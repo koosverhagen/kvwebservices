@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Contact — KV Web Services</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Contact KV Web Services for web design and development enquiries.">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="container">
+    <strong class="logo">KVWebServices</strong>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="services.html">Services</a>
+      <a href="qualifications.html">Qualifications</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <h1>Contact</h1>
+
+    <p>
+      Have a project in mind or need a new website?
+      Send a message and I’ll get back to you shortly.
+    </p>
+
+    <form
+      action="https://formspree.io/f/xyzzabcd"
+      method="POST"
+      style="max-width:520px"
+    >
+      <p>
+        <label>
+          Name<br>
+          <input type="text" name="name" required style="width:100%;padding:10px;">
+        </label>
+      </p>
+
+      <p>
+        <label>
+          Email<br>
+          <input type="email" name="email" required style="width:100%;padding:10px;">
+        </label>
+      </p>
+
+      <p>
+        <label>
+          Message<br>
+          <textarea name="message" rows="5" required style="width:100%;padding:10px;"></textarea>
+        </label>
+      </p>
+
+      <p>
+        <button class="btn" type="submit">Send message</button>
+      </p>
+    </form>
+
+    <p style="margin-top:24px;color:var(--muted)">
+      Or email directly:  
+      <strong>info@kvwebservices.co.uk</strong>
+    </p>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <small>© <span id="year"></span> KV Web Services</small>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
