@@ -131,10 +131,6 @@ a {
     padding: 0 var(--pad);
   }
 
-  .nav a:not(.btn) {
-    display: none; /* hide About / Services / Qualifications */
-  }
-
   .logo {
     font-size: 18px;
   }
