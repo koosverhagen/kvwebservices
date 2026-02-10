@@ -47,6 +47,7 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
+
 .header .container {
   height: 68px;
   display: flex;
@@ -238,6 +239,7 @@ textarea:focus {
     display: none;
     flex-direction: column;
     gap: 14px;
+    z-index: 1000; /* 🔑 ensures menu is visible */
   }
 
   .menu.open {
