@@ -159,3 +159,26 @@ textarea:focus {
   border-color: var(--accent);
 }
 
+/* ---------- Mobile header cleanup ---------- */
+@media (max-width: 720px) {
+  .header .container {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+    padding: 0 var(--pad);
+  }
+
+  .nav a:not(.btn) {
+    display: none; /* hide About / Services / Qualifications */
+  }
+
+  .nav {
+    width: auto;
+  }
+
+  .logo {
+    font-size: 18px;
+  }
+}
+
