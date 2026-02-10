@@ -197,39 +197,23 @@ textarea:focus {
 
 /* ================= MOBILE HAMBURGER MENU ================= */
 
-.menu-toggle {
-  display: none;
-  font-size: 24px;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-/* Desktop menu */
-.menu {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-}
-
-/* Mobile behavior */
 @media (max-width: 720px) {
   .menu-toggle {
     display: block;
   }
 
   .menu {
-    position: absolute;
-    top: 64px;
+    position: fixed;          /* 🔑 KEY CHANGE */
+    top: 64px;                /* below header */
     left: 0;
     right: 0;
     background: white;
     border-bottom: 1px solid var(--border);
-    padding: 16px var(--pad);
+    padding: 20px var(--pad);
     display: none;
     flex-direction: column;
-    gap: 14px;
-    z-index: 1000; /* 🔑 ensures menu is visible */
+    gap: 16px;
+    z-index: 1000;
   }
 
   .menu.open {
@@ -239,5 +223,10 @@ textarea:focus {
   .menu a {
     font-size: 16px;
   }
+
+  .menu a {
+  padding: 8px 0;
+}
+
 }
 
