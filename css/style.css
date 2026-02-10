@@ -204,3 +204,49 @@ textarea:focus {
   border-radius: 8px;
   background: #f8fafc;
 }
+
+/* ================= MOBILE HAMBURGER MENU ================= */
+
+.menu-toggle {
+  display: none;
+  font-size: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Desktop menu */
+.menu {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+/* Mobile behavior */
+@media (max-width: 720px) {
+  .menu-toggle {
+    display: block;
+  }
+
+  .menu {
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 16px var(--pad);
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .menu.open {
+    display: flex;
+  }
+
+  .menu a {
+    font-size: 16px;
+  }
+}
+
