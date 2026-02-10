@@ -255,3 +255,6 @@ textarea:focus {
   padding: 24px 0;
   color: var(--muted);
 }
+
+t-child)::after {
+    content: "|";
