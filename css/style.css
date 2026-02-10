@@ -164,12 +164,6 @@ a {
   border-color: var(--muted);
 }
 
-/* Hide hero nav on desktop */
-@media (min-width: 721px) {
-  .hero-nav {
-    display: none;
-  }
-}
 
 /* ================= FORMS ================= */
 
