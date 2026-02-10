@@ -66,14 +66,7 @@ a {
   align-items: center;
 }
 
-/* Remove button styling from Contact in top navigation */
-.nav .btn {
-  background: none;
-  color: var(--text);
-  border: none;
-  padding: 0;
-  font-weight: 500;
-}
+
 
 /* ================= BUTTONS ================= */
 
@@ -224,13 +217,14 @@ a {
     gap: 26px;
   }
 
-  .menu a:not(:last-child)::after {
-    content: "|";
-    margin-left: 26px;
-    color: var(--border);
-    font-weight: 400;
-  }
+ .menu a:not(:last-child)::after {
+  content: "|";
+  margin-left: 26px;
+- color: var(--border);
++ color: var(--muted);
+  font-weight: 400;
 }
+
 
 /* ================= FORMS ================= */
 
