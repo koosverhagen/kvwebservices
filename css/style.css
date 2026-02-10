@@ -18,14 +18,13 @@ html, body {
   padding: 0;
 }
 
-body{
+body {
   font-family: system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
   font-size: 16px;
 }
-
 
 a {
   color: inherit;
@@ -38,13 +37,15 @@ a {
   padding: 0 var(--pad);
 }
 
-/* Header */
+/* ================= HEADER ================= */
+
 .header {
   position: sticky;
   top: 0;
   background: rgba(255,255,255,0.9);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
 }
 
 .header .container {
@@ -64,36 +65,10 @@ a {
   display: flex;
   gap: 14px;
   align-items: center;
-  flex-wrap: wrap;
 }
 
-/* Mobile navigation */
-@media (max-width: 720px) {
-  .header .container {
-    flex-direction: column;
-    height: auto;
-    padding: 12px 0;
-    gap: 10px;
-  }
+/* ================= BUTTONS ================= */
 
-  .nav {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .nav a {
-    padding: 8px 6px;
-    font-size: 14px;
-  }
-
-  .btn {
-    padding: 10px 12px;
-    font-size: 14px;
-  }
-}
-
-
-/* Buttons */
 .btn {
   padding: 10px 14px;
   border-radius: 10px;
@@ -107,6 +82,8 @@ a {
   background: transparent;
   color: var(--accent);
 }
+
+/* ================= HERO ================= */
 
 .hero {
   padding: 48px 0 36px;
@@ -125,6 +102,12 @@ a {
   margin-bottom: 22px;
 }
 
+.actions {
+  display: flex;
+  gap: 14px;
+}
+
+/* Stack hero buttons on small phones */
 @media (max-width: 520px) {
   .actions {
     flex-direction: column;
@@ -137,29 +120,8 @@ a {
   }
 }
 
+/* ================= MOBILE HEADER (CLEAN) ================= */
 
-/* Footer */
-.footer {
-  border-top: 1px solid var(--border);
-  margin-top: 48px;
-  padding: 24px 0;
-  color: var(--muted);
-}
-
-input,
-textarea {
-  font-size: 16px; /* prevents iOS zoom */
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-
-input:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-/* ---------- Mobile header cleanup ---------- */
 @media (max-width: 720px) {
   .header .container {
     flex-direction: row;
@@ -173,16 +135,18 @@ textarea:focus {
     display: none; /* hide About / Services / Qualifications */
   }
 
-  .nav {
-    width: auto;
-  }
-
   .logo {
     font-size: 18px;
   }
+
+  .btn {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
 }
 
-/* Hero secondary navigation */
+/* ================= HERO SECONDARY NAV ================= */
+
 .hero-nav {
   margin-top: 28px;
   display: flex;
@@ -207,4 +171,26 @@ textarea:focus {
   }
 }
 
+/* ================= FORMS ================= */
 
+input,
+textarea {
+  font-size: 16px; /* prevents iOS zoom */
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ================= FOOTER ================= */
+
+.footer {
+  border-top: 1px solid var(--border);
+  margin-top: 48px;
+  padding: 24px 0;
+  color: var(--muted);
+}
