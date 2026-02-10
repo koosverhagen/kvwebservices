@@ -259,3 +259,16 @@ textarea:focus {
   padding: 0 !important;
   font-weight: 500;
 }
+
+/* Remove blue background from Contact inside hamburger menu */
+@media (max-width: 720px) {
+  .menu .btn {
+    background: none !important;
+    color: var(--text) !important;
+    border: none !important;
+    padding: 8px 0 !important;
+    font-weight: 500;
+  }
+}
+
+
