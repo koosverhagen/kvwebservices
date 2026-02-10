@@ -182,3 +182,29 @@ textarea:focus {
   }
 }
 
+/* Hero secondary navigation */
+.hero-nav {
+  margin-top: 28px;
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.hero-nav a {
+  font-size: 14px;
+  color: var(--muted);
+  border-bottom: 1px solid transparent;
+}
+
+.hero-nav a:hover {
+  border-color: var(--muted);
+}
+
+/* Hide hero nav on desktop */
+@media (min-width: 721px) {
+  .hero-nav {
+    display: none;
+  }
+}
+
+
