@@ -256,5 +256,12 @@ textarea:focus {
   color: var(--muted);
 }
 
-t-child)::after {
-    content: "|";
+
+  /* FINAL override: Contact not blue in top nav (desktop + mobile) */
+.header .nav .btn {
+  background: none !important;
+  color: var(--text) !important;
+  border: none !important;
+  padding: 0 !important;
+  font-weight: 500;
+}
