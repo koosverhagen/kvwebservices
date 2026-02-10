@@ -194,3 +194,13 @@ textarea:focus {
   padding: 24px 0;
   color: var(--muted);
 }
+
+.hero-nav {
+  margin-top: 22px;
+}
+
+.hero-nav a {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
