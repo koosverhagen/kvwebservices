@@ -66,8 +66,6 @@ a {
   align-items: center;
 }
 
-
-
 /* ================= BUTTONS ================= */
 
 .btn {
@@ -108,11 +106,9 @@ a {
   gap: 14px;
 }
 
-/* Stack hero buttons on small phones */
 @media (max-width: 520px) {
   .actions {
     flex-direction: column;
-    align-items: stretch;
   }
 
   .actions .btn {
@@ -150,7 +146,7 @@ a {
   }
 }
 
-/* ================= MOBILE HAMBURGER MENU ================= */
+/* ================= HAMBURGER MENU ================= */
 
 .menu-toggle {
   display: none;
@@ -165,6 +161,7 @@ a {
   align-items: center;
 }
 
+/* MOBILE MENU */
 @media (max-width: 720px) {
   .menu-toggle {
     display: block;
@@ -198,6 +195,7 @@ a {
   .menu a {
     font-size: 16px;
     padding: 8px 0;
+    text-align: center;
   }
 
   /* subtle backdrop */
@@ -208,6 +206,17 @@ a {
     background: rgba(0,0,0,0.04);
     z-index: -1;
   }
+
+  /* FULLY neutralise Contact button in hamburger */
+  .menu a.btn {
+    all: unset;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--text);
+    padding: 8px 0;
+    cursor: pointer;
+    text-align: center;
+  }
 }
 
 /* ================= DESKTOP NAV SPACING + SEPARATORS ================= */
@@ -217,14 +226,22 @@ a {
     gap: 26px;
   }
 
- .menu a:not(:last-child)::after {
-  content: "|";
-  margin-left: 26px;
-- color: var(--border);
-+ color: var(--muted);
-  font-weight: 400;
-}
+  .menu a:not(:last-child)::after {
+    content: "|";
+    margin-left: 26px;
+    color: var(--muted);
+    font-weight: 400;
+  }
 
+  /* Remove Contact button styling in desktop nav */
+  .header .nav .btn {
+    background: none;
+    color: var(--text);
+    border: none;
+    padding: 0;
+    font-weight: 500;
+  }
+}
 
 /* ================= FORMS ================= */
 
@@ -249,26 +266,3 @@ textarea:focus {
   padding: 24px 0;
   color: var(--muted);
 }
-
-
-  /* FINAL override: Contact not blue in top nav (desktop + mobile) */
-.header .nav .btn {
-  background: none !important;
-  color: var(--text) !important;
-  border: none !important;
-  padding: 0 !important;
-  font-weight: 500;
-}
-
-/* Remove blue background from Contact inside hamburger menu */
-@media (max-width: 720px) {
-  .menu .btn {
-    background: none !important;
-    color: var(--text) !important;
-    border: none !important;
-    padding: 8px 0 !important;
-    font-weight: 500;
-  }
-}
-
-
