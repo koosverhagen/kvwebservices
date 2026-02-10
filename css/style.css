@@ -202,19 +202,31 @@ textarea:focus {
     display: block;
   }
 
-  .menu {
-    position: fixed;          /* 🔑 KEY CHANGE */
-    top: 64px;                /* below header */
-    left: 0;
-    right: 0;
-    background: white;
-    border-bottom: 1px solid var(--border);
-    padding: 20px var(--pad);
-    display: none;
-    flex-direction: column;
-    gap: 16px;
-    z-index: 1000;
-  }
+ .menu {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 20px var(--pad);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 1000;
+
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 
   .menu.open {
     display: flex;
