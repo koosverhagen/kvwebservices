@@ -9,6 +9,8 @@
   --pad: 18px;
 }
 
+/* ================= BASE ================= */
+
 * {
   box-sizing: border-box;
 }
@@ -47,13 +49,11 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
-
 .header .container {
   height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
 }
 
 .logo {
@@ -63,8 +63,16 @@ a {
 
 .nav {
   display: flex;
-  gap: 14px;
   align-items: center;
+}
+
+/* Remove button styling from Contact in top navigation */
+.nav .btn {
+  background: none;
+  color: var(--text);
+  border: none;
+  padding: 0;
+  font-weight: 500;
 }
 
 /* ================= BUTTONS ================= */
@@ -120,27 +128,6 @@ a {
   }
 }
 
-/* ================= MOBILE HEADER (CLEAN) ================= */
-
-@media (max-width: 720px) {
-  .header .container {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    height: 64px;
-    padding: 0 var(--pad);
-  }
-
-  .logo {
-    font-size: 18px;
-  }
-
-  .btn {
-    padding: 10px 12px;
-    font-size: 14px;
-  }
-}
-
 /* ================= HERO SECONDARY NAV ================= */
 
 .hero-nav {
@@ -156,11 +143,18 @@ a {
   padding: 6px 10px;
   border-radius: 8px;
   background: #f8fafc;
-  border-bottom: 1px solid transparent;
 }
 
-.hero-nav a:hover {
-  border-color: var(--muted);
+/* ================= MOBILE HEADER ================= */
+
+@media (max-width: 720px) {
+  .header .container {
+    height: 64px;
+  }
+
+  .logo {
+    font-size: 18px;
+  }
 }
 
 /* ================= MOBILE HAMBURGER MENU ================= */
@@ -171,6 +165,11 @@ a {
   background: none;
   border: none;
   cursor: pointer;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
 }
 
 @media (max-width: 720px) {
@@ -216,17 +215,43 @@ a {
     background: rgba(0,0,0,0.04);
     z-index: -1;
   }
-
-  /* Remove button styling from Contact in top navigation */
-.nav .btn {
-  background: none;
-  color: var(--text);
-  border: none;
-  padding: 0;
-  font-weight: 500;
 }
 
+/* ================= DESKTOP NAV SPACING + SEPARATORS ================= */
 
+@media (min-width: 721px) {
+  .menu {
+    gap: 26px;
+  }
 
+  .menu a:not(:last-child)::after {
+    content: "|";
+    margin-left: 26px;
+    color: var(--border);
+    font-weight: 400;
+  }
+}
 
+/* ================= FORMS ================= */
 
+input,
+textarea {
+  font-size: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ================= FOOTER ================= */
+
+.footer {
+  border-top: 1px solid var(--border);
+  margin-top: 48px;
+  padding: 24px 0;
+  color: var(--muted);
+}
