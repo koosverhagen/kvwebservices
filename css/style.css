@@ -216,15 +216,17 @@ a {
     background: rgba(0,0,0,0.04);
     z-index: -1;
   }
+
+  /* Remove button styling from Contact in top navigation */
+.nav .btn {
+  background: none;
+  color: var(--text);
+  border: none;
+  padding: 0;
+  font-weight: 500;
 }
 
-@media (max-width: 720px) {
-  .menu .btn {
-    background: transparent;
-    color: var(--text);
-    border: none;
-    padding: 8px 0;
-    font-weight: 500;
-  }
-}
+
+
+
 
