@@ -350,4 +350,59 @@ textarea:focus {
   height: 24px;
 }
 
+/* ================= PORTFOLIO ================= */
+
+.portfolio-section {
+  margin-top: 96px;
+}
+
+.portfolio-grid {
+  display: grid;
+  gap: 40px;
+  margin-top: 48px;
+}
+
+@media (min-width: 900px) {
+  .portfolio-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Card */
+
+.portfolio-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.25s ease;
+}
+
+.portfolio-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Image placeholder */
+
+.portfolio-image {
+  height: 260px;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+/* Content */
+
+.portfolio-content h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.2px;
+}
+
+.portfolio-content p {
+  color: var(--muted);
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
 
