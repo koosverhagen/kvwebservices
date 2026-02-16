@@ -307,10 +307,12 @@ textarea:focus {
 }
 
 .service-card {
-  padding: 0;
-  border: none;
-  background: transparent;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  padding: 28px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.06); /* ultra thin line */
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03); /* very soft shadow */
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .service-card h3 {
@@ -327,9 +329,9 @@ textarea:focus {
   font-size: 15px;
 }
 
-/* subtle hover */
 .service-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 
@@ -374,21 +376,29 @@ textarea:focus {
   display: block;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.25s ease;
+  padding: 28px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .portfolio-card:hover {
   transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
+
 
 /* Image placeholder */
 
 .portfolio-image {
-  height: 260px;
+  height: 220px;
   background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-  border-radius: 16px;
+  border-radius: 12px;
   margin-bottom: 20px;
 }
+
 
 /* Content */
 
