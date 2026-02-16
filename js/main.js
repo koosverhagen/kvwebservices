@@ -17,3 +17,12 @@ document.addEventListener("click", (e) => {
   }
 });
 
+menu.querySelectorAll("a").forEach(link => {
+  link.addEventListener("click", () => {
+    menu.classList.remove("open");
+    document.body.classList.remove("menu-open");
+    toggle.setAttribute("aria-expanded", "false");
+  });
+});
+
+
