@@ -337,3 +337,20 @@ textarea:focus {
   border-top: 1px solid var(--border);
 }
 
+/* ================= SERVICE ICONS ================= */
+
+.service-icon {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.service-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
