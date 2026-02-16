@@ -267,90 +267,86 @@ textarea:focus {
   color: var(--muted);
 }
 
-/* ================= SERVICES SECTION ================= */
+/* ================= SERVICES (APPLE MINIMAL) ================= */
 
 .services-section {
-  padding: 72px 0;
+  margin-top: 72px;
+  padding-top: 72px;
+  border-top: 1px solid var(--border);
 }
 
 .section-title {
   font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
   margin-bottom: 8px;
 }
 
 .section-subtitle {
   color: var(--muted);
   max-width: 520px;
-  margin-bottom: 36px;
+  margin-bottom: 48px;
 }
 
-/* Grid layout */
 .services-grid {
   display: grid;
-  gap: 24px;
+  gap: 40px;
 }
 
-/* Desktop */
 @media (min-width: 900px) {
   .services-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-/* Tablet */
 @media (min-width: 600px) and (max-width: 899px) {
   .services-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Service card */
 .service-card {
-  padding: 28px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: white;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 0;
+  border: none;
+  background: transparent;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .service-card h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.2px;
 }
 
 .service-card p {
   color: var(--muted);
   margin: 0;
+  line-height: 1.7;
+  font-size: 15px;
 }
 
-/* Subtle hover effect */
+/* subtle hover */
 .service-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+  transform: translateY(-3px);
+  opacity: 0.85;
 }
 
-
-.services-section {
-  margin-top: 64px;
-  padding-top: 64px;
-  border-top: 1px solid var(--border);
-}
-
-/* ================= SERVICE ICONS ================= */
+/* ICON */
 
 .service-icon {
-  width: 42px;
-  height: 42px;
-  margin-bottom: 18px;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 20px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   color: var(--accent);
 }
 
 .service-icon svg {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
+
 
