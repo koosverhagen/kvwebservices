@@ -8,3 +8,12 @@ if (toggle && menu) {
     toggle.setAttribute("aria-expanded", open);
   });
 }
+
+document.addEventListener("click", (e) => {
+  if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+    menu.classList.remove("open");
+    document.body.classList.remove("menu-open");
+    toggle.setAttribute("aria-expanded", "false");
+  }
+});
+
