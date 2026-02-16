@@ -349,6 +349,15 @@ textarea:focus {
     0 12px 32px rgba(15, 23, 42, 0.04);
 }
 
+.services-section {
+  background: linear-gradient(
+    to bottom,
+    #ffffff,
+    #f8fafc
+  );
+}
+
+
 
 /* ICON */
 
