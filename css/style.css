@@ -171,18 +171,15 @@ a {
 /* MOBILE MENU */
 @media (max-width: 720px) {
 
-  .menu {
-  display: none; /* hide desktop menu */
-}
-
-
   .menu-toggle {
     display: block;
   }
 
   .menu {
+    display: none; /* hide by default */
+
     position: fixed;
-    top: 76px; /* below header */
+    top: 76px;
     left: 16px;
     right: 16px;
 
@@ -192,7 +189,6 @@ a {
     border-radius: 22px;
     padding: 24px;
 
-    display: flex;
     flex-direction: column;
     gap: 20px;
 
@@ -204,44 +200,17 @@ a {
     transform: translateY(-10px) scale(0.98);
     pointer-events: none;
 
-    transition:
-      opacity 0.25s ease,
-      transform 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease;
   }
 
   .menu.open {
+    display: flex;
     opacity: 1;
     transform: translateY(0) scale(1);
     pointer-events: auto;
   }
-
-  .menu a {
-    font-size: 18px;
-    font-weight: 500;
-    text-align: center;
-    padding: 10px 0;
-  }
-
-  /* Remove button styling completely */
-  .menu a.btn {
-    all: unset;
-    font-family: inherit;
-    font-size: 18px;
-    font-weight: 500;
-    color: var(--text);
-    cursor: pointer;
-    text-align: center;
-  }
-
 }
 
-body.menu-open::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.04);
-  z-index: 999;
-}
 
 
 /* ================= DESKTOP NAV SPACING + SEPARATORS ================= */
