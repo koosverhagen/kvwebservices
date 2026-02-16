@@ -330,8 +330,8 @@ textarea:focus {
 /* subtle hover */
 .service-card:hover {
   transform: translateY(-3px);
-  opacity: 0.85;
 }
+
 
 /* ICON */
 
