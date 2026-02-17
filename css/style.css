@@ -517,7 +517,9 @@ svg {
 }
 
 .contact-card {
-  background: #ffffff;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(6px);
+
   padding: 56px;
   border-radius: 28px;
 
