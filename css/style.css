@@ -437,4 +437,58 @@ textarea:focus {
   line-height: 1.6;
 }
 
+/* ================= CASE STUDY ================= */
 
+.case-grid {
+  display: grid;
+  gap: 48px;
+  margin-top: 40px;
+  margin-bottom: 96px;
+}
+
+@media (min-width: 980px) {
+  .case-grid {
+    grid-template-columns: 2fr 1fr;
+    align-items: start;
+  }
+}
+
+.case-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.case-card h2 {
+  margin: 0 0 14px 0;
+  font-size: 18px;
+  letter-spacing: -0.2px;
+}
+
+.case-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.case-list li {
+  margin: 8px 0;
+}
+
+/* Responsive 16:9 video */
+.video-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0b1220;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.video-wrap iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
