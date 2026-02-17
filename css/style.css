@@ -556,4 +556,10 @@ textarea:focus {
   height: 100%;
   border: 0;
 }
+ .tech-tags {
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 0.2px;
+}
 
