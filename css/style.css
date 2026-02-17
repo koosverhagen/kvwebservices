@@ -418,6 +418,22 @@ textarea:focus {
   display: block;
 }
 
+.portfolio-image {
+  height: 240px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+  overflow: hidden;              /* IMPORTANT */
+  background: #f1f5f9;
+  position: relative;
+}
+
+.portfolio-image img {
+  width: 100%;                   /* Fit card width */
+  height: 100%;                  /* Fill container height */
+  object-fit: cover;             /* Crop nicely */
+  display: block;                /* Remove inline gap */
+  transition: transform 0.4s ease;
+}
 
 
 
