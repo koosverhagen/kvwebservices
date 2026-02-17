@@ -49,36 +49,30 @@
     <form
   action="https://formspree.io/f/xreablqv"
   method="POST"
-  style="max-width:520px"
+  class="contact-form"
 >
-      <input type="hidden" name="_subject" value="New enquiry from KV Web Services">
+  <input type="hidden" name="_subject" value="New enquiry from KV Web Services">
 
+  <div class="form-group">
+    <label for="name">Name</label>
+    <input id="name" type="text" name="name" required>
+  </div>
 
-      <p>
-        <label>
-          Name<br>
-          <input type="text" name="name" required style="width:100%;padding:10px;">
-        </label>
-      </p>
+  <div class="form-group">
+    <label for="email">Email</label>
+    <input id="email" type="email" name="email" required>
+  </div>
 
-      <p>
-        <label>
-          Email<br>
-          <input type="email" name="email" required style="width:100%;padding:10px;">
-        </label>
-      </p>
+  <div class="form-group">
+    <label for="message">Message</label>
+    <textarea id="message" name="message" rows="5" required></textarea>
+  </div>
 
-      <p>
-        <label>
-          Message<br>
-          <textarea name="message" rows="5" required style="width:100%;padding:10px;"></textarea>
-        </label>
-      </p>
+  <button class="btn submit-btn" type="submit">
+    Send message
+  </button>
+</form>
 
-      <p>
-        <button class="btn" type="submit">Send message</button>
-      </p>
-    </form>
 
     <p style="margin-top:24px;color:var(--muted)">
       Or email directly:  
