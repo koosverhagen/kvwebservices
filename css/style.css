@@ -306,12 +306,15 @@ svg {
   background: #ffffff;
   border: 1px solid rgba(15,23,42,0.06);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+
 .portfolio-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
 }
+
 
 .portfolio-image {
   aspect-ratio: 16 / 9;
