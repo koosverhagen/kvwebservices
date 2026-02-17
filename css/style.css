@@ -499,3 +499,36 @@ svg {
   align-self: flex-start;
 }
 
+/* ================= CONTACT LAYOUT ================= */
+
+.contact-wrapper {
+  margin-top: 48px;
+  margin-bottom: 96px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.contact-card {
+  background: #ffffff;
+  padding: 48px;
+  border-radius: 28px;
+  border: 1px solid rgba(15,23,42,0.06);
+  box-shadow: 0 10px 40px rgba(15,23,42,0.04);
+  max-width: 560px;
+  width: 100%;
+}
+
+/* Better spacing under hero */
+.hero + .contact-wrapper {
+  margin-top: 40px;
+}
+
+/* Improve button presence */
+.submit-btn {
+  margin-top: 12px;
+  padding: 14px 24px;
+  border-radius: 20px;
+  font-size: 16px;
+}
+
+
