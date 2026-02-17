@@ -372,9 +372,9 @@ svg {
 
 .case-grid {
   display: grid;
-  gap: 64px;
+  gap: 48px;
   margin-top: 48px;
-  margin-bottom: 120px;
+  margin-bottom: 100px;
 }
 
 @media (min-width: 980px) {
@@ -384,12 +384,20 @@ svg {
 }
 
 .case-card {
-  padding: 42px;
-  border-radius: 26px;
+  padding: 28px; /* was 42px */
+  border-radius: 24px; /* slightly refined */
   background: #ffffff;
   border: 1px solid rgba(15,23,42,0.06);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
+
+
+.case-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(15,23,42,0.08);
+}
+
 
 .case-card h2 {
   margin: 0 0 18px;
