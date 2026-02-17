@@ -304,7 +304,7 @@ svg {
 
 .portfolio-grid {
   display: grid;
-  gap: 56px;
+  gap: 44px;
   margin-top: 64px;
 }
 
@@ -315,13 +315,14 @@ svg {
 }
 
 .portfolio-card {
-  padding: 32px;
+  padding: 22px; /* was 32px */
   border-radius: 22px;
   background: #ffffff;
   border: 1px solid rgba(15,23,42,0.06);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 
 
 .portfolio-image img {
@@ -338,7 +339,7 @@ svg {
   aspect-ratio: 16 / 9;
   border-radius: 18px;
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
   background: #f1f5f9;
   border: 1px solid rgba(15,23,42,0.05);
 }
