@@ -85,8 +85,9 @@ a {
 /* ================= HERO ================= */
 
 .hero {
-  padding: 48px 0 24px;
+  padding: 72px 0 32px;  /* more top presence, tighter bottom */
 }
+
 
 
 .hero h1 {
@@ -463,12 +464,16 @@ textarea:focus {
 }
 
 .case-card {
+  padding: 40px;
+  border-radius: 24px;
   background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 20px;
-  padding: 28px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
+
 
 .case-card h2 {
   margin: 0 0 14px 0;
@@ -485,6 +490,12 @@ textarea:focus {
 .case-list li {
   margin: 8px 0;
 }
+
+.case-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 36px rgba(15, 23, 42, 0.06);
+}
+
 
 /* Responsive 16:9 video */
 .video-wrap {
@@ -564,4 +575,15 @@ textarea:focus {
   letter-spacing: 0.2px;
 }
 
+.case-grid {
+  margin-top: 48px;
+  padding-top: 64px;
+
+  /* subtle gradient fade */
+  background: linear-gradient(
+    to bottom,
+    rgba(248, 250, 252, 0.6),
+    #ffffff 120px
+  );
+}
 
