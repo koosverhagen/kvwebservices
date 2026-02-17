@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>HireCheck App — KV Web Services</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="HireCheck iOS app case study — digital vehicle checks, signatures, and PDF reports.">
+
+  <link rel="stylesheet" href="css/style.css?v=9">
+</head>
+<body>
+
+<header class="header">
+  <div class="container">
+    <a href="index.html" class="logo">KVWebServices</a>
+
+    <nav class="nav">
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">
+        ☰
+      </button>
+
+      <div class="menu">
+        <a href="about.html">About</a>
+        <a href="services.html">Services</a>
+        <a href="portfolio.html">Portfolio</a>
+        <a href="qualifications.html">Qualifications</a>
+        <a href="contact.html">Contact</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+    <h1>HireCheck App</h1>
+    <p>
+      iOS app built in SwiftUI for digital damage reports, signatures, and
+      automated multi-page PDF generation — designed for real hire workflows.
+    </p>
+
+    <div class="actions">
+      <a class="btn" href="contact.html">Build something similar</a>
+      <a class="btn ghost" href="portfolio.html">Back to Portfolio</a>
+    </div>
+  </section>
+
+  <section class="case-grid">
+
+    <div class="case-card">
+      <h2>Demo Video</h2>
+
+      <div class="video-wrap">
+        <iframe
+          src="https://www.youtube.com/embed/YOUR_YOUTUBE_ID"
+          title="HireCheck App Demo"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen>
+        </iframe>
+      </div>
+
+      <p class="muted" style="margin-top:12px;">
+        Short walkthrough of the app flow: booking → checks → signatures → PDF output.
+      </p>
+    </div>
+
+    <div class="case-card">
+      <h2>What it does</h2>
+      <ul class="case-list">
+        <li>Capture damage diagrams and notes on-device</li>
+        <li>Collect multiple signatures (customer + terms)</li>
+        <li>Generate professional PDF reports automatically</li>
+        <li>Supports hire workflow: pickup + return checks</li>
+      </ul>
+
+      <h2 style="margin-top:22px;">Tech stack</h2>
+      <ul class="case-list">
+        <li>SwiftUI</li>
+        <li>PencilKit (drawing + signature capture)</li>
+        <li>PDFKit (PDF creation + layout)</li>
+        <li>Backend integration for data + email sending</li>
+      </ul>
+    </div>
+
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <small>© <span id="year"></span> KV Web Services</small>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
