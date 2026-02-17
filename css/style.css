@@ -446,15 +446,63 @@ svg {
   pointer-events: none;
 }
 
-/* ================= CONTACT FORM ================= */
+/* =====================================================
+   CONTACT LAYOUT
+===================================================== */
+
+.contact-wrapper {
+  margin-top: 64px;
+  margin-bottom: 120px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Card */
+
+.contact-card {
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(6px);
+
+  padding: 64px;
+  border-radius: 28px;
+
+  border: 1px solid rgba(15,23,42,0.06);
+
+  box-shadow:
+    0 20px 60px rgba(15,23,42,0.05),
+    0 8px 24px rgba(15,23,42,0.04);
+
+  max-width: 600px;
+  width: 100%;
+
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Subtle lift (safe) */
+.contact-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 30px 80px rgba(15,23,42,0.06),
+    0 12px 36px rgba(15,23,42,0.05);
+}
+
+/* Better spacing under hero */
+.hero + .contact-wrapper {
+  margin-top: 48px;
+}
+
+
+/* =====================================================
+   CONTACT FORM
+===================================================== */
 
 .contact-form {
-  max-width: 520px;
-  margin-top: 32px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
 }
+
+/* Form group */
 
 .form-group {
   display: flex;
@@ -469,86 +517,57 @@ svg {
   letter-spacing: -0.2px;
 }
 
+/* Inputs */
+
 .contact-form input,
 .contact-form textarea {
   width: 100%;
-  padding: 14px 16px;
-  border-radius: 10px;
+  padding: 16px 18px;
+  border-radius: 14px;
+
   border: 1px solid rgba(15,23,42,0.08);
   background: #ffffff;
+
   font-size: 16px;
   font-family: inherit;
+
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .contact-form textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 140px;
 }
+
+/* Focus state (Apple soft glow) */
 
 .contact-form input:focus,
 .contact-form textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
+
+
+/* =====================================================
+   SUBMIT BUTTON
+===================================================== */
 
 .submit-btn {
   margin-top: 8px;
-  padding: 14px 22px;
-  border-radius: 10px;
+  padding: 16px 28px;
+
+  border-radius: 22px;
   font-size: 16px;
   font-weight: 600;
+
   align-self: flex-start;
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* ================= CONTACT LAYOUT ================= */
-
-.contact-wrapper {
-  margin-top: 48px;
-  margin-bottom: 96px;
-  display: flex;
-  justify-content: flex-start;
-}
-
-.contact-card {
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(8px);
-
-  padding: 64px;
-  border-radius: 32px;
-
-  border: 1px solid rgba(15,23,42,0.06);
-
-  box-shadow:
-    0 30px 80px rgba(15,23,42,0.05),
-    0 12px 32px rgba(15,23,42,0.04);
-
-  max-width: 600px;
-  width: 100%;
-}
-.contact-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.contact-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 40px 100px rgba(15,23,42,0.06),
-    0 18px 48px rgba(15,23,42,0.05);
-}
-
-/* Better spacing under hero */
-.hero + .contact-wrapper {
-  margin-top: 40px;
-}
-
-/* Improve button presence */
-.submit-btn {
-  margin-top: 12px;
-  padding: 14px 24px;
-  border-radius: 20px;
-  font-size: 16px;
+.submit-btn:hover {
+  transform: translateY(-2px);
 }
 
 
