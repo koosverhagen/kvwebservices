@@ -410,3 +410,30 @@ svg {
   padding: 36px 0;
   color: var(--muted);
 }
+/* ================= FOOTER FADE ================= */
+
+.footer {
+  position: relative;
+  border-top: 1px solid var(--border);
+  padding: 48px 0 32px;
+  margin-top: 0; /* remove old spacing if any */
+}
+
+/* Soft fade above footer */
+.footer::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  left: 0;
+  right: 0;
+  height: 80px;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,1)
+  );
+
+  pointer-events: none;
+}
+
