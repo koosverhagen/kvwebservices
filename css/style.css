@@ -310,10 +310,14 @@ svg {
 }
 
 
-.portfolio-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+.portfolio-image img {
+  transition: filter 0.25s ease;
 }
+
+.portfolio-card:hover .portfolio-image img {
+  filter: brightness(1.04);
+}
+
 
 
 .portfolio-image {
