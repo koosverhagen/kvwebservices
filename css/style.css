@@ -271,8 +271,6 @@ svg {
 
 .service-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-
 }
 
 .service-card h3 {
@@ -313,7 +311,6 @@ svg {
 
 .portfolio-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
 .portfolio-image {
