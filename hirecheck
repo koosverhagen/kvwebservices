@@ -48,24 +48,23 @@
 
   <section class="case-grid">
 
-    <div class="case-card">
-      <h2>Demo Video</h2>
+   <div class="case-card">
+  <h2>Demo Video</h2>
 
-      <div class="video-wrap">
-       <iframe
-  src="https://www.youtube.com/embed/lZAKsYwq-MQ"
-  title="HireCheck App Demo"
-  frameborder="0"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-  allowfullscreen>
-</iframe>
+  <div class="video-wrap">
+    <iframe
+      src="https://www.youtube.com/embed/lZAKsYwq-MQ"
+      title="HireCheck App Demo"
+      frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen>
+    </iframe>
+  </div>
 
-      </div>
-
-      <p class="muted" style="margin-top:12px;">
-        Short walkthrough of the app flow: booking → checks → signatures → PDF output.
-      </p>
-    </div>
+  <p class="muted" style="margin-top:12px;">
+    Short walkthrough of the app flow: booking → checks → signatures → PDF output.
+  </p>
+</div>
 
     <div class="case-card">
       <h2>What it does</h2>
