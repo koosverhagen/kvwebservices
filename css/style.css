@@ -459,9 +459,9 @@ svg {
 .contact-wrapper {
   margin-top: 64px;
   margin-bottom: 120px;
-  display: flex;
-  justify-content: center;   /* was flex-start */
+  display: block;
 }
+
 
 
 /* Card */
