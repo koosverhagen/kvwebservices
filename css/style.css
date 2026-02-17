@@ -470,7 +470,7 @@ svg {
 .contact-form textarea {
   width: 100%;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: 10px;
   border: 1px solid rgba(15,23,42,0.08);
   background: #ffffff;
   font-size: 16px;
@@ -493,7 +493,7 @@ svg {
 .submit-btn {
   margin-top: 8px;
   padding: 14px 22px;
-  border-radius: 18px;
+  border-radius: 10px;
   font-size: 16px;
   font-weight: 600;
   align-self: flex-start;
