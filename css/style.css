@@ -564,11 +564,4 @@ textarea:focus {
   letter-spacing: 0.2px;
 }
 
-.section-divider {
-  border: none;
-  height: 1px;
-  background: rgba(15,23,42,0.06);
-    margin: 32px 0 48px;   /* reduced spacing */
-}
-
 
