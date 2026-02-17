@@ -570,5 +570,93 @@ svg {
   transform: translateY(-2px);
 }
 
+/* =========================================
+   CONTACT PAGE — CENTERED KEYNOTE STYLE
+========================================= */
+
+.center-contact {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.keynote-card {
+  width: 100%;
+  max-width: 640px;
+
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border-radius: 20px;
+  padding: 40px;
+
+  border: 1px solid rgba(0,0,0,0.06);
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.06),
+    0 2px 8px rgba(0,0,0,0.04);
+
+  transition: transform 0.2s ease;
+}
+
+.keynote-card:hover {
+  transform: translateY(-2px);
+}
+
+/* FORM SPACING IMPROVEMENT */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* INPUT STYLE UPGRADE */
+.contact-form input,
+.contact-form textarea {
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 14px;
+  font-size: 15px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: #1b5cff;
+  box-shadow: 0 0 0 4px rgba(27,92,255,0.15);
+}
+
+/* BUTTON POLISH */
+.submit-btn {
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 15px;
+
+  background: #1b5cff;
+  color: white;
+
+  border: none;
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+  background: #1448d4;
+  transform: translateY(-1px);
+}
+
+/* MOBILE REFINEMENT */
+@media (max-width: 640px) {
+  .keynote-card {
+    padding: 26px;
+    border-radius: 16px;
+  }
+}
 
 
