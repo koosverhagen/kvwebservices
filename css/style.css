@@ -26,20 +26,23 @@
 html, body {
   margin: 0;
   padding: 0;
-background: linear-gradient(
-    to bottom,
-    #ffffff,
-    #f8fafc
-  );
 }
 
 body {
   font-family: system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  background: var(--bg);
+
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #f8fafc 60%,
+    #ffffff 100%
+  );
+
   color: var(--text);
   line-height: 1.6;
   font-size: 16px;
 }
+
 
 a {
   color: inherit;
