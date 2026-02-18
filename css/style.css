@@ -69,6 +69,12 @@ svg {
   padding: 0 var(--pad);
 }
 
+button,
+a {
+  color: inherit;
+}
+
+
 
 /* =====================================================
    HEADER
