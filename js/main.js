@@ -29,3 +29,23 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
 });
+
+/* =========================
+   FAQ ACCORDION
+========================= */
+
+document.querySelectorAll(".faq-question").forEach(button => {
+  button.addEventListener("click", () => {
+
+    const item = button.parentElement;
+
+    // Close other open items (optional premium behaviour)
+    document.querySelectorAll(".faq-item").forEach(i => {
+      if (i !== item) i.classList.remove("active");
+    });
+
+    item.classList.toggle("active");
+
+  });
+});
+
