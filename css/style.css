@@ -837,17 +837,20 @@ margin-left: 0;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.pricing-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 25px 60px rgba(15,23,42,0.08);
-}
-
 /* Featured (middle card) */
 
 .pricing-card.featured {
   border-color: var(--accent);
   box-shadow: 0 20px 60px rgba(37, 99, 235, 0.08);
 }
+
+
+
+.pricing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 25px 60px rgba(15,23,42,0.08);
+}
+
 
 
 
