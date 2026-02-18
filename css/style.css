@@ -916,8 +916,8 @@ margin-left: 0;
 }
 
 .service-icon svg {
-  width: 42px;        /* control size here */
-  height: 42px;
+  width: 36px;        /* control size here */
+  height: 36px;
   max-width: none;    /* override global svg rule */
 }
 
