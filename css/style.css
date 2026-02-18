@@ -812,7 +812,7 @@ margin-left: 0;
 }
 
 .pricing-card.featured {
-  transform: scale(1.03);
+  border: 1px solid rgba(37, 99, 235, 0.6);
 }
 
 
