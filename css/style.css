@@ -280,8 +280,8 @@ a {
 }
 
 .service-card {
-  padding: 36px;
-  border-radius: 22px;
+  padding: 28px;
+  border-radius: 20px;
   background: #ffffff;
   border: 1px solid rgba(15,23,42,0.06);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
@@ -296,14 +296,15 @@ a {
 }
 
 .service-card h3 {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   font-size: 18px;
   transition: color 0.2s ease;
 }
 
 .service-card p {
   color: var(--muted);
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.5;
 }
 .service-card:hover h3 {
   color: var(--accent);
