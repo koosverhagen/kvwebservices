@@ -652,6 +652,7 @@ margin-left: 0;
 }
 
 .shot {
+  aspect-ratio: 9 / 19;   /* iPhone ratio */
   border-radius: 22px;
   overflow: hidden;
   background: #ffffff;
@@ -662,14 +663,14 @@ margin-left: 0;
 
 .shot img {
   width: 100%;
-  height: auto;          /* important */
+  height: 100%;
   object-fit: contain;
-  background: #f8fafc;
   padding: 20px;
+  background: #f8fafc;
 }
-
 
 .shot:hover {
   transform: translateY(-6px);
   box-shadow: 0 20px 45px rgba(15,23,42,0.08);
 }
+
