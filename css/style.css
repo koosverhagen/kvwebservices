@@ -756,6 +756,8 @@ margin-left: 0;
   cursor: pointer;
   padding: 0;
   position: relative;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .faq-question::after {
