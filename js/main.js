@@ -25,4 +25,21 @@ menu.querySelectorAll("a").forEach(link => {
   });
 });
 
+document.addEventListener("click", function(e) {
+  const placeholder = e.target.closest(".video-placeholder");
+  if (!placeholder) return;
+
+  const videoID = placeholder.dataset.video;
+
+  placeholder.innerHTML = `
+    <iframe
+      src="https://www.youtube-nocookie.com/embed/${videoID}?autoplay=1&modestbranding=1&rel=0"
+      frameborder="0"
+      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+  `;
+});
+
+
 
