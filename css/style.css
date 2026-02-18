@@ -279,22 +279,28 @@ svg {
   background: #ffffff;
   border: 1px solid rgba(15,23,42,0.06);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: block;              /* important for <a> */
+  text-decoration: none;
+  color: inherit;  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .service-card:hover {
   transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(15,23,42,0.08);
 }
 
 .service-card h3 {
   margin: 0 0 12px;
   font-size: 18px;
+  transition: color 0.2s ease;
 }
 
 .service-card p {
   color: var(--muted);
   font-size: 15px;
+}
+.service-card:hover h3 {
+  color: var(--accent);
 }
 
 
