@@ -845,9 +845,11 @@ margin-left: 0;
 /* Featured (middle card) */
 
 .pricing-card.featured {
-  border: 1px solid var(--accent); /* thinner border */
+  border-color: var(--accent);
   box-shadow: 0 20px 60px rgba(37, 99, 235, 0.08);
 }
+
+
 
 /* Title */
 
