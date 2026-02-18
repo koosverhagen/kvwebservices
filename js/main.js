@@ -29,10 +29,12 @@ document.addEventListener("click", function(e) {
   const placeholder = e.target.closest(".video-placeholder");
   if (!placeholder) return;
 
-  const videoID = placeholder.dataset.video;
+  const videoID = placeholder.getAttribute("data-video");
 
   placeholder.innerHTML = `
     <iframe
+      width="100%"
+      height="100%"
       src="https://www.youtube-nocookie.com/embed/${videoID}?autoplay=1&modestbranding=1&rel=0"
       frameborder="0"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
