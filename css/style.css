@@ -811,10 +811,6 @@ margin-left: 0;
   }
 }
 
-.pricing-card.featured {
-  border: 1px solid rgba(37, 99, 235, 0.6);
-}
-
 
 .pricing-card {
   padding: 36px;
@@ -828,7 +824,10 @@ margin-left: 0;
   flex-direction: column;
 }
 
-
+.pricing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(15,23,42,0.08);
+}
 
 .pricing-card.featured {
   border: 1px solid var(--accent);
