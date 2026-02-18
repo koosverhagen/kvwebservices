@@ -792,45 +792,6 @@ margin-left: 0;
 }
 
 /* =========================
-   PRICING TEASER
-========================= */
-
-.pricing-teaser {
-  margin-top: 80px;
-  padding: 40px;
-  border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid rgba(15,23,42,0.06);
-  box-shadow: 0 10px 30px rgba(15,23,42,0.05);
-}
-
-.pricing-teaser h2 {
-  margin-bottom: 16px;
-}
-
-.price-range {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 16px 0;
-}
-
-.pricing-note {
-  color: var(--muted);
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.pricing-teaser .btn {
-  margin-top: 24px;
-}
-
-@media (max-width: 640px) {
-  .pricing-teaser {
-    padding: 28px;
-  }
-}
-
-/* =========================
    PRICING TIERS
 ========================= */
 
