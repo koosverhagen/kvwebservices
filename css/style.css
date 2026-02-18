@@ -716,3 +716,19 @@ margin-left: 0;
 .video-placeholder:hover .play-button {
   transform: translate(-50%, -50%) scale(1.1);
 }
+
+.service-detail {
+  max-width: 720px;
+  margin-top: 60px;
+  margin-bottom: 120px;
+}
+
+.service-detail h2 {
+  margin-top: 40px;
+  font-size: 22px;
+}
+
+.service-detail ul {
+  padding-left: 18px;
+  margin-top: 16px;
+}
