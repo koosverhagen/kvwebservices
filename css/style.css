@@ -908,4 +908,16 @@ margin-left: 0;
   }
 }
 
+.service-icon {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.service-icon svg {
+  width: 42px;        /* control size here */
+  height: 42px;
+  max-width: none;    /* override global svg rule */
+}
+
 
