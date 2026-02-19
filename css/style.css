@@ -1016,3 +1016,10 @@ margin-left: 0;
   margin-bottom: 32px;
 }
 
+@media (max-width: 640px) {
+  .hero {
+    padding: 40px 0 24px;
+  }
+}
+
+
