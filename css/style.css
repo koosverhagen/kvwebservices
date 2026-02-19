@@ -84,6 +84,14 @@ section > h2:not(:first-child) {
   margin-top: 60px;
 }
 
+@media (max-width: 640px) {
+  :root {
+    --space-section: 90px;
+    --space-block: 40px;
+  }
+}
+
+
 /* =====================================================
    HEADER
 ===================================================== */
@@ -206,7 +214,8 @@ section > h2:not(:first-child) {
   font-weight: 600;
   text-align: center;
 
-  transition: all 0.2s ease;
+ transition: transform 0.2s ease, box-shadow 0.2s ease;
+
 }
 
 .btn:hover {
@@ -523,10 +532,10 @@ section > h2:not(:first-child) {
 
 .contact-wrapper {
   margin-top: 64px;
-  margin-bottom: 120px;
+  margin-bottom: var(--space-section);
+  max-width: 680px;
   display: block;
 }
-
 
 
 /* Card */
@@ -555,12 +564,6 @@ margin-left: 0;
 .contact-card:hover {
   transform: translateY(-4px);
 }
-
-.contact-wrapper {
-  display: block;
-  max-width: 680px;
-}
-
 
 
 /* Better spacing under hero */
@@ -751,7 +754,8 @@ margin-left: 0;
 .service-detail {
   max-width: 720px;
   margin-top: 60px;
-  margin-bottom: 120px;
+ margin-top: var(--space-block);
+
 }
 
 .service-detail h2 {
@@ -821,9 +825,10 @@ margin-left: 0;
 ========================= */
 
 .pricing-section {
-  margin-top: 120px;
-  margin-bottom: 120px;
+  margin-top: var(--space-section);
+  margin-bottom: var(--space-section);
 }
+
 
 .pricing-section h2 {
   margin-bottom: 12px;
@@ -953,7 +958,7 @@ margin-left: 0;
 .pricing-section .btn,
 .pricing-teaser .btn,
 .portfolio-section .btn {
-  margin-top: 28px;
+ margin-top: var(--space-button);
 }
 
 
