@@ -451,9 +451,10 @@ section > h2:not(:first-child) {
   font-size: 20px; /* slightly tighter than 22px */
 }
 
-.case-card .muted {
-  margin-top: 10px !important;
+.muted {
+  color: var(--muted);
   font-size: 14px;
+  margin-top: 12px;
 }
 
 
