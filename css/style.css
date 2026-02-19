@@ -430,7 +430,7 @@ section > h2:not(:first-child) {
 }
 
 .case-card {
-  padding: 14px; /* reduced from 42px */
+  padding: 28px; /* reduced from 42px */
   border-radius: 24px;
   background: #ffffff;
   border: 1px solid rgba(15,23,42,0.06);
@@ -469,25 +469,17 @@ section > h2:not(:first-child) {
   color: var(--muted);
 }
 
-.case-card .video-wrap {
-  margin: 20px -28px 24px;
-  width: calc(100% + 56px);
-}
-
-
 .video-wrap {
   width: 100%;
   aspect-ratio: 16 / 9;
-
-  border-radius: 16px; /* slightly tighter */
+  border-radius: 16px;
   overflow: hidden;
-
   border: 1px solid rgba(15,23,42,0.05);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
-
-  margin-top: 14px; /* subtle breathing space under heading */
-   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  margin: 20px 0 24px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
+
 
 .video-wrap:hover {
   transform: translateY(-3px);
@@ -755,7 +747,6 @@ margin-left: 0;
 
 .service-detail {
   max-width: 720px;
-  margin-top: 60px;
  margin-top: var(--space-block);
 }
 
@@ -995,10 +986,6 @@ margin-left: 0;
 /* ==========================================
    CONTENT BLOCK SPACING
 ========================================== */
-
-.content-block {
-  margin-bottom: 80px;
-}
 
 .section-divider {
   height: 1px;
