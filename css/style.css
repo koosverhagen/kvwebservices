@@ -236,7 +236,7 @@ section > h2:not(:first-child) {
 ===================================================== */
 
 .hero {
-  padding: 96px 0 32px;
+  padding: 48px 0 32px;
 }
 
 .hero h1 {
