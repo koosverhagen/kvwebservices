@@ -469,6 +469,12 @@ section > h2:not(:first-child) {
   color: var(--muted);
 }
 
+.case-card .video-wrap {
+  margin: 20px -28px 24px;
+  width: calc(100% + 56px);
+}
+
+
 .video-wrap {
   width: 100%;
   aspect-ratio: 16 / 9;
