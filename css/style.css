@@ -182,22 +182,34 @@ a {
    BUTTONS
 ===================================================== */
 
+
 .btn {
-  padding: 12px 20px;
-  border-radius: 14px;
-  border: 1px solid var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 14px 26px;
+  border-radius: 16px;
+
   background: var(--accent);
-  color: white;
+  color: #ffffff;
+
+  border: none;
   font-weight: 600;
+  text-align: center;
+
   transition: all 0.2s ease;
 }
 
 .btn:hover {
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
 }
 
+/* Optional subtle outline style */
 .btn.ghost {
   background: transparent;
+  border: 1px solid var(--accent);
   color: var(--accent);
 }
 
@@ -921,4 +933,16 @@ margin-left: 0;
   max-width: none;    /* override global svg rule */
 }
 
+/* =====================================================
+   GLOBAL BUTTON SPACING
+===================================================== */
+
+.service-detail .btn,
+.pricing-section .btn,
+.pricing-teaser .btn,
+.hero .btn,
+.portfolio-section .btn,
+section .btn {
+  margin-top: 28px;
+}
 
