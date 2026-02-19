@@ -538,6 +538,7 @@ section > h2:not(:first-child) {
 }
 
 
+
 /* Card */
 
 .contact-card {
@@ -657,12 +658,7 @@ margin-left: 0;
   box-shadow: 0 10px 25px rgba(37,99,235,0.25);
 }
 
-@media (max-width: 640px) {
-  .contact-card {
-    padding: 32px;
-    border-radius: 22px;
-  }
-}
+
 
 /* =====================================================
    HIRECHECK SCREENSHOTS
@@ -755,7 +751,6 @@ margin-left: 0;
   max-width: 720px;
   margin-top: 60px;
  margin-top: var(--space-block);
-
 }
 
 .service-detail h2 {
@@ -828,6 +823,7 @@ margin-left: 0;
   margin-top: var(--space-section);
   margin-bottom: var(--space-section);
 }
+
 
 
 .pricing-section h2 {
@@ -959,6 +955,13 @@ margin-left: 0;
 .pricing-teaser .btn,
 .portfolio-section .btn {
  margin-top: var(--space-button);
+}
+
+@media (max-width: 640px) {
+  .contact-card {
+    padding: 32px;
+    border-radius: 22px;
+  }
 }
 
 
