@@ -12,6 +12,10 @@
   --radius: 18px;
   --max: 1100px;
   --pad: 20px;
+
+  --space-section: 120px;
+  --space-block: 60px;
+  --space-button: 28px;
 }
 
 
@@ -74,12 +78,11 @@ a {
   color: inherit;
 }
 
-section {
-  margin-top: 100px;
+
+/* Consistent heading spacing */
+section > h2:not(:first-child) {
+  margin-top: 60px;
 }
-
-
-
 
 /* =====================================================
    HEADER
@@ -306,7 +309,9 @@ section {
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
   display: block;              /* important for <a> */
   text-decoration: none;
-  color: inherit;  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  color: inherit;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+
 }
 
 .service-card:hover {
@@ -860,7 +865,7 @@ margin-left: 0;
 /* Featured (middle card) */
 
 .pricing-card.featured {
-  border-color: var(--accent);
+  border: 1.5px solid var(--accent);
   box-shadow: 0 20px 60px rgba(37, 99, 235, 0.08);
 }
 
@@ -947,9 +952,8 @@ margin-left: 0;
 .service-detail .btn,
 .pricing-section .btn,
 .pricing-teaser .btn,
-.hero .btn,
-.portfolio-section .btn,
-section .btn {
+.portfolio-section .btn {
   margin-top: 28px;
 }
+
 
