@@ -239,6 +239,13 @@ section > h2:not(:first-child) {
   padding: 48px 0 32px;
 }
 
+@media (max-width: 640px) {
+  .hero {
+    padding: 40px 0 24px;
+  }
+}
+
+
 .hero h1 {
   font-size: clamp(36px, 6vw, 60px);
   line-height: 1.05;
@@ -1016,10 +1023,5 @@ margin-left: 0;
   margin-bottom: 32px;
 }
 
-@media (max-width: 640px) {
-  .hero {
-    padding: 40px 0 24px;
-  }
-}
 
 
