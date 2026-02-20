@@ -165,4 +165,5 @@ if (projectForm) {
   // Initialize first step
   updateStep();
 }
+});
 
