@@ -45,41 +45,128 @@
       Send a message and I’ll get back to you shortly.
     </p>
 
-    <section class="contact-wrapper center-contact">
-  <div class="contact-card keynote-card">
+   <section class="contact-wrapper">
 
+  <div class="contact-card">
 
-    <form
-      action="https://formspree.io/f/xreablqv"
+    <div class="funnel-progress">
+      <div class="progress-bar"></div>
+    </div>
+
+    <form 
+      id="project-form"
+      action="https://formspree.io/f/YOUR_FORM_ID"
       method="POST"
-      class="contact-form"
+      class="funnel-form"
     >
-      <input type="hidden" name="_subject" value="New enquiry from KV Web Services">
 
-      <div class="form-group">
-        <label for="name">Name</label>
-        <input id="name" type="text" name="name" required>
+      <!-- Hidden structured output -->
+      <input type="hidden" name="Project Type" id="hidden-project-type">
+      <input type="hidden" name="Business Type" id="hidden-business-type">
+      <input type="hidden" name="Industry" id="hidden-industry">
+      <input type="hidden" name="Timeline" id="hidden-timeline">
+      <input type="hidden" name="Budget" id="hidden-budget">
+      <input type="hidden" name="Maintenance" id="hidden-maintenance">
+      <input type="hidden" name="Platform" id="hidden-platform">
+
+      <!-- STEP 1 -->
+      <div class="form-step active" data-step="1">
+        <h2>What do you need?</h2>
+
+        <div class="option-group">
+          <button type="button" class="option-btn" data-value="New Website">
+            Create a new website
+          </button>
+          <button type="button" class="option-btn" data-value="Website Update">
+            Make changes to my current website
+          </button>
+        </div>
+
+        <button type="button" class="next-btn">Continue</button>
       </div>
 
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" name="email" required>
+      <!-- STEP 2 -->
+      <div class="form-step" data-step="2">
+        <h2>Business Information</h2>
+
+        <select id="business-type">
+          <option value="">Business type</option>
+          <option>Sole trader/self-employed</option>
+          <option>Small business (1 - 9 employees)</option>
+          <option>Medium business (10 - 29 employees)</option>
+          <option>Large business (30+ employees)</option>
+          <option>Charity / non-profit</option>
+        </select>
+
+        <select id="industry">
+          <option value="">Industry</option>
+          <option>Business services</option>
+          <option>Technology / software</option>
+          <option>Health & fitness</option>
+          <option>Retail / e-commerce</option>
+          <option>Other</option>
+        </select>
+
+        <div id="platform-wrapper" style="display:none;">
+          <select id="platform">
+            <option value="">Current platform</option>
+            <option>WordPress</option>
+            <option>Wix</option>
+            <option>Shopify</option>
+            <option>Custom built</option>
+            <option>Not sure</option>
+          </select>
+        </div>
+
+        <button type="button" class="next-btn">Continue</button>
       </div>
 
-      <div class="form-group">
-        <label for="message">Message</label>
-        <textarea id="message" name="message" rows="5" required></textarea>
+      <!-- STEP 3 -->
+      <div class="form-step" data-step="3">
+        <h2>Timeline & Budget</h2>
+
+        <select id="timeline">
+          <option value="">Timeline</option>
+          <option>As soon as possible</option>
+          <option>Within a few weeks</option>
+          <option>Within a month</option>
+          <option>Flexible</option>
+        </select>
+
+        <select id="budget">
+          <option value="">Budget range</option>
+          <option>£1,000 – £2,999</option>
+          <option>£3,000 – £4,999</option>
+          <option>£5,000 – £9,999</option>
+          <option>£10,000+</option>
+          <option>Not sure yet</option>
+        </select>
+
+        <select id="maintenance">
+          <option value="">Ongoing maintenance?</option>
+          <option>Yes</option>
+          <option>No</option>
+          <option>Maybe</option>
+        </select>
+
+        <button type="button" class="next-btn">Continue</button>
       </div>
 
-      <button class="btn submit-btn" type="submit">
-        Send message
-      </button>
+      <!-- STEP 4 -->
+      <div class="form-step" data-step="4">
+        <h2>Your Details</h2>
+
+        <input type="text" name="Name" placeholder="Your name" required>
+        <input type="email" name="Email" placeholder="Email address" required>
+        <textarea name="Message" placeholder="Additional notes (optional)"></textarea>
+
+        <button type="submit" class="submit-btn">Start My Project</button>
+      </div>
 
     </form>
-
   </div>
-
 </section>
+
 
       Or email directly:  
       <strong>info@kvwebservices.co.uk</strong>
