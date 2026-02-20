@@ -1079,11 +1079,6 @@ margin-left: 0;
   min-height: 320px; /* prevents layout jump */
 }
 
-.funnel-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 32px;
-}
 
 .funnel-progress {
   height: 4px;
