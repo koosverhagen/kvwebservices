@@ -91,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const fieldMessages = {
       "business-type": "Please choose a business type.",
       industry: "Please choose an industry.",
+      "industry-other": "Please specify your industry.",
       platform: "Please choose your current platform.",
       timeline: "Please choose a timeline.",
       budget: "Please choose a budget range.",
@@ -129,6 +130,24 @@ document.addEventListener("DOMContentLoaded", () => {
           platformSelect.setCustomValidity("");
           platformSelect.selectedIndex = 0;
         }
+      }
+    };
+
+    const setIndustryOtherVisibility = () => {
+      const industrySelect = document.getElementById("industry");
+      const otherWrapper = document.getElementById("industry-other-wrapper");
+      const otherInput = document.getElementById("industry-other");
+      if (!industrySelect || !otherWrapper || !otherInput) return;
+
+      const shouldShow = industrySelect.value === "Other";
+      otherWrapper.classList.toggle("is-visible", shouldShow);
+      otherWrapper.style.display = shouldShow ? "" : "none";
+
+      otherInput.disabled = !shouldShow;
+      otherInput.required = shouldShow;
+      if (!shouldShow) {
+        otherInput.value = "";
+        otherInput.setCustomValidity("");
       }
     };
 
@@ -195,6 +214,13 @@ document.addEventListener("DOMContentLoaded", () => {
         field.addEventListener("input", () => clearFieldError(field));
       });
 
+    const industrySelect = document.getElementById("industry");
+    if (industrySelect) {
+      industrySelect.addEventListener("change", () => {
+        setIndustryOtherVisibility();
+      });
+    }
+
     // Next
     nextButtons.forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -259,10 +285,23 @@ document.addEventListener("DOMContentLoaded", () => {
           hidden.value = String(visibleEl.value ?? "");
         }
       });
+
+      const industryVisible = document.getElementById("industry");
+      const industryOther = document.getElementById("industry-other");
+      const hiddenIndustry = document.getElementById("hidden-industry");
+
+      if (hiddenIndustry && industryVisible) {
+        if (industryVisible.value === "Other" && industryOther) {
+          hiddenIndustry.value = String(industryOther.value ?? "").trim();
+        } else {
+          hiddenIndustry.value = String(industryVisible.value ?? "");
+        }
+      }
     });
 
     // Initialize
     updateStep();
     setPlatformVisibility();
+    setIndustryOtherVisibility();
   }
 });
