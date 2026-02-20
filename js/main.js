@@ -88,6 +88,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentStep = 0;
     let selectedProjectType = "";
+    const fieldMessages = {
+      "business-type": "Please choose a business type.",
+      industry: "Please choose an industry.",
+      platform: "Please choose your current platform.",
+      timeline: "Please choose a timeline.",
+      budget: "Please choose a budget range.",
+      maintenance: "Please choose an option for ongoing maintenance.",
+      name: "Please enter your name.",
+      email: "Please enter a valid email address.",
+    };
 
     const updateStep = () => {
       steps.forEach((step, index) => {
@@ -116,9 +126,21 @@ document.addEventListener("DOMContentLoaded", () => {
         platformSelect.disabled = !shouldShow;
         platformSelect.required = shouldShow;
         if (!shouldShow) {
+          platformSelect.setCustomValidity("");
           platformSelect.selectedIndex = 0;
         }
       }
+    };
+
+    const clearFieldError = (field) => {
+      if (!field) return;
+      field.setCustomValidity("");
+    };
+
+    const setFieldError = (field) => {
+      if (!field) return;
+      const message = fieldMessages[field.id] || "Please complete this field.";
+      field.setCustomValidity(message);
     };
 
     const validateCurrentStep = () => {
@@ -132,8 +154,12 @@ document.addEventListener("DOMContentLoaded", () => {
       for (const field of requiredFields) {
         if (field.disabled) continue;
 
+        clearFieldError(field);
+
         if (!field.checkValidity()) {
+          setFieldError(field);
           field.reportValidity();
+          clearFieldError(field);
           return false;
         }
       }
@@ -161,6 +187,13 @@ document.addEventListener("DOMContentLoaded", () => {
         setPlatformVisibility();
       });
     });
+
+    projectForm
+      .querySelectorAll("select, input, textarea")
+      .forEach((field) => {
+        field.addEventListener("change", () => clearFieldError(field));
+        field.addEventListener("input", () => clearFieldError(field));
+      });
 
     // Next
     nextButtons.forEach((btn) => {
