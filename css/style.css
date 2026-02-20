@@ -1057,9 +1057,12 @@ margin-left: 0;
   border: 1px solid rgba(15,23,42,0.08);
   background: #ffffff;
   font-size: 15px;
+  font-weight: 500;
+  text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
 
 
 .option-btn:hover {
