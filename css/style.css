@@ -792,6 +792,22 @@ margin-left: 0;
   margin-bottom: 0;
 }
 
+.qualifications-cta {
+  position: relative;
+  z-index: 2;
+}
+
+.qualifications-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: var(--space-button);
+}
+
+.qualifications-cta-row .btn {
+  margin-top: 0;
+}
+
 /* FAQ SECTION */
 
 .service-faq {
