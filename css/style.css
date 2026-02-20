@@ -1184,6 +1184,12 @@ margin-left: 0;
   box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
 }
 
+.funnel-form input:invalid,
+.funnel-form select:invalid,
+.funnel-form textarea:invalid {
+  border-color: rgba(220, 38, 38, 0.45);
+}
+
 /* Label left, field right rows */
 
 .form-step.active[data-step="2"],
