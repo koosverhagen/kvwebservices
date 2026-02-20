@@ -56,7 +56,7 @@ if (projectForm) {
 
  const steps = projectForm.querySelectorAll(".form-step");
 const nextButtons = projectForm.querySelectorAll(".next-btn");
-  const progressBar = document.querySelector(".progress-bar");
+  const progressBar = projectForm.closest(".contact-card")?.querySelector(".progress-bar");
 
   let currentStep = 0;
   let selectedProjectType = "";
