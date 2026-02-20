@@ -1175,3 +1175,29 @@ margin-left: 0;
   box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
 }
 
+/* Two column layout on desktop */
+
+@media (min-width: 720px) {
+
+  .form-step[data-step="2"] select,
+  .form-step[data-step="3"] select {
+    max-width: 48%;
+  }
+
+  .form-step[data-step="2"],
+  .form-step[data-step="3"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .form-step[data-step="2"] h2,
+  .form-step[data-step="3"] h2 {
+    width: 100%;
+  }
+
+  .form-step[data-step="2"] .step-actions,
+  .form-step[data-step="3"] .step-actions {
+    width: 100%;
+  }
+}
