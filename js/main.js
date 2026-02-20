@@ -102,9 +102,9 @@ projectForm.querySelectorAll(".option-btn").forEach(btn => {
 
     // Step 1 validation
     if (currentStep === 0 && !selectedProjectType) {
-      return; // stop if nothing selected
-    }
-
+  alert("Please select an option to continue.");
+  return;
+}
     // Move forward safely
     if (currentStep < steps.length - 1) {
       currentStep++;
