@@ -1023,5 +1023,59 @@ margin-left: 0;
   margin-bottom: 32px;
 }
 
+.funnel-form {
+  position: relative;
+}
+
+.form-step {
+  display: none;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.4s ease;
+}
+
+.form-step.active {
+  display: block;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.option-btn {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,0.08);
+  background: white;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.option-btn:hover,
+.option-btn.selected {
+  border-color: var(--accent);
+  box-shadow: 0 10px 25px rgba(37,99,235,0.12);
+}
+
+.funnel-progress {
+  height: 4px;
+  background: rgba(15,23,42,0.06);
+  border-radius: 4px;
+  margin-bottom: 36px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 25%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
 
 
