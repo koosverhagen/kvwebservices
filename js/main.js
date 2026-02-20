@@ -219,6 +219,9 @@ document.addEventListener("DOMContentLoaded", () => {
       industrySelect.addEventListener("change", () => {
         setIndustryOtherVisibility();
       });
+      industrySelect.addEventListener("input", () => {
+        setIndustryOtherVisibility();
+      });
     }
 
     // Next
