@@ -74,28 +74,28 @@ const nextButtons = projectForm.querySelectorAll(".next-btn");
         ((currentStep + 1) / steps.length) * 100 + "%";
     }
   };
+projectForm.querySelectorAll(".option-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    projectForm.querySelectorAll(".option-btn")
+      .forEach(b => b.classList.remove("selected"));
 
-  document.querySelectorAll(".option-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".option-btn")
-        .forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
 
-      btn.classList.add("selected");
+    selectedProjectType = btn.dataset.value;
 
-      selectedProjectType = btn.dataset.value;
+    const hiddenProject = document.getElementById("hidden-project-type");
+    if (hiddenProject) hiddenProject.value = selectedProjectType;
 
-      const hiddenProject = document.getElementById("hidden-project-type");
-      if (hiddenProject) hiddenProject.value = selectedProjectType;
+    const platformWrapper = document.getElementById("platform-wrapper");
 
-      const platformWrapper = document.getElementById("platform-wrapper");
-
-      if (selectedProjectType === "Website Update") {
-        if (platformWrapper) platformWrapper.style.display = "block";
-      } else {
-        if (platformWrapper) platformWrapper.style.display = "none";
-      }
-    });
+    if (selectedProjectType === "Website Update") {
+      if (platformWrapper) platformWrapper.style.display = "block";
+    } else {
+      if (platformWrapper) platformWrapper.style.display = "none";
+    }
   });
+});
+
 
   nextButtons.forEach(btn => {
     btn.addEventListener("click", () => {
