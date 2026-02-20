@@ -236,12 +236,12 @@ section > h2:not(:first-child) {
 ===================================================== */
 
 .hero {
-  padding: 48px 0 32px;
+  padding: 28px 0 32px;
 }
 
 @media (max-width: 640px) {
   .hero {
-    padding: 40px 0 24px;
+    padding: 22px 0 24px;
   }
 }
 
@@ -573,9 +573,17 @@ margin-left: 0;
 }
 
 
-/* Better spacing under hero */
-.hero + .contact-wrapper {
-  margin-top: 48px;
+/* Consistent spacing under hero across pages */
+.hero + .services-section,
+.hero + .service-detail,
+.hero + .case-grid,
+.hero + .contact-wrapper,
+.hero + .pricing-section {
+  margin-top: 20px;
+}
+
+.hero + .portfolio-section .portfolio-grid {
+  margin-top: 20px;
 }
 
 
@@ -1102,8 +1110,8 @@ margin-left: 0;
 .step-actions {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 28px;
+  align-items: center;
+  margin-top: 36px;
 }
 
 .back-btn {
