@@ -106,6 +106,17 @@ projectForm.querySelectorAll(".option-btn").forEach(btn => {
     });
   });
 
+  const backButtons = projectForm.querySelectorAll(".back-btn");
+
+backButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (currentStep > 0) {
+      currentStep--;
+      updateStep();
+    }
+  });
+});
+
   projectForm.addEventListener("submit", function () {
 
     const setHidden = (id, hiddenId) => {
