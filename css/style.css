@@ -1140,5 +1140,38 @@ margin-left: 0;
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(37,99,235,0.25);
 }
+/* ==========================================
+   FUNNEL INPUT STYLING
+========================================== */
 
+.funnel-form input,
+.funnel-form select,
+.funnel-form textarea {
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: #ffffff;
+  font-size: 15px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  appearance: none;
+}
+
+.funnel-form select {
+  cursor: pointer;
+}
+
+.funnel-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.funnel-form input:focus,
+.funnel-form select:focus,
+.funnel-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+}
 
