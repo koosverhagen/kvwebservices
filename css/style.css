@@ -249,7 +249,7 @@ section > h2:not(:first-child) {
 
 
 .hero h1 {
-  font-size: clamp(36px, 6vw, 60px);
+  font-size: clamp(33px, 5.4vw, 54px);
   line-height: 1.05;
   letter-spacing: -0.6px;
   margin-bottom: 18px;

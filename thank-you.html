@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Thanks for contacting KV Web Services. Your project enquiry has been received.">
 
-  <link rel="stylesheet" href="css/style.css?v=26">
+  <link rel="stylesheet" href="css/style.css?v=27">
 </head>
 <body>
 
@@ -46,6 +46,10 @@
       <a class="btn" href="portfolio.html">View Portfolio</a>
       <a class="btn ghost" href="index.html">Back to Home</a>
     </div>
+
+    <p>
+      You’ll be redirected to the home page in around 20 seconds.
+    </p>
   </section>
 
   <section class="service-detail">
@@ -70,5 +74,10 @@
 </footer>
 
 <script src="js/main.js"></script>
+<script>
+  window.setTimeout(function () {
+    window.location.href = "index.html";
+  }, 20000);
+</script>
 </body>
 </html>
