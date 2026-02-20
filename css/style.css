@@ -1224,18 +1224,15 @@ margin-left: 0;
 
 #platform-wrapper {
   grid-column: 1 / -1;
+  display: none;
 }
 
-#platform-wrapper[style*="display: block"] {
-  display: grid !important;
+#platform-wrapper.is-visible {
+  display: grid;
   grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
   column-gap: 18px;
   row-gap: 14px;
   align-items: center;
-}
-
-#platform-wrapper[style*="display: none"] {
-  display: none !important;
 }
 
 #platform-wrapper label {
@@ -1271,7 +1268,7 @@ margin-left: 0;
     grid-column: 1;
   }
 
-  #platform-wrapper[style*="display: block"] {
+  #platform-wrapper.is-visible {
     grid-template-columns: 1fr;
   }
 
