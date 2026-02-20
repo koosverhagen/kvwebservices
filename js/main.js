@@ -54,14 +54,20 @@ const projectForm = document.getElementById("project-form");
 
 if (projectForm) {
 
- const steps = projectForm.querySelectorAll(".form-step");
-const nextButtons = projectForm.querySelectorAll(".next-btn");
-  const progressBar = projectForm.closest(".contact-card")?.querySelector(".progress-bar");
+  const steps = projectForm.querySelectorAll(".form-step");
+  const nextButtons = projectForm.querySelectorAll(".next-btn");
+  const backButtons = projectForm.querySelectorAll(".back-btn");
+  const progressBar = projectForm
+    .closest(".contact-card")
+    ?.querySelector(".progress-bar");
 
   let currentStep = 0;
   let selectedProjectType = "";
 
+  /* ---------- UPDATE STEP ---------- */
+
   const updateStep = () => {
+
     steps.forEach((step, index) => {
       step.classList.remove("active");
       if (index === currentStep) {
@@ -69,61 +75,75 @@ const nextButtons = projectForm.querySelectorAll(".next-btn");
       }
     });
 
+    // Update progress bar
     if (progressBar) {
       progressBar.style.width =
         ((currentStep + 1) / steps.length) * 100 + "%";
     }
+
+    // Hide back button on first step
+    backButtons.forEach(btn => {
+      btn.style.visibility = currentStep === 0 ? "hidden" : "visible";
+    });
   };
-projectForm.querySelectorAll(".option-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    projectForm.querySelectorAll(".option-btn")
-      .forEach(b => b.classList.remove("selected"));
 
-    btn.classList.add("selected");
+  /* ---------- OPTION BUTTONS ---------- */
 
-    selectedProjectType = btn.dataset.value;
+  projectForm.querySelectorAll(".option-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
 
-    const hiddenProject = document.getElementById("hidden-project-type");
-    if (hiddenProject) hiddenProject.value = selectedProjectType;
+      projectForm.querySelectorAll(".option-btn")
+        .forEach(b => b.classList.remove("selected"));
 
-    const platformWrapper = document.getElementById("platform-wrapper");
+      btn.classList.add("selected");
 
-    if (selectedProjectType === "Website Update") {
-      if (platformWrapper) platformWrapper.style.display = "block";
-    } else {
-      if (platformWrapper) platformWrapper.style.display = "none";
-    }
+      selectedProjectType = btn.dataset.value;
+
+      const hiddenProject = document.getElementById("hidden-project-type");
+      if (hiddenProject) hiddenProject.value = selectedProjectType;
+
+      const platformWrapper = document.getElementById("platform-wrapper");
+
+      if (selectedProjectType === "Website Update") {
+        if (platformWrapper) platformWrapper.style.display = "block";
+      } else {
+        if (platformWrapper) platformWrapper.style.display = "none";
+      }
+
+    });
   });
-});
 
+  /* ---------- NEXT BUTTON ---------- */
 
- nextButtons.forEach(btn => {
-  btn.addEventListener("click", () => {
+  nextButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
 
-    // Step 1 validation
-    if (currentStep === 0 && !selectedProjectType) {
-  alert("Please select an option to continue.");
-  return;
-}
-    // Move forward safely
-    if (currentStep < steps.length - 1) {
-      currentStep++;
-      updateStep();
-    }
+      // Step 1 validation
+      if (currentStep === 0 && !selectedProjectType) {
+        alert("Please select an option to continue.");
+        return;
+      }
 
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        updateStep();
+      }
+
+    });
   });
-});
 
-  const backButtons = projectForm.querySelectorAll(".back-btn");
+  /* ---------- BACK BUTTON ---------- */
 
-backButtons.forEach(btn => {
-  btn.addEventListener("click", () => {
-    if (currentStep > 0) {
-      currentStep--;
-      updateStep();
-    }
+  backButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (currentStep > 0) {
+        currentStep--;
+        updateStep();
+      }
+    });
   });
-});
+
+  /* ---------- FORM SUBMIT ---------- */
 
   projectForm.addEventListener("submit", function () {
 
@@ -142,6 +162,7 @@ backButtons.forEach(btn => {
 
   });
 
-  updateStep(); // ensure step 1 active on load
+  // Initialize first step
+  updateStep();
 }
 
