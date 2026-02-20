@@ -1105,13 +1105,15 @@ margin-left: 0;
 
 .back-btn {
   background: transparent;
-   border: 1px solid rgba(15,23,42,0.15);
-   padding: 12px 20px;
+  border: 1px solid rgba(15,23,42,0.15);
+  padding: 12px 20px;
   border-radius: 14px;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
+  font-weight: 500;
 }
+
 
 
 .back-btn:hover {
@@ -1121,13 +1123,14 @@ margin-left: 0;
 }
 
 .next-btn {
-  padding: 12px 22px;
+  padding: 13px 26px;
   border-radius: 14px;
   background: var(--accent);
   color: white;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-weight: 600;
 }
 
 .next-btn:hover {
