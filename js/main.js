@@ -107,8 +107,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const platformWrapper = document.getElementById("platform-wrapper");
       if (!platformWrapper) return;
 
-      platformWrapper.style.display =
-        selectedProjectType === "Website Update" ? "block" : "none";
+      const shouldShow = selectedProjectType === "Website Update";
+      platformWrapper.classList.toggle("is-visible", shouldShow);
+      platformWrapper.style.display = shouldShow ? "" : "none";
     };
 
     // Option buttons (project type)
