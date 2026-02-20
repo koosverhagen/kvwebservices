@@ -1106,6 +1106,15 @@ margin-left: 0;
   margin-top: 36px;
 }
 
+.back-btn,
+.next-btn,
+.submit-btn {
+  font-size: 16px;
+  line-height: 1.2;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .back-btn {
   background: transparent;
   border: 1px solid rgba(15,23,42,0.15);
