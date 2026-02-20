@@ -1234,6 +1234,20 @@ margin-left: 0;
   display: none;
 }
 
+#project-type-other-wrapper {
+  display: none;
+  margin-top: 8px;
+}
+
+#project-type-other-wrapper.is-visible {
+  display: block;
+}
+
+#project-type-other-wrapper label {
+  display: block;
+  margin-bottom: 8px;
+}
+
 #industry-other-wrapper {
   grid-column: 1 / -1;
   display: none;
@@ -1247,13 +1261,60 @@ margin-left: 0;
   align-items: center;
 }
 
+#business-type-other-wrapper,
+#platform-other-wrapper,
+#timeline-other-wrapper,
+#budget-other-wrapper,
+#maintenance-other-wrapper {
+  grid-column: 1 / -1;
+  display: none;
+}
+
+#business-type-other-wrapper.is-visible,
+#platform-other-wrapper.is-visible,
+#timeline-other-wrapper.is-visible,
+#budget-other-wrapper.is-visible,
+#maintenance-other-wrapper.is-visible {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+  column-gap: 18px;
+  row-gap: 14px;
+  align-items: center;
+}
+
 #industry-other-wrapper label {
+  grid-column: 1;
+}
+
+#business-type-other-wrapper label,
+#platform-other-wrapper label,
+#timeline-other-wrapper label,
+#budget-other-wrapper label,
+#maintenance-other-wrapper label {
   grid-column: 1;
 }
 
 #industry-other-wrapper input,
 #industry-other-wrapper select,
 #industry-other-wrapper textarea {
+  grid-column: 2;
+}
+
+#business-type-other-wrapper input,
+#business-type-other-wrapper select,
+#business-type-other-wrapper textarea,
+#platform-other-wrapper input,
+#platform-other-wrapper select,
+#platform-other-wrapper textarea,
+#timeline-other-wrapper input,
+#timeline-other-wrapper select,
+#timeline-other-wrapper textarea,
+#budget-other-wrapper input,
+#budget-other-wrapper select,
+#budget-other-wrapper textarea,
+#maintenance-other-wrapper input,
+#maintenance-other-wrapper select,
+#maintenance-other-wrapper textarea {
   grid-column: 2;
 }
 
@@ -1306,10 +1367,41 @@ margin-left: 0;
     grid-template-columns: 1fr;
   }
 
+  #business-type-other-wrapper.is-visible,
+  #platform-other-wrapper.is-visible,
+  #timeline-other-wrapper.is-visible,
+  #budget-other-wrapper.is-visible,
+  #maintenance-other-wrapper.is-visible {
+    grid-template-columns: 1fr;
+  }
+
   #industry-other-wrapper label,
   #industry-other-wrapper input,
   #industry-other-wrapper select,
   #industry-other-wrapper textarea {
+    grid-column: 1;
+  }
+
+  #business-type-other-wrapper label,
+  #business-type-other-wrapper input,
+  #business-type-other-wrapper select,
+  #business-type-other-wrapper textarea,
+  #platform-other-wrapper label,
+  #platform-other-wrapper input,
+  #platform-other-wrapper select,
+  #platform-other-wrapper textarea,
+  #timeline-other-wrapper label,
+  #timeline-other-wrapper input,
+  #timeline-other-wrapper select,
+  #timeline-other-wrapper textarea,
+  #budget-other-wrapper label,
+  #budget-other-wrapper input,
+  #budget-other-wrapper select,
+  #budget-other-wrapper textarea,
+  #maintenance-other-wrapper label,
+  #maintenance-other-wrapper input,
+  #maintenance-other-wrapper select,
+  #maintenance-other-wrapper textarea {
     grid-column: 1;
   }
 

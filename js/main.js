@@ -92,6 +92,12 @@ document.addEventListener("DOMContentLoaded", () => {
       "business-type": "Please choose a business type.",
       industry: "Please choose an industry.",
       "industry-other": "Please specify your industry.",
+      "project-type-other": "Please specify your project type.",
+      "business-type-other": "Please specify your business type.",
+      "platform-other": "Please specify your platform.",
+      "timeline-other": "Please specify your timeline.",
+      "budget-other": "Please specify your budget range.",
+      "maintenance-other": "Please specify your maintenance preference.",
       platform: "Please choose your current platform.",
       timeline: "Please choose a timeline.",
       budget: "Please choose a budget range.",
@@ -131,24 +137,94 @@ document.addEventListener("DOMContentLoaded", () => {
           platformSelect.selectedIndex = 0;
         }
       }
+
+      setPlatformOtherVisibility();
+    };
+
+    const toggleOtherWrapper = ({
+      shouldShow,
+      wrapperId,
+      inputId,
+      keepValueWhenHidden = false,
+    }) => {
+      const wrapper = document.getElementById(wrapperId);
+      const input = document.getElementById(inputId);
+      if (!wrapper || !input) return;
+
+      wrapper.classList.toggle("is-visible", shouldShow);
+      wrapper.style.display = shouldShow ? "" : "none";
+
+      input.disabled = !shouldShow;
+      input.required = shouldShow;
+      if (!shouldShow) {
+        if (!keepValueWhenHidden) {
+          input.value = "";
+        }
+        input.setCustomValidity("");
+      }
+    };
+
+    const setProjectTypeOtherVisibility = () => {
+      toggleOtherWrapper({
+        shouldShow: selectedProjectType === "Other",
+        wrapperId: "project-type-other-wrapper",
+        inputId: "project-type-other",
+      });
+    };
+
+    const setSelectOtherVisibility = (selectId, wrapperId, inputId) => {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+
+      toggleOtherWrapper({
+        shouldShow: select.value === "Other" && !select.disabled,
+        wrapperId,
+        inputId,
+      });
     };
 
     const setIndustryOtherVisibility = () => {
-      const industrySelect = document.getElementById("industry");
-      const otherWrapper = document.getElementById("industry-other-wrapper");
-      const otherInput = document.getElementById("industry-other");
-      if (!industrySelect || !otherWrapper || !otherInput) return;
+      setSelectOtherVisibility(
+        "industry",
+        "industry-other-wrapper",
+        "industry-other"
+      );
+    };
 
-      const shouldShow = industrySelect.value === "Other";
-      otherWrapper.classList.toggle("is-visible", shouldShow);
-      otherWrapper.style.display = shouldShow ? "" : "none";
+    const setBusinessTypeOtherVisibility = () => {
+      setSelectOtherVisibility(
+        "business-type",
+        "business-type-other-wrapper",
+        "business-type-other"
+      );
+    };
 
-      otherInput.disabled = !shouldShow;
-      otherInput.required = shouldShow;
-      if (!shouldShow) {
-        otherInput.value = "";
-        otherInput.setCustomValidity("");
-      }
+    const setPlatformOtherVisibility = () => {
+      setSelectOtherVisibility(
+        "platform",
+        "platform-other-wrapper",
+        "platform-other"
+      );
+    };
+
+    const setTimelineOtherVisibility = () => {
+      setSelectOtherVisibility(
+        "timeline",
+        "timeline-other-wrapper",
+        "timeline-other"
+      );
+    };
+
+    const setBudgetOtherVisibility = () => {
+      setSelectOtherVisibility("budget", "budget-other-wrapper", "budget-other");
+    };
+
+    const setMaintenanceOtherVisibility = () => {
+      setSelectOtherVisibility(
+        "maintenance",
+        "maintenance-other-wrapper",
+        "maintenance-other"
+      );
     };
 
     const clearFieldError = (field) => {
@@ -204,6 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hiddenProject) hiddenProject.value = selectedProjectType;
 
         setPlatformVisibility();
+        setProjectTypeOtherVisibility();
       });
     });
 
@@ -224,6 +301,19 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
+    const addOtherSelectListeners = (selectId, handler) => {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      select.addEventListener("change", handler);
+      select.addEventListener("input", handler);
+    };
+
+    addOtherSelectListeners("business-type", setBusinessTypeOtherVisibility);
+    addOtherSelectListeners("platform", setPlatformOtherVisibility);
+    addOtherSelectListeners("timeline", setTimelineOtherVisibility);
+    addOtherSelectListeners("budget", setBudgetOtherVisibility);
+    addOtherSelectListeners("maintenance", setMaintenanceOtherVisibility);
+
     // Next
     nextButtons.forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -234,6 +324,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentStep === 0 && !selectedProjectType) {
           alert("Please select an option to continue.");
           return;
+        }
+
+        if (currentStep === 0 && selectedProjectType === "Other") {
+          const projectTypeOther = document.getElementById("project-type-other");
+          if (projectTypeOther && !projectTypeOther.checkValidity()) {
+            setFieldError(projectTypeOther);
+            projectTypeOther.reportValidity();
+            clearFieldError(projectTypeOther);
+            return;
+          }
         }
 
         if (currentStep > 0 && !validateCurrentStep()) {
@@ -289,6 +389,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
+      const resolveSelectOrOtherValue = (selectId, otherInputId) => {
+        const select = document.getElementById(selectId);
+        if (!select) return "";
+
+        if (select.value === "Other" && otherInputId) {
+          const otherInput = document.getElementById(otherInputId);
+          if (!otherInput) return "";
+          return String(otherInput.value ?? "").trim();
+        }
+
+        return String(select.value ?? "").trim();
+      };
+
+      const hiddenProject = document.getElementById("hidden-project-type");
+      const projectTypeOther = document.getElementById("project-type-other");
+      if (hiddenProject) {
+        if (selectedProjectType === "Other" && projectTypeOther) {
+          hiddenProject.value = String(projectTypeOther.value ?? "").trim();
+        } else {
+          hiddenProject.value = selectedProjectType;
+        }
+      }
+
       const industryVisible = document.getElementById("industry");
       const industryOther = document.getElementById("industry-other");
       const hiddenIndustry = document.getElementById("hidden-industry");
@@ -300,11 +423,54 @@ document.addEventListener("DOMContentLoaded", () => {
           hiddenIndustry.value = String(industryVisible.value ?? "");
         }
       }
+
+      const hiddenBusinessType = document.getElementById("hidden-business-type");
+      if (hiddenBusinessType) {
+        hiddenBusinessType.value = resolveSelectOrOtherValue(
+          "business-type",
+          "business-type-other"
+        );
+      }
+
+      const hiddenTimeline = document.getElementById("hidden-timeline");
+      if (hiddenTimeline) {
+        hiddenTimeline.value = resolveSelectOrOtherValue(
+          "timeline",
+          "timeline-other"
+        );
+      }
+
+      const hiddenBudget = document.getElementById("hidden-budget");
+      if (hiddenBudget) {
+        hiddenBudget.value = resolveSelectOrOtherValue("budget", "budget-other");
+      }
+
+      const hiddenMaintenance = document.getElementById("hidden-maintenance");
+      if (hiddenMaintenance) {
+        hiddenMaintenance.value = resolveSelectOrOtherValue(
+          "maintenance",
+          "maintenance-other"
+        );
+      }
+
+      const hiddenPlatform = document.getElementById("hidden-platform");
+      if (hiddenPlatform) {
+        hiddenPlatform.value = resolveSelectOrOtherValue(
+          "platform",
+          "platform-other"
+        );
+      }
     });
 
     // Initialize
     updateStep();
     setPlatformVisibility();
+    setProjectTypeOtherVisibility();
     setIndustryOtherVisibility();
+    setBusinessTypeOtherVisibility();
+    setPlatformOtherVisibility();
+    setTimelineOtherVisibility();
+    setBudgetOtherVisibility();
+    setMaintenanceOtherVisibility();
   }
 });
