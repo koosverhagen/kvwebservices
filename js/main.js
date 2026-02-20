@@ -105,11 +105,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const setPlatformVisibility = () => {
       const platformWrapper = document.getElementById("platform-wrapper");
+      const platformSelect = document.getElementById("platform");
       if (!platformWrapper) return;
 
       const shouldShow = selectedProjectType === "Website Update";
       platformWrapper.classList.toggle("is-visible", shouldShow);
       platformWrapper.style.display = shouldShow ? "" : "none";
+
+      if (platformSelect) {
+        platformSelect.disabled = !shouldShow;
+        platformSelect.required = shouldShow;
+        if (!shouldShow) {
+          platformSelect.selectedIndex = 0;
+        }
+      }
+    };
+
+    const validateCurrentStep = () => {
+      const currentStepEl = steps[currentStep];
+      if (!currentStepEl) return true;
+
+      const requiredFields = currentStepEl.querySelectorAll(
+        "select[required], input[required], textarea[required]"
+      );
+
+      for (const field of requiredFields) {
+        if (field.disabled) continue;
+
+        if (!field.checkValidity()) {
+          field.reportValidity();
+          return false;
+        }
+      }
+
+      return true;
     };
 
     // Option buttons (project type)
@@ -142,6 +171,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // Step 1 validation
         if (currentStep === 0 && !selectedProjectType) {
           alert("Please select an option to continue.");
+          return;
+        }
+
+        if (currentStep > 0 && !validateCurrentStep()) {
           return;
         }
 
