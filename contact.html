@@ -96,8 +96,8 @@
           <h2>Business Information</h2>
 
           <label for="business-type">Business type</label>
-          <select id="business-type" name="Business type">
-            <option value="">Business type</option>
+          <select id="business-type" name="Business type" required>
+            <option value="" selected disabled>Please choose</option>
             <option value="Sole trader/self-employed">Sole trader/self-employed</option>
             <option value="Small business (1 - 9 employees)">Small business (1 - 9 employees)</option>
             <option value="Medium business (10 - 29 employees)">Medium business (10 - 29 employees)</option>
@@ -106,8 +106,8 @@
           </select>
 
           <label for="industry">Industry</label>
-          <select id="industry" name="Industry select">
-            <option value="">Industry</option>
+          <select id="industry" name="Industry select" required>
+            <option value="" selected disabled>Please choose</option>
             <option value="Business services">Business services</option>
             <option value="Technology / software">Technology / software</option>
             <option value="Health & fitness">Health & fitness</option>
@@ -117,8 +117,8 @@
 
           <div id="platform-wrapper" style="display:none;">
             <label for="platform">Current platform</label>
-            <select id="platform" name="Current platform">
-              <option value="">Current platform</option>
+            <select id="platform" name="Current platform" required disabled>
+              <option value="" selected disabled>Please choose</option>
               <option value="WordPress">WordPress</option>
               <option value="Wix">Wix</option>
               <option value="Shopify">Shopify</option>
@@ -138,8 +138,8 @@
           <h2>Timeline &amp; Budget</h2>
 
           <label for="timeline">Timeline</label>
-          <select id="timeline" name="Timeline select">
-            <option value="">Timeline</option>
+          <select id="timeline" name="Timeline select" required>
+            <option value="" selected disabled>Please choose</option>
             <option value="As soon as possible">As soon as possible</option>
             <option value="Within a few weeks">Within a few weeks</option>
             <option value="Within a month">Within a month</option>
@@ -147,8 +147,8 @@
           </select>
 
           <label for="budget">Budget range</label>
-          <select id="budget" name="Budget range">
-            <option value="">Budget range</option>
+          <select id="budget" name="Budget range" required>
+            <option value="" selected disabled>Please choose</option>
             <option value="£1,000 – £2,999">£1,000 – £2,999</option>
             <option value="£3,000 – £4,999">£3,000 – £4,999</option>
             <option value="£5,000 – £9,999">£5,000 – £9,999</option>
@@ -157,8 +157,8 @@
           </select>
 
           <label for="maintenance">Ongoing maintenance?</label>
-          <select id="maintenance" name="Ongoing maintenance">
-            <option value="">Ongoing maintenance?</option>
+          <select id="maintenance" name="Ongoing maintenance" required>
+            <option value="" selected disabled>Please choose</option>
             <option value="Yes">Yes</option>
             <option value="No">No</option>
             <option value="Maybe">Maybe</option>
