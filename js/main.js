@@ -133,7 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
         platformSelect.disabled = !shouldShow;
         platformSelect.required = shouldShow;
         if (!shouldShow) {
-          platformSelect.setCustomValidity("");
           platformSelect.selectedIndex = 0;
         }
       }
@@ -160,7 +159,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!keepValueWhenHidden) {
           input.value = "";
         }
-        input.setCustomValidity("");
       }
     };
 
@@ -227,15 +225,33 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     };
 
-    const clearFieldError = (field) => {
+    const getFieldMessage = (field) => {
       if (!field) return;
-      field.setCustomValidity("");
+      return fieldMessages[field.id] || "Please complete this field.";
     };
 
-    const setFieldError = (field) => {
-      if (!field) return;
-      const message = fieldMessages[field.id] || "Please complete this field.";
-      field.setCustomValidity(message);
+    const validateField = (field) => {
+      if (!field || field.disabled) return true;
+
+      const value = String(field.value ?? "").trim();
+      if (value.length === 0) {
+        alert(getFieldMessage(field));
+        field.focus();
+        return false;
+      }
+
+      if (
+        field instanceof HTMLInputElement &&
+        field.type === "email" &&
+        field.validity &&
+        field.validity.typeMismatch
+      ) {
+        alert(getFieldMessage(field));
+        field.focus();
+        return false;
+      }
+
+      return true;
     };
 
     const validateCurrentStep = () => {
@@ -247,14 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       for (const field of requiredFields) {
-        if (field.disabled) continue;
-
-        clearFieldError(field);
-
-        if (!field.checkValidity()) {
-          setFieldError(field);
-          field.reportValidity();
-          clearFieldError(field);
+        if (!validateField(field)) {
           return false;
         }
       }
@@ -283,13 +292,6 @@ document.addEventListener("DOMContentLoaded", () => {
         setProjectTypeOtherVisibility();
       });
     });
-
-    projectForm
-      .querySelectorAll("select, input, textarea")
-      .forEach((field) => {
-        field.addEventListener("change", () => clearFieldError(field));
-        field.addEventListener("input", () => clearFieldError(field));
-      });
 
     const industrySelect = document.getElementById("industry");
     if (industrySelect) {
@@ -328,10 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (currentStep === 0 && selectedProjectType === "Other") {
           const projectTypeOther = document.getElementById("project-type-other");
-          if (projectTypeOther && !projectTypeOther.checkValidity()) {
-            setFieldError(projectTypeOther);
-            projectTypeOther.reportValidity();
-            clearFieldError(projectTypeOther);
+          if (!validateField(projectTypeOther)) {
             return;
           }
         }
