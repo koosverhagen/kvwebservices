@@ -1033,6 +1033,17 @@ margin-left: 0;
 
 .funnel-form {
   position: relative;
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+
+.funnel-form h2 {
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.funnel-form label {
+  font-size: 16px;
 }
 
 .form-step {
@@ -1056,7 +1067,7 @@ margin-left: 0;
   border-radius: 14px;
   border: 1px solid rgba(15,23,42,0.08);
   background: #ffffff;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 500;
   text-align: center;
   cursor: pointer;
@@ -1109,7 +1120,7 @@ margin-left: 0;
 .back-btn,
 .next-btn,
 .submit-btn {
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.2;
   -webkit-appearance: none;
   appearance: none;
@@ -1161,7 +1172,7 @@ margin-left: 0;
   border-radius: 14px;
   border: 1px solid rgba(15,23,42,0.10);
   background: #ffffff;
-  font-size: 16px;
+  font-size: 17px;
   font-family: inherit;
   -webkit-text-size-adjust: 100%;
   transition: all 0.2s ease;
