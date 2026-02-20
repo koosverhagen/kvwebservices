@@ -97,14 +97,22 @@ projectForm.querySelectorAll(".option-btn").forEach(btn => {
 });
 
 
-  nextButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      if (currentStep < steps.length - 1) {
-        currentStep++;
-        updateStep();
-      }
-    });
+ nextButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    // Step 1 validation
+    if (currentStep === 0 && !selectedProjectType) {
+      return; // stop if nothing selected
+    }
+
+    // Move forward safely
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      updateStep();
+    }
+
   });
+});
 
   const backButtons = projectForm.querySelectorAll(".back-btn");
 
