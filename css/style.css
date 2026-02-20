@@ -1028,16 +1028,19 @@ margin-left: 0;
 }
 
 .form-step {
-  display: none;
+  position: absolute;
+  inset: 0;
   opacity: 0;
   transform: translateX(20px);
-  transition: all 0.4s ease;
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
 .form-step.active {
-  display: block;
+  position: relative;
   opacity: 1;
   transform: translateX(0);
+  pointer-events: auto;
 }
 
 .option-group {
@@ -1068,6 +1071,12 @@ margin-left: 0;
   background: rgba(37,99,235,0.08);
   border-color: var(--accent);
   color: var(--accent);
+}
+
+
+.funnel-form {
+  position: relative;
+  min-height: 320px; /* prevents layout jump */
 }
 
 .funnel-actions {
