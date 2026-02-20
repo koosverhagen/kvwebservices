@@ -1183,29 +1183,111 @@ margin-left: 0;
   box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
 }
 
-/* Two column layout on desktop */
+/* Label left, field right rows */
 
-@media (min-width: 720px) {
+.form-step[data-step="2"],
+.form-step[data-step="3"],
+.form-step[data-step="4"] {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+  column-gap: 18px;
+  row-gap: 14px;
+  align-items: center;
+}
 
-  .form-step[data-step="2"] select,
-  .form-step[data-step="3"] select {
-    max-width: 48%;
-  }
+.form-step[data-step="2"] h2,
+.form-step[data-step="3"] h2,
+.form-step[data-step="4"] h2,
+.form-step[data-step="2"] .step-actions,
+.form-step[data-step="3"] .step-actions,
+.form-step[data-step="4"] .step-actions {
+  grid-column: 1 / -1;
+}
 
+.form-step[data-step="2"] label,
+.form-step[data-step="3"] label,
+.form-step[data-step="4"] label {
+  margin: 0;
+}
+
+.form-step[data-step="2"] input,
+.form-step[data-step="2"] select,
+.form-step[data-step="2"] textarea,
+.form-step[data-step="3"] input,
+.form-step[data-step="3"] select,
+.form-step[data-step="3"] textarea,
+.form-step[data-step="4"] input,
+.form-step[data-step="4"] select,
+.form-step[data-step="4"] textarea {
+  grid-column: 2;
+}
+
+#platform-wrapper {
+  grid-column: 1 / -1;
+}
+
+#platform-wrapper[style*="display: block"] {
+  display: grid !important;
+  grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+  column-gap: 18px;
+  row-gap: 14px;
+  align-items: center;
+}
+
+#platform-wrapper[style*="display: none"] {
+  display: none !important;
+}
+
+#platform-wrapper label {
+  grid-column: 1;
+}
+
+#platform-wrapper input,
+#platform-wrapper select,
+#platform-wrapper textarea {
+  grid-column: 2;
+}
+
+@media (max-width: 719px) {
   .form-step[data-step="2"],
-  .form-step[data-step="3"] {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+  .form-step[data-step="3"],
+  .form-step[data-step="4"] {
+    grid-template-columns: 1fr;
+    row-gap: 10px;
   }
 
-  .form-step[data-step="2"] h2,
-  .form-step[data-step="3"] h2 {
-    width: 100%;
+  .form-step[data-step="2"] input,
+  .form-step[data-step="2"] select,
+  .form-step[data-step="2"] textarea,
+  .form-step[data-step="2"] label,
+  .form-step[data-step="3"] input,
+  .form-step[data-step="3"] select,
+  .form-step[data-step="3"] textarea,
+  .form-step[data-step="3"] label,
+  .form-step[data-step="4"] input,
+  .form-step[data-step="4"] select,
+  .form-step[data-step="4"] textarea,
+  .form-step[data-step="4"] label {
+    grid-column: 1;
   }
 
-  .form-step[data-step="2"] .step-actions,
-  .form-step[data-step="3"] .step-actions {
+  #platform-wrapper[style*="display: block"] {
+    grid-template-columns: 1fr;
+  }
+
+  #platform-wrapper label,
+  #platform-wrapper input,
+  #platform-wrapper select,
+  #platform-wrapper textarea {
+    grid-column: 1;
+  }
+
+  .form-step[data-step="4"] .step-actions {
+    justify-content: center;
+  }
+
+  .form-step[data-step="4"] .submit-btn {
     width: 100%;
+    align-self: center;
   }
 }
