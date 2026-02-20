@@ -358,8 +358,14 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // On submit, copy visible fields into hidden fields
-    projectForm.addEventListener("submit", () => {
+    // On submit, copy visible fields into hidden fields, then submit via fetch
+    projectForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (!validateCurrentStep()) {
+        return;
+      }
+
       const pairs = [
         ["business-type", "hidden-business-type"],
         ["industry", "hidden-industry"],
@@ -458,6 +464,37 @@ document.addEventListener("DOMContentLoaded", () => {
           "platform",
           "platform-other"
         );
+      }
+
+      const submitButton = projectForm.querySelector(".submit-btn");
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = true;
+        submitButton.textContent = "Sending...";
+      }
+
+      try {
+        const response = await fetch(projectForm.action, {
+          method: "POST",
+          body: new FormData(projectForm),
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Submission failed");
+        }
+
+        window.location.href = "thank-you.html";
+      } catch (error) {
+        alert(
+          "Something went wrong while sending your message. Please try again or email info@kvwebservices.co.uk."
+        );
+
+        if (submitButton instanceof HTMLButtonElement) {
+          submitButton.disabled = false;
+          submitButton.textContent = "Start My Project";
+        }
       }
     });
 
