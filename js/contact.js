@@ -24,6 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const projectForm = document.getElementById("project-form");
   if (!projectForm) return;
 
+  const steps = projectForm.querySelectorAll(".form-step");
+  const nextButtons = projectForm.querySelectorAll(".next-btn");
+  const backButtons = projectForm.querySelectorAll(".back-btn");
+  const progressBar =
+    projectForm.closest(".contact-card")?.querySelector(".progress-bar") || null;
+
+  let currentStep = 0;
   let selectedProjectType = "";
 
   const showOrHideWrapper = (shouldShow, wrapperId, inputId) => {
@@ -124,6 +131,69 @@ document.addEventListener("DOMContentLoaded", () => {
   const isVisible = (field) => field instanceof HTMLElement && field.offsetParent !== null;
   const valueOf = (field) => String(field?.value ?? "").trim();
 
+  const updateStep = () => {
+    steps.forEach((step, index) => {
+      step.classList.toggle("active", index === currentStep);
+    });
+
+    if (progressBar && steps.length) {
+      progressBar.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
+    }
+
+    backButtons.forEach((btn) => {
+      btn.style.visibility = currentStep === 0 ? "hidden" : "visible";
+    });
+  };
+
+  const validateCurrentStep = () => {
+    const step = steps[currentStep];
+    if (!step) return true;
+
+    if (currentStep === 0 && !selectedProjectType) {
+      alert("Please select an option for project type.");
+      return false;
+    }
+
+    const projectTypeOther = document.getElementById("project-type-other");
+    if (
+      currentStep === 0 &&
+      selectedProjectType === "Other" &&
+      projectTypeOther instanceof HTMLInputElement &&
+      valueOf(projectTypeOther).length === 0
+    ) {
+      alert("Please specify your project type.");
+      projectTypeOther.focus();
+      return false;
+    }
+
+    const requiredFields = step.querySelectorAll(
+      "select[required], input[required], textarea[required]"
+    );
+
+    for (const field of requiredFields) {
+      if (field.disabled || !isVisible(field)) continue;
+
+      if (valueOf(field).length === 0) {
+        alert("Please complete all required fields.");
+        field.focus();
+        return false;
+      }
+
+      if (
+        field instanceof HTMLInputElement &&
+        field.type === "email" &&
+        field.validity &&
+        field.validity.typeMismatch
+      ) {
+        alert("Please enter a valid email address.");
+        field.focus();
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const validateForm = () => {
     if (!selectedProjectType) {
       alert("Please select an option for project type.");
@@ -168,6 +238,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     return true;
   };
+
+  nextButtons.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!validateCurrentStep()) return;
+
+      if (currentStep < steps.length - 1) {
+        currentStep += 1;
+        updateStep();
+      }
+    });
+  });
+
+  backButtons.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentStep > 0) {
+        currentStep -= 1;
+        updateStep();
+      }
+    });
+  });
 
   const resolveSelectOrOtherValue = (selectId, otherInputId) => {
     const select = document.getElementById(selectId);
@@ -262,4 +354,5 @@ document.addEventListener("DOMContentLoaded", () => {
   setProjectTypeVisibility();
   setPlatformVisibility();
   refreshAllOtherWrappers();
+  updateStep();
 });
