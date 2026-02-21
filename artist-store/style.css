@@ -397,6 +397,15 @@ textarea {
   font-size: 24px;
 }
 
+.about-legacy-image {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,0.08);
+  margin: 10px 0 16px;
+  display: block;
+}
+
 .about-panel p:last-child {
   margin-bottom: 0;
 }
