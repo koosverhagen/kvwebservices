@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Commission Enquiry | Artist Store</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a class="logo" href="index.html">Artist Store</a>
+      <div class="header-links"><a class="btn ghost" href="index.html">Back to Store</a></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section panel" style="padding: 24px; margin-top: 30px;">
+      <h2>Commission Request</h2>
+      <p>Share your vision and preferred size, medium, and timeline.</p>
+
+      <form action="https://formspree.io/f/xreablqv" method="POST" class="form-grid">
+        <input required name="name" placeholder="Your name">
+        <input required type="email" name="email" placeholder="Your email">
+        <input class="full" name="subject" placeholder="Commission type (portrait, abstract, landscape...)" required>
+        <input name="budget" placeholder="Budget range">
+        <input name="timeline" placeholder="Preferred timeline">
+        <textarea class="full" rows="6" name="message" placeholder="Describe your commission brief" required></textarea>
+        <input type="hidden" name="source" value="Artist Store Commission Form">
+        <button class="btn full" type="submit">Send Commission Request</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

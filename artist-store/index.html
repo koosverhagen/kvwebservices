@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Artist Store | Featured Case Study</title>
+  <meta name="description" content="Featured case study: a minimal artist storefront with gallery, cart, promo code, shipping and checkout flow.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a class="logo" href="../index.html">KVWebServices</a>
+      <div class="header-links">
+        <a href="studio.html" class="btn ghost">Artist Studio</a>
+        <a href="../contact.html" class="btn">Start Similar Project</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1 id="store-name">Artist Store</h1>
+      <p>A clean storefront for showcasing and selling artwork, including category filtering, cart, shipping options and promo-code support.</p>
+    </section>
+
+    <section class="layout">
+      <div class="shop-card">
+        <div class="toolbar">
+          <select id="category-filter" aria-label="Filter category"></select>
+          <a class="btn ghost" href="commission.html">Commission Enquiry</a>
+        </div>
+        <div class="grid" id="product-grid"></div>
+      </div>
+
+      <aside class="cart-card">
+        <h2 class="cart-title">Cart</h2>
+        <div id="cart-items" class="cart-items"></div>
+
+        <div class="row" style="margin-bottom: 10px;">
+          <input id="promo-code" placeholder="Promo code">
+          <button class="btn ghost" id="apply-promo" type="button">Apply</button>
+        </div>
+
+        <label for="shipping-method" class="muted">Shipping</label>
+        <select id="shipping-method">
+          <option value="standard">Standard</option>
+          <option value="express">Express</option>
+        </select>
+
+        <div class="cart-totals">
+          <div class="total-row"><span>Subtotal</span><span id="subtotal">£0.00</span></div>
+          <div class="total-row"><span>Discount</span><span id="discount">-£0.00</span></div>
+          <div class="total-row"><span>Shipping</span><span id="shipping">£0.00</span></div>
+          <div class="total-row strong"><span>Total</span><span id="total">£0.00</span></div>
+        </div>
+
+        <button class="btn" id="checkout-btn" type="button">Checkout</button>
+        <div class="note">Checkout opens a customer details step, then redirects to Stripe Payment Link.</div>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <small>© <span id="year"></span> KV Web Services — Featured case study build</small>
+    </div>
+  </footer>
+
+  <script src="store.js"></script>
+</body>
+</html>
