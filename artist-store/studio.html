@@ -10,8 +10,8 @@
   <header class="header">
     <div class="container header-inner">
       <a class="logo" href="index.html">
-        <img class="logo-mark" src="../images/abbie/abbie-art-logo.webp" alt="Abbie By Hart logo">
-        <span>Abbie By Hart Studio</span>
+        <img class="logo-mark" src="../images/abbie/abbie-art-logo.webp" alt="Abbie at Heart logo">
+        <span>Abbie at Heart Studio</span>
       </a>
       <div class="header-links"><a class="btn ghost" href="index.html">Open Storefront</a></div>
     </div>
@@ -145,7 +145,7 @@
       const existing = readSettings();
       const next = {
         ...existing,
-        storeName: String(data.get("storeName") || "Abbie By Hart").trim(),
+        storeName: String(data.get("storeName") || "Abbie at Heart").trim(),
         stripePaymentLink: String(data.get("stripePaymentLink") || "").trim(),
         shippingStandard: Number(data.get("shippingStandard") || 0),
         shippingExpress: Number(data.get("shippingExpress") || 0)
@@ -156,7 +156,7 @@
 
     (function init() {
       const settings = readSettings();
-      settingsForm.storeName.value = settings.storeName || "Abbie By Hart";
+      settingsForm.storeName.value = settings.storeName || "Abbie at Heart";
       settingsForm.stripePaymentLink.value = settings.stripePaymentLink || "";
       settingsForm.shippingStandard.value = settings.shippingStandard ?? 6;
       settingsForm.shippingExpress.value = settings.shippingExpress ?? 14;
