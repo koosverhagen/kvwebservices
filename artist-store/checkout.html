@@ -33,7 +33,7 @@
         <button class="btn full" type="submit">Continue to Stripe</button>
       </form>
 
-      <div class="note">Address suggestions appear while typing.</div>
+      <div class="note">Address suggestions appear while typing. Best results: start with house number/name + street or postcode.</div>
 
       <div class="panel" style="margin-top: 18px; padding: 16px;">
         <strong>Order Summary</strong>
@@ -53,30 +53,82 @@
     let searchTimeout = null;
     let activeRequest = null;
 
+    function buildPhotonLabel(properties) {
+      const firstLine = [properties.housenumber, properties.street].filter(Boolean).join(" ").trim();
+      const parts = [
+        firstLine,
+        properties.city || properties.town || properties.county || properties.state,
+        properties.postcode,
+        properties.country
+      ].filter(Boolean);
+
+      return parts.join(", ");
+    }
+
+    function normalizeAddressText(value) {
+      return String(value || "").replace(/\s+/g, " ").trim();
+    }
+
     async function lookupAddress(query) {
       if (activeRequest) activeRequest.abort();
       activeRequest = new AbortController();
 
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=gb&q=${encodeURIComponent(query)}`,
-        {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=gb&q=${encodeURIComponent(query)}`;
+      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6&lang=en`;
+
+      const [nominatimResponse, photonResponse] = await Promise.allSettled([
+        fetch(nominatimUrl, {
           signal: activeRequest.signal,
           headers: {
             "Accept-Language": "en-GB"
           }
-        }
-      );
+        }),
+        fetch(photonUrl, {
+          signal: activeRequest.signal,
+          headers: {
+            "Accept-Language": "en-GB"
+          }
+        })
+      ]);
 
-      if (!response.ok) return [];
-      const results = await response.json();
-      return Array.isArray(results) ? results : [];
+      const options = [];
+
+      if (nominatimResponse.status === "fulfilled" && nominatimResponse.value.ok) {
+        const nominatimJson = await nominatimResponse.value.json();
+        if (Array.isArray(nominatimJson)) {
+          nominatimJson.forEach((item) => {
+            if (item?.display_name) options.push(normalizeAddressText(item.display_name));
+          });
+        }
+      }
+
+      if (photonResponse.status === "fulfilled" && photonResponse.value.ok) {
+        const photonJson = await photonResponse.value.json();
+        const features = Array.isArray(photonJson?.features) ? photonJson.features : [];
+        features.forEach((feature) => {
+          const label = buildPhotonLabel(feature?.properties || {});
+          if (label) options.push(normalizeAddressText(label));
+        });
+      }
+
+      const unique = [];
+      const seen = new Set();
+      options.forEach((label) => {
+        const key = label.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(label);
+        }
+      });
+
+      return unique.slice(0, 8);
     }
 
     function renderAddressSuggestions(results) {
       addressSuggestions.innerHTML = "";
       results.forEach((item) => {
         const option = document.createElement("option");
-        option.value = item.display_name;
+        option.value = item;
         addressSuggestions.appendChild(option);
       });
     }
