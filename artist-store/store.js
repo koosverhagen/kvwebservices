@@ -5,29 +5,47 @@ const SETTINGS_KEY = "kv_artist_settings";
 const defaultProducts = [
   {
     id: "art-1",
-    title: "Coastal Light",
+    title: "Gentle Morning Walk",
     category: "Original",
-    price: 420,
+    price: 480,
     stock: 1,
-    image: "",
-    description: "Original acrylic on canvas"
+    image: "../images/abbie/abbie-art-001.webp",
+    description: "Original painting"
   },
   {
     id: "art-2",
-    title: "Midnight Fields",
-    category: "Print",
-    price: 65,
-    stock: 10,
-    image: "",
-    description: "Signed giclée print"
+    title: "Quiet Field Study",
+    category: "Original",
+    price: 520,
+    stock: 1,
+    image: "../images/abbie/abbie-art-002.webp",
+    description: "Original painting"
   },
   {
     id: "art-3",
-    title: "Sunset Study",
+    title: "Companions",
+    category: "Original",
+    price: 560,
+    stock: 1,
+    image: "../images/abbie/abbie-art-003.webp",
+    description: "Original painting"
+  },
+  {
+    id: "art-4",
+    title: "Blue Horizon",
     category: "Print",
-    price: 55,
-    stock: 10,
-    image: "",
+    price: 75,
+    stock: 12,
+    image: "../images/abbie/abbie-art-004.webp",
+    description: "Signed giclée print"
+  },
+  {
+    id: "art-5",
+    title: "Soft Light",
+    category: "Print",
+    price: 68,
+    stock: 15,
+    image: "../images/abbie/abbie-art-005.webp",
     description: "Open edition print"
   }
 ];
@@ -57,7 +75,20 @@ function loadProducts() {
     localStorage.setItem(PRODUCT_KEY, JSON.stringify(defaultProducts));
     return [...defaultProducts];
   }
-  return JSON.parse(raw);
+  const parsed = JSON.parse(raw);
+
+  const shouldResetToAbbieDefaults =
+    Array.isArray(parsed) &&
+    parsed.length <= 3 &&
+    parsed.every((product) => /^art-[1-3]$/.test(String(product.id || ""))) &&
+    parsed.some((product) => !product.image);
+
+  if (shouldResetToAbbieDefaults) {
+    localStorage.setItem(PRODUCT_KEY, JSON.stringify(defaultProducts));
+    return [...defaultProducts];
+  }
+
+  return parsed;
 }
 
 function loadCart() {
