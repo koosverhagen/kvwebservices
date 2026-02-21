@@ -122,6 +122,19 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 18px;
 }
 
+.commission-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.shop-card > .section-kicker,
+.cart-card > .section-kicker {
+  margin-bottom: 10px;
+}
+
 select,
 input,
 textarea {
