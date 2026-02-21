@@ -1090,6 +1090,25 @@ body.contact-stable .funnel-progress {
   display: none;
 }
 
+body.contact-stable {
+  background: #ffffff;
+}
+
+body.contact-stable .header {
+  position: static;
+}
+
+body.contact-stable .footer::before {
+  display: none;
+}
+
+body.contact-stable *,
+body.contact-stable *::before,
+body.contact-stable *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
 body.contact-stable .header {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
