@@ -140,6 +140,11 @@ section > h2:not(:first-child) {
   font-weight: 500;
 }
 
+.menu a[href="artist-store/index.html"] {
+  font-weight: 600;
+  color: var(--accent);
+}
+
 /* Desktop separators */
 @media (min-width: 721px) {
   .menu a:not(:last-child)::after {
