@@ -79,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const projectForm = document.getElementById("project-form");
 
   if (projectForm) {
+    try {
     const steps = projectForm.querySelectorAll(".form-step");
     const nextButtons = projectForm.querySelectorAll(".next-btn");
     const backButtons = projectForm.querySelectorAll(".back-btn");
@@ -508,5 +509,41 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimelineOtherVisibility();
     setBudgetOtherVisibility();
     setMaintenanceOtherVisibility();
+    } catch (error) {
+      console.error("Funnel setup failed, using fallback submit flow.", error);
+
+      projectForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const submitButton = projectForm.querySelector(".submit-btn");
+        if (submitButton instanceof HTMLButtonElement) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Sending...";
+        }
+
+        try {
+          const response = await fetch(projectForm.action, {
+            method: "POST",
+            body: new FormData(projectForm),
+            headers: { Accept: "application/json" },
+          });
+
+          if (!response.ok) {
+            throw new Error("Submission failed");
+          }
+
+          window.location.href = "thank-you.html";
+        } catch (submitError) {
+          alert(
+            "Something went wrong while sending your message. Please try again or email info@kvwebservices.co.uk."
+          );
+
+          if (submitButton instanceof HTMLButtonElement) {
+            submitButton.disabled = false;
+            submitButton.textContent = "Start My Project";
+          }
+        }
+      });
+    }
   }
 });
