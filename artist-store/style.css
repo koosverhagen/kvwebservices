@@ -340,6 +340,10 @@ textarea {
   object-fit: cover;
 }
 
+.clip-static img.clip-image-lower-crop {
+  object-position: center 72%;
+}
+
 .clip-static-note {
   margin: 0;
   padding: 10px 12px;
