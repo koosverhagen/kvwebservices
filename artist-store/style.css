@@ -250,6 +250,11 @@ textarea {
   margin-top: 16px;
 }
 
+.cart-card label.muted {
+  display: block;
+  margin-bottom: 8px;
+}
+
 @media (max-width: 1024px) {
   .layout { grid-template-columns: 1fr; }
   .cart-card { position: static; }
