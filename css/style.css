@@ -1090,6 +1090,17 @@ body.contact-stable .funnel-progress {
   display: none;
 }
 
+body.contact-stable .header {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.contact-stable .contact-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
 body.contact-stable .form-step {
   display: block;
   position: static;
@@ -1110,6 +1121,21 @@ body.contact-stable .step-actions button[type="button"] {
 body.contact-stable .step-actions {
   justify-content: flex-start;
   margin-top: 18px;
+}
+
+body.contact-stable .option-btn,
+body.contact-stable .next-btn,
+body.contact-stable .back-btn,
+body.contact-stable .submit-btn {
+  transition: none;
+}
+
+body.contact-stable .option-btn:hover,
+body.contact-stable .next-btn:hover,
+body.contact-stable .submit-btn:hover,
+body.contact-stable .back-btn:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 body.chrome-safe-funnel .form-step {
