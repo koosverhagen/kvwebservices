@@ -15,69 +15,51 @@
         <span>Abbie at Heart</span>
       </a>
       <div class="header-links">
-        <a href="studio.html" class="btn ghost">Artist Studio</a>
-        <a href="../contact.html" class="btn">Start Similar Project</a>
+        <a href="about.html" class="btn ghost">About</a>
+        <a href="commission.html" class="btn">Commission</a>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <section class="hero">
+    <section class="hero art-hero">
+      <p class="section-kicker">Original Equine Artwork</p>
       <h1 id="store-name">Abbie at Heart</h1>
-      <p>A clean storefront for showcasing and selling artwork, including category filtering, cart, shipping options and promo-code support.</p>
-      <a class="btn ghost hero-secondary-btn" href="about.html">About Abbie</a>
+      <p>Expressive horse and countryside pieces in mixed media, available as originals, commissions, and selected prints.</p>
+      <div class="hero-actions">
+        <a class="btn" href="commission.html">Commission Enquiry</a>
+        <a class="btn ghost" href="about.html">About Abbie</a>
+        <a class="btn ghost" href="studio.html">Open Storefront</a>
+      </div>
     </section>
 
-    <section class="layout">
-      <div class="shop-card">
-        <p class="section-kicker">Shop</p>
-        <div class="toolbar">
-          <select id="category-filter" aria-label="Filter category"></select>
-        </div>
-
-        <div class="commission-inline">
-          <p class="section-kicker">Commission</p>
-          <a class="btn ghost" href="commission.html">Commission Enquiry</a>
-        </div>
-
-        <div class="grid" id="product-grid"></div>
-      </div>
-
-      <aside class="cart-card">
-        <p class="section-kicker">Cart</p>
-        <h2 class="cart-title">Cart</h2>
-        <div id="cart-items" class="cart-items"></div>
-
-        <div class="row" style="margin-bottom: 10px;">
-          <input id="promo-code" placeholder="Promo code">
-          <button class="btn ghost" id="apply-promo" type="button">Apply</button>
-        </div>
-
-        <label for="shipping-method" class="muted">Shipping</label>
-        <select id="shipping-method">
-          <option value="standard">Standard</option>
-          <option value="express">Express</option>
-        </select>
-
-        <div class="cart-totals">
-          <div class="total-row"><span>Subtotal</span><span id="subtotal">£0.00</span></div>
-          <div class="total-row"><span>Discount</span><span id="discount">-£0.00</span></div>
-          <div class="total-row"><span>Shipping</span><span id="shipping">£0.00</span></div>
-          <div class="total-row strong"><span>Total</span><span id="total">£0.00</span></div>
-        </div>
-
-        <button class="btn" id="checkout-btn" type="button">Checkout</button>
-        <div class="note">Checkout opens a customer details step, then redirects to Stripe Payment Link.</div>
-      </aside>
+    <section class="art-showcase" aria-label="Selected artwork">
+      <figure class="art-tile art-tile-large">
+        <img src="../images/abbie/abbie-art-001.webp" alt="Horse artwork by Abbie">
+      </figure>
+      <figure class="art-tile">
+        <img src="../images/abbie/abbie-art-002.webp" alt="Equine painting by Abbie">
+      </figure>
+      <figure class="art-tile">
+        <img src="../images/abbie/abbie-art-003.webp" alt="Watercolor horse portrait by Abbie">
+      </figure>
+      <figure class="art-tile">
+        <img src="../images/abbie/abbie-art-004.webp" alt="Countryside horse study by Abbie">
+      </figure>
+      <figure class="art-tile">
+        <img src="../images/abbie/abbie-art-005.webp" alt="Expressive equine artwork by Abbie">
+      </figure>
     </section>
   </main>
 
   <footer class="footer">
     <div class="container">
-      <small>© <span id="year"></span> KV Web Services — Featured case study build</small>
+      <small>© <span id="year"></span> Abbie at Heart</small>
     </div>
   </footer>
 
-  <script src="store.js"></script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
