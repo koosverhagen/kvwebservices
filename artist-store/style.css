@@ -175,6 +175,7 @@ a { color: inherit; text-decoration: none; }
   height: auto;
   object-fit: cover;
   aspect-ratio: 4 / 3;
+  cursor: zoom-in;
 }
 
 .art-tile figcaption {
@@ -222,6 +223,42 @@ a { color: inherit; text-decoration: none; }
   display: block;
   object-fit: cover;
   aspect-ratio: 4 / 3;
+  cursor: zoom-in;
+}
+
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(15,23,42,0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.image-lightbox img {
+  max-width: min(96vw, 1400px);
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .legacy-card figcaption {
