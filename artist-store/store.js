@@ -66,7 +66,14 @@ function loadSettings() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(defaultSettings));
     return { ...defaultSettings };
   }
-  return { ...defaultSettings, ...JSON.parse(raw) };
+  const merged = { ...defaultSettings, ...JSON.parse(raw) };
+
+  if (merged.storeName === "Abbie By Hart") {
+    merged.storeName = "Abbie at Heart";
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+  }
+
+  return merged;
 }
 
 function loadProducts() {
