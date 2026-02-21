@@ -89,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentStep = 0;
     let selectedProjectType = "";
+    const isChromium = /Chrome|CriOS/i.test(navigator.userAgent);
     const fieldMessages = {
       "business-type": "Please choose a business type.",
       industry: "Please choose an industry.",
@@ -108,6 +109,10 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const updateStep = () => {
+      if (document.body.classList.contains("chrome-safe-funnel")) {
+        return;
+      }
+
       steps.forEach((step, index) => {
         step.classList.toggle("active", index === currentStep);
       });
@@ -119,6 +124,29 @@ document.addEventListener("DOMContentLoaded", () => {
       backButtons.forEach((btn) => {
         btn.style.visibility = currentStep === 0 ? "hidden" : "visible";
       });
+    };
+
+    const enableChromeSafeMode = () => {
+      document.body.classList.add("chrome-safe-funnel");
+
+      const progress = projectForm
+        .closest(".contact-card")
+        ?.querySelector(".funnel-progress");
+      if (progress instanceof HTMLElement) {
+        progress.style.display = "none";
+      }
+
+      steps.forEach((step) => {
+        step.classList.add("active");
+      });
+
+      projectForm
+        .querySelectorAll('.step-actions button[type="button"]')
+        .forEach((btn) => {
+          if (btn instanceof HTMLElement) {
+            btn.style.display = "none";
+          }
+        });
     };
 
     const setPlatformVisibility = () => {
@@ -316,6 +344,10 @@ document.addEventListener("DOMContentLoaded", () => {
     addOtherSelectListeners("timeline", setTimelineOtherVisibility);
     addOtherSelectListeners("budget", setBudgetOtherVisibility);
     addOtherSelectListeners("maintenance", setMaintenanceOtherVisibility);
+
+    if (isChromium) {
+      enableChromeSafeMode();
+    }
 
     // Next
     nextButtons.forEach((btn) => {
