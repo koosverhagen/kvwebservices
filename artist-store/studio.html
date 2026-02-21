@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Artist Studio Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a class="logo" href="index.html">Artist Store Studio</a>
+      <div class="header-links"><a class="btn ghost" href="index.html">Open Storefront</a></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section panel" style="padding:24px; margin-top:30px;">
+      <h2>Upload / Manage Artwork</h2>
+      <p>Add new works directly from the browser. This saves to local browser storage for phase 1 demos.</p>
+
+      <form id="product-form" class="form-grid">
+        <input name="title" required placeholder="Artwork title">
+        <select name="category" required>
+          <option value="">Category</option>
+          <option>Original</option>
+          <option>Print</option>
+          <option>Limited Edition</option>
+        </select>
+        <input name="price" required type="number" min="0" step="0.01" placeholder="Price">
+        <input name="stock" required type="number" min="0" step="1" placeholder="Stock">
+        <input class="full" name="description" placeholder="Short description">
+        <input class="full" name="imageUrl" placeholder="Image URL (or use upload below)">
+        <input class="full" id="imageUpload" type="file" accept="image/*">
+        <button class="btn full" type="submit">Save Artwork</button>
+      </form>
+    </section>
+
+    <section class="section panel" style="padding:24px;">
+      <h2>Store Settings</h2>
+      <form id="settings-form" class="form-grid">
+        <input name="storeName" class="full" placeholder="Store name">
+        <input name="stripePaymentLink" class="full" placeholder="Stripe Payment Link URL">
+        <input name="shippingStandard" type="number" step="0.01" min="0" placeholder="Standard shipping">
+        <input name="shippingExpress" type="number" step="0.01" min="0" placeholder="Express shipping">
+        <button class="btn full" type="submit">Save Settings</button>
+      </form>
+    </section>
+
+    <section class="section panel" style="padding:24px; margin-bottom:80px;">
+      <h2>Current Artwork</h2>
+      <div id="product-list" class="grid"></div>
+    </section>
+  </main>
+
+  <script>
+    const PRODUCT_KEY = "kv_artist_products";
+    const SETTINGS_KEY = "kv_artist_settings";
+
+    const form = document.getElementById("product-form");
+    const settingsForm = document.getElementById("settings-form");
+    const productList = document.getElementById("product-list");
+    const imageUpload = document.getElementById("imageUpload");
+
+    function readProducts() {
+      return JSON.parse(localStorage.getItem(PRODUCT_KEY) || "[]");
+    }
+
+    function saveProducts(products) {
+      localStorage.setItem(PRODUCT_KEY, JSON.stringify(products));
+    }
+
+    function readSettings() {
+      return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    }
+
+    function saveSettings(settings) {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    function renderProducts() {
+      const items = readProducts();
+      productList.innerHTML = "";
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "product";
+        card.innerHTML = `
+          <img class="product-image" src="${item.image || ""}" alt="${item.title}">
+          <div class="product-body">
+            <h3 class="product-title">${item.title}</h3>
+            <div class="product-meta">${item.category} • Stock ${item.stock}</div>
+            <p class="product-price">£${Number(item.price).toFixed(2)}</p>
+            <button class="btn ghost" data-id="${item.id}">Delete</button>
+          </div>
+        `;
+        card.querySelector("button").addEventListener("click", () => {
+          const next = readProducts().filter((p) => p.id !== item.id);
+          saveProducts(next);
+          renderProducts();
+        });
+        productList.appendChild(card);
+      });
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return resolve("");
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      const uploadFile = imageUpload.files[0];
+      const uploaded = await fileToDataUrl(uploadFile);
+
+      const product = {
+        id: crypto.randomUUID(),
+        title: String(data.get("title") || "").trim(),
+        category: String(data.get("category") || "").trim(),
+        price: Number(data.get("price") || 0),
+        stock: Number(data.get("stock") || 0),
+        description: String(data.get("description") || "").trim(),
+        image: uploaded || String(data.get("imageUrl") || "").trim()
+      };
+
+      const products = readProducts();
+      products.push(product);
+      saveProducts(products);
+      form.reset();
+      renderProducts();
+      alert("Artwork saved.");
+    });
+
+    settingsForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = new FormData(settingsForm);
+      const existing = readSettings();
+      const next = {
+        ...existing,
+        storeName: String(data.get("storeName") || "Artist Store").trim(),
+        stripePaymentLink: String(data.get("stripePaymentLink") || "").trim(),
+        shippingStandard: Number(data.get("shippingStandard") || 0),
+        shippingExpress: Number(data.get("shippingExpress") || 0)
+      };
+      saveSettings(next);
+      alert("Settings saved.");
+    });
+
+    (function init() {
+      const settings = readSettings();
+      settingsForm.storeName.value = settings.storeName || "Artist Store";
+      settingsForm.stripePaymentLink.value = settings.stripePaymentLink || "";
+      settingsForm.shippingStandard.value = settings.shippingStandard ?? 6;
+      settingsForm.shippingExpress.value = settings.shippingExpress ?? 14;
+      renderProducts();
+    })();
+  </script>
+</body>
+</html>

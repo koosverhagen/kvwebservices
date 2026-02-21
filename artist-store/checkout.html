@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout | Artist Store</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a class="logo" href="index.html">Artist Store</a>
+      <div class="header-links">
+        <a class="btn ghost" href="index.html">Back to Store</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section panel" style="padding: 24px; margin-top: 30px;">
+      <h2>Checkout Details</h2>
+      <p>Enter customer details and continue to secure Stripe payment.</p>
+
+      <form id="checkout-form" class="form-grid">
+        <input required name="name" placeholder="Full name">
+        <input required type="email" name="email" placeholder="Email address">
+        <input class="full" required name="address" placeholder="Shipping address">
+        <textarea class="full" name="notes" rows="4" placeholder="Order notes (optional)"></textarea>
+        <button class="btn full" type="submit">Continue to Stripe</button>
+      </form>
+
+      <div class="panel" style="margin-top: 18px; padding: 16px;">
+        <strong>Order Summary</strong>
+        <div id="order-summary" class="muted" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="note">For multi-item carts with automated totals at payment, migrate to custom Stripe Checkout later. This phase uses a Payment Link flow.</div>
+    </section>
+  </main>
+
+  <script>
+    const payload = JSON.parse(localStorage.getItem("kv_artist_checkout") || "null");
+    const summary = document.getElementById("order-summary");
+    const form = document.getElementById("checkout-form");
+
+    if (!payload || !payload.items || !payload.items.length) {
+      summary.textContent = "No checkout data found. Return to store and add items.";
+      form.style.display = "none";
+    } else {
+      const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const promo = (payload.promoCode || "").trim().toUpperCase();
+      const promoPct = payload.settings.promoCodes[promo] || 0;
+      const discount = subtotal * (promoPct / 100);
+      const total = Math.max(0, subtotal - discount + payload.shippingCost);
+
+      summary.innerHTML = payload.items
+        .map((item) => `${item.title} × ${item.quantity} — £${(item.quantity * item.price).toFixed(2)}`)
+        .join("<br>") + `<br><br>Subtotal: £${subtotal.toFixed(2)}<br>Discount: -£${discount.toFixed(2)}<br>Shipping: £${payload.shippingCost.toFixed(2)}<br><strong>Total: £${total.toFixed(2)}</strong>`;
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const data = new FormData(form);
+        const customer = {
+          name: data.get("name"),
+          email: data.get("email"),
+          address: data.get("address"),
+          notes: data.get("notes")
+        };
+
+        localStorage.setItem("kv_artist_last_order", JSON.stringify({ ...payload, customer, total }));
+        window.location.href = payload.settings.stripePaymentLink;
+      });
+    }
+  </script>
+</body>
+</html>
