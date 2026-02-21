@@ -1086,6 +1086,32 @@ margin-left: 0;
   display: block;
 }
 
+body.contact-stable .funnel-progress {
+  display: none;
+}
+
+body.contact-stable .form-step {
+  display: block;
+  position: static;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  margin-bottom: 36px;
+}
+
+body.contact-stable .form-step:last-child {
+  margin-bottom: 0;
+}
+
+body.contact-stable .step-actions button[type="button"] {
+  display: none;
+}
+
+body.contact-stable .step-actions {
+  justify-content: flex-start;
+  margin-top: 18px;
+}
+
 body.chrome-safe-funnel .form-step {
   display: block;
   margin-bottom: 34px;
