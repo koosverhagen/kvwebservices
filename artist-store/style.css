@@ -253,6 +253,12 @@ textarea {
   overflow: hidden;
 }
 
+.featured-clip-caption {
+  margin: 10px 2px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
 .about-panel h2 {
   margin: 0 0 10px;
   font-size: 24px;
