@@ -51,7 +51,7 @@ const defaultProducts = [
 ];
 
 const defaultSettings = {
-  storeName: "Abbie By Hart",
+  storeName: "Abbie at Heart",
   stripePaymentLink: "https://buy.stripe.com/test_placeholder",
   shippingStandard: 6,
   shippingExpress: 14,
