@@ -215,6 +215,13 @@ a { color: inherit; text-decoration: none; }
   aspect-ratio: 4 / 3;
 }
 
+.legacy-card figcaption {
+  padding: 10px 12px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
 .entry-links {
   display: flex;
   flex-wrap: wrap;
