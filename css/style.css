@@ -1019,6 +1019,11 @@ margin-left: 0;
   border-bottom: 1px solid rgba(15,23,42,0.06);
 }
 
+.service-detail .content-block {
+  margin-bottom: 56px;
+  padding-bottom: 36px;
+}
+
 .content-block:last-child {
   border-bottom: none;
   margin-bottom: 0;
