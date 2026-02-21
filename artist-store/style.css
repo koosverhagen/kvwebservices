@@ -232,6 +232,15 @@ textarea {
   color: var(--muted);
 }
 
+.section-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .about-panel {
   padding: 24px;
   margin: 18px 0 42px;
