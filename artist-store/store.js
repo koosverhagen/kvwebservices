@@ -33,7 +33,7 @@ const defaultProducts = [
 ];
 
 const defaultSettings = {
-  storeName: "Artist Store",
+  storeName: "Abbie By Hart",
   stripePaymentLink: "https://buy.stripe.com/test_placeholder",
   shippingStandard: 6,
   shippingExpress: 14,
