@@ -190,6 +190,13 @@ textarea {
   margin-top: 10px;
 }
 
+.cart-item-top .btn.ghost {
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 12px;
+  min-width: 108px;
+}
+
 .muted { color: var(--muted); font-size: 13px; }
 
 .cart-totals {
