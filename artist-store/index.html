@@ -81,8 +81,48 @@
     </div>
   </footer>
 
+  <div class="image-lightbox" id="image-lightbox" hidden>
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close image">×</button>
+    <img id="lightbox-image" src="" alt="">
+  </div>
+
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    const lightboxEl = document.getElementById("image-lightbox");
+    const lightboxImageEl = document.getElementById("lightbox-image");
+    const lightboxCloseEl = document.getElementById("lightbox-close");
+    const clickableImages = document.querySelectorAll(".art-showcase img, .legacy-grid img");
+
+    function closeLightbox() {
+      lightboxEl.hidden = true;
+      lightboxImageEl.src = "";
+      lightboxImageEl.alt = "";
+      document.body.style.overflow = "";
+    }
+
+    clickableImages.forEach((image) => {
+      image.addEventListener("click", () => {
+        lightboxImageEl.src = image.src;
+        lightboxImageEl.alt = image.alt || "Artwork";
+        lightboxEl.hidden = false;
+        document.body.style.overflow = "hidden";
+      });
+    });
+
+    lightboxCloseEl.addEventListener("click", closeLightbox);
+
+    lightboxEl.addEventListener("click", (event) => {
+      if (event.target === lightboxEl) {
+        closeLightbox();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !lightboxEl.hidden) {
+        closeLightbox();
+      }
+    });
   </script>
 </body>
 </html>
