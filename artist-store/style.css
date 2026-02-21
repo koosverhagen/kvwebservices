@@ -262,8 +262,16 @@ textarea {
 }
 
 @media (max-width: 640px) {
+  .header-inner {
+    height: auto;
+    padding: 10px 0;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
   .logo {
     font-size: 16px;
+    width: 100%;
   }
 
   .logo-mark {
@@ -271,8 +279,21 @@ textarea {
     height: 30px;
   }
 
+  .header-links {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .header-links .btn {
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.2;
+    padding: 10px 12px;
+  }
+
   .grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
-  .header-inner { gap: 10px; }
-  .header-links { gap: 8px; }
 }
