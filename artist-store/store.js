@@ -10,7 +10,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/two_horses_jpg-100486-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 220
   },
   {
     id: "art-2",
@@ -19,7 +20,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/horse_and_hound_green_jpg-100488-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 226
   },
   {
     id: "art-3",
@@ -28,7 +30,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/four_riders_jpg-100487-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 211
   },
   {
     id: "art-4",
@@ -37,7 +40,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Two_Friends_jpg-100504-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 227
   },
   {
     id: "art-5",
@@ -46,7 +50,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/rider_and_hounds_jpg-100484-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 222
   },
   {
     id: "art-6",
@@ -55,7 +60,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Grey_on_Maroon_jpg-100501-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 230
   },
   {
     id: "art-7",
@@ -64,7 +70,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/three_gents_and_dogs_jpg-100485-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 221
   },
   {
     id: "art-8",
@@ -73,7 +80,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Stable_Mates_jpg-100503-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 228
   },
   {
     id: "art-9",
@@ -82,7 +90,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/hunt_and_fox_jpg-100482-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 224
   },
   {
     id: "art-10",
@@ -91,7 +100,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Four_Ready_jpg-100500-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 231
   },
   {
     id: "art-11",
@@ -100,7 +110,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Black_on_Red_jpg-100498-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 233
   },
   {
     id: "art-12",
@@ -109,7 +120,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Horse_dog_right_jpg-100481-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 225
   },
   {
     id: "art-13",
@@ -118,7 +130,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Hound_Show_jpg-100502-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 229
   },
   {
     id: "art-14",
@@ -127,7 +140,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Chestnut_on_Green_jpg-100499-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 232
   },
   {
     id: "art-15",
@@ -136,7 +150,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Bay_on_Orange_jpg-100497-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 234
   },
   {
     id: "art-16",
@@ -145,7 +160,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/ladies_and_dogs_jpg-100483-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 223
   },
   {
     id: "art-17",
@@ -154,7 +170,8 @@ const defaultProducts = [
     price: 60,
     stock: 12,
     image: "../images/abbie/legacy/Ukraine_jpg-100513-600x600.jpg",
-    description: "Fine art print"
+    description: "Fine art print",
+    externalProductId: 241
   }
 ];
 
@@ -356,6 +373,48 @@ function addToCart(product) {
   }
   saveCart(cart);
   renderCart();
+  mirrorToExternalCart(product, 1);
+}
+
+function ensureExternalMirrorFrame() {
+  let frame = document.getElementById("external-cart-mirror-frame");
+  if (frame) return frame;
+
+  frame = document.createElement("iframe");
+  frame.id = "external-cart-mirror-frame";
+  frame.name = "external-cart-mirror-frame";
+  frame.style.display = "none";
+  frame.setAttribute("aria-hidden", "true");
+  document.body.appendChild(frame);
+  return frame;
+}
+
+function mirrorToExternalCart(product, quantity) {
+  if (!product || !product.externalProductId) return;
+
+  ensureExternalMirrorFrame();
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "https://artprinthub.com/index.php?route=checkout/cart/add";
+  form.target = "external-cart-mirror-frame";
+  form.style.display = "none";
+
+  const productIdInput = document.createElement("input");
+  productIdInput.type = "hidden";
+  productIdInput.name = "product_id";
+  productIdInput.value = String(product.externalProductId);
+
+  const quantityInput = document.createElement("input");
+  quantityInput.type = "hidden";
+  quantityInput.name = "quantity";
+  quantityInput.value = String(quantity || 1);
+
+  form.appendChild(productIdInput);
+  form.appendChild(quantityInput);
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
 }
 
 function removeItem(id) {
@@ -440,7 +499,9 @@ function wireEvents() {
       createdAt: new Date().toISOString()
     };
     localStorage.setItem("kv_artist_checkout", JSON.stringify(checkoutPayload));
-    window.location.href = "checkout.html";
+
+    const externalCheckoutUrl = "https://artprinthub.com/index.php?route=checkout/checkout";
+    window.location.href = externalCheckoutUrl;
   });
 }
 
