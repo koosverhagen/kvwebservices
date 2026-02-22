@@ -8,6 +8,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (toggle && menu) {
     toggle.textContent = "☰ Menu";
 
+    const currentPath = window.location.pathname.split("/").pop() || "index.html";
+    menu.querySelectorAll("a").forEach((link) => {
+      const href = link.getAttribute("href") || "";
+      if (href === currentPath) {
+        link.setAttribute("aria-current", "page");
+      }
+    });
+
     const closeMenu = () => {
       menu.classList.remove("open");
       document.body.classList.remove("menu-open");
