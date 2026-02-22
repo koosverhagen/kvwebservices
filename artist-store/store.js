@@ -153,6 +153,12 @@ function buildProductCard(product) {
   const meta = document.createElement("div");
   meta.className = "product-meta";
   meta.textContent = `${product.category} • ${product.description || "Artwork"}`;
+  if (
+    String(product.category || "").toLowerCase() === "print" &&
+    String(product.description || "").toLowerCase().includes("fine art print")
+  ) {
+    meta.title = "Print on A3 paper. Image size 250mm high.";
+  }
 
   const price = document.createElement("p");
   price.className = "product-price";
