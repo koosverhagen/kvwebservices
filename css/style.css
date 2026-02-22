@@ -177,6 +177,18 @@ section > h2:not(:first-child) {
   padding: 0 12px;
 }
 
+.menu-toggle:focus-visible {
+  outline: 2px solid rgba(37,99,235,0.45);
+  outline-offset: 2px;
+}
+
+.menu a[aria-current="page"] {
+  border-color: rgba(37,99,235,0.35);
+  background: rgba(37,99,235,0.10);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 @media (max-width: 930px) {
   .menu-toggle {
     display: inline-flex;
