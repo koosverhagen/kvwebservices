@@ -507,7 +507,17 @@ function wireEvents() {
     localStorage.setItem("kv_artist_checkout", JSON.stringify(checkoutPayload));
 
     const externalCartUrl = "https://artprinthub.com/index.php?rt=checkout/cart";
-    window.location.href = externalCartUrl;
+
+    cart.forEach((item) => {
+      const product = products.find((candidate) => candidate.id === item.id);
+      if (product) {
+        mirrorToExternalCart(product, item.quantity);
+      }
+    });
+
+    setTimeout(() => {
+      window.location.href = externalCartUrl;
+    }, 900);
   });
 }
 
