@@ -129,29 +129,53 @@ section > h2:not(:first-child) {
 .nav {
   display: flex;
   align-items: center;
+  position: relative;
 }
 
 .menu {
-  display: flex;
-  gap: 28px;
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,0.08);
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  z-index: 120;
 }
 
 .menu a {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,0.12);
+  background: #ffffff;
+  color: var(--text);
+  font-size: 14px;
   font-weight: 500;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.menu a:hover,
+.menu a:focus-visible {
+  border-color: rgba(15,23,42,0.18);
+  background: rgba(15,23,42,0.04);
 }
 
 .menu a[href="artist-store/index.html"] {
-  font-weight: 600;
+  border-color: rgba(37,99,235,0.35);
+  background: rgba(37,99,235,0.10);
   color: var(--accent);
-}
-
-/* Desktop separators */
-@media (min-width: 721px) {
-  .menu a:not(:last-child)::after {
-    content: "|";
-    margin-left: 28px;
-    color: var(--muted);
-  }
+  font-weight: 600;
 }
 
 /* =====================================================
@@ -159,44 +183,30 @@ section > h2:not(:first-child) {
 ===================================================== */
 
 .menu-toggle {
-  display: none;
-  font-size: 28px;
-  background: none;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(15,23,42,0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 0;
 }
 
-/* Mobile menu */
+.menu.open {
+  display: flex;
+}
+
 @media (max-width: 720px) {
-
-  .menu-toggle {
-    display: block;
-  }
-
   .menu {
-    display: none;
-    position: fixed;
-    top: 84px;
-    left: 16px;
-    right: 16px;
-
-    flex-direction: column;
-    gap: 20px;
-
-    padding: 26px;
-    border-radius: 26px;
-
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(20px);
-
-    border: 1px solid rgba(15,23,42,0.06);
-   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-
-  }
-
-  .menu.open {
-    display: flex;
+    left: 0;
+    right: 0;
+    min-width: 0;
   }
 }
 
