@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     window.addEventListener("resize", () => {
-      if (window.innerWidth > 850 && isOpen()) {
+      if (window.innerWidth > 930 && isOpen()) {
         closeMenu();
       }
     });

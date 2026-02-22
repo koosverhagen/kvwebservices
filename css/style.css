@@ -147,7 +147,7 @@ section > h2:not(:first-child) {
   font-weight: 600;
 }
 
-@media (min-width: 851px) {
+@media (min-width: 931px) {
   .menu a:not(:last-child)::after {
     content: "|";
     margin-left: 28px;
@@ -177,7 +177,7 @@ section > h2:not(:first-child) {
   padding: 0 12px;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 930px) {
   .nav {
     position: relative;
   }
