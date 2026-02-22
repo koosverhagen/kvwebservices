@@ -496,8 +496,16 @@ function wireEvents() {
   shippingSelectEl.addEventListener("change", renderCart);
 
   checkoutBtnEl.addEventListener("click", () => {
+    const checkoutItems = cart.map((item) => {
+      const product = products.find((candidate) => candidate.id === item.id);
+      return {
+        ...item,
+        externalProductId: product?.externalProductId || null
+      };
+    });
+
     const checkoutPayload = {
-      items: cart,
+      items: checkoutItems,
       promoCode: activePromo,
       shippingMethod: shippingSelectEl.value,
       shippingCost: shippingSelectEl.value === "express" ? settings.shippingExpress : settings.shippingStandard,
@@ -505,19 +513,7 @@ function wireEvents() {
       createdAt: new Date().toISOString()
     };
     localStorage.setItem("kv_artist_checkout", JSON.stringify(checkoutPayload));
-
-    const externalCartUrl = "https://artprinthub.com/index.php?rt=checkout/cart";
-
-    cart.forEach((item) => {
-      const product = products.find((candidate) => candidate.id === item.id);
-      if (product) {
-        mirrorToExternalCart(product, item.quantity);
-      }
-    });
-
-    setTimeout(() => {
-      window.location.href = externalCartUrl;
-    }, 900);
+    window.location.href = "checkout.html";
   });
 }
 

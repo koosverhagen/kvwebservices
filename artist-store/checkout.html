@@ -32,7 +32,7 @@
   <main class="container">
     <section class="section panel" style="padding: 24px; margin-top: 30px;">
       <h2>Checkout Details</h2>
-      <p>Enter customer details and continue to secure Stripe payment.</p>
+      <p>Confirm your details, then continue to Art Print Hub for secure payment.</p>
 
       <form id="checkout-form" class="form-grid">
         <input required name="name" placeholder="Full name">
@@ -40,7 +40,7 @@
         <input class="full" required name="address" id="shipping-address" list="address-suggestions" autocomplete="street-address" placeholder="Shipping address">
         <datalist id="address-suggestions"></datalist>
         <textarea class="full" name="notes" rows="4" placeholder="Order notes (optional)"></textarea>
-        <button class="btn full" type="submit">Continue to Stripe</button>
+        <button class="btn full" type="submit">Continue to Art Print Hub</button>
       </form>
 
       <div class="note">Address suggestions appear while typing. Best results: start with house number/name + street or postcode.</div>
@@ -50,7 +50,7 @@
         <div id="order-summary" class="muted" style="margin-top:8px;"></div>
       </div>
 
-      <div class="note">For multi-item carts with automated totals at payment, migrate to custom Stripe Checkout later. This phase uses a Payment Link flow.</div>
+      <div class="note">You will continue on Art Print Hub to review cart and complete payment securely.</div>
     </section>
   </main>
 
@@ -195,7 +195,7 @@
         };
 
         localStorage.setItem("kv_artist_last_order", JSON.stringify({ ...payload, customer, total }));
-        window.location.href = payload.settings.stripePaymentLink;
+        window.location.href = "https://artprinthub.com/index.php?rt=checkout/cart";
       });
     }
   </script>
