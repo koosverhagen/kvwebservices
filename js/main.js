@@ -51,6 +51,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && isOpen()) closeMenu();
     });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 850 && isOpen()) {
+        closeMenu();
+      }
+    });
   }
 
   /* =========================
