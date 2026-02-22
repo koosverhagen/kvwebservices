@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const menu = document.querySelector(".menu");
 
   if (toggle && menu) {
+    toggle.textContent = "☰ Menu";
+
     const closeMenu = () => {
       menu.classList.remove("open");
       document.body.classList.remove("menu-open");
