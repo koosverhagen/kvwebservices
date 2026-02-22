@@ -114,6 +114,7 @@ section > h2:not(:first-child) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 }
 
 .logo {
@@ -129,7 +130,7 @@ section > h2:not(:first-child) {
 .nav {
   display: flex;
   align-items: center;
-  position: relative;
+  position: static;
 }
 
 .menu {
@@ -186,16 +187,18 @@ section > h2:not(:first-child) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
+  width: auto;
+  min-width: 74px;
   height: 42px;
   border: 1px solid rgba(15,23,42,0.12);
   border-radius: 12px;
   background: #ffffff;
   color: var(--text);
-  font-size: 22px;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  padding: 0;
+  padding: 0 12px;
 }
 
 .menu.open {
