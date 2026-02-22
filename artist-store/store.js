@@ -157,7 +157,31 @@ function buildProductCard(product) {
     String(product.category || "").toLowerCase() === "print" &&
     String(product.description || "").toLowerCase().includes("fine art print")
   ) {
-    meta.title = "Print on A3 paper. Image size 250mm high.";
+    meta.classList.add("has-tooltip");
+    meta.setAttribute("data-tooltip", "Print on A3 paper. Image size 250mm high.");
+    meta.setAttribute("tabindex", "0");
+
+    meta.addEventListener("click", () => {
+      meta.classList.toggle("show-tooltip");
+    });
+
+    meta.addEventListener("blur", () => {
+      meta.classList.remove("show-tooltip");
+    });
+
+    meta.addEventListener("mouseleave", () => {
+      meta.classList.remove("show-tooltip");
+    });
+
+    meta.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        meta.classList.toggle("show-tooltip");
+      }
+      if (event.key === "Escape") {
+        meta.classList.remove("show-tooltip");
+      }
+    });
   }
 
   const price = document.createElement("p");

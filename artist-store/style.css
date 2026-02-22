@@ -464,6 +464,44 @@ textarea {
 .product-body { padding: 12px; }
 .product-title { margin: 0 0 4px; font-size: 16px; }
 .product-meta { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.product-meta.has-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  text-decoration: underline dotted rgba(71,85,105,0.55);
+  text-underline-offset: 2px;
+}
+
+.product-meta.has-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  max-width: 260px;
+  width: max-content;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: #ffffff;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.10);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 20;
+}
+
+.product-meta.has-tooltip:hover::after,
+.product-meta.has-tooltip:focus-visible::after,
+.product-meta.has-tooltip.show-tooltip::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .product-price { margin: 0 0 10px; font-weight: 700; }
 
 .row { display: flex; gap: 8px; }
