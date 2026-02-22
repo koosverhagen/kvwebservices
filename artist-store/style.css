@@ -285,6 +285,12 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: -0.02em;
 }
 
+.legacy-pricing {
+  margin: -4px 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .legacy-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -5,48 +5,48 @@ const SETTINGS_KEY = "kv_artist_settings";
 const defaultProducts = [
   {
     id: "art-1",
-    title: "Gentle Morning Walk",
-    category: "Original",
-    price: 480,
-    stock: 1,
+    title: "Hometime",
+    category: "Print",
+    price: 60,
+    stock: 12,
     image: "../images/abbie/abbie-art-001.webp",
-    description: "Original painting"
+    description: "Fine art print"
   },
   {
     id: "art-2",
-    title: "Quiet Field Study",
-    category: "Original",
-    price: 520,
-    stock: 1,
+    title: "The Four",
+    category: "Print",
+    price: 60,
+    stock: 12,
     image: "../images/abbie/abbie-art-002.webp",
-    description: "Original painting"
+    description: "Fine art print"
   },
   {
     id: "art-3",
-    title: "Companions",
-    category: "Original",
-    price: 560,
-    stock: 1,
+    title: "Going Home",
+    category: "Print",
+    price: 60,
+    stock: 12,
     image: "../images/abbie/abbie-art-003.webp",
-    description: "Original painting"
+    description: "Fine art print"
   },
   {
     id: "art-4",
-    title: "Blue Horizon",
+    title: "Debrief",
     category: "Print",
-    price: 75,
+    price: 60,
     stock: 12,
     image: "../images/abbie/abbie-art-004.webp",
-    description: "Signed giclée print"
+    description: "Fine art print"
   },
   {
     id: "art-5",
-    title: "Soft Light",
+    title: "Gone Away",
     category: "Print",
-    price: 68,
-    stock: 15,
+    price: 60,
+    stock: 12,
     image: "../images/abbie/abbie-art-005.webp",
-    description: "Open edition print"
+    description: "Fine art print"
   }
 ];
 
@@ -86,9 +86,20 @@ function loadProducts() {
 
   const shouldResetToAbbieDefaults =
     Array.isArray(parsed) &&
-    parsed.length <= 3 &&
-    parsed.every((product) => /^art-[1-3]$/.test(String(product.id || ""))) &&
-    parsed.some((product) => !product.image);
+    ((parsed.length <= 3 &&
+      parsed.every((product) => /^art-[1-3]$/.test(String(product.id || ""))) &&
+      parsed.some((product) => !product.image)) ||
+      (parsed.length === 5 &&
+        parsed.every((product) => /^art-[1-5]$/.test(String(product.id || ""))) &&
+        parsed.some((product) =>
+          [
+            "Gentle Morning Walk",
+            "Quiet Field Study",
+            "Companions",
+            "Blue Horizon",
+            "Soft Light"
+          ].includes(String(product.title || ""))
+        )));
 
   if (shouldResetToAbbieDefaults) {
     localStorage.setItem(PRODUCT_KEY, JSON.stringify(defaultProducts));
