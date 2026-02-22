@@ -237,7 +237,7 @@ section > h2:not(:first-child) {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 730px) {
   .menu {
     left: 0;
     right: 0;
