@@ -396,7 +396,7 @@ function mirrorToExternalCart(product, quantity) {
 
   const form = document.createElement("form");
   form.method = "POST";
-  form.action = "https://artprinthub.com/index.php?route=checkout/cart/add";
+  form.action = "https://artprinthub.com/index.php?rt=checkout/cart";
   form.target = "external-cart-mirror-frame";
   form.style.display = "none";
 
@@ -410,8 +410,14 @@ function mirrorToExternalCart(product, quantity) {
   quantityInput.name = "quantity";
   quantityInput.value = String(quantity || 1);
 
+  const redirectInput = document.createElement("input");
+  redirectInput.type = "hidden";
+  redirectInput.name = "redirect";
+  redirectInput.value = `https://artprinthub.com/index.php?rt=product/product&product_id=${product.externalProductId}`;
+
   form.appendChild(productIdInput);
   form.appendChild(quantityInput);
+  form.appendChild(redirectInput);
   document.body.appendChild(form);
   form.submit();
   form.remove();
@@ -500,8 +506,8 @@ function wireEvents() {
     };
     localStorage.setItem("kv_artist_checkout", JSON.stringify(checkoutPayload));
 
-    const externalCheckoutUrl = "https://artprinthub.com/index.php?route=checkout/checkout";
-    window.location.href = externalCheckoutUrl;
+    const externalCartUrl = "https://artprinthub.com/index.php?rt=checkout/cart";
+    window.location.href = externalCartUrl;
   });
 }
 
