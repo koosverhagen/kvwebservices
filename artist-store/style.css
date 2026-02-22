@@ -98,10 +98,14 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid rgba(15,23,42,0.08);
   background: rgba(255,255,255,0.96);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-  z-index: 45;
+  z-index: 120;
 }
 
 .abbie-nav.open .abbie-menu {
+  display: flex;
+}
+
+.abbie-nav:focus-within .abbie-menu {
   display: flex;
 }
 
