@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Artist Studio Manager</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260222-1">
 </head>
 <body>
   <header class="header">
@@ -13,7 +13,19 @@
         <img class="logo-mark" src="../images/abbie/abbie-art-logo2.webp" alt="Abbie at Heart logo">
         <span>Abbie at Heart Studio</span>
       </a>
-      <div class="header-links"><a href="../index.html" class="kv-home-link">← KV Web Services</a><a class="btn ghost" href="store.html">Buy Art</a></div>
+      <div class="header-links">
+        <a href="../index.html" class="kv-home-link">← KV Web Services</a>
+        <nav class="abbie-nav" aria-label="Abbie site navigation">
+          <button class="abbie-menu-toggle" type="button" aria-label="Open Abbie menu" aria-expanded="false" aria-controls="abbie-menu">Menu</button>
+          <div class="abbie-menu" id="abbie-menu">
+            <a href="index.html">Gallery</a>
+            <a href="about.html">About Abbie</a>
+            <a href="store.html">Buy Art</a>
+            <a href="commission.html">Commission Enquiry</a>
+            <a href="studio.html">Artist Studio</a>
+          </div>
+        </nav>
+      </div>
     </div>
   </header>
 
@@ -163,5 +175,6 @@
       renderProducts();
     })();
   </script>
+  <script src="menu.js?v=20260222-1"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Buy Art | Abbie at Heart</title>
   <meta name="description" content="Browse and buy Abbie at Heart artwork with on-site cart and checkout.">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260222-1">
 </head>
 <body>
   <header class="header">
@@ -16,8 +16,16 @@
       </a>
       <div class="header-links">
         <a href="../index.html" class="kv-home-link">← KV Web Services</a>
-        <a href="index.html" class="btn ghost">View Artwork</a>
-        <a href="commission.html" class="btn">Commission</a>
+        <nav class="abbie-nav" aria-label="Abbie site navigation">
+          <button class="abbie-menu-toggle" type="button" aria-label="Open Abbie menu" aria-expanded="false" aria-controls="abbie-menu">Menu</button>
+          <div class="abbie-menu" id="abbie-menu">
+            <a href="index.html">Gallery</a>
+            <a href="about.html">About Abbie</a>
+            <a href="store.html">Buy Art</a>
+            <a href="commission.html">Commission Enquiry</a>
+            <a href="studio.html">Artist Studio</a>
+          </div>
+        </nav>
       </div>
     </div>
   </header>
@@ -79,6 +87,7 @@
     </div>
   </footer>
 
+  <script src="menu.js?v=20260222-1"></script>
   <script src="store.js"></script>
 </body>
 </html>
