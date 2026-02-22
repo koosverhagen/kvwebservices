@@ -323,7 +323,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 0;
 }
 
 .image-lightbox[hidden] {
@@ -331,11 +331,11 @@ a { color: inherit; text-decoration: none; }
 }
 
 .image-lightbox img {
-  max-width: min(96vw, 1400px);
-  max-height: 90vh;
+  max-width: min(100vw, 1400px);
+  max-height: 100vh;
   width: auto;
   height: auto;
-  border-radius: 14px;
+  border-radius: 0;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
