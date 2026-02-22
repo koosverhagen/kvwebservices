@@ -9,43 +9,151 @@ const defaultProducts = [
     category: "Print",
     price: 60,
     stock: 12,
-    image: "../images/abbie/abbie-art-001.webp",
+    image: "../images/abbie/legacy/two_horses_jpg-100486-600x600.jpg",
     description: "Fine art print"
   },
   {
     id: "art-2",
-    title: "The Four",
+    title: "Horse and Hound",
     category: "Print",
     price: 60,
     stock: 12,
-    image: "../images/abbie/abbie-art-002.webp",
+    image: "../images/abbie/legacy/horse_and_hound_green_jpg-100488-600x600.jpg",
     description: "Fine art print"
   },
   {
     id: "art-3",
-    title: "Going Home",
+    title: "The Four",
     category: "Print",
     price: 60,
     stock: 12,
-    image: "../images/abbie/abbie-art-003.webp",
+    image: "../images/abbie/legacy/four_riders_jpg-100487-600x600.jpg",
     description: "Fine art print"
   },
   {
     id: "art-4",
-    title: "Debrief",
+    title: "Two Friends",
     category: "Print",
     price: 60,
     stock: 12,
-    image: "../images/abbie/abbie-art-004.webp",
+    image: "../images/abbie/legacy/Two_Friends_jpg-100504-600x600.jpg",
     description: "Fine art print"
   },
   {
     id: "art-5",
+    title: "Going Home",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/rider_and_hounds_jpg-100484-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-6",
+    title: "Grey on Maroon",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Grey_on_Maroon_jpg-100501-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-7",
+    title: "Debrief",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/three_gents_and_dogs_jpg-100485-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-8",
+    title: "Stable Mates",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Stable_Mates_jpg-100503-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-9",
     title: "Gone Away",
     category: "Print",
     price: 60,
     stock: 12,
-    image: "../images/abbie/abbie-art-005.webp",
+    image: "../images/abbie/legacy/hunt_and_fox_jpg-100482-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-10",
+    title: "Four Ready",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Four_Ready_jpg-100500-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-11",
+    title: "Black on Red",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Black_on_Red_jpg-100498-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-12",
+    title: "Friends",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Horse_dog_right_jpg-100481-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-13",
+    title: "Hound Show",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Hound_Show_jpg-100502-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-14",
+    title: "Chestnut on Green",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Chestnut_on_Green_jpg-100499-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-15",
+    title: "Bay on Orange",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Bay_on_Orange_jpg-100497-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-16",
+    title: "Leave It",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/ladies_and_dogs_jpg-100483-600x600.jpg",
+    description: "Fine art print"
+  },
+  {
+    id: "art-17",
+    title: "Ukraine",
+    category: "Print",
+    price: 60,
+    stock: 12,
+    image: "../images/abbie/legacy/Ukraine_jpg-100513-600x600.jpg",
     description: "Fine art print"
   }
 ];
@@ -84,22 +192,24 @@ function loadProducts() {
   }
   const parsed = JSON.parse(raw);
 
-  const shouldResetToAbbieDefaults =
-    Array.isArray(parsed) &&
-    ((parsed.length <= 3 &&
-      parsed.every((product) => /^art-[1-3]$/.test(String(product.id || ""))) &&
-      parsed.some((product) => !product.image)) ||
-      (parsed.length === 5 &&
-        parsed.every((product) => /^art-[1-5]$/.test(String(product.id || ""))) &&
-        parsed.some((product) =>
-          [
-            "Gentle Morning Walk",
-            "Quiet Field Study",
-            "Companions",
-            "Blue Horizon",
-            "Soft Light"
-          ].includes(String(product.title || ""))
-        )));
+  const isOld3ItemSeed =
+    parsed.length <= 3 &&
+    parsed.every((product) => /^art-[1-3]$/.test(String(product.id || ""))) &&
+    parsed.some((product) => !product.image);
+
+  const isOld5ItemSeed =
+    parsed.length === 5 &&
+    parsed.every((product) => /^art-[1-5]$/.test(String(product.id || ""))) &&
+    parsed.some((product) =>
+      ["Gentle Morning Walk", "Quiet Field Study", "Companions", "Blue Horizon", "Soft Light"].includes(
+        String(product.title || "")
+      )
+    );
+
+  const isShortAbbieSeed =
+    parsed.length < defaultProducts.length && parsed.every((product) => /^art-\d+$/.test(String(product.id || "")));
+
+  const shouldResetToAbbieDefaults = Array.isArray(parsed) && (isOld3ItemSeed || isOld5ItemSeed || isShortAbbieSeed);
 
   if (shouldResetToAbbieDefaults) {
     localStorage.setItem(PRODUCT_KEY, JSON.stringify(defaultProducts));
