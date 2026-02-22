@@ -134,49 +134,25 @@ section > h2:not(:first-child) {
 }
 
 .menu {
-  display: none;
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 240px;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  padding: 10px;
-  border-radius: 16px;
-  border: 1px solid rgba(15,23,42,0.08);
-  background: rgba(255,255,255,0.96);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-  z-index: 120;
+  display: flex;
+  gap: 28px;
 }
 
 .menu a {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(15,23,42,0.12);
-  background: #ffffff;
-  color: var(--text);
-  font-size: 14px;
   font-weight: 500;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-}
-
-.menu a:hover,
-.menu a:focus-visible {
-  border-color: rgba(15,23,42,0.18);
-  background: rgba(15,23,42,0.04);
 }
 
 .menu a[href="artist-store/index.html"] {
-  border-color: rgba(37,99,235,0.35);
-  background: rgba(37,99,235,0.10);
   color: var(--accent);
   font-weight: 600;
+}
+
+@media (min-width: 851px) {
+  .menu a:not(:last-child)::after {
+    content: "|";
+    margin-left: 28px;
+    color: var(--muted);
+  }
 }
 
 /* =====================================================
@@ -184,7 +160,7 @@ section > h2:not(:first-child) {
 ===================================================== */
 
 .menu-toggle {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   width: auto;
@@ -201,8 +177,64 @@ section > h2:not(:first-child) {
   padding: 0 12px;
 }
 
-.menu.open {
-  display: flex;
+@media (max-width: 850px) {
+  .nav {
+    position: relative;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 240px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(15,23,42,0.08);
+    background: rgba(255,255,255,0.96);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    z-index: 120;
+  }
+
+  .menu.open {
+    display: flex;
+  }
+
+  .menu a {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: #ffffff;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  }
+
+  .menu a:hover,
+  .menu a:focus-visible {
+    border-color: rgba(15,23,42,0.18);
+    background: rgba(15,23,42,0.04);
+  }
+
+  .menu a[href="artist-store/index.html"] {
+    border-color: rgba(37,99,235,0.35);
+    background: rgba(37,99,235,0.10);
+    color: var(--accent);
+    font-weight: 600;
+  }
 }
 
 @media (max-width: 720px) {
