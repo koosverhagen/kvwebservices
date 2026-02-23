@@ -126,8 +126,6 @@ const vehicles = [
 ];
 window.vehicles = vehicles;
 
-const fleetGrid = document.getElementById("fleet-grid");
-const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
 const availabilityResults = document.getElementById("availability-results");
