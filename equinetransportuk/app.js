@@ -130,7 +130,6 @@ const fleetGrid = document.getElementById("fleet-grid");
 const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
-const durationDaysInput = document.getElementById("duration-days");
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
@@ -160,7 +159,6 @@ const clearAdminBtn = document.getElementById("clear-admin");
 
 let selectedAvailability = null;
 
-document.getElementById("year").textContent = String(new Date().getFullYear());
 
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
