@@ -326,11 +326,13 @@ function renderFleet() {
     card.tabIndex = 0;
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", `View details for ${vehicle.name}`);
+    // Fix label for 'no living' for 7.5T 4 Horses No Living
+    const livingLabel = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
     card.innerHTML = `
       <img src="${vehicle.image}" alt="${vehicle.name}">
       <div class="fleet-content">
         <h3>${vehicle.name}</h3>
-        <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${vehicle.overnight ? "living" : "no living"}</p>
+        <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${livingLabel}</p>
         <p class="muted tiny">${vehicle.summary || ""}</p>
         <p><strong>From £${vehicle.dayRate}</strong> / day</p>
         ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
@@ -364,9 +366,10 @@ function openFleetModal(vehicleId) {
   }) || [vehicle.image.replace("images/", "")];
 
   fleetModalGallery.innerHTML = imageFiles.map(img => `<img src="images/${img}" alt="${vehicle.name}">`).join("");
+  const livingLabelModal = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
   fleetModalInfo.innerHTML = `
     <h3>${vehicle.name}</h3>
-    <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${vehicle.overnight ? "living" : "no living"}</p>
+    <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${livingLabelModal}</p>
     <p class="muted tiny">${vehicle.summary || ""}</p>
     <p><strong>From £${vehicle.dayRate}</strong> / day</p>
     ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
