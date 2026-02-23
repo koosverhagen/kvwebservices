@@ -328,8 +328,25 @@ function renderFleet() {
     card.setAttribute("aria-label", `View details for ${vehicle.name}`);
     // Fix label for 'no living' for 7.5T 4 Horses No Living
     const livingLabel = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
+    // Find all images for this lorry
+    const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
+    const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
+    const imageFiles = window.fleetImages?.filter(img => {
+      return (code && img.startsWith(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
+    }) || [vehicle.image.replace("images/", "")];
+    // Slideshow markup
+    const slideshowId = `slideshow-${vehicle.id}`;
+    const slideshow = `
+      <div class="fleet-slideshow" id="${slideshowId}">
+        <button class="fleet-slide-prev" aria-label="Previous image">&#8592;</button>
+        <div class="fleet-slide-img-wrap">
+          <img src="images/${imageFiles[0]}" alt="${vehicle.name}" class="fleet-slide-img">
+        </div>
+        <button class="fleet-slide-next" aria-label="Next image">&#8594;</button>
+      </div>
+    `;
     card.innerHTML = `
-      <img src="${vehicle.image}" alt="${vehicle.name}">
+      ${slideshow}
       <div class="fleet-content">
         <h3>${vehicle.name}</h3>
         <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${livingLabel}</p>
@@ -338,10 +355,36 @@ function renderFleet() {
         ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
         ${vehicle.pricingModel === "75_living_rules" ? '<p class="muted tiny">1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</p>' : ''}
         ${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
+        <button class="btn fleet-card-book" data-lorry-id="${vehicle.id}">Book this Lorry</button>
       </div>
     `;
-    card.addEventListener("click", () => openFleetModal(vehicle.id));
+    // Slideshow logic
+    setTimeout(() => {
+      const slideImgs = imageFiles;
+      let idx = 0;
+      const wrap = document.getElementById(slideshowId);
+      if (!wrap) return;
+      const imgEl = wrap.querySelector('.fleet-slide-img');
+      const prevBtn = wrap.querySelector('.fleet-slide-prev');
+      const nextBtn = wrap.querySelector('.fleet-slide-next');
+      function updateImg() {
+        imgEl.src = `images/${slideImgs[idx]}`;
+      }
+      prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
+      nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
+    }, 0);
+    // Only open modal if not clicking the Book button or slideshow controls
+    card.addEventListener("click", (e) => {
+      if (e.target.closest('.fleet-card-book') || e.target.closest('.fleet-slide-prev') || e.target.closest('.fleet-slide-next')) return;
+      openFleetModal(vehicle.id);
+    });
     card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { openFleetModal(vehicle.id); }});
+    // Book button logic
+    card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById("selected-lorry").value = vehicle.name;
+      window.location.hash = "#booking";
+    });
     fleetGrid.appendChild(card);
   });
 }
