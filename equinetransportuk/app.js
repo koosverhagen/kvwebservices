@@ -10,8 +10,8 @@ const STRIPE_PAYMENT_LINK_35T = "";
 const STRIPE_PAYMENT_LINK_75T = "";
 const OUTSTANDING_PAYMENT_LINK = "";
 const DEPOSIT_PAYMENT_LINK = "";
-const FORM_LINK_A = "";
-const FORM_LINK_B = "";
+const FORM_LINK_A = "https://www.equinetransportuk.com/shortformsubmit";
+const FORM_LINK_B = "https://www.equinetransportuk.com/longformsubmit";
 const BACKEND_API_BASE = "";
 
 const vehicles = [
@@ -78,6 +78,7 @@ const customerEmailInput = document.getElementById("customer-email");
 const customerMobileInput = document.getElementById("customer-mobile");
 const customerAddressInput = document.getElementById("customer-address");
 const customerDobInput = document.getElementById("customer-dob");
+const hiredWithin3MonthsInput = document.getElementById("hired-within-3-months");
 const dartfordEnabledInput = document.getElementById("dartford-enabled");
 const dartfordCountInput = document.getElementById("dartford-count");
 const earlyPickupEnabledInput = document.getElementById("early-pickup-enabled");
@@ -99,6 +100,29 @@ document.getElementById("year").textContent = String(new Date().getFullYear());
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
   return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
+}
+
+function generateNumericBookingId(existingIds = new Set()) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const suffix = String(Math.floor(Math.random() * 1000000)).padStart(6, "0");
+    const candidate = `19${suffix}`;
+    if (!existingIds.has(candidate)) return candidate;
+  }
+
+  return `19${String(Date.now()).slice(-6)}`;
+}
+
+function buildFormUrl(baseUrl, bookingId) {
+  if (!baseUrl) return "";
+
+  try {
+    const url = new URL(baseUrl);
+    url.searchParams.set("bookingID", bookingId);
+    return url.toString();
+  } catch {
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${separator}bookingID=${encodeURIComponent(bookingId)}`;
+  }
 }
 
 function getBookings() {
@@ -261,6 +285,7 @@ function updateCheckoutSummary() {
   const hireTotal = calculateHireTotal(selectedAvailability.baseCost, crossingsCount, earlyPickupEnabled);
   const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+  const requiredFormType = hiredWithin3MonthsInput.checked ? "Short Form" : "Long Form";
 
   checkoutSummary.innerHTML = `
     ${selectedAvailability.vehicle.name}<br>
@@ -269,6 +294,7 @@ function updateCheckoutSummary() {
     Early pickup: £${earlyPickupCharge.toFixed(2)}${earlyPickupEnabled ? " (evening before)" : ""}<br>
     <strong>Hire total: £${hireTotal.toFixed(2)}</strong><br>
     Pay now to confirm: £${confirmationFee.toFixed(2)} · Outstanding later: £${outstandingAmount.toFixed(2)}<br>
+    Required hire form: ${requiredFormType}<br>
     Security deposit link (day before): £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)}
   `;
 }
@@ -337,6 +363,8 @@ function renderAdminBookings() {
           <td>${booking.dartfordCrossings}</td>
           <td>£${booking.confirmationFee.toFixed(2)}</td>
           <td>£${booking.outstandingAmount.toFixed(2)}</td>
+          <td>${booking.requiredFormType === "short" ? "Short" : "Long"}</td>
+          <td>${booking.requiredFormLink ? `<a href="${escapeHtml(booking.requiredFormLink)}" target="_blank" rel="noopener">Open form</a>` : "—"}</td>
           <td>${booking.status}</td>
           <td>${formatDateTime(booking.reminderAt)}</td>
         </tr>
@@ -358,6 +386,8 @@ function renderAdminBookings() {
           <th>Crossings</th>
           <th>Paid Now</th>
           <th>Outstanding</th>
+          <th>Required Form</th>
+          <th>Form Link</th>
           <th>Status</th>
           <th>Reminder</th>
         </tr>
@@ -390,7 +420,7 @@ function downloadFile(content, filename, mimeType) {
 function exportAdminCsv() {
   const bookings = getBookings().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const lines = [
-    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Status,Reminder At,Outstanding Link,Deposit Link,Form A,Form B,Created"
+    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Outstanding Link,Deposit Link,Form A,Form B,Created"
   ];
 
   if (!bookings.length) {
@@ -416,6 +446,8 @@ function exportAdminCsv() {
           `£${booking.confirmationFee.toFixed(2)}`,
           `£${booking.outstandingAmount.toFixed(2)}`,
           `£${booking.depositAmount.toFixed(2)}`,
+          booking.requiredFormType === "short" ? "Short" : "Long",
+          booking.requiredFormLink,
           booking.status,
           formatDateTime(booking.reminderAt),
           booking.outstandingPaymentLink,
@@ -556,6 +588,7 @@ function resetBookingCustomerFields() {
   customerMobileInput.value = "";
   customerAddressInput.value = "";
   customerDobInput.value = "";
+  hiredWithin3MonthsInput.checked = false;
   dartfordEnabledInput.checked = false;
   dartfordCountInput.value = "1";
   dartfordCountInput.disabled = true;
@@ -591,6 +624,7 @@ dartfordEnabledInput.addEventListener("change", () => {
 
 dartfordCountInput.addEventListener("input", updateCheckoutSummary);
 earlyPickupEnabledInput.addEventListener("change", updateCheckoutSummary);
+hiredWithin3MonthsInput.addEventListener("change", updateCheckoutSummary);
 
 bookingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -618,9 +652,17 @@ bookingForm.addEventListener("submit", async (event) => {
   const hireTotal = calculateHireTotal(selectedAvailability.baseCost, dartfordCrossings, earlyPickup);
   const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+  const hiredWithinLast3Months = hiredWithin3MonthsInput.checked;
+  const requiredFormType = hiredWithinLast3Months ? "short" : "long";
+
+  const existingIds = new Set(getBookings().map((item) => String(item.id)));
+  const bookingId = generateNumericBookingId(existingIds);
+  const shortFormLink = buildFormUrl(FORM_LINK_A, bookingId);
+  const longFormLink = buildFormUrl(FORM_LINK_B, bookingId);
+  const requiredFormLink = requiredFormType === "short" ? shortFormLink : longFormLink;
 
   const booking = {
-    id: crypto.randomUUID(),
+    id: bookingId,
     vehicleId: selectedAvailability.vehicle.id,
     vehicleSnapshot: {
       id: selectedAvailability.vehicle.id,
@@ -647,8 +689,11 @@ bookingForm.addEventListener("submit", async (event) => {
     reminderAt: getReminderAt(selectedAvailability.pickupAt.toISOString()),
     outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
     depositLink: DEPOSIT_PAYMENT_LINK,
-    formLinkA: FORM_LINK_A,
-    formLinkB: FORM_LINK_B,
+    formLinkA: shortFormLink,
+    formLinkB: longFormLink,
+    requiredFormType,
+    requiredFormLink,
+    hiredWithinLast3Months,
     createdAt: new Date().toISOString()
   };
 

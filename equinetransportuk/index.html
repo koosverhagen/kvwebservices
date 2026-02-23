@@ -64,6 +64,17 @@
 					<h3>2) Your booking details</h3>
 					<p class="muted">Complete customer details and checkout options for the selected lorry.</p>
 
+					<div class="hire-form-info">
+						<h4>Hire Form Required</h4>
+						<p class="muted">After booking, you will receive an email with a secure link to your required hire form.</p>
+						<ul>
+							<li><strong>Hired within last 3 months:</strong> Short Form</li>
+							<li><strong>More than 3 months ago:</strong> Long Form</li>
+							<li>Submit your <strong>DVLA licence check code</strong> inside the form</li>
+						</ul>
+						<p class="muted tiny">Before collection: outstanding balance, refundable deposit hold, completed forms in the driver’s name, and proof of address are required.</p>
+					</div>
+
 					<form id="booking-form" class="form-grid">
 						<label class="full">Selected lorry
 							<input id="selected-lorry" type="text" readonly placeholder="Choose a lorry from availability results">
@@ -92,6 +103,11 @@
 						</label>
 						<label class="full">Address
 							<textarea id="customer-address" rows="3" required></textarea>
+						</label>
+
+						<label class="full checkline">
+							<input id="hired-within-3-months" type="checkbox">
+							<span>I have hired with Equine Transport UK in the last 3 months (use short form)</span>
 						</label>
 
 						<label class="full checkline">

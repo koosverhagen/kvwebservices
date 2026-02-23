@@ -213,6 +213,28 @@ textarea { min-height: 100px; }
   margin-top: 3px;
 }
 
+.hire-form-info {
+  margin: 12px 0 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.hire-form-info h4 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.hire-form-info ul {
+  margin: 10px 0;
+  padding-left: 18px;
+}
+
+.hire-form-info li {
+  margin: 6px 0;
+}
+
 .quote {
   background: #f0f5ff;
   border: 1px solid #cad9ff;
