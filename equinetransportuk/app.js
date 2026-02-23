@@ -1,6 +1,18 @@
 const STORAGE_BOOKINGS = "equinetransportuk_bookings";
 const DARTFORD_CROSSING_PRICE = 4.2;
+const EARLY_PICKUP_PRICE = 20;
+const CONFIRMATION_FEE_35T = 70;
+const CONFIRMATION_FEE_75T = 100;
+const SECURITY_DEPOSIT_AMOUNT = 200;
 const DEFAULT_PICKUP_TIME = "09:00";
+
+const STRIPE_PAYMENT_LINK_35T = "";
+const STRIPE_PAYMENT_LINK_75T = "";
+const OUTSTANDING_PAYMENT_LINK = "";
+const DEPOSIT_PAYMENT_LINK = "";
+const FORM_LINK_A = "";
+const FORM_LINK_B = "";
+const BACKEND_API_BASE = "";
 
 const vehicles = [
   {
@@ -68,6 +80,7 @@ const customerAddressInput = document.getElementById("customer-address");
 const customerDobInput = document.getElementById("customer-dob");
 const dartfordEnabledInput = document.getElementById("dartford-enabled");
 const dartfordCountInput = document.getElementById("dartford-count");
+const earlyPickupEnabledInput = document.getElementById("early-pickup-enabled");
 const checkoutSummary = document.getElementById("checkout-summary");
 const bookingSubmitBtn = document.getElementById("booking-submit");
 const bookingSuccess = document.getElementById("booking-success");
@@ -82,6 +95,11 @@ const clearAdminBtn = document.getElementById("clear-admin");
 let selectedAvailability = null;
 
 document.getElementById("year").textContent = String(new Date().getFullYear());
+
+function apiUrl(path) {
+  if (!BACKEND_API_BASE) return path;
+  return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
+}
 
 function getBookings() {
   return JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
@@ -118,6 +136,14 @@ function overlaps(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }
 
+function is35T(vehicle) {
+  return vehicle.type.toLowerCase().includes("3.5");
+}
+
+function getConfirmationFee(vehicle) {
+  return is35T(vehicle) ? CONFIRMATION_FEE_35T : CONFIRMATION_FEE_75T;
+}
+
 function calculateBaseCost(vehicle, durationDays) {
   return vehicle.dayRate * durationDays;
 }
@@ -126,8 +152,18 @@ function calculateCrossingCharge(crossingsCount) {
   return crossingsCount * DARTFORD_CROSSING_PRICE;
 }
 
-function calculateTotalCost(baseCost, crossingsCount) {
-  return baseCost + calculateCrossingCharge(crossingsCount);
+function calculateEarlyPickupCharge(enabled) {
+  return enabled ? EARLY_PICKUP_PRICE : 0;
+}
+
+function calculateHireTotal(baseCost, crossingsCount, earlyPickupEnabled) {
+  return baseCost + calculateCrossingCharge(crossingsCount) + calculateEarlyPickupCharge(earlyPickupEnabled);
+}
+
+function getReminderAt(pickupAtIso) {
+  const reminderDate = new Date(pickupAtIso);
+  reminderDate.setDate(reminderDate.getDate() - 1);
+  return reminderDate.toISOString();
 }
 
 function renderFleet() {
@@ -162,7 +198,7 @@ function buildAvailability(vehicle, pickupDate, durationDays) {
 
 function isVehicleAvailable(vehicleId, pickupDate, durationDays) {
   const candidate = buildAvailability({ id: vehicleId, dayRate: 0 }, pickupDate, durationDays);
-  const vehicleBookings = getBookings().filter((booking) => booking.vehicleId === vehicleId);
+  const vehicleBookings = getBookings().filter((booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled");
 
   return !vehicleBookings.some((booking) => {
     const existingStart = new Date(booking.pickupAt);
@@ -190,12 +226,14 @@ function renderAvailabilityResults(items) {
 
   const html = items
     .map((item) => {
+      const confirmationFee = getConfirmationFee(item.vehicle);
       return `
         <article class="availability-item">
           <div>
             <h4>${item.vehicle.name}</h4>
             <p class="muted">${formatDateOnly(item.pickupDate)} · ${item.durationDays} day(s)</p>
-            <p><strong>£${item.baseCost.toFixed(2)}</strong></p>
+            <p><strong>Hire from £${item.baseCost.toFixed(2)}</strong></p>
+            <p class="muted tiny">Pay now to confirm: £${confirmationFee.toFixed(2)}</p>
           </div>
           <button class="btn choose-lorry" type="button" data-vehicle-id="${item.vehicle.id}">Select</button>
         </article>
@@ -217,14 +255,21 @@ function updateCheckoutSummary() {
 
   const dartfordEnabled = dartfordEnabledInput.checked;
   const crossingsCount = dartfordEnabled ? Math.max(1, Number(dartfordCountInput.value || 1)) : 0;
+  const earlyPickupEnabled = earlyPickupEnabledInput.checked;
   const crossingCharge = calculateCrossingCharge(crossingsCount);
-  const total = calculateTotalCost(selectedAvailability.baseCost, crossingsCount);
+  const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
+  const hireTotal = calculateHireTotal(selectedAvailability.baseCost, crossingsCount, earlyPickupEnabled);
+  const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
   checkoutSummary.innerHTML = `
     ${selectedAvailability.vehicle.name}<br>
     Base hire: £${selectedAvailability.baseCost.toFixed(2)}<br>
     Dartford crossings: £${crossingCharge.toFixed(2)}${dartfordEnabled ? ` (${crossingsCount} crossing${crossingsCount === 1 ? "" : "s"})` : ""}<br>
-    <strong>Total to checkout: £${total.toFixed(2)}</strong>
+    Early pickup: £${earlyPickupCharge.toFixed(2)}${earlyPickupEnabled ? " (evening before)" : ""}<br>
+    <strong>Hire total: £${hireTotal.toFixed(2)}</strong><br>
+    Pay now to confirm: £${confirmationFee.toFixed(2)} · Outstanding later: £${outstandingAmount.toFixed(2)}<br>
+    Security deposit link (day before): £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)}
   `;
 }
 
@@ -261,8 +306,9 @@ function renderBookings() {
           <strong>${vehicle?.name || booking.vehicleId}</strong><br>
           ${formatDateTime(booking.pickupAt)} → ${formatDateTime(booking.dropoffAt)}<br>
           ${booking.customerName} · ${booking.customerEmail}<br>
-          <span class="muted">Dartford: ${booking.dartfordCrossings} crossing${booking.dartfordCrossings === 1 ? "" : "s"} (£${booking.crossingCharge.toFixed(2)})</span><br>
-          <span class="muted">Total: £${booking.total.toFixed(2)}</span>
+          <span class="muted">Status: ${booking.status}</span><br>
+          <span class="muted">Paid now: £${booking.confirmationFee.toFixed(2)} · Outstanding: £${booking.outstandingAmount.toFixed(2)}</span><br>
+          <span class="muted">Total hire: £${booking.hireTotal.toFixed(2)}</span>
         </article>
       `;
     })
@@ -287,9 +333,12 @@ function renderAdminBookings() {
           <td>${booking.customerMobile}</td>
           <td>${formatDateTime(booking.pickupAt)}</td>
           <td>${booking.durationDays} day(s)</td>
+          <td>${booking.earlyPickup ? "Yes" : "No"}</td>
           <td>${booking.dartfordCrossings}</td>
-          <td>£${booking.total.toFixed(2)}</td>
-          <td>${formatDateTime(booking.createdAt)}</td>
+          <td>£${booking.confirmationFee.toFixed(2)}</td>
+          <td>£${booking.outstandingAmount.toFixed(2)}</td>
+          <td>${booking.status}</td>
+          <td>${formatDateTime(booking.reminderAt)}</td>
         </tr>
       `;
     })
@@ -305,9 +354,12 @@ function renderAdminBookings() {
           <th>Mobile</th>
           <th>Pickup</th>
           <th>Duration</th>
+          <th>Early</th>
           <th>Crossings</th>
-          <th>Total</th>
-          <th>Created</th>
+          <th>Paid Now</th>
+          <th>Outstanding</th>
+          <th>Status</th>
+          <th>Reminder</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -338,11 +390,11 @@ function downloadFile(content, filename, mimeType) {
 function exportAdminCsv() {
   const bookings = getBookings().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const lines = [
-    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Dartford Crossings,Crossing Charge,Total,Created"
+    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Status,Reminder At,Outstanding Link,Deposit Link,Form A,Form B,Created"
   ];
 
   if (!bookings.length) {
-    lines.push("No bookings saved,,,,,,,,,,,,,");
+    lines.push("No bookings saved,,,,,,,,,,,,,,,,,,,,,,");
   } else {
     bookings.forEach((booking) => {
       const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
@@ -358,9 +410,18 @@ function exportAdminCsv() {
           formatDateTime(booking.pickupAt),
           formatDateTime(booking.dropoffAt),
           booking.durationDays,
+          booking.earlyPickup ? "Yes" : "No",
           booking.dartfordCrossings,
-          `£${booking.crossingCharge.toFixed(2)}`,
-          `£${booking.total.toFixed(2)}`,
+          `£${booking.hireTotal.toFixed(2)}`,
+          `£${booking.confirmationFee.toFixed(2)}`,
+          `£${booking.outstandingAmount.toFixed(2)}`,
+          `£${booking.depositAmount.toFixed(2)}`,
+          booking.status,
+          formatDateTime(booking.reminderAt),
+          booking.outstandingPaymentLink,
+          booking.depositLink,
+          booking.formLinkA,
+          booking.formLinkB,
           formatDateTime(booking.createdAt)
         ]
           .map(csvEscape)
@@ -395,16 +456,17 @@ function exportAdminPdf() {
               <td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td>
               <td>${escapeHtml(booking.customerName)}</td>
               <td>${escapeHtml(booking.customerEmail)}</td>
-              <td>${escapeHtml(booking.customerMobile)}</td>
               <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
               <td>${escapeHtml(String(booking.durationDays))}</td>
-              <td>${escapeHtml(String(booking.dartfordCrossings))}</td>
-              <td>${escapeHtml(`£${booking.total.toFixed(2)}`)}</td>
+              <td>${escapeHtml(booking.earlyPickup ? "Yes" : "No")}</td>
+              <td>${escapeHtml(`£${booking.confirmationFee.toFixed(2)}`)}</td>
+              <td>${escapeHtml(`£${booking.outstandingAmount.toFixed(2)}`)}</td>
+              <td>${escapeHtml(booking.status)}</td>
             </tr>
           `;
         })
         .join("")
-    : "<tr><td colspan='8'>No bookings saved.</td></tr>";
+    : "<tr><td colspan='9'>No bookings saved.</td></tr>";
 
   const reportHtml = `
     <!doctype html>
@@ -430,11 +492,12 @@ function exportAdminPdf() {
               <th>Vehicle</th>
               <th>Name</th>
               <th>Email</th>
-              <th>Mobile</th>
               <th>Pickup</th>
               <th>Duration</th>
-              <th>Crossings</th>
-              <th>Total</th>
+              <th>Early</th>
+              <th>Paid Now</th>
+              <th>Outstanding</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -454,6 +517,50 @@ function exportAdminPdf() {
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
+}
+
+async function notifyBackend(booking, phase) {
+  try {
+    await fetch(apiUrl("/api/bookings/automation"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phase, booking })
+    });
+  } catch (error) {
+    console.warn("Automation endpoint unavailable.", error);
+  }
+}
+
+async function createStripeCheckoutSession(booking) {
+  try {
+    const response = await fetch(apiUrl("/api/bookings/create-checkout-session"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ booking })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data?.checkoutUrl) return data.checkoutUrl;
+    }
+  } catch (error) {
+    console.warn("Stripe session endpoint unavailable.", error);
+  }
+
+  return is35T(booking.vehicleSnapshot) ? STRIPE_PAYMENT_LINK_35T : STRIPE_PAYMENT_LINK_75T;
+}
+
+function resetBookingCustomerFields() {
+  customerNameInput.value = "";
+  customerEmailInput.value = "";
+  customerMobileInput.value = "";
+  customerAddressInput.value = "";
+  customerDobInput.value = "";
+  dartfordEnabledInput.checked = false;
+  dartfordCountInput.value = "1";
+  dartfordCountInput.disabled = true;
+  earlyPickupEnabledInput.checked = false;
+  updateCheckoutSummary();
 }
 
 availabilityForm.addEventListener("submit", (event) => {
@@ -483,8 +590,9 @@ dartfordEnabledInput.addEventListener("change", () => {
 });
 
 dartfordCountInput.addEventListener("input", updateCheckoutSummary);
+earlyPickupEnabledInput.addEventListener("change", updateCheckoutSummary);
 
-bookingForm.addEventListener("submit", (event) => {
+bookingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!selectedAvailability) {
@@ -504,12 +612,21 @@ bookingForm.addEventListener("submit", (event) => {
   }
 
   const dartfordCrossings = dartfordEnabledInput.checked ? Math.max(1, Number(dartfordCountInput.value || 1)) : 0;
+  const earlyPickup = earlyPickupEnabledInput.checked;
   const crossingCharge = calculateCrossingCharge(dartfordCrossings);
-  const total = calculateTotalCost(selectedAvailability.baseCost, dartfordCrossings);
+  const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickup);
+  const hireTotal = calculateHireTotal(selectedAvailability.baseCost, dartfordCrossings, earlyPickup);
+  const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
   const booking = {
     id: crypto.randomUUID(),
     vehicleId: selectedAvailability.vehicle.id,
+    vehicleSnapshot: {
+      id: selectedAvailability.vehicle.id,
+      name: selectedAvailability.vehicle.name,
+      type: selectedAvailability.vehicle.type
+    },
     pickupAt: selectedAvailability.pickupAt.toISOString(),
     dropoffAt: selectedAvailability.dropoffAt.toISOString(),
     durationDays: selectedAvailability.durationDays,
@@ -520,7 +637,18 @@ bookingForm.addEventListener("submit", (event) => {
     customerDob: customerDobInput.value,
     dartfordCrossings,
     crossingCharge,
-    total,
+    earlyPickup,
+    earlyPickupCharge,
+    hireTotal,
+    confirmationFee,
+    outstandingAmount,
+    depositAmount: SECURITY_DEPOSIT_AMOUNT,
+    status: "pending_confirmation_payment",
+    reminderAt: getReminderAt(selectedAvailability.pickupAt.toISOString()),
+    outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
+    depositLink: DEPOSIT_PAYMENT_LINK,
+    formLinkA: FORM_LINK_A,
+    formLinkB: FORM_LINK_B,
     createdAt: new Date().toISOString()
   };
 
@@ -531,20 +659,21 @@ bookingForm.addEventListener("submit", (event) => {
   renderBookings();
   renderAdminBookings();
 
+  await notifyBackend(booking, "booking_created");
+
+  const checkoutUrl = await createStripeCheckoutSession(booking);
+  if (!checkoutUrl) {
+    alert("Stripe checkout link is not configured yet. Add your Stripe links or backend session endpoint in app.js.");
+    return;
+  }
+
   bookingSuccess.hidden = false;
   setTimeout(() => {
     bookingSuccess.hidden = true;
   }, 2500);
 
-  customerNameInput.value = "";
-  customerEmailInput.value = "";
-  customerMobileInput.value = "";
-  customerAddressInput.value = "";
-  customerDobInput.value = "";
-  dartfordEnabledInput.checked = false;
-  dartfordCountInput.value = "1";
-  dartfordCountInput.disabled = true;
-  updateCheckoutSummary();
+  resetBookingCustomerFields();
+  window.location.href = checkoutUrl;
 });
 
 refreshAdminBtn.addEventListener("click", renderAdminBookings);

@@ -102,10 +102,16 @@
 							<input id="dartford-count" type="number" min="1" step="1" value="1" disabled>
 						</label>
 
+						<label class="full checkline">
+							<input id="early-pickup-enabled" type="checkbox">
+							<span>Add early pickup (evening before) £20.00</span>
+						</label>
+
 						<div id="checkout-summary" class="quote full">Select an available lorry to continue.</div>
-						<button id="booking-submit" class="btn full" type="submit">Book now</button>
+						<p class="muted tiny full">Checkout is via Stripe. Confirmation payment due now: £70 for 3.5t, £100 for 7.5t.</p>
+						<button id="booking-submit" class="btn full" type="submit">Continue to Stripe checkout</button>
 					</form>
-					<div id="booking-success" class="success" hidden>Booking saved successfully.</div>
+					<div id="booking-success" class="success" hidden>Checkout started. Complete payment in Stripe to confirm booking.</div>
 				</article>
 			</div>
 		</section>
