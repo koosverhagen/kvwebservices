@@ -383,8 +383,12 @@ function renderFleet() {
       function updateImg() {
         imgEl.src = `images/${slideImgs[idx]}`;
       }
-      prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
-      nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
+      if (prevBtn) {
+        prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
+      }
+      if (nextBtn) {
+        nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
+      }
     }, 0);
     // Remove modal opening on card click
     // Add overlay click handler
