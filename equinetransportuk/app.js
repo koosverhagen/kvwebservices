@@ -6,6 +6,48 @@ const CONFIRMATION_FEE_75T = 100;
 const SECURITY_DEPOSIT_AMOUNT = 200;
 const DEFAULT_PICKUP_TIME = "09:00";
 
+const RATE_35T_TOTALS = {
+  "0.5": 70,
+  "1": 100,
+  "2": 190,
+  "3": 285,
+  "4": 380,
+  "5": 475,
+  "6": 570,
+  "7": 665
+};
+
+const RATE_75_LIVING_TOTALS = {
+  "1": 175,
+  "2": 350,
+  "3": 525,
+  "4": 700,
+  "5": 875,
+  "6": 1050,
+  "7": 1225
+};
+
+const DURATION_HOURS_35T = {
+  "0.5": 6,
+  "1": 12,
+  "2": 36,
+  "3": 50,
+  "4": 96,
+  "5": 120,
+  "6": 144,
+  "7": 168
+};
+
+const DURATION_HOURS_75T = {
+  "1": 12,
+  "2": 36,
+  "3": 50,
+  "4": 96,
+  "5": 120,
+  "6": 144,
+  "7": 168
+};
+
 const STRIPE_PAYMENT_LINK_35T = "";
 const STRIPE_PAYMENT_LINK_75T = "";
 const OUTSTANDING_PAYMENT_LINK = "";
@@ -17,54 +59,73 @@ const BACKEND_API_BASE = "";
 const vehicles = [
   {
     id: "v35-1",
-    name: "3.5T Stallion Layout",
+    name: "3.5T Safety Bar Lorry",
+    code: "LS23",
     type: "3.5 tonne",
+    horses: 2,
     seats: 3,
     overnight: false,
-    dayRate: 165,
-    image: "https://static.wixstatic.com/media/a9ff84_68faf662eaf24511a7711c29c377127a~mv2.webp/v1/fill/w_590,h_716,al_c,q_85,enc_avif,quality_auto/3_5%20Tonne%20Horsebox%20Stallion%20Equine%20Transport%20UK6%20(1)%20(1)%20(1)%20(1)_upscayl_2x_upscayl-lite-4.webp"
+    dayRate: 100,
+    pricingModel: "35_duration_rules",
+    summary: "Rear-facing 2-horse lorry with externally releasable safety breast bar, tack/changing room, horse/reverse cameras and ventilation.",
+    image: "images/lorry-ls23.webp"
   },
   {
     id: "v35-2",
-    name: "3.5T Rear-Facing Layout",
+    name: "3.5T Stallion Lorry",
+    code: "MM68",
     type: "3.5 tonne",
+    horses: 2,
     seats: 3,
     overnight: false,
-    dayRate: 175,
-    image: "https://static.wixstatic.com/media/a9ff84_a4985901fe1d4fac9683121f46650de1~mv2.webp/v1/fill/w_598,h_404,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/IMG_0968%20(1)%20(1)%20(1)_upscayl_2x_upscayl-lite-4x%20(1)%20(1).webp"
+    dayRate: 100,
+    pricingModel: "35_duration_rules",
+    summary: "Back-facing 2-horse stallion layout with high partitions, no breast bar, horse/reverse cameras, roof vent and windows.",
+    image: "images/lorry-mm68.webp"
   },
   {
     id: "v35-3",
-    name: "3.5T Premium Travel Layout",
+    name: "3.5T Breast Bar Lorry",
+    code: "CA21",
     type: "3.5 tonne",
+    horses: 2,
     seats: 3,
     overnight: false,
-    dayRate: 185,
-    image: "https://static.wixstatic.com/media/a9ff84_873b9f6d7d644b10851d5b664a1afe85~mv2.webp/v1/fill/w_960,h_720,al_c,q_85,enc_avif,quality_auto/7_edited%20(1)%20(1)%20(1)_upscayl_2x_upscayl-lite-4x.webp"
+    dayRate: 100,
+    pricingModel: "35_duration_rules",
+    summary: "Back-facing 2-horse lorry with adjustable breast bar, tack/changing room, horse/reverse cameras and roof ventilation.",
+    image: "images/lorry-ca21.webp"
   },
   {
     id: "v75-1",
-    name: "7.5T with Living Layout A",
+    name: "7.5T 3 Horse with Living",
     type: "7.5 tonne",
+    horses: 3,
     seats: 3,
     overnight: true,
-    dayRate: 245,
-    image: "https://static.wixstatic.com/media/a9ff84_4e06d95c65794b30aca861a5c4827af7~mv2.webp/v1/fill/w_425,h_567,al_c,lg_1,q_80,enc_avif,quality_auto/7_5T%20Horsebox%20with%20living%20Equine%20Transport%20UK%20003%20(1).webp"
+    dayRate: 175,
+    pricingModel: "75_living_rules",
+    summary: "High-end 3-horse 7.5T with living space, focused on comfort, reliability and practical long-day transport.",
+    image: "images/lorry-75-living.webp"
   },
   {
     id: "v75-2",
-    name: "7.5T with Living Layout B",
+    name: "7.5T 4 Horses No Living",
     type: "7.5 tonne",
+    horses: 4,
     seats: 3,
     overnight: true,
-    dayRate: 260,
-    image: "https://static.wixstatic.com/media/a9ff84_82c45cb343c94a279f00d7fbd7af16ab~mv2.webp/v1/fill/w_497,h_432,al_c,lg_1,q_80,enc_avif,quality_auto/7_5T%20Horsebox%20with%20living%20Equine%20Transport%20UK%20008%20(1)%20(1).webp"
+    dayRate: 165,
+    pricingModel: "75_no_living_rules",
+    summary: "Practical 4-horse 7.5T with large tack area, built for functional multi-horse transport without living section.",
+    image: "images/lorry-75-noliving.webp"
   }
 ];
 
 const fleetGrid = document.getElementById("fleet-grid");
 const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
+const pickupTimeInput = document.getElementById("pickup-time");
 const durationDaysInput = document.getElementById("duration-days");
 const availabilityResults = document.getElementById("availability-results");
 
@@ -143,6 +204,12 @@ function addDays(date, days) {
   return output;
 }
 
+function addHours(date, hours) {
+  const output = new Date(date);
+  output.setHours(output.getHours() + hours);
+  return output;
+}
+
 function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -168,8 +235,65 @@ function getConfirmationFee(vehicle) {
   return is35T(vehicle) ? CONFIRMATION_FEE_35T : CONFIRMATION_FEE_75T;
 }
 
-function calculateBaseCost(vehicle, durationDays) {
-  return vehicle.dayRate * durationDays;
+function getDurationKey(durationDays) {
+  return String(Number(durationDays || 0));
+}
+
+function formatDurationLabel(durationDays) {
+  const numeric = Number(durationDays || 0);
+  if (numeric === 0.5) return "1/2 day";
+  if (numeric === 7) return "Week";
+  if (numeric === 1) return "1 day";
+  return `${numeric} days`;
+}
+
+function isWeekendDate(date) {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+function getDurationHours(vehicle, durationDays) {
+  const key = getDurationKey(durationDays);
+  const map = vehicle.pricingModel === "35_duration_rules" ? DURATION_HOURS_35T : DURATION_HOURS_75T;
+  const fallback = Number(durationDays || 1) * 24;
+  return map[key] || fallback;
+}
+
+function supportsDuration(vehicle, durationDays) {
+  const key = getDurationKey(durationDays);
+  if (vehicle.pricingModel === "35_duration_rules") {
+    return Boolean(DURATION_HOURS_35T[key]);
+  }
+  return Boolean(DURATION_HOURS_75T[key]);
+}
+
+function calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime) {
+  const duration = Number(durationDays || 0);
+  const durationKey = getDurationKey(duration);
+  const startDate = asDate(pickupDate, pickupTime);
+  const isWeekendStart = isWeekendDate(startDate);
+
+  if (vehicle.pricingModel === "35_duration_rules") {
+    const mapped = RATE_35T_TOTALS[durationKey];
+    if (mapped != null) return mapped;
+    return 100 * Math.max(1, duration);
+  }
+
+  if (vehicle.pricingModel === "75_living_rules") {
+    let total = RATE_75_LIVING_TOTALS[durationKey] ?? (175 * Math.max(1, duration));
+    if (isWeekendStart && duration === 1) total = Math.max(total, 200);
+    if (isWeekendStart && duration === 2) total = Math.max(total, 400);
+    return total;
+  }
+
+  if (vehicle.pricingModel === "75_no_living_rules") {
+    let total = 165 * Math.max(1, duration);
+    if (isWeekendStart && duration === 1) total = Math.max(total, 175);
+    if (isWeekendStart && duration === 2) total = Math.max(total, 350);
+    return total;
+  }
+
+  return vehicle.dayRate * Math.max(1, duration);
 }
 
 function calculateCrossingCharge(crossingsCount) {
@@ -199,29 +323,40 @@ function renderFleet() {
       <img src="${vehicle.image}" alt="${vehicle.name}">
       <div class="fleet-content">
         <h3>${vehicle.name}</h3>
-        <p class="muted">${vehicle.type} · ${vehicle.seats} seats · ${vehicle.overnight ? "living" : "day layout"}</p>
+        <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${vehicle.overnight ? "living" : "no living"}</p>
+        <p class="muted tiny">${vehicle.summary || ""}</p>
         <p><strong>From £${vehicle.dayRate}</strong> / day</p>
+        ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
+        ${vehicle.pricingModel === "75_living_rules" ? '<p class="muted tiny">1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</p>' : ''}
+        ${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
       </div>
     `;
     fleetGrid.appendChild(card);
   });
 }
 
-function buildAvailability(vehicle, pickupDate, durationDays) {
-  const pickupAt = asDate(pickupDate);
-  const dropoffAt = addDays(pickupAt, durationDays);
+function buildAvailability(vehicle, pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
+  const pickupAt = asDate(pickupDate, pickupTime);
+  const durationHours = getDurationHours(vehicle, durationDays);
+  const dropoffAt = addHours(pickupAt, durationHours);
   return {
     vehicle,
     pickupDate,
+    pickupTime,
     durationDays,
+    durationHours,
     pickupAt,
     dropoffAt,
-    baseCost: calculateBaseCost(vehicle, durationDays)
+    baseCost: calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime)
   };
 }
 
-function isVehicleAvailable(vehicleId, pickupDate, durationDays) {
-  const candidate = buildAvailability({ id: vehicleId, dayRate: 0 }, pickupDate, durationDays);
+function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
+  const vehicle = vehicles.find((item) => item.id === vehicleId);
+  if (!vehicle) return false;
+  if (!supportsDuration(vehicle, durationDays)) return false;
+
+  const candidate = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
   const vehicleBookings = getBookings().filter((booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled");
 
   return !vehicleBookings.some((booking) => {
@@ -231,10 +366,11 @@ function isVehicleAvailable(vehicleId, pickupDate, durationDays) {
   });
 }
 
-function getAvailableLorries(pickupDate, durationDays) {
+function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
   return vehicles
-    .filter((vehicle) => isVehicleAvailable(vehicle.id, pickupDate, durationDays))
-    .map((vehicle) => buildAvailability(vehicle, pickupDate, durationDays));
+    .filter((vehicle) => supportsDuration(vehicle, durationDays))
+    .filter((vehicle) => isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime))
+    .map((vehicle) => buildAvailability(vehicle, pickupDate, durationDays, pickupTime));
 }
 
 function renderAvailabilityResults(items) {
@@ -255,7 +391,7 @@ function renderAvailabilityResults(items) {
         <article class="availability-item">
           <div>
             <h4>${item.vehicle.name}</h4>
-            <p class="muted">${formatDateOnly(item.pickupDate)} · ${item.durationDays} day(s)</p>
+            <p class="muted">${item.vehicle.code ? `${item.vehicle.code} · ` : ""}${formatDateOnly(item.pickupDate)} ${item.pickupTime} · ${formatDurationLabel(item.durationDays)}</p>
             <p><strong>Hire from £${item.baseCost.toFixed(2)}</strong></p>
             <p class="muted tiny">Pay now to confirm: £${confirmationFee.toFixed(2)}</p>
           </div>
@@ -301,15 +437,16 @@ function updateCheckoutSummary() {
 
 function selectAvailability(vehicleId) {
   const pickupDate = pickupDateInput.value;
+  const pickupTime = pickupTimeInput.value || DEFAULT_PICKUP_TIME;
   const durationDays = Number(durationDaysInput.value);
   const vehicle = vehicles.find((item) => item.id === vehicleId);
-  if (!vehicle || !pickupDate || durationDays < 1) return;
+  if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) return;
 
-  selectedAvailability = buildAvailability(vehicle, pickupDate, durationDays);
+  selectedAvailability = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
 
   selectedLorryInput.value = vehicle.name;
-  selectedPickupInput.value = formatDateOnly(pickupDate);
-  selectedDurationInput.value = `${durationDays} day(s)`;
+  selectedPickupInput.value = `${formatDateOnly(pickupDate)} ${pickupTime}`;
+  selectedDurationInput.value = formatDurationLabel(durationDays);
   selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
 
   bookingSuccess.hidden = true;
@@ -331,6 +468,7 @@ function renderBookings() {
         <article class="booking-item">
           <strong>${vehicle?.name || booking.vehicleId}</strong><br>
           ${formatDateTime(booking.pickupAt)} → ${formatDateTime(booking.dropoffAt)}<br>
+          <span class="muted">Duration: ${formatDurationLabel(booking.durationDays)}</span><br>
           ${booking.customerName} · ${booking.customerEmail}<br>
           <span class="muted">Status: ${booking.status}</span><br>
           <span class="muted">Paid now: £${booking.confirmationFee.toFixed(2)} · Outstanding: £${booking.outstandingAmount.toFixed(2)}</span><br>
@@ -358,7 +496,7 @@ function renderAdminBookings() {
           <td>${booking.customerEmail}</td>
           <td>${booking.customerMobile}</td>
           <td>${formatDateTime(booking.pickupAt)}</td>
-          <td>${booking.durationDays} day(s)</td>
+          <td>${formatDurationLabel(booking.durationDays)}</td>
           <td>${booking.earlyPickup ? "Yes" : "No"}</td>
           <td>${booking.dartfordCrossings}</td>
           <td>£${booking.confirmationFee.toFixed(2)}</td>
@@ -489,7 +627,7 @@ function exportAdminPdf() {
               <td>${escapeHtml(booking.customerName)}</td>
               <td>${escapeHtml(booking.customerEmail)}</td>
               <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
-              <td>${escapeHtml(String(booking.durationDays))}</td>
+              <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
               <td>${escapeHtml(booking.earlyPickup ? "Yes" : "No")}</td>
               <td>${escapeHtml(`£${booking.confirmationFee.toFixed(2)}`)}</td>
               <td>${escapeHtml(`£${booking.outstandingAmount.toFixed(2)}`)}</td>
@@ -600,14 +738,15 @@ availabilityForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const pickupDate = pickupDateInput.value;
+  const pickupTime = pickupTimeInput.value || DEFAULT_PICKUP_TIME;
   const durationDays = Number(durationDaysInput.value);
 
-  if (!pickupDate || Number.isNaN(durationDays) || durationDays < 1) {
+  if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
     availabilityResults.innerHTML = '<p class="empty-note">Enter a valid pickup date and duration.</p>';
     return;
   }
 
-  const availableLorries = getAvailableLorries(pickupDate, durationDays);
+  const availableLorries = getAvailableLorries(pickupDate, durationDays, pickupTime);
   renderAvailabilityResults(availableLorries);
 });
 
@@ -637,7 +776,8 @@ bookingForm.addEventListener("submit", async (event) => {
   const stillAvailable = isVehicleAvailable(
     selectedAvailability.vehicle.id,
     selectedAvailability.pickupDate,
-    selectedAvailability.durationDays
+    selectedAvailability.durationDays,
+    selectedAvailability.pickupTime
   );
 
   if (!stillAvailable) {
@@ -672,6 +812,8 @@ bookingForm.addEventListener("submit", async (event) => {
     pickupAt: selectedAvailability.pickupAt.toISOString(),
     dropoffAt: selectedAvailability.dropoffAt.toISOString(),
     durationDays: selectedAvailability.durationDays,
+    durationHours: selectedAvailability.durationHours,
+    pickupTime: selectedAvailability.pickupTime,
     customerName: customerNameInput.value,
     customerEmail: customerEmailInput.value,
     customerMobile: customerMobileInput.value,
