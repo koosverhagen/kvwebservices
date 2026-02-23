@@ -4,7 +4,10 @@ const EARLY_PICKUP_PRICE = 20;
 const CONFIRMATION_FEE_35T = 70;
 const CONFIRMATION_FEE_75T = 100;
 const SECURITY_DEPOSIT_AMOUNT = 200;
-const DEFAULT_PICKUP_TIME = "09:00";
+const DEFAULT_PICKUP_TIME = "07:00";
+const HALF_DAY_PICKUP_TIMES_35T = ["07:00", "13:00"];
+const HALF_DAY_DROPOFF_TIMES_35T = {"07:00": "13:00", "13:00": "19:00"};
+const FULL_DAY_DROPOFF_TIME = "19:00";
 
 const RATE_35T_TOTALS = {
   "0.5": 70,
@@ -335,19 +338,43 @@ function renderFleet() {
   });
 }
 
-function buildAvailability(vehicle, pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
-  const pickupAt = asDate(pickupDate, pickupTime);
-  const durationHours = getDurationHours(vehicle, durationDays);
-  const dropoffAt = addHours(pickupAt, durationHours);
+function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) {
+  let actualPickupTime = pickupTime;
+  let dropoffTime = FULL_DAY_DROPOFF_TIME;
+  let durationHours = getDurationHours(vehicle, durationDays);
+  // 1/2 day logic for 3.5T only
+  if (is35T(vehicle) && Number(durationDays) === 0.5) {
+    // If pickupTime not specified or invalid, default to 07:00
+    if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
+      actualPickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
+    }
+    dropoffTime = HALF_DAY_DROPOFF_TIMES_35T[actualPickupTime];
+    durationHours = 6; // 6 hours for half day
+  } else {
+    // For 1 day or more, always 07:00 pickup, 19:00 drop-off
+    actualPickupTime = DEFAULT_PICKUP_TIME;
+    dropoffTime = FULL_DAY_DROPOFF_TIME;
+    // durationHours already set by getDurationHours
+  }
+  const pickupAt = asDate(pickupDate, actualPickupTime);
+  // Drop-off is always same day for 1/2 day, else pickup + duration or set to 19:00
+  let dropoffAt;
+  if (is35T(vehicle) && Number(durationDays) === 0.5) {
+    dropoffAt = asDate(pickupDate, dropoffTime);
+  } else {
+    // For 1 day or more, drop-off is pickupDate at 19:00 plus (durationDays-1) days
+    const dropoffDate = addDays(pickupAt, Math.max(0, Number(durationDays) - 1));
+    dropoffAt = asDate(dropoffDate.toISOString().slice(0,10), dropoffTime);
+  }
   return {
     vehicle,
     pickupDate,
-    pickupTime,
+    pickupTime: actualPickupTime,
     durationDays,
     durationHours,
     pickupAt,
     dropoffAt,
-    baseCost: calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime)
+    baseCost: calculateBaseCost(vehicle, durationDays, pickupDate, actualPickupTime)
   };
 }
 
@@ -437,15 +464,24 @@ function updateCheckoutSummary() {
 
 function selectAvailability(vehicleId) {
   const pickupDate = pickupDateInput.value;
-  const pickupTime = pickupTimeInput.value || DEFAULT_PICKUP_TIME;
+  let pickupTime = pickupTimeInput.value;
   const durationDays = Number(durationDaysInput.value);
   const vehicle = vehicles.find((item) => item.id === vehicleId);
   if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) return;
 
+  // For 1/2 day 3.5T, restrict pickupTime to allowed slots
+  if (is35T(vehicle) && durationDays === 0.5) {
+    if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
+      pickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
+    }
+  } else {
+    pickupTime = DEFAULT_PICKUP_TIME;
+  }
+
   selectedAvailability = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
 
   selectedLorryInput.value = vehicle.name;
-  selectedPickupInput.value = `${formatDateOnly(pickupDate)} ${pickupTime}`;
+  selectedPickupInput.value = `${formatDateOnly(pickupDate)} ${selectedAvailability.pickupTime}`;
   selectedDurationInput.value = formatDurationLabel(durationDays);
   selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
 
