@@ -418,46 +418,59 @@ const fleetModalBook = fleetModal.querySelector(".fleet-modal-book");
 function openFleetModal(vehicleId) {
   const vehicle = vehicles.find(v => v.id === vehicleId);
   if (!vehicle) return;
-  // Find all images for this lorry
+  // Find all images for this lorry and rotate them in the modal overlay
   const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
   const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
   // Build image list by matching files in images/ that start with code or baseName
-  const imageFiles = window.fleetImages?.filter(img => {
-    return (code && img.startsWith(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
+  let imageFiles = window.fleetImages?.filter(img => {
+    // Match by code (e.g. LS23, MM68, CA21) or by lorry type in filename
+    return (code && img.includes(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
   }) || [vehicle.image.replace("images/", "")];
 
-  // Show only image slideshow/gallery in modal overlay
+  // If no images found, fallback to vehicle.image
+  if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
+    imageFiles = [vehicle.image.replace(/^images\//, "")];
+  }
   // Always prefix with images/ if not already
-  let modalImageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
-  fleetModalGallery.innerHTML = modalImageFiles.map((img, idx) => `
-    <img src="${img}" alt="${vehicle.name} image ${idx+1}" style="max-width: 90vw; max-height: 80vh; display: ${idx === 0 ? 'block' : 'none'}; margin: 0 auto;" class="fleet-modal-img">
-  `).join("");
+  imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
+
+  // Modal gallery markup
+  let galleryHtml = '';
+  imageFiles.forEach((img, idx) => {
+    galleryHtml += `<img src="${img}" alt="${vehicle.name} image ${idx+1}" style="max-width: 90vw; max-height: 80vh; display: ${idx === 0 ? 'block' : 'none'}; margin: 0 auto;" class="fleet-modal-img">`;
+  });
+  // Add slideshow controls if multiple images
+  if (imageFiles.length > 1) {
+    galleryHtml += `<button class="fleet-modal-prev" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:10;font-size:2rem;">&#8592;</button>`;
+    galleryHtml += `<button class="fleet-modal-next" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:10;font-size:2rem;">&#8594;</button>`;
+  }
+  fleetModalGallery.innerHTML = galleryHtml;
+
   // Hide info and booking button in overlay
   if (typeof fleetModalInfo !== 'undefined' && fleetModalInfo) fleetModalInfo.innerHTML = "";
   if (typeof fleetModalBook !== 'undefined' && fleetModalBook) fleetModalBook.style.display = "none";
-  // Optionally add slideshow controls if multiple images
-  if (modalImageFiles.length > 1) {
+
+  // Slideshow logic for modal
+  if (imageFiles.length > 1) {
     let currentIdx = 0;
     const imgs = fleetModalGallery.querySelectorAll('.fleet-modal-img');
-    const prevBtn = document.createElement('button');
-    prevBtn.textContent = '←';
-    prevBtn.className = 'fleet-modal-prev';
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = '→';
-    nextBtn.className = 'fleet-modal-next';
-    prevBtn.onclick = () => {
-      imgs[currentIdx].style.display = 'none';
+    const prevBtn = fleetModalGallery.querySelector('.fleet-modal-prev');
+    const nextBtn = fleetModalGallery.querySelector('.fleet-modal-next');
+    function showImg(idx) {
+      imgs.forEach((img, i) => { img.style.display = i === idx ? 'block' : 'none'; });
+    }
+    prevBtn.onclick = (e) => {
+      e.stopPropagation();
       currentIdx = (currentIdx - 1 + imgs.length) % imgs.length;
-      imgs[currentIdx].style.display = 'block';
+      showImg(currentIdx);
     };
-    nextBtn.onclick = () => {
-      imgs[currentIdx].style.display = 'none';
+    nextBtn.onclick = (e) => {
+      e.stopPropagation();
       currentIdx = (currentIdx + 1) % imgs.length;
-      imgs[currentIdx].style.display = 'block';
+      showImg(currentIdx);
     };
-    fleetModalGallery.appendChild(prevBtn);
-    fleetModalGallery.appendChild(nextBtn);
   }
+
   fleetModal.style.display = "flex";
   fleetModal.style.position = "fixed";
   fleetModal.style.top = "0";
