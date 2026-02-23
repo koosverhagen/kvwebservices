@@ -696,12 +696,16 @@ async function sendConfirmationEmail(env, booking) {
   const requiredFormLabel = booking.requiredFormType === "short"
     ? "Short Form (hired within the last 3 months)"
     : "Long Form (more than 3 months ago)";
+  const durationLabel = getDurationLabel(booking.durationDays);
+  const pickupLabel = formatBookingDateTime(booking.pickupAt);
+  const dropoffLabel = formatBookingDateTime(booking.dropoffAt);
   const html = `
     <h2>Your booking is confirmed</h2>
     <p>Thank you ${escapeHtml(booking.customerName)}.</p>
     <p>Your lorry: <strong>${escapeHtml(booking.vehicleSnapshot?.name || booking.vehicleId)}</strong></p>
-    <p>Pickup: ${escapeHtml(booking.pickupAt)}</p>
-    <p>Drop-off: ${escapeHtml(booking.dropoffAt)}</p>
+    <p>Pickup: ${escapeHtml(pickupLabel)}</p>
+    <p>Drop-off: ${escapeHtml(dropoffLabel)}</p>
+    <p>Duration: ${escapeHtml(durationLabel)}</p>
     <p>Total hire: £${Number(booking.hireTotal || 0).toFixed(2)}</p>
     <p>Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}</p>
     <h3>Hire form required</h3>
@@ -723,9 +727,15 @@ async function sendReminderEmail(env, booking) {
   const requiredFormLabel = booking.requiredFormType === "short"
     ? "Short Form (hired within the last 3 months)"
     : "Long Form (more than 3 months ago)";
+  const durationLabel = getDurationLabel(booking.durationDays);
+  const pickupLabel = formatBookingDateTime(booking.pickupAt);
+  const dropoffLabel = formatBookingDateTime(booking.dropoffAt);
   const html = `
     <h2>Booking reminder: action required</h2>
     <p>Your pickup is tomorrow for <strong>${escapeHtml(booking.vehicleSnapshot?.name || booking.vehicleId)}</strong>.</p>
+    <p>Pickup: ${escapeHtml(pickupLabel)}</p>
+    <p>Drop-off: ${escapeHtml(dropoffLabel)}</p>
+    <p>Booked duration: ${escapeHtml(durationLabel)}</p>
     <p>Outstanding balance: £${Number(booking.outstandingAmount || 0).toFixed(2)}</p>
     <p>Security deposit: £${Number(booking.depositAmount || 200).toFixed(2)}</p>
     <p><a href="${escapeHtml(booking.outstandingPaymentLink || "")}">Pay outstanding balance</a></p>
@@ -877,6 +887,40 @@ async function stripeGetPaymentIntent(env, paymentIntentId) {
 function bookingIdFromMetadata(metadata) {
   if (!metadata) return null;
   return metadata.booking_id || metadata.bookingID || null;
+}
+
+function getDurationLabel(durationDays) {
+  const duration = Number(durationDays || 0);
+  if (duration === 0.5) return "1/2 day";
+  if (duration === 7) return "week";
+  if (duration === 1) return "1 day";
+  if (!duration) return "Not specified";
+  return `${duration} days`;
+}
+
+function formatBookingDateTime(value) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return String(value || "Not specified");
+
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+
+  const get = (type) => parts.find((part) => part.type === type)?.value || "";
+  const weekday = get("weekday");
+  const day = get("day");
+  const month = get("month");
+  const year = get("year");
+  const hour = get("hour");
+  const minute = get("minute");
+
+  return `${weekday} ${day}/${month}/${year} ${hour}:${minute}`.trim();
 }
 
 function buildDepositLink(env, booking) {

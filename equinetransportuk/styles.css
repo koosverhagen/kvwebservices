@@ -39,10 +39,22 @@ body {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--text);
   text-decoration: none;
   font-weight: 700;
   letter-spacing: .01em;
+}
+
+.brand-logo {
+  width: 54px;
+  height: 30px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
 }
 
 .main-nav {
@@ -336,6 +348,19 @@ textarea { min-height: 100px; }
   font-size: 14px;
 }
 
+.terms-card h3 {
+  margin: 14px 0 8px;
+}
+
+.terms-card ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+}
+
+.terms-card li {
+  margin: 5px 0;
+}
+
 .site-footer {
   border-top: 1px solid var(--line);
   margin-top: 24px;
@@ -357,6 +382,7 @@ textarea { min-height: 100px; }
 
 @media (max-width: 720px) {
   .main-nav { gap: 12px; font-size: 14px; }
+  .brand span { display: none; }
   .fleet-grid,
   .booking-list,
   .form-grid {

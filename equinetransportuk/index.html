@@ -10,7 +10,10 @@
 <body>
 	<header class="site-header">
 		<div class="container header-inner">
-			<a class="brand" href="#top">Equine Transport UK</a>
+			<a class="brand" href="#top" aria-label="Equine Transport UK home">
+				<img class="brand-logo" src="images/logo.png" alt="Equine Transport UK logo">
+				<span>Equine Transport UK</span>
+			</a>
 			<nav class="main-nav" aria-label="Main navigation">
 				<a href="#fleet">Fleet</a>
 				<a href="#booking">Book</a>
@@ -31,7 +34,7 @@
 						<a class="btn ghost" href="#fleet">View fleet</a>
 					</div>
 				</div>
-				<img class="hero-image" src="https://static.wixstatic.com/media/a9ff84_203a196cbe82461bad0c2ca3263ebcc0%7Emv2_d_3000_1571_s_2.jpeg/v1/fit/w_2500,h_1330,al_c/a9ff84_203a196cbe82461bad0c2ca3263ebcc0%7Emv2_d_3000_1571_s_2.jpeg" alt="Horsebox on route">
+				<img class="hero-image" src="images/hero.jpg" alt="Horsebox on route">
 			</div>
 		</section>
 
@@ -47,16 +50,63 @@
 			<div class="container booking-grid">
 				<article class="card">
 					<h3>1) Check availability</h3>
-					<p class="muted">Choose pickup date and duration to see available lorries and pricing.</p>
+					<p class="muted">Choose pickup date, pickup time, and a preset duration to see available lorries and pricing.</p>
 					<form id="availability-form" class="form-grid">
 						<label>Pickup date
 							<input id="pickup-date" type="date" required>
 						</label>
-						<label>Duration (days)
-							<input id="duration-days" type="number" min="1" max="30" step="1" value="1" required>
+						<label>Pickup time
+							<select id="pickup-time" required>
+								<option value="07:00">07:00</option>
+								<option value="07:15">07:15</option>
+								<option value="07:30">07:30</option>
+								<option value="07:45">07:45</option>
+								<option value="08:00">08:00</option>
+								<option value="08:15">08:15</option>
+								<option value="08:30">08:30</option>
+								<option value="08:45">08:45</option>
+								<option value="09:00" selected>09:00</option>
+								<option value="09:15">09:15</option>
+								<option value="09:30">09:30</option>
+								<option value="09:45">09:45</option>
+								<option value="10:00">10:00</option>
+								<option value="10:15">10:15</option>
+								<option value="10:30">10:30</option>
+								<option value="10:45">10:45</option>
+								<option value="11:00">11:00</option>
+								<option value="11:15">11:15</option>
+								<option value="11:30">11:30</option>
+								<option value="11:45">11:45</option>
+								<option value="12:00">12:00</option>
+								<option value="12:15">12:15</option>
+								<option value="12:30">12:30</option>
+								<option value="12:45">12:45</option>
+								<option value="13:00">13:00</option>
+								<option value="13:15">13:15</option>
+								<option value="13:30">13:30</option>
+								<option value="13:45">13:45</option>
+								<option value="14:00">14:00</option>
+								<option value="14:15">14:15</option>
+								<option value="14:30">14:30</option>
+								<option value="14:45">14:45</option>
+								<option value="15:00">15:00</option>
+							</select>
+						</label>
+						<label>Rental duration
+							<select id="duration-days" required>
+								<option value="0.5">1/2 Day</option>
+								<option value="1" selected>1 Day</option>
+								<option value="2">2 Days</option>
+								<option value="3">3 Days</option>
+								<option value="4">4 Days</option>
+								<option value="5">5 Days</option>
+								<option value="6">6 Days</option>
+								<option value="7">Week</option>
+							</select>
 						</label>
 						<button class="btn full" type="submit">Find available lorries</button>
 					</form>
+					<p class="muted tiny">Pickup time window: 07:00 to 15:00, quarter-hour start times.</p>
 					<div id="availability-results" class="availability-list"></div>
 				</article>
 
@@ -140,10 +190,66 @@
 			<div id="booking-list" class="booking-list"></div>
 		</section>
 
+		<section class="section container" id="pricing-terms">
+			<div class="section-head">
+				<p class="kicker">Policy</p>
+				<h2>Current pricing & terms</h2>
+			</div>
+			<article class="card terms-card">
+				<h3>3.5T horsebox pricing rules</h3>
+				<ul>
+					<li>1/2 day: £70</li>
+					<li>1 day: £100</li>
+					<li>2 days: £190</li>
+					<li>3 days: £285</li>
+					<li>4 days: £380</li>
+					<li>5 days: £475</li>
+					<li>6 days: £570</li>
+					<li>Week: £665</li>
+				</ul>
+				<p class="muted">Default day rate rule: £100/day for 3.5T resources.</p>
+
+				<h3>7.5T rates</h3>
+				<ul>
+					<li>7.5T 3 horses with living: 1 day £175, 2 days £350, 3 days £525, 4 days £700, 5 days £875, 6 days £1050, week £1225</li>
+					<li>7.5T 4 horses no living: default £165/day</li>
+					<li>Weekend rule (Saturday/Sunday) for 1 day: £200/day (living), £175/day (no living)</li>
+					<li>Weekend-start rule for 2 days: £400 (living), £350 (no living)</li>
+				</ul>
+				<p class="muted">Pre-payment rule: £70 for 3.5T and £100 for 7.5T.</p>
+
+				<h3>Booking, forms, and before collection</h3>
+				<ul>
+					<li>Refundable security deposit hold: £200 (card pre-authorisation)</li>
+					<li>First hire: complete long form; hired within 3 months: short form</li>
+					<li>DVLA licence check code must be submitted in form</li>
+					<li>Forms must be in the driver’s name and proof of address is required on collection</li>
+				</ul>
+
+				<h3>Time-related settings</h3>
+				<ul>
+					<li>Pickup start window: 07:00 to 15:00 on working days, quarter-hour intervals</li>
+					<li>3.5T preset durations: 1/2 day (6h), 1 day (12h), 2 days (36h), 3 days (50h), 4/5/6 days, week</li>
+					<li>7.5T preset durations: 1 day (12h), 2 days (36h), 3 days (50h), 4/5/6 days, week</li>
+				</ul>
+
+				<h3>Fuel, mileage, and charges</h3>
+				<ul>
+					<li>Return with full tank of diesel</li>
+					<li>300 miles per paid day included, then 30p/mile</li>
+					<li>ULEZ, congestion, Dart/CAZ and similar charges are the hirer’s responsibility</li>
+					<li>Insurance excess: £400</li>
+				</ul>
+
+				<p class="muted tiny">This section mirrors your current live policy content so customers see current operational terms during booking.</p>
+			</article>
+		</section>
+
 		<section class="section container" id="admin-review">
 			<div class="section-head">
 				<p class="kicker">Admin View</p>
 				<h2>Booking review</h2>
+				<p class="muted tiny">Legacy-style booking ID format enabled: 19xxxxxx.</p>
 			</div>
 
 			<div class="admin-actions">
