@@ -1,5 +1,3 @@
-const fleetGrid = document.getElementById("fleet-grid");
-const availabilityForm = document.getElementById("availability-form");
 const STORAGE_BOOKINGS = "equinetransportuk_bookings";
 const DARTFORD_CROSSING_PRICE = 4.2;
 const EARLY_PICKUP_PRICE = 20;
@@ -128,8 +126,11 @@ const vehicles = [
 ];
 window.vehicles = vehicles;
 
+const fleetGrid = document.getElementById("fleet-grid");
+const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
+const durationDaysInput = document.getElementById("duration-days");
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
@@ -159,10 +160,12 @@ const clearAdminBtn = document.getElementById("clear-admin");
 
 let selectedAvailability = null;
 
+document.getElementById("year").textContent = String(new Date().getFullYear());
 
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
   return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
+}
 
 function generateNumericBookingId(existingIds = new Set()) {
   for (let attempt = 0; attempt < 30; attempt += 1) {
@@ -370,7 +373,12 @@ function renderFleet() {
       prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
       nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
     }, 0);
-    // No modal logic: only slideshow and booking button are interactive
+    // Only open modal if not clicking the Book button or slideshow controls
+    card.addEventListener("click", (e) => {
+      if (e.target.closest('.fleet-card-book') || e.target.closest('.fleet-slide-prev') || e.target.closest('.fleet-slide-next')) return;
+      openFleetModal(vehicle.id);
+    });
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { openFleetModal(vehicle.id); }});
     // Book button logic
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -382,7 +390,55 @@ function renderFleet() {
 }
 
 // --- Fleet Modal Logic ---
+const fleetModal = document.getElementById("fleet-modal");
+const fleetModalBackdrop = fleetModal.querySelector(".fleet-modal-backdrop");
+const fleetModalClose = fleetModal.querySelector(".fleet-modal-close");
+const fleetModalGallery = fleetModal.querySelector(".fleet-modal-gallery");
+const fleetModalInfo = fleetModal.querySelector(".fleet-modal-info");
+const fleetModalBook = fleetModal.querySelector(".fleet-modal-book");
 
+function openFleetModal(vehicleId) {
+  const vehicle = vehicles.find(v => v.id === vehicleId);
+  if (!vehicle) return;
+  // Find all images for this lorry
+  const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
+  const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
+  // Build image list by matching files in images/ that start with code or baseName
+  const imageFiles = window.fleetImages?.filter(img => {
+    return (code && img.startsWith(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
+  }) || [vehicle.image.replace("images/", "")];
+
+  fleetModalGallery.innerHTML = imageFiles.map(img => `<img src="images/${img}" alt="${vehicle.name}">`).join("");
+  const livingLabelModal = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
+  fleetModalInfo.innerHTML = `
+    <h3>${vehicle.name}</h3>
+    <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${livingLabelModal}</p>
+    <p class="muted tiny">${vehicle.summary || ""}</p>
+    <p><strong>From £${vehicle.dayRate}</strong> / day</p>
+    ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
+    ${vehicle.pricingModel === "75_living_rules" ? '<p class="muted tiny">1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</p>' : ''}
+    ${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
+  `;
+  fleetModalBook.onclick = function() {
+    // Scroll to booking form and pre-select this lorry
+    document.getElementById("selected-lorry").value = vehicle.name;
+    window.location.hash = "#booking";
+    closeFleetModal();
+  };
+  fleetModal.style.display = "block";
+  setTimeout(() => fleetModal.classList.add("open"), 10);
+}
+
+function closeFleetModal() {
+  fleetModal.classList.remove("open");
+  setTimeout(() => { fleetModal.style.display = "none"; }, 250);
+}
+
+fleetModalBackdrop.addEventListener("click", closeFleetModal);
+fleetModalClose.addEventListener("click", closeFleetModal);
+document.addEventListener("keydown", (e) => {
+  if (fleetModal.style.display === "block" && (e.key === "Escape")) closeFleetModal();
+});
 
 // Expose images for modal gallery
 window.fleetImages = [
@@ -509,11 +565,11 @@ function renderAvailabilityResults(items) {
     })
     .join("");
 
-      card.addEventListener("click", (e) => {
-        if (e.target.closest('.fleet-card-book') || e.target.closest('.fleet-slide-prev') || e.target.closest('.fleet-slide-next')) return;
-        openFleetModal(vehicle.id);
-      });
-      card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { openFleetModal(vehicle.id); }});
+  availabilityResults.innerHTML = html;
+}
+
+function updateCheckoutSummary() {
+  if (!selectedAvailability) {
     checkoutSummary.textContent = "Select an available lorry to continue.";
     bookingSubmitBtn.disabled = true;
     return;
