@@ -334,18 +334,26 @@ function renderFleet() {
     // Find all images for this lorry
     const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
     const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
-    const imageFiles = window.fleetImages?.filter(img => {
+    let imageFiles = window.fleetImages?.filter(img => {
       return (code && img.startsWith(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
     }) || [vehicle.image.replace("images/", "")];
+    if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
+      imageFiles = [vehicle.image.replace("images/", "")];
+    }
+    // Always prefix with images/ if not already
+    imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
     // Slideshow markup
     const slideshowId = `slideshow-${vehicle.id}`;
+    const hasMultiple = imageFiles.length > 1;
     const slideshow = `
       <div class="fleet-slideshow" id="${slideshowId}">
-        <button class="fleet-slide-prev" aria-label="Previous image">&#8592;</button>
         <div class="fleet-slide-img-wrap">
-          <img src="images/${imageFiles[0]}" alt="${vehicle.name}" class="fleet-slide-img">
+          <img src="${imageFiles[0]}" alt="${vehicle.name}" class="fleet-slide-img">
+          <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}">
+            <span class="fleet-overlay-text">View more</span>
+            <button class="fleet-overlay-btn" aria-label="View more"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="12" fill="#1f6feb"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg></button>
+          </div>
         </div>
-        <button class="fleet-slide-next" aria-label="Next image">&#8594;</button>
       </div>
     `;
     card.innerHTML = `
@@ -376,12 +384,12 @@ function renderFleet() {
       prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
       nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
     }, 0);
-    // Only open modal if not clicking the Book button or slideshow controls
-    card.addEventListener("click", (e) => {
-      if (e.target.closest('.fleet-card-book') || e.target.closest('.fleet-slide-prev') || e.target.closest('.fleet-slide-next')) return;
+    // Remove modal opening on card click
+    // Add overlay click handler
+    card.querySelector('.fleet-img-overlay').addEventListener('click', (e) => {
       openFleetModal(vehicle.id);
+      e.stopPropagation();
     });
-    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { openFleetModal(vehicle.id); }});
     // Book button logic
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -411,24 +419,44 @@ function openFleetModal(vehicleId) {
     return (code && img.startsWith(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
   }) || [vehicle.image.replace("images/", "")];
 
-  fleetModalGallery.innerHTML = imageFiles.map(img => `<img src="images/${img}" alt="${vehicle.name}">`).join("");
-  const livingLabelModal = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
-  fleetModalInfo.innerHTML = `
-    <h3>${vehicle.name}</h3>
-    <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${livingLabelModal}</p>
-    <p class="muted tiny">${vehicle.summary || ""}</p>
-    <p><strong>From £${vehicle.dayRate}</strong> / day</p>
-    ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
-    ${vehicle.pricingModel === "75_living_rules" ? '<p class="muted tiny">1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</p>' : ''}
-    ${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
-  `;
-  fleetModalBook.onclick = function() {
-    // Scroll to booking form and pre-select this lorry
-    document.getElementById("selected-lorry").value = vehicle.name;
-    window.location.hash = "#booking";
-    closeFleetModal();
-  };
-  fleetModal.style.display = "block";
+  // Show only image slideshow/gallery in modal overlay
+  fleetModalGallery.innerHTML = imageFiles.map((img, idx) => `
+    <img src="images/${img}" alt="${vehicle.name} image ${idx+1}" style="max-width: 90vw; max-height: 80vh; display: ${idx === 0 ? 'block' : 'none'}; margin: 0 auto;" class="fleet-modal-img">
+  `).join("");
+  // Hide info and booking button in overlay
+  fleetModalInfo.innerHTML = "";
+  fleetModalBook.style.display = "none";
+  // Optionally add slideshow controls if multiple images
+  if (imageFiles.length > 1) {
+    let currentIdx = 0;
+    const imgs = fleetModalGallery.querySelectorAll('.fleet-modal-img');
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '←';
+    prevBtn.className = 'fleet-modal-prev';
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '→';
+    nextBtn.className = 'fleet-modal-next';
+    prevBtn.onclick = () => {
+      imgs[currentIdx].style.display = 'none';
+      currentIdx = (currentIdx - 1 + imgs.length) % imgs.length;
+      imgs[currentIdx].style.display = 'block';
+    };
+    nextBtn.onclick = () => {
+      imgs[currentIdx].style.display = 'none';
+      currentIdx = (currentIdx + 1) % imgs.length;
+      imgs[currentIdx].style.display = 'block';
+    };
+    fleetModalGallery.appendChild(prevBtn);
+    fleetModalGallery.appendChild(nextBtn);
+  }
+  fleetModal.style.display = "flex";
+  fleetModal.style.position = "fixed";
+  fleetModal.style.top = "0";
+  fleetModal.style.left = "0";
+  fleetModal.style.width = "100vw";
+  fleetModal.style.height = "100vh";
+  fleetModal.style.zIndex = "100";
+  fleetModal.style.background = "rgba(30,40,60,0.35)";
   setTimeout(() => fleetModal.classList.add("open"), 10);
 }
 
