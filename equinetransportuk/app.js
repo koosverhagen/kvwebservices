@@ -347,11 +347,13 @@ function renderFleet() {
     const hasMultiple = imageFiles.length > 1;
     const slideshow = `
       <div class="fleet-slideshow" id="${slideshowId}">
-        <div class="fleet-slide-img-wrap">
+        <div class="fleet-slide-img-wrap" style="position:relative;">
           <img src="${imageFiles[0]}" alt="${vehicle.name}" class="fleet-slide-img">
-          <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}">
-            <span class="fleet-overlay-text">View more</span>
-            <button class="fleet-overlay-btn" aria-label="View more"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="12" fill="#1f6feb"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg></button>
+          <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:2;">
+            <span class="fleet-overlay-text" style="color:#fff;font-size:18px;font-weight:500;margin-bottom:8px;">View more</span>
+            <button class="fleet-overlay-btn" aria-label="View more" style="background:none;border:none;padding:0;cursor:pointer;">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="12" fill="#1f6feb"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -387,8 +389,9 @@ function renderFleet() {
     // Remove modal opening on card click
     // Add overlay click handler
     card.querySelector('.fleet-img-overlay').addEventListener('click', (e) => {
-      openFleetModal(vehicle.id);
+      e.preventDefault();
       e.stopPropagation();
+      openFleetModal(vehicle.id);
     });
     // Book button logic
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
@@ -420,14 +423,16 @@ function openFleetModal(vehicleId) {
   }) || [vehicle.image.replace("images/", "")];
 
   // Show only image slideshow/gallery in modal overlay
-  fleetModalGallery.innerHTML = imageFiles.map((img, idx) => `
-    <img src="images/${img}" alt="${vehicle.name} image ${idx+1}" style="max-width: 90vw; max-height: 80vh; display: ${idx === 0 ? 'block' : 'none'}; margin: 0 auto;" class="fleet-modal-img">
+  // Always prefix with images/ if not already
+  let modalImageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
+  fleetModalGallery.innerHTML = modalImageFiles.map((img, idx) => `
+    <img src="${img}" alt="${vehicle.name} image ${idx+1}" style="max-width: 90vw; max-height: 80vh; display: ${idx === 0 ? 'block' : 'none'}; margin: 0 auto;" class="fleet-modal-img">
   `).join("");
   // Hide info and booking button in overlay
-  fleetModalInfo.innerHTML = "";
-  fleetModalBook.style.display = "none";
+  if (typeof fleetModalInfo !== 'undefined' && fleetModalInfo) fleetModalInfo.innerHTML = "";
+  if (typeof fleetModalBook !== 'undefined' && fleetModalBook) fleetModalBook.style.display = "none";
   // Optionally add slideshow controls if multiple images
-  if (imageFiles.length > 1) {
+  if (modalImageFiles.length > 1) {
     let currentIdx = 0;
     const imgs = fleetModalGallery.querySelectorAll('.fleet-modal-img');
     const prevBtn = document.createElement('button');
