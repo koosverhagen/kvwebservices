@@ -79,27 +79,19 @@
 					<p class="muted tiny">For 1/2 day (3.5T): 07:00–13:00 or 13:00–19:00. For 1 day or more: 07:00–19:00.</p>
 					</main>
 					<script>
+
 					// Dynamically adjust pickup time options based on duration and lorry type
 					const pickupTimeSelect = document.getElementById('pickup-time');
 					const durationDaysSelect = document.getElementById('duration-days');
 					let selectedVehicleType = null;
 
-					// Listen for availability results to set selectedVehicleType
-					document.addEventListener('click', function(e) {
-						const btn = e.target.closest('.choose-lorry');
-						if (btn && btn.dataset.vehicleId) {
-							// Find vehicle type from JS fleet array (exposed via window.vehicles if needed)
-							if (window.vehicles) {
-								const v = window.vehicles.find(x => x.id === btn.dataset.vehicleId);
-								selectedVehicleType = v ? v.type : null;
-							}
-						}
-					});
-
 					function updatePickupTimeOptions() {
 						const duration = durationDaysSelect.value;
-						// If 1/2 day and 3.5T, show both slots. Else only 07:00.
-						let is35T = selectedVehicleType && selectedVehicleType.includes('3.5');
+						// If no lorry selected, default to 3.5T logic (show both for 1/2 day)
+						let is35T = true;
+						if (selectedVehicleType) {
+							is35T = selectedVehicleType.includes('3.5');
+						}
 						pickupTimeSelect.innerHTML = '';
 						if (duration === '0.5' && is35T) {
 							pickupTimeSelect.innerHTML = '<option value="07:00">07:00</option><option value="13:00">13:00</option>';
@@ -109,7 +101,21 @@
 					}
 
 					durationDaysSelect.addEventListener('change', updatePickupTimeOptions);
-					// Optionally, update on lorry select as well
+
+					// Listen for availability results to set selectedVehicleType
+					document.addEventListener('click', function(e) {
+						const btn = e.target.closest('.choose-lorry');
+						if (btn && btn.dataset.vehicleId) {
+							if (window.vehicles) {
+								const v = window.vehicles.find(x => x.id === btn.dataset.vehicleId);
+								selectedVehicleType = v ? v.type : null;
+								updatePickupTimeOptions(); // update when lorry is chosen
+							}
+						}
+					});
+
+					// Initial call to set correct options on page load
+					updatePickupTimeOptions();
 					</script>
 					<div id="availability-results" class="availability-list"></div>
 				</article>
