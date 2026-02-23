@@ -160,7 +160,10 @@ const clearAdminBtn = document.getElementById("clear-admin");
 
 let selectedAvailability = null;
 
-document.getElementById("year").textContent = String(new Date().getFullYear());
+document.addEventListener("DOMContentLoaded", function() {
+  var yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+});
 
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
