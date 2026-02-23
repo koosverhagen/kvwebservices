@@ -322,6 +322,9 @@ function renderFleet() {
   vehicles.forEach((vehicle) => {
     const card = document.createElement("article");
     card.className = "fleet-card";
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `View details for ${vehicle.name}`);
     card.innerHTML = `
       <img src="${vehicle.image}" alt="${vehicle.name}">
       <div class="fleet-content">
@@ -334,8 +337,96 @@ function renderFleet() {
         ${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
       </div>
     `;
+    card.addEventListener("click", () => openFleetModal(vehicle.id));
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { openFleetModal(vehicle.id); }});
     fleetGrid.appendChild(card);
   });
+}
+
+// --- Fleet Modal Logic ---
+const fleetModal = document.getElementById("fleet-modal");
+const fleetModalBackdrop = fleetModal.querySelector(".fleet-modal-backdrop");
+const fleetModalClose = fleetModal.querySelector(".fleet-modal-close");
+const fleetModalGallery = fleetModal.querySelector(".fleet-modal-gallery");
+const fleetModalInfo = fleetModal.querySelector(".fleet-modal-info");
+const fleetModalBook = fleetModal.querySelector(".fleet-modal-book");
+
+function openFleetModal(vehicleId) {
+  const vehicle = vehicles.find(v => v.id === vehicleId);
+  if (!vehicle) return;
+  // Find all images for this lorry
+  const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
+  const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
+  // Build image list by matching files in images/ that start with code or baseName
+  const imageFiles = window.fleetImages?.filter(img => {
+    return (code && img.startsWith(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
+  }) || [vehicle.image.replace("images/", "")];
+
+  fleetModalGallery.innerHTML = imageFiles.map(img => `<img src="images/${img}" alt="${vehicle.name}">`).join("");
+  fleetModalInfo.innerHTML = `
+    <h3>${vehicle.name}</h3>
+    <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${vehicle.overnight ? "living" : "no living"}</p>
+    <p class="muted tiny">${vehicle.summary || ""}</p>
+    <p><strong>From £${vehicle.dayRate}</strong> / day</p>
+    ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
+    ${vehicle.pricingModel === "75_living_rules" ? '<p class="muted tiny">1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</p>' : ''}
+    ${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
+  `;
+  fleetModalBook.onclick = function() {
+    // Scroll to booking form and pre-select this lorry
+    document.getElementById("selected-lorry").value = vehicle.name;
+    window.location.hash = "#booking";
+    closeFleetModal();
+  };
+  fleetModal.style.display = "block";
+  setTimeout(() => fleetModal.classList.add("open"), 10);
+}
+
+function closeFleetModal() {
+  fleetModal.classList.remove("open");
+  setTimeout(() => { fleetModal.style.display = "none"; }, 250);
+}
+
+fleetModalBackdrop.addEventListener("click", closeFleetModal);
+fleetModalClose.addEventListener("click", closeFleetModal);
+document.addEventListener("keydown", (e) => {
+  if (fleetModal.style.display === "block" && (e.key === "Escape")) closeFleetModal();
+});
+
+// Expose images for modal gallery
+window.fleetImages = [
+  "3.5 T Stallion (MM68)1.webp",
+  "3.5 T Stallion (MM68)2.webp",
+  "3.5 T Stallion (MM68)3.webp",
+  "3.5 T Stallion (MM68)4.webp",
+  "3.5 T Stallion (MM68)5.webp",
+  "3.5 T With Breast Bar (CA21)1.webp",
+  "3.5 T With Breast Bar (CA21)2.webp",
+  "3.5 T With Breast Bar (CA21)3.webp",
+  "3.5 T With Breast Bar (CA21)4.webp",
+  "3.5 T With Breast Bar (CA21)5.webp",
+  "3.5 T With Breast Bar (CA21)6.webp",
+  "3.5T With Safety Bar (LS23)1.webp",
+  "3.5T With Safety Bar (LS23)2.webp",
+  "3.5T With Safety Bar (LS23)3.webp",
+  "3.5T With Safety Bar (LS23)4.webp",
+  "3.5T With Safety Bar (LS23)5.webp",
+  "3.5T With Safety Bar (LS23)6.webp",
+  "3.5T With Safety Bar (LS23)7.webp",
+  "3.5T With Safety Bar (LS23)8.webp",
+  "3.5T With Safety Bar (LS23)9.webp",
+  "3.5T With Safety Bar (LS23)10.webp",
+  "7.5 T 3 Horses with Living1.webp",
+  "7.5 T 3 Horses with Living2.webp",
+  "7.5 T 3 Horses with Living3.webp",
+  "7.5 T 3 Horses with Living4.webp",
+  "7.5 T 3 Horses with Living5.webp",
+  "7.5 T 3 Horses with Living6.webp",
+  "7.5 T 4 Horses No Living1.webp",
+  "7.5 T 4 Horses No Living2.webp",
+  "7.5 T 4 Horses No Living3.webp",
+  "7.5 T 4 Horses No Living4.webp"
+];
 }
 
 function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) {
