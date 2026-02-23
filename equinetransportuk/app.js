@@ -124,6 +124,7 @@ const vehicles = [
     image: "images/lorry-75-noliving.webp"
   }
 ];
+window.vehicles = vehicles;
 
 const fleetGrid = document.getElementById("fleet-grid");
 const availabilityForm = document.getElementById("availability-form");
