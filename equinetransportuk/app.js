@@ -1,3 +1,5 @@
+const fleetGrid = document.getElementById("fleet-grid");
+const availabilityForm = document.getElementById("availability-form");
 const STORAGE_BOOKINGS = "equinetransportuk_bookings";
 const DARTFORD_CROSSING_PRICE = 4.2;
 const EARLY_PICKUP_PRICE = 20;
