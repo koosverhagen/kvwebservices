@@ -372,12 +372,7 @@ function renderFleet() {
       prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
       nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
     }, 0);
-    // Only open modal if not clicking the Book button or slideshow controls
-    card.addEventListener("click", (e) => {
-      if (e.target.closest('.fleet-card-book') || e.target.closest('.fleet-slide-prev') || e.target.closest('.fleet-slide-next')) return;
-      openFleetModal(vehicle.id);
-    });
-    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { openFleetModal(vehicle.id); }});
+    // No modal logic: only slideshow and booking button are interactive
     // Book button logic
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
       e.stopPropagation();
