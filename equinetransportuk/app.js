@@ -427,7 +427,6 @@ window.fleetImages = [
   "7.5 T 4 Horses No Living3.webp",
   "7.5 T 4 Horses No Living4.webp"
 ];
-}
 
 function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) {
   let actualPickupTime = pickupTime;
