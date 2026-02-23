@@ -1,193 +1,149 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Equine Transport UK | Horsebox Rental & Booking</title>
-  <meta name="description" content="Modern horsebox rental website rebuild with responsive fleet pages and custom booking flow.">
-  <link rel="stylesheet" href="styles.css">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Equine Transport UK | Horsebox Rental & Booking</title>
+	<meta name="description" content="Modern horsebox rental website rebuild with responsive fleet pages and custom booking flow.">
+	<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="#top">Equine Transport UK</a>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="#fleet">Fleet</a>
-        <a href="#booking">Book</a>
-        <a href="#contact">Contact</a>
-      </nav>
-    </div>
-  </header>
+	<header class="site-header">
+		<div class="container header-inner">
+			<a class="brand" href="#top">Equine Transport UK</a>
+			<nav class="main-nav" aria-label="Main navigation">
+				<a href="#fleet">Fleet</a>
+				<a href="#booking">Book</a>
+				<a href="#admin-review">Admin</a>
+			</nav>
+		</div>
+	</header>
 
-  <main id="top">
-    <section class="hero">
-      <div class="container hero-grid">
-        <div>
-          <p class="kicker">Horsebox Rental</p>
-          <h1>Flexible horsebox hire for events, clinics and safe transport days.</h1>
-          <p class="lead">A fully responsive rebuild concept for equinetransportuk.com with your own booking system replacing embedded third-party checkout.</p>
-          <div class="hero-actions">
-            <a class="btn" href="#booking">Check availability</a>
-            <a class="btn ghost" href="#fleet">View fleet</a>
-          </div>
-        </div>
-        <img class="hero-image" src="https://static.wixstatic.com/media/a9ff84_203a196cbe82461bad0c2ca3263ebcc0%7Emv2_d_3000_1571_s_2.jpeg/v1/fit/w_2500,h_1330,al_c/a9ff84_203a196cbe82461bad0c2ca3263ebcc0%7Emv2_d_3000_1571_s_2.jpeg" alt="Horsebox on route">
-      </div>
-    </section>
+	<main id="top">
+		<section class="hero">
+			<div class="container hero-grid">
+				<div>
+					<p class="kicker">Horsebox Rental</p>
+					<h1>Find available lorries and book in minutes.</h1>
+					<p class="lead">Pick a date and duration, see exactly which lorries are free, view the price, then complete your booking details and checkout.</p>
+					<div class="hero-actions">
+						<a class="btn" href="#booking">Start booking</a>
+						<a class="btn ghost" href="#fleet">View fleet</a>
+					</div>
+				</div>
+				<img class="hero-image" src="https://static.wixstatic.com/media/a9ff84_203a196cbe82461bad0c2ca3263ebcc0%7Emv2_d_3000_1571_s_2.jpeg/v1/fit/w_2500,h_1330,al_c/a9ff84_203a196cbe82461bad0c2ca3263ebcc0%7Emv2_d_3000_1571_s_2.jpeg" alt="Horsebox on route">
+			</div>
+		</section>
 
-    <section id="fleet" class="section container">
-      <div class="section-head">
-        <p class="kicker">Fleet</p>
-        <h2>5 layouts ready to book</h2>
-      </div>
-      <div id="fleet-grid" class="fleet-grid"></div>
-    </section>
+		<section id="fleet" class="section container">
+			<div class="section-head">
+				<p class="kicker">Fleet</p>
+				<h2>5 layouts ready to book</h2>
+			</div>
+			<div id="fleet-grid" class="fleet-grid"></div>
+		</section>
 
-    <section id="booking" class="section booking-wrap">
-      <div class="container booking-grid">
-        <article class="card">
-          <h3>Instant booking request</h3>
-          <p class="muted">Select vehicle, pickup/drop-off and driver details. Availability checks against existing bookings for that vehicle.</p>
-          <form id="booking-form" class="form-grid">
-            <label>Vehicle
-              <select id="vehicle" required></select>
-            </label>
-            <label>Pickup date
-              <input id="pickup-date" type="date" required>
-            </label>
-            <label>Pickup time
-              <select id="pickup-time" required></select>
-            </label>
-            <label>Drop-off date
-              <input id="dropoff-date" type="date" required>
-            </label>
-            <label>Drop-off time
-              <select id="dropoff-time" required></select>
-            </label>
-            <label>Driver name
-              <input id="driver-name" type="text" required>
-            </label>
-            <label>Email
-              <input id="driver-email" type="email" required>
-            </label>
-            <label>Phone
-              <input id="driver-phone" type="tel" required>
-            </label>
-            <label class="full">Notes
-              <textarea id="booking-notes" rows="3" placeholder="Optional collection details"></textarea>
-            </label>
-            <div class="full muted tiny">
-              Before booking, complete the <strong>Responsibility Agreement</strong> and <strong>Driving Licence Check</strong> forms.
-            </div>
-            <div class="quote full" id="quote-box">Choose dates to calculate quote.</div>
-            <button class="btn full" type="submit">Place booking request</button>
-          </form>
-          <p class="muted tiny">MVP mode: bookings store in browser local storage. Next step is API + admin panel + payment capture.</p>
-        </article>
+		<section id="booking" class="section booking-wrap">
+			<div class="container booking-grid">
+				<article class="card">
+					<h3>1) Check availability</h3>
+					<p class="muted">Choose pickup date and duration to see available lorries and pricing.</p>
+					<form id="availability-form" class="form-grid">
+						<label>Pickup date
+							<input id="pickup-date" type="date" required>
+						</label>
+						<label>Duration (days)
+							<input id="duration-days" type="number" min="1" max="30" step="1" value="1" required>
+						</label>
+						<button class="btn full" type="submit">Find available lorries</button>
+					</form>
+					<div id="availability-results" class="availability-list"></div>
+				</article>
 
-        <div class="card-stack" id="contact">
-          <article class="card">
-            <h3>Responsibility Agreement</h3>
-            <p class="muted">Confirms hirer responsibility, vehicle care and incident reporting terms.</p>
-            <form id="responsibility-form" class="form-grid">
-              <label>Full name
-                <input id="responsibility-name" type="text" required>
-              </label>
-              <label>Email
-                <input id="responsibility-email" type="email" required>
-              </label>
-              <label class="full">Address
-                <input id="responsibility-address" type="text" required>
-              </label>
-              <label class="full checkline">
-                <input id="responsibility-confirm" type="checkbox" required>
-                <span>I accept responsibility for safe use, legal compliance and return condition of the hired horsebox.</span>
-              </label>
-              <button class="btn full" type="submit">Save responsibility form</button>
-            </form>
-            <div id="responsibility-success" class="success" hidden>Responsibility form saved.</div>
-          </article>
+				<article class="card">
+					<h3>2) Your booking details</h3>
+					<p class="muted">Complete customer details and checkout options for the selected lorry.</p>
 
-          <article class="card">
-            <h3>Driving Licence Check</h3>
-            <p class="muted">Collects licence details required before release of vehicle.</p>
-            <form id="licence-form" class="form-grid">
-              <label>Driver full name
-                <input id="licence-name" type="text" required>
-              </label>
-              <label>Date of birth
-                <input id="licence-dob" type="date" required>
-              </label>
-              <label>Licence number
-                <input id="licence-number" type="text" required>
-              </label>
-              <label>Check code (DVLA)
-                <input id="licence-check-code" type="text" required>
-              </label>
-              <label>Check code expiry
-                <input id="licence-expiry" type="date" required>
-              </label>
-              <label>Phone
-                <input id="licence-phone" type="tel" required>
-              </label>
-              <label class="full checkline">
-                <input id="licence-consent" type="checkbox" required>
-                <span>I consent to Equine Transport UK validating my licence details for insurance and hire compliance.</span>
-              </label>
-              <button class="btn full" type="submit">Save licence check form</button>
-            </form>
-            <div id="licence-success" class="success" hidden>Licence check form saved.</div>
-          </article>
-        </div>
-      </div>
-    </section>
+					<form id="booking-form" class="form-grid">
+						<label class="full">Selected lorry
+							<input id="selected-lorry" type="text" readonly placeholder="Choose a lorry from availability results">
+						</label>
+						<label>Pickup
+							<input id="selected-pickup" type="text" readonly>
+						</label>
+						<label>Duration
+							<input id="selected-duration" type="text" readonly>
+						</label>
+						<label class="full">Base hire
+							<input id="selected-base" type="text" readonly>
+						</label>
 
-    <section class="section container">
-      <div class="section-head">
-        <p class="kicker">Upcoming bookings</p>
-        <h2>Live availability preview</h2>
-      </div>
-      <div id="booking-list" class="booking-list"></div>
-    </section>
+						<label>Full name
+							<input id="customer-name" type="text" required>
+						</label>
+						<label>Email
+							<input id="customer-email" type="email" required>
+						</label>
+						<label>Mobile
+							<input id="customer-mobile" type="tel" required>
+						</label>
+						<label>Date of birth
+							<input id="customer-dob" type="date" required>
+						</label>
+						<label class="full">Address
+							<textarea id="customer-address" rows="3" required></textarea>
+						</label>
 
-    <section class="section container" id="admin-review">
-      <div class="section-head">
-        <p class="kicker">Admin View</p>
-        <h2>Compliance & booking review</h2>
-      </div>
+						<label class="full checkline">
+							<input id="dartford-enabled" type="checkbox">
+							<span>Add Dartford Crossings (£4.20 per crossing)</span>
+						</label>
+						<label class="full">Number of crossings
+							<input id="dartford-count" type="number" min="1" step="1" value="1" disabled>
+						</label>
 
-      <div class="admin-actions">
-        <button id="refresh-admin" class="btn ghost" type="button">Refresh review data</button>
-        <button id="export-admin-csv" class="btn ghost" type="button">Export CSV</button>
-        <button id="export-admin-pdf" class="btn ghost" type="button">Export PDF</button>
-        <button id="clear-admin" class="btn ghost" type="button">Clear all demo data</button>
-      </div>
+						<div id="checkout-summary" class="quote full">Select an available lorry to continue.</div>
+						<button id="booking-submit" class="btn full" type="submit">Book now</button>
+					</form>
+					<div id="booking-success" class="success" hidden>Booking saved successfully.</div>
+				</article>
+			</div>
+		</section>
 
-      <div class="admin-grid">
-        <article class="card">
-          <h3>Responsibility Agreement</h3>
-          <div id="admin-responsibility" class="admin-table-wrap"></div>
-        </article>
+		<section class="section container">
+			<div class="section-head">
+				<p class="kicker">Upcoming bookings</p>
+				<h2>Live booking register</h2>
+			</div>
+			<div id="booking-list" class="booking-list"></div>
+		</section>
 
-        <article class="card">
-          <h3>Driving Licence Check</h3>
-          <div id="admin-licence" class="admin-table-wrap"></div>
-        </article>
-      </div>
+		<section class="section container" id="admin-review">
+			<div class="section-head">
+				<p class="kicker">Admin View</p>
+				<h2>Booking review</h2>
+			</div>
 
-      <article class="card" style="margin-top:16px;">
-        <h3>Booking Register</h3>
-        <div id="admin-bookings" class="admin-table-wrap"></div>
-      </article>
-    </section>
-  </main>
+			<div class="admin-actions">
+				<button id="refresh-admin" class="btn ghost" type="button">Refresh review data</button>
+				<button id="export-admin-csv" class="btn ghost" type="button">Export CSV</button>
+				<button id="export-admin-pdf" class="btn ghost" type="button">Export PDF</button>
+				<button id="clear-admin" class="btn ghost" type="button">Clear all demo data</button>
+			</div>
 
-  <footer class="site-footer">
-    <div class="container">
-      <small>© <span id="year"></span> Equine Transport UK — case study rebuild concept.</small>
-    </div>
-  </footer>
+			<article class="card">
+				<h3>Booking Register</h3>
+				<div id="admin-bookings" class="admin-table-wrap"></div>
+			</article>
+		</section>
+	</main>
 
-  <script src="app.js"></script>
+	<footer class="site-footer">
+		<div class="container">
+			<small>© <span id="year"></span> Equine Transport UK — case study rebuild concept.</small>
+		</div>
+	</footer>
+
+	<script src="app.js"></script>
 </body>
 </html>

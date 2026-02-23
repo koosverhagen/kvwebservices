@@ -222,6 +222,32 @@ textarea { min-height: 100px; }
   font-weight: 600;
 }
 
+.availability-list {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.availability-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.availability-item h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .success {
   margin-top: 10px;
   background: #edfdf2;
@@ -312,6 +338,9 @@ textarea { min-height: 100px; }
   .fleet-grid,
   .booking-list,
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .availability-item {
     grid-template-columns: 1fr;
   }
 }
