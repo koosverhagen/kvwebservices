@@ -14,12 +14,17 @@
 				<img class="brand-logo" src="images/logo.png" alt="Equine Transport UK logo">
 				<span>Equine Transport UK</span>
 			</a>
-			<nav class="main-nav" aria-label="Main navigation">
+			<nav class="main-nav" id="main-nav" aria-label="Main navigation">
 			<a href="#fleet">Fleet</a>
 			<a href="#booking">Book</a>
 			<a href="pricing-terms.html">Pricing & Terms</a>
 			<a href="#admin-review">Admin</a>
 			</nav>
+			<button class="nav-toggle" id="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="main-nav">
+				<span class="nav-toggle-bar"></span>
+				<span class="nav-toggle-bar"></span>
+				<span class="nav-toggle-bar"></span>
+			</button>
 		</div>
 	</header>
 
@@ -322,5 +327,25 @@
 	</footer>
 
 	<script src="app.js"></script>
+	<script>
+		(function() {
+			const toggle = document.getElementById('nav-toggle');
+			const nav = document.getElementById('main-nav');
+			toggle.addEventListener('click', function() {
+				const isOpen = nav.classList.toggle('open');
+				toggle.classList.toggle('open', isOpen);
+				toggle.setAttribute('aria-expanded', isOpen);
+				toggle.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+			});
+			nav.addEventListener('click', function(e) {
+				if (e.target.tagName === 'A') {
+					nav.classList.remove('open');
+					toggle.classList.remove('open');
+					toggle.setAttribute('aria-expanded', 'false');
+					toggle.setAttribute('aria-label', 'Open navigation');
+				}
+			});
+		})();
+	</script>
 </body>
 </html>
