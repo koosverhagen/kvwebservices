@@ -183,29 +183,24 @@ function generateNumericBookingId(existingIds = new Set()) {
 function buildFormUrl(baseUrl, bookingId) {
   if (!baseUrl) return "";
 
-  try {
-    const url = new URL(baseUrl);
-    url.searchParams.set("bookingID", bookingId);
-    return url.toString();
-  } catch {
-    const separator = baseUrl.includes("?") ? "&" : "?";
-    return `${baseUrl}${separator}bookingID=${encodeURIComponent(bookingId)}`;
-  }
-}
-
-function getBookings() {
-  return JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
-}
-
-function saveBookings(items) {
-  localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(items));
-}
-
-function asDate(date, time = DEFAULT_PICKUP_TIME) {
-  return new Date(`${date}T${time}:00`);
-}
-
-function addDays(date, days) {
+      if (btn) {
+        // --- SCROLL & FOCUS LOGIC STARTS HERE ---
+        const bookingForm = document.getElementById('booking-form');
+        const pickupInput = document.getElementById('selected-pickup');
+        if (pickupInput) {
+          pickupInput.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => pickupInput.focus(), 600);
+        } else if (bookingForm) {
+          bookingForm.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        // --- SCROLL & FOCUS LOGIC ENDS HERE ---
+        // Update the form with the selected lorry's name
+        const vehicleId = btn.dataset.lorryId;
+        const vehicle = vehicles.find(v => v.id === vehicleId);
+        if (vehicle) {
+          document.getElementById("selected-lorry").value = vehicle.name;
+        }
+      }
   const output = new Date(date);
   output.setDate(output.getDate() + days);
   return output;
