@@ -419,26 +419,31 @@ function renderFleet() {
       document.getElementById("selected-lorry").value = vehicle.name;
       // Scroll booking form into view and focus first input
       const bookingForm = document.getElementById("booking-form");
-      if (bookingForm) {
-        // Scroll so that the <h3>2) Your booking details</h3> heading is at the top of the viewport
-        let bookingHeading = null;
-        // Look for the heading in the booking section, not just inside the form
-        const bookingSection = document.querySelector('#booking');
-        if (bookingSection) {
+      // Improved scroll and focus logic for booking section
+      const bookingSection = document.querySelector('#booking');
+      if (bookingSection) {
+          // Search for the specific heading "2) Your booking details"
           const headings = bookingSection.querySelectorAll('h3');
+          let targetHeading = null;
           headings.forEach(h => {
-            if (h.textContent && h.textContent.trim().toLowerCase().includes('your booking details')) {
-              bookingHeading = h;
-            }
+              if (h.textContent.includes('2)') || h.textContent.toLowerCase().includes('booking details')) {
+                  targetHeading = h;
+              }
           });
-        }
-        if (bookingHeading) {
-          setTimeout(() => bookingHeading.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
-        } else {
-          setTimeout(() => bookingForm.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
-        }
-        const firstInput = bookingForm.querySelector("input:not([readonly]):not([type='hidden']):not([disabled])");
-        if (firstInput) setTimeout(() => firstInput.focus(), 500);
+          if (targetHeading) {
+              targetHeading.scrollIntoView({ 
+                  behavior: "smooth", 
+                  block: "start" 
+              });
+          } else {
+              bookingSection.scrollIntoView({ 
+                  behavior: "smooth", 
+                  block: "start" 
+              });
+          }
+          // Optional: Focus the first input field for better user experience
+          const firstInput = document.getElementById("customer-name");
+          if (firstInput) setTimeout(() => firstInput.focus(), 800);
       }
     });
     fleetGrid.appendChild(card);
