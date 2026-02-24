@@ -413,6 +413,12 @@ function renderFleet() {
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
       e.stopPropagation();
       document.getElementById("selected-lorry").value = vehicle.name;
+      // Sync pickup date from availability form to booking form
+      const availPickup = document.getElementById("pickup-date");
+      const bookingPickup = document.getElementById("selected-pickup");
+      if (availPickup && bookingPickup) {
+        bookingPickup.value = availPickup.value;
+      }
       // Scroll booking form into view and focus first input
       const bookingForm = document.getElementById("booking-form");
       // Improved scroll and focus logic for booking section
@@ -440,6 +446,15 @@ function renderFleet() {
           // Optional: Focus the first input field for better user experience
           const firstInput = document.getElementById("customer-name");
           if (firstInput) setTimeout(() => firstInput.focus(), 800);
+
+          // Keep booking form pickup date in sync if user changes it
+          const bookingPickup = document.getElementById("selected-pickup");
+          const availPickup = document.getElementById("pickup-date");
+          if (bookingPickup && availPickup) {
+            bookingPickup.addEventListener('change', function() {
+              availPickup.value = bookingPickup.value;
+            });
+          }
       }
     });
     fleetGrid.appendChild(card);
