@@ -417,7 +417,13 @@ function renderFleet() {
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
       e.stopPropagation();
       document.getElementById("selected-lorry").value = vehicle.name;
-      window.location.hash = "#booking";
+      // Scroll booking form into view and focus first input
+      const bookingForm = document.getElementById("booking-form");
+      if (bookingForm) {
+        bookingForm.scrollIntoView({ behavior: "smooth", block: "center" });
+        const firstInput = bookingForm.querySelector("input:not([readonly]):not([type='hidden']):not([disabled])");
+        if (firstInput) setTimeout(() => firstInput.focus(), 500);
+      }
     });
     fleetGrid.appendChild(card);
   });
