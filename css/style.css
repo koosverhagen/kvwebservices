@@ -106,7 +106,7 @@
   border-radius: 12px;
   max-height: 180px;
   object-fit: cover;
-  border: 1px solid #e2e8f0;
+  border: 5px solid #ffffff;
   background: #f8fafc;
   box-shadow: 0 2px 8px rgba(15,23,42,0.06);
   transition: transform 0.18s;
@@ -122,6 +122,7 @@
 .fleet-modal-book {
   width: 100%;
   margin-top: 10px;
+  margin-bottom: 16px;
   font-size: 1.1rem;
 }
 @media (max-width: 600px) {
