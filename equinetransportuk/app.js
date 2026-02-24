@@ -126,6 +126,41 @@ const vehicles = [
 ];
 window.vehicles = vehicles;
 
+// Expose images for modal gallery
+window.fleetImages = [
+  "3.5 T Stallion (MM68)1.webp",
+  "3.5 T Stallion (MM68)2.webp",
+  "3.5 T Stallion (MM68)3.webp",
+  "3.5 T Stallion (MM68)4.webp",
+  "3.5 T Stallion (MM68)5.webp",
+  "3.5 T With Breast Bar (CA21)1.webp",
+  "3.5 T With Breast Bar (CA21)2.webp",
+  "3.5 T With Breast Bar (CA21)3.webp",
+  "3.5 T With Breast Bar (CA21)4.webp",
+  "3.5 T With Breast Bar (CA21)5.webp",
+  "3.5 T With Breast Bar (CA21)6.webp",
+  "3.5T With Safety Bar (LS23)1.webp",
+  "3.5T With Safety Bar (LS23)2.webp",
+  "3.5T With Safety Bar (LS23)3.webp",
+  "3.5T With Safety Bar (LS23)4.webp",
+  "3.5T With Safety Bar (LS23)5.webp",
+  "3.5T With Safety Bar (LS23)6.webp",
+  "3.5T With Safety Bar (LS23)7.webp",
+  "3.5T With Safety Bar (LS23)8.webp",
+  "3.5T With Safety Bar (LS23)9.webp",
+  "3.5T With Safety Bar (LS23)10.webp",
+  "7.5 T 3 Horses with Living1.webp",
+  "7.5 T 3 Horses with Living2.webp",
+  "7.5 T 3 Horses with Living3.webp",
+  "7.5 T 3 Horses with Living4.webp",
+  "7.5 T 3 Horses with Living5.webp",
+  "7.5 T 3 Horses with Living6.webp",
+  "7.5 T 4 Horses No Living1.webp",
+  "7.5 T 4 Horses No Living2.webp",
+  "7.5 T 4 Horses No Living3.webp",
+  "7.5 T 4 Horses No Living4.webp"
+];
+
 const fleetGrid = document.getElementById("fleet-grid");
 const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
@@ -160,11 +195,27 @@ const clearAdminBtn = document.getElementById("clear-admin");
 
 let selectedAvailability = null;
 
-document.addEventListener("DOMContentLoaded", function() {
-  var yearEl = document.getElementById("year");
-  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
-  // Removed scroll/focus to booking form on page load. Only scroll/focus on booking button click.
-});
+// --- Helper Functions ---
+
+function getLorryImages(vehicle) {
+  const code = vehicle.code;
+  if (!window.fleetImages) return [vehicle.image];
+  
+  let imgs = [];
+  if (vehicle.name.includes("7.5T 3 Horse")) {
+    imgs = window.fleetImages.filter(img => img.includes("3 Horses with Living"));
+  } else if (vehicle.name.includes("7.5T 4 Horses")) {
+    imgs = window.fleetImages.filter(img => img.includes("4 Horses No Living"));
+  } else if (code === "LS23") {
+    imgs = window.fleetImages.filter(img => img.includes("Safety Bar") || img.includes("LS23"));
+  } else if (code === "MM68") {
+    imgs = window.fleetImages.filter(img => img.includes("Stallion") || img.includes("MM68"));
+  } else if (code === "CA21") {
+    imgs = window.fleetImages.filter(img => img.includes("Breast Bar") || img.includes("CA21"));
+  }
+
+  return imgs.length ? imgs.map(f => f.startsWith('images/') ? f : 'images/' + f) : [vehicle.image];
+}
 
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
@@ -177,7 +228,6 @@ function generateNumericBookingId(existingIds = new Set()) {
     const candidate = `19${suffix}`;
     if (!existingIds.has(candidate)) return candidate;
   }
-
   return `19${String(Date.now()).slice(-6)}`;
 }
 
@@ -318,6 +368,8 @@ function getReminderAt(pickupAtIso) {
   return reminderDate.toISOString();
 }
 
+// --- Main UI Logic ---
+
 function renderFleet() {
   fleetGrid.innerHTML = "";
   vehicles.forEach((vehicle) => {
@@ -326,44 +378,13 @@ function renderFleet() {
     card.tabIndex = 0;
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", `View details for ${vehicle.name}`);
-    // Fix label for 'no living' for 7.5T 4 Horses No Living
+    
     const livingLabel = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
-    // Find all images for this lorry
-    const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
-    const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
-    // Find the best matching image for this vehicle
-    let mainImage = null;
-    if (code) {
-      mainImage = window.fleetImages.find(img => img.includes(code));
-    }
-    if (!mainImage) {
-      mainImage = window.fleetImages.find(img => img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, "")));
-    }
-    if (!mainImage) {
-      mainImage = vehicle.image.replace(/^images\//, "");
-    }
-    // Always prefix with images/ if not already
-    mainImage = mainImage.startsWith('images/') ? mainImage : 'images/' + mainImage;
-    // Find all images for the modal/gallery using explicit mapping by code
-    let imageFiles = [];
-    if (code === "LS23") {
-      imageFiles = window.fleetImages.filter(img => img.includes("Safety Bar") || img.includes("LS23"));
-    } else if (code === "MM68") {
-      imageFiles = window.fleetImages.filter(img => img.includes("Stallion") || img.includes("MM68"));
-    } else if (code === "CA21") {
-      imageFiles = window.fleetImages.filter(img => img.includes("Breast Bar") || img.includes("CA21"));
-    } else if (vehicle.name.includes("7.5T 3 Horse")) {
-      imageFiles = window.fleetImages.filter(img => img.includes("3 Horses with Living"));
-    } else if (vehicle.name.includes("7.5T 4 Horses")) {
-      imageFiles = window.fleetImages.filter(img => img.includes("4 Horses No Living"));
-    }
-    if (!imageFiles || imageFiles.length === 0) {
-      imageFiles = [vehicle.image.replace("images/", "")];
-    }
-    imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
-    // Slideshow markup
+    
+    const imageFiles = getLorryImages(vehicle);
+    const mainImage = imageFiles[0];
+
     const slideshowId = `slideshow-${vehicle.id}`;
-    const hasMultiple = imageFiles.length > 1;
     const slideshow = `
       <div class="fleet-slideshow" id="${slideshowId}">
         <div class="fleet-slide-img-wrap" style="position:relative;">
@@ -392,33 +413,21 @@ function renderFleet() {
         <button class="btn fleet-card-book" data-lorry-id="${vehicle.id}">Book this Lorry</button>
       </div>
     `;
-    // Slideshow logic
+
     setTimeout(() => {
-      const slideImgs = imageFiles;
-      let idx = 0;
       const wrap = document.getElementById(slideshowId);
       if (!wrap) return;
       const imgEl = wrap.querySelector('.fleet-slide-img');
-      const prevBtn = wrap.querySelector('.fleet-slide-prev');
-      const nextBtn = wrap.querySelector('.fleet-slide-next');
-      function updateImg() {
-        imgEl.src = `images/${slideImgs[idx]}`;
-      }
-      if (prevBtn) {
-        prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
-      }
-      if (nextBtn) {
-        nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
-      }
+      let idx = 0;
+      // Note: Full slideshow logic can be added here if prev/next buttons are added to cards
     }, 0);
-    // Remove modal opening on card click
-    // Add overlay click handler
+
     card.querySelector('.fleet-img-overlay').addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       openFleetModal(vehicle.id);
     });
-    // Book button logic
+
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
       e.stopPropagation();
       bookFromVehicle(vehicle.id);
@@ -438,25 +447,9 @@ const fleetModalBook = fleetModal.querySelector(".fleet-modal-book");
 function openFleetModal(vehicleId) {
   const vehicle = vehicles.find(v => v.id === vehicleId);
   if (!vehicle) return;
-  // Find all images for this lorry and rotate them in the modal overlay
-  const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
-  const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
-  // Build image list by matching files in images/ that contain code or baseName (ignoring case and spaces)
-  let imageFiles = (window.fleetImages || []).filter(img => {
-    const imgLower = img.toLowerCase();
-    const codeLower = code.toLowerCase();
-    const baseNameLower = baseName.toLowerCase().replace(/ /g, "");
-    // Match by code (e.g. LS23, MM68, CA21) or by lorry type in filename
-    return (code && imgLower.includes(codeLower)) || (baseName && imgLower.includes(baseNameLower));
-  });
-  // If no images found, fallback to vehicle.image
-  if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
-    imageFiles = [vehicle.image.replace(/^images\//, "")];
-  }
-  // Always prefix with images/ if not already
-  imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
 
-  // Modal gallery markup
+  const imageFiles = getLorryImages(vehicle);
+
   let galleryHtml = '<div class="fleet-modal-gallery-inner">';
   imageFiles.forEach((img, idx) => {
     galleryHtml += `<div class="fleet-modal-img-wrap" style="position:relative;width:100%;height:100%;display:${idx === 0 ? 'flex' : 'none'};align-items:center;justify-content:center;">`;
@@ -470,7 +463,6 @@ function openFleetModal(vehicleId) {
   galleryHtml += '</div>';
   fleetModalGallery.innerHTML = galleryHtml;
 
-  // Slideshow logic for modal (updated for new structure)
   if (imageFiles.length > 1) {
     let currentIdx = 0;
     const wraps = fleetModalGallery.querySelectorAll('.fleet-modal-img-wrap');
@@ -491,34 +483,12 @@ function openFleetModal(vehicleId) {
     };
   }
 
-  // Show vehicle info and booking button in overlay
-  if (typeof fleetModalInfo !== 'undefined' && fleetModalInfo) {
+  if (fleetModalInfo) {
     fleetModalInfo.innerHTML = `<h3>${vehicle.name}</h3><p class="muted">${vehicle.summary || ""}</p>`;
   }
-  if (typeof fleetModalBook !== 'undefined' && fleetModalBook) {
+  if (fleetModalBook) {
     fleetModalBook.style.display = "";
     fleetModalBook.dataset.lorryId = vehicleId;
-  }
-
-  // Slideshow logic for modal
-  if (imageFiles.length > 1) {
-    let currentIdx = 0;
-    const imgs = fleetModalGallery.querySelectorAll('.fleet-modal-img');
-    const prevBtn = fleetModalGallery.querySelector('.fleet-modal-prev');
-    const nextBtn = fleetModalGallery.querySelector('.fleet-modal-next');
-    function showImg(idx) {
-      imgs.forEach((img, i) => { img.style.display = i === idx ? 'block' : 'none'; });
-    }
-    prevBtn.onclick = (e) => {
-      e.stopPropagation();
-      currentIdx = (currentIdx - 1 + imgs.length) % imgs.length;
-      showImg(currentIdx);
-    };
-    nextBtn.onclick = (e) => {
-      e.stopPropagation();
-      currentIdx = (currentIdx + 1) % imgs.length;
-      showImg(currentIdx);
-    };
   }
 
   fleetModal.style.display = "flex";
@@ -540,7 +510,7 @@ function closeFleetModal() {
 fleetModalBackdrop.addEventListener("click", closeFleetModal);
 fleetModalClose.addEventListener("click", closeFleetModal);
 document.addEventListener("keydown", (e) => {
-  if (fleetModal.style.display === "block" && (e.key === "Escape")) closeFleetModal();
+  if (fleetModal.style.display === "flex" && (e.key === "Escape")) closeFleetModal();
 });
 
 fleetModalBook.addEventListener("click", () => {
@@ -549,110 +519,29 @@ fleetModalBook.addEventListener("click", () => {
   if (vehicleId) bookFromVehicle(vehicleId);
 });
 
-function bookFromVehicle(vehicleId) {
-  const vehicle = vehicles.find((v) => v.id === vehicleId);
-  if (!vehicle) return;
-
-  // Set the selected lorry name in the booking form
-  selectedLorryInput.value = vehicle.name;
-
-  // Default pickup date: use availability form date, or today if empty
-  const today = new Date().toISOString().slice(0, 10);
-  const defaultDate = pickupDateInput.value || today;
-  selectedPickupInput.value = defaultDate;
-
-  // Populate duration dropdown for this vehicle and select default
-  populateBookingDurationSelect(vehicle);
-  // Default to 1 day if supported, otherwise first available
-  if (supportsDuration(vehicle, 1)) {
-    selectedDurationInput.value = "1";
-  }
-
-  // Build a preliminary availability object so checkBookingFormAvailability has a vehicle reference
-  const durationDays = Number(selectedDurationInput.value) || 1;
-  const pickupTime = DEFAULT_PICKUP_TIME;
-  selectedAvailability = buildAvailability(vehicle, defaultDate, durationDays, pickupTime);
-  selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
-
-  // Trigger availability validation
-  checkBookingFormAvailability();
-
-  // Scroll to booking details heading and focus the pickup date input
-  const bookingSection = document.querySelector("#booking");
-  if (bookingSection) {
-    const headings = bookingSection.querySelectorAll("h3");
-    let targetHeading = null;
-    headings.forEach((h) => {
-      if (h.textContent.includes("2)") || h.textContent.toLowerCase().includes("booking details")) {
-        targetHeading = h;
-      }
-    });
-    const scrollTarget = targetHeading || bookingSection;
-    scrollTarget.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => selectedPickupInput.focus(), 600);
-  }
-}
-
-// Expose images for modal gallery
-window.fleetImages = [
-  "3.5 T Stallion (MM68)1.webp",
-  "3.5 T Stallion (MM68)2.webp",
-  "3.5 T Stallion (MM68)3.webp",
-  "3.5 T Stallion (MM68)4.webp",
-  "3.5 T Stallion (MM68)5.webp",
-  "3.5 T With Breast Bar (CA21)1.webp",
-  "3.5 T With Breast Bar (CA21)2.webp",
-  "3.5 T With Breast Bar (CA21)3.webp",
-  "3.5 T With Breast Bar (CA21)4.webp",
-  "3.5 T With Breast Bar (CA21)5.webp",
-  "3.5 T With Breast Bar (CA21)6.webp",
-  "3.5T With Safety Bar (LS23)1.webp",
-  "3.5T With Safety Bar (LS23)2.webp",
-  "3.5T With Safety Bar (LS23)3.webp",
-  "3.5T With Safety Bar (LS23)4.webp",
-  "3.5T With Safety Bar (LS23)5.webp",
-  "3.5T With Safety Bar (LS23)6.webp",
-  "3.5T With Safety Bar (LS23)7.webp",
-  "3.5T With Safety Bar (LS23)8.webp",
-  "3.5T With Safety Bar (LS23)9.webp",
-  "3.5T With Safety Bar (LS23)10.webp",
-  "7.5 T 3 Horses with Living1.webp",
-  "7.5 T 3 Horses with Living2.webp",
-  "7.5 T 3 Horses with Living3.webp",
-  "7.5 T 3 Horses with Living4.webp",
-  "7.5 T 3 Horses with Living5.webp",
-  "7.5 T 3 Horses with Living6.webp",
-  "7.5 T 4 Horses No Living1.webp",
-  "7.5 T 4 Horses No Living2.webp",
-  "7.5 T 4 Horses No Living3.webp",
-  "7.5 T 4 Horses No Living4.webp"
-];
+// --- Booking and Availability Logic ---
 
 function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) {
   let actualPickupTime = pickupTime;
   let dropoffTime = FULL_DAY_DROPOFF_TIME;
   let durationHours = getDurationHours(vehicle, durationDays);
-  // 1/2 day logic for 3.5T only
+  
   if (is35T(vehicle) && Number(durationDays) === 0.5) {
-    // If pickupTime not specified or invalid, default to 07:00
     if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
       actualPickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
     }
     dropoffTime = HALF_DAY_DROPOFF_TIMES_35T[actualPickupTime];
-    durationHours = 6; // 6 hours for half day
+    durationHours = 6;
   } else {
-    // For 1 day or more, always 07:00 pickup, 19:00 drop-off
     actualPickupTime = DEFAULT_PICKUP_TIME;
     dropoffTime = FULL_DAY_DROPOFF_TIME;
-    // durationHours already set by getDurationHours
   }
+  
   const pickupAt = asDate(pickupDate, actualPickupTime);
-  // Drop-off is always same day for 1/2 day, else pickup + duration or set to 19:00
   let dropoffAt;
   if (is35T(vehicle) && Number(durationDays) === 0.5) {
     dropoffAt = asDate(pickupDate, dropoffTime);
   } else {
-    // For 1 day or more, drop-off is pickupDate at 19:00 plus (durationDays-1) days
     const dropoffDate = addDays(pickupAt, Math.max(0, Number(durationDays) - 1));
     dropoffAt = asDate(dropoffDate.toISOString().slice(0,10), dropoffTime);
   }
@@ -824,7 +713,6 @@ function checkBookingFormAvailability() {
   }
 }
 
-
 function selectAvailability(vehicleId) {
   const pickupDate = pickupDateInput.value;
   let pickupTime = pickupTimeInput.value;
@@ -832,7 +720,6 @@ function selectAvailability(vehicleId) {
   const vehicle = vehicles.find((item) => item.id === vehicleId);
   if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) return;
 
-  // For 1/2 day 3.5T, restrict pickupTime to allowed slots
   if (is35T(vehicle) && durationDays === 0.5) {
     if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
       pickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
@@ -842,7 +729,6 @@ function selectAvailability(vehicleId) {
   }
 
   selectedAvailability = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
-
   selectedLorryInput.value = vehicle.name;
   selectedPickupInput.value = pickupDate;
   populateBookingDurationSelect(vehicle);
@@ -855,14 +741,50 @@ function selectAvailability(vehicleId) {
   updateCheckoutSummary();
 }
 
+function bookFromVehicle(vehicleId) {
+  const vehicle = vehicles.find((v) => v.id === vehicleId);
+  if (!vehicle) return;
+
+  selectedLorryInput.value = vehicle.name;
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultDate = pickupDateInput.value || today;
+  selectedPickupInput.value = defaultDate;
+
+  populateBookingDurationSelect(vehicle);
+  if (supportsDuration(vehicle, 1)) {
+    selectedDurationInput.value = "1";
+  }
+
+  const durationDays = Number(selectedDurationInput.value) || 1;
+  const pickupTime = DEFAULT_PICKUP_TIME;
+  selectedAvailability = buildAvailability(vehicle, defaultDate, durationDays, pickupTime);
+  selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+
+  checkBookingFormAvailability();
+
+  const bookingSection = document.querySelector("#booking");
+  if (bookingSection) {
+    const headings = bookingSection.querySelectorAll("h3");
+    let targetHeading = null;
+    headings.forEach((h) => {
+      if (h.textContent.includes("2)") || h.textContent.toLowerCase().includes("booking details")) {
+        targetHeading = h;
+      }
+    });
+    const scrollTarget = targetHeading || bookingSection;
+    scrollTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => selectedPickupInput.focus(), 600);
+  }
+}
+
+// --- Admin and Export Functions ---
+
 function renderBookings() {
   const bookings = getBookings().sort((a, b) => new Date(a.pickupAt) - new Date(b.pickupAt));
-
   if (!bookings.length) {
     bookingList.innerHTML = '<div class="booking-item muted">No bookings yet. Your first booking will appear here.</div>';
     return;
   }
-
   bookingList.innerHTML = bookings
     .map((booking) => {
       const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
@@ -887,7 +809,6 @@ function renderAdminBookings() {
     adminBookings.innerHTML = '<p class="empty-note">No bookings saved yet.</p>';
     return;
   }
-
   const rows = bookings
     .map((booking) => {
       const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
@@ -959,136 +880,35 @@ function downloadFile(content, filename, mimeType) {
 
 function exportAdminCsv() {
   const bookings = getBookings().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  const lines = [
-    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Outstanding Link,Deposit Link,Form A,Form B,Created"
-  ];
-
+  const lines = ["Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Outstanding Link,Deposit Link,Form A,Form B,Created"];
   if (!bookings.length) {
     lines.push("No bookings saved,,,,,,,,,,,,,,,,,,,,,,");
   } else {
     bookings.forEach((booking) => {
       const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
-      lines.push(
-        [
-          booking.id,
-          vehicle?.name || booking.vehicleId,
-          booking.customerName,
-          booking.customerEmail,
-          booking.customerMobile,
-          booking.customerAddress,
-          booking.customerDob,
-          formatDateTime(booking.pickupAt),
-          formatDateTime(booking.dropoffAt),
-          booking.durationDays,
-          booking.earlyPickup ? "Yes" : "No",
-          booking.dartfordCrossings,
-          `£${booking.hireTotal.toFixed(2)}`,
-          `£${booking.confirmationFee.toFixed(2)}`,
-          `£${booking.outstandingAmount.toFixed(2)}`,
-          `£${booking.depositAmount.toFixed(2)}`,
-          booking.requiredFormType === "short" ? "Short" : "Long",
-          booking.requiredFormLink,
-          booking.status,
-          formatDateTime(booking.reminderAt),
-          booking.outstandingPaymentLink,
-          booking.depositLink,
-          booking.formLinkA,
-          booking.formLinkB,
-          formatDateTime(booking.createdAt)
-        ]
-          .map(csvEscape)
-          .join(",")
-      );
+      lines.push([booking.id, vehicle?.name || booking.vehicleId, booking.customerName, booking.customerEmail, booking.customerMobile, booking.customerAddress, booking.customerDob, formatDateTime(booking.pickupAt), formatDateTime(booking.dropoffAt), booking.durationDays, booking.earlyPickup ? "Yes" : "No", booking.dartfordCrossings, `£${booking.hireTotal.toFixed(2)}`, `£${booking.confirmationFee.toFixed(2)}`, `£${booking.outstandingAmount.toFixed(2)}`, `£${booking.depositAmount.toFixed(2)}`, booking.requiredFormType === "short" ? "Short" : "Long", booking.requiredFormLink, booking.status, formatDateTime(booking.reminderAt), booking.outstandingPaymentLink, booking.depositLink, booking.formLinkA, booking.formLinkB, formatDateTime(booking.createdAt)].map(csvEscape).join(","));
     });
   }
-
   const stamp = new Date().toISOString().slice(0, 10);
   downloadFile(lines.join("\n"), `equine-bookings-${stamp}.csv`, "text/csv;charset=utf-8");
 }
 
 function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function exportAdminPdf() {
   const bookings = getBookings().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const stamp = new Date().toISOString().slice(0, 10);
+  const rows = bookings.length ? bookings.map((booking) => {
+    const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
+    return `<tr><td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td><td>${escapeHtml(booking.customerName)}</td><td>${escapeHtml(booking.customerEmail)}</td><td>${escapeHtml(formatDateTime(booking.pickupAt))}</td><td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td><td>${escapeHtml(booking.earlyPickup ? "Yes" : "No")}</td><td>${escapeHtml(`£${booking.confirmationFee.toFixed(2)}`)}</td><td>${escapeHtml(`£${booking.outstandingAmount.toFixed(2)}`)}</td><td>${escapeHtml(booking.status)}</td></tr>`;
+  }).join("") : "<tr><td colspan='9'>No bookings saved.</td></tr>";
 
-  const rows = bookings.length
-    ? bookings
-        .map((booking) => {
-          const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
-          return `
-            <tr>
-              <td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td>
-              <td>${escapeHtml(booking.customerName)}</td>
-              <td>${escapeHtml(booking.customerEmail)}</td>
-              <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
-              <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
-              <td>${escapeHtml(booking.earlyPickup ? "Yes" : "No")}</td>
-              <td>${escapeHtml(`£${booking.confirmationFee.toFixed(2)}`)}</td>
-              <td>${escapeHtml(`£${booking.outstandingAmount.toFixed(2)}`)}</td>
-              <td>${escapeHtml(booking.status)}</td>
-            </tr>
-          `;
-        })
-        .join("")
-    : "<tr><td colspan='9'>No bookings saved.</td></tr>";
-
-  const reportHtml = `
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <title>Equine Booking Export ${stamp}</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 24px; color: #111827; }
-          h1 { margin: 0 0 8px; }
-          .meta { margin-bottom: 16px; color: #4b5563; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th, td { border: 1px solid #d1d5db; padding: 7px; text-align: left; vertical-align: top; }
-          th { background: #f3f4f6; }
-        </style>
-      </head>
-      <body>
-        <h1>Equine Transport UK Booking Export</h1>
-        <div class="meta">Generated: ${escapeHtml(new Date().toLocaleString())}</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Vehicle</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Pickup</th>
-              <th>Duration</th>
-              <th>Early</th>
-              <th>Paid Now</th>
-              <th>Outstanding</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </body>
-    </html>
-  `;
-
+  const reportHtml = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Equine Booking Export ${stamp}</title><style>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 24px; color: #111827; } h1 { margin: 0 0 8px; } .meta { margin-bottom: 16px; color: #4b5563; } table { width: 100%; border-collapse: collapse; font-size: 12px; } th, td { border: 1px solid #d1d5db; padding: 7px; text-align: left; vertical-align: top; } th { background: #f3f4f6; }</style></head><body><h1>Equine Transport UK Booking Export</h1><div class="meta">Generated: ${escapeHtml(new Date().toLocaleString())}</div><table><thead><tr><th>Vehicle</th><th>Name</th><th>Email</th><th>Pickup</th><th>Duration</th><th>Early</th><th>Paid Now</th><th>Outstanding</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
   const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    alert("Please allow pop-ups to export PDF.");
-    return;
-  }
-
-  printWindow.document.open();
-  printWindow.document.write(reportHtml);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  if (!printWindow) { alert("Please allow pop-ups to export PDF."); return; }
+  printWindow.document.open(); printWindow.document.write(reportHtml); printWindow.document.close(); printWindow.focus(); printWindow.print();
 }
 
 async function notifyBackend(booking, phase) {
@@ -1098,9 +918,7 @@ async function notifyBackend(booking, phase) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phase, booking })
     });
-  } catch (error) {
-    console.warn("Automation endpoint unavailable.", error);
-  }
+  } catch (error) { console.warn("Automation endpoint unavailable.", error); }
 }
 
 async function createStripeCheckoutSession(booking) {
@@ -1110,15 +928,11 @@ async function createStripeCheckoutSession(booking) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ booking })
     });
-
     if (response.ok) {
       const data = await response.json();
       if (data?.checkoutUrl) return data.checkoutUrl;
     }
-  } catch (error) {
-    console.warn("Stripe session endpoint unavailable.", error);
-  }
-
+  } catch (error) { console.warn("Stripe session endpoint unavailable.", error); }
   return is35T(booking.vehicleSnapshot) ? STRIPE_PAYMENT_LINK_35T : STRIPE_PAYMENT_LINK_75T;
 }
 
@@ -1136,18 +950,22 @@ function resetBookingCustomerFields() {
   updateCheckoutSummary();
 }
 
+// --- Event Listeners ---
+
+document.addEventListener("DOMContentLoaded", function() {
+  var yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+});
+
 availabilityForm.addEventListener("submit", (event) => {
   event.preventDefault();
-
   const pickupDate = pickupDateInput.value;
   const pickupTime = pickupTimeInput.value || DEFAULT_PICKUP_TIME;
   const durationDays = Number(durationDaysInput.value);
-
   if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
     availabilityResults.innerHTML = '<p class="empty-note">Enter a valid pickup date and duration.</p>';
     return;
   }
-
   const availableLorries = getAvailableLorries(pickupDate, durationDays, pickupTime);
   renderAvailabilityResults(availableLorries);
 });
@@ -1166,29 +984,14 @@ dartfordEnabledInput.addEventListener("change", () => {
 dartfordCountInput.addEventListener("input", updateCheckoutSummary);
 earlyPickupEnabledInput.addEventListener("change", updateCheckoutSummary);
 hiredWithin3MonthsInput.addEventListener("change", updateCheckoutSummary);
-
 selectedPickupInput.addEventListener("change", checkBookingFormAvailability);
 selectedDurationInput.addEventListener("change", checkBookingFormAvailability);
 
 bookingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-
-  if (!selectedAvailability) {
-    alert("Please select a lorry from the availability results first.");
-    return;
-  }
-
-  const stillAvailable = isVehicleAvailable(
-    selectedAvailability.vehicle.id,
-    selectedAvailability.pickupDate,
-    selectedAvailability.durationDays,
-    selectedAvailability.pickupTime
-  );
-
-  if (!stillAvailable) {
-    alert("That lorry is no longer available for the selected dates. Please search again.");
-    return;
-  }
+  if (!selectedAvailability) { alert("Please select a lorry from the availability results first."); return; }
+  const stillAvailable = isVehicleAvailable(selectedAvailability.vehicle.id, selectedAvailability.pickupDate, selectedAvailability.durationDays, selectedAvailability.pickupTime);
+  if (!stillAvailable) { alert("That lorry is no longer available for the selected dates. Please search again."); return; }
 
   const dartfordCrossings = dartfordEnabledInput.checked ? Math.max(1, Number(dartfordCountInput.value || 1)) : 0;
   const earlyPickup = earlyPickupEnabledInput.checked;
@@ -1209,11 +1012,7 @@ bookingForm.addEventListener("submit", async (event) => {
   const booking = {
     id: bookingId,
     vehicleId: selectedAvailability.vehicle.id,
-    vehicleSnapshot: {
-      id: selectedAvailability.vehicle.id,
-      name: selectedAvailability.vehicle.name,
-      type: selectedAvailability.vehicle.type
-    },
+    vehicleSnapshot: { id: selectedAvailability.vehicle.id, name: selectedAvailability.vehicle.name, type: selectedAvailability.vehicle.type },
     pickupAt: selectedAvailability.pickupAt.toISOString(),
     dropoffAt: selectedAvailability.dropoffAt.toISOString(),
     durationDays: selectedAvailability.durationDays,
@@ -1224,13 +1023,7 @@ bookingForm.addEventListener("submit", async (event) => {
     customerMobile: customerMobileInput.value,
     customerAddress: customerAddressInput.value,
     customerDob: customerDobInput.value,
-    dartfordCrossings,
-    crossingCharge,
-    earlyPickup,
-    earlyPickupCharge,
-    hireTotal,
-    confirmationFee,
-    outstandingAmount,
+    dartfordCrossings, crossingCharge, earlyPickup, earlyPickupCharge, hireTotal, confirmationFee, outstandingAmount,
     depositAmount: SECURITY_DEPOSIT_AMOUNT,
     status: "pending_confirmation_payment",
     reminderAt: getReminderAt(selectedAvailability.pickupAt.toISOString()),
@@ -1238,32 +1031,21 @@ bookingForm.addEventListener("submit", async (event) => {
     depositLink: DEPOSIT_PAYMENT_LINK,
     formLinkA: shortFormLink,
     formLinkB: longFormLink,
-    requiredFormType,
-    requiredFormLink,
-    hiredWithinLast3Months,
+    requiredFormType, requiredFormLink, hiredWithinLast3Months,
     createdAt: new Date().toISOString()
   };
 
   const bookings = getBookings();
   bookings.push(booking);
   saveBookings(bookings);
-
   renderBookings();
   renderAdminBookings();
-
   await notifyBackend(booking, "booking_created");
 
   const checkoutUrl = await createStripeCheckoutSession(booking);
-  if (!checkoutUrl) {
-    alert("Stripe checkout link is not configured yet. Add your Stripe links or backend session endpoint in app.js.");
-    return;
-  }
-
+  if (!checkoutUrl) { alert("Stripe checkout link is not configured yet."); return; }
   bookingSuccess.hidden = false;
-  setTimeout(() => {
-    bookingSuccess.hidden = true;
-  }, 2500);
-
+  setTimeout(() => { bookingSuccess.hidden = true; }, 2500);
   resetBookingCustomerFields();
   window.location.href = checkoutUrl;
 });
@@ -1271,7 +1053,6 @@ bookingForm.addEventListener("submit", async (event) => {
 refreshAdminBtn.addEventListener("click", renderAdminBookings);
 exportAdminCsvBtn.addEventListener("click", exportAdminCsv);
 exportAdminPdfBtn.addEventListener("click", exportAdminPdf);
-
 clearAdminBtn.addEventListener("click", () => {
   if (!confirm("Clear all saved demo bookings?")) return;
   localStorage.removeItem(STORAGE_BOOKINGS);
@@ -1282,11 +1063,10 @@ clearAdminBtn.addEventListener("click", () => {
   selectedBaseInput.value = "";
   const statusEl = document.getElementById("booking-availability-status");
   if (statusEl) { statusEl.textContent = ""; statusEl.hidden = true; }
-  renderBookings();
-  renderAdminBookings();
-  updateCheckoutSummary();
+  renderBookings(); renderAdminBookings(); updateCheckoutSummary();
 });
 
+// --- Initial Render ---
 bookingSubmitBtn.disabled = true;
 renderFleet();
 renderBookings();
