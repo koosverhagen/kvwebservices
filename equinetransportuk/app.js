@@ -433,12 +433,14 @@ function openFleetModal(vehicleId) {
   // Find all images for this lorry and rotate them in the modal overlay
   const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
   const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
-  // Build image list by matching files in images/ that start with code or baseName
-  let imageFiles = window.fleetImages?.filter(img => {
+  // Build image list by matching files in images/ that contain code or baseName (ignoring case and spaces)
+  let imageFiles = (window.fleetImages || []).filter(img => {
+    const imgLower = img.toLowerCase();
+    const codeLower = code.toLowerCase();
+    const baseNameLower = baseName.toLowerCase().replace(/ /g, "");
     // Match by code (e.g. LS23, MM68, CA21) or by lorry type in filename
-    return (code && img.includes(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
-  }) || [vehicle.image.replace("images/", "")];
-
+    return (code && imgLower.includes(codeLower)) || (baseName && imgLower.includes(baseNameLower));
+  });
   // If no images found, fallback to vehicle.image
   if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
     imageFiles = [vehicle.image.replace(/^images\//, "")];
