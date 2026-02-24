@@ -592,14 +592,22 @@ textarea { min-height: 100px; }
     display: flex;
   }
 
+  .hero-actions {
+    flex-direction: column;
+  }
+
   .btn {
-    padding-left: 5px;
-    padding-right: 5px;
+    display: flex;
+    width: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 16px;
   }
 
   input, select, textarea {
-    padding-left: 5px;
-    padding-right: 5px;
+    font-size: 16px;
+    padding-left: 10px;
+    padding-right: 10px;
   }
 }
 
