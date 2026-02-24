@@ -175,29 +175,31 @@
 					</div>
 
 					<form id="booking-form" class="form-grid">
-						<label class="full">Selected lorry
-							<input id="selected-lorry" type="text" readonly placeholder="Choose a lorry from availability results">
-						</label>
-						<label>Pickup
+						<div class="full">
+							<label>Selected lorry</label>
+							<input id="selected-lorry" type="text" readonly>
+						</div>
+						<div>
+							<label>Pickup</label>
 							<input id="selected-pickup" type="text" readonly>
-						</label>
-						<label>Duration
+						</div>
+						<div>
+							<label>Duration</label>
 							<input id="selected-duration" type="text" readonly>
-						</label>
-						<label class="full">Base hire
-							<input id="selected-base" type="text" readonly>
-						</label>
-
-						<label>Full name
+						</div>
+						<div class="full">
+							<label>Base hire cost</label>
+							<input id="selected-base" type="text" readonly style="font-weight:700; color:var(--accent);">
+						</div>
+						<hr class="full" style="border:0; border-top:1px solid var(--line); margin:10px 0;">
+						<div>
+							<label>Full name</label>
 							<input id="customer-name" type="text" required>
-						</label>
-						<label>Email
+						</div>
+						<div>
+							<label>Email</label>
 							<input id="customer-email" type="email" required>
-						</label>
-						<label>Mobile
-							<input id="customer-mobile" type="tel" required>
-						</label>
-						<label>Date of birth
+						</div>
 							<input id="customer-dob" type="date" required>
 						</label>
 						<label class="full">Address
