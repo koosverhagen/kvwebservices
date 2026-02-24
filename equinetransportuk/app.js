@@ -55,9 +55,9 @@ const STRIPE_PAYMENT_LINK_35T = "";
 const STRIPE_PAYMENT_LINK_75T = "";
 const OUTSTANDING_PAYMENT_LINK = "";
 const DEPOSIT_PAYMENT_LINK = "";
-const FORM_LINK_A = "https://www.equinetransportuk.com/shortformsubmit";
-const FORM_LINK_B = "https://www.equinetransportuk.com/longformsubmit";
-const BACKEND_API_BASE = "";
+const FORM_LINK_A = "https://kvwebservices.co.uk/equinetransportuk/shortform.html";
+const FORM_LINK_B = "https://kvwebservices.co.uk/equinetransportuk/longform.html";
+const BACKEND_API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
 
 const vehicles = [
   {
