@@ -334,13 +334,27 @@ function renderFleet() {
     // Find all images for this lorry
     const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
     const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
+    // Find the best matching image for this vehicle
+    let mainImage = null;
+    if (code) {
+      mainImage = window.fleetImages.find(img => img.includes(code));
+    }
+    if (!mainImage) {
+      mainImage = window.fleetImages.find(img => img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, "")));
+    }
+    if (!mainImage) {
+      mainImage = vehicle.image.replace(/^images\//, "");
+    }
+    // Always prefix with images/ if not already
+    mainImage = mainImage.startsWith('images/') ? mainImage : 'images/' + mainImage;
+    // Find all images for the modal/gallery
     let imageFiles = window.fleetImages?.filter(img => {
-      return (code && img.startsWith(code)) || img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
+      if (code && img.includes(code)) return true;
+      return img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
     }) || [vehicle.image.replace("images/", "")];
     if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
       imageFiles = [vehicle.image.replace("images/", "")];
     }
-    // Always prefix with images/ if not already
     imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
     // Slideshow markup
     const slideshowId = `slideshow-${vehicle.id}`;
@@ -348,7 +362,7 @@ function renderFleet() {
     const slideshow = `
       <div class="fleet-slideshow" id="${slideshowId}">
         <div class="fleet-slide-img-wrap" style="position:relative;">
-          <img src="${imageFiles[0]}" alt="${vehicle.name}" class="fleet-slide-img">
+          <img src="${mainImage}" alt="${vehicle.name}" class="fleet-slide-img">
           <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:2;">
             <span class="fleet-overlay-text" style="color:#fff;font-size:18px;font-weight:500;margin-bottom:8px;">View more</span>
             <button class="fleet-overlay-btn" aria-label="View more" style="background:none;border:none;padding:0;cursor:pointer;">
