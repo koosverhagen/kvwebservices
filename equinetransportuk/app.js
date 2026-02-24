@@ -363,11 +363,13 @@ function renderFleet() {
       <div class="fleet-slideshow" id="${slideshowId}">
         <div class="fleet-slide-img-wrap" style="position:relative;">
           <img src="${mainImage}" alt="${vehicle.name}" class="fleet-slide-img">
-          <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:2;">
-            <span class="fleet-overlay-text" style="color:#fff;font-size:18px;font-weight:500;margin-bottom:8px;">View more</span>
-            <button class="fleet-overlay-btn" aria-label="View more" style="background:none;border:none;padding:0;cursor:pointer;">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="12" fill="#1f6feb"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
-            </button>
+          <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;">
+            <div style="display:flex;align-items:center;justify-content:center;filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="12" fill="#1f6feb"/>
+                <polygon points="10,8 16,12 10,16" fill="#fff"/>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
