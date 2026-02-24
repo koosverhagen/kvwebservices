@@ -344,21 +344,21 @@ h1 {
 }
 
 .fleet-card img {
-  width: 100%;
+  width: calc(100% - 10px);
   height: 220px;
   object-fit: cover;
-  border: 5px solid #ffffff;
+  margin: 5px 5px 0;
 }
 
 .fleet-content {
-  padding: 14px;
+  padding: 5px 14px 5px;
   flex: 1 1 auto;
 }
 /* Make fleet card book button full width and aligned */
 .fleet-card-book {
   width: 100%;
-  margin-top: 12px;
-  margin-bottom: 4px;
+  margin-top: 8px;
+  margin-bottom: 0;
   align-self: stretch;
   justify-content: center;
   display: flex;
