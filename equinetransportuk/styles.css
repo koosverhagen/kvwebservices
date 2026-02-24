@@ -514,3 +514,78 @@ textarea { min-height: 100px; }
     grid-template-columns: 1fr;
   }
 }
+
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.nav-toggle-bar {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.nav-toggle.open .nav-toggle-bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.nav-toggle.open .nav-toggle-bar:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.nav-toggle.open .nav-toggle-bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 650px) {
+  .nav-toggle {
+    display: flex;
+  }
+
+  .main-nav {
+    display: none;
+    position: absolute;
+    top: 68px;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    flex-direction: column;
+    padding: 16px 20px;
+    gap: 16px;
+    z-index: 19;
+  }
+
+  .main-nav.open {
+    display: flex;
+  }
+
+  .btn {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  input, select, textarea {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+
+@media (max-width: 350px) {
+  .hero-image {
+    display: none;
+  }
+}
