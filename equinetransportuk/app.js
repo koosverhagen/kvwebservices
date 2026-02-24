@@ -417,18 +417,16 @@ function renderFleet() {
       document.getElementById("selected-lorry").value = vehicle.name;
       window.location.hash = "#booking";
     });
-    fleetGrid.appendChild(card);
-  });
-}
-
-// --- Fleet Modal Logic ---
-const fleetModal = document.getElementById("fleet-modal");
-const fleetModalBackdrop = fleetModal.querySelector(".fleet-modal-backdrop");
-const fleetModalClose = fleetModal.querySelector(".fleet-modal-close");
-const fleetModalGallery = fleetModal.querySelector(".fleet-modal-gallery");
-const fleetModalInfo = fleetModal.querySelector(".fleet-modal-info");
-const fleetModalBook = fleetModal.querySelector(".fleet-modal-book");
-
+        // Ensure mainImage is defined (usually the first image in your array)
+        let imageFiles = window.fleetImages?.filter(img => {
+          if (code && img.includes(code)) return true;
+          return img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
+        }) || [vehicle.image.replace("images/", "")];
+        if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
+          imageFiles = [vehicle.image.replace("images/", "")];
+        }
+        imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
+        const mainImage = imageFiles[0];
 function openFleetModal(vehicleId) {
   const vehicle = vehicles.find(v => v.id === vehicleId);
   if (!vehicle) return;
