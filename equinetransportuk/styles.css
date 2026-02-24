@@ -1,12 +1,12 @@
   /* Apple-style modal centering and glass effect */
-  /* Safari desktop only: Increase button text size */
-  @media not all and (min-resolution: 0.001dpcm) {
-    @media {
-      .btn {
-        font-size: 20px !important;
-      }
+/* Safari desktop only: Increase button text size */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance:none) {
+    .btn, button.btn, a.btn {
+      font-size: 20px !important;
     }
   }
+}
   .fleet-modal {
     display: none; /* Controlled by JS */
     align-items: center;
@@ -278,6 +278,10 @@ h1 {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
 
 .fleet-card img {
@@ -288,6 +292,15 @@ h1 {
 
 .fleet-content {
   padding: 14px;
+  flex: 1 1 auto;
+}
+/* Make fleet card book button full width and aligned */
+.fleet-card-book {
+  width: 100%;
+  margin-top: 12px;
+  align-self: stretch;
+  justify-content: center;
+  display: flex;
 }
 
 .fleet-content h3 {
