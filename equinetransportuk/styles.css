@@ -107,45 +107,18 @@
   justify-content: center;
   cursor: pointer;
   z-index: 2;
-    /* Apple-style glassmorphism overlay for play button and text */
-    background: rgba(30, 34, 40, 0.35);
-    backdrop-filter: blur(10px) saturate(160%);
-    -webkit-backdrop-filter: blur(10px) saturate(160%);
-    border-radius: 18px;
-    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10);
-    padding: 8px 18px;
-    margin-bottom: 8px;
-    transition: background 0.2s;
-    display: inline-flex;
-    align-items: center;
 }
 .fleet-overlay-text {
   color: #fff;
   font-size: 18px;
   font-weight: 500;
   margin-bottom: 8px;
-    background: rgba(30, 34, 40, 0.35);
-    backdrop-filter: blur(10px) saturate(160%);
-    -webkit-backdrop-filter: blur(10px) saturate(160%);
-    border-radius: 18px;
-    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10);
-    transition: background 0.2s;
 }
 .fleet-overlay-btn {
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
-    background: rgba(30, 34, 40, 0.35);
-    border-radius: 50%;
-    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .fleet-overlay-btn:hover, .fleet-overlay-text:hover {
-    background: rgba(30, 34, 40, 0.55);
-  }
 }
 :root {
   --bg: #f6f7f8;
