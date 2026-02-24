@@ -696,3 +696,15 @@ textarea { min-height: 100px; }
     display: none;
   }
 }
+
+/* Safari desktop only: `font: -apple-system-body` is recognised as a valid
+   font shorthand only by Safari/WebKit, not by Chrome, Edge, or Firefox.
+   `(hover: hover) and (pointer: fine)` additionally excludes touch/mobile
+   Safari, keeping this rule strictly for Safari on desktop. */
+@supports (font: -apple-system-body) {
+  @media (hover: hover) and (pointer: fine) {
+    .btn {
+      font-size: 17px;
+    }
+  }
+}
