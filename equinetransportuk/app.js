@@ -420,14 +420,18 @@ function renderFleet() {
       // Scroll booking form into view and focus first input
       const bookingForm = document.getElementById("booking-form");
       if (bookingForm) {
-        // Scroll so that the <h3>Your booking details</h3> heading is at the top of the viewport
-        const headings = bookingForm.querySelectorAll('h3');
+        // Scroll so that the <h3>2) Your booking details</h3> heading is at the top of the viewport
         let bookingHeading = null;
-        headings.forEach(h => {
-          if (h.textContent && h.textContent.trim().toLowerCase().includes('your booking details')) {
-            bookingHeading = h;
-          }
-        });
+        // Look for the heading in the booking section, not just inside the form
+        const bookingSection = document.querySelector('#booking');
+        if (bookingSection) {
+          const headings = bookingSection.querySelectorAll('h3');
+          headings.forEach(h => {
+            if (h.textContent && h.textContent.trim().toLowerCase().includes('your booking details')) {
+              bookingHeading = h;
+            }
+          });
+        }
         if (bookingHeading) {
           setTimeout(() => bookingHeading.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
         } else {
