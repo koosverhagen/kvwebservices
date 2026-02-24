@@ -323,102 +323,58 @@ function getReminderAt(pickupAtIso) {
 
 function renderFleet() {
   fleetGrid.innerHTML = "";
-  vehicles.forEach((vehicle) => {
-    const card = document.createElement("article");
-    card.className = "fleet-card";
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
-    card.setAttribute("aria-label", `View details for ${vehicle.name}`);
-    // Fix label for 'no living' for 7.5T 4 Horses No Living
-    const livingLabel = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
-    // Find all images for this lorry
-    const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
-    const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
-    // Find the best matching image for this vehicle
-    let mainImage = null;
-    if (code) {
-      mainImage = window.fleetImages.find(img => img.includes(code));
-    }
-    if (!mainImage) {
-      mainImage = window.fleetImages.find(img => img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, "")));
-    }
-    if (!mainImage) {
-      mainImage = vehicle.image.replace(/^images\//, "");
-    }
-    // Always prefix with images/ if not already
-    mainImage = mainImage.startsWith('images/') ? mainImage : 'images/' + mainImage;
-    // Find all images for the modal/gallery
-    let imageFiles = window.fleetImages?.filter(img => {
-      if (code && img.includes(code)) return true;
-      return img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
-    }) || [vehicle.image.replace("images/", "")];
-    if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
-      imageFiles = [vehicle.image.replace("images/", "")];
-    }
-    imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
-    // Slideshow markup
-    const slideshowId = `slideshow-${vehicle.id}`;
-    const hasMultiple = imageFiles.length > 1;
-    const slideshow = `
-      <div class="fleet-slideshow" id="${slideshowId}">
-        <div class="fleet-slide-img-wrap" style="position:relative;">
-          <img src="${mainImage}" alt="${vehicle.name}" class="fleet-slide-img">
-          <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:2;">
-            <span class="fleet-overlay-text" style="color:#fff;font-size:18px;font-weight:500;margin-bottom:8px;">View more</span>
-            <button class="fleet-overlay-btn" aria-label="View more" style="background:none;border:none;padding:0;cursor:pointer;">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="12" fill="#1f6feb"/><polygon points="10,8 16,12 10,16" fill="#fff"/></svg>
-            </button>
+    vehicles.forEach((vehicle) => {
+        const card = document.createElement("article");
+        card.className = "fleet-card";
+        // Find all images for the modal/gallery
+        const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
+        const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
+        let mainImage = vehicle.image.replace(/^images\//, "");
+        mainImage = mainImage.startsWith('images/') ? mainImage : 'images/' + mainImage;
+        let imageFiles = window.fleetImages?.filter(img => {
+          if (code && img.includes(code)) return true;
+          return img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
+        }) || [vehicle.image.replace("images/", "")];
+        if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
+          imageFiles = [vehicle.image.replace("images/", "")];
+        }
+        imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
+        const slideshowId = `slideshow-${vehicle.id}`;
+        const hasMultiple = imageFiles.length > 1;
+        const slideshow = \`
+          <div class="fleet-slideshow" id="\${slideshowId}">
+            <div class="fleet-slide-img-wrap" style="position:relative; overflow:hidden; border-radius:16px;">
+              <img src="\${mainImage}" alt="\${vehicle.name}" class="fleet-slide-img">
+              <div class="fleet-img-overlay" data-lorry-id="\${vehicle.id}" 
+                   style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:2;background:rgba(0,0,0,0.2);">
+                <div style="margin-bottom: 12px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="12" fill="#1f6feb"/>
+                    <polygon points="10,8 16,12 10,16" fill="#fff"/>
+                  </svg>
+                </div>
+                <button class="apple-btn" aria-label="More Images">More Images</button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    `;
-    card.innerHTML = `
-      ${slideshow}
-      <div class="fleet-content">
-        <h3>${vehicle.name}</h3>
-        <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${livingLabel}</p>
-        <p class="muted tiny">${vehicle.summary || ""}</p>
-        <p><strong>From £${vehicle.dayRate}</strong> / day</p>
-        ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
-        ${vehicle.pricingModel === "75_living_rules" ? '<p class="muted tiny">1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</p>' : ''}
-        ${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
-        <button class="btn fleet-card-book" data-lorry-id="${vehicle.id}">Book this Lorry</button>
-      </div>
-    `;
-    // Slideshow logic
-    setTimeout(() => {
-      const slideImgs = imageFiles;
-      let idx = 0;
-      const wrap = document.getElementById(slideshowId);
-      if (!wrap) return;
-      const imgEl = wrap.querySelector('.fleet-slide-img');
-      const prevBtn = wrap.querySelector('.fleet-slide-prev');
-      const nextBtn = wrap.querySelector('.fleet-slide-next');
-      function updateImg() {
-        imgEl.src = `images/${slideImgs[idx]}`;
-      }
-      if (prevBtn) {
-        prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
-      }
-      if (nextBtn) {
-        nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
-      }
-    }, 0);
-    // Remove modal opening on card click
-    // Add overlay click handler
-    card.querySelector('.fleet-img-overlay').addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openFleetModal(vehicle.id);
+        \`;
+        // Living label and content
+        const livingLabel = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
+        card.innerHTML = \`
+          \${slideshow}
+          <div class="fleet-content">
+            <h3>\${vehicle.name}</h3>
+            <p class="muted">\${vehicle.type}\${vehicle.code ? \` · \${vehicle.code}\` : ""} · \${vehicle.horses || "—"} horse\${vehicle.horses === 1 ? "" : "s"} · \${vehicle.seats} seats · \${livingLabel}</p>
+            <p class="muted tiny">\${vehicle.summary || ""}</p>
+            <p><strong>From £\${vehicle.dayRate}</strong> / day</p>
+            \${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
+            \${vehicle.pricingModel === "75_living_rules" ? '<p class="muted tiny">1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</p>' : ''}
+            \${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
+            <button class="btn fleet-card-book" data-lorry-id="\${vehicle.id}">Book this Lorry</button>
+          </div>
+        \`;
+        fleetGrid.appendChild(card);
     });
-    // Book button logic
-    card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.getElementById("selected-lorry").value = vehicle.name;
-      window.location.hash = "#booking";
-    });
-    fleetGrid.appendChild(card);
-  });
 }
 
 // --- Fleet Modal Logic ---
