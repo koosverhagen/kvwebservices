@@ -385,19 +385,11 @@ function renderFleet() {
     const mainImage = imageFiles[0];
 
     const slideshowId = `slideshow-${vehicle.id}`;
+    const hasMultiple = imageFiles.length > 1;
     const slideshow = `
-      <div class="fleet-slideshow" id="${slideshowId}">
-        <div class="fleet-slide-img-wrap" style="position:relative;">
-          <img src="${mainImage}" alt="${vehicle.name}" class="fleet-slide-img">
-          <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;">
-            <div style="display:flex;align-items:center;justify-content:center;filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="12" fill="#1f6feb"/>
-                <polygon points="10,8 16,12 10,16" fill="#fff"/>
-              </svg>
-            </div>
-          </div>
-        </div>
+      <div class="fleet-slideshow" id="${slideshowId}" style="position:relative;">
+        <img src="${mainImage}" alt="${vehicle.name}" class="fleet-slide-img">
+        ${hasMultiple ? `<button class="fleet-card-prev" aria-label="Previous image">&#8592;</button><button class="fleet-card-next" aria-label="Next image">&#8594;</button>` : ""}
       </div>
     `;
     card.innerHTML = `
@@ -414,19 +406,24 @@ function renderFleet() {
       </div>
     `;
 
-    setTimeout(() => {
-      const wrap = document.getElementById(slideshowId);
-      if (!wrap) return;
-      const imgEl = wrap.querySelector('.fleet-slide-img');
+    if (hasMultiple) {
       let idx = 0;
-      // Note: Full slideshow logic can be added here if prev/next buttons are added to cards
-    }, 0);
-
-    card.querySelector('.fleet-img-overlay').addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openFleetModal(vehicle.id);
-    });
+      const imgEl = card.querySelector('.fleet-slide-img');
+      const prevBtn = card.querySelector('.fleet-card-prev');
+      const nextBtn = card.querySelector('.fleet-card-next');
+      if (prevBtn && nextBtn && imgEl) {
+        prevBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          idx = (idx - 1 + imageFiles.length) % imageFiles.length;
+          imgEl.src = imageFiles[idx];
+        });
+        nextBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          idx = (idx + 1) % imageFiles.length;
+          imgEl.src = imageFiles[idx];
+        });
+      }
+    }
 
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
       e.stopPropagation();
