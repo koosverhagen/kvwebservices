@@ -523,7 +523,7 @@ textarea { min-height: 100px; }
 
 @media (max-width: 720px) {
   .main-nav { gap: 12px; font-size: 14px; }
-  .brand span { display: none; }
+  .brand span { font-size: 14px; }
   .fleet-grid,
   .booking-list,
   .form-grid {
