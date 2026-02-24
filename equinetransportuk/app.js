@@ -344,12 +344,20 @@ function renderFleet() {
     }
     // Always prefix with images/ if not already
     mainImage = mainImage.startsWith('images/') ? mainImage : 'images/' + mainImage;
-    // Find all images for the modal/gallery
-    let imageFiles = window.fleetImages?.filter(img => {
-      if (code && img.includes(code)) return true;
-      return img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
-    }) || [vehicle.image.replace("images/", "")];
-    if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
+    // Find all images for the modal/gallery using explicit mapping by code
+    let imageFiles = [];
+    if (code === "LS23") {
+      imageFiles = window.fleetImages.filter(img => img.includes("Safety Bar") || img.includes("LS23"));
+    } else if (code === "MM68") {
+      imageFiles = window.fleetImages.filter(img => img.includes("Stallion") || img.includes("MM68"));
+    } else if (code === "CA21") {
+      imageFiles = window.fleetImages.filter(img => img.includes("Breast Bar") || img.includes("CA21"));
+    } else if (vehicle.name.includes("7.5T 3 Horse")) {
+      imageFiles = window.fleetImages.filter(img => img.includes("3 Horses with Living"));
+    } else if (vehicle.name.includes("7.5T 4 Horses")) {
+      imageFiles = window.fleetImages.filter(img => img.includes("4 Horses No Living"));
+    }
+    if (!imageFiles || imageFiles.length === 0) {
       imageFiles = [vehicle.image.replace("images/", "")];
     }
     imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
