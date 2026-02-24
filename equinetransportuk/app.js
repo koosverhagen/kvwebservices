@@ -1,51 +1,3 @@
-// Keep booking form pickup date in sync with availability form and vice versa
-document.addEventListener("DOMContentLoaded", function() {
-  const availPickup = document.getElementById("pickup-date");
-  const bookPickup = document.getElementById("selected-pickup");
-  if (availPickup && bookPickup) {
-    // When availability form changes, update booking form
-    availPickup.addEventListener("change", function() {
-      bookPickup.value = availPickup.value;
-    });
-    // When booking form changes, update availability form
-    bookPickup.addEventListener("change", function() {
-      availPickup.value = bookPickup.value;
-    });
-    // Set initial value
-    if (availPickup.value) bookPickup.value = availPickup.value;
-    else if (bookPickup.value) availPickup.value = bookPickup.value;
-  }
-});
-// Event delegation for Book button clicks
-const fleetGrid = document.getElementById("fleet-grid");
-if (fleetGrid) {
-  fleetGrid.addEventListener("click", function(e) {
-  const btn = e.target.closest(".fleet-card-book");
-  if (btn) {
-    // --- SCROLL LOGIC STARTS HERE ---
-    const bookingSection = document.querySelector('#booking');
-    if (bookingSection) {
-      const headings = bookingSection.querySelectorAll('h3');
-      let targetHeading = null;
-      headings.forEach(h => {
-        if (h.textContent.includes('2)') || h.textContent.toLowerCase().includes('booking details')) {
-          targetHeading = h;
-        }
-      });
-      if (targetHeading) {
-        targetHeading.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-    // --- SCROLL LOGIC ENDS HERE ---
-    // Update the form with the selected lorry's name
-    const vehicleId = btn.dataset.lorryId;
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (vehicle) {
-      document.getElementById("selected-lorry").value = vehicle.name;
-    }
-  }
-  });
-}
 const STORAGE_BOOKINGS = "equinetransportuk_bookings";
 const DARTFORD_CROSSING_PRICE = 4.2;
 const EARLY_PICKUP_PRICE = 20;
@@ -462,7 +414,38 @@ function renderFleet() {
       openFleetModal(vehicle.id);
     });
     // Book button logic
-      // Book button logic is now handled by event delegation below
+    card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById("selected-lorry").value = vehicle.name;
+      // Scroll booking form into view and focus first input
+      const bookingForm = document.getElementById("booking-form");
+      // Improved scroll and focus logic for booking section
+      const bookingSection = document.querySelector('#booking');
+      if (bookingSection) {
+          // Search for the specific heading "2) Your booking details"
+          const headings = bookingSection.querySelectorAll('h3');
+          let targetHeading = null;
+          headings.forEach(h => {
+              if (h.textContent.includes('2)') || h.textContent.toLowerCase().includes('booking details')) {
+                  targetHeading = h;
+              }
+          });
+          if (targetHeading) {
+              targetHeading.scrollIntoView({ 
+                  behavior: "smooth", 
+                  block: "start" 
+              });
+          } else {
+              bookingSection.scrollIntoView({ 
+                  behavior: "smooth", 
+                  block: "start" 
+              });
+          }
+          // Optional: Focus the first input field for better user experience
+          const firstInput = document.getElementById("customer-name");
+          if (firstInput) setTimeout(() => firstInput.focus(), 800);
+      }
+    });
     fleetGrid.appendChild(card);
   });
 }
