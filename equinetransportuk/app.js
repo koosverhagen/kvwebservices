@@ -449,14 +449,37 @@ function openFleetModal(vehicleId) {
   // Modal gallery markup
   let galleryHtml = '<div class="fleet-modal-gallery-inner">';
   imageFiles.forEach((img, idx) => {
-    galleryHtml += `<img src="${img}" alt="${vehicle.name} image ${idx+1}" class="fleet-modal-img" style="display:${idx === 0 ? 'block' : 'none'};">`;
+    galleryHtml += `<div class="fleet-modal-img-wrap" style="position:relative;width:100%;height:100%;display:${idx === 0 ? 'flex' : 'none'};align-items:center;justify-content:center;">`;
+    galleryHtml += `<img src="${img}" alt="${vehicle.name} image ${idx+1}" class="fleet-modal-img">`;
+    galleryHtml += `</div>`;
   });
-  galleryHtml += '</div>';
   if (imageFiles.length > 1) {
     galleryHtml += `<button class="fleet-modal-prev" aria-label="Previous image">&#8592;</button>`;
     galleryHtml += `<button class="fleet-modal-next" aria-label="Next image">&#8594;</button>`;
   }
+  galleryHtml += '</div>';
   fleetModalGallery.innerHTML = galleryHtml;
+
+  // Slideshow logic for modal (updated for new structure)
+  if (imageFiles.length > 1) {
+    let currentIdx = 0;
+    const wraps = fleetModalGallery.querySelectorAll('.fleet-modal-img-wrap');
+    const prevBtn = fleetModalGallery.querySelector('.fleet-modal-prev');
+    const nextBtn = fleetModalGallery.querySelector('.fleet-modal-next');
+    function showImg(idx) {
+      wraps.forEach((wrap, i) => { wrap.style.display = i === idx ? 'flex' : 'none'; });
+    }
+    prevBtn.onclick = (e) => {
+      e.stopPropagation();
+      currentIdx = (currentIdx - 1 + wraps.length) % wraps.length;
+      showImg(currentIdx);
+    };
+    nextBtn.onclick = (e) => {
+      e.stopPropagation();
+      currentIdx = (currentIdx + 1) % wraps.length;
+      showImg(currentIdx);
+    };
+  }
 
   // Show vehicle info and booking button in overlay
   if (typeof fleetModalInfo !== 'undefined' && fleetModalInfo) {
