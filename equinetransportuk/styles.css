@@ -470,6 +470,25 @@ textarea { min-height: 100px; }
   font-size: 14px;
 }
 
+.availability-status {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.availability-status.ok {
+  background: #edfdf2;
+  border: 1px solid #b6efcb;
+  color: #137a3d;
+}
+
+.availability-status.error {
+  background: #fff3f3;
+  border: 1px solid #f5b0b0;
+  color: #b91c1c;
+}
+
 .terms-card h3 {
   margin: 14px 0 8px;
 }

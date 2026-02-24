@@ -187,12 +187,21 @@
 							<input id="selected-pickup" type="date" required>
 						</label>
 						<label>Duration
-							<input id="selected-duration" type="text" readonly>
+							<select id="selected-duration">
+								<option value="0.5">1/2 Day</option>
+								<option value="1" selected>1 Day</option>
+								<option value="2">2 Days</option>
+								<option value="3">3 Days</option>
+								<option value="4">4 Days</option>
+								<option value="5">5 Days</option>
+								<option value="6">6 Days</option>
+								<option value="7">Week</option>
+							</select>
 						</label>
 						<label class="full">Base hire
 							<input id="selected-base" type="text" readonly>
 						</label>
-
+						<div id="booking-availability-status" class="availability-status full" hidden></div>
 						<label>Full name
 							<input id="customer-name" type="text" required>
 						</label>
