@@ -1,4 +1,12 @@
   /* Apple-style modal centering and glass effect */
+  /* Safari desktop only: Increase button text size */
+  @media not all and (min-resolution: 0.001dpcm) {
+    @media {
+      .btn {
+        font-size: 20px !important;
+      }
+    }
+  }
   .fleet-modal {
     display: none; /* Controlled by JS */
     align-items: center;
@@ -605,6 +613,15 @@ textarea { min-height: 100px; }
   }
 
   input, select, textarea {
+    font-size: 16px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  /* Ensure date inputs match other input widths on mobile */
+  input[type="date"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     font-size: 16px;
     padding-left: 10px;
     padding-right: 10px;
