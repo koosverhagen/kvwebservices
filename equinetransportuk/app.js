@@ -183,28 +183,29 @@ function generateNumericBookingId(existingIds = new Set()) {
 
 function buildFormUrl(baseUrl, bookingId) {
   if (!baseUrl) return "";
+  return `${baseUrl}?id=${encodeURIComponent(bookingId)}`;
+}
 
-      if (btn) {
-        // --- SCROLL & FOCUS LOGIC STARTS HERE ---
-        const bookingForm = document.getElementById('booking-form');
-        const pickupInput = document.getElementById('selected-pickup');
-        if (pickupInput) {
-          pickupInput.scrollIntoView({ behavior: "smooth", block: "center" });
-          setTimeout(() => pickupInput.focus(), 600);
-        } else if (bookingForm) {
-          bookingForm.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        // --- SCROLL & FOCUS LOGIC ENDS HERE ---
-        // Update the form with the selected lorry's name
-        const vehicleId = btn.dataset.lorryId;
-        const vehicle = vehicles.find(v => v.id === vehicleId);
-        if (vehicle) {
-          document.getElementById("selected-lorry").value = vehicle.name;
-        }
-      }
+function addDays(date, days) {
   const output = new Date(date);
   output.setDate(output.getDate() + days);
   return output;
+}
+
+function asDate(dateString, timeString) {
+  return new Date(`${dateString}T${timeString}:00`);
+}
+
+function getBookings() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveBookings(bookings) {
+  localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(bookings));
 }
 
 function addHours(date, hours) {
@@ -412,50 +413,7 @@ function renderFleet() {
     // Book button logic
     card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
       e.stopPropagation();
-      document.getElementById("selected-lorry").value = vehicle.name;
-      // Sync pickup date from availability form to booking form
-      const availPickup = document.getElementById("pickup-date");
-      const bookingPickup = document.getElementById("selected-pickup");
-      if (availPickup && bookingPickup) {
-        bookingPickup.value = availPickup.value;
-      }
-      // Scroll booking form into view and focus first input
-      const bookingForm = document.getElementById("booking-form");
-      // Improved scroll and focus logic for booking section
-      const bookingSection = document.querySelector('#booking');
-      if (bookingSection) {
-          // Search for the specific heading "2) Your booking details"
-          const headings = bookingSection.querySelectorAll('h3');
-          let targetHeading = null;
-          headings.forEach(h => {
-              if (h.textContent.includes('2)') || h.textContent.toLowerCase().includes('booking details')) {
-                  targetHeading = h;
-              }
-          });
-          if (targetHeading) {
-              targetHeading.scrollIntoView({ 
-                  behavior: "smooth", 
-                  block: "start" 
-              });
-          } else {
-              bookingSection.scrollIntoView({ 
-                  behavior: "smooth", 
-                  block: "start" 
-              });
-          }
-          // Optional: Focus the first input field for better user experience
-          const firstInput = document.getElementById("customer-name");
-          if (firstInput) setTimeout(() => firstInput.focus(), 800);
-
-          // Keep booking form pickup date in sync if user changes it
-          const bookingPickup = document.getElementById("selected-pickup");
-          const availPickup = document.getElementById("pickup-date");
-          if (bookingPickup && availPickup) {
-            bookingPickup.addEventListener('change', function() {
-              availPickup.value = bookingPickup.value;
-            });
-          }
-      }
+      bookFromVehicle(vehicle.id);
     });
     fleetGrid.appendChild(card);
   });
@@ -500,9 +458,14 @@ function openFleetModal(vehicleId) {
   }
   fleetModalGallery.innerHTML = galleryHtml;
 
-  // Hide info and booking button in overlay
-  if (typeof fleetModalInfo !== 'undefined' && fleetModalInfo) fleetModalInfo.innerHTML = "";
-  if (typeof fleetModalBook !== 'undefined' && fleetModalBook) fleetModalBook.style.display = "none";
+  // Show vehicle info and booking button in overlay
+  if (typeof fleetModalInfo !== 'undefined' && fleetModalInfo) {
+    fleetModalInfo.innerHTML = `<h3>${vehicle.name}</h3><p class="muted">${vehicle.summary || ""}</p>`;
+  }
+  if (typeof fleetModalBook !== 'undefined' && fleetModalBook) {
+    fleetModalBook.style.display = "";
+    fleetModalBook.dataset.lorryId = vehicleId;
+  }
 
   // Slideshow logic for modal
   if (imageFiles.length > 1) {
@@ -546,6 +509,56 @@ fleetModalClose.addEventListener("click", closeFleetModal);
 document.addEventListener("keydown", (e) => {
   if (fleetModal.style.display === "block" && (e.key === "Escape")) closeFleetModal();
 });
+
+fleetModalBook.addEventListener("click", () => {
+  const vehicleId = fleetModalBook.dataset.lorryId;
+  closeFleetModal();
+  if (vehicleId) bookFromVehicle(vehicleId);
+});
+
+function bookFromVehicle(vehicleId) {
+  const vehicle = vehicles.find((v) => v.id === vehicleId);
+  if (!vehicle) return;
+
+  // Set the selected lorry name in the booking form
+  selectedLorryInput.value = vehicle.name;
+
+  // Default pickup date: use availability form date, or today if empty
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultDate = pickupDateInput.value || today;
+  selectedPickupInput.value = defaultDate;
+
+  // Populate duration dropdown for this vehicle and select default
+  populateBookingDurationSelect(vehicle);
+  // Default to 1 day if supported, otherwise first available
+  if (supportsDuration(vehicle, 1)) {
+    selectedDurationInput.value = "1";
+  }
+
+  // Build a preliminary availability object so checkBookingFormAvailability has a vehicle reference
+  const durationDays = Number(selectedDurationInput.value) || 1;
+  const pickupTime = DEFAULT_PICKUP_TIME;
+  selectedAvailability = buildAvailability(vehicle, defaultDate, durationDays, pickupTime);
+  selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+
+  // Trigger availability validation
+  checkBookingFormAvailability();
+
+  // Scroll to booking details heading and focus the pickup date input
+  const bookingSection = document.querySelector("#booking");
+  if (bookingSection) {
+    const headings = bookingSection.querySelectorAll("h3");
+    let targetHeading = null;
+    headings.forEach((h) => {
+      if (h.textContent.includes("2)") || h.textContent.toLowerCase().includes("booking details")) {
+        targetHeading = h;
+      }
+    });
+    const scrollTarget = targetHeading || bookingSection;
+    scrollTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => selectedPickupInput.focus(), 600);
+  }
+}
 
 // Expose images for modal gallery
 window.fleetImages = [
@@ -706,6 +719,79 @@ function updateCheckoutSummary() {
   `;
 }
 
+function populateBookingDurationSelect(vehicle) {
+  const select = selectedDurationInput;
+  if (!(select instanceof HTMLSelectElement)) return;
+  const currentVal = select.value;
+  let hasCurrentVal = false;
+  Array.from(select.options).forEach((opt) => {
+    const isValid = !vehicle || supportsDuration(vehicle, Number(opt.value));
+    opt.disabled = !isValid;
+    opt.hidden = !isValid;
+    if (opt.value === currentVal && isValid) hasCurrentVal = true;
+  });
+  if (!hasCurrentVal) {
+    const firstValid = Array.from(select.options).find((opt) => !opt.disabled);
+    if (firstValid) select.value = firstValid.value;
+  }
+}
+
+function checkBookingFormAvailability() {
+  const statusEl = document.getElementById("booking-availability-status");
+  if (!selectedAvailability) {
+    if (statusEl) { statusEl.textContent = ""; statusEl.hidden = true; }
+    return;
+  }
+  const vehicle = selectedAvailability.vehicle;
+  const pickupDate = selectedPickupInput.value;
+  const durationDays = Number(selectedDurationInput.value);
+
+  if (!pickupDate || !durationDays || durationDays <= 0) {
+    if (statusEl) {
+      statusEl.textContent = "Please select a valid date and duration.";
+      statusEl.className = "availability-status error full";
+      statusEl.hidden = false;
+    }
+    bookingSubmitBtn.disabled = true;
+    return;
+  }
+
+  if (!supportsDuration(vehicle, durationDays)) {
+    if (statusEl) {
+      statusEl.textContent = `${vehicle.name} does not support this duration.`;
+      statusEl.className = "availability-status error full";
+      statusEl.hidden = false;
+    }
+    bookingSubmitBtn.disabled = true;
+    return;
+  }
+
+  const pickupTime = is35T(vehicle) && durationDays === 0.5
+    ? (selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME)
+    : DEFAULT_PICKUP_TIME;
+  const available = isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime);
+
+  if (available) {
+    selectedAvailability = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
+    selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+    if (statusEl) {
+      statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
+      statusEl.className = "availability-status ok full";
+      statusEl.hidden = false;
+    }
+    bookingSubmitBtn.disabled = false;
+    updateCheckoutSummary();
+  } else {
+    if (statusEl) {
+      statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
+      statusEl.className = "availability-status error full";
+      statusEl.hidden = false;
+    }
+    bookingSubmitBtn.disabled = true;
+  }
+}
+
+
 function selectAvailability(vehicleId) {
   const pickupDate = pickupDateInput.value;
   let pickupTime = pickupTimeInput.value;
@@ -725,10 +811,13 @@ function selectAvailability(vehicleId) {
   selectedAvailability = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
 
   selectedLorryInput.value = vehicle.name;
-  selectedPickupInput.value = `${formatDateOnly(pickupDate)} ${selectedAvailability.pickupTime}`;
-  selectedDurationInput.value = formatDurationLabel(durationDays);
+  selectedPickupInput.value = pickupDate;
+  populateBookingDurationSelect(vehicle);
+  selectedDurationInput.value = String(durationDays);
   selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
 
+  const statusEl = document.getElementById("booking-availability-status");
+  if (statusEl) { statusEl.hidden = true; }
   bookingSuccess.hidden = true;
   updateCheckoutSummary();
 }
@@ -1045,6 +1134,9 @@ dartfordCountInput.addEventListener("input", updateCheckoutSummary);
 earlyPickupEnabledInput.addEventListener("change", updateCheckoutSummary);
 hiredWithin3MonthsInput.addEventListener("change", updateCheckoutSummary);
 
+selectedPickupInput.addEventListener("change", checkBookingFormAvailability);
+selectedDurationInput.addEventListener("change", checkBookingFormAvailability);
+
 bookingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -1153,8 +1245,10 @@ clearAdminBtn.addEventListener("click", () => {
   selectedAvailability = null;
   selectedLorryInput.value = "";
   selectedPickupInput.value = "";
-  selectedDurationInput.value = "";
+  populateBookingDurationSelect(null);
   selectedBaseInput.value = "";
+  const statusEl = document.getElementById("booking-availability-status");
+  if (statusEl) { statusEl.textContent = ""; statusEl.hidden = true; }
   renderBookings();
   renderAdminBookings();
   updateCheckoutSummary();
