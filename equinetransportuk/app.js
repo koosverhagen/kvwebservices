@@ -420,12 +420,12 @@ function renderFleet() {
       // Scroll booking form into view and focus first input
       const bookingForm = document.getElementById("booking-form");
       if (bookingForm) {
-        // Try to scroll the heading to the very top, accounting for any sticky nav
+        // Only scroll on button click, not on page load
         const heading = bookingForm.querySelector('h3, .form-title, legend, label');
         if (heading) {
-          heading.scrollIntoView({ behavior: "smooth", block: "start" });
+          setTimeout(() => heading.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
         } else {
-          bookingForm.scrollIntoView({ behavior: "smooth", block: "start" });
+          setTimeout(() => bookingForm.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
         }
         const firstInput = bookingForm.querySelector("input:not([readonly]):not([type='hidden']):not([disabled])");
         if (firstInput) setTimeout(() => firstInput.focus(), 500);
