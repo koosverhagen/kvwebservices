@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horsebox Insurance Proposal Short Form</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .form-section { max-width: 420px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); padding: 18px 16px 24px 16px; }
+    .form-section h2 { font-size: 1.2rem; margin-bottom: 0.5em; }
+    .form-section label { display: block; margin: 12px 0 4px; font-weight: 500; }
+    .form-section input, .form-section textarea, .form-section select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #bbb; margin-bottom: 10px; font-size: 1rem; }
+    .form-section button { width: 100%; padding: 12px; border-radius: 8px; background: #444; color: #fff; font-weight: 600; border: none; font-size: 1.1rem; margin-top: 10px; }
+    .form-section .signature { min-height: 48px; border: 1px solid #bbb; border-radius: 8px; background: #f8f8f8; margin-bottom: 10px; }
+    .form-section .dvla-btn { background: #1769ff; color: #fff; font-weight: 600; border-radius: 8px; padding: 10px; border: none; margin: 10px 0; width: 100%; font-size: 1rem; }
+    .form-section .note { font-size: 0.95em; color: #666; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <form class="form-section" autocomplete="off">
+    <h2>MILLENS SELF DRIVE HIRE<br>HORSEBOX INSURANCE<br>PROPOSAL <b>SHORT FORM</b></h2>
+    <p class="note">I hereby confirm that there have been no change in my personal circumstances nor driving record since I completed my last hire questionnaire and I can still agree the declaration in my long questionnaire.</p>
+    <label>First Name of Hirer / Driver:
+      <input name="firstName" required placeholder="Drivers First Name">
+    </label>
+    <label>Last Name of Hirer / Driver:
+      <input name="lastName" required placeholder="Drivers Last Name">
+    </label>
+    <label>Email:
+      <input name="email" type="email" required placeholder="Drivers Email">
+    </label>
+    <label>Mobile Number:
+      <input name="mobile" required placeholder="Drivers Mobile Number">
+    </label>
+    <label>Driving Licence Number: <span style="font-size:0.95em;">16 digits / capitals</span>
+      <input name="licenceNumber" required placeholder="Drivers Diving Licence Number">
+    </label>
+    <label>Date of the Last Long Form:
+      <input name="lastLongFormDate" type="date" required placeholder="Add Date of Last Long Form">
+    </label>
+    <label>Date of this Hire (must be within 3 months of Last Long Form):
+      <input name="hireDate" type="date" required>
+    </label>
+    <a class="dvla-btn" href="https://www.gov.uk/view-driving-licence" target="_blank">Get Your DVLA Code Here ↗</a>
+    <div class="note">iPhone users: long-press → Open in New Tab</div>
+    <label>DVLA Access Code: <span style="font-size:0.95em;">8 digits / case sensitive</span>
+      <input name="dvlaCode" required placeholder="Drivers DVLA Access Code">
+    </label>
+    <label>Date of Your Last DVLA Access Code:
+      <input name="lastDvlaDate" type="date" required placeholder="Add Date of Last DVLA Code">
+    </label>
+    <label>Your Signature:
+      <textarea name="signature" class="signature" required placeholder="Sign here or type your name"></textarea>
+    </label>
+    <label>Today's Date:
+      <input name="today" type="date" required value="">
+    </label>
+    <button type="submit">Submit</button>
+  </form>
+  <script>
+    // Set today's date
+    document.querySelector('input[name="today"]').value = new Date().toISOString().slice(0,10);
+  </script>
+</body>
+</html>

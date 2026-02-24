@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horsebox Insurance Proposal Long Form</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .form-section { max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); padding: 18px 16px 24px 16px; }
+    .form-section h2 { font-size: 1.2rem; margin-bottom: 0.5em; }
+    .form-section label { display: block; margin: 12px 0 4px; font-weight: 500; }
+    .form-section input, .form-section textarea, .form-section select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #bbb; margin-bottom: 10px; font-size: 1rem; }
+    .form-section button { width: 100%; padding: 12px; border-radius: 8px; background: #444; color: #fff; font-weight: 600; border: none; font-size: 1.1rem; margin-top: 10px; }
+    .form-section .signature { min-height: 48px; border: 1px solid #bbb; border-radius: 8px; background: #f8f8f8; margin-bottom: 10px; }
+    .form-section .dvla-btn { background: #1769ff; color: #fff; font-weight: 600; border-radius: 8px; padding: 10px; border: none; margin: 10px 0; width: 100%; font-size: 1rem; }
+    .form-section .note { font-size: 0.95em; color: #666; margin-bottom: 10px; }
+    .form-section .section-title { background: #eee; border-radius: 8px; padding: 8px 10px; font-weight: 600; margin: 18px 0 8px; }
+    .form-section .checkbox-group { margin-bottom: 10px; }
+    .form-section .checkbox-group label { display: flex; align-items: center; font-weight: 400; margin-bottom: 4px; }
+    .form-section .checkbox-group input[type="checkbox"] { margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <form class="form-section" autocomplete="off">
+    <h2>MILLENS SELF DRIVE HIRE<br>HORSEBOX INSURANCE<br>PROPOSAL <b>LONG FORM</b></h2>
+    <div class="section-title">Hirer and Driver Information (one form per Driver needed).</div>
+    <label>First Name of Hirer / Driver:
+      <input name="firstName" required placeholder="Add your First Name">
+    </label>
+    <label>Last Name of Hirer / Driver:
+      <input name="lastName" required placeholder="Add your last Name">
+    </label>
+    <label>Email of Hirer / Driver:
+      <input name="email" type="email" required placeholder="Add your Email">
+    </label>
+    <label>Mobile Number of Hirer / Driver:
+      <input name="mobile" required placeholder="Add your Mobile Number">
+    </label>
+    <label>Address of Hirer / Driver:
+      <input name="address" required placeholder="Add your Address">
+    </label>
+    <label>How long have you lived here for:
+      <input name="livedHere" required placeholder="Add how long you lived here">
+    </label>
+    <label>Your Occupation:
+      <input name="occupation" required placeholder="Add your Occupation">
+    </label>
+    <label>Your Nationality:
+      <input name="nationality" required placeholder="Add your Nationality">
+    </label>
+    <div class="section-title">Journey Details:</div>
+    <label>Dates of this Hire (Not to exceed 90 days):
+      <input name="hireFrom" type="date" required placeholder="Hire From">
+      <input name="hireUntil" type="date" required placeholder="Hire Until">
+    </label>
+    <label>Reason for this Journey:
+      <input name="journeyReason" required placeholder="Add Reason for this Travel">
+    </label>
+    <label>Where are you traveling to?
+      <input name="travelTo" required placeholder="Add where you will travel to">
+    </label>
+    <div class="checkbox-group">
+      <label>If hiring for more than one day, please confirm the overnight parking arrangements:</label>
+      <label><input type="checkbox" name="parking" value="third-party">A third party yard</label>
+      <label><input type="checkbox" name="parking" value="own-premises">Your own premises</label>
+      <label><input type="checkbox" name="parking" value="road">Parking on the road</label>
+    </div>
+    <div class="section-title">Licence information - UK licences issued by DVLA</div>
+    <label>Driving Licence No. 16 digits / capital letters
+      <input name="licenceNumber" required placeholder="Add Driving Licence Number (First 16 digits)">
+    </label>
+    <a class="dvla-btn" href="https://www.gov.uk/view-driving-licence" target="_blank">Get Your DVLA Code Here ↗</a>
+    <div class="note">iPhone users: long-press → Open in New Tab</div>
+    <label>DVLA Check Code: 8 digits / case sensitive
+      <input name="dvlaCode" required placeholder="Add DVLA Check Code (8 digits)">
+    </label>
+    <label>Date Check Code Obtained:
+      <input name="dvlaDate" type="date" required placeholder="Add Date Check Code Obtained">
+    </label>
+    <div class="section-title">Driver Medical Conditions/Disabilities</div>
+    <label>Do you have any medical conditions or disabilities that are notifiable to the DVLA?
+      <select name="medicalCondition" required>
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </label>
+    <label>If yes, have you notified the DVLA?
+      <select name="notifiedDvla">
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </label>
+    <label>If yes, have you been issued with a licence?
+      <select name="issuedLicence">
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </label>
+    <label>If yes to any of the above, please provide further details below
+      <textarea name="medicalDetails" placeholder="Add more details If any of the above is answered with Yes"></textarea>
+    </label>
+    <div class="section-title">General Questions</div>
+    <label>How often do you drive a motor vehicle in the UK?
+      <input name="driveFrequency" required placeholder="Add How often you drive in UK">
+    </label>
+    <label>How long have you been driving this regularly?
+      <input name="drivingDuration" required placeholder="Add How long you have been driving">
+    </label>
+    <label>What experience do you have of driving a horsebox of the weight you are hiring?
+      <input name="horseboxExperience" required placeholder="Add Your experience driving a horsebox">
+    </label>
+    <label>Have you ever had insurance refused or declined?
+      <select name="insuranceRefused" required>
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </label>
+    <label>Have you ever had insurance cover cancelled?
+      <select name="insuranceCancelled" required>
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </label>
+    <label>Has an insurer ever applied special terms, exclusions or restrictions to your motor insurance?
+      <select name="insuranceRestrictions" required>
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </label>
+    <label>Have you any non-motoring or criminal convictions?
+      <select name="criminalConvictions" required>
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </label>
+    <label>If yes to any of the above, please provide further details below
+      <textarea name="convictionDetails" placeholder="Add more details If any of the above is answered with Yes"></textarea>
+    </label>
+    <div class="section-title">Declaration</div>
+    <div class="note" style="white-space: pre-line;">
+1. I/We declare that the answers given (on which the underwriters will rely when deciding whether to accept the risk and in fixing the premium) are true to the best of my/our knowledge and belief and that no information has been withheld. I/We also agree that if another person has given any information on this form, he or she acted as my/our agent for this purpose. I/We hereby consent to any information you may have about me/us being processed in accordance with the data protection notice on this form.
+2. At your request a copy of this completed form will be supplied to you, provided the request is made within a period of three months after its completion.
+3. Underwriters liability does not operate until acceptance has been notified or a Cover Note delivered to the Insured. If the Proposal should disclose any special features the Underwriters may quote special terms and they reserve the right to decline a proposal.
+4. Details of full policy terms will be supplied on request.
+
+I/We undertake that the vehicle(s) will not be driven by any person(s) who to my/our knowledge:-
+(a) has been refused any motor vehicle insurance or continuance thereof.
+(b) suffers from a notifiable condition not notified to DVLA. You are reminded that you are required by law to inform Drivers Medical Enquiries, DVLA, Swansea SA99 1TU, at once, if you have any disability (including any physical or mental condition) which is or may become likely to affect your fitness as a driver.
+(c) has during the last 5 years been convicted of any of the following motor offences:-manslaughter, causing death by dangerous driving, dangerous driving, driving under the influence of drink or drugs, failing to stop after an accident, any offence or combination of offences which resulted in suspension from driving, unless such person(s) has been declared to the Underwriters and given permission to drive with you, and
+(d) has not held a full driving licence for at least 12 months.
+    </div>
+    <label>Hirer Driver's Signature:
+      <textarea name="signature" class="signature" required placeholder="Sign here or type your name"></textarea>
+    </label>
+    <label>Date of Signing:
+      <input name="signingDate" type="date" required>
+    </label>
+    <div class="section-title">Driving Licence and Identification Paperwork</div>
+    <div class="note">Please indicate what type of driving licence you have been issued with and bring all parts with you on the day of hire.<br>Also bring two address proofs (such as utility bills, bank statement, credit card statement, mobile phone contract) that have been issued in your name at your address.<br>In order to provide this hire, we will need to retain copies of your documents for 12 months. Failure to bring these documents with you, will result in you not being able to complete the hire.<br>You will also need to review / sign the terms and conditions of hire and pay the hire fee before the hire may commence.</div>
+    <div class="checkbox-group">
+      <label><input type="checkbox" name="dvlaLicenceHolder"> DVLA Licence Holder</label>
+      <label><input type="checkbox" name="nonDvlaLicenceHolder"> Non DVLA Licence Holder</label>
+      <label>Proof of Address *</label>
+      <label><input type="checkbox" name="proofAddress1"> Proof of Address 1</label>
+      <label><input type="checkbox" name="proofAddress2"> Proof of Address 2</label>
+      <label><input type="checkbox" name="photoId"> Photo ID</label>
+    </div>
+    <button type="submit">Continue</button>
+  </form>
+</body>
+</html>
