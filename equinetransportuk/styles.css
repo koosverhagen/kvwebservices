@@ -288,7 +288,7 @@ h1 {
 }
 
 .muted { color: var(--muted); }
-.tiny { font-size: 12px; }
+.tiny { font-size: 13px; }
 
 .booking-wrap { padding: 34px 0; }
 .booking-grid {
