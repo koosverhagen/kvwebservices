@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    # Speed Tip: Don't run the build if only non-site files change
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
 
 permissions:
@@ -24,6 +29,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Speed Tip: Only fetch the latest commit
+          fetch-depth: 1
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -31,8 +39,11 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          # Optimization: specify the exact folder if you use a build step
           path: .
 
       - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 # Using v4 for latest speed improvements
         id: deployment
         uses: actions/deploy-pages@v4
