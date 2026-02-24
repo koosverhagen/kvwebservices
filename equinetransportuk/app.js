@@ -1167,6 +1167,8 @@ clearAdminBtn.addEventListener("click", () => {
 });
 
 bookingSubmitBtn.disabled = true;
+
+// Ensure these run after window.fleetImages is defined
 renderFleet();
 renderBookings();
 renderAdminBookings();
