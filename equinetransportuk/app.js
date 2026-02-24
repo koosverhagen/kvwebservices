@@ -447,14 +447,14 @@ function openFleetModal(vehicleId) {
   imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
 
   // Modal gallery markup
-  let galleryHtml = '';
+  let galleryHtml = '<div class="fleet-modal-gallery-inner">';
   imageFiles.forEach((img, idx) => {
-    galleryHtml += `<img src="${img}" alt="${vehicle.name} image ${idx+1}" style="max-width: 90vw; max-height: 80vh; display: ${idx === 0 ? 'block' : 'none'}; margin: 0 auto;" class="fleet-modal-img">`;
+    galleryHtml += `<img src="${img}" alt="${vehicle.name} image ${idx+1}" class="fleet-modal-img" style="display:${idx === 0 ? 'block' : 'none'};">`;
   });
-  // Add slideshow controls if multiple images
+  galleryHtml += '</div>';
   if (imageFiles.length > 1) {
-    galleryHtml += `<button class="fleet-modal-prev" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:10;font-size:2rem;">&#8592;</button>`;
-    galleryHtml += `<button class="fleet-modal-next" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:10;font-size:2rem;">&#8594;</button>`;
+    galleryHtml += `<button class="fleet-modal-prev" aria-label="Previous image">&#8592;</button>`;
+    galleryHtml += `<button class="fleet-modal-next" aria-label="Next image">&#8594;</button>`;
   }
   fleetModalGallery.innerHTML = galleryHtml;
 
