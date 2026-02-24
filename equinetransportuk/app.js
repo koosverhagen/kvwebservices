@@ -420,7 +420,7 @@ function renderFleet() {
       // Scroll booking form into view and focus first input
       const bookingForm = document.getElementById("booking-form");
       if (bookingForm) {
-        bookingForm.scrollIntoView({ behavior: "smooth", block: "center" });
+        bookingForm.scrollIntoView({ behavior: "smooth", block: "start" });
         const firstInput = bookingForm.querySelector("input:not([readonly]):not([type='hidden']):not([disabled])");
         if (firstInput) setTimeout(() => firstInput.focus(), 500);
       }
