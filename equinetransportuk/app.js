@@ -163,6 +163,7 @@ let selectedAvailability = null;
 document.addEventListener("DOMContentLoaded", function() {
   var yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+  // Removed scroll/focus to booking form on page load. Only scroll/focus on booking button click.
 });
 
 function apiUrl(path) {
