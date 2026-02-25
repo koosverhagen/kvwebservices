@@ -557,35 +557,49 @@ textarea { min-height: 100px; }
   background: rgba(0,0,0,.32);
 }
 
-.play-button {
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.95);
-  display: flex;
+
+/* ======================================================
+   APPLE STYLE PLAY BUTTON
+====================================================== */
+
+.apple-play-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  transition: transform .25s ease, opacity .25s ease;
-}
-
-.play-button svg {
-  width: 22px;
-  height: 22px;
-  margin-left: 3px;
-  fill: var(--accent);
-}
-
-.fleet-overlay span {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .12em;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.4);
+  background: rgba(255,255,255,.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: all .25s ease;
 }
 
-.fleet-overlay.playing {
-  background: rgba(0,0,0,.05);
+.apple-play-btn:hover {
+  background: rgba(255,255,255,.28);
+  transform: translateY(-1px);
 }
+
+.apple-play-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: #fff;
+  margin-left: 2px;
+}
+
+/* Fade entire overlay when playing */
+.fleet-overlay.playing {
+  background: transparent;
+}
+
+
+
+
 
 .fleet-overlay.playing .play-button {
   opacity: .45;
