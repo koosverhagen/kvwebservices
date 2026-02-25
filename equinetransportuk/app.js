@@ -320,112 +320,93 @@ function getReminderAt(pickupAtIso) {
 
 function renderFleet() {
   fleetGrid.innerHTML = "";
+
   vehicles.forEach((vehicle) => {
+
     const card = document.createElement("article");
     card.className = "fleet-card";
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
-    card.setAttribute("aria-label", `View details for ${vehicle.name}`);
-    // Fix label for 'no living' for 7.5T 4 Horses No Living
-    const livingLabel = (vehicle.pricingModel === "75_no_living_rules") ? "no living" : (vehicle.overnight ? "living" : "no living");
-    // Find all images for this lorry
-    const code = vehicle.code || vehicle.name.match(/\(([^)]+)\)/)?.[1] || "";
-    const baseName = vehicle.name.replace(/[^\w]+/g, " ").trim();
-    // Find the best matching image for this vehicle
-    let mainImage = null;
-    if (code) {
-      mainImage = window.fleetImages.find(img => img.includes(code));
+
+    const livingLabel =
+      vehicle.pricingModel === "75_no_living_rules"
+        ? "no living"
+        : vehicle.overnight
+        ? "living"
+        : "no living";
+
+    // ----- FIND IMAGES -----
+    const code = vehicle.code || "";
+    const baseName = vehicle.name.replace(/[^\w]+/g, "").toLowerCase();
+
+    let imageFiles =
+      window.fleetImages?.filter((img) => {
+        return (
+          (code && img.includes(code)) ||
+          img.replace(/[^\w]+/g, "").toLowerCase().includes(baseName)
+        );
+      }) || [];
+
+    if (!imageFiles.length) {
+      imageFiles = [vehicle.image.replace(/^images\//, "")];
     }
-    if (!mainImage) {
-      mainImage = window.fleetImages.find(img => img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, "")));
-    }
-    if (!mainImage) {
-      mainImage = vehicle.image.replace(/^images\//, "");
-    }
-    // Always prefix with images/ if not already
-    mainImage = mainImage.startsWith('images/') ? mainImage : 'images/' + mainImage;
-    // Find all images for the modal/gallery
-    let imageFiles = window.fleetImages?.filter(img => {
-      if (code && img.includes(code)) return true;
-      return img.toLowerCase().includes(baseName.toLowerCase().replace(/ /g, ""));
-    }) || [vehicle.image.replace("images/", "")];
-    if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
-      imageFiles = [vehicle.image.replace("images/", "")];
-    }
-    imageFiles = imageFiles.map(f => f.startsWith('images/') ? f : 'images/' + f);
-    // Slideshow markup
-    const slideshowId = `slideshow-${vehicle.id}`;
-    const hasMultiple = imageFiles.length > 1;
-    const slideshow = `
-      <div class="fleet-slideshow" id="${slideshowId}">
-        <div class="fleet-slide-img-wrap" style="position:relative;">
-          <img src="${mainImage}" alt="${vehicle.name}" class="fleet-slide-img">
-          <div class="fleet-img-overlay" data-lorry-id="${vehicle.id}" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;">
-            <div style="display:flex;align-items:center;justify-content:center;filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="12" fill="#1f6feb"/>
-                <polygon points="10,8 16,12 10,16" fill="#fff"/>
-              </svg>
-            </div>
-          </div>
-        </div>
+
+    imageFiles = imageFiles.map((f) =>
+      f.startsWith("images/") ? f : "images/" + f
+    );
+
+    // ----- IMAGE WRAP -----
+    const imageWrap = document.createElement("div");
+    imageWrap.className = "fleet-image-wrap";
+
+    const img = document.createElement("img");
+    img.src = imageFiles[0];
+    img.dataset.images = JSON.stringify(imageFiles);
+
+    const overlay = document.createElement("div");
+    overlay.className = "fleet-overlay";
+
+    overlay.innerHTML = `
+      <div class="play-button">
+        <svg viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z"></path>
+        </svg>
       </div>
+      <span>SEE MORE</span>
     `;
-    card.innerHTML = `
-      ${slideshow}
-      <div class="fleet-content">
-        <h3>${vehicle.name}</h3>
-        <p class="muted">${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · ${vehicle.horses || "—"} horse${vehicle.horses === 1 ? "" : "s"} · ${vehicle.seats} seats · ${livingLabel}</p>
-        <p class="muted tiny">${vehicle.summary || ""}</p>
-        <p><strong>From £${vehicle.dayRate}</strong> / day</p>
-        ${vehicle.pricingModel === "35_duration_rules" ? '<p class="muted tiny">1/2 day £70 · 1 day £100 · 2 days £190 · 3 days £285 · 4 days £380 · 5 days £475 · 6 days £570 · week £665</p>' : ''}
-        ${vehicle.pricingModel === "75_living_rules" ? '<p class="muted tiny">1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</p>' : ''}
-        ${vehicle.pricingModel === "75_no_living_rules" ? '<p class="muted tiny">Default £165/day · weekend uplift: 1 day £175, 2 days £350</p>' : ''}
-        <button class="btn fleet-card-book" data-lorry-id="${vehicle.id}">Book this Lorry</button>
-      </div>
+
+    imageWrap.appendChild(img);
+    imageWrap.appendChild(overlay);
+
+    // ----- CONTENT -----
+    const content = document.createElement("div");
+    content.className = "fleet-content";
+
+    content.innerHTML = `
+      <h3>${vehicle.name}</h3>
+      <p class="muted">
+        ${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · 
+        ${vehicle.horses} horses · ${vehicle.seats} seats · ${livingLabel}
+      </p>
+      <p class="muted tiny">${vehicle.summary}</p>
+      <p><strong>From £${vehicle.dayRate}</strong> / day</p>
+      <button class="btn fleet-card-book" data-lorry-id="${vehicle.id}">
+        Book this Lorry
+      </button>
     `;
-    // Slideshow logic
-    setTimeout(() => {
-      const slideImgs = imageFiles;
-      let idx = 0;
-      const wrap = document.getElementById(slideshowId);
-      if (!wrap) return;
-      const imgEl = wrap.querySelector('.fleet-slide-img');
-      const prevBtn = wrap.querySelector('.fleet-slide-prev');
-      const nextBtn = wrap.querySelector('.fleet-slide-next');
-      function updateImg() {
-        imgEl.src = `images/${slideImgs[idx]}`;
-      }
-      if (prevBtn) {
-        prevBtn.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + slideImgs.length) % slideImgs.length; updateImg(); };
-      }
-      if (nextBtn) {
-        nextBtn.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % slideImgs.length; updateImg(); };
-      }
-    }, 0);
-    // Remove modal opening on card click
-    // Add overlay click handler
-    card.querySelector('.fleet-img-overlay').addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openFleetModal(vehicle.id);
-    });
-    // Book button logic
-    card.querySelector('.fleet-card-book').addEventListener('click', (e) => {
-      e.stopPropagation();
-      bookFromVehicle(vehicle.id);
-    });
+
+    card.appendChild(imageWrap);
+    card.appendChild(content);
+
+    content
+      .querySelector(".fleet-card-book")
+      .addEventListener("click", (e) => {
+        e.stopPropagation();
+        bookFromVehicle(vehicle.id);
+      });
+
     fleetGrid.appendChild(card);
   });
 }
 
-// --- Fleet Modal Logic ---
-const fleetModal = document.getElementById("fleet-modal");
-const fleetModalBackdrop = fleetModal.querySelector(".fleet-modal-backdrop");
-const fleetModalClose = fleetModal.querySelector(".fleet-modal-close");
-const fleetModalGallery = fleetModal.querySelector(".fleet-modal-gallery");
-const fleetModalInfo = fleetModal.querySelector(".fleet-modal-info");
-const fleetModalBook = fleetModal.querySelector(".fleet-modal-book");
 
 function openFleetModal(vehicleId) {
   const vehicle = vehicles.find(v => v.id === vehicleId);
@@ -1259,3 +1240,40 @@ renderFleet();
 renderBookings();
 renderAdminBookings();
 updateCheckoutSummary();
+
+// Apple-style in-card slideshow
+document.addEventListener("click", function (e) {
+
+  const overlay = e.target.closest(".fleet-overlay");
+  if (!overlay) return;
+
+  const wrap = overlay.closest(".fleet-image-wrap");
+  const img = wrap.querySelector("img");
+
+  const images = JSON.parse(img.dataset.images);
+  let idx = 0;
+
+  overlay.classList.add("playing");
+
+  // stop if already running
+  if (wrap._interval) {
+    clearInterval(wrap._interval);
+    wrap._interval = null;
+    overlay.classList.remove("playing");
+    img.src = images[0];
+    return;
+  }
+
+  wrap._interval = setInterval(() => {
+
+    idx = (idx + 1) % images.length;
+
+    img.style.opacity = 0;
+
+    setTimeout(() => {
+      img.src = images[idx];
+      img.style.opacity = 1;
+    }, 150);
+
+  }, 1800);
+});
