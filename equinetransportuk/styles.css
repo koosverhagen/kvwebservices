@@ -1,4 +1,4 @@
-  /* Apple-style modal centering and glass effect */
+/* Apple-style modal centering and glass effect */
 /* Safari desktop only: Increase button text size */
 @media not all and (min-resolution: 0.001dpcm) {
   @supports (-webkit-appearance:none) {
@@ -7,101 +7,102 @@
     }
   }
 }
-  .fleet-modal {
-    display: none; /* Controlled by JS */
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.3s ease;
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    z-index: 1000;
-  }
 
-  .fleet-modal-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: -1;
-  }
-
-  .fleet-modal-content {
-    position: relative;
-    background: #ffffff;
-    width: 90vw;
-    max-width: 900px;
-    max-height: 85vh;
-    border-radius: 28px;
-    padding: 24px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transform: scale(0.95);
-    transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
-  }
-
-  .fleet-modal.open .fleet-modal-content {
-    transform: scale(1);
-  }
-
-  .fleet-modal-gallery {
-    width: 100%;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .fleet-modal-img {
-    border-radius: 16px;
-    object-fit: contain;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  }
-
-  .fleet-modal-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: #f2f2f7;
-    border: none;
-    font-size: 22px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    color: var(--text);
-  }
-
-  .fleet-modal-prev, .fleet-modal-next {
-    background: rgba(255, 255, 255, 0.8);
-    border: none;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 10;
-  }
-  .fleet-modal-prev { left: 20px; }
-  .fleet-modal-next { right: 20px; }
-  .fleet-modal-prev:hover, .fleet-modal-next:hover {
-    background: #ffffff;
-  }
-  position: relative;
+.fleet-modal {
+  display: none; /* Controlled by JS */
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease;
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: 1000;
 }
+
+.fleet-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  /* Updated to a lighter, more vibrant Apple-style glass effect */
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  z-index: -1;
+}
+
+.fleet-modal-content {
+  position: relative;
+  background: #ffffff;
+  width: 90vw;
+  max-width: 900px;
+  max-height: 85vh;
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: scale(0.95);
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.fleet-modal.open .fleet-modal-content {
+  transform: scale(1);
+}
+
+.fleet-modal-gallery {
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fleet-modal-img {
+  border-radius: 16px;
+  object-fit: contain;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.fleet-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f2f2f7;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  color: var(--text);
+}
+
+.fleet-modal-prev, .fleet-modal-next {
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+.fleet-modal-prev { left: 20px; }
+.fleet-modal-next { right: 20px; }
+.fleet-modal-prev:hover, .fleet-modal-next:hover {
+  background: #ffffff;
+}
+
 .fleet-img-overlay {
   position: absolute;
   top: 0;
@@ -128,8 +129,9 @@
   padding: 0;
   cursor: pointer;
 }
+
 :root {
-  --bg: #f6f7f8;
+  --bg: #f5f7fa;
   --card: #ffffff;
   --text: #1d2530;
   --muted: #5a6675;
@@ -140,10 +142,17 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+
 body {
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Updated font stack and background for premium Apple feel */
+  font-family: "SF Pro Display", "SF Pro Text", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   color: var(--text);
-  background: var(--bg);
+  background: linear-gradient(180deg, #f5f7fa 0%, #e8ecf2 100%) !important;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
   line-height: 1.45;
 }
 
@@ -155,8 +164,9 @@ body {
 .site-header {
   position: sticky;
   top: 0;
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(8px);
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--line);
   z-index: 20;
 }
@@ -256,6 +266,12 @@ h1 {
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .btn.ghost {
@@ -282,6 +298,12 @@ h1 {
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.fleet-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
 .fleet-card img {
@@ -294,7 +316,7 @@ h1 {
   padding: 14px;
   flex: 1 1 auto;
 }
-/* Make fleet card book button full width and aligned */
+
 .fleet-card-book {
   width: 100%;
   margin-top: 12px;
@@ -351,6 +373,7 @@ input, select, textarea {
   border: 1px solid var(--line);
   padding: 10px 12px;
   font: inherit;
+  background: #fafbfc;
 }
 
 textarea { min-height: 100px; }
@@ -531,10 +554,7 @@ textarea { min-height: 100px; }
 }
 
 @media (max-width: 980px) {
-  .hero-grid,
-  .booking-grid,
-  .fleet-grid,
-  .booking-list {
+  .hero-grid, .booking-grid, .fleet-grid, .booking-list {
     grid-template-columns: 1fr 1fr;
   }
   .hero-grid { grid-template-columns: 1fr; }
@@ -545,9 +565,7 @@ textarea { min-height: 100px; }
 @media (max-width: 720px) {
   .main-nav { gap: 12px; font-size: 14px; }
   .brand span { font-size: 14px; }
-  .fleet-grid,
-  .booking-list,
-  .form-grid {
+  .fleet-grid, .booking-list, .form-grid {
     grid-template-columns: 1fr;
   }
   .availability-item {
@@ -591,10 +609,7 @@ textarea { min-height: 100px; }
 }
 
 @media (max-width: 650px) {
-  .nav-toggle {
-    display: flex;
-  }
-
+  .nav-toggle { display: flex; }
   .main-nav {
     display: none;
     position: absolute;
@@ -608,53 +623,18 @@ textarea { min-height: 100px; }
     gap: 16px;
     z-index: 19;
   }
-
-  .main-nav.open {
-    display: flex;
-  }
-
-  .hero-actions {
-    flex-direction: column;
-  }
-
-  .btn {
-    display: flex;
-    width: 100%;
-    padding-left: 10px;
-    padding-right: 10px;
-    font-size: 16px;
-  }
-
-  input, select, textarea {
-    font-size: 16px;
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-  /* Ensure date inputs match other input widths on mobile */
-  input[type="date"] {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    font-size: 16px;
-    padding-left: 10px;
-    padding-right: 10px;
-  }
+  .main-nav.open { display: flex; }
+  .hero-actions { flex-direction: column; }
+  .btn { width: 100%; font-size: 16px; }
+  input, select, textarea { font-size: 16px; }
 }
 
 @media (max-width: 350px) {
-  .hero-image {
-    display: none;
-  }
+  .hero-image { display: none; }
 }
 
-/* Safari desktop only: `font: -apple-system-body` is recognised as a valid
-   font shorthand only by Safari/WebKit, not by Chrome, Edge, or Firefox.
-   `(hover: hover) and (pointer: fine)` additionally excludes touch/mobile
-   Safari, keeping this rule strictly for Safari on desktop. */
 @supports (font: -apple-system-body) {
   @media (hover: hover) and (pointer: fine) {
-    .btn {
-      font-size: 17px;
-    }
+    .btn { font-size: 17px; }
   }
 }
