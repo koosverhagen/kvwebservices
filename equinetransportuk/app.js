@@ -373,8 +373,41 @@ function renderFleet() {
       <span>SEE MORE</span>
     `;
 
-    imageWrap.appendChild(img);
-    imageWrap.appendChild(overlay);
+   imageWrap.appendChild(img);
+imageWrap.appendChild(overlay);
+
+// ---- SLIDESHOW LOGIC ----
+let currentIndex = 0;
+let playing = false;
+let interval = null;
+const images = imageFiles;
+
+overlay.addEventListener("click", (e) => {
+  e.stopPropagation();
+
+  if (!playing) {
+    playing = true;
+    overlay.classList.add("playing");
+
+    interval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % images.length;
+      img.style.opacity = 0;
+
+      setTimeout(() => {
+        img.src = images[currentIndex];
+        img.style.opacity = 1;
+      }, 200);
+
+    }, 2500);
+  } else {
+    // reset
+    clearInterval(interval);
+    playing = false;
+    currentIndex = 0;
+    img.src = images[0];
+    overlay.classList.remove("playing");
+  }
+});
 
     // ----- CONTENT -----
     const content = document.createElement("div");
