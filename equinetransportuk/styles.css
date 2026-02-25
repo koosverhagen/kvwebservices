@@ -8,127 +8,6 @@
   }
 }
 
-.fleet-modal {
-  display: none; /* Controlled by JS */
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.3s ease;
-  position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
-  z-index: 1000;
-}
-
-.fleet-modal-backdrop {
-  position: absolute;
-  inset: 0;
-  /* Updated to a lighter, more vibrant Apple-style glass effect */
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  z-index: -1;
-}
-
-.fleet-modal-content {
-  position: relative;
-  background: #ffffff;
-  width: 90vw;
-  max-width: 900px;
-  max-height: 85vh;
-  border-radius: 28px;
-  padding: 24px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: scale(0.95);
-  transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
-}
-
-.fleet-modal.open .fleet-modal-content {
-  transform: scale(1);
-}
-
-.fleet-modal-gallery {
-  width: 100%;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.fleet-modal-img {
-  border-radius: 16px;
-  object-fit: contain;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-}
-
-.fleet-modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #f2f2f7;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
-  color: var(--text);
-}
-
-.fleet-modal-prev, .fleet-modal-next {
-  background: rgba(255, 255, 255, 0.8);
-  border: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-}
-.fleet-modal-prev { left: 20px; }
-.fleet-modal-next { right: 20px; }
-.fleet-modal-prev:hover, .fleet-modal-next:hover {
-  background: #ffffff;
-}
-
-.fleet-img-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(30, 40, 60, 0.45);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 2;
-}
-.fleet-overlay-text {
-  color: #fff;
-  font-size: 18px;
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-.fleet-overlay-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
 
 :root {
   --bg: #f5f7fa;
@@ -637,4 +516,72 @@ textarea { min-height: 100px; }
   @media (hover: hover) and (pointer: fine) {
     .btn { font-size: 17px; }
   }
+}
+
+/* ======================================================
+   FLEET CARD SLIDESHOW (APPLE STYLE)
+====================================================== */
+
+.fleet-image-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.fleet-image-wrap img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  transition: opacity .35s ease, transform .6s ease;
+}
+
+.fleet-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .3s ease;
+}
+
+.fleet-overlay:hover {
+  background: rgba(0,0,0,.35);
+}
+
+.play-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  transition: transform .2s ease, opacity .2s ease;
+}
+
+.play-button svg {
+  width: 22px;
+  height: 22px;
+  margin-left: 3px;
+  fill: var(--accent);
+}
+
+.fleet-overlay span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  color: #fff;
+}
+
+.fleet-overlay.playing {
+  background: rgba(0,0,0,.05);
+}
+
+.fleet-overlay.playing .play-button {
+  opacity: .4;
+  transform: scale(.85);
 }
