@@ -143,7 +143,7 @@ html, body { margin: 0; padding: 0; }
 body {
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
-  background: var(--bg);
+  background: linear-gradient(160deg, #e3f0ff 0%, #f0f6ff 45%, #ddeeff 100%) fixed;
   line-height: 1.45;
 }
 
