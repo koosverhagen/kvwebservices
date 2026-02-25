@@ -364,14 +364,14 @@ function renderFleet() {
     const overlay = document.createElement("div");
     overlay.className = "fleet-overlay";
 
-    overlay.innerHTML = `
-      <div class="play-button">
-        <svg viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z"></path>
-        </svg>
-      </div>
-      <span>SEE MORE</span>
-    `;
+   overlay.innerHTML = `
+  <button class="apple-play-btn">
+    <svg viewBox="0 0 24 24">
+      <path d="M8 5v14l11-7z"></path>
+    </svg>
+    <span>See More</span>
+  </button>
+`;
 
    imageWrap.appendChild(img);
 imageWrap.appendChild(overlay);
@@ -388,6 +388,8 @@ overlay.addEventListener("click", (e) => {
   if (!playing) {
     playing = true;
     overlay.classList.add("playing");
+overlay.querySelector(".apple-play-btn").style.opacity = "0";
+overlay.querySelector(".apple-play-btn").style.pointerEvents = "none";
 
     interval = setInterval(() => {
       currentIndex = (currentIndex + 1) % images.length;
@@ -406,6 +408,9 @@ overlay.addEventListener("click", (e) => {
     currentIndex = 0;
     img.src = images[0];
     overlay.classList.remove("playing");
+const btn = overlay.querySelector(".apple-play-btn");
+btn.style.opacity = "1";
+btn.style.pointerEvents = "auto";
   }
 });
 
