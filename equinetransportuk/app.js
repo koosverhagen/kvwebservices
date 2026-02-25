@@ -739,6 +739,20 @@ function selectAvailability(vehicleId) {
   if (statusEl) { statusEl.hidden = true; }
   bookingSuccess.hidden = true;
   updateCheckoutSummary();
+
+  const bookingSection = document.querySelector("#booking");
+  if (bookingSection) {
+    const headings = bookingSection.querySelectorAll("h3");
+    let targetHeading = null;
+    headings.forEach((h) => {
+      if (h.textContent.includes("2)") || h.textContent.toLowerCase().includes("booking details")) {
+        targetHeading = h;
+      }
+    });
+    const scrollTarget = targetHeading || bookingSection;
+    scrollTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => selectedPickupInput.focus(), 600);
+  }
 }
 
 function bookFromVehicle(vehicleId) {
