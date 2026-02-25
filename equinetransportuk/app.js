@@ -1,3 +1,4 @@
+let activeSlideshow = null;
 const STORAGE_BOOKINGS = "equinetransportuk_bookings";
 const DARTFORD_CROSSING_PRICE = 4.2;
 const EARLY_PICKUP_PRICE = 20;
@@ -382,35 +383,58 @@ let playing = false;
 let interval = null;
 const images = imageFiles;
 
+function startSlideshow() {
+  playing = true;
+  overlay.classList.add("playing");
+
+  const btn = overlay.querySelector(".apple-play-btn");
+  btn.style.opacity = "0";
+  btn.style.pointerEvents = "none";
+
+  interval = setInterval(() => {
+    currentIndex = (currentIndex + 1) % images.length;
+
+    img.style.opacity = 0;
+
+    setTimeout(() => {
+      img.src = images[currentIndex];
+      img.style.opacity = 1;
+    }, 200);
+
+  }, 2500);
+
+  activeSlideshow = stopSlideshow;
+}
+
+function stopSlideshow() {
+  clearInterval(interval);
+  playing = false;
+  currentIndex = 0;
+  img.src = images[0];
+
+  overlay.classList.remove("playing");
+
+  const btn = overlay.querySelector(".apple-play-btn");
+  btn.style.opacity = "1";
+  btn.style.pointerEvents = "auto";
+
+  if (activeSlideshow === stopSlideshow) {
+    activeSlideshow = null;
+  }
+}
+
 overlay.addEventListener("click", (e) => {
   e.stopPropagation();
 
+  // Stop any other active slideshow
+  if (activeSlideshow && activeSlideshow !== stopSlideshow) {
+    activeSlideshow();
+  }
+
   if (!playing) {
-    playing = true;
-    overlay.classList.add("playing");
-overlay.querySelector(".apple-play-btn").style.opacity = "0";
-overlay.querySelector(".apple-play-btn").style.pointerEvents = "none";
-
-    interval = setInterval(() => {
-      currentIndex = (currentIndex + 1) % images.length;
-      img.style.opacity = 0;
-
-      setTimeout(() => {
-        img.src = images[currentIndex];
-        img.style.opacity = 1;
-      }, 200);
-
-    }, 2500);
+    startSlideshow();
   } else {
-    // reset
-    clearInterval(interval);
-    playing = false;
-    currentIndex = 0;
-    img.src = images[0];
-    overlay.classList.remove("playing");
-const btn = overlay.querySelector(".apple-play-btn");
-btn.style.opacity = "1";
-btn.style.pointerEvents = "auto";
+    stopSlideshow();
   }
 });
 
