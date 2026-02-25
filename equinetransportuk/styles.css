@@ -518,20 +518,26 @@ textarea { min-height: 100px; }
   }
 }
 
+
+
 /* ======================================================
    FLEET CARD SLIDESHOW (APPLE STYLE)
 ====================================================== */
 
 .fleet-image-wrap {
   position: relative;
+  width: 100%;
+  height: 220px;
   overflow: hidden;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: #000;
 }
 
 .fleet-image-wrap img {
   width: 100%;
-  height: 220px;
+  height: 100%;
   object-fit: cover;
-  transition: opacity .35s ease, transform .6s ease;
+  transition: opacity .35s ease;
 }
 
 .fleet-overlay {
@@ -542,25 +548,25 @@ textarea { min-height: 100px; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   cursor: pointer;
   transition: background .3s ease;
 }
 
 .fleet-overlay:hover {
-  background: rgba(0,0,0,.35);
+  background: rgba(0,0,0,.32);
 }
 
 .play-button {
-  width: 60px;
-  height: 60px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: rgba(255,255,255,.95);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
   box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  transition: transform .2s ease, opacity .2s ease;
+  transition: transform .25s ease, opacity .25s ease;
 }
 
 .play-button svg {
@@ -582,6 +588,6 @@ textarea { min-height: 100px; }
 }
 
 .fleet-overlay.playing .play-button {
-  opacity: .4;
+  opacity: .45;
   transform: scale(.85);
 }
