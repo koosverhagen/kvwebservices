@@ -12,6 +12,7 @@ export default {
     }
 
     try {
+
       if (request.method === "POST" && url.pathname === "/api/bookings/create-checkout-session") {
         const response = await handleCreateCheckoutSession(request, env);
         return withCors(response, corsHeaders);
@@ -26,6 +27,19 @@ export default {
         const response = await handleAutomationEvent(request, env);
         return withCors(response, corsHeaders);
       }
+
+      /* ===============================
+         NEW: FORM SUBMISSION ENDPOINT
+      ================================ */
+
+      if (request.method === "POST" && url.pathname === "/api/forms/submit") {
+        const response = await handleFormSubmit(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+         DEPOSIT ROUTES
+      ================================ */
 
       if (request.method === "POST" && url.pathname === "/api/deposit/create-intent") {
         const response = await handleCreateDepositIntent(request, env);
@@ -46,6 +60,10 @@ export default {
         const response = await handleSendDepositLink(request, env);
         return withCors(response, corsHeaders);
       }
+
+      /* ===============================
+         GET ROUTES
+      ================================ */
 
       if (request.method === "GET" && url.pathname.startsWith("/api/bookings/")) {
         const bookingId = url.pathname.replace("/api/bookings/", "");
@@ -86,6 +104,7 @@ export default {
       }
 
       return withCors(json({ error: "Not found" }, 404), corsHeaders);
+
     } catch (error) {
       return withCors(
         json({ error: "Server error", detail: error?.message || "Unknown error" }, 500),
@@ -1078,6 +1097,35 @@ async function verifyStripeSignature(rawBody, signatureHeader, webhookSecret) {
   const digest = await crypto.subtle.sign("HMAC", key, payloadData);
   const expected = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
   return expected === signature;
+}
+
+async function handleFormSubmit(request, env) {
+  const payload = await request.json();
+  const bookingID = String(payload?.bookingID || "").trim();
+
+  if (!bookingID) {
+    return json({ error: "Missing bookingID" }, 400);
+  }
+
+  const booking = await getBooking(env, bookingID);
+  if (!booking) {
+    return json({ error: "Booking not found" }, 404);
+  }
+
+  if (booking.formCompleted) {
+    return json({ error: "Form already submitted" }, 400);
+  }
+
+  await env.BOOKINGS_KV.put(
+    `form:${bookingID}`,
+    JSON.stringify(payload)
+  );
+
+  booking.formCompleted = true;
+  booking.formSubmittedAt = new Date().toISOString();
+  await saveBooking(env, booking);
+
+  return json({ success: true });
 }
 
 function assertConfigured(env, keys) {

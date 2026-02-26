@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Equine Transport UK – Long Hire Form</title>
+<link rel="stylesheet" href="form.css">
+</head>
+<body>
+
+<div class="card">
+  <h1>Long Hire Form</h1>
+  <p>Please complete all sections carefully.</p>
+
+  <form id="hire-form">
+
+    <input type="hidden" name="bookingID" id="bookingID">
+
+    <!-- DRIVER -->
+    <h2>Driver Information</h2>
+
+    <input name="firstName" placeholder="First Name" required>
+    <input name="lastName" placeholder="Last Name" required>
+    <input name="email" type="email" placeholder="Email" required>
+    <input name="mobile" placeholder="Mobile Number" required>
+    <input name="address" placeholder="Full Address" required>
+    <input name="addressDuration" placeholder="How long lived here?" required>
+    <input name="occupation" placeholder="Occupation" required>
+    <input name="nationality" placeholder="Nationality" required>
+
+    <!-- JOURNEY -->
+    <h2>Journey Details</h2>
+
+    <input name="hireFrom" type="datetime-local" required>
+    <input name="hireUntil" type="datetime-local" required>
+    <input name="reason" placeholder="Reason for Journey" required>
+    <input name="destination" placeholder="Destination" required>
+
+    <select name="overnightParking" required>
+      <option value="">Overnight Parking</option>
+      <option value="third_party">Third Party Yard</option>
+      <option value="own_premises">Own Premises</option>
+      <option value="road">On Road</option>
+    </select>
+
+    <!-- LICENCE -->
+    <h2>Licence Details</h2>
+
+    <input name="licenceNumber" placeholder="Driving Licence Number" required>
+    <input name="dvlaCode" placeholder="DVLA Check Code" required>
+    <input name="dvlaCodeDate" type="date" required>
+
+    <!-- MEDICAL -->
+    <h2>Medical Declaration</h2>
+
+    <select name="hasCondition" required>
+      <option value="">Medical Condition?</option>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </select>
+
+    <select name="notifiedDVLA" required>
+      <option value="">Notified DVLA?</option>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </select>
+
+    <select name="licenceIssued" required>
+      <option value="">Licence Issued?</option>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </select>
+
+    <textarea name="medicalDetails" placeholder="Additional details"></textarea>
+
+    <!-- INSURANCE -->
+    <h2>Insurance History</h2>
+
+    <input name="ukDrivingFrequency" placeholder="How often do you drive in UK?" required>
+    <input name="drivingExperience" placeholder="How long driving regularly?" required>
+    <input name="horseboxExperience" placeholder="Horsebox experience?" required>
+
+    <select name="insuranceRefused" required>
+      <option value="">Insurance Refused?</option>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </select>
+
+    <select name="insuranceCancelled" required>
+      <option value="">Insurance Cancelled?</option>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </select>
+
+    <select name="insuranceRestrictions" required>
+      <option value="">Restrictions Applied?</option>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </select>
+
+    <select name="convictions" required>
+      <option value="">Criminal Convictions?</option>
+      <option value="no">No</option>
+      <option value="yes">Yes</option>
+    </select>
+
+    <textarea name="insuranceDetails" placeholder="If yes to any, provide details"></textarea>
+
+    <!-- DECLARATION -->
+    <h2>Declaration</h2>
+
+    <label>
+      <input type="checkbox" name="agreeDeclaration" required>
+      I confirm all information provided is true.
+    </label>
+
+    <input type="date" name="signedDate" required>
+
+    <button type="submit">Submit Form</button>
+
+  </form>
+
+  <div id="result"></div>
+</div>
+
+<script src="form.js"></script>
+</body>
+</html>
