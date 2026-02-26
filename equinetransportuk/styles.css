@@ -494,8 +494,7 @@ textarea { min-height: 100px; }
    APPLE STYLE CHECKBOX (PROPER SIZE + ALIGNMENT)
 ====================================================== */
 
-.checkbox-row,
-.grid label {
+.checkbox-row {
   display: flex;
   align-items: center;
   gap: 10px;
