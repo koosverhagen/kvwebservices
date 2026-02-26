@@ -41,12 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   wrapper.classList.toggle("is-visible", shouldShow);
 
+  // 🔥 Bulletproof: override any inline display:none
+  wrapper.style.display = shouldShow ? "" : "none";
+
   input.disabled = !shouldShow;
   input.required = shouldShow;
 
-  if (!shouldShow) {
-    input.value = "";
-  }
+  if (!shouldShow) input.value = "";
 };
 
   const setProjectTypeVisibility = () => {
