@@ -134,9 +134,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const isVisible = (field) => field instanceof HTMLElement && field.offsetParent !== null;
   const valueOf = (field) => String(field?.value ?? "").trim();
 
+  let lastStep = -1;
   const updateStep = () => {
+    if (lastStep === currentStep) return; // Prevent unnecessary updates
     steps.forEach((step, index) => {
-      step.classList.toggle("active", index === currentStep);
+      if (index === currentStep) {
+        step.classList.add("active");
+        step.style.display = "block";
+      } else {
+        step.classList.remove("active");
+        step.style.display = "none";
+      }
     });
 
     if (progressBar && steps.length) {
@@ -146,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
     backButtons.forEach((btn) => {
       btn.style.visibility = currentStep === 0 ? "hidden" : "visible";
     });
+    lastStep = currentStep;
   };
 
   const validateCurrentStep = () => {
