@@ -29,7 +29,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: var(--text);
   background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
-  background-attachment: fixed;
+  @supports (-webkit-touch-callout: none) {
+  body {
+    background-attachment: scroll;
+  }
+}
   background-repeat: no-repeat;
   background-size: cover;
   line-height: 1.45;
@@ -276,6 +280,7 @@ textarea { min-height: 100px; }
 
 .checkline input[type="checkbox"] {
   margin: 0;
+  vertical-align: middle;
 }
 
 .hire-form-info {
@@ -455,6 +460,8 @@ textarea { min-height: 100px; }
   border: 1px solid var(--line);
   background: #fff;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
 }
 
