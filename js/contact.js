@@ -1,4 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Chrome stability mode
+const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+
+if (isChrome) {
+  document.body.classList.add("chrome-safe-funnel");
+}
   const year = document.getElementById("year");
   if (year) year.textContent = String(new Date().getFullYear());
 
