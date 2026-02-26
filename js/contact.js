@@ -1,10 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Chrome stability mode
-const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
 
-if (isChrome) {
-  document.body.classList.add("chrome-safe-funnel");
-}
   const year = document.getElementById("year");
   if (year) year.textContent = String(new Date().getFullYear());
 
@@ -40,19 +35,19 @@ if (isChrome) {
   let selectedProjectType = "";
 
   const showOrHideWrapper = (shouldShow, wrapperId, inputId) => {
-    const wrapper = document.getElementById(wrapperId);
-    const input = document.getElementById(inputId);
-    if (!wrapper || !input) return;
+  const wrapper = document.getElementById(wrapperId);
+  const input = document.getElementById(inputId);
+  if (!wrapper || !input) return;
 
-    wrapper.classList.toggle("is-visible", shouldShow);
-    wrapper.style.display = shouldShow ? "" : "none";
-    input.disabled = !shouldShow;
-    input.required = shouldShow;
+  wrapper.classList.toggle("is-visible", shouldShow);
 
-    if (!shouldShow) {
-      input.value = "";
-    }
-  };
+  input.disabled = !shouldShow;
+  input.required = shouldShow;
+
+  if (!shouldShow) {
+    input.value = "";
+  }
+};
 
   const setProjectTypeVisibility = () => {
     showOrHideWrapper(
@@ -63,21 +58,21 @@ if (isChrome) {
   };
 
   const setPlatformVisibility = () => {
-    const platformWrapper = document.getElementById("platform-wrapper");
-    const platformSelect = document.getElementById("platform");
-    if (!platformWrapper || !platformSelect) return;
+  const platformWrapper = document.getElementById("platform-wrapper");
+  const platformSelect = document.getElementById("platform");
+  if (!platformWrapper || !platformSelect) return;
 
-    const shouldShow = selectedProjectType === "Website Update";
-    platformWrapper.classList.toggle("is-visible", shouldShow);
-    platformWrapper.style.display = shouldShow ? "" : "none";
-    platformSelect.disabled = !shouldShow;
-    platformSelect.required = shouldShow;
+  const shouldShow = selectedProjectType === "Website Update";
 
-    if (!shouldShow) {
-      platformSelect.selectedIndex = 0;
-    }
-  };
+  platformWrapper.classList.toggle("is-visible", shouldShow);
 
+  platformSelect.disabled = !shouldShow;
+  platformSelect.required = shouldShow;
+
+  if (!shouldShow) {
+    platformSelect.selectedIndex = 0;
+  }
+};
   const setSelectOtherVisibility = (selectId, wrapperId, inputId) => {
     const select = document.getElementById(selectId);
     if (!select) return;
@@ -106,28 +101,36 @@ if (isChrome) {
     );
   };
 
-  projectForm.querySelectorAll(".option-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
+  const optionButtons = projectForm.querySelectorAll(".option-btn");
 
-      // Prevent redundant work if already selected
-      if (btn.classList.contains("selected")) return;
+optionButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
 
-      projectForm
-        .querySelectorAll(".option-btn")
-        .forEach((button) => button.classList.remove("selected"));
+    // Prevent redundant work if already selected
+    if (btn.classList.contains("selected")) return;
 
-      btn.classList.add("selected");
-      selectedProjectType = btn.dataset.value || "";
-
-      const hiddenProject = document.getElementById("hidden-project-type");
-      if (hiddenProject) hiddenProject.value = selectedProjectType;
-
-      setProjectTypeVisibility();
-      setPlatformVisibility();
-      refreshAllOtherWrappers();
+    // Clear previous selection
+    optionButtons.forEach((button) => {
+      button.classList.remove("selected");
+      button.setAttribute("aria-pressed", "false");
     });
+
+    // Select current
+    btn.classList.add("selected");
+    btn.setAttribute("aria-pressed", "true");
+
+    selectedProjectType = btn.dataset.value || "";
+
+    const hiddenProject = document.getElementById("hidden-project-type");
+    if (hiddenProject) {
+      hiddenProject.value = selectedProjectType;
+    }
+
+    setProjectTypeVisibility();
+    setPlatformVisibility();
+    refreshAllOtherWrappers();
   });
+});
 
   ["industry", "business-type", "platform", "timeline", "budget", "maintenance"]
     .forEach((id) => {
@@ -137,32 +140,31 @@ if (isChrome) {
       el.addEventListener("input", refreshAllOtherWrappers);
     });
 
-  const isVisible = (field) => field instanceof HTMLElement && field.offsetParent !== null;
+  const isVisible = (field) =>
+  field instanceof HTMLElement &&
+  field.closest(".form-step")?.classList.contains("active");
   const valueOf = (field) => String(field?.value ?? "").trim();
 
   let lastStep = -1;
   const updateStep = () => {
-    if (lastStep === currentStep) return; // Prevent unnecessary updates
-    steps.forEach((step, index) => {
-      if (index === currentStep) {
-        step.classList.add("active");
-        step.style.display = "block";
-      } else {
-        step.classList.remove("active");
-        step.style.display = "none";
-      }
-    });
+  if (lastStep === currentStep) return;
 
-    if (progressBar && steps.length) {
-      progressBar.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
-    }
+  steps.forEach((step, index) => {
+    step.classList.toggle("active", index === currentStep);
+  });
 
-    backButtons.forEach((btn) => {
-      btn.style.visibility = currentStep === 0 ? "hidden" : "visible";
-    });
-    lastStep = currentStep;
-  };
+  if (progressBar && steps.length) {
+    progressBar.style.width =
+      `${((currentStep + 1) / steps.length) * 100}%`;
+  }
 
+  backButtons.forEach((btn) => {
+    btn.style.visibility =
+      currentStep === 0 ? "hidden" : "visible";
+  });
+
+  lastStep = currentStep;
+};
   const validateCurrentStep = () => {
     const step = steps[currentStep];
     if (!step) return true;
