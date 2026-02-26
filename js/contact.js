@@ -163,6 +163,14 @@ optionButtons.forEach((btn) => {
       currentStep === 0 ? "hidden" : "visible";
   });
 
+  // 🔥 CRITICAL: Re-check all conditional wrappers
+  setProjectTypeVisibility();
+  setPlatformVisibility();
+  refreshAllOtherWrappers();
+
+  lastStep = currentStep;
+};
+
   lastStep = currentStep;
 };
   const validateCurrentStep = () => {
