@@ -65,16 +65,17 @@ export default {
          GET ROUTES
       ================================ */
 
+      if (request.method === "GET" && url.pathname === "/api/bookings/ical") {
+        const response = await handleIcalFeed(env);
+        return withCors(response, corsHeaders);
+      }
       if (request.method === "GET" && url.pathname.startsWith("/api/bookings/")) {
         const bookingId = url.pathname.replace("/api/bookings/", "");
         const response = await handleGetBooking(env, bookingId);
         return withCors(response, corsHeaders);
       }
 
-      if (request.method === "GET" && url.pathname === "/api/bookings/ical") {
-        const response = await handleIcalFeed(env);
-        return withCors(response, corsHeaders);
-      }
+      
 
       if (request.method === "GET" && url.pathname === "/api/deposit/list-all") {
         const response = await handleDepositListAll(env);
@@ -97,11 +98,17 @@ export default {
         const response = await handleDepositPayPage(url, env);
         return withCors(response, corsHeaders);
       }
+     if (request.method === "GET" && url.pathname.startsWith("/api/forms/")) {
+  const providedKey = request.headers.get("x-app-key");
 
-      if (request.method === "GET" && url.pathname === "/api/bookings/reminders/run") {
-        const response = await runDueReminders(env);
-        return withCors(response, corsHeaders);
-      }
+  if (!env.APP_API_KEY || providedKey !== env.APP_API_KEY) {
+    return withCors(json({ error: "Unauthorized" }, 401), corsHeaders);
+  }
+
+  const bookingId = url.pathname.replace("/api/forms/", "");
+  const response = await handleGetForm(env, bookingId);
+  return withCors(response, corsHeaders);
+}
 
       return withCors(json({ error: "Not found" }, 404), corsHeaders);
 
@@ -279,6 +286,19 @@ async function handleAutomationEvent(request, env) {
   booking = await enrichBookingCompliance(env, booking);
   await saveBooking(env, booking);
   return json({ ok: true, stored: booking.id });
+}
+async function handleGetForm(env, bookingId) {
+  const id = String(bookingId || "").trim();
+  if (!id) return json({ error: "Missing bookingID" }, 400);
+
+  const raw = await env.BOOKINGS_KV.get(`form:${id}`);
+  if (!raw) return json({ error: "Form not found" }, 404);
+
+  // return exact stored JSON
+  return new Response(raw, {
+    status: 200,
+    headers: JSON_HEADERS
+  });
 }
 
 async function handleCreateDepositIntent(request, env) {

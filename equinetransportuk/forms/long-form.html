@@ -1,128 +1,685 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Equine Transport UK – Long Hire Form</title>
-<link rel="stylesheet" href="form.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Long Hire Form | Equine Transport UK</title>
+
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --accent:#1f6feb;
+      --accent2:#0b5bd3;
+      --radius:16px;
+      --shadow: 0 14px 40px rgba(15,23,42,.12);
+      --shadow2: 0 10px 25px rgba(15,23,42,.10);
+      --input:#f8fafc;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 18px 14px 32px;
+    }
+
+    .wrap{max-width:820px;margin:0 auto}
+    .header-card{
+      background: linear-gradient(180deg, #ffffff, #fbfcff);
+      border:1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow2);
+      padding: 16px 16px 14px;
+      margin-bottom: 14px;
+      position: sticky;
+      top: 10px;
+      z-index: 5;
+      backdrop-filter: blur(8px);
+    }
+    .brand-title{
+      font-weight:800;
+      letter-spacing:-.4px;
+      font-size: 20px;
+      margin:0;
+      text-transform: uppercase;
+    }
+    .brand-sub{
+      margin:8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .section{
+      background: var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      margin: 12px 0;
+    }
+
+    .section h2{
+      margin:0 0 10px;
+      font-size: 16px;
+      letter-spacing:-.2px;
+      background: #6b7280;
+      color:#fff;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    @media (min-width: 740px){
+      .grid.two{ grid-template-columns: repeat(2, 1fr); }
+      .grid.three{ grid-template-columns: repeat(3, 1fr); }
+    }
+
+    label{
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input, select, textarea{
+      width:100%;
+      border: 1px solid #d7dde6;
+      background: var(--input);
+      border-radius: 12px;
+      padding: 12px 12px;
+      min-height: 44px;
+      font-size: 15px;
+      outline: none;
+      transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+    }
+
+    textarea{ min-height: 110px; resize: vertical; }
+
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(31,111,235,.45);
+      box-shadow: 0 0 0 4px rgba(31,111,235,.14);
+      background:#fff;
+    }
+
+    .hint{
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .row{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      min-height: 46px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration:none;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .btn.primary{
+      background: var(--accent);
+      border-color: var(--accent);
+      color:#fff;
+    }
+    .btn.primary:hover{ background: var(--accent2); border-color: var(--accent2); }
+    .btn.ghost{
+      background: #fff;
+      border-color: var(--line);
+      color: var(--text);
+    }
+    .btn.full{ width:100%; }
+
+    .divider{
+      height: 1px;
+      background: var(--line);
+      margin: 12px 0;
+    }
+
+    .checkbox-row{
+      display:flex;
+      align-items:flex-start;
+      gap: 10px;
+      padding: 10px 0 0;
+    }
+    .checkbox-row input{ width:18px; height:18px; min-height:auto; margin-top: 2px; }
+    .checkbox-row .text{
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .status{
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .status.ok{color:#0f766e;font-weight:700}
+    .status.err{color:#b42318;font-weight:700}
+
+    .small{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .top-meta{
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .pill{
+      background:#eef2ff;
+      border:1px solid #dbeafe;
+      color:#1e3a8a;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Keep the page from feeling "raw" on huge screens */
+    .spacer{ height: 8px; }
+  </style>
 </head>
+
 <body>
+  <div class="wrap">
 
-<div class="card">
-  <h1>Long Hire Form</h1>
-  <p>Please complete all sections carefully.</p>
+    <div class="header-card">
+      <h1 class="brand-title">Millens Self Drive Hire Horsebox Insurance Proposal <span style="opacity:.75">Long Form</span></h1>
+      <div class="top-meta">
+        <div class="pill">One form per driver</div>
+        <div class="pill">Booking ID: <span id="bookingIdPill">—</span></div>
+      </div>
+      <p class="brand-sub">
+        Please complete all sections carefully. All forms must be completed in the <strong>driver’s name</strong>.
+        You will need your DVLA check code (8 digits, case sensitive).
+      </p>
+    </div>
 
-  <form id="hire-form">
+    <form id="longForm" novalidate>
 
-    <input type="hidden" name="bookingID" id="bookingID">
+      <!-- Driver info -->
+      <section class="section">
+        <h2>Hirer and Driver Information</h2>
 
-    <!-- DRIVER -->
-    <h2>Driver Information</h2>
+        <div class="grid two">
+          <div>
+            <label for="firstName">First Name of Hirer / Driver</label>
+            <input id="firstName" name="firstName" autocomplete="given-name" required placeholder="Add your first name">
+          </div>
 
-    <input name="firstName" placeholder="First Name" required>
-    <input name="lastName" placeholder="Last Name" required>
-    <input name="email" type="email" placeholder="Email" required>
-    <input name="mobile" placeholder="Mobile Number" required>
-    <input name="address" placeholder="Full Address" required>
-    <input name="addressDuration" placeholder="How long lived here?" required>
-    <input name="occupation" placeholder="Occupation" required>
-    <input name="nationality" placeholder="Nationality" required>
+          <div>
+            <label for="lastName">Last Name of Hirer / Driver</label>
+            <input id="lastName" name="lastName" autocomplete="family-name" required placeholder="Add your last name">
+          </div>
+        </div>
 
-    <!-- JOURNEY -->
-    <h2>Journey Details</h2>
+        <div class="grid two">
+          <div>
+            <label for="email">Email of Hirer / Driver</label>
+            <input id="email" name="email" type="email" autocomplete="email" required placeholder="Add your email">
+          </div>
 
-    <input name="hireFrom" type="datetime-local" required>
-    <input name="hireUntil" type="datetime-local" required>
-    <input name="reason" placeholder="Reason for Journey" required>
-    <input name="destination" placeholder="Destination" required>
+          <div>
+            <label for="mobile">Mobile Number of Hirer / Driver</label>
+            <input id="mobile" name="mobile" autocomplete="tel" required placeholder="Add your mobile number">
+          </div>
+        </div>
 
-    <select name="overnightParking" required>
-      <option value="">Overnight Parking</option>
-      <option value="third_party">Third Party Yard</option>
-      <option value="own_premises">Own Premises</option>
-      <option value="road">On Road</option>
-    </select>
+        <div class="grid two">
+          <div>
+            <label for="address">Address of Hirer / Driver</label>
+            <input id="address" name="address" autocomplete="street-address" required placeholder="Add your address">
+          </div>
 
-    <!-- LICENCE -->
-    <h2>Licence Details</h2>
+          <div>
+            <label for="howLongHere">How long have you lived here for?</label>
+            <input id="howLongHere" name="howLongHere" required placeholder="e.g. 2 years">
+          </div>
+        </div>
 
-    <input name="licenceNumber" placeholder="Driving Licence Number" required>
-    <input name="dvlaCode" placeholder="DVLA Check Code" required>
-    <input name="dvlaCodeDate" type="date" required>
+        <div class="grid two">
+          <div>
+            <label for="occupation">Your Occupation</label>
+            <input id="occupation" name="occupation" required placeholder="Add your occupation">
+          </div>
 
-    <!-- MEDICAL -->
-    <h2>Medical Declaration</h2>
+          <div>
+            <label for="nationality">Your Nationality</label>
+            <input id="nationality" name="nationality" required placeholder="Add your nationality">
+          </div>
+        </div>
+      </section>
 
-    <select name="hasCondition" required>
-      <option value="">Medical Condition?</option>
-      <option value="no">No</option>
-      <option value="yes">Yes</option>
-    </select>
+      <!-- Journey -->
+      <section class="section">
+        <h2>Journey Details</h2>
 
-    <select name="notifiedDVLA" required>
-      <option value="">Notified DVLA?</option>
-      <option value="no">No</option>
-      <option value="yes">Yes</option>
-    </select>
+        <p class="small"><strong>Dates of this hire (not to exceed 90 days).</strong></p>
 
-    <select name="licenceIssued" required>
-      <option value="">Licence Issued?</option>
-      <option value="no">No</option>
-      <option value="yes">Yes</option>
-    </select>
+        <div class="grid two">
+          <div>
+            <label for="hireFrom">Hire From</label>
+            <input id="hireFrom" name="hireFrom" type="datetime-local" required>
+          </div>
+          <div>
+            <label for="hireUntil">Hire Until</label>
+            <input id="hireUntil" name="hireUntil" type="datetime-local" required>
+          </div>
+        </div>
 
-    <textarea name="medicalDetails" placeholder="Additional details"></textarea>
+        <div class="grid two">
+          <div>
+            <label for="journeyReason">Reason for this Journey</label>
+            <input id="journeyReason" name="journeyReason" required placeholder="Add reason for this travel">
+          </div>
+          <div>
+            <label for="destination">Where are you travelling to?</label>
+            <input id="destination" name="destination" required placeholder="Add where you will travel to">
+          </div>
+        </div>
 
-    <!-- INSURANCE -->
-    <h2>Insurance History</h2>
+        <div class="divider"></div>
 
-    <input name="ukDrivingFrequency" placeholder="How often do you drive in UK?" required>
-    <input name="drivingExperience" placeholder="How long driving regularly?" required>
-    <input name="horseboxExperience" placeholder="Horsebox experience?" required>
+        <div>
+          <label for="overnightParking">Overnight Parking Arrangement (if hiring more than one day)</label>
+          <select id="overnightParking" name="overnightParking" required>
+            <option value="" selected disabled>Select an option</option>
+            <option value="third_party_yard">A third party yard</option>
+            <option value="own_premises">Your own premises</option>
+            <option value="on_road">Parking on the road</option>
+          </select>
+        </div>
+      </section>
 
-    <select name="insuranceRefused" required>
-      <option value="">Insurance Refused?</option>
-      <option value="no">No</option>
-      <option value="yes">Yes</option>
-    </select>
+      <!-- Licence -->
+      <section class="section">
+        <h2>Licence Information (UK licences issued by DVLA)</h2>
 
-    <select name="insuranceCancelled" required>
-      <option value="">Insurance Cancelled?</option>
-      <option value="no">No</option>
-      <option value="yes">Yes</option>
-    </select>
+        <div class="grid two">
+          <div>
+            <label for="drivingLicenceNumber">Driving Licence No. (16 digits / capital letters)</label>
+            <input id="drivingLicenceNumber" name="drivingLicenceNumber" required placeholder="Add driving licence number">
+          </div>
 
-    <select name="insuranceRestrictions" required>
-      <option value="">Restrictions Applied?</option>
-      <option value="no">No</option>
-      <option value="yes">Yes</option>
-    </select>
+          <div>
+            <label for="dvlaCheckCode">DVLA Check Code (8 digits, case sensitive)</label>
+            <input id="dvlaCheckCode" name="dvlaCheckCode" required placeholder="Add DVLA check code (8 digits)">
+          </div>
+        </div>
 
-    <select name="convictions" required>
-      <option value="">Criminal Convictions?</option>
-      <option value="no">No</option>
-      <option value="yes">Yes</option>
-    </select>
+        <div class="grid two">
+          <div>
+            <label for="dvlaCodeDate">Date Check Code Obtained</label>
+            <input id="dvlaCodeDate" name="dvlaCodeDate" type="date" required>
+          </div>
 
-    <textarea name="insuranceDetails" placeholder="If yes to any, provide details"></textarea>
+          <div>
+            <label>&nbsp;</label>
+            <a class="btn primary full"
+               href="https://www.viewdrivingrecord.service.gov.uk/driving-record/licence-number"
+               target="_blank"
+               rel="noopener noreferrer">
+              Get Your DVLA Code Here ↗
+            </a>
+            <div class="hint">iPhone users: long-press → “Open in New Tab”.</div>
+          </div>
+        </div>
+      </section>
 
-    <!-- DECLARATION -->
-    <h2>Declaration</h2>
+      <!-- Medical -->
+      <section class="section">
+        <h2>Driver Medical Conditions / Disabilities</h2>
 
-    <label>
-      <input type="checkbox" name="agreeDeclaration" required>
-      I confirm all information provided is true.
-    </label>
+        <p class="small">
+          Do you have any medical conditions or disabilities that are notifiable to the DVLA?
+          DVLA guidance: <a href="https://www.gov.uk/driving-medical-conditions" target="_blank" rel="noopener noreferrer">driving medical conditions ↗</a>
+        </p>
 
-    <input type="date" name="signedDate" required>
+        <div class="grid three">
+          <div>
+            <label for="medicalCondition">Medical Condition / Disability</label>
+            <select id="medicalCondition" name="medicalCondition" required>
+              <option value="" selected disabled>Select</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+          <div>
+            <label for="notifiedDvla">If yes, have you notified the DVLA?</label>
+            <select id="notifiedDvla" name="notifiedDvla" required>
+              <option value="" selected disabled>Select</option>
+              <option value="n/a">N/A</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+          <div>
+            <label for="issuedLicence">If yes, have you been issued with a licence?</label>
+            <select id="issuedLicence" name="issuedLicence" required>
+              <option value="" selected disabled>Select</option>
+              <option value="n/a">N/A</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+        </div>
 
-    <button type="submit">Submit Form</button>
+        <div class="spacer"></div>
 
-  </form>
+        <div>
+          <label for="medicalDetails">If yes to any above, please provide further details</label>
+          <textarea id="medicalDetails" name="medicalDetails" placeholder="Add more details (only if any above is Yes)"></textarea>
+        </div>
+      </section>
 
-  <div id="result"></div>
+      <!-- Insurance history -->
+      <section class="section">
+        <h2>General Questions</h2>
+
+        <div class="grid two">
+          <div>
+            <label for="howOftenDrive">How often do you drive a motor vehicle in the UK?</label>
+            <input id="howOftenDrive" name="howOftenDrive" required placeholder="Add how often you drive in UK">
+          </div>
+
+          <div>
+            <label for="howLongDriving">How long have you been driving this regularly?</label>
+            <input id="howLongDriving" name="howLongDriving" required placeholder="Add how long you have been driving">
+          </div>
+        </div>
+
+        <div>
+          <label for="horseboxExperience">What experience do you have of driving a horsebox of the weight you are hiring?</label>
+          <textarea id="horseboxExperience" name="horseboxExperience" required placeholder="Add your experience driving a horsebox"></textarea>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="grid three">
+          <div>
+            <label for="insuranceRefused">Have you ever had insurance refused or declined?</label>
+            <select id="insuranceRefused" name="insuranceRefused" required>
+              <option value="" selected disabled>Select</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="insuranceCancelled">Have you ever had insurance cover cancelled?</label>
+            <select id="insuranceCancelled" name="insuranceCancelled" required>
+              <option value="" selected disabled>Select</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="restrictionsApplied">Has an insurer ever applied special terms / exclusions / restrictions?</label>
+            <select id="restrictionsApplied" name="restrictionsApplied" required>
+              <option value="" selected disabled>Select</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div>
+            <label for="criminalConvictions">Have you any non-motoring or criminal convictions?</label>
+            <select id="criminalConvictions" name="criminalConvictions" required>
+              <option value="" selected disabled>Select</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="insuranceDetails">If yes to any above, please provide details</label>
+            <textarea id="insuranceDetails" name="insuranceDetails" placeholder="If yes to any, provide details"></textarea>
+          </div>
+        </div>
+      </section>
+
+<!-- DECLARATION + PAPERWORK -->
+<section class="section">
+  <h2>Declaration & Identification Paperwork</h2>
+
+  <div class="small" style="margin-bottom:14px; line-height:1.5">
+
+    <p>
+      1. I/We declare that the answers given (on which the underwriters will rely when deciding whether to accept the risk and in fixing the premium) are true to the best of my/our knowledge and belief and that no information has been withheld.
+    </p>
+
+    <p>
+      2. At your request a copy of this completed form will be supplied to you, provided the request is made within a period of three months after its completion.
+    </p>
+
+    <p>
+      3. Underwriters liability does not operate until acceptance has been notified or a Cover Note delivered to the Insured.
+    </p>
+
+    <p>
+      4. I/We undertake that the vehicle(s) will not be driven by any person(s) who:
+      <br>(a) has been refused motor vehicle insurance
+      <br>(b) suffers from a notifiable condition not notified to DVLA
+      <br>(c) has during the last 5 years been convicted of dangerous driving, drink/drugs offences or similar
+      <br>(d) has not held a full driving licence for at least two years.
+    </p>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Signature -->
+  <div class="grid two">
+    <div>
+      <label for="signature">Hirer Driver's Signature</label>
+      <textarea id="signature" name="signature"
+        placeholder="Type full name as digital signature"
+        required></textarea>
+        <div class="hint">
+  By typing your full name, you agree this constitutes your electronic signature.
+</div>
+    </div>
+
+    <div>
+      <label for="signedDate">Date of Signing</label>
+      <input id="signedDate" name="signedDate" type="date" required>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Driving Licence & Paperwork -->
+  <h2>Driving Licence and Identification Paperwork</h2>
+  <div class="small" style="margin-bottom:12px; line-height:1.5">
+    <p>
+      Please indicate what type of driving licence you have been issued with and bring all parts with you on the day of hire.
+    </p>
+
+    <p>
+      Please also bring two address proofs (utility bill, bank statement, credit card statement, mobile phone contract)
+      issued in your name at your address.
+    </p>
+
+    <p>
+      In order to provide this hire, we will need to retain copies of your documents for 12 months.
+      Failure to bring these documents with you will result in you not being able to complete the hire.
+    </p>
+  </div>
+
+  <!-- Licence Holder Type -->
+  <div class="grid two">
+    <label style="display:flex;gap:10px;align-items:center">
+  <input type="checkbox" name="dvlaLicenceHolder" value="yes">
+  ✓ DVLA Licence Holder
+</label>
+
+<label style="display:flex;gap:10px;align-items:center">
+  <input type="checkbox" name="nonDvlaLicenceHolder" value="yes">
+  ✓ Non DVLA Licence Holder
+</label>
+  </div>
+
+  <div class="divider"></div>
+
+  <h3 style="margin-top:0;font-size:15px">Proof of Address</h3>
+
+  <div class="grid two">
+    <label style="display:flex;gap:10px;align-items:center">
+  <input type="checkbox" name="proofAddress1" value="yes">
+  ✓ Proof of Address 1
+</label>
+
+<label style="display:flex;gap:10px;align-items:center">
+  <input type="checkbox" name="proofAddress2" value="yes">
+  ✓ Proof of Address 2
+</label>
+  </div>
+
+  <div style="margin-top:10px">
+    <label style="display:flex;gap:10px;align-items:center">
+  <input type="checkbox" name="photoId" value="yes">
+  ✓ Photo ID (Photocard Licence / Passport / etc.)
+</label>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Confirm checkbox -->
+  <div class="checkbox-row">
+  <input id="confirmTrue"
+         name="confirmTrue"
+         type="checkbox"
+         value="yes"
+         required>
+
+  <div class="text">
+    I confirm all information provided is true and I agree to the terms above.
+  </div>
 </div>
 
-<script src="form.js"></script>
+  <div style="margin-top:16px">
+    <button class="btn primary full" type="submit">
+      Submit Long Form
+    </button>
+  </div>
+
+  <div id="status" class="status"></div>
+
+</section>
+    </form>
+  </div>
+
+  <script>
+    // ---- BookingID from URL (so HireCheck can match later)
+    const params = new URLSearchParams(location.search);
+    const bookingID = params.get("bookingID") || "";
+    document.getElementById("bookingIdPill").textContent = bookingID || "—";
+
+    // Optional: set today's date default
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById("signedDate").value = today;
+
+    // ---- Submit handler (safe for later switch)
+    // For now this just shows the payload in console; you can enable POST when you switch.
+    const form = document.getElementById("longForm");
+    const statusEl = document.getElementById("status");
+
+    form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  if (!form.checkValidity()) {
+    statusEl.className = "status err";
+    statusEl.textContent = "Please complete all required fields above.";
+    return;
+  }
+
+  if (!form.confirmTrue.checked) {
+    statusEl.className = "status err";
+    statusEl.textContent = "You must confirm the declaration before submitting.";
+    return;
+  }
+
+  if (form.dvlaCheckCode.value.trim().length !== 8) {
+    statusEl.className = "status err";
+    statusEl.textContent = "DVLA check code must be exactly 8 characters.";
+    return;
+  }
+
+  if (!bookingID) {
+    statusEl.className = "status err";
+    statusEl.textContent = "Missing bookingID in the link. Please use the link from your booking email.";
+    return;
+  }
+
+  const submitBtn = form.querySelector("button[type='submit']");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting...";
+
+  const data = Object.fromEntries(new FormData(form).entries());
+  data.bookingID = bookingID;
+  data.formType = "long";
+
+  statusEl.className = "status";
+  statusEl.textContent = "Submitting...";
+
+  try {
+    const res = await fetch("/api/forms/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.error || "Submit failed");
+
+    statusEl.className = "status ok";
+    statusEl.textContent = "Thank you — your form has been submitted successfully.";
+
+  } catch (err) {
+    statusEl.className = "status err";
+    statusEl.textContent = err.message || "Submit failed. Please try again.";
+
+    // 👇 THIS is where your line belongs
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit Long Form";
+  }
+});
+  </script>
 </body>
 </html>
