@@ -172,8 +172,7 @@ optionButtons.forEach((btn) => {
   lastStep = currentStep;
 };
 
-  lastStep = currentStep;
-};
+ 
   const validateCurrentStep = () => {
     const step = steps[currentStep];
     if (!step) return true;
