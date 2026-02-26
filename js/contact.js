@@ -104,6 +104,9 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
 
+      // Prevent redundant work if already selected
+      if (btn.classList.contains("selected")) return;
+
       projectForm
         .querySelectorAll(".option-btn")
         .forEach((button) => button.classList.remove("selected"));
