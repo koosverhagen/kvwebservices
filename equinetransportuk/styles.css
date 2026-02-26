@@ -269,14 +269,13 @@ textarea { min-height: 100px; }
 
 .checkline {
   display: grid;
-  grid-template-columns: 18px 1fr;
-  align-items: start;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
   gap: 10px;
 }
 
 .checkline input[type="checkbox"] {
-  min-height: auto;
-  margin-top: 3px;
+  margin: 0;
 }
 
 .hire-form-info {
@@ -441,6 +440,84 @@ textarea { min-height: 100px; }
   color: var(--muted);
 }
 
+/* ======================================================
+   SIGNATURE PAD (DRAWABLE ON MOBILE)
+====================================================== */
+
+.signature-wrap {
+  margin-top: 6px;
+}
+
+#signaturePad {
+  width: 100%;
+  height: 160px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  touch-action: none;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.signature-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.signature-actions button {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.signature-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ======================================================
+   APPLE STYLE CHECKBOXES (CLEAN + PROPORTIONAL)
+====================================================== */
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--accent);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 6px;
+  height: 12px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+
 @media (max-width: 980px) {
   .hero-grid, .booking-grid, .fleet-grid, .booking-list {
     grid-template-columns: 1fr 1fr;
@@ -459,6 +536,14 @@ textarea { min-height: 100px; }
   .availability-item {
     grid-template-columns: 1fr;
   }
+  #signaturePad {
+  height: 180px;
+}
+
+input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+}
 }
 
 .nav-toggle {
