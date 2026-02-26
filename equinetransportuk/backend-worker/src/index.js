@@ -519,109 +519,118 @@ async function handleDepositPayPage(url, env) {
   const html = `<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Deposit Hold - Booking #${escapeHtml(bookingId)}</title>
-  <script src="https://js.stripe.com/v3/"></script>
-  <style>
-    body{margin:0;padding:0;background:#f6f7fb;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1d2530}
-    .container{max-width:620px;margin:18px auto;background:#fff;padding:16px;border-radius:12px;border:1px solid #dbe1e8}
-    h1{font-size:24px;margin:0 0 12px}
-    .muted{color:#5a6675;font-size:14px}
-    .box{background:#f8fbff;border:1px solid #dbe7ff;border-radius:10px;padding:12px;margin:14px 0}
-    label{display:block;margin-top:10px;font-size:13px;color:#5a6675}
-    input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #dbe1e8;border-radius:10px;margin-top:6px;min-height:42px}
-    #card-element{padding:12px;border:1px solid #dbe1e8;border-radius:10px;background:#fff;margin-top:8px}
-    button{margin-top:16px;width:100%;min-height:44px;border-radius:10px;border:1px solid #1f6feb;background:#1f6feb;color:#fff;font-weight:600;cursor:pointer}
-    button:disabled{opacity:.55;cursor:not-allowed}
-    #result{margin-top:12px;font-size:14px}
-    @media (max-width:720px){.container{margin:10px;padding:12px}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deposit Hold - Booking #${escapeHtml(bookingId)}</title>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+body{margin:0;padding:0;background:#f6f7fb;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1d2530}
+.container{max-width:620px;margin:18px auto;background:#fff;padding:16px;border-radius:12px;border:1px solid #dbe1e8}
+h1{font-size:24px;margin:0 0 12px}
+.muted{color:#5a6675;font-size:14px}
+.box{background:#f8fbff;border:1px solid #dbe7ff;border-radius:10px;padding:12px;margin:14px 0}
+label{display:block;margin-top:10px;font-size:13px;color:#5a6675}
+input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #dbe1e8;border-radius:10px;margin-top:6px;min-height:42px}
+#card-element{padding:12px;border:1px solid #dbe1e8;border-radius:10px;background:#fff;margin-top:8px}
+button{margin-top:16px;width:100%;min-height:44px;border-radius:10px;border:1px solid #1f6feb;background:#1f6feb;color:#fff;font-weight:600;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+#result{margin-top:12px;font-size:14px}
+@media (max-width:720px){.container{margin:10px;padding:12px}}
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>Deposit hold</h1>
-    <p class="muted">Complete the card hold for your booking. This is a pre-authorisation, not an immediate capture.</p>
-    <div class="box">
-      <div><strong>Booking:</strong> #${escapeHtml(bookingId)}</div>
-      <div><strong>Vehicle:</strong> ${escapeHtml(booking.vehicleSnapshot?.name || booking.vehicleId || "Lorry")}</div>
-      <div><strong>Pickup:</strong> ${escapeHtml(booking.pickupAt || "")}</div>
-      <div><strong>Deposit hold:</strong> £${escapeHtml(depositAmountText)}</div>
-    </div>
+<div class="container">
+<h1>Deposit hold</h1>
+<p class="muted">Complete the card hold for your booking. This is a pre-authorisation, not an immediate capture.</p>
 
-    <form id="deposit-form">
-      <label>Full name
-        <input id="full-name" required>
-      </label>
-      <label>Postcode
-        <input id="postcode" required>
-      </label>
-      <label>Card details
-        <div id="card-element"></div>
-      </label>
-      <button id="pay-btn" type="submit">Confirm deposit hold</button>
-      <div id="result"></div>
-    </form>
-  </div>
+<div class="box">
+<div><strong>Booking:</strong> #${escapeHtml(bookingId)}</div>
+<div><strong>Vehicle:</strong> ${escapeHtml(booking.vehicleSnapshot?.name || booking.vehicleId || "Lorry")}</div>
+<div><strong>Pickup:</strong> ${escapeHtml(booking.pickupAt || "")}</div>
+<div><strong>Deposit hold:</strong> £${escapeHtml(depositAmountText)}</div>
+</div>
 
-  <script>
-    const stripe = Stripe(${JSON.stringify(publishable)});
-    const bookingID = ${JSON.stringify(bookingId)};
-    const depositAmountPence = ${JSON.stringify(defaultAmountPence)};
-    const form = document.getElementById("deposit-form");
-    const result = document.getElementById("result");
-    const payBtn = document.getElementById("pay-btn");
+<form id="deposit-form">
+<label>Full name
+<input id="full-name" required>
+</label>
 
-    const elements = stripe.elements();
-    const card = elements.create("card");
-    card.mount("#card-element");
+<label>Postcode
+<input id="postcode" required>
+</label>
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      payBtn.disabled = true;
-      result.textContent = "Processing...";
+<label>Card details
+<div id="card-element"></div>
+</label>
 
-      try {
-        const intentRes = await fetch("/api/deposit/create-intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bookingID, amount: depositAmountPence })
-        });
-        const intentData = await intentRes.json();
-        if (!intentRes.ok || !intentData.clientSecret) {
-          throw new Error(intentData.error || "Failed to create deposit intent");
-        }
+<button id="pay-btn" type="submit">Confirm deposit hold</button>
+<div id="result"></div>
+</form>
+</div>
 
-        const fullName = document.getElementById("full-name").value.trim();
-        const postcode = document.getElementById("postcode").value.trim();
+<script>
+var stripe = Stripe("${publishable}");
+var bookingID = "${bookingId}";
+var depositAmountPence = ${defaultAmountPence};
+var form = document.getElementById("deposit-form");
+var result = document.getElementById("result");
+var payBtn = document.getElementById("pay-btn");
 
-        const confirm = await stripe.confirmCardPayment(intentData.clientSecret, {
-          payment_method: {
-            card,
-            billing_details: {
-              name: fullName,
-              address: { postal_code: postcode }
-            }
-          }
-        });
+var elements = stripe.elements();
+var card = elements.create("card");
+card.mount("#card-element");
 
-        if (confirm.error) {
-          throw new Error(confirm.error.message || "Payment failed");
-        }
+form.addEventListener("submit", async function(event) {
+event.preventDefault();
+payBtn.disabled = true;
+result.textContent = "Processing...";
 
-        const status = confirm.paymentIntent?.status || "unknown";
-        if (status === "requires_capture" || status === "succeeded") {
-          result.textContent = "Deposit hold successful. You can close this page.";
-        } else {
-          result.textContent = `Payment status: ${status}`;
-        }
-      } catch (error) {
-        result.textContent = error.message || "Payment failed";
-      } finally {
-        payBtn.disabled = false;
-      }
-    });
-  </script>
+try {
+
+var intentRes = await fetch("/api/deposit/create-intent", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ bookingID: bookingID, amount: depositAmountPence })
+});
+
+var intentData = await intentRes.json();
+
+if (!intentRes.ok || !intentData.clientSecret) {
+throw new Error(intentData.error || "Failed to create deposit intent");
+}
+
+var fullName = document.getElementById("full-name").value.trim();
+var postcode = document.getElementById("postcode").value.trim();
+
+var confirm = await stripe.confirmCardPayment(intentData.clientSecret, {
+payment_method: {
+card: card,
+billing_details: {
+name: fullName,
+address: { postal_code: postcode }
+}
+}
+});
+
+if (confirm.error) {
+throw new Error(confirm.error.message || "Payment failed");
+}
+
+var status = confirm.paymentIntent ? confirm.paymentIntent.status : "unknown";
+
+if (status === "requires_capture" || status === "succeeded") {
+result.textContent = "Deposit hold successful. You can close this page.";
+} else {
+result.textContent = "Payment status: " + status;
+}
+
+} catch (error) {
+result.textContent = error.message || "Payment failed";
+} finally {
+payBtn.disabled = false;
+}
+});
+</script>
 </body>
 </html>`;
 
@@ -1148,7 +1157,7 @@ function buildCorsHeaders(request, env) {
   const allowed = env.CORS_ORIGIN || "*";
 
   return {
-    "access-control-allow-origin": allowed === "*" ? "*" : origin,
+    "access-control-allow-origin": allowed === "*" ? "*" : allowed,
     "access-control-allow-methods": "GET,POST,OPTIONS",
     "access-control-allow-headers": "content-type,stripe-signature"
   };
