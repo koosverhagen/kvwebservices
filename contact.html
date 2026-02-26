@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Contact KV Web Services | Start Your Web Design Project</title>
+  <title>Contact KV Web Services | Web Design & Development Enquiries</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Start your web design project today. Contact KV Web Services for a fast, modern website built for performance and growth.">
 
   <link rel="stylesheet" href="css/style.css?v=30">
 </head>
-<body>
+<body class="contact-page">
 
 <header class="header">
   <div class="container">
@@ -17,13 +17,13 @@
 
     <nav class="nav">
       <button
-        class="menu-toggle"
-        type="button"
-        aria-label="Open menu"
-        aria-expanded="false"
-        aria-controls="site-menu">
-        ☰
-      </button>
+  class="menu-toggle"
+  type="button"
+  aria-expanded="false"
+  aria-controls="site-menu">
+  <span class="visually-hidden">Menu</span>
+  ☰
+</button>
 
       <div class="menu" id="site-menu">
         <a href="about.html">About</a>
@@ -60,10 +60,8 @@
         method="POST"
         class="funnel-form">
 
-        <!-- Funnel source identifier -->
         <input type="hidden" name="source" value="KV Web Services Premium Funnel">
 
-        <!-- Hidden structured output (kept for compatibility with existing JS) -->
         <input type="hidden" name="Project Type" id="hidden-project-type">
         <input type="hidden" name="Business Type" id="hidden-business-type">
         <input type="hidden" name="Industry" id="hidden-industry">
@@ -77,13 +75,14 @@
           <h2>What do you need?</h2>
 
           <div class="option-group" role="group" aria-label="Project type">
-            <button type="button" class="option-btn" data-value="New Website">
+            <!-- ✅ kept type="button" + added aria-pressed default false -->
+            <button type="button" class="option-btn" data-value="New Website" aria-pressed="false">
               Create a new website
             </button>
-            <button type="button" class="option-btn" data-value="Website Update">
+            <button type="button" class="option-btn" data-value="Website Update" aria-pressed="false">
               Make changes to my current website
             </button>
-            <button type="button" class="option-btn" data-value="Other">
+            <button type="button" class="option-btn" data-value="Other" aria-pressed="false">
               Other
             </button>
           </div>
@@ -100,8 +99,8 @@
           </div>
 
           <div class="step-actions">
-            <!-- Step 1 has no previous step -->
-            <button type="button" class="back-btn" disabled aria-disabled="true">Back</button>
+            <!-- ✅ add tabindex="-1" so it can't be focused while disabled -->
+            <button type="button" class="back-btn" disabled aria-disabled="true" tabindex="-1">Back</button>
             <button type="button" class="next-btn">Continue</button>
           </div>
         </div>
