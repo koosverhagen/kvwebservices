@@ -490,17 +490,30 @@ textarea { min-height: 100px; }
    APPLE STYLE CHECKBOXES (CLEAN + PROPORTIONAL)
 ====================================================== */
 
+/* ======================================================
+   APPLE STYLE CHECKBOX (PROPER SIZE + ALIGNMENT)
+====================================================== */
+
+.checkbox-row,
+.grid label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
   border: 2px solid var(--line);
-  border-radius: 6px;
+  border-radius: 5px;
   background: #fff;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
+  margin: 0;
 }
 
 input[type="checkbox"]:hover {
@@ -515,10 +528,10 @@ input[type="checkbox"]:checked {
 input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
-  left: 5px;
+  left: 4px;
   top: 1px;
-  width: 6px;
-  height: 12px;
+  width: 5px;
+  height: 9px;
   border: solid #fff;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
@@ -547,9 +560,11 @@ input[type="checkbox"]:checked::after {
   height: 180px;
 }
 
-input[type="checkbox"] {
-  width: 22px;
-  height: 22px;
+@media (max-width: 720px) {
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
 }
 }
 
