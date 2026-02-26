@@ -1448,19 +1448,36 @@ body.contact-stable .back-btn:hover {
   box-shadow: none;
 }
 
+/* ==========================================
+   CHROME SAFE FUNNEL MODE
+========================================== */
+
+body.chrome-safe-funnel .contact-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.06);
+}
+
+body.chrome-safe-funnel .header {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 body.chrome-safe-funnel .form-step {
+  position: relative;
   display: block;
-  margin-bottom: 34px;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  margin-bottom: 36px;
 }
 
-body.chrome-safe-funnel .form-step.active[data-step="2"],
-body.chrome-safe-funnel .form-step.active[data-step="3"],
-body.chrome-safe-funnel .form-step.active[data-step="4"] {
-  grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+body.chrome-safe-funnel .funnel-progress {
+  transition: none;
 }
 
-body.chrome-safe-funnel .step-actions {
-  margin-top: 16px;
+body.chrome-safe-funnel .progress-bar {
+  transition: none;
 }
 
 .option-group {
