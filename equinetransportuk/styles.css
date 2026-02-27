@@ -280,10 +280,7 @@ textarea { min-height: 100px; }
   gap: 10px;
 }
 
-.checkline input[type="checkbox"] {
-  margin: 0;
-  vertical-align: middle;
-}
+
 
 .hire-form-info {
   margin: 12px 0 14px;
@@ -496,47 +493,7 @@ textarea { min-height: 100px; }
    APPLE STYLE CHECKBOX (PROPER SIZE + ALIGNMENT)
 ====================================================== */
 
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
-input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  flex: 0 0 18px;
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--line);
-  border-radius: 5px;
-  background: #fff;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s ease;
-  margin: 0;
-}
-
-input[type="checkbox"]:hover {
-  border-color: var(--accent);
-}
-
-input[type="checkbox"]:checked {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-input[type="checkbox"]:checked::after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 5px;
-  height: 9px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
 
 
 @media (max-width: 980px) {
@@ -561,12 +518,7 @@ input[type="checkbox"]:checked::after {
   height: 180px;
 }
 
-@media (max-width: 720px) {
-  input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-  }
-}
+
 }
 
 .nav-toggle {
@@ -723,11 +675,59 @@ input[type="checkbox"]:checked::after {
   transform: scale(.85);
 }
 
-/* Fix checkbox layout inside grid */
-.grid.two > label,
-.grid.three > label {
-  display: inline-flex !important;
+/* ==========================================
+   CLEAN APPLE-STYLE CHECKBOX (FIXED ALIGNMENT)
+========================================== */
+
+.checkbox-line {
+  display: flex;
   align-items: center;
   gap: 10px;
-  width: auto;
+  cursor: pointer;
+}
+
+.checkbox-line input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.checkbox-line input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox-line input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 11px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-line span {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.header-card{
+  background: linear-gradient(180deg, #ffffff, #fbfcff);
+  border:1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow2);
+  padding: 16px 16px 14px;
+  margin-bottom: 14px;
+  position: relative;
 }
