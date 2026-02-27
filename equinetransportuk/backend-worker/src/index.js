@@ -1132,6 +1132,8 @@ async function handleFormSubmit(request, env) {
   const payload = await request.json();
   const bookingID = String(payload?.bookingID || "").trim();
 
+console.log("Form submitted:", payload.formType, bookingID);
+
   if (!bookingID) {
     return json({ error: "Missing bookingID" }, 400);
   }

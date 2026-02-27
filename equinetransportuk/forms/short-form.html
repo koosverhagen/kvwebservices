@@ -6,371 +6,519 @@
 <title>Short Form | Equine Transport UK</title>
 
 <style>
-:root{
-  --bg:#f5f7fb;
-  --card:#ffffff;
-  --text:#111827;
-  --muted:#6b7280;
-  --line:#e5e7eb;
-  --accent:#1f6feb;
-  --accent2:#0b5bd3;
-  --radius:16px;
-}
+  :root{
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --text:#111827;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --accent:#1f6feb;
+    --accent2:#0b5bd3;
+    --radius:16px;
+    --shadow: 0 14px 40px rgba(15,23,42,.12);
+    --shadow2: 0 10px 25px rgba(15,23,42,.10);
+    --input:#f8fafc;
+  }
 
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
-  background:var(--bg);
-  padding:20px 14px 40px;
-}
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
 
-.wrap{max-width:760px;margin:0 auto}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+    background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
+    color: var(--text);
+    padding: 18px 14px 40px;
+    line-height: 1.45;
+  }
 
-.section{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  padding:18px;
-  margin-bottom:16px;
-}
+  .wrap{ max-width: 820px; margin: 0 auto; }
 
-h1{
-  text-align:center;
-  font-size:20px;
-  margin-bottom:12px;
-}
+  /* Header card like long form */
+  .header-card{
+    background: rgba(255,255,255,.92);
+    border:1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow2);
+    padding: 16px 16px 14px;
+    margin-bottom: 14px;
+  }
 
-.intro{
-  font-size:14px;
-  color:var(--text);
-  line-height:1.5;
-  margin-bottom:16px;
-}
+  .brand-title{
+    font-weight: 900;
+    letter-spacing: -.4px;
+    font-size: 22px;
+    margin: 0;
+    text-transform: uppercase;
+    text-align: left;
+  }
 
-label{
-  font-size:13px;
-  font-weight:600;
-  color:var(--muted);
-  display:block;
-  margin-bottom:6px;
-}
+  .top-meta{
+    display:flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .pill{
+    background:#eef2ff;
+    border:1px solid #dbeafe;
+    color:#1e3a8a;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+  }
 
-input, select, textarea{
-  width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid #d7dde6;
-  font-size:15px;
-  min-height:44px;
-}
+  .brand-sub{
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+  }
 
-textarea{resize:vertical}
+  .section{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px;
+    margin: 12px 0;
+  }
 
-.grid{display:grid;gap:16px}
-.grid.two{grid-template-columns:1fr}
+  /* Grey section header like long form */
+  .section h2{
+    margin: 0 0 12px;
+    font-size: 16px;
+    letter-spacing: -.2px;
+    background: #6b7280;
+    color:#fff;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-weight: 800;
+  }
 
-@media(min-width:740px){
-  .grid.two{grid-template-columns:1fr 1fr}
-}
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  @media (min-width: 740px){
+    .grid.two{ grid-template-columns: repeat(2, 1fr); }
+  }
 
-/* Date + time */
-.date-time{
-  display:flex;
-  gap:14px;
-  align-items:flex-start;
-}
-.date-time select{width:130px}
+  label{
+    display:block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
 
-@media(max-width:520px){
-  .date-time{flex-direction:column}
-  .date-time select{width:100%}
-}
+  input, select, textarea{
+    width:100%;
+    border: 1px solid #d7dde6;
+    background: var(--input);
+    border-radius: 12px;
+    padding: 12px 12px;
+    min-height: 44px;
+    font-size: 15px;
+    outline: none;
+    transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  }
 
-/* Button */
-.btn{
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  border-radius:14px;
-  padding:14px;
-  font-weight:700;
-  width:100%;
-  cursor:pointer;
-}
-.btn:hover{background:var(--accent2)}
+  input:focus, select:focus, textarea:focus{
+    border-color: rgba(31,111,235,.45);
+    box-shadow: 0 0 0 4px rgba(31,111,235,.14);
+    background:#fff;
+  }
 
-/* Signature */
-#signaturePad{
-  width:100%;
-  height:160px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  background:#fff;
-  touch-action:none;
-  display:block; /* prevents baseline shift */
-}
-.clear{
-  text-align:right;
-  font-size:13px;
-  margin-top:6px;
-  cursor:pointer;
-  color:var(--muted);
-}
+  textarea{ min-height: 110px; resize: vertical; }
 
-.status{
-  margin-top:12px;
-  font-size:13px;
-}
-.status.err{color:#b42318}
-.status.ok{color:#0f766e}
+  .divider{
+    height: 1px;
+    background: var(--line);
+    margin: 14px 0;
+  }
 
-.dvla-section{
-  margin: 24px 0 20px;
-  text-align: center;
-}
+  /* Date + time layout (stable, matches long form feeling) */
+  .date-time{
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 12px;
+    align-items: center;
+  }
+  @media (max-width: 520px){
+    .date-time{ grid-template-columns: 1fr; }
+  }
 
-.dvla-section .btn{
-  max-width: 460px;
-  margin: 0 auto;
-}
+  /* Buttons (works for <a> and <button>) */
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    border-radius: 12px;
+    padding: 12px 14px;
+    min-height: 46px;
+    font-weight: 800;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration:none;
+    user-select:none;
+  }
 
-.dvla-help{
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--muted);
-}
+  .btn.primary{
+    background: var(--accent);
+    border-color: var(--accent);
+    color:#fff;
+  }
+  .btn.primary:hover{
+    background: var(--accent2);
+    border-color: var(--accent2);
+  }
+  .btn.full{ width:100%; }
+
+  /* DVLA section: ALWAYS centered and never overlaps */
+  .dvla-section{
+    margin: 18px 0 6px;
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .dvla-section .btn{
+    width: min(520px, 100%);
+  }
+  .dvla-help{
+    font-size: 13px;
+    color: var(--muted);
+    text-align:center;
+  }
+
+  /* Signature */
+  .signature-wrap{ margin-top: 6px; }
+  #signaturePad{
+    width:100%;
+    height:160px;
+    border-radius: 14px;
+    border:1px solid var(--line);
+    background:#fff;
+    touch-action: none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  .clear{
+    margin-top: 8px;
+    text-align:right;
+    font-size: 13px;
+    color: var(--muted);
+    cursor:pointer;
+  }
+
+  .status{
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .status.err{ color:#b42318; font-weight: 800; }
+  .status.ok{ color:#0f766e; font-weight: 800; }
+
+  /* Safari desktop: bigger submit text (same trick you used) */
+  @media not all and (min-resolution: 0.001dpcm) {
+    @supports (-webkit-appearance:none) {
+      button.btn { font-size: 20px !important; }
+    }
+  }
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
-<div class="section">
-<h1>MILLENS SELF DRIVE HIRE HORSEBOX INSURANCE PROPOSAL <strong>SHORT FORM</strong></h1>
+  <div class="header-card">
+    <h1 class="brand-title">Millens Self Drive Hire Horsebox Insurance Proposal <span style="opacity:.7">Short Form</span></h1>
 
-<div class="intro">
-I hereby confirm that there have been no change in my personal circumstances nor driving record since I completed my last hire questionnaire and I can still agree the declaration in my long questionnaire.
-</div>
-
-<form id="shortForm" autocomplete="on" novalidate>
-
-<div class="grid two">
-
-<div>
-<label>First Name of Hirer / Driver</label>
-<input name="firstName" required placeholder="Drivers First Name">
-</div>
-
-<div>
-<label>Last Name of Hirer / Driver</label>
-<input name="lastName" required placeholder="Drivers Last Name">
-</div>
-
-<div>
-<label>Email</label>
-<input type="email" name="email" required placeholder="Drivers Email">
-</div>
-
-<div>
-<label>Mobile Number</label>
-<input name="mobile" required placeholder="Drivers Mobile Number">
-</div>
-
-<div>
-<label>Driving Licence Number (16 digits / capitals)</label>
-<input name="licenceNumber" required placeholder="Drivers Driving Licence Number">
-</div>
-
-<div>
-<label>Date of the Last Long Form</label>
-<input type="date" name="lastLongFormDate" required>
-</div>
-
-</div>
-
-<!-- Hire Dates -->
-<div class="grid two" style="margin-top:20px">
-
-  <div>
-    <label>Hire From</label>
-    <div class="date-time">
-      <input id="hireFromDate" type="date" required>
-      <select id="hireFromTime" required>
-        <option value="" disabled selected>Time</option>
-        <option value="07:00">07:00</option>
-        <option value="13:00">13:00</option>
-      </select>
+    <div class="top-meta">
+      <div class="pill">One form per driver</div>
+      <div class="pill">Booking ID: <span id="bookingIdPill">—</span></div>
     </div>
+
+    <p class="brand-sub">
+      I hereby confirm there has been <strong>no change</strong> in my personal circumstances or driving record since I completed my last hire questionnaire,
+      and I can still agree to the declaration in my long questionnaire.
+    </p>
   </div>
 
-  <div>
-    <label>Hire Until</label>
-    <div class="date-time">
-      <input id="hireUntilDate" type="date" required>
-      <select id="hireUntilTime" required>
-        <option value="" disabled selected>Time</option>
-        <option value="07:00">07:00</option>
-        <option value="13:00">13:00</option>
-      </select>
-    </div>
-  </div>
+  <form id="shortForm" novalidate>
 
-</div>
+    <section class="section">
+      <h2>Driver Information</h2>
 
-<!-- Hidden combined values -->
-<input type="hidden" id="hireFrom" name="hireFrom">
-<input type="hidden" id="hireUntil" name="hireUntil">
+      <div class="grid two">
+        <div>
+          <label>First Name of Hirer / Driver</label>
+          <input name="firstName" autocomplete="given-name" required placeholder="Driver’s first name">
+        </div>
 
+        <div>
+          <label>Last Name of Hirer / Driver</label>
+          <input name="lastName" autocomplete="family-name" required placeholder="Driver’s last name">
+        </div>
+      </div>
 
-<!-- =========================
-     DVLA BUTTON SECTION
-========================== -->
-<div class="dvla-section">
+      <div class="grid two">
+        <div>
+          <label>Email</label>
+          <input type="email" name="email" autocomplete="email" required placeholder="Driver’s email">
+        </div>
 
-  <a class="btn primary full"
-     href="https://www.viewdrivingrecord.service.gov.uk/driving-record/licence-number"
-     target="_blank"
-     rel="noopener noreferrer">
-    Get Your DVLA Code Here ↗
-  </a>
+        <div>
+          <label>Mobile Number</label>
+          <input name="mobile" autocomplete="tel" required placeholder="Driver’s mobile number">
+        </div>
+      </div>
 
-  <div class="dvla-help">
-    iPhone users: long-press → Open in New Tab
-  </div>
+      <div class="grid two">
+        <div>
+          <label>Driving Licence Number (16 digits / capitals)</label>
+          <input name="licenceNumber" required placeholder="Driver’s driving licence number">
+        </div>
 
-</div>
+        <div>
+          <label>Date of the Last Long Form</label>
+          <input type="date" name="lastLongFormDate" required>
+        </div>
+      </div>
 
+      <div class="divider"></div>
 
-<!-- DVLA Inputs -->
-<div class="grid two" style="margin-top:20px">
+      <div class="grid two">
+        <div>
+          <label>Hire From</label>
+          <div class="date-time">
+            <input id="hireFromDate" type="date" required>
+            <select id="hireFromTime" required>
+              <option value="" disabled selected>Time</option>
+              <option value="07:00">07:00</option>
+              <option value="13:00">13:00</option>
+            </select>
+          </div>
+        </div>
 
-  <div>
-    <label>DVLA Access Code (8 digits / case sensitive)</label>
-    <input name="dvlaCode" required placeholder="Drivers DVLA Access Code">
-  </div>
+        <div>
+          <label>Hire Until</label>
+          <div class="date-time">
+            <input id="hireUntilDate" type="date" required>
+            <select id="hireUntilTime" required>
+              <option value="" disabled selected>Time</option>
+              <option value="07:00">07:00</option>
+              <option value="13:00">13:00</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-  <div>
-    <label>Date of Your Last DVLA Access Code</label>
-    <input type="date" name="dvlaCodeDate" required>
-  </div>
+      <!-- Hidden combined values (submitted) -->
+      <input type="hidden" id="hireFrom" name="hireFrom">
+      <input type="hidden" id="hireUntil" name="hireUntil">
 
-</div>
+      <!-- DVLA button is outside the grid so it can't “float” weirdly -->
+      <div class="dvla-section">
+        <a class="btn primary"
+           href="https://www.viewdrivingrecord.service.gov.uk/driving-record/licence-number"
+           target="_blank"
+           rel="noopener noreferrer">
+          Get Your DVLA Code Here ↗
+        </a>
+        <div class="dvla-help">iPhone users: long-press → Open in New Tab</div>
+      </div>
 
-<!-- Signature -->
-<div style="margin-top:20px">
-<label>Your Signature</label>
-<canvas id="signaturePad"></canvas>
-<div class="clear" id="clearSignature">Clear</div>
-<input type="hidden" id="signatureData" name="signatureData" required>
-</div>
+      <div class="grid two" style="margin-top:10px">
+        <div>
+          <label>DVLA Access Code (8 digits / case sensitive)</label>
+          <input name="dvlaCode" required placeholder="Driver’s DVLA access code">
+        </div>
 
-<div style="margin-top:20px">
-<label>Today's Date</label>
-<input type="date" id="todayDate" name="todayDate" required>
-</div>
+        <div>
+          <label>Date of Your Last DVLA Access Code</label>
+          <input type="date" name="dvlaCodeDate" required>
+        </div>
+      </div>
 
-<div style="margin-top:24px">
-<button class="btn" type="submit">Submit</button>
-<div id="status" class="status"></div>
-</div>
+      <div class="divider"></div>
 
-</form>
-</div>
+      <div>
+        <label>Your Signature</label>
+        <div class="signature-wrap">
+          <canvas id="signaturePad"></canvas>
+          <div class="clear" id="clearSignature">Clear</div>
+        </div>
+        <input type="hidden" id="signatureData" name="signatureData" required>
+      </div>
+
+      <div style="margin-top:14px">
+        <label>Today’s Date</label>
+        <input type="date" id="todayDate" name="todayDate" required>
+      </div>
+
+      <div style="margin-top:16px">
+        <button class="btn primary full" type="submit">Submit</button>
+        <div id="status" class="status"></div>
+      </div>
+    </section>
+  </form>
+
 </div>
 
 <script>
-const form = document.getElementById("shortForm");
-const statusEl = document.getElementById("status");
+  // BookingID pill (same as long form)
+  const params = new URLSearchParams(location.search);
+  const bookingID = params.get("bookingID") || "";
+  document.getElementById("bookingIdPill").textContent = bookingID || "—";
 
-/* Auto today */
-document.getElementById("todayDate").value =
-new Date().toISOString().slice(0,10);
+  // Default today
+  document.getElementById("todayDate").value = new Date().toISOString().slice(0,10);
 
-/* Signature */
-const canvas = document.getElementById("signaturePad");
-const ctx = canvas.getContext("2d");
-let drawing=false;
+  // Signature pad (same stable version)
+  const canvas = document.getElementById("signaturePad");
+  const ctx = canvas.getContext("2d");
+  const signatureInput = document.getElementById("signatureData");
+  let drawing = false;
 
-function resizeCanvas(){
-const ratio=window.devicePixelRatio||1;
-const rect=canvas.getBoundingClientRect();
-canvas.width=rect.width*ratio;
-canvas.height=rect.height*ratio;
-ctx.setTransform(ratio,0,0,ratio,0,0);
-ctx.lineCap = "round";
-ctx.lineJoin = "round";
-ctx.strokeStyle = "#111";
-ctx.lineWidth = 2;
-}
-resizeCanvas();
-window.addEventListener("resize",resizeCanvas);
+  function resizeCanvas() {
+    const ratio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  }
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
 
-function getPos(e){
-const rect=canvas.getBoundingClientRect();
-const x=e.touches?e.touches[0].clientX:e.clientX;
-const y=e.touches?e.touches[0].clientY:e.clientY;
-return{x:x-rect.left,y:y-rect.top};
-}
-function start(e){e.preventDefault();drawing=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
-function draw(e){if(!drawing)return;e.preventDefault();const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#111";ctx.lineWidth=2;ctx.lineCap="round";ctx.stroke();}
-function stop(){if(!drawing)return;drawing=false;document.getElementById("signatureData").value=canvas.toDataURL();}
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }
 
-canvas.addEventListener("mousedown",start);
-canvas.addEventListener("mousemove",draw);
-canvas.addEventListener("mouseup",stop);
-canvas.addEventListener("mouseleave",stop);
-canvas.addEventListener("touchstart",start,{passive:false});
-canvas.addEventListener("touchmove",draw,{passive:false});
-canvas.addEventListener("touchend",stop);
+  function start(e) {
+    e.preventDefault();
+    drawing = true;
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+  function move(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.stroke();
+  }
+  function end() {
+    if (!drawing) return;
+    drawing = false;
+    signatureInput.value = canvas.toDataURL();
+  }
 
-document.getElementById("clearSignature").onclick=()=>{
-ctx.clearRect(0,0,canvas.width,canvas.height);
-document.getElementById("signatureData").value="";
-};
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  canvas.addEventListener("mouseup", end);
+  canvas.addEventListener("mouseleave", end);
+  canvas.addEventListener("touchstart", start, { passive:false });
+  canvas.addEventListener("touchmove", move, { passive:false });
+  canvas.addEventListener("touchend", end);
 
-/* Submit */
-form.addEventListener("submit",(e)=>{
-e.preventDefault();
+  document.getElementById("clearSignature").addEventListener("click", () => {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    signatureInput.value = "";
+  });
 
-if (!form.checkValidity()) {
-  form.reportValidity();
-  return;
-}
+  // Submit validation (and combine hireFrom/hireUntil)
+  const form = document.getElementById("shortForm");
+  const statusEl = document.getElementById("status");
 
-const fromDate=document.getElementById("hireFromDate").value;
-const fromTime=document.getElementById("hireFromTime").value;
-const untilDate=document.getElementById("hireUntilDate").value;
-const untilTime=document.getElementById("hireUntilTime").value;
+  form.addEventListener("submit", (e) => {form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-if(!fromDate||!fromTime||!untilDate||!untilTime){
-statusEl.className="status err";
-statusEl.textContent="Please select hire dates and times.";
-return;
-}
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
 
-const hireFromISO=`${fromDate}T${fromTime}`;
-const hireUntilISO=`${untilDate}T${untilTime}`;
+  const fromDate = document.getElementById("hireFromDate").value;
+  const fromTime = document.getElementById("hireFromTime").value;
+  const untilDate = document.getElementById("hireUntilDate").value;
+  const untilTime = document.getElementById("hireUntilTime").value;
 
-if(new Date(hireUntilISO)<=new Date(hireFromISO)){
-statusEl.className="status err";
-statusEl.textContent="Hire Until must be after Hire From.";
-return;
-}
+  if (!fromDate || !fromTime || !untilDate || !untilTime) {
+    statusEl.className = "status err";
+    statusEl.textContent = "Please select hire dates and times.";
+    return;
+  }
 
-document.getElementById("hireFrom").value=hireFromISO;
-document.getElementById("hireUntil").value=hireUntilISO;
+  const hireFromISO = `${fromDate}T${fromTime}`;
+  const hireUntilISO = `${untilDate}T${untilTime}`;
 
-if(!document.getElementById("signatureData").value){
-statusEl.className="status err";
-statusEl.textContent="Please sign before submitting.";
-return;
-}
+  if (new Date(hireUntilISO) <= new Date(hireFromISO)) {
+    statusEl.className = "status err";
+    statusEl.textContent = "Hire Until must be after Hire From.";
+    return;
+  }
 
-statusEl.className="status ok";
-statusEl.textContent="Short form ready to submit.";
+  document.getElementById("hireFrom").value = hireFromISO;
+  document.getElementById("hireUntil").value = hireUntilISO;
+
+  if (!signatureInput.value) {
+    statusEl.className = "status err";
+    statusEl.textContent = "Please sign before submitting.";
+    return;
+  }
+
+  if (!bookingID) {
+    statusEl.className = "status err";
+    statusEl.textContent = "Missing bookingID in link.";
+    return;
+  }
+
+  const submitBtn = form.querySelector("button[type='submit']");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting...";
+
+  const data = Object.fromEntries(new FormData(form).entries());
+  data.bookingID = bookingID;
+  data.formType = "short";
+
+  statusEl.className = "status";
+  statusEl.textContent = "Submitting...";
+
+  try {
+    const res = await fetch("/api/forms/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.error || "Submit failed");
+
+    statusEl.className = "status ok";
+    statusEl.textContent = "Thank you — your short form has been submitted successfully.";
+
+  } catch (err) {
+    statusEl.className = "status err";
+    statusEl.textContent = err.message || "Submit failed. Please try again.";
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit";
+  }
 });
+  });
 </script>
-
 </body>
 </html>
