@@ -1131,12 +1131,17 @@ async function verifyStripeSignature(rawBody, signatureHeader, webhookSecret) {
 async function handleFormSubmit(request, env) {
   const payload = await request.json();
   const bookingID = String(payload?.bookingID || "").trim();
-  if (!payload.signatureData || !payload.signatureData.startsWith("data:image")) {
-  return json({ error: "Missing signature" }, 400);
-}
 
   if (!bookingID) {
     return json({ error: "Missing bookingID" }, 400);
+  }
+
+  if (
+    !payload.signatureData ||
+    typeof payload.signatureData !== "string" ||
+    !payload.signatureData.startsWith("data:image/png;base64,")
+  ) {
+    return json({ error: "Missing or invalid signature" }, 400);
   }
 
   const booking = await getBooking(env, bookingID);
@@ -1148,13 +1153,21 @@ async function handleFormSubmit(request, env) {
     return json({ error: "Form already submitted" }, 400);
   }
 
+  const cleanPayload = {
+  bookingID,
+  formType: "long",
+  submittedAt: new Date().toISOString(),
+  data: payload
+};
+
   await env.BOOKINGS_KV.put(
     `form:${bookingID}`,
-    JSON.stringify(payload)
+    JSON.stringify(cleanPayload)
   );
 
   booking.formCompleted = true;
-  booking.formSubmittedAt = new Date().toISOString();
+  booking.formSubmittedAt = cleanPayload.submittedAt;
+
   await saveBooking(env, booking);
 
   return json({ success: true });
