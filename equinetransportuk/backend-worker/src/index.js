@@ -1131,6 +1131,9 @@ async function verifyStripeSignature(rawBody, signatureHeader, webhookSecret) {
 async function handleFormSubmit(request, env) {
   const payload = await request.json();
   const bookingID = String(payload?.bookingID || "").trim();
+  if (!payload.signatureData || !payload.signatureData.startsWith("data:image")) {
+  return json({ error: "Missing signature" }, 400);
+}
 
   if (!bookingID) {
     return json({ error: "Missing bookingID" }, 400);
