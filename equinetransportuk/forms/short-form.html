@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Short Hire Form | Equine Transport UK</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Short Form | Equine Transport UK</title>
 
 <style>
 :root{
@@ -13,6 +13,7 @@
   --muted:#6b7280;
   --line:#e5e7eb;
   --accent:#1f6feb;
+  --accent2:#0b5bd3;
   --radius:16px;
 }
 
@@ -24,31 +25,38 @@ body{
   padding:20px 14px 40px;
 }
 
-.wrap{max-width:720px;margin:0 auto}
+.wrap{max-width:760px;margin:0 auto}
 
 .section{
   background:var(--card);
   border:1px solid var(--line);
   border-radius:var(--radius);
-  padding:16px;
-  margin-bottom:14px;
+  padding:18px;
+  margin-bottom:16px;
 }
 
 h1{
   text-align:center;
   font-size:20px;
+  margin-bottom:12px;
+}
+
+.intro{
+  font-size:14px;
+  color:var(--text);
+  line-height:1.5;
   margin-bottom:16px;
 }
 
 label{
   font-size:13px;
-  color:var(--muted);
   font-weight:600;
+  color:var(--muted);
   display:block;
   margin-bottom:6px;
 }
 
-input, select{
+input, select, textarea{
   width:100%;
   padding:12px;
   border-radius:12px;
@@ -57,7 +65,9 @@ input, select{
   min-height:44px;
 }
 
-.grid{display:grid;gap:14px}
+textarea{resize:vertical}
+
+.grid{display:grid;gap:16px}
 .grid.two{grid-template-columns:1fr}
 
 @media(min-width:740px){
@@ -88,6 +98,7 @@ input, select{
   width:100%;
   cursor:pointer;
 }
+.btn:hover{background:var(--accent2)}
 
 /* Signature */
 #signaturePad{
@@ -98,62 +109,71 @@ input, select{
   background:#fff;
   touch-action:none;
 }
-
 .clear{
   text-align:right;
   font-size:13px;
-  cursor:pointer;
   margin-top:6px;
+  cursor:pointer;
   color:var(--muted);
 }
 
 .status{
-  margin-top:10px;
+  margin-top:12px;
   font-size:13px;
 }
 .status.err{color:#b42318}
 .status.ok{color:#0f766e}
-
-input:not([type="checkbox"]):invalid,
-select:invalid{
-  border-color:#dc2626;
-  box-shadow:0 0 0 3px rgba(220,38,38,.15);
-}
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
-<h1>Millens Self Drive Hire Horsebox Insurance Proposal<br><strong>Short Form</strong></h1>
+<div class="section">
+<h1>MILLENS SELF DRIVE HIRE HORSEBOX INSURANCE PROPOSAL <strong>SHORT FORM</strong></h1>
+
+<div class="intro">
+I hereby confirm that there have been no change in my personal circumstances nor driving record since I completed my last hire questionnaire and I can still agree the declaration in my long questionnaire.
+</div>
 
 <form id="shortForm" novalidate>
 
-<div class="section grid two">
+<div class="grid two">
 
 <div>
-<label>First Name</label>
-<input name="firstName" required>
+<label>First Name of Hirer / Driver</label>
+<input name="firstName" required placeholder="Drivers First Name">
 </div>
 
 <div>
-<label>Last Name</label>
-<input name="lastName" required>
+<label>Last Name of Hirer / Driver</label>
+<input name="lastName" required placeholder="Drivers Last Name">
 </div>
 
 <div>
 <label>Email</label>
-<input type="email" name="email" required>
+<input type="email" name="email" required placeholder="Drivers Email">
 </div>
 
 <div>
-<label>Mobile</label>
-<input name="mobile" required>
+<label>Mobile Number</label>
+<input name="mobile" required placeholder="Drivers Mobile Number">
+</div>
+
+<div>
+<label>Driving Licence Number (16 digits / capitals)</label>
+<input name="licenceNumber" required placeholder="Drivers Driving Licence Number">
+</div>
+
+<div>
+<label>Date of the Last Long Form</label>
+<input type="date" name="lastLongFormDate" required>
 </div>
 
 </div>
 
-<div class="section grid two">
+<!-- Hire Dates -->
+<div style="margin-top:20px" class="grid two">
 
 <div>
 <label>Hire From</label>
@@ -184,49 +204,83 @@ select:invalid{
 
 </div>
 
-<div class="section">
+<div style="margin-top:20px">
 
+<a class="btn" href="https://www.viewdrivingrecord.service.gov.uk/driving-record/licence-number" target="_blank">
+Get Your DVLA Code Here ↗
+</a>
+
+<div style="text-align:center;font-size:13px;margin-top:6px;color:var(--muted)">
+iPhone users: long-press → Open in New Tab
+</div>
+
+</div>
+
+<div style="margin-top:20px" class="grid two">
+
+<div>
+<label>DVLA Access Code (8 digits / case sensitive)</label>
+<input name="dvlaCode" required placeholder="Drivers DVLA Access Code">
+</div>
+
+<div>
+<label>Date of Your Last DVLA Access Code</label>
+<input type="date" name="dvlaCodeDate" required>
+</div>
+
+</div>
+
+<!-- Signature -->
+<div style="margin-top:20px">
 <label>Your Signature</label>
 <canvas id="signaturePad"></canvas>
 <div class="clear" id="clearSignature">Clear</div>
 <input type="hidden" id="signatureData" name="signatureData" required>
-
 </div>
 
-<div class="section">
-<button class="btn" type="submit">Submit Short Form</button>
+<div style="margin-top:20px">
+<label>Today's Date</label>
+<input type="date" id="todayDate" name="todayDate" required>
+</div>
+
+<div style="margin-top:24px">
+<button class="btn" type="submit">Submit</button>
 <div id="status" class="status"></div>
 </div>
 
 </form>
+</div>
 </div>
 
 <script>
 const form = document.getElementById("shortForm");
 const statusEl = document.getElementById("status");
 
+/* Auto today */
+document.getElementById("todayDate").value =
+new Date().toISOString().slice(0,10);
+
 /* Signature */
 const canvas = document.getElementById("signaturePad");
 const ctx = canvas.getContext("2d");
-let drawing = false;
+let drawing=false;
 
 function resizeCanvas(){
-const ratio = window.devicePixelRatio || 1;
-const rect = canvas.getBoundingClientRect();
-canvas.width = rect.width * ratio;
-canvas.height = rect.height * ratio;
+const ratio=window.devicePixelRatio||1;
+const rect=canvas.getBoundingClientRect();
+canvas.width=rect.width*ratio;
+canvas.height=rect.height*ratio;
 ctx.setTransform(ratio,0,0,ratio,0,0);
 }
 resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+window.addEventListener("resize",resizeCanvas);
 
 function getPos(e){
-const rect = canvas.getBoundingClientRect();
-const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-return {x:clientX-rect.left,y:clientY-rect.top};
+const rect=canvas.getBoundingClientRect();
+const x=e.touches?e.touches[0].clientX:e.clientX;
+const y=e.touches?e.touches[0].clientY:e.clientY;
+return{x:x-rect.left,y:y-rect.top};
 }
-
 function start(e){e.preventDefault();drawing=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
 function draw(e){if(!drawing)return;e.preventDefault();const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#111";ctx.lineWidth=2;ctx.lineCap="round";ctx.stroke();}
 function stop(){if(!drawing)return;drawing=false;document.getElementById("signatureData").value=canvas.toDataURL();}
@@ -248,10 +302,10 @@ document.getElementById("signatureData").value="";
 form.addEventListener("submit",(e)=>{
 e.preventDefault();
 
-const fromDate = document.getElementById("hireFromDate").value;
-const fromTime = document.getElementById("hireFromTime").value;
-const untilDate = document.getElementById("hireUntilDate").value;
-const untilTime = document.getElementById("hireUntilTime").value;
+const fromDate=document.getElementById("hireFromDate").value;
+const fromTime=document.getElementById("hireFromTime").value;
+const untilDate=document.getElementById("hireUntilDate").value;
+const untilTime=document.getElementById("hireUntilTime").value;
 
 if(!fromDate||!fromTime||!untilDate||!untilTime){
 statusEl.className="status err";
@@ -278,7 +332,7 @@ return;
 }
 
 statusEl.className="status ok";
-statusEl.textContent="Form ready to send.";
+statusEl.textContent="Short form ready to submit.";
 });
 </script>
 
