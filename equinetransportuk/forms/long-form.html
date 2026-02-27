@@ -259,6 +259,29 @@ textarea:focus{
       font-weight: 700;
     }
 
+    /* Align medical section selects perfectly */
+.grid.three > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.grid.three label {
+  min-height: 42px; /* equalises label height */
+  display: flex;
+  align-items: flex-end;
+}
+
+
+    /* Add space between date and time select */
+#hireFromTime,
+#hireUntilTime {
+  margin-top: 10px;
+  min-height: 40px;
+}
+
+    
+
     /* Keep the page from feeling "raw" on huge screens */
     .spacer{ height: 8px; }
 /* ==========================================
@@ -285,6 +308,8 @@ textarea:invalid {
   border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(220,38,38,.15);
 }
+
+
   </style>
 </head>
 
@@ -336,7 +361,7 @@ textarea:invalid {
         <div class="grid two">
           <div>
             <label for="address">Address of Hirer / Driver</label>
-            <input id="address" name="address" autocomplete="street-address" required placeholder="Add your address">
+            <input id="address" name="address" autocomplete="street-address" required placeholder="Start typing your address...">
           </div>
 
           <div>
@@ -365,15 +390,29 @@ textarea:invalid {
         <p class="small"><strong>Dates of this hire (not to exceed 90 days).</strong></p>
 
         <div class="grid two">
-          <div>
-            <label for="hireFrom">Hire From</label>
-            <input id="hireFrom" name="hireFrom" type="datetime-local" required>
-          </div>
-          <div>
-            <label for="hireUntil">Hire Until</label>
-            <input id="hireUntil" name="hireUntil" type="datetime-local" required>
-          </div>
-        </div>
+        
+  <div>
+    <label for="hireFromDate">Hire From</label>
+    <input id="hireFromDate" name="hireFromDate" type="date" required>
+
+    <select id="hireFromTime" name="hireFromTime" required>
+      <option value="" disabled selected>Select time</option>
+      <option value="07:00">07:00</option>
+      <option value="13:00">13:00</option>
+    </select>
+  </div>
+
+  <div>
+    <label for="hireUntilDate">Hire Until</label>
+    <input id="hireUntilDate" name="hireUntilDate" type="date" required>
+
+    <select id="hireUntilTime" name="hireUntilTime" required>
+      <option value="" disabled selected>Select time</option>
+      <option value="07:00">07:00</option>
+      <option value="13:00">13:00</option>
+    </select>
+  </div>
+</div>
 
         <div class="grid two">
           <div>
@@ -697,6 +736,8 @@ textarea:invalid {
   </div>
 
   <script>
+
+    
 /* ==========================================
    BOOKING ID + DEFAULT DATE
 ========================================== */
@@ -841,7 +882,17 @@ if (!form.checkValidity()) {
   submitBtn.disabled = true;
   submitBtn.textContent = "Submitting...";
 
-  const data = Object.fromEntries(new FormData(form).entries());
+const data = Object.fromEntries(new FormData(form).entries());
+
+// Combine date + time into ISO string
+data.hireFrom = `${data.hireFromDate}T${data.hireFromTime}`;
+data.hireUntil = `${data.hireUntilDate}T${data.hireUntilTime}`;
+
+// Remove the separate fields (optional, cleaner payload)
+delete data.hireFromDate;
+delete data.hireFromTime;
+delete data.hireUntilDate;
+delete data.hireUntilTime;
   data.bookingID = bookingID;
   data.formType = "long";
 
@@ -867,5 +918,27 @@ if (!form.checkValidity()) {
   }
 });
 </script>
+<script>
+  function initAddressAutocomplete() {
+    const addressInput = document.getElementById("address");
+    if (!addressInput) return;
+
+    const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+      types: ["address"],
+      componentRestrictions: { country: "gb" } // UK only
+    });
+
+    autocomplete.addListener("place_changed", function () {
+      const place = autocomplete.getPlace();
+      if (!place.geometry) return;
+
+      // Replace input value with formatted address
+      addressInput.value = place.formatted_address || addressInput.value;
+    });
+  }
+
+  window.addEventListener("load", initAddressAutocomplete);
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-E07sEDKDzhG1xVF7yZ3MNqENRA5B0r8&libraries=places"></script>
 </body>
 </html>
