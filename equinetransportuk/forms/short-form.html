@@ -215,6 +215,11 @@
     color: var(--muted);
     cursor:pointer;
   }
+  
+  .invalid {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.15) !important;
+}
 
   .status{
     margin-top: 12px;
@@ -230,6 +235,17 @@
       button.btn { font-size: 20px !important; }
     }
   }
+  /* =========================
+   INVALID FIELD HIGHLIGHT
+========================= */
+
+input:invalid,
+select:invalid,
+textarea:invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.15);
+  background: #fff;
+}
 </style>
 </head>
 
@@ -446,10 +462,14 @@
   form.addEventListener("submit", (e) => {form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  if (!form.checkValidity()) {
-    form.reportValidity();
-    return;
-  }
+ if (!form.checkValidity()) {
+  form.reportValidity();
+
+  // force browser to apply :invalid styles
+  form.querySelectorAll(":invalid").forEach(el => el.classList.add("invalid"));
+
+  return;
+}
 
   const fromDate = document.getElementById("hireFromDate").value;
   const fromTime = document.getElementById("hireFromTime").value;
