@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Short Hire Form | Equine Transport UK</title>
+
+<style>
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --accent:#1f6feb;
+  --radius:16px;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  padding:20px 14px 40px;
+}
+
+.wrap{max-width:720px;margin:0 auto}
+
+.section{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+  margin-bottom:14px;
+}
+
+h1{
+  text-align:center;
+  font-size:20px;
+  margin-bottom:16px;
+}
+
+label{
+  font-size:13px;
+  color:var(--muted);
+  font-weight:600;
+  display:block;
+  margin-bottom:6px;
+}
+
+input, select{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #d7dde6;
+  font-size:15px;
+  min-height:44px;
+}
+
+.grid{display:grid;gap:14px}
+.grid.two{grid-template-columns:1fr}
+
+@media(min-width:740px){
+  .grid.two{grid-template-columns:1fr 1fr}
+}
+
+/* Date + time */
+.date-time{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.date-time select{width:130px}
+
+@media(max-width:520px){
+  .date-time{flex-direction:column}
+  .date-time select{width:100%}
+}
+
+/* Button */
+.btn{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  border-radius:14px;
+  padding:14px;
+  font-weight:700;
+  width:100%;
+  cursor:pointer;
+}
+
+/* Signature */
+#signaturePad{
+  width:100%;
+  height:160px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  touch-action:none;
+}
+
+.clear{
+  text-align:right;
+  font-size:13px;
+  cursor:pointer;
+  margin-top:6px;
+  color:var(--muted);
+}
+
+.status{
+  margin-top:10px;
+  font-size:13px;
+}
+.status.err{color:#b42318}
+.status.ok{color:#0f766e}
+
+input:not([type="checkbox"]):invalid,
+select:invalid{
+  border-color:#dc2626;
+  box-shadow:0 0 0 3px rgba(220,38,38,.15);
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<h1>Millens Self Drive Hire Horsebox Insurance Proposal<br><strong>Short Form</strong></h1>
+
+<form id="shortForm" novalidate>
+
+<div class="section grid two">
+
+<div>
+<label>First Name</label>
+<input name="firstName" required>
+</div>
+
+<div>
+<label>Last Name</label>
+<input name="lastName" required>
+</div>
+
+<div>
+<label>Email</label>
+<input type="email" name="email" required>
+</div>
+
+<div>
+<label>Mobile</label>
+<input name="mobile" required>
+</div>
+
+</div>
+
+<div class="section grid two">
+
+<div>
+<label>Hire From</label>
+<div class="date-time">
+<input id="hireFromDate" type="date" required>
+<select id="hireFromTime" required>
+<option value="" disabled selected>Time</option>
+<option value="07:00">07:00</option>
+<option value="13:00">13:00</option>
+</select>
+</div>
+</div>
+
+<div>
+<label>Hire Until</label>
+<div class="date-time">
+<input id="hireUntilDate" type="date" required>
+<select id="hireUntilTime" required>
+<option value="" disabled selected>Time</option>
+<option value="07:00">07:00</option>
+<option value="13:00">13:00</option>
+</select>
+</div>
+</div>
+
+<input type="hidden" id="hireFrom" name="hireFrom">
+<input type="hidden" id="hireUntil" name="hireUntil">
+
+</div>
+
+<div class="section">
+
+<label>Your Signature</label>
+<canvas id="signaturePad"></canvas>
+<div class="clear" id="clearSignature">Clear</div>
+<input type="hidden" id="signatureData" name="signatureData" required>
+
+</div>
+
+<div class="section">
+<button class="btn" type="submit">Submit Short Form</button>
+<div id="status" class="status"></div>
+</div>
+
+</form>
+</div>
+
+<script>
+const form = document.getElementById("shortForm");
+const statusEl = document.getElementById("status");
+
+/* Signature */
+const canvas = document.getElementById("signaturePad");
+const ctx = canvas.getContext("2d");
+let drawing = false;
+
+function resizeCanvas(){
+const ratio = window.devicePixelRatio || 1;
+const rect = canvas.getBoundingClientRect();
+canvas.width = rect.width * ratio;
+canvas.height = rect.height * ratio;
+ctx.setTransform(ratio,0,0,ratio,0,0);
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+function getPos(e){
+const rect = canvas.getBoundingClientRect();
+const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+return {x:clientX-rect.left,y:clientY-rect.top};
+}
+
+function start(e){e.preventDefault();drawing=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+function draw(e){if(!drawing)return;e.preventDefault();const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#111";ctx.lineWidth=2;ctx.lineCap="round";ctx.stroke();}
+function stop(){if(!drawing)return;drawing=false;document.getElementById("signatureData").value=canvas.toDataURL();}
+
+canvas.addEventListener("mousedown",start);
+canvas.addEventListener("mousemove",draw);
+canvas.addEventListener("mouseup",stop);
+canvas.addEventListener("mouseleave",stop);
+canvas.addEventListener("touchstart",start,{passive:false});
+canvas.addEventListener("touchmove",draw,{passive:false});
+canvas.addEventListener("touchend",stop);
+
+document.getElementById("clearSignature").onclick=()=>{
+ctx.clearRect(0,0,canvas.width,canvas.height);
+document.getElementById("signatureData").value="";
+};
+
+/* Submit */
+form.addEventListener("submit",(e)=>{
+e.preventDefault();
+
+const fromDate = document.getElementById("hireFromDate").value;
+const fromTime = document.getElementById("hireFromTime").value;
+const untilDate = document.getElementById("hireUntilDate").value;
+const untilTime = document.getElementById("hireUntilTime").value;
+
+if(!fromDate||!fromTime||!untilDate||!untilTime){
+statusEl.className="status err";
+statusEl.textContent="Please select hire dates and times.";
+return;
+}
+
+const hireFromISO=`${fromDate}T${fromTime}`;
+const hireUntilISO=`${untilDate}T${untilTime}`;
+
+if(new Date(hireUntilISO)<=new Date(hireFromISO)){
+statusEl.className="status err";
+statusEl.textContent="Hire Until must be after Hire From.";
+return;
+}
+
+document.getElementById("hireFrom").value=hireFromISO;
+document.getElementById("hireUntil").value=hireUntilISO;
+
+if(!document.getElementById("signatureData").value){
+statusEl.className="status err";
+statusEl.textContent="Please sign before submitting.";
+return;
+}
+
+statusEl.className="status ok";
+statusEl.textContent="Form ready to send.";
+});
+</script>
+
+</body>
+</html>
