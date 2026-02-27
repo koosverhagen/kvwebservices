@@ -552,53 +552,61 @@
 
   <!-- Licence Holder Type -->
   <div class="grid two">
-    <label style="display:flex;gap:10px;align-items:center">
-  <input type="checkbox" name="dvlaLicenceHolder" value="yes">
-  DVLA Licence Holder
-</label>
 
-<label style="display:flex;gap:10px;align-items:center">
-  <input type="checkbox" name="nonDvlaLicenceHolder" value="yes">
-  Non DVLA Licence Holder
-</label>
-  </div>
+  <label class="checkbox-line">
+    <input type="checkbox" name="dvlaLicenceHolder" value="yes">
+    <span>DVLA Licence Holder</span>
+  </label>
+
+  <label class="checkbox-line">
+    <input type="checkbox" name="nonDvlaLicenceHolder" value="yes">
+    <span>Non DVLA Licence Holder</span>
+  </label>
+
+</div>
 
   <div class="divider"></div>
 
   <h3 style="margin-top:0;font-size:15px">Proof of Address</h3>
 
   <div class="grid two">
-    <label style="display:flex;gap:10px;align-items:center">
-  <input type="checkbox" name="proofAddress1" value="yes">
-  Proof of Address 1
-</label>
 
-<label style="display:flex;gap:10px;align-items:center">
-  <input type="checkbox" name="proofAddress2" value="yes">
-  Proof of Address 2
-</label>
-  </div>
+  <label class="checkbox-line">
+    <input type="checkbox" name="proofAddress1" value="yes">
+    <span>Proof of Address 1</span>
+  </label>
+
+  <label class="checkbox-line">
+    <input type="checkbox" name="proofAddress2" value="yes">
+    <span>Proof of Address 2</span>
+  </label>
+
+</div>
 
   <div style="margin-top:10px">
-    <label style="display:flex;gap:10px;align-items:center">
-  <input type="checkbox" name="photoId" value="yes">
-  Photo ID (Photocard Licence / Passport / etc.)
-</label>
-  </div>
 
-  <div class="divider"></div>
+  <label class="checkbox-line">
+    <input type="checkbox" name="photoId" value="yes">
+    <span>Photo ID (Photocard Licence / Passport / etc.)</span>
+  </label>
 
-  <!-- Confirm checkbox -->
-  <div class="checkbox-row">
-  <input id="confirmTrue"
-         name="confirmTrue"
-         type="checkbox"
-         value="yes"
-         required>
+</div>
 
-  <div class="text">
-    I confirm all information provided is true and I agree to the terms above.
-  </div>
+  <div style="margin-top:14px">
+
+  <label class="checkbox-line">
+    <input
+      id="confirmTrue"
+      name="confirmTrue"
+      type="checkbox"
+      value="yes"
+      required
+    >
+    <span>
+      I confirm all information provided is true and I agree to the terms above.
+    </span>
+  </label>
+
 </div>
 
   <div style="margin-top:16px">
