@@ -262,15 +262,15 @@ textarea:focus{
     /* Keep the page from feeling "raw" on huge screens */
     .spacer{ height: 8px; }
 /* ==========================================
-   SAFARI ONLY – Bigger Submit Button Text
+   SAFARI (DESKTOP + MOBILE)
 ========================================== */
 
-@supports (-webkit-touch-callout: none) {
+@supports (-webkit-hyphens: none) and (not (overflow: clip)) {
 
-  /* Target only Safari (desktop + iOS) */
   .btn.primary.full {
     font-size: 18px;
     letter-spacing: 0.2px;
+    font-weight: 700;
   }
 
 }
