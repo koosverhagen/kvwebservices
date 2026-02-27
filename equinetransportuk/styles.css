@@ -23,20 +23,22 @@
 html, body { margin: 0; padding: 0; }
 
 body {
-  /* Updated font stack and background for premium Apple feel */
   font-family: "SF Pro Display", "SF Pro Text", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--text);
   background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
-  @supports (-webkit-touch-callout: none) {
-  body {
-    background-attachment: scroll;
-  }
-}
+  background-attachment: fixed;
   background-repeat: no-repeat;
   background-size: cover;
   line-height: 1.45;
+}
+
+/* iOS fix – prevent wobble repaint */
+@supports (-webkit-touch-callout: none) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 .container {
@@ -719,4 +721,13 @@ input[type="checkbox"]:checked::after {
 .fleet-overlay.playing .play-button {
   opacity: .45;
   transform: scale(.85);
+}
+
+/* Fix checkbox layout inside grid */
+.grid.two > label,
+.grid.three > label {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+  width: auto;
 }

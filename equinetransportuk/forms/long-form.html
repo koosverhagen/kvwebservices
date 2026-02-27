@@ -505,24 +505,32 @@
   <div class="divider"></div>
 
   <!-- Signature -->
-  <div class="grid two">
-    <div>
-      <label for="signature">Hirer Driver's Signature</label>
-      <textarea id="signature" name="signature"
-        placeholder="Type full name as digital signature"
-        required></textarea>
-        <div class="hint">
-  By typing your full name, you agree this constitutes your electronic signature.
-</div>
+<div class="grid two">
+  <div>
+    <label>Hirer Driver's Signature</label>
+
+    <div class="signature-wrap">
+      <canvas id="signaturePad"></canvas>
+
+      <div class="signature-actions">
+        <button type="button" id="clearSignature">Clear</button>
+      </div>
     </div>
 
-    <div>
-      <label for="signedDate">Date of Signing</label>
-      <input id="signedDate" name="signedDate" type="date" required>
+    <input type="hidden" id="signatureData" name="signatureData" required>
+
+    <div class="hint">
+      Please sign using your finger, stylus or mouse.
     </div>
   </div>
 
-  <div class="divider"></div>
+  <div>
+    <label for="signedDate">Date of Signing</label>
+    <input id="signedDate" name="signedDate" type="date" required>
+  </div>
+</div>
+
+<div class="divider"></div>
 
   <!-- Driving Licence & Paperwork -->
   <h2>Driving Licence and Identification Paperwork</h2>
@@ -606,21 +614,96 @@
   </div>
 
   <script>
-    // ---- BookingID from URL (so HireCheck can match later)
-    const params = new URLSearchParams(location.search);
-    const bookingID = params.get("bookingID") || "";
-    document.getElementById("bookingIdPill").textContent = bookingID || "—";
+/* ==========================================
+   BOOKING ID + DEFAULT DATE
+========================================== */
 
-    // Optional: set today's date default
-    const today = new Date().toISOString().slice(0,10);
-    document.getElementById("signedDate").value = today;
+const params = new URLSearchParams(location.search);
+const bookingID = params.get("bookingID") || "";
+document.getElementById("bookingIdPill").textContent = bookingID || "—";
 
-    // ---- Submit handler (safe for later switch)
-    // For now this just shows the payload in console; you can enable POST when you switch.
-    const form = document.getElementById("longForm");
-    const statusEl = document.getElementById("status");
+const today = new Date().toISOString().slice(0,10);
+document.getElementById("signedDate").value = today;
 
-    form.addEventListener("submit", async (e) => {
+
+/* ==========================================
+   SIGNATURE PAD (INITIALISE ON LOAD)
+========================================== */
+
+const canvas = document.getElementById("signaturePad");
+const ctx = canvas.getContext("2d");
+const clearBtn = document.getElementById("clearSignature");
+const signatureInput = document.getElementById("signatureData");
+
+let drawing = false;
+
+function resizeCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  drawing = true;
+  const pos = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+}
+
+function draw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  const pos = getPos(e);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.stroke();
+}
+
+function stopDraw() {
+  if (!drawing) return;
+  drawing = false;
+  signatureInput.value = canvas.toDataURL();
+}
+
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", draw);
+canvas.addEventListener("mouseup", stopDraw);
+canvas.addEventListener("mouseleave", stopDraw);
+
+canvas.addEventListener("touchstart", startDraw, { passive: false });
+canvas.addEventListener("touchmove", draw, { passive: false });
+canvas.addEventListener("touchend", stopDraw);
+
+clearBtn.addEventListener("click", () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  signatureInput.value = "";
+});
+
+
+/* ==========================================
+   FORM SUBMIT
+========================================== */
+
+const form = document.getElementById("longForm");
+const statusEl = document.getElementById("status");
+
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   if (!form.checkValidity()) {
@@ -635,6 +718,12 @@
     return;
   }
 
+  if (!signatureInput.value) {
+    statusEl.className = "status err";
+    statusEl.textContent = "Please provide your signature.";
+    return;
+  }
+
   if (form.dvlaCheckCode.value.trim().length !== 8) {
     statusEl.className = "status err";
     statusEl.textContent = "DVLA check code must be exactly 8 characters.";
@@ -643,7 +732,7 @@
 
   if (!bookingID) {
     statusEl.className = "status err";
-    statusEl.textContent = "Missing bookingID in the link. Please use the link from your booking email.";
+    statusEl.textContent = "Missing bookingID in the link.";
     return;
   }
 
@@ -654,9 +743,6 @@
   const data = Object.fromEntries(new FormData(form).entries());
   data.bookingID = bookingID;
   data.formType = "long";
-
-  statusEl.className = "status";
-  statusEl.textContent = "Submitting...";
 
   try {
     const res = await fetch("/api/forms/submit", {
@@ -673,13 +759,12 @@
 
   } catch (err) {
     statusEl.className = "status err";
-    statusEl.textContent = err.message || "Submit failed. Please try again.";
+    statusEl.textContent = err.message || "Submit failed.";
 
-    // 👇 THIS is where your line belongs
     submitBtn.disabled = false;
     submitBtn.textContent = "Submit Long Form";
   }
 });
-  </script>
+</script>
 </body>
 </html>
