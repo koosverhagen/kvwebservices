@@ -274,6 +274,17 @@ textarea:focus{
     font-size: 19px !important;
   }
 }
+
+/* ==========================================
+   VALIDATION HIGHLIGHT
+========================================== */
+
+input:invalid,
+select:invalid,
+textarea:invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.15);
+}
   </style>
 </head>
 
@@ -782,11 +793,25 @@ const statusEl = document.getElementById("status");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  if (!form.checkValidity()) {
-    statusEl.className = "status err";
-    statusEl.textContent = "Please complete all required fields above.";
-    return;
+if (!form.checkValidity()) {
+
+  // Find first invalid field
+  const firstInvalid = form.querySelector(":invalid");
+
+  if (firstInvalid) {
+    firstInvalid.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    firstInvalid.focus({ preventScroll: true });
   }
+
+  statusEl.className = "status err";
+  statusEl.textContent = "Please complete all required fields.";
+
+  return;
+}
 
   if (!form.confirmTrue.checked) {
     statusEl.className = "status err";
