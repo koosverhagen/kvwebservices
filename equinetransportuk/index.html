@@ -51,10 +51,14 @@
 
   <a class="btn ghost" href="#fleet">View fleet</a>
 
-<div class="hero-review-wrap">
-  <div class="elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd"
-       data-elfsight-app-lazy></div>
-</div>
+<a class="btn ghost reviews-open" href="#">
+  <span style="margin-right:8px;">G</span>
+  Reviews
+</a>
+
+<div class="elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd"
+     data-elfsight-app-lazy
+     style="display:none;"></div>
 
 
 
@@ -340,6 +344,28 @@
 	</footer>
 
 	<script src="app.js"></script>
+
+	<script>
+document.addEventListener("DOMContentLoaded", function(){
+
+  const btn = document.querySelector(".reviews-open");
+
+  btn.addEventListener("click", function(e){
+    e.preventDefault();
+
+    // Wait until Elfsight loads
+    const interval = setInterval(function(){
+      const trigger = document.querySelector(".elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd button");
+      if(trigger){
+        trigger.click();
+        clearInterval(interval);
+      }
+    }, 200);
+
+  });
+
+});
+</script>
 	<script>
 		(function() {
 			const toggle = document.getElementById('nav-toggle');
