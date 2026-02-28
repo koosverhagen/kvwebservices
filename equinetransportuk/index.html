@@ -39,31 +39,29 @@
 	</header>
 
 	<main id="top">
-		<section class="hero">
-			<div class="container hero-grid">
-				<div>
-					<p class="kicker">Horsebox Rental</p>
-					<h1>Find available lorries and book in minutes.</h1>
-					<p class="lead">Pick a date and duration, see exactly which lorries are free, view the price, then complete your booking details and checkout.</p>
-					<div class="hero-cta-row">
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="kicker">Horsebox Rental</p>
+        <h1>Find available lorries and book in minutes.</h1>
+        <p class="lead">
+          Pick a date and duration, see exactly which lorries are free, view the price,
+          then complete your booking details and checkout.
+        </p>
 
-  <a class="btn" href="#booking">Start booking</a>
+        <div class="hero-cta-row">
 
-  <a class="btn ghost" href="#fleet">View fleet</a>
+          <a class="btn" href="#booking">Start booking</a>
 
-<a class="btn ghost reviews-open" href="#">
-  <span style="margin-right:8px;">G</span>
-  Reviews
-</a>
+          <a class="btn ghost" href="#fleet">View fleet</a>
 
-<div class="elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd"
-     data-elfsight-app-lazy
-     style="display:none;"></div>
+          <a class="btn ghost reviews-open" href="#">
+            <span style="margin-right:8px;">G</span>
+            Reviews
+          </a>
 
-
-
-</div>
-				</div>
+        </div>
+      </div>
 				   <img class="hero-image" id="hero-slideshow" src="images/hero5.webp" alt="Horsebox on route">
 			<script>
 			// Hero image slideshow
@@ -348,23 +346,28 @@
 	<script>
 document.addEventListener("DOMContentLoaded", function(){
 
-  const btn = document.querySelector(".reviews-open");
+  const overlay = document.getElementById("reviewsOverlay");
+  const openBtn = document.querySelector(".reviews-open");
+  const closeBtn = document.getElementById("closeReviews");
 
-  btn.addEventListener("click", function(e){
+  if(!overlay || !openBtn || !closeBtn) return;
+
+  openBtn.addEventListener("click", function(e){
     e.preventDefault();
+    overlay.classList.add("active");
+    document.body.style.overflow = "hidden";
+  });
 
-    // Wait until Elfsight is ready
-    const check = setInterval(function(){
+  closeBtn.addEventListener("click", function(){
+    overlay.classList.remove("active");
+    document.body.style.overflow = "";
+  });
 
-      if (window.eapps && window.eapps.googleReviews) {
-        clearInterval(check);
-
-        // Open the widget popup
-        window.eapps.googleReviews.open();
-      }
-
-    }, 200);
-
+  overlay.addEventListener("click", function(e){
+    if(e.target === overlay){
+      overlay.classList.remove("active");
+      document.body.style.overflow = "";
+    }
   });
 
 });
@@ -391,6 +394,16 @@ document.addEventListener("DOMContentLoaded", function(){
 	</script>
 	
 	<script src="https://elfsightcdn.com/platform.js" async></script>
-	
+	<!-- Reviews Overlay -->
+<div class="reviews-overlay" id="reviewsOverlay">
+  <div class="reviews-modal">
+    <button class="reviews-close" id="closeReviews">×</button>
+
+    <!-- Elfsight Inline Widget -->
+   <div class="elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd"></div>
+
+  </div>
+</div>
+
 </body>
 </html>
