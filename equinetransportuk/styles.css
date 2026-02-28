@@ -485,16 +485,6 @@ textarea { min-height: 100px; }
   color: var(--accent);
 }
 
-/* ======================================================
-   APPLE STYLE CHECKBOXES (CLEAN + PROPORTIONAL)
-====================================================== */
-
-/* ======================================================
-   APPLE STYLE CHECKBOX (PROPER SIZE + ALIGNMENT)
-====================================================== */
-
-
-
 
 @media (max-width: 980px) {
   .hero-grid, .booking-grid, .fleet-grid, .booking-list {
@@ -732,16 +722,21 @@ textarea { min-height: 100px; }
   position: relative;
 }
 
-/* ======================================================
-   HERO CTA + REVIEWS INLINE LAYOUT
-====================================================== */
+
+
+
+
+
+/* ==========================================
+   HERO CTA ROW — CLEAN VERSION
+========================================== */
 
 .hero-cta-row {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 18px;
   margin-top: 20px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .hero-actions {
@@ -750,25 +745,46 @@ textarea { min-height: 100px; }
 }
 
 .hero-reviews {
-  max-width: 360px;
   display: flex;
   align-items: center;
+  height: 44px;
+  flex-shrink: 0;
 }
 
-/* Keep widget compact */
-.hero-reviews .elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd {
-  width: 100%;
+.hero-reviews iframe,
+.hero-reviews > div {
+  max-width: 240px;
+  height: 44px !important;
 }
 
-/* Mobile: stack vertically */
-@media (max-width: 720px) {
-  .hero-cta-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
+/* ==========================================
+   FORCE REVIEWS TO MATCH BUTTON EXACTLY
+========================================== */
 
-  .hero-reviews {
-    max-width: 100%;
-  }
+.hero-reviews {
+  display: flex;
+  align-items: center;
+  height: 44px;
 }
 
+.hero-reviews iframe,
+.hero-reviews > div {
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Normalize inner content */
+.hero-reviews * {
+  line-height: 1 !important;
+}
+
+/* Match font weight */
+.hero-reviews {
+  font-weight: 600 !important;
+}
+
+/* Ensure border thickness matches */
+.hero-reviews iframe {
+  border-radius: 12px !important;
+}
