@@ -341,9 +341,20 @@
 		</div>
 	</footer>
 
-	<script src="app.js"></script>
+<!-- Reviews Overlay -->
+<div class="reviews-overlay" id="reviewsOverlay">
+  <div class="reviews-modal">
+    <button class="reviews-close" id="closeReviews">×</button>
 
-	<script>
+    <!-- Elfsight Inline Widget -->
+    <div class="elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd"></div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+
+<script>
 document.addEventListener("DOMContentLoaded", function(){
 
   const overlay = document.getElementById("reviewsOverlay");
@@ -352,58 +363,80 @@ document.addEventListener("DOMContentLoaded", function(){
 
   if(!overlay || !openBtn || !closeBtn) return;
 
-  openBtn.addEventListener("click", function(e){
-    e.preventDefault();
+  function openOverlay(){
     overlay.classList.add("active");
     document.body.style.overflow = "hidden";
-  });
+  }
 
-  closeBtn.addEventListener("click", function(){
+  function closeOverlay(){
     overlay.classList.remove("active");
     document.body.style.overflow = "";
+  }
+
+  // Open
+  openBtn.addEventListener("click", function(e){
+    e.preventDefault();
+    openOverlay();
   });
 
+  // Close via X
+  closeBtn.addEventListener("click", closeOverlay);
+
+  // Close when tapping outside modal
   overlay.addEventListener("click", function(e){
     if(e.target === overlay){
-      overlay.classList.remove("active");
-      document.body.style.overflow = "";
+      closeOverlay();
+    }
+  });
+
+  // Close with ESC key
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){
+      closeOverlay();
+    }
+  });
+
+  // Swipe down to close (mobile)
+  let startY = 0;
+
+  overlay.addEventListener("touchstart", function(e){
+    startY = e.touches[0].clientY;
+  });
+
+  overlay.addEventListener("touchmove", function(e){
+    const currentY = e.touches[0].clientY;
+    if(currentY - startY > 80){
+      closeOverlay();
     }
   });
 
 });
 </script>
-	<script>
-		(function() {
-			const toggle = document.getElementById('nav-toggle');
-			const nav = document.getElementById('main-nav');
-			toggle.addEventListener('click', function() {
-				const isOpen = nav.classList.toggle('open');
-				toggle.classList.toggle('open', isOpen);
-				toggle.setAttribute('aria-expanded', isOpen);
-				toggle.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
-			});
-			nav.addEventListener('click', function(e) {
-				if (e.target.tagName === 'A') {
-					nav.classList.remove('open');
-					toggle.classList.remove('open');
-					toggle.setAttribute('aria-expanded', 'false');
-					toggle.setAttribute('aria-label', 'Open navigation');
-				}
-			});
-		})();
-	</script>
-	
-	<script src="https://elfsightcdn.com/platform.js" async></script>
-	<!-- Reviews Overlay -->
-<div class="reviews-overlay" id="reviewsOverlay">
-  <div class="reviews-modal">
-    <button class="reviews-close" id="closeReviews">×</button>
 
-    <!-- Elfsight Inline Widget -->
-   <div class="elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd"></div>
+<script>
+(function() {
+  const toggle = document.getElementById('nav-toggle');
+  const nav = document.getElementById('main-nav');
 
-  </div>
-</div>
+  toggle.addEventListener('click', function() {
+    const isOpen = nav.classList.toggle('open');
+    toggle.classList.toggle('open', isOpen);
+    toggle.setAttribute('aria-expanded', isOpen);
+    toggle.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+  });
+
+  nav.addEventListener('click', function(e) {
+    if (e.target.tagName === 'A') {
+      nav.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open navigation');
+    }
+  });
+})();
+</script>
+
+<script src="https://elfsightcdn.com/platform.js" async></script>
 
 </body>
 </html>
