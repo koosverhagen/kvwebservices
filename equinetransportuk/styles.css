@@ -1511,6 +1511,17 @@ textarea { min-height: 100px; }
   position: relative;
 }
 
+.reviews-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
+
 
 
 
