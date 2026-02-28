@@ -732,8 +732,43 @@ textarea { min-height: 100px; }
   position: relative;
 }
 
+/* ======================================================
+   HERO CTA + REVIEWS INLINE LAYOUT
+====================================================== */
+
+.hero-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+}
+
 .hero-reviews {
-  margin-top: 18px;
-  max-width: 420px;
+  max-width: 360px;
+  display: flex;
+  align-items: center;
+}
+
+/* Keep widget compact */
+.hero-reviews .elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd {
+  width: 100%;
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 720px) {
+  .hero-cta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-reviews {
+    max-width: 100%;
+  }
 }
 
