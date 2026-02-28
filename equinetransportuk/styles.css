@@ -1620,6 +1620,37 @@ textarea { min-height: 100px; }
 
 }
 
+/* Drag handle */
+.reviews-drag{
+  animation: pulseHandle 2s infinite;
+}
+
+@keyframes pulseHandle{
+  0%,100%{ opacity:.5; }
+  50%{ opacity:1; }
+}
+
+/* Make it more sheet-like on mobile */
+@media (max-width: 650px){
+
+  .reviews-overlay{
+    align-items: flex-end;
+  }
+
+  .reviews-modal{
+    width: 100%;
+    border-radius: 24px 24px 0 0;
+    padding-top: 6px;
+    animation: sheetUp .25s ease;
+  }
+
+  @keyframes sheetUp{
+    from{ transform: translateY(40px); opacity: 0; }
+    to{ transform: translateY(0); opacity: 1; }
+  }
+
+}
+
 
 
 
