@@ -1622,12 +1622,11 @@ textarea { min-height: 100px; }
 
 /* Drag handle */
 .reviews-drag{
-  animation: pulseHandle 2s infinite;
-}
-
-@keyframes pulseHandle{
-  0%,100%{ opacity:.5; }
-  50%{ opacity:1; }
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.2);
+  margin: 8px auto 14px auto;
 }
 
 /* Make it more sheet-like on mobile */
