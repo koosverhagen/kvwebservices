@@ -1701,7 +1701,72 @@ textarea { min-height: 100px; }
   margin-top:8px;
 }
 
+/* ==========================================
+   APPLE STYLE BOOKING FLOW
+========================================== */
 
+.booking-steps{
+  display:flex;
+  gap:14px;
+  margin-bottom:22px;
+  flex-wrap:wrap;
+}
+
+.step{
+  font-size:14px;
+  color:var(--muted);
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:#fff;
+}
+
+.step.active{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent);
+}
+
+.booking-step{
+  display:none;
+}
+
+.booking-step.active{
+  display:block;
+  animation:fadeStep .25s ease;
+}
+
+@keyframes fadeStep{
+  from{opacity:0;transform:translateY(8px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.checkout-breakdown{
+  background:#f0f5ff;
+  border:1px solid #cad9ff;
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:18px;
+  font-weight:600;
+}
+
+.requirements-box{
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:18px;
+}
+
+.requirements-box ul{
+  margin:8px 0 0;
+  padding-left:18px;
+}
+
+.confirm-btn{
+  font-size:18px;
+  height:52px;
+}
 
 
 

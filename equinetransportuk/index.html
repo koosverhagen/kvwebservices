@@ -98,157 +98,69 @@
 		</section>
 
 		<section id="booking" class="section booking-wrap">
-			<div class="container booking-grid">
-				<article class="card">
-					<h3>1) Check availability</h3>
-					<p class="muted">Choose pickup date, pickup time, and a preset duration to see available lorries and pricing.</p>
-					<form id="availability-form" class="form-grid">
-						<label>Pickup date
-							<input id="pickup-date" type="date" required>
-						</label>
-						<label>Pickup time
-							<select id="pickup-time" required>
-								<option value="07:00" selected>07:00</option>
-								<option value="13:00">13:00</option>
-							</select>
-						</label>
-						<label>Rental duration
-							<select id="duration-days" required>
-								<option value="0.5">1/2 Day</option>
-								<option value="1" selected>1 Day</option>
-								<option value="2">2 Days</option>
-								<option value="3">3 Days</option>
-								<option value="4">4 Days</option>
-								<option value="5">5 Days</option>
-								<option value="6">6 Days</option>
-								<option value="7">Week</option>
-							</select>
-						</label>
-						<button class="btn full" type="submit">Find available lorries</button>
-					</form>
-					<p class="muted tiny">For 1/2 day (3.5T): 07:00–13:00 or 13:00–19:00. For 1 day or more: 07:00–19:00.</p>
-					<script>
+			<div class="container">
 
-					// Dynamically adjust pickup time options based on duration and lorry type
-					const pickupTimeSelect = document.getElementById('pickup-time');
-					const durationDaysSelect = document.getElementById('duration-days');
-					let selectedVehicleType = null;
+  <!-- Step indicator -->
+  <div class="booking-steps">
+    <div class="step active" data-step="1">1 Availability</div>
+    <div class="step" data-step="2">2 Lorry</div>
+    <div class="step" data-step="3">3 Details</div>
+    <div class="step" data-step="4">4 Payment</div>
+  </div>
 
-					function updatePickupTimeOptions() {
-						const duration = durationDaysSelect.value;
-						// If no lorry selected, default to 3.5T logic (show both for 1/2 day)
-						let is35T = true;
-						if (selectedVehicleType) {
-							is35T = selectedVehicleType.includes('3.5');
-						}
-						pickupTimeSelect.innerHTML = '';
-						if (duration === '0.5' && is35T) {
-							pickupTimeSelect.innerHTML = '<option value="07:00">07:00</option><option value="13:00">13:00</option>';
-						} else {
-							pickupTimeSelect.innerHTML = '<option value="07:00">07:00</option>';
-						}
-					}
+  <div class="booking-flow">
 
-					durationDaysSelect.addEventListener('change', updatePickupTimeOptions);
+    <!-- STEP 1 -->
+    <div class="booking-step active" id="step-1">
+      <div class="card">
+        <h3>Check availability</h3>
+        <p class="muted">Choose date and duration to see available lorries.</p>
+        <!-- KEEP your availability form exactly as it is here -->
+      </div>
+    </div>
 
-					// Listen for availability results to set selectedVehicleType
-					document.addEventListener('click', function(e) {
-						const btn = e.target.closest('.choose-lorry');
-						if (btn && btn.dataset.vehicleId) {
-							if (window.vehicles) {
-								const v = window.vehicles.find(x => x.id === btn.dataset.vehicleId);
-								selectedVehicleType = v ? v.type : null;
-								updatePickupTimeOptions(); // update when lorry is chosen
-							}
-						}
-					});
+    <!-- STEP 2 -->
+    <div class="booking-step" id="step-2">
+      <div class="card">
+        <h3>Select your lorry</h3>
+        <div id="availability-results"></div>
+      </div>
+    </div>
 
-					// Initial call to set correct options on page load
-					updatePickupTimeOptions();
+    <!-- STEP 3 -->
+    <div class="booking-step" id="step-3">
+      <div class="card">
+        <h3>Your details</h3>
+        <!-- KEEP your booking form fields here -->
+      </div>
+    </div>
 
-					</script>
-					<div id="availability-results" class="availability-list"></div>
-					</article>
+    <!-- STEP 4 -->
+    <div class="booking-step" id="step-4">
+      <div class="card">
+        <h3>Review & confirm</h3>
 
-				<article class="card">
-					<h3>2) Your booking details</h3>
-					<p class="muted">Complete customer details and checkout options for the selected lorry.</p>
+        <div id="checkout-summary" class="checkout-breakdown"></div>
 
-					<div class="hire-form-info">
-						<h4>Hire Form Required</h4>
-						<p class="muted">After booking, you will receive an email with a secure link to your required hire form.</p>
-						<ul>
-							<li><strong>Hired within last 3 months:</strong> Short Form</li>
-							<li><strong>More than 3 months ago:</strong> Long Form</li>
-							<li>Submit your <strong>DVLA licence check code</strong> inside the form</li>
-						</ul>
-						<p class="muted tiny">Before collection: outstanding balance, refundable deposit hold, completed forms in the driver’s name, and proof of address are required.</p>
-					</div>
+        <div class="requirements-box">
+          <h4>Before collection</h4>
+          <ul>
+            <li>Complete hire form (short/long based on history)</li>
+            <li>Submit DVLA licence check code</li>
+            <li>Pay outstanding balance</li>
+            <li>£200 refundable deposit hold</li>
+            <li>Bring proof of address</li>
+          </ul>
+        </div>
 
-					<form id="booking-form" class="form-grid">
-						<label class="full">Selected lorry
-							<input id="selected-lorry" type="text" readonly placeholder="Choose a lorry from availability results">
-						</label>
-						<label>Pickup date
-							<input id="selected-pickup" type="date" required>
-						</label>
-						<label>Duration
-							<select id="selected-duration">
-								<option value="0.5">1/2 Day</option>
-								<option value="1" selected>1 Day</option>
-								<option value="2">2 Days</option>
-								<option value="3">3 Days</option>
-								<option value="4">4 Days</option>
-								<option value="5">5 Days</option>
-								<option value="6">6 Days</option>
-								<option value="7">Week</option>
-							</select>
-						</label>
-						<label class="full">Base hire
-							<input id="selected-base" type="text" readonly>
-						</label>
-						<div id="booking-availability-status" class="availability-status full" hidden></div>
-						<label>Full name
-							<input id="customer-name" type="text" required>
-						</label>
-						<label>Email
-							<input id="customer-email" type="email" required>
-						</label>
-						<label>Mobile
-							<input id="customer-mobile" type="tel" required>
-						</label>
-						<label>Date of birth
-							<input id="customer-dob" type="date" required>
-						</label>
-						<label class="full">Address
-							<textarea id="customer-address" rows="3" required></textarea>
-						</label>
+        <button id="booking-submit" class="btn full confirm-btn">
+          Pay £75 to confirm booking
+        </button>
+      </div>
+    </div>
 
-						<label class="full checkline">
-							<input id="hired-within-3-months" type="checkbox">
-							<span>I have hired with Equine Transport UK in the last 3 months (use short form)</span>
-						</label>
-
-						<label class="full checkline">
-							<input id="dartford-enabled" type="checkbox">
-							<span>Add Dartford Crossings (£4.20 per crossing)</span>
-						</label>
-						<label class="full">Number of crossings
-							<input id="dartford-count" type="number" min="1" step="1" value="1" disabled>
-						</label>
-
-						<label class="full checkline">
-							<input id="early-pickup-enabled" type="checkbox">
-							<span>Add early pickup (evening before) £20.00</span>
-						</label>
-
-						<div id="checkout-summary" class="quote full">Select an available lorry to continue.</div>
-						<p class="muted tiny full">Checkout is via Stripe. Confirmation payment due now: £70 for 3.5t, £100 for 7.5t.</p>
-						<button id="booking-submit" class="btn full" type="submit">Continue to Stripe checkout</button>
-					</form>
-					<div id="booking-success" class="success" hidden>Checkout started. Complete payment in Stripe to confirm booking.</div>
-				</article>
-			</div>
+  </div>
+</div>
 		</section>
 
 		<section class="section container">
@@ -266,17 +178,17 @@
 			</div>
 			<article class="card terms-card">
 				<h3>3.5T horsebox pricing rules</h3>
-				<ul>
-					<li>1/2 day: £70</li>
-					<li>1 day: £100</li>
-					<li>2 days: £190</li>
-					<li>3 days: £285</li>
-					<li>4 days: £380</li>
-					<li>5 days: £475</li>
-					<li>6 days: £570</li>
-					<li>Week: £665</li>
-				</ul>
-				<p class="muted">Default day rate rule: £100/day for 3.5T resources.</p>
+<ul>
+  <li>1/2 day: £75</li>
+  <li>1 day: £105</li>
+  <li>2 days: £200</li>
+  <li>3 days: £300</li>
+  <li>4 days: £400</li>
+  <li>5 days: £500</li>
+  <li>6 days: £600</li>
+  <li>Week: £700</li>
+</ul>
+<p class="muted">Default day rate rule: £105/day for 3.5T resources.</p>
 
 				<h3>7.5T rates</h3>
 				<ul>
@@ -285,7 +197,7 @@
 					<li>Weekend rule (Saturday/Sunday) for 1 day: £200/day (living), £175/day (no living)</li>
 					<li>Weekend-start rule for 2 days: £400 (living), £350 (no living)</li>
 				</ul>
-				<p class="muted">Pre-payment rule: £70 for 3.5T and £100 for 7.5T.</p>
+				<p class="muted">Pre-payment rule: £75 for 3.5T and £100 for 7.5T.</p>
 
 				<h3>Booking, forms, and before collection</h3>
 				<ul>

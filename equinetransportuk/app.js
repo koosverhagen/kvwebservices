@@ -1095,159 +1095,201 @@ function resetBookingCustomerFields() {
   updateCheckoutSummary();
 }
 
-availabilityForm.addEventListener("submit", (event) => {
-  event.preventDefault();
+if (availabilityForm) {
+  availabilityForm.addEventListener("submit", (event) => {
+    event.preventDefault();
 
-  const pickupDate = pickupDateInput.value;
-  const pickupTime = pickupTimeInput.value || DEFAULT_PICKUP_TIME;
-  const durationDays = Number(durationDaysInput.value);
+    const pickupDate = pickupDateInput.value;
+    const pickupTime = pickupTimeInput.value || DEFAULT_PICKUP_TIME;
+    const durationDays = Number(durationDaysInput.value);
 
-  if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
-    availabilityResults.innerHTML = '<p class="empty-note">Enter a valid pickup date and duration.</p>';
-    return;
-  }
+    if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
+      availabilityResults.innerHTML =
+        '<p class="empty-note">Enter a valid pickup date and duration.</p>';
+      return;
+    }
 
-  const availableLorries = getAvailableLorries(pickupDate, durationDays, pickupTime);
-  renderAvailabilityResults(availableLorries);
-});
+    const availableLorries = getAvailableLorries(
+      pickupDate,
+      durationDays,
+      pickupTime
+    );
 
-availabilityResults.addEventListener("click", (event) => {
-  const button = event.target.closest(".choose-lorry");
-  if (!button) return;
-  selectAvailability(button.dataset.vehicleId);
-});
+    renderAvailabilityResults(availableLorries);
+  });
+}
 
-dartfordEnabledInput.addEventListener("change", () => {
-  dartfordCountInput.disabled = !dartfordEnabledInput.checked;
-  updateCheckoutSummary();
-});
+// ---- SAFE EVENT LISTENERS ----
 
-dartfordCountInput.addEventListener("input", updateCheckoutSummary);
-earlyPickupEnabledInput.addEventListener("change", updateCheckoutSummary);
-hiredWithin3MonthsInput.addEventListener("change", updateCheckoutSummary);
+// Availability results
+if (availabilityResults) {
+  availabilityResults.addEventListener("click", (event) => {
+    const button = event.target.closest(".choose-lorry");
+    if (!button) return;
+    selectAvailability(button.dataset.vehicleId);
+  });
+}
 
-selectedPickupInput.addEventListener("change", checkBookingFormAvailability);
-selectedDurationInput.addEventListener("change", checkBookingFormAvailability);
+// Extras
+if (dartfordEnabledInput) {
+  dartfordEnabledInput.addEventListener("change", () => {
+    dartfordCountInput.disabled = !dartfordEnabledInput.checked;
+    updateCheckoutSummary();
+  });
+}
 
-bookingForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+if (dartfordCountInput) {
+  dartfordCountInput.addEventListener("input", updateCheckoutSummary);
+}
 
-  if (!selectedAvailability) {
-    alert("Please select a lorry from the availability results first.");
-    return;
-  }
+if (earlyPickupEnabledInput) {
+  earlyPickupEnabledInput.addEventListener("change", updateCheckoutSummary);
+}
 
-  const stillAvailable = isVehicleAvailable(
-    selectedAvailability.vehicle.id,
-    selectedAvailability.pickupDate,
-    selectedAvailability.durationDays,
-    selectedAvailability.pickupTime
-  );
+if (hiredWithin3MonthsInput) {
+  hiredWithin3MonthsInput.addEventListener("change", updateCheckoutSummary);
+}
 
-  if (!stillAvailable) {
-    alert("That lorry is no longer available for the selected dates. Please search again.");
-    return;
-  }
+if (selectedPickupInput) {
+  selectedPickupInput.addEventListener("change", checkBookingFormAvailability);
+}
 
-  const dartfordCrossings = dartfordEnabledInput.checked ? Math.max(1, Number(dartfordCountInput.value || 1)) : 0;
-  const earlyPickup = earlyPickupEnabledInput.checked;
-  const crossingCharge = calculateCrossingCharge(dartfordCrossings);
-  const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickup);
-  const hireTotal = calculateHireTotal(selectedAvailability.baseCost, dartfordCrossings, earlyPickup);
-  const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
-  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
-  const hiredWithinLast3Months = hiredWithin3MonthsInput.checked;
-  const requiredFormType = hiredWithinLast3Months ? "short" : "long";
+if (selectedDurationInput) {
+  selectedDurationInput.addEventListener("change", checkBookingFormAvailability);
+}
 
-  const existingIds = new Set(getBookings().map((item) => String(item.id)));
-  const bookingId = generateNumericBookingId(existingIds);
-  const shortFormLink = buildFormUrl(FORM_LINK_A, bookingId);
-  const longFormLink = buildFormUrl(FORM_LINK_B, bookingId);
-  const requiredFormLink = requiredFormType === "short" ? shortFormLink : longFormLink;
+// Booking form submit
+if (bookingForm) {
+  bookingForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-  const booking = {
-    id: bookingId,
-    vehicleId: selectedAvailability.vehicle.id,
-    vehicleSnapshot: {
-      id: selectedAvailability.vehicle.id,
-      name: selectedAvailability.vehicle.name,
-      type: selectedAvailability.vehicle.type
-    },
-    pickupAt: selectedAvailability.pickupAt.toISOString(),
-    dropoffAt: selectedAvailability.dropoffAt.toISOString(),
-    durationDays: selectedAvailability.durationDays,
-    durationHours: selectedAvailability.durationHours,
-    pickupTime: selectedAvailability.pickupTime,
-    customerName: customerNameInput.value,
-    customerEmail: customerEmailInput.value,
-    customerMobile: customerMobileInput.value,
-    customerAddress: customerAddressInput.value,
-    customerDob: customerDobInput.value,
-    dartfordCrossings,
-    crossingCharge,
-    earlyPickup,
-    earlyPickupCharge,
-    hireTotal,
-    confirmationFee,
-    outstandingAmount,
-    depositAmount: SECURITY_DEPOSIT_AMOUNT,
-    status: "pending_confirmation_payment",
-    reminderAt: getReminderAt(selectedAvailability.pickupAt.toISOString()),
-    outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
-    depositLink: DEPOSIT_PAYMENT_LINK,
-    formLinkA: shortFormLink,
-    formLinkB: longFormLink,
-    requiredFormType,
-    requiredFormLink,
-    hiredWithinLast3Months,
-    createdAt: new Date().toISOString()
-  };
+    if (!selectedAvailability) {
+      alert("Please select a lorry from the availability results first.");
+      return;
+    }
 
-  const bookings = getBookings();
-  bookings.push(booking);
-  saveBookings(bookings);
+    const stillAvailable = isVehicleAvailable(
+      selectedAvailability.vehicle.id,
+      selectedAvailability.pickupDate,
+      selectedAvailability.durationDays,
+      selectedAvailability.pickupTime
+    );
 
-  renderBookings();
-  renderAdminBookings();
+    if (!stillAvailable) {
+      alert("That lorry is no longer available for the selected dates. Please search again.");
+      return;
+    }
 
-  await notifyBackend(booking, "booking_created");
+    const dartfordCrossings = dartfordEnabledInput?.checked
+      ? Math.max(1, Number(dartfordCountInput?.value || 1))
+      : 0;
 
-  const checkoutUrl = await createStripeCheckoutSession(booking);
-  if (!checkoutUrl) {
-    alert("Stripe checkout link is not configured yet. Add your Stripe links or backend session endpoint in app.js.");
-    return;
-  }
+    const earlyPickup = earlyPickupEnabledInput?.checked || false;
 
-  bookingSuccess.hidden = false;
-  setTimeout(() => {
-    bookingSuccess.hidden = true;
-  }, 2500);
+    const crossingCharge = calculateCrossingCharge(dartfordCrossings);
+    const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickup);
+    const hireTotal = calculateHireTotal(
+      selectedAvailability.baseCost,
+      dartfordCrossings,
+      earlyPickup
+    );
 
-  resetBookingCustomerFields();
-  window.location.href = checkoutUrl;
-});
+    const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+    const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+    const hiredWithinLast3Months = hiredWithin3MonthsInput?.checked || false;
+    const requiredFormType = hiredWithinLast3Months ? "short" : "long";
 
-refreshAdminBtn.addEventListener("click", renderAdminBookings);
-exportAdminCsvBtn.addEventListener("click", exportAdminCsv);
-exportAdminPdfBtn.addEventListener("click", exportAdminPdf);
+    const existingIds = new Set(getBookings().map((item) => String(item.id)));
+    const bookingId = generateNumericBookingId(existingIds);
 
-clearAdminBtn.addEventListener("click", () => {
-  if (!confirm("Clear all saved demo bookings?")) return;
-  localStorage.removeItem(STORAGE_BOOKINGS);
-  selectedAvailability = null;
-  selectedLorryInput.value = "";
-  selectedPickupInput.value = "";
-  populateBookingDurationSelect(null);
-  selectedBaseInput.value = "";
-  const statusEl = document.getElementById("booking-availability-status");
-  if (statusEl) { statusEl.textContent = ""; statusEl.hidden = true; }
-  renderBookings();
-  renderAdminBookings();
-  updateCheckoutSummary();
-});
+    const shortFormLink = buildFormUrl(FORM_LINK_A, bookingId);
+    const longFormLink = buildFormUrl(FORM_LINK_B, bookingId);
+    const requiredFormLink =
+      requiredFormType === "short" ? shortFormLink : longFormLink;
 
-bookingSubmitBtn.disabled = true;
-renderFleet();
-renderBookings();
-renderAdminBookings();
+    const booking = {
+      id: bookingId,
+      vehicleId: selectedAvailability.vehicle.id,
+      vehicleSnapshot: {
+        id: selectedAvailability.vehicle.id,
+        name: selectedAvailability.vehicle.name,
+        type: selectedAvailability.vehicle.type
+      },
+      pickupAt: selectedAvailability.pickupAt.toISOString(),
+      dropoffAt: selectedAvailability.dropoffAt.toISOString(),
+      durationDays: selectedAvailability.durationDays,
+      durationHours: selectedAvailability.durationHours,
+      pickupTime: selectedAvailability.pickupTime,
+      customerName: customerNameInput?.value || "",
+      customerEmail: customerEmailInput?.value || "",
+      customerMobile: customerMobileInput?.value || "",
+      customerAddress: customerAddressInput?.value || "",
+      customerDob: customerDobInput?.value || "",
+      dartfordCrossings,
+      crossingCharge,
+      earlyPickup,
+      earlyPickupCharge,
+      hireTotal,
+      confirmationFee,
+      outstandingAmount,
+      depositAmount: SECURITY_DEPOSIT_AMOUNT,
+      status: "pending_confirmation_payment",
+      reminderAt: getReminderAt(selectedAvailability.pickupAt.toISOString()),
+      outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
+      depositLink: DEPOSIT_PAYMENT_LINK,
+      formLinkA: shortFormLink,
+      formLinkB: longFormLink,
+      requiredFormType,
+      requiredFormLink,
+      hiredWithinLast3Months,
+      createdAt: new Date().toISOString()
+    };
+
+    const bookings = getBookings();
+    bookings.push(booking);
+    saveBookings(bookings);
+
+    renderBookings();
+    renderAdminBookings();
+
+    await notifyBackend(booking, "booking_created");
+
+    const checkoutUrl = await createStripeCheckoutSession(booking);
+    if (!checkoutUrl) {
+      alert("Stripe checkout link is not configured yet.");
+      return;
+    }
+
+    resetBookingCustomerFields();
+    window.location.href = checkoutUrl;
+  });
+}
+
+// Admin buttons
+if (refreshAdminBtn) refreshAdminBtn.addEventListener("click", renderAdminBookings);
+if (exportAdminCsvBtn) exportAdminCsvBtn.addEventListener("click", exportAdminCsv);
+if (exportAdminPdfBtn) exportAdminPdfBtn.addEventListener("click", exportAdminPdf);
+
+if (clearAdminBtn) {
+  clearAdminBtn.addEventListener("click", () => {
+    if (!confirm("Clear all saved demo bookings?")) return;
+
+    localStorage.removeItem(STORAGE_BOOKINGS);
+    selectedAvailability = null;
+
+    if (selectedLorryInput) selectedLorryInput.value = "";
+    if (selectedPickupInput) selectedPickupInput.value = "";
+    if (selectedBaseInput) selectedBaseInput.value = "";
+
+    renderBookings();
+    renderAdminBookings();
+    updateCheckoutSummary();
+  });
+}
+
+// ---- SAFE INITIAL LOAD ----
+if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+if (fleetGrid) renderFleet();
+if (bookingList) renderBookings();
+if (adminBookings) renderAdminBookings();
 updateCheckoutSummary();
