@@ -2,7 +2,7 @@ let activeSlideshow = null;
 const STORAGE_BOOKINGS = "equinetransportuk_bookings";
 const DARTFORD_CROSSING_PRICE = 4.2;
 const EARLY_PICKUP_PRICE = 20;
-const CONFIRMATION_FEE_35T = 70;
+const CONFIRMATION_FEE_35T = 75;
 const CONFIRMATION_FEE_75T = 100;
 const SECURITY_DEPOSIT_AMOUNT = 200;
 const DEFAULT_PICKUP_TIME = "07:00";
@@ -11,14 +11,14 @@ const HALF_DAY_DROPOFF_TIMES_35T = {"07:00": "13:00", "13:00": "19:00"};
 const FULL_DAY_DROPOFF_TIME = "19:00";
 
 const RATE_35T_TOTALS = {
-  "0.5": 70,
-  "1": 100,
-  "2": 190,
-  "3": 285,
-  "4": 380,
-  "5": 475,
-  "6": 570,
-  "7": 665
+  "0.5": 75,   // was 70
+  "1": 105,    // was 100
+  "2": 200,    // was 190
+  "3": 300,    // was 285
+  "4": 400,    // was 380
+  "5": 500,    // was 475
+  "6": 600,    // was 570
+  "7": 700     // was 665
 };
 
 const RATE_75_LIVING_TOTALS = {
@@ -69,7 +69,7 @@ const vehicles = [
     horses: 2,
     seats: 3,
     overnight: false,
-    dayRate: 100,
+    dayRate: 105,
     pricingModel: "35_duration_rules",
     summary: "Rear-facing 2-horse lorry with externally releasable safety breast bar, tack/changing room, horse/reverse cameras and ventilation.",
     image: "images/lorry-ls23.webp"
@@ -82,7 +82,7 @@ const vehicles = [
     horses: 2,
     seats: 3,
     overnight: false,
-    dayRate: 100,
+    dayRate: 105,
     pricingModel: "35_duration_rules",
     summary: "Back-facing 2-horse stallion layout with high partitions, no breast bar, horse/reverse cameras, roof vent and windows.",
     image: "images/lorry-mm68.webp"
@@ -95,7 +95,7 @@ const vehicles = [
     horses: 2,
     seats: 3,
     overnight: false,
-    dayRate: 100,
+    dayRate: 105,
     pricingModel: "35_duration_rules",
     summary: "Back-facing 2-horse lorry with adjustable breast bar, tack/changing room, horse/reverse cameras and roof ventilation.",
     image: "images/lorry-ca21.webp"
@@ -281,7 +281,7 @@ function calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime) {
   if (vehicle.pricingModel === "35_duration_rules") {
     const mapped = RATE_35T_TOTALS[durationKey];
     if (mapped != null) return mapped;
-    return 100 * Math.max(1, duration);
+    return 105 * Math.max(1, duration);
   }
 
   if (vehicle.pricingModel === "75_living_rules") {
@@ -665,15 +665,50 @@ function updateCheckoutSummary() {
   const requiredFormType = hiredWithin3MonthsInput.checked ? "Short Form" : "Long Form";
 
   checkoutSummary.innerHTML = `
-    ${selectedAvailability.vehicle.name}<br>
-    Base hire: £${selectedAvailability.baseCost.toFixed(2)}<br>
-    Dartford crossings: £${crossingCharge.toFixed(2)}${dartfordEnabled ? ` (${crossingsCount} crossing${crossingsCount === 1 ? "" : "s"})` : ""}<br>
-    Early pickup: £${earlyPickupCharge.toFixed(2)}${earlyPickupEnabled ? " (evening before)" : ""}<br>
-    <strong>Hire total: £${hireTotal.toFixed(2)}</strong><br>
-    Pay now to confirm: £${confirmationFee.toFixed(2)} · Outstanding later: £${outstandingAmount.toFixed(2)}<br>
-    Required hire form: ${requiredFormType}<br>
-    Security deposit link (day before): £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)}
-  `;
+  <div class="summary-card">
+    <h4>${selectedAvailability.vehicle.name}</h4>
+    
+    <div class="summary-row">
+      <span>Base hire</span>
+      <strong>£${selectedAvailability.baseCost.toFixed(2)}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Dartford crossings</span>
+      <strong>£${crossingCharge.toFixed(2)}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Early pickup</span>
+      <strong>£${earlyPickupCharge.toFixed(2)}</strong>
+    </div>
+
+    <hr>
+
+    <div class="summary-row total">
+      <span>Total hire</span>
+      <strong>£${hireTotal.toFixed(2)}</strong>
+    </div>
+
+    <div class="summary-row pay-now">
+      <span>Pay now (confirmation)</span>
+      <strong>£${confirmationFee.toFixed(2)}</strong>
+    </div>
+
+    <div class="summary-row outstanding">
+      <span>Remaining balance</span>
+      <strong>£${outstandingAmount.toFixed(2)}</strong>
+    </div>
+
+    <div class="summary-note">
+      Security deposit £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)} — card hold the day before collection.
+    </div>
+
+    <div class="summary-note">
+      Required form: <strong>${requiredFormType}</strong>
+    </div>
+  </div>
+`;
 }
 
 function populateBookingDurationSelect(vehicle) {
