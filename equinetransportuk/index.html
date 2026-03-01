@@ -94,7 +94,7 @@
 			</div>
 			<div id="fleet-grid" class="fleet-grid"></div>
 
-				   <!-- <script src="app.js"></script> removed duplicate, script is loaded at end of body -->
+				  
 		</section>
 
 		<section id="booking" class="section booking-wrap">
@@ -111,13 +111,57 @@
   <div class="booking-flow">
 
     <!-- STEP 1 -->
-    <div class="booking-step active" id="step-1">
-      <div class="card">
-        <h3>Check availability</h3>
-        <p class="muted">Choose date and duration to see available lorries.</p>
-        <!-- KEEP your availability form exactly as it is here -->
+<div class="booking-step active" id="step-1">
+  <div class="card">
+    <h3>Check availability</h3>
+    <p class="muted">Choose date and duration to see available lorries.</p>
+
+    <form id="availability-form" class="form-grid">
+
+      <!-- Pickup Date -->
+      <label>
+        Pickup date
+        <input
+          type="date"
+          id="pickup-date"
+          required
+        >
+      </label>
+
+      <!-- Pickup Time -->
+      <label>
+        Pickup time
+        <select id="pickup-time" required>
+  <option value="07:00" selected>07:00</option>
+  <option value="13:00">13:00 (½ day PM only)</option>
+</select>
+      </label>
+
+      <!-- Duration -->
+      <label>
+        Duration
+       <select id="duration-days" required>
+  <option value="0.5">½ day</option>
+  <option value="1" selected>1 day</option>
+  <option value="2">2 days</option>
+  <option value="3">3 days</option>
+  <option value="4">4 days</option>
+  <option value="5">5 days</option>
+  <option value="6">6 days</option>
+  <option value="7">Week</option>
+</select>
+      </label>
+
+      <div class="full">
+        <button type="submit" class="btn full">
+          Check availability
+        </button>
       </div>
-    </div>
+
+    </form>
+
+  </div>
+</div>
 
     <!-- STEP 2 -->
     <div class="booking-step" id="step-2">
@@ -269,7 +313,6 @@
   </div>
 </div>
 
-<script src="app.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
@@ -354,6 +397,6 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 <script src="https://elfsightcdn.com/platform.js" async></script>
-
+<script src="app.js"></script>
 </body>
 </html>

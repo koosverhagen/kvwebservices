@@ -132,6 +132,40 @@ const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
 const durationDaysInput = document.getElementById("duration-days");
+/* ======================================================
+   STEP 1B — Smart Pickup Time Locking
+   Only ½ day allows 13:00
+====================================================== */
+
+function syncPickupTimeOptions() {
+  if (!durationDaysInput || !pickupTimeInput) return;
+
+  const duration = Number(durationDaysInput.value);
+
+  const pmOption = Array.from(pickupTimeInput.options)
+    .find(opt => opt.value === "13:00");
+
+  if (!pmOption) return;
+
+  if (duration === 0.5) {
+    // Allow PM
+    pmOption.hidden = false;
+  } else {
+    // Hide PM for all other durations
+    pmOption.hidden = true;
+
+    // Force 07:00 if PM was selected
+    if (pickupTimeInput.value === "13:00") {
+      pickupTimeInput.value = "07:00";
+    }
+  }
+}
+
+// Run on load
+document.addEventListener("DOMContentLoaded", syncPickupTimeOptions);
+
+// Run when duration changes
+durationDaysInput?.addEventListener("change", syncPickupTimeOptions);
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
@@ -473,7 +507,7 @@ overlay.addEventListener("click", (e) => {
 
 
 
-function bookFromVehicle(vehicleId) {
+async function bookFromVehicle(vehicleId) {
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   if (!vehicle) return;
 
@@ -502,7 +536,7 @@ function bookFromVehicle(vehicleId) {
   const durationDays = Number(selectedDurationInput?.value) || 1;
   const pickupTime = DEFAULT_PICKUP_TIME;
 
-  selectedAvailability = buildAvailability(
+  selectedAvailability = await buildAvailability(
     vehicle,
     defaultDate,
     durationDays,
@@ -514,7 +548,7 @@ function bookFromVehicle(vehicleId) {
     selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
   }
 
-  checkBookingFormAvailability();
+  await checkBookingFormAvailability();
 
   // Scroll safely
   const bookingSection = document.querySelector("#booking");
@@ -564,35 +598,65 @@ window.fleetImages = [
   "7.5 T 4 Horses No Living3.webp",
   "7.5 T 4 Horses No Living4.webp"
 ];
+async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime) {
+  try {
+    const res = await fetch(apiUrl("/api/pricing/quote"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        vehicleId: vehicle.id,
+        durationDays,
+        pickupDate,
+        pickupTime
+      })
+    });
 
-function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) {
+    if (!res.ok) throw new Error("Pricing API error");
+
+    const pricing = await res.json();
+    return pricing.baseCost;
+
+  } catch (err) {
+    console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
+    return calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
+  }
+}
+
+async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) {
+
   let actualPickupTime = pickupTime;
   let dropoffTime = FULL_DAY_DROPOFF_TIME;
   let durationHours = getDurationHours(vehicle, durationDays);
-  // 1/2 day logic for 3.5T only
+
   if (is35T(vehicle) && Number(durationDays) === 0.5) {
-    // If pickupTime not specified or invalid, default to 07:00
     if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
       actualPickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
     }
     dropoffTime = HALF_DAY_DROPOFF_TIMES_35T[actualPickupTime];
-    durationHours = 6; // 6 hours for half day
+    durationHours = 6;
   } else {
-    // For 1 day or more, always 07:00 pickup, 19:00 drop-off
     actualPickupTime = DEFAULT_PICKUP_TIME;
     dropoffTime = FULL_DAY_DROPOFF_TIME;
-    // durationHours already set by getDurationHours
   }
+
   const pickupAt = asDate(pickupDate, actualPickupTime);
-  // Drop-off is always same day for 1/2 day, else pickup + duration or set to 19:00
+
   let dropoffAt;
   if (is35T(vehicle) && Number(durationDays) === 0.5) {
     dropoffAt = asDate(pickupDate, dropoffTime);
   } else {
-    // For 1 day or more, drop-off is pickupDate at 19:00 plus (durationDays-1) days
     const dropoffDate = addDays(pickupAt, Math.max(0, Number(durationDays) - 1));
     dropoffAt = asDate(dropoffDate.toISOString().slice(0,10), dropoffTime);
   }
+
+  // ✅ Server pricing
+  const baseCost = await fetchServerQuote(
+    vehicle,
+    durationDays,
+    pickupDate,
+    actualPickupTime
+  );
+
   return {
     vehicle,
     pickupDate,
@@ -601,17 +665,26 @@ function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) {
     durationHours,
     pickupAt,
     dropoffAt,
-    baseCost: calculateBaseCost(vehicle, durationDays, pickupDate, actualPickupTime)
+    baseCost
   };
 }
 
-function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
+async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
+
   const vehicle = vehicles.find((item) => item.id === vehicleId);
   if (!vehicle) return false;
   if (!supportsDuration(vehicle, durationDays)) return false;
 
-  const candidate = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
-  const vehicleBookings = getBookings().filter((booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled");
+  const candidate = await buildAvailability(
+    vehicle,
+    pickupDate,
+    durationDays,
+    pickupTime
+  );
+
+  const vehicleBookings = getBookings().filter(
+    (booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled"
+  );
 
   return !vehicleBookings.some((booking) => {
     const existingStart = new Date(booking.pickupAt);
@@ -620,11 +693,24 @@ function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTime = DE
   });
 }
 
-function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
-  return vehicles
-    .filter((vehicle) => supportsDuration(vehicle, durationDays))
-    .filter((vehicle) => isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime))
-    .map((vehicle) => buildAvailability(vehicle, pickupDate, durationDays, pickupTime));
+async function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
+  const results = [];
+
+  for (const vehicle of vehicles) {
+    if (!supportsDuration(vehicle, durationDays)) continue;
+    if (!(await isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime))) continue;
+
+    const availability = await buildAvailability(
+      vehicle,
+      pickupDate,
+      durationDays,
+      pickupTime
+    );
+
+    results.push(availability);
+  }
+
+  return results;
 }
 
 function renderAvailabilityResults(items) {
@@ -639,21 +725,33 @@ function renderAvailabilityResults(items) {
   }
 
   const html = items
-    .map((item) => {
-      const confirmationFee = getConfirmationFee(item.vehicle);
-      return `
-        <article class="availability-item">
-          <div>
-            <h4>${item.vehicle.name}</h4>
-            <p class="muted">${item.vehicle.code ? `${item.vehicle.code} · ` : ""}${formatDateOnly(item.pickupDate)} ${item.pickupTime} · ${formatDurationLabel(item.durationDays)}</p>
-            <p><strong>Hire from £${item.baseCost.toFixed(2)}</strong></p>
-            <p class="muted tiny">Pay now to confirm: £${confirmationFee.toFixed(2)}</p>
-          </div>
-          <button class="btn choose-lorry" type="button" data-vehicle-id="${item.vehicle.id}">Select</button>
-        </article>
-      `;
-    })
-    .join("");
+  .map((item) => {
+    const confirmationFee = getConfirmationFee(item.vehicle);
+    return `
+      <article class="availability-item">
+        <div>
+          <h4>${item.vehicle.name}</h4>
+          <p class="muted">
+            ${item.vehicle.code ? `${item.vehicle.code} · ` : ""}
+            ${formatDateOnly(item.pickupDate)} ${item.pickupTime} · 
+            ${formatDurationLabel(item.durationDays)}
+          </p>
+
+          <div class="price">£${item.baseCost.toFixed(2)}</div>
+
+          <p class="muted tiny">
+            Pay now to confirm: £${confirmationFee.toFixed(2)}
+          </p>
+        </div>
+
+        <button class="btn choose-lorry" type="button" 
+          data-vehicle-id="${item.vehicle.id}">
+          Select
+        </button>
+      </article>
+    `;
+  })
+  .join("");
 
   availabilityResults.innerHTML = html;
 }
@@ -741,7 +839,7 @@ function populateBookingDurationSelect(vehicle) {
   }
 }
 
-function checkBookingFormAvailability() {
+async function checkBookingFormAvailability() {
 
   // If booking form not present, safely exit
   if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput) {
@@ -787,7 +885,7 @@ function checkBookingFormAvailability() {
   );
 
   if (available) {
-    selectedAvailability = buildAvailability(
+    selectedAvailability = await buildAvailability(
       vehicle,
       pickupDate,
       durationDays,
@@ -821,7 +919,7 @@ function checkBookingFormAvailability() {
 }
 
 
-function selectAvailability(vehicleId) {
+async function selectAvailability(vehicleId) {
   const pickupDate = pickupDateInput.value;
   let pickupTime = pickupTimeInput.value;
   const durationDays = Number(durationDaysInput.value);
@@ -837,7 +935,7 @@ function selectAvailability(vehicleId) {
     pickupTime = DEFAULT_PICKUP_TIME;
   }
 
-  selectedAvailability = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
+  selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
 
   selectedLorryInput.value = vehicle.name;
   selectedPickupInput.value = pickupDate;
@@ -1131,14 +1229,28 @@ function resetBookingCustomerFields() {
   earlyPickupEnabledInput.checked = false;
   updateCheckoutSummary();
 }
+function renderAvailabilityLoading() {
+  if (!availabilityResults) return;
+  availabilityResults.innerHTML = `
+    <div class="loading-note">
+      <span class="spinner" aria-hidden="true"></span>
+      Checking availability…
+    </div>
+  `;
+}
+
+function renderAvailabilityError(message = "Something went wrong. Please try again.") {
+  if (!availabilityResults) return;
+  availabilityResults.innerHTML = `<p class="empty-note">${message}</p>`;
+}
 
 if (availabilityForm) {
-  availabilityForm.addEventListener("submit", (event) => {
+  availabilityForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const pickupDate = pickupDateInput.value;
-    const pickupTime = pickupTimeInput.value || DEFAULT_PICKUP_TIME;
-    const durationDays = Number(durationDaysInput.value);
+    const pickupDate = pickupDateInput?.value;
+    const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+    const durationDays = Number(durationDaysInput?.value);
 
     if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
       availabilityResults.innerHTML =
@@ -1146,13 +1258,37 @@ if (availabilityForm) {
       return;
     }
 
-    const availableLorries = getAvailableLorries(
-      pickupDate,
-      durationDays,
-      pickupTime
-    );
+    // Lock UI
+    const submitBtn = availabilityForm.querySelector('button[type="submit"], input[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+    if (pickupDateInput) pickupDateInput.disabled = true;
+    if (pickupTimeInput) pickupTimeInput.disabled = true;
+    if (durationDaysInput) durationDaysInput.disabled = true;
 
-    renderAvailabilityResults(availableLorries);
+    renderAvailabilityLoading();
+
+    try {
+      const availableLorries = await getAvailableLorries(
+        pickupDate,
+        durationDays,
+        pickupTime
+      );
+
+      renderAvailabilityResults(availableLorries);
+
+      // Optional: gentle scroll to results (nice UX)
+      availabilityResults.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (err) {
+      console.warn("Availability search failed:", err);
+      renderAvailabilityError("Couldn’t check availability right now. Please try again.");
+    } finally {
+      // Unlock UI
+      if (submitBtn) submitBtn.disabled = false;
+      if (pickupDateInput) pickupDateInput.disabled = false;
+      if (pickupTimeInput) pickupTimeInput.disabled = false;
+      if (durationDaysInput) durationDaysInput.disabled = false;
+    }
   });
 }
 
@@ -1205,12 +1341,12 @@ if (bookingForm) {
       return;
     }
 
-    const stillAvailable = isVehicleAvailable(
-      selectedAvailability.vehicle.id,
-      selectedAvailability.pickupDate,
-      selectedAvailability.durationDays,
-      selectedAvailability.pickupTime
-    );
+    const stillAvailable = await isVehicleAvailable(
+  selectedAvailability.vehicle.id,
+  selectedAvailability.pickupDate,
+  selectedAvailability.durationDays,
+  selectedAvailability.pickupTime
+);
 
     if (!stillAvailable) {
       alert("That lorry is no longer available for the selected dates. Please search again.");
