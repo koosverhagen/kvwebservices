@@ -1913,6 +1913,14 @@ button:disabled, input[type="submit"]:disabled{
   margin-top:6px;
 }
 
+.voucher-message.ok {
+  color: #16a34a;
+  font-weight: 600;
+}
 
+.voucher-message.error {
+  color: #dc2626;
+  font-weight: 600;
+}
 
 

@@ -28,6 +28,13 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
+  const response = await handlePricingQuote(request, env);
+  return withCors(response, corsHeaders);
+}
+
+      
+
       /* ===============================
          NEW: FORM SUBMISSION ENDPOINT
       ================================ */
@@ -143,6 +150,46 @@ const DISCOUNT_CODES = [
     minDuration: 0.5
   }
 ];
+
+async function handlePricingQuote(request, env) {
+  const payload = await request.json();
+
+  const {
+    vehicleId,
+    durationDays,
+    pickupDate,
+    pickupTime,
+    discountCode
+  } = payload;
+
+  if (!vehicleId || !durationDays || !pickupDate || !pickupTime) {
+    return json({ error: "Missing required pricing fields" }, 400);
+  }
+
+  // You MUST replicate your pricing rules here server-side.
+  // For now simple example:
+  const baseCost = calculateServerBaseCost(vehicleId, durationDays, pickupDate, pickupTime);
+
+  const discount = resolveDiscount({
+    code: discountCode,
+    vehicleId,
+    durationDays,
+    baseCost
+  });
+
+  if (discount.error) {
+    return json({ error: discount.error }, 400);
+  }
+
+  const discountAmount = discount.discountAmount || 0;
+  const discountedTotal = Math.max(0, baseCost - discountAmount);
+
+  return json({
+    baseCost,
+    discountAmount,
+    discountedTotal
+  });
+}
 
 async function handleCreateCheckoutSession(request, env) {
   assertConfigured(env, ["STRIPE_SECRET_KEY", "STRIPE_SUCCESS_URL", "STRIPE_CANCEL_URL"]);
@@ -963,6 +1010,14 @@ function getDurationLabel(durationDays) {
   if (duration === 1) return "1 day";
   if (!duration) return "Not specified";
   return `${duration} days`;
+}
+function calculateServerBaseCost(vehicleId, durationDays, pickupDate, pickupTime) {
+  // replicate your frontend pricing rules here
+  // for now simple fallback
+  const duration = Number(durationDays);
+  if (duration === 0.5) return 75;
+  if (duration === 1) return 105;
+  return 105 * duration;
 }
 
 function formatBookingDateTime(value) {
