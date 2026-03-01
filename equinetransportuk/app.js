@@ -203,12 +203,28 @@ if (applyDiscountBtn) {
   applyDiscountBtn.addEventListener("click", async () => {
     if (!selectedAvailability) return;
 
+    const codeInput = document.getElementById("discount-code");
+    const code = codeInput?.value?.trim();
+
+    if (!code) {
+      if (discountMessage) {
+        discountMessage.hidden = false;
+        discountMessage.textContent = "Please enter a voucher code.";
+        discountMessage.className = "voucher-message error tiny";
+      }
+      return;
+    }
+
+    applyDiscountBtn.disabled = true;
+    applyDiscountBtn.textContent = "Applying...";
+
     try {
       const updated = await buildAvailability(
         selectedAvailability.vehicle,
         selectedAvailability.pickupDate,
         selectedAvailability.durationDays,
-        selectedAvailability.pickupTime
+        selectedAvailability.pickupTime,
+        code // 🔥 pass code to server
       );
 
       selectedAvailability = updated;
@@ -218,10 +234,10 @@ if (applyDiscountBtn) {
         discountMessage.hidden = false;
 
         if (updated.discountAmount > 0) {
-          discountMessage.textContent = "Voucher applied successfully.";
+          discountMessage.textContent = "Voucher applied ✓";
           discountMessage.className = "voucher-message ok tiny";
         } else {
-          discountMessage.textContent = "No discount applied.";
+          discountMessage.textContent = "Code valid but no discount applied.";
           discountMessage.className = "voucher-message muted tiny";
         }
       }
@@ -229,9 +245,13 @@ if (applyDiscountBtn) {
     } catch (err) {
       if (discountMessage) {
         discountMessage.hidden = false;
-        discountMessage.textContent = "Invalid or expired code.";
+        discountMessage.textContent =
+          err?.message || "Invalid or expired voucher.";
         discountMessage.className = "voucher-message error tiny";
       }
+    } finally {
+      applyDiscountBtn.disabled = false;
+      applyDiscountBtn.textContent = "Apply";
     }
   });
 }
@@ -576,14 +596,17 @@ async function bookFromVehicle(vehicleId) {
     }
   }
 
-  const durationDays = Number(selectedDurationInput?.value) || 1;
+    const durationDays = Number(selectedDurationInput?.value) || 1;
   const pickupTime = DEFAULT_PICKUP_TIME;
+
+  const code = getDiscountCode();
 
   selectedAvailability = await buildAvailability(
     vehicle,
     defaultDate,
     durationDays,
-    pickupTime
+    pickupTime,
+    code
   );
 
   // Safely set base price
@@ -641,10 +664,7 @@ window.fleetImages = [
   "7.5 T 4 Horses No Living3.webp",
   "7.5 T 4 Horses No Living4.webp"
 ];
-async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime) {
-  const discountCodeInput = document.getElementById("discount-code");
-  const discountCode = discountCodeInput?.value?.trim() || "";
-
+async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime, discountCode = "") {
   try {
     const res = await fetch(apiUrl("/api/pricing/quote"), {
       method: "POST",
@@ -685,7 +705,7 @@ async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime) {
   }
 }
 
-async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) {
+async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode = "") {
 
   let actualPickupTime = pickupTime;
   let dropoffTime = FULL_DAY_DROPOFF_TIME;
@@ -717,7 +737,8 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) 
   vehicle.id,
   pickupDate,
   durationDays,
-  actualPickupTime
+  actualPickupTime,
+  discountCode || ""
 );
 
 const cached = AVAILABILITY_CACHE.get(cacheKey);
@@ -730,7 +751,8 @@ const pricing = await fetchServerQuote(
   vehicle,
   durationDays,
   pickupDate,
-  actualPickupTime
+  actualPickupTime,
+  discountCode
 );
 
 const availabilityObject = {
@@ -835,7 +857,7 @@ function renderAvailabilityResults(items) {
             ${formatDurationLabel(item.durationDays)}
           </p>
 
-          <div class="price">£${item.baseCost.toFixed(2)}</div>
+          <div class="price">£${(item.discountedTotal ?? item.baseCost).toFixed(2)}</div>
 
           <p class="muted tiny">
             Pay now to confirm: £${confirmationFee.toFixed(2)}
@@ -856,38 +878,66 @@ function renderAvailabilityResults(items) {
 
 function updateCheckoutSummary() {
   if (!selectedAvailability) {
-    checkoutSummary.textContent = "Select an available lorry to continue.";
-    bookingSubmitBtn.disabled = true;
-    return;
-  }
+  checkoutSummary.textContent = "Select an available lorry to continue.";
+  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+  return;
+}
 
-  bookingSubmitBtn.disabled = false;
+if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
 
-  const dartfordEnabled = dartfordEnabledInput.checked;
-  const crossingsCount = dartfordEnabled ? Math.max(1, Number(dartfordCountInput.value || 1)) : 0;
-  const earlyPickupEnabled = earlyPickupEnabledInput.checked;
-  const crossingCharge = calculateCrossingCharge(crossingsCount);
-  const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
-  const hireTotal = calculateHireTotal(
-  selectedAvailability.discountedTotal ?? selectedAvailability.baseCost,
+const dartfordEnabled = dartfordEnabledInput?.checked || false;
+const crossingsCount = dartfordEnabled
+  ? Math.max(1, Number(dartfordCountInput?.value || 1))
+  : 0;
+
+const earlyPickupEnabled = earlyPickupEnabledInput?.checked || false;
+
+const crossingCharge = calculateCrossingCharge(crossingsCount);
+const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
+
+const baseCost = Number(selectedAvailability.baseCost || 0);
+const discountAmount = Number(selectedAvailability.discountAmount || 0);
+
+// Apply discount BEFORE extras
+const discountedBase = Math.max(0, baseCost - discountAmount);
+
+const hireTotal = calculateHireTotal(
+  discountedBase,
   crossingsCount,
   earlyPickupEnabled
 );
-  const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
-  if (bookingSubmitBtn) {
+
+const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+
+if (bookingSubmitBtn) {
   bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
 }
-  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
-  const requiredFormType = hiredWithin3MonthsInput.checked ? "Short Form" : "Long Form";
 
-  checkoutSummary.innerHTML = `
+const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+
+const requiredFormType = hiredWithin3MonthsInput?.checked
+  ? "Short Form"
+  : "Long Form";
+
+checkoutSummary.innerHTML = `
   <div class="summary-card">
     <h4>${selectedAvailability.vehicle.name}</h4>
-    
+
     <div class="summary-row">
       <span>Base hire</span>
-      <strong>£${(selectedAvailability.baseCost ?? 0).toFixed(2)}</strong>
+      <strong>£${baseCost.toFixed(2)}</strong>
     </div>
+
+    ${
+      discountAmount > 0
+        ? `
+      <div class="summary-row discount">
+        <span>Discount</span>
+        <strong>-£${discountAmount.toFixed(2)}</strong>
+      </div>
+      `
+        : ""
+    }
 
     <div class="summary-row">
       <span>Dartford crossings</span>
@@ -990,11 +1040,14 @@ async function checkBookingFormAvailability() {
 );
 
   if (available) {
+       const code = getDiscountCode();
+
     selectedAvailability = await buildAvailability(
       vehicle,
       pickupDate,
       durationDays,
-      pickupTime
+      pickupTime,
+      code
     );
 
     if (selectedBaseInput) {
@@ -1040,7 +1093,8 @@ async function selectAvailability(vehicleId) {
     pickupTime = DEFAULT_PICKUP_TIME;
   }
 
-  selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
+    const code = getDiscountCode();
+  selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, code);
 
   selectedLorryInput.value = vehicle.name;
   selectedPickupInput.value = pickupDate;
@@ -1136,6 +1190,10 @@ function renderAdminBookings() {
   `;
 }
 
+function getDiscountCode() {
+  return document.getElementById("discount-code")?.value?.trim() || "";
+}
+
 function csvEscape(value) {
   const normalized = String(value ?? "");
   if (/[",\n]/.test(normalized)) {
@@ -1214,8 +1272,9 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function getAvailabilityCacheKey(vehicleId, pickupDate, durationDays, pickupTime) {
-  return `${vehicleId}|${pickupDate}|${durationDays}|${pickupTime}`;
+function getAvailabilityCacheKey(vehicleId, pickupDate, durationDays, pickupTime, discountCode = "")
+{
+  return `${vehicleId}|${pickupDate}|${durationDays}|${pickupTime}|${discountCode}`;
 }
 
 function exportAdminPdf() {
@@ -1470,11 +1529,15 @@ if (bookingForm) {
 
     const crossingCharge = calculateCrossingCharge(dartfordCrossings);
     const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickup);
-    const hireTotal = calculateHireTotal(
-      selectedAvailability.baseCost,
-      dartfordCrossings,
-      earlyPickup
-    );
+    const baseCost = Number(selectedAvailability.baseCost || 0);
+const discountAmount = Number(selectedAvailability.discountAmount || 0);
+const discountedBase = Math.max(0, baseCost - discountAmount);
+
+const hireTotal = calculateHireTotal(
+  discountedBase,
+  dartfordCrossings,
+  earlyPickup
+);
 
     const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
     const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
