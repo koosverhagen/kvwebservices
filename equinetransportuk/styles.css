@@ -1669,6 +1669,40 @@ textarea { min-height: 100px; }
 
 }
 
+.summary-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.summary-row {
+  display:flex;
+  justify-content:space-between;
+  margin:8px 0;
+}
+
+.summary-row.total {
+  font-size:18px;
+}
+
+.summary-row.pay-now {
+  color:#1f6feb;
+  font-weight:600;
+}
+
+.summary-row.outstanding {
+  color:#555;
+}
+
+.summary-note {
+  font-size:13px;
+  color:#666;
+  margin-top:8px;
+}
+
+
+
 
 
 
