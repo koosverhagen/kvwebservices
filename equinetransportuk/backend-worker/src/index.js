@@ -125,6 +125,25 @@ export default {
   }
 };
 
+const DISCOUNT_CODES = [
+  {
+    code: "SPRING10",
+    type: "percent",      // percent | fixed
+    value: 10,            // 10% off
+    expires: "2026-05-31",
+    vehicles: "all",      // or ["v35-1", "v75-1"]
+    minDuration: 1
+  },
+  {
+    code: "HALFDAY15",
+    type: "fixed",
+    value: 15,            // £15 off
+    expires: "2026-12-31",
+    vehicles: ["v35-1", "v35-2", "v35-3"],
+    minDuration: 0.5
+  }
+];
+
 async function handleCreateCheckoutSession(request, env) {
   assertConfigured(env, ["STRIPE_SECRET_KEY", "STRIPE_SUCCESS_URL", "STRIPE_CANCEL_URL"]);
 
@@ -1181,6 +1200,43 @@ function assertConfigured(env, keys) {
       throw new Error(`Missing required env var: ${key}`);
     }
   }
+}
+
+function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
+  if (!code) return { discountAmount: 0 };
+
+  const entry = DISCOUNT_CODES.find(
+    d => d.code.toUpperCase() === code.toUpperCase()
+  );
+
+  if (!entry) return { error: "Invalid code" };
+
+  const now = new Date();
+  const expiry = new Date(entry.expires + "T23:59:59");
+  if (now > expiry) return { error: "Code expired" };
+
+  if (entry.vehicles !== "all" && !entry.vehicles.includes(vehicleId)) {
+    return { error: "Code not valid for this vehicle" };
+  }
+
+  if (Number(durationDays) < Number(entry.minDuration || 0)) {
+    return { error: "Code not valid for this duration" };
+  }
+
+  let discountAmount = 0;
+
+  if (entry.type === "percent") {
+    discountAmount = (baseCost * entry.value) / 100;
+  } else if (entry.type === "fixed") {
+    discountAmount = entry.value;
+  }
+
+  discountAmount = Math.min(discountAmount, baseCost);
+
+  return {
+    discountAmount: Number(discountAmount.toFixed(2)),
+    label: entry.code
+  };
 }
 
 function json(payload, status = 200) {

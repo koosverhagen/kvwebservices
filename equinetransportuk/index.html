@@ -180,28 +180,45 @@
     </div>
 
     <!-- STEP 4 -->
-    <div class="booking-step" id="step-4">
-      <div class="card">
-        <h3>Review & confirm</h3>
+<div class="booking-step" id="step-4">
+  <div class="card">
+    <h3>Review & confirm</h3>
 
-        <div id="checkout-summary" class="checkout-breakdown"></div>
+    <div id="checkout-summary" class="checkout-breakdown"></div>
 
-        <div class="requirements-box">
-          <h4>Before collection</h4>
-          <ul>
-            <li>Complete hire form (short/long based on history)</li>
-            <li>Submit DVLA licence check code</li>
-            <li>Pay outstanding balance</li>
-            <li>£200 refundable deposit hold</li>
-            <li>Bring proof of address</li>
-          </ul>
-        </div>
-
-        <button id="booking-submit" class="btn full confirm-btn">
-          Pay £75 to confirm booking
+    <!-- Voucher Section -->
+    <div class="voucher-box">
+      <label for="discount-code">Voucher code</label>
+      <div class="voucher-row">
+        <input 
+          type="text" 
+          id="discount-code" 
+          placeholder="Enter voucher code"
+          autocomplete="off"
+        >
+        <button type="button" id="apply-discount" class="btn ghost small">
+          Apply
         </button>
       </div>
+      <p id="discount-message" class="voucher-message muted tiny" hidden></p>
     </div>
+
+    <div class="requirements-box">
+      <h4>Before collection</h4>
+      <ul>
+        <li>Complete hire form (short/long based on history)</li>
+        <li>Submit DVLA licence check code</li>
+        <li>Pay outstanding balance</li>
+        <li>£200 refundable deposit hold</li>
+        <li>Bring proof of address</li>
+      </ul>
+    </div>
+
+    <button id="booking-submit" class="btn full confirm-btn">
+      Confirm & pay
+    </button>
+  </div>
+</div>
 
   </div>
 </div>

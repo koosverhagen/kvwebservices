@@ -1874,6 +1874,45 @@ button:disabled, input[type="submit"]:disabled{
   font-weight: 700;
 }
 
+/* ===========================
+   VOUCHER BOX
+=========================== */
+
+.voucher-box{
+  margin: 20px 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(15,23,42,0.04);
+}
+
+.voucher-box label{
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.voucher-row{
+  display:flex;
+  gap:10px;
+  margin-top:8px;
+}
+
+.voucher-row input{
+  flex:1;
+  padding:12px 14px;
+  border-radius:12px;
+  border:1px solid rgba(15,23,42,0.12);
+  font-size:15px;
+}
+
+.voucher-row .small{
+  height:42px;
+  padding:0 18px;
+}
+
+.voucher-message{
+  margin-top:6px;
+}
+
 
 
 

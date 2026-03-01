@@ -196,6 +196,46 @@ const exportAdminCsvBtn = document.getElementById("export-admin-csv");
 const exportAdminPdfBtn = document.getElementById("export-admin-pdf");
 const clearAdminBtn = document.getElementById("clear-admin");
 
+const applyDiscountBtn = document.getElementById("apply-discount");
+const discountMessage = document.getElementById("discount-message");
+
+if (applyDiscountBtn) {
+  applyDiscountBtn.addEventListener("click", async () => {
+    if (!selectedAvailability) return;
+
+    try {
+      const updated = await buildAvailability(
+        selectedAvailability.vehicle,
+        selectedAvailability.pickupDate,
+        selectedAvailability.durationDays,
+        selectedAvailability.pickupTime
+      );
+
+      selectedAvailability = updated;
+      updateCheckoutSummary();
+
+      if (discountMessage) {
+        discountMessage.hidden = false;
+
+        if (updated.discountAmount > 0) {
+          discountMessage.textContent = "Voucher applied successfully.";
+          discountMessage.className = "voucher-message ok tiny";
+        } else {
+          discountMessage.textContent = "No discount applied.";
+          discountMessage.className = "voucher-message muted tiny";
+        }
+      }
+
+    } catch (err) {
+      if (discountMessage) {
+        discountMessage.hidden = false;
+        discountMessage.textContent = "Invalid or expired code.";
+        discountMessage.className = "voucher-message error tiny";
+      }
+    }
+  });
+}
+
 let selectedAvailability = null;
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -602,6 +642,9 @@ window.fleetImages = [
   "7.5 T 4 Horses No Living4.webp"
 ];
 async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime) {
+  const discountCodeInput = document.getElementById("discount-code");
+  const discountCode = discountCodeInput?.value?.trim() || "";
+
   try {
     const res = await fetch(apiUrl("/api/pricing/quote"), {
       method: "POST",
@@ -610,18 +653,35 @@ async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime) {
         vehicleId: vehicle.id,
         durationDays,
         pickupDate,
-        pickupTime
+        pickupTime,
+        discountCode
       })
     });
 
-    if (!res.ok) throw new Error("Pricing API error");
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null);
+      const message = errorData?.error || "Pricing API error";
+      throw new Error(message);
+    }
 
     const pricing = await res.json();
-    return pricing.baseCost;
+
+    return {
+      baseCost: pricing.baseCost ?? 0,
+      discountAmount: pricing.discountAmount ?? 0,
+      discountedTotal: pricing.discountedTotal ?? pricing.baseCost ?? 0
+    };
 
   } catch (err) {
     console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
-    return calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
+
+    const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
+
+    return {
+      baseCost: fallbackBase,
+      discountAmount: 0,
+      discountedTotal: fallbackBase
+    };
   }
 }
 
@@ -666,7 +726,7 @@ if (cached && (Date.now() - cached.timestamp < AVAILABILITY_CACHE_TTL)) {
   return cached.data;
 }
 
-const baseCost = await fetchServerQuote(
+const pricing = await fetchServerQuote(
   vehicle,
   durationDays,
   pickupDate,
@@ -681,7 +741,9 @@ const availabilityObject = {
   durationHours,
   pickupAt,
   dropoffAt,
-  baseCost
+  baseCost: pricing.baseCost,
+  discountAmount: pricing.discountAmount,
+  discountedTotal: pricing.discountedTotal
 };
 
 AVAILABILITY_CACHE.set(cacheKey, {
@@ -806,8 +868,15 @@ function updateCheckoutSummary() {
   const earlyPickupEnabled = earlyPickupEnabledInput.checked;
   const crossingCharge = calculateCrossingCharge(crossingsCount);
   const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
-  const hireTotal = calculateHireTotal(selectedAvailability.baseCost, crossingsCount, earlyPickupEnabled);
+  const hireTotal = calculateHireTotal(
+  selectedAvailability.discountedTotal ?? selectedAvailability.baseCost,
+  crossingsCount,
+  earlyPickupEnabled
+);
   const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+  if (bookingSubmitBtn) {
+  bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
+}
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
   const requiredFormType = hiredWithin3MonthsInput.checked ? "Short Form" : "Long Form";
 
