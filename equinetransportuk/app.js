@@ -135,7 +135,7 @@ const durationDaysInput = document.getElementById("duration-days");
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
-const selectedLorryInput = document.getElementById("selected-lorry");
+const selectedLorryInput = document.getElementById("selected-lorry") || { value: "" };
 const selectedPickupInput = document.getElementById("selected-pickup");
 const selectedDurationInput = document.getElementById("selected-duration");
 const selectedBaseInput = document.getElementById("selected-base");
@@ -477,43 +477,56 @@ function bookFromVehicle(vehicleId) {
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   if (!vehicle) return;
 
-  // Set the selected lorry name in the booking form
-  selectedLorryInput.value = vehicle.name;
-
-  // Default pickup date: use availability form date, or today if empty
   const today = new Date().toISOString().slice(0, 10);
-  const defaultDate = pickupDateInput.value || today;
-  selectedPickupInput.value = defaultDate;
+  const defaultDate = pickupDateInput?.value || today;
 
-  // Populate duration dropdown for this vehicle and select default
-  populateBookingDurationSelect(vehicle);
-  // Default to 1 day if supported, otherwise first available
-  if (supportsDuration(vehicle, 1)) {
-    selectedDurationInput.value = "1";
+  // Safely set selected lorry
+  if (selectedLorryInput) {
+    selectedLorryInput.value = vehicle.name;
   }
 
-  // Build a preliminary availability object so checkBookingFormAvailability has a vehicle reference
-  const durationDays = Number(selectedDurationInput.value) || 1;
-  const pickupTime = DEFAULT_PICKUP_TIME;
-  selectedAvailability = buildAvailability(vehicle, defaultDate, durationDays, pickupTime);
-  selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+  // Safely set pickup date
+  if (selectedPickupInput) {
+    selectedPickupInput.value = defaultDate;
+  }
 
-  // Trigger availability validation
+  // Populate duration dropdown safely
+  if (selectedDurationInput) {
+    populateBookingDurationSelect(vehicle);
+
+    if (supportsDuration(vehicle, 1)) {
+      selectedDurationInput.value = "1";
+    }
+  }
+
+  const durationDays = Number(selectedDurationInput?.value) || 1;
+  const pickupTime = DEFAULT_PICKUP_TIME;
+
+  selectedAvailability = buildAvailability(
+    vehicle,
+    defaultDate,
+    durationDays,
+    pickupTime
+  );
+
+  // Safely set base price
+  if (selectedBaseInput) {
+    selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+  }
+
   checkBookingFormAvailability();
 
-  // Scroll to booking details heading and focus the pickup date input
+  // Scroll safely
   const bookingSection = document.querySelector("#booking");
   if (bookingSection) {
-    const headings = bookingSection.querySelectorAll("h3");
-    let targetHeading = null;
-    headings.forEach((h) => {
-      if (h.textContent.includes("2)") || h.textContent.toLowerCase().includes("booking details")) {
-        targetHeading = h;
-      }
+    bookingSection.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
     });
-    const scrollTarget = targetHeading || bookingSection;
-    scrollTarget.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => selectedPickupInput.focus(), 600);
+
+    setTimeout(() => {
+      selectedPickupInput?.focus();
+    }, 600);
   }
 }
 
