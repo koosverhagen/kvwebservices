@@ -1201,6 +1201,36 @@ function buildCorsHeaders(request, env) {
   };
 }
 
+if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
+  const payload = await request.json();
+  const response = await handlePricingQuote(payload);
+  return withCors(response, corsHeaders);
+}
+
+async function handlePricingQuote(payload) {
+  const { vehicleId, durationDays, pickupDate, pickupTime } = payload;
+
+  if (!vehicleId || !durationDays || !pickupDate || !pickupTime) {
+    return json({ error: "Invalid payload" }, 400);
+  }
+
+  const vehicle = VEHICLES.find(v => v.id === vehicleId);
+  if (!vehicle) {
+    return json({ error: "Vehicle not found" }, 404);
+  }
+
+  const baseCost = calculateBaseCostServer(vehicle, durationDays, pickupDate, pickupTime);
+
+  const confirmationFee = vehicle.type.includes("3.5") ? 75 : 100;
+
+  return json({
+    baseCost,
+    confirmationFee,
+    hireTotal: baseCost,
+    totalDueNow: confirmationFee
+  });
+}
+
 function withCors(response, corsHeaders) {
   const headers = new Headers(response.headers);
   Object.entries(corsHeaders).forEach(([key, value]) => headers.set(key, value));
