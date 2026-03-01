@@ -742,11 +742,14 @@ function populateBookingDurationSelect(vehicle) {
 }
 
 function checkBookingFormAvailability() {
-  const statusEl = document.getElementById("booking-availability-status");
-  if (!selectedAvailability) {
-    if (statusEl) { statusEl.textContent = ""; statusEl.hidden = true; }
+
+  // If booking form not present, safely exit
+  if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput) {
     return;
   }
+
+  const statusEl = document.getElementById("booking-availability-status");
+
   const vehicle = selectedAvailability.vehicle;
   const pickupDate = selectedPickupInput.value;
   const durationDays = Number(selectedDurationInput.value);
@@ -757,7 +760,7 @@ function checkBookingFormAvailability() {
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
-    bookingSubmitBtn.disabled = true;
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
     return;
   }
 
@@ -767,32 +770,53 @@ function checkBookingFormAvailability() {
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
-    bookingSubmitBtn.disabled = true;
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
     return;
   }
 
-  const pickupTime = is35T(vehicle) && durationDays === 0.5
-    ? (selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME)
-    : DEFAULT_PICKUP_TIME;
-  const available = isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime);
+  const pickupTime =
+    is35T(vehicle) && durationDays === 0.5
+      ? (selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME)
+      : DEFAULT_PICKUP_TIME;
+
+  const available = isVehicleAvailable(
+    vehicle.id,
+    pickupDate,
+    durationDays,
+    pickupTime
+  );
 
   if (available) {
-    selectedAvailability = buildAvailability(vehicle, pickupDate, durationDays, pickupTime);
-    selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+    selectedAvailability = buildAvailability(
+      vehicle,
+      pickupDate,
+      durationDays,
+      pickupTime
+    );
+
+    if (selectedBaseInput) {
+      selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+    }
+
     if (statusEl) {
-      statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
+      statusEl.textContent =
+        `${vehicle.name} is available for the selected date and duration.`;
       statusEl.className = "availability-status ok full";
       statusEl.hidden = false;
     }
-    bookingSubmitBtn.disabled = false;
+
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
+
     updateCheckoutSummary();
   } else {
     if (statusEl) {
-      statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
+      statusEl.textContent =
+        `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
-    bookingSubmitBtn.disabled = true;
+
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
   }
 }
 
