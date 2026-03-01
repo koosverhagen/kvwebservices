@@ -10,6 +10,9 @@ const HALF_DAY_PICKUP_TIMES_35T = ["07:00", "13:00"];
 const HALF_DAY_DROPOFF_TIMES_35T = {"07:00": "13:00", "13:00": "19:00"};
 const FULL_DAY_DROPOFF_TIME = "19:00";
 
+const AVAILABILITY_CACHE = new Map();
+const AVAILABILITY_CACHE_TTL = 60 * 1000; // 60 seconds
+
 const RATE_35T_TOTALS = {
   "0.5": 75,   // was 70
   "1": 105,    // was 100
@@ -545,7 +548,7 @@ async function bookFromVehicle(vehicleId) {
 
   // Safely set base price
   if (selectedBaseInput) {
-    selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+    selectedBaseInput.value = `£${(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
   }
 
   await checkBookingFormAvailability();
@@ -650,23 +653,45 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime) 
   }
 
   // ✅ Server pricing
-  const baseCost = await fetchServerQuote(
-    vehicle,
-    durationDays,
-    pickupDate,
-    actualPickupTime
-  );
+  const cacheKey = getAvailabilityCacheKey(
+  vehicle.id,
+  pickupDate,
+  durationDays,
+  actualPickupTime
+);
 
-  return {
-    vehicle,
-    pickupDate,
-    pickupTime: actualPickupTime,
-    durationDays,
-    durationHours,
-    pickupAt,
-    dropoffAt,
-    baseCost
-  };
+const cached = AVAILABILITY_CACHE.get(cacheKey);
+
+if (cached && (Date.now() - cached.timestamp < AVAILABILITY_CACHE_TTL)) {
+  return cached.data;
+}
+
+const baseCost = await fetchServerQuote(
+  vehicle,
+  durationDays,
+  pickupDate,
+  actualPickupTime
+);
+
+const availabilityObject = {
+  vehicle,
+  pickupDate,
+  pickupTime: actualPickupTime,
+  durationDays,
+  durationHours,
+  pickupAt,
+  dropoffAt,
+  baseCost
+};
+
+AVAILABILITY_CACHE.set(cacheKey, {
+  timestamp: Date.now(),
+  data: availabilityObject
+});
+
+return availabilityObject;
+
+  
 }
 
 async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
@@ -698,7 +723,6 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAUL
 
   for (const vehicle of vehicles) {
     if (!supportsDuration(vehicle, durationDays)) continue;
-    if (!(await isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime))) continue;
 
     const availability = await buildAvailability(
       vehicle,
@@ -707,7 +731,19 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAUL
       pickupTime
     );
 
-    results.push(availability);
+    const vehicleBookings = getBookings().filter(
+      (booking) => booking.vehicleId === vehicle.id && booking.status !== "cancelled"
+    );
+
+    const overlapsExisting = vehicleBookings.some((booking) => {
+      const existingStart = new Date(booking.pickupAt);
+      const existingEnd = new Date(booking.dropoffAt);
+      return overlaps(availability.pickupAt, availability.dropoffAt, existingStart, existingEnd);
+    });
+
+    if (!overlapsExisting) {
+      results.push(availability);
+    }
   }
 
   return results;
@@ -781,7 +817,7 @@ function updateCheckoutSummary() {
     
     <div class="summary-row">
       <span>Base hire</span>
-      <strong>£${selectedAvailability.baseCost.toFixed(2)}</strong>
+      <strong>£${(selectedAvailability.baseCost ?? 0).toFixed(2)}</strong>
     </div>
 
     <div class="summary-row">
@@ -877,12 +913,12 @@ async function checkBookingFormAvailability() {
       ? (selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME)
       : DEFAULT_PICKUP_TIME;
 
-  const available = isVehicleAvailable(
-    vehicle.id,
-    pickupDate,
-    durationDays,
-    pickupTime
-  );
+  const available = await isVehicleAvailable(
+  vehicle.id,
+  pickupDate,
+  durationDays,
+  pickupTime
+);
 
   if (available) {
     selectedAvailability = await buildAvailability(
@@ -893,7 +929,7 @@ async function checkBookingFormAvailability() {
     );
 
     if (selectedBaseInput) {
-      selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+      selectedBaseInput.value = `£${(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
     }
 
     if (statusEl) {
@@ -941,7 +977,7 @@ async function selectAvailability(vehicleId) {
   selectedPickupInput.value = pickupDate;
   populateBookingDurationSelect(vehicle);
   selectedDurationInput.value = String(durationDays);
-  selectedBaseInput.value = `£${selectedAvailability.baseCost.toFixed(2)}`;
+  selectedBaseInput.value = `£${(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
 
   const statusEl = document.getElementById("booking-availability-status");
   if (statusEl) { statusEl.hidden = true; }
@@ -1107,6 +1143,10 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function getAvailabilityCacheKey(vehicleId, pickupDate, durationDays, pickupTime) {
+  return `${vehicleId}|${pickupDate}|${durationDays}|${pickupTime}`;
 }
 
 function exportAdminPdf() {
@@ -1421,6 +1461,7 @@ if (bookingForm) {
     const bookings = getBookings();
     bookings.push(booking);
     saveBookings(bookings);
+    AVAILABILITY_CACHE.clear();
 
     renderBookings();
     renderAdminBookings();
