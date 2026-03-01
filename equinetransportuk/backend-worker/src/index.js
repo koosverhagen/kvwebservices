@@ -1219,3 +1219,11 @@ function escapeHtml(value) {
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+function goToStep(n){
+  document.querySelectorAll('.booking-step').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+
+  document.getElementById('step-'+n)?.classList.add('active');
+  document.querySelector('.step[data-step="'+n+'"]')?.classList.add('active');
+}
