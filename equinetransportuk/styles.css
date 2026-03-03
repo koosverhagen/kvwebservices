@@ -1909,3 +1909,13 @@ textarea { min-height: 100px; }
 .voucher-message.ok{ color: #059669; }
 .voucher-message.error{ color: #dc2626; }
 .voucher-message.muted{ color: rgba(15,23,42,0.65); }
+
+/* Fix mobile date input overflow */
+input[type="date"],
+input[type="time"],
+select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0; /* critical for Safari */
+}
