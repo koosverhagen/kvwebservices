@@ -367,14 +367,26 @@ function syncPickupTimeOptions() {
   if (!durationDaysInput || !pickupTimeInput) return;
 
   const duration = Number(durationDaysInput.value);
-  const pmOption = Array.from(pickupTimeInput.options).find((opt) => opt.value === "13:00");
-  if (!pmOption) return;
+
+  const existingPmOption = Array.from(pickupTimeInput.options)
+    .find(opt => opt.value === "13:00");
 
   if (duration === 0.5) {
-    pmOption.hidden = false;
+    // Add PM option if missing
+    if (!existingPmOption) {
+      const pmOption = document.createElement("option");
+      pmOption.value = "13:00";
+      pmOption.textContent = "13:00";
+      pickupTimeInput.appendChild(pmOption);
+    }
   } else {
-    pmOption.hidden = true;
-    if (pickupTimeInput.value === "13:00") pickupTimeInput.value = "07:00";
+    // Remove PM option entirely for all other durations
+    if (existingPmOption) {
+      pickupTimeInput.removeChild(existingPmOption);
+    }
+
+    // Force 07:00 if needed
+    pickupTimeInput.value = "07:00";
   }
 }
 
