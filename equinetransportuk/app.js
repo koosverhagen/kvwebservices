@@ -49,22 +49,22 @@ const RATE_75_LIVING_TOTALS = {
 const DURATION_HOURS_35T = {
   "0.5": 6,
   "1": 12,
-  "2": 36,
-  "3": 50,
-  "4": 96,
-  "5": 120,
-  "6": 144,
-  "7": 168
+  "2": 24,
+  "3": 36,
+  "4": 48,
+  "5": 60,
+  "6": 72,
+  "7": 84
 };
 
 const DURATION_HOURS_75T = {
   "1": 12,
-  "2": 36,
-  "3": 50,
-  "4": 96,
-  "5": 120,
-  "6": 144,
-  "7": 168
+  "2": 24,
+  "3": 36,
+  "4": 48,
+  "5": 60,
+  "6": 72,
+  "7": 84
 };
 
 // Stripe / links (fallback)
@@ -395,6 +395,20 @@ function syncPickupTimeOptions() {
 ====================================================== */
 
 async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime, discountCode = "") {
+
+  // 🔒 Local development safeguard (prevents 405 spam on Live Server)
+  if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
+    console.log("Skipping pricing API (localhost dev)");
+
+    const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
+
+    return {
+      baseCost: fallbackBase,
+      discountAmount: 0,
+      discountedTotal: fallbackBase
+    };
+  }
+
   try {
     const res = await fetch(apiUrl("/api/pricing/quote"), {
       method: "POST",
@@ -1702,5 +1716,12 @@ function selectDate(dateObj) {
   });
 
   renderCalendar();
+  const durationInput = document.getElementById("duration-days");
+
+if (durationInput) {
+  durationInput.addEventListener("change", () => {
+    renderCalendar();
+  });
+}
 
 })();
