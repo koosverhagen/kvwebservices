@@ -1,27 +1,39 @@
+/* ======================================================
+   Equine Transport UK — Booking Flow (Client)
+   Phase 2: Server Pricing
+   Phase 3: Discount Engine (voucher codes)
+   ====================================================== */
+
 let activeSlideshow = null;
+
+// Storage + pricing constants
 const STORAGE_BOOKINGS = "equinetransportuk_bookings";
 const DARTFORD_CROSSING_PRICE = 4.2;
 const EARLY_PICKUP_PRICE = 20;
 const CONFIRMATION_FEE_35T = 75;
 const CONFIRMATION_FEE_75T = 100;
 const SECURITY_DEPOSIT_AMOUNT = 200;
+
+// Time rules
 const DEFAULT_PICKUP_TIME = "07:00";
 const HALF_DAY_PICKUP_TIMES_35T = ["07:00", "13:00"];
-const HALF_DAY_DROPOFF_TIMES_35T = {"07:00": "13:00", "13:00": "19:00"};
+const HALF_DAY_DROPOFF_TIMES_35T = { "07:00": "13:00", "13:00": "19:00" };
 const FULL_DAY_DROPOFF_TIME = "19:00";
 
+// Availability cache (quote results)
 const AVAILABILITY_CACHE = new Map();
 const AVAILABILITY_CACHE_TTL = 60 * 1000; // 60 seconds
 
+// Duration price tables
 const RATE_35T_TOTALS = {
-  "0.5": 75,   // was 70
-  "1": 105,    // was 100
-  "2": 200,    // was 190
-  "3": 300,    // was 285
-  "4": 400,    // was 380
-  "5": 500,    // was 475
-  "6": 600,    // was 570
-  "7": 700     // was 665
+  "0.5": 75,
+  "1": 105,
+  "2": 200,
+  "3": 300,
+  "4": 400,
+  "5": 500,
+  "6": 600,
+  "7": 700
 };
 
 const RATE_75_LIVING_TOTALS = {
@@ -55,14 +67,18 @@ const DURATION_HOURS_75T = {
   "7": 168
 };
 
+// Stripe / links (fallback)
 const STRIPE_PAYMENT_LINK_35T = "";
 const STRIPE_PAYMENT_LINK_75T = "";
 const OUTSTANDING_PAYMENT_LINK = "";
 const DEPOSIT_PAYMENT_LINK = "";
 const FORM_LINK_A = "https://www.equinetransportuk.com/shortformsubmit";
 const FORM_LINK_B = "https://www.equinetransportuk.com/longformsubmit";
+
+// If empty, API paths are relative (same origin)
 const BACKEND_API_BASE = "";
 
+// Fleet data
 const vehicles = [
   {
     id: "v35-1",
@@ -74,7 +90,8 @@ const vehicles = [
     overnight: false,
     dayRate: 105,
     pricingModel: "35_duration_rules",
-    summary: "Rear-facing 2-horse lorry with externally releasable safety breast bar, tack/changing room, horse/reverse cameras and ventilation.",
+    summary:
+      "Rear-facing 2-horse lorry with externally releasable safety breast bar, tack/changing room, horse/reverse cameras and ventilation.",
     image: "images/lorry-ls23.webp"
   },
   {
@@ -87,7 +104,8 @@ const vehicles = [
     overnight: false,
     dayRate: 105,
     pricingModel: "35_duration_rules",
-    summary: "Back-facing 2-horse stallion layout with high partitions, no breast bar, horse/reverse cameras, roof vent and windows.",
+    summary:
+      "Back-facing 2-horse stallion layout with high partitions, no breast bar, horse/reverse cameras, roof vent and windows.",
     image: "images/lorry-mm68.webp"
   },
   {
@@ -100,7 +118,8 @@ const vehicles = [
     overnight: false,
     dayRate: 105,
     pricingModel: "35_duration_rules",
-    summary: "Back-facing 2-horse lorry with adjustable breast bar, tack/changing room, horse/reverse cameras and roof ventilation.",
+    summary:
+      "Back-facing 2-horse lorry with adjustable breast bar, tack/changing room, horse/reverse cameras and roof ventilation.",
     image: "images/lorry-ca21.webp"
   },
   {
@@ -112,7 +131,8 @@ const vehicles = [
     overnight: true,
     dayRate: 175,
     pricingModel: "75_living_rules",
-    summary: "High-end 3-horse 7.5T with living space, focused on comfort, reliability and practical long-day transport.",
+    summary:
+      "High-end 3-horse 7.5T with living space, focused on comfort, reliability and practical long-day transport.",
     image: "images/lorry-75-living.webp"
   },
   {
@@ -124,51 +144,20 @@ const vehicles = [
     overnight: true,
     dayRate: 165,
     pricingModel: "75_no_living_rules",
-    summary: "Practical 4-horse 7.5T with large tack area, built for functional multi-horse transport without living section.",
+    summary:
+      "Practical 4-horse 7.5T with large tack area, built for functional multi-horse transport without living section.",
     image: "images/lorry-75-noliving.webp"
   }
 ];
+
 window.vehicles = vehicles;
 
+// DOM
 const fleetGrid = document.getElementById("fleet-grid");
 const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
 const durationDaysInput = document.getElementById("duration-days");
-/* ======================================================
-   STEP 1B — Smart Pickup Time Locking
-   Only ½ day allows 13:00
-====================================================== */
-
-function syncPickupTimeOptions() {
-  if (!durationDaysInput || !pickupTimeInput) return;
-
-  const duration = Number(durationDaysInput.value);
-
-  const pmOption = Array.from(pickupTimeInput.options)
-    .find(opt => opt.value === "13:00");
-
-  if (!pmOption) return;
-
-  if (duration === 0.5) {
-    // Allow PM
-    pmOption.hidden = false;
-  } else {
-    // Hide PM for all other durations
-    pmOption.hidden = true;
-
-    // Force 07:00 if PM was selected
-    if (pickupTimeInput.value === "13:00") {
-      pickupTimeInput.value = "07:00";
-    }
-  }
-}
-
-// Run on load
-document.addEventListener("DOMContentLoaded", syncPickupTimeOptions);
-
-// Run when duration changes
-durationDaysInput?.addEventListener("change", syncPickupTimeOptions);
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
@@ -176,15 +165,18 @@ const selectedLorryInput = document.getElementById("selected-lorry") || { value:
 const selectedPickupInput = document.getElementById("selected-pickup");
 const selectedDurationInput = document.getElementById("selected-duration");
 const selectedBaseInput = document.getElementById("selected-base");
+
 const customerNameInput = document.getElementById("customer-name");
 const customerEmailInput = document.getElementById("customer-email");
 const customerMobileInput = document.getElementById("customer-mobile");
 const customerAddressInput = document.getElementById("customer-address");
 const customerDobInput = document.getElementById("customer-dob");
+
 const hiredWithin3MonthsInput = document.getElementById("hired-within-3-months");
 const dartfordEnabledInput = document.getElementById("dartford-enabled");
 const dartfordCountInput = document.getElementById("dartford-count");
 const earlyPickupEnabledInput = document.getElementById("early-pickup-enabled");
+
 const checkoutSummary = document.getElementById("checkout-summary");
 const bookingSubmitBtn = document.getElementById("booking-submit");
 const bookingSuccess = document.getElementById("booking-success");
@@ -199,74 +191,19 @@ const clearAdminBtn = document.getElementById("clear-admin");
 const applyDiscountBtn = document.getElementById("apply-discount");
 const discountMessage = document.getElementById("discount-message");
 
-if (applyDiscountBtn) {
-  applyDiscountBtn.addEventListener("click", async () => {
-    if (!selectedAvailability) return;
-
-    const codeInput = document.getElementById("discount-code");
-    const code = codeInput?.value?.trim();
-
-    if (!code) {
-      if (discountMessage) {
-        discountMessage.hidden = false;
-        discountMessage.textContent = "Please enter a voucher code.";
-        discountMessage.className = "voucher-message error tiny";
-      }
-      return;
-    }
-
-    applyDiscountBtn.disabled = true;
-    applyDiscountBtn.textContent = "Applying...";
-
-    try {
-      const updated = await buildAvailability(
-        selectedAvailability.vehicle,
-        selectedAvailability.pickupDate,
-        selectedAvailability.durationDays,
-        selectedAvailability.pickupTime,
-        code // 🔥 pass code to server
-      );
-
-      selectedAvailability = updated;
-      updateCheckoutSummary();
-
-      if (discountMessage) {
-        discountMessage.hidden = false;
-
-        if (updated.discountAmount > 0) {
-          discountMessage.textContent = "Voucher applied ✓";
-          discountMessage.className = "voucher-message ok tiny";
-        } else {
-          discountMessage.textContent = "Code valid but no discount applied.";
-          discountMessage.className = "voucher-message muted tiny";
-        }
-      }
-
-    } catch (err) {
-      if (discountMessage) {
-        discountMessage.hidden = false;
-        discountMessage.textContent =
-          err?.message || "Invalid or expired voucher.";
-        discountMessage.className = "voucher-message error tiny";
-      }
-    } finally {
-      applyDiscountBtn.disabled = false;
-      applyDiscountBtn.textContent = "Apply";
-    }
-  });
-}
-
 let selectedAvailability = null;
 
-document.addEventListener("DOMContentLoaded", function() {
-  var yearEl = document.getElementById("year");
-  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
-  // Removed scroll/focus to booking form on page load. Only scroll/focus on booking button click.
-});
+/* ======================================================
+   Helpers
+====================================================== */
 
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
   return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
+}
+
+function getCurrentDiscountCode() {
+  return document.getElementById("discount-code")?.value?.trim() || "";
 }
 
 function generateNumericBookingId(existingIds = new Set()) {
@@ -275,7 +212,6 @@ function generateNumericBookingId(existingIds = new Set()) {
     const candidate = `19${suffix}`;
     if (!existingIds.has(candidate)) return candidate;
   }
-
   return `19${String(Date.now()).slice(-6)}`;
 }
 
@@ -306,12 +242,6 @@ function saveBookings(bookings) {
   localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(bookings));
 }
 
-function addHours(date, hours) {
-  const output = new Date(date);
-  output.setHours(output.getHours() + hours);
-  return output;
-}
-
 function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -330,7 +260,7 @@ function overlaps(aStart, aEnd, bStart, bEnd) {
 }
 
 function is35T(vehicle) {
-  return vehicle.type.toLowerCase().includes("3.5");
+  return String(vehicle?.type || "").toLowerCase().includes("3.5");
 }
 
 function getConfirmationFee(vehicle) {
@@ -416,254 +346,42 @@ function getReminderAt(pickupAtIso) {
   return reminderDate.toISOString();
 }
 
-function renderFleet() {
-  fleetGrid.innerHTML = "";
-
-  vehicles.forEach((vehicle) => {
-
-    const card = document.createElement("article");
-    card.className = "fleet-card";
-
-    const livingLabel =
-      vehicle.pricingModel === "75_no_living_rules"
-        ? "no living"
-        : vehicle.overnight
-        ? "living"
-        : "no living";
-
-    // ----- FIND IMAGES -----
-    const code = vehicle.code || "";
-    const baseName = vehicle.name.replace(/[^\w]+/g, "").toLowerCase();
-
-    let imageFiles =
-      window.fleetImages?.filter((img) => {
-        return (
-          (code && img.includes(code)) ||
-          img.replace(/[^\w]+/g, "").toLowerCase().includes(baseName)
-        );
-      }) || [];
-
-    if (!imageFiles.length) {
-      imageFiles = [vehicle.image.replace(/^images\//, "")];
-    }
-
-    imageFiles = imageFiles.map((f) =>
-      f.startsWith("images/") ? f : "images/" + f
-    );
-
-    // ----- IMAGE WRAP -----
-    const imageWrap = document.createElement("div");
-    imageWrap.className = "fleet-image-wrap";
-
-    const img = document.createElement("img");
-    img.src = imageFiles[0];
-    img.dataset.images = JSON.stringify(imageFiles);
-
-    const overlay = document.createElement("div");
-    overlay.className = "fleet-overlay";
-
-   overlay.innerHTML = `
-  <button class="apple-play-btn">
-    <svg viewBox="0 0 24 24">
-      <path d="M8 5v14l11-7z"></path>
-    </svg>
-    <span>See More</span>
-  </button>
-`;
-
-   imageWrap.appendChild(img);
-imageWrap.appendChild(overlay);
-
-// ---- SLIDESHOW LOGIC ----
-let currentIndex = 0;
-let playing = false;
-let interval = null;
-const images = imageFiles;
-
-function startSlideshow() {
-  playing = true;
-  overlay.classList.add("playing");
-
-  const btn = overlay.querySelector(".apple-play-btn");
-  btn.style.opacity = "0";
-  btn.style.pointerEvents = "none";
-
-  interval = setInterval(() => {
-    currentIndex = (currentIndex + 1) % images.length;
-
-    img.style.opacity = 0;
-
-    setTimeout(() => {
-      img.src = images[currentIndex];
-      img.style.opacity = 1;
-    }, 200);
-
-  }, 2500);
-
-  activeSlideshow = stopSlideshow;
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-function stopSlideshow() {
-  clearInterval(interval);
-  playing = false;
-  currentIndex = 0;
-  img.src = images[0];
-
-  overlay.classList.remove("playing");
-
-  const btn = overlay.querySelector(".apple-play-btn");
-  btn.style.opacity = "1";
-  btn.style.pointerEvents = "auto";
-
-  if (activeSlideshow === stopSlideshow) {
-    activeSlideshow = null;
-  }
+function getAvailabilityCacheKey(vehicleId, pickupDate, durationDays, pickupTime, discountCode = "") {
+  return `${vehicleId}|${pickupDate}|${durationDays}|${pickupTime}|${discountCode}`;
 }
 
-overlay.addEventListener("click", (e) => {
-  e.stopPropagation();
+/* ======================================================
+   Pickup time locking (½ day only)
+====================================================== */
 
-  // Stop any other active slideshow
-  if (activeSlideshow && activeSlideshow !== stopSlideshow) {
-    activeSlideshow();
-  }
+function syncPickupTimeOptions() {
+  if (!durationDaysInput || !pickupTimeInput) return;
 
-  if (!playing) {
-    startSlideshow();
+  const duration = Number(durationDaysInput.value);
+  const pmOption = Array.from(pickupTimeInput.options).find((opt) => opt.value === "13:00");
+  if (!pmOption) return;
+
+  if (duration === 0.5) {
+    pmOption.hidden = false;
   } else {
-    stopSlideshow();
-  }
-});
-
-    // ----- CONTENT -----
-    const content = document.createElement("div");
-    content.className = "fleet-content";
-
-    content.innerHTML = `
-      <h3>${vehicle.name}</h3>
-      <p class="muted">
-        ${vehicle.type}${vehicle.code ? ` · ${vehicle.code}` : ""} · 
-        ${vehicle.horses} horses · ${vehicle.seats} seats · ${livingLabel}
-      </p>
-      <p class="muted tiny">${vehicle.summary}</p>
-      <p><strong>From £${vehicle.dayRate}</strong> / day</p>
-      <button class="btn fleet-card-book" data-lorry-id="${vehicle.id}">
-        Book this Lorry
-      </button>
-    `;
-
-    card.appendChild(imageWrap);
-    card.appendChild(content);
-
-    content
-      .querySelector(".fleet-card-book")
-      .addEventListener("click", (e) => {
-        e.stopPropagation();
-        bookFromVehicle(vehicle.id);
-      });
-
-    fleetGrid.appendChild(card);
-  });
-}
-
-
-
-
-
-async function bookFromVehicle(vehicleId) {
-  const vehicle = vehicles.find((v) => v.id === vehicleId);
-  if (!vehicle) return;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const defaultDate = pickupDateInput?.value || today;
-
-  // Safely set selected lorry
-  if (selectedLorryInput) {
-    selectedLorryInput.value = vehicle.name;
-  }
-
-  // Safely set pickup date
-  if (selectedPickupInput) {
-    selectedPickupInput.value = defaultDate;
-  }
-
-  // Populate duration dropdown safely
-  if (selectedDurationInput) {
-    populateBookingDurationSelect(vehicle);
-
-    if (supportsDuration(vehicle, 1)) {
-      selectedDurationInput.value = "1";
-    }
-  }
-
-    const durationDays = Number(selectedDurationInput?.value) || 1;
-  const pickupTime = DEFAULT_PICKUP_TIME;
-
-  const code = getDiscountCode();
-
-  selectedAvailability = await buildAvailability(
-    vehicle,
-    defaultDate,
-    durationDays,
-    pickupTime,
-    code
-  );
-
-  // Safely set base price
-  if (selectedBaseInput) {
-    selectedBaseInput.value = `£${(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
-  }
-
-  await checkBookingFormAvailability();
-
-  // Scroll safely
-  const bookingSection = document.querySelector("#booking");
-  if (bookingSection) {
-    bookingSection.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-
-    setTimeout(() => {
-      selectedPickupInput?.focus();
-    }, 600);
+    pmOption.hidden = true;
+    if (pickupTimeInput.value === "13:00") pickupTimeInput.value = "07:00";
   }
 }
 
-// Expose images for modal gallery
-window.fleetImages = [
-  "3.5 T Stallion (MM68)1.webp",
-  "3.5 T Stallion (MM68)2.webp",
-  "3.5 T Stallion (MM68)3.webp",
-  "3.5 T Stallion (MM68)4.webp",
-  "3.5 T Stallion (MM68)5.webp",
-  "3.5 T With Breast Bar (CA21)1.webp",
-  "3.5 T With Breast Bar (CA21)2.webp",
-  "3.5 T With Breast Bar (CA21)3.webp",
-  "3.5 T With Breast Bar (CA21)4.webp",
-  "3.5 T With Breast Bar (CA21)5.webp",
-  "3.5 T With Breast Bar (CA21)6.webp",
-  "3.5T With Safety Bar (LS23)1.webp",
-  "3.5T With Safety Bar (LS23)2.webp",
-  "3.5T With Safety Bar (LS23)3.webp",
-  "3.5T With Safety Bar (LS23)4.webp",
-  "3.5T With Safety Bar (LS23)5.webp",
-  "3.5T With Safety Bar (LS23)6.webp",
-  "3.5T With Safety Bar (LS23)7.webp",
-  "3.5T With Safety Bar (LS23)8.webp",
-  "3.5T With Safety Bar (LS23)9.webp",
-  "3.5T With Safety Bar (LS23)10.webp",
-  "7.5 T 3 Horses with Living1.webp",
-  "7.5 T 3 Horses with Living2.webp",
-  "7.5 T 3 Horses with Living3.webp",
-  "7.5 T 3 Horses with Living4.webp",
-  "7.5 T 3 Horses with Living5.webp",
-  "7.5 T 3 Horses with Living6.webp",
-  "7.5 T 4 Horses No Living1.webp",
-  "7.5 T 4 Horses No Living2.webp",
-  "7.5 T 4 Horses No Living3.webp",
-  "7.5 T 4 Horses No Living4.webp"
-];
+/* ======================================================
+   Pricing API (server quote with local fallback)
+====================================================== */
+
 async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime, discountCode = "") {
   try {
     const res = await fetch(apiUrl("/api/pricing/quote"), {
@@ -687,11 +405,10 @@ async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime, d
     const pricing = await res.json();
 
     return {
-      baseCost: pricing.baseCost ?? 0,
-      discountAmount: pricing.discountAmount ?? 0,
-      discountedTotal: pricing.discountedTotal ?? pricing.baseCost ?? 0
+      baseCost: Number(pricing.baseCost ?? 0),
+      discountAmount: Number(pricing.discountAmount ?? 0),
+      discountedTotal: Number(pricing.discountedTotal ?? pricing.baseCost ?? 0)
     };
-
   } catch (err) {
     console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
 
@@ -706,7 +423,7 @@ async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime, d
 }
 
 async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode = "") {
-
+  // time rules
   let actualPickupTime = pickupTime;
   let dropoffTime = FULL_DAY_DROPOFF_TIME;
   let durationHours = getDurationHours(vehicle, durationDays);
@@ -729,67 +446,44 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, 
     dropoffAt = asDate(pickupDate, dropoffTime);
   } else {
     const dropoffDate = addDays(pickupAt, Math.max(0, Number(durationDays) - 1));
-    dropoffAt = asDate(dropoffDate.toISOString().slice(0,10), dropoffTime);
+    dropoffAt = asDate(dropoffDate.toISOString().slice(0, 10), dropoffTime);
   }
 
-  // ✅ Server pricing
-  const cacheKey = getAvailabilityCacheKey(
-  vehicle.id,
-  pickupDate,
-  durationDays,
-  actualPickupTime,
-  discountCode || ""
-);
+  // quote cache (includes discount code)
+  const cacheKey = getAvailabilityCacheKey(vehicle.id, pickupDate, durationDays, actualPickupTime, discountCode || "");
+  const cached = AVAILABILITY_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < AVAILABILITY_CACHE_TTL) return cached.data;
 
-const cached = AVAILABILITY_CACHE.get(cacheKey);
+  const pricing = await fetchServerQuote(vehicle, durationDays, pickupDate, actualPickupTime, discountCode);
 
-if (cached && (Date.now() - cached.timestamp < AVAILABILITY_CACHE_TTL)) {
-  return cached.data;
+  const availabilityObject = {
+    vehicle,
+    pickupDate,
+    pickupTime: actualPickupTime,
+    durationDays,
+    durationHours,
+    pickupAt,
+    dropoffAt,
+    baseCost: pricing.baseCost,
+    discountAmount: pricing.discountAmount,
+    discountedTotal: pricing.discountedTotal
+  };
+
+  AVAILABILITY_CACHE.set(cacheKey, { timestamp: Date.now(), data: availabilityObject });
+  return availabilityObject;
 }
 
-const pricing = await fetchServerQuote(
-  vehicle,
-  durationDays,
-  pickupDate,
-  actualPickupTime,
-  discountCode
-);
-
-const availabilityObject = {
-  vehicle,
-  pickupDate,
-  pickupTime: actualPickupTime,
-  durationDays,
-  durationHours,
-  pickupAt,
-  dropoffAt,
-  baseCost: pricing.baseCost,
-  discountAmount: pricing.discountAmount,
-  discountedTotal: pricing.discountedTotal
-};
-
-AVAILABILITY_CACHE.set(cacheKey, {
-  timestamp: Date.now(),
-  data: availabilityObject
-});
-
-return availabilityObject;
-
-  
-}
+/* ======================================================
+   Availability checks + rendering
+====================================================== */
 
 async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
-
   const vehicle = vehicles.find((item) => item.id === vehicleId);
   if (!vehicle) return false;
   if (!supportsDuration(vehicle, durationDays)) return false;
 
-  const candidate = await buildAvailability(
-    vehicle,
-    pickupDate,
-    durationDays,
-    pickupTime
-  );
+  // discount does not affect availability, but buildAvailability needs it for times too.
+  const candidate = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, "");
 
   const vehicleBookings = getBookings().filter(
     (booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled"
@@ -804,16 +498,12 @@ async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTim
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
   const results = [];
+  const discountCode = getCurrentDiscountCode(); // show discounted prices in list if code is already entered
 
   for (const vehicle of vehicles) {
     if (!supportsDuration(vehicle, durationDays)) continue;
 
-    const availability = await buildAvailability(
-      vehicle,
-      pickupDate,
-      durationDays,
-      pickupTime
-    );
+    const availability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode);
 
     const vehicleBookings = getBookings().filter(
       (booking) => booking.vehicleId === vehicle.id && booking.status !== "cancelled"
@@ -825,17 +515,30 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAUL
       return overlaps(availability.pickupAt, availability.dropoffAt, existingStart, existingEnd);
     });
 
-    if (!overlapsExisting) {
-      results.push(availability);
-    }
+    if (!overlapsExisting) results.push(availability);
   }
 
   return results;
 }
 
+function renderAvailabilityLoading() {
+  if (!availabilityResults) return;
+  availabilityResults.innerHTML = `
+    <div class="loading-note">
+      <span class="spinner" aria-hidden="true"></span>
+      Checking availability…
+    </div>
+  `;
+}
+
+function renderAvailabilityError(message = "Something went wrong. Please try again.") {
+  if (!availabilityResults) return;
+  availabilityResults.innerHTML = `<p class="empty-note">${escapeHtml(message)}</p>`;
+}
+
 function renderAvailabilityResults(items) {
-  if (!pickupDateInput.value || !durationDaysInput.value) {
-    availabilityResults.innerHTML = "";
+  if (!pickupDateInput?.value || !durationDaysInput?.value) {
+    if (availabilityResults) availabilityResults.innerHTML = "";
     return;
   }
 
@@ -845,161 +548,352 @@ function renderAvailabilityResults(items) {
   }
 
   const html = items
-  .map((item) => {
-    const confirmationFee = getConfirmationFee(item.vehicle);
-    return `
-      <article class="availability-item">
-        <div>
-          <h4>${item.vehicle.name}</h4>
-          <p class="muted">
-            ${item.vehicle.code ? `${item.vehicle.code} · ` : ""}
-            ${formatDateOnly(item.pickupDate)} ${item.pickupTime} · 
-            ${formatDurationLabel(item.durationDays)}
-          </p>
+    .map((item) => {
+      const confirmationFee = getConfirmationFee(item.vehicle);
+      const displayPrice = Number(item.discountedTotal ?? item.baseCost ?? 0);
+      return `
+        <article class="availability-item">
+          <div>
+            <h4>${escapeHtml(item.vehicle.name)}</h4>
+            <p class="muted">
+              ${item.vehicle.code ? `${escapeHtml(item.vehicle.code)} · ` : ""}
+              ${escapeHtml(formatDateOnly(item.pickupDate))} ${escapeHtml(item.pickupTime)} · 
+              ${escapeHtml(formatDurationLabel(item.durationDays))}
+            </p>
 
-          <div class="price">£${(item.discountedTotal ?? item.baseCost).toFixed(2)}</div>
+            <div class="price">£${displayPrice.toFixed(2)}</div>
 
-          <p class="muted tiny">
-            Pay now to confirm: £${confirmationFee.toFixed(2)}
-          </p>
-        </div>
+            <p class="muted tiny">
+              Pay now to confirm: £${confirmationFee.toFixed(2)}
+            </p>
+          </div>
 
-        <button class="btn choose-lorry" type="button" 
-          data-vehicle-id="${item.vehicle.id}">
-          Select
-        </button>
-      </article>
-    `;
-  })
-  .join("");
+          <button class="btn choose-lorry" type="button" data-vehicle-id="${escapeHtml(item.vehicle.id)}">
+            Select
+          </button>
+        </article>
+      `;
+    })
+    .join("");
 
   availabilityResults.innerHTML = html;
 }
 
+/* ======================================================
+   Checkout summary (discount-safe)
+====================================================== */
+
 function updateCheckoutSummary() {
+  if (!checkoutSummary) return;
+
   if (!selectedAvailability) {
-  checkoutSummary.textContent = "Select an available lorry to continue.";
-  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
-  return;
-}
+    checkoutSummary.textContent = "Select an available lorry to continue.";
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+    return;
+  }
 
-if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
+  if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
 
-const dartfordEnabled = dartfordEnabledInput?.checked || false;
-const crossingsCount = dartfordEnabled
-  ? Math.max(1, Number(dartfordCountInput?.value || 1))
-  : 0;
+  const dartfordEnabled = dartfordEnabledInput?.checked || false;
+  const crossingsCount = dartfordEnabled ? Math.max(1, Number(dartfordCountInput?.value || 1)) : 0;
+  const earlyPickupEnabled = earlyPickupEnabledInput?.checked || false;
 
-const earlyPickupEnabled = earlyPickupEnabledInput?.checked || false;
+  const crossingCharge = calculateCrossingCharge(crossingsCount);
+  const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
 
-const crossingCharge = calculateCrossingCharge(crossingsCount);
-const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
+  const baseCost = Number(selectedAvailability.baseCost || 0);
+  const discountAmount = Number(selectedAvailability.discountAmount || 0);
+  const discountedBase = Math.max(0, baseCost - discountAmount);
 
-const baseCost = Number(selectedAvailability.baseCost || 0);
-const discountAmount = Number(selectedAvailability.discountAmount || 0);
+  const hireTotal = calculateHireTotal(discountedBase, crossingsCount, earlyPickupEnabled);
 
-// Apply discount BEFORE extras
-const discountedBase = Math.max(0, baseCost - discountAmount);
+  const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
 
-const hireTotal = calculateHireTotal(
-  discountedBase,
-  crossingsCount,
-  earlyPickupEnabled
-);
+  if (bookingSubmitBtn) {
+    bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
+  }
 
-const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+  const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
 
-if (bookingSubmitBtn) {
-  bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
-}
+  checkoutSummary.innerHTML = `
+    <div class="summary-card">
+      <h4>${escapeHtml(selectedAvailability.vehicle.name)}</h4>
 
-const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
-
-const requiredFormType = hiredWithin3MonthsInput?.checked
-  ? "Short Form"
-  : "Long Form";
-
-checkoutSummary.innerHTML = `
-  <div class="summary-card">
-    <h4>${selectedAvailability.vehicle.name}</h4>
-
-    <div class="summary-row">
-      <span>Base hire</span>
-      <strong>£${baseCost.toFixed(2)}</strong>
-    </div>
-
-    ${
-      discountAmount > 0
-        ? `
-      <div class="summary-row discount">
-        <span>Discount</span>
-        <strong>-£${discountAmount.toFixed(2)}</strong>
+      <div class="summary-row">
+        <span>Base hire</span>
+        <strong>£${baseCost.toFixed(2)}</strong>
       </div>
-      `
-        : ""
+
+      ${
+        discountAmount > 0
+          ? `
+        <div class="summary-row discount">
+          <span>Discount</span>
+          <strong>-£${discountAmount.toFixed(2)}</strong>
+        </div>
+        `
+          : ""
+      }
+
+      <div class="summary-row">
+        <span>Dartford crossings</span>
+        <strong>£${crossingCharge.toFixed(2)}</strong>
+      </div>
+
+      <div class="summary-row">
+        <span>Early pickup</span>
+        <strong>£${earlyPickupCharge.toFixed(2)}</strong>
+      </div>
+
+      <hr>
+
+      <div class="summary-row total">
+        <span>Total hire</span>
+        <strong>£${hireTotal.toFixed(2)}</strong>
+      </div>
+
+      <div class="summary-row pay-now">
+        <span>Pay now (confirmation)</span>
+        <strong>£${confirmationFee.toFixed(2)}</strong>
+      </div>
+
+      <div class="summary-row outstanding">
+        <span>Remaining balance</span>
+        <strong>£${outstandingAmount.toFixed(2)}</strong>
+      </div>
+
+      <div class="summary-note">
+        Security deposit £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)} — card hold the day before collection.
+      </div>
+
+      <div class="summary-note">
+        Required form: <strong>${escapeHtml(requiredFormType)}</strong>
+      </div>
+    </div>
+  `;
+}
+
+/* ======================================================
+   Fleet rendering
+====================================================== */
+
+function renderFleet() {
+  if (!fleetGrid) return;
+  fleetGrid.innerHTML = "";
+
+  vehicles.forEach((vehicle) => {
+    const card = document.createElement("article");
+    card.className = "fleet-card";
+
+    const livingLabel =
+      vehicle.pricingModel === "75_no_living_rules" ? "no living" : vehicle.overnight ? "living" : "no living";
+
+    // Find images
+    const code = vehicle.code || "";
+    const baseName = vehicle.name.replace(/[^\w]+/g, "").toLowerCase();
+
+    let imageFiles =
+      window.fleetImages?.filter((img) => {
+        return (code && img.includes(code)) || img.replace(/[^\w]+/g, "").toLowerCase().includes(baseName);
+      }) || [];
+
+    if (!imageFiles.length) imageFiles = [vehicle.image.replace(/^images\//, "")];
+
+    imageFiles = imageFiles.map((f) => (f.startsWith("images/") ? f : "images/" + f));
+
+    // Image wrap
+    const imageWrap = document.createElement("div");
+    imageWrap.className = "fleet-image-wrap";
+
+    const img = document.createElement("img");
+    img.src = imageFiles[0];
+    img.dataset.images = JSON.stringify(imageFiles);
+
+    const overlay = document.createElement("div");
+    overlay.className = "fleet-overlay";
+    overlay.innerHTML = `
+      <button class="apple-play-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 5v14l11-7z"></path>
+        </svg>
+        <span>See More</span>
+      </button>
+    `;
+
+    imageWrap.appendChild(img);
+    imageWrap.appendChild(overlay);
+
+    // Slideshow logic (one at a time)
+    let currentIndex = 0;
+    let playing = false;
+    let interval = null;
+    const images = imageFiles;
+
+    function startSlideshow() {
+      if (images.length <= 1) return;
+      playing = true;
+      overlay.classList.add("playing");
+
+      const btn = overlay.querySelector(".apple-play-btn");
+      if (btn) {
+        btn.style.opacity = "0";
+        btn.style.pointerEvents = "none";
+      }
+
+      interval = setInterval(() => {
+        currentIndex = (currentIndex + 1) % images.length;
+        img.style.opacity = "0";
+
+        setTimeout(() => {
+          img.src = images[currentIndex];
+          img.style.opacity = "1";
+        }, 200);
+      }, 2500);
+
+      activeSlideshow = stopSlideshow;
     }
 
-    <div class="summary-row">
-      <span>Dartford crossings</span>
-      <strong>£${crossingCharge.toFixed(2)}</strong>
-    </div>
+    function stopSlideshow() {
+      if (interval) clearInterval(interval);
+      playing = false;
+      currentIndex = 0;
+      img.src = images[0];
 
-    <div class="summary-row">
-      <span>Early pickup</span>
-      <strong>£${earlyPickupCharge.toFixed(2)}</strong>
-    </div>
+      overlay.classList.remove("playing");
 
-    <hr>
+      const btn = overlay.querySelector(".apple-play-btn");
+      if (btn) {
+        btn.style.opacity = "1";
+        btn.style.pointerEvents = "auto";
+      }
 
-    <div class="summary-row total">
-      <span>Total hire</span>
-      <strong>£${hireTotal.toFixed(2)}</strong>
-    </div>
+      if (activeSlideshow === stopSlideshow) activeSlideshow = null;
+    }
 
-    <div class="summary-row pay-now">
-      <span>Pay now (confirmation)</span>
-      <strong>£${confirmationFee.toFixed(2)}</strong>
-    </div>
+    overlay.addEventListener("click", (e) => {
+      e.stopPropagation();
 
-    <div class="summary-row outstanding">
-      <span>Remaining balance</span>
-      <strong>£${outstandingAmount.toFixed(2)}</strong>
-    </div>
+      if (activeSlideshow && activeSlideshow !== stopSlideshow) activeSlideshow();
 
-    <div class="summary-note">
-      Security deposit £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)} — card hold the day before collection.
-    </div>
+      if (!playing) startSlideshow();
+      else stopSlideshow();
+    });
 
-    <div class="summary-note">
-      Required form: <strong>${requiredFormType}</strong>
-    </div>
-  </div>
-`;
+    // Content
+    const content = document.createElement("div");
+    content.className = "fleet-content";
+    content.innerHTML = `
+      <h3>${escapeHtml(vehicle.name)}</h3>
+      <p class="muted">
+        ${escapeHtml(vehicle.type)}${vehicle.code ? ` · ${escapeHtml(vehicle.code)}` : ""} · 
+        ${vehicle.horses} horses · ${vehicle.seats} seats · ${escapeHtml(livingLabel)}
+      </p>
+      <p class="muted tiny">${escapeHtml(vehicle.summary)}</p>
+      <p><strong>From £${Number(vehicle.dayRate).toFixed(0)}</strong> / day</p>
+      <button class="btn fleet-card-book" type="button" data-lorry-id="${escapeHtml(vehicle.id)}">
+        Book this Lorry
+      </button>
+    `;
+
+    card.appendChild(imageWrap);
+    card.appendChild(content);
+
+    content.querySelector(".fleet-card-book")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      bookFromVehicle(vehicle.id);
+    });
+
+    fleetGrid.appendChild(card);
+  });
 }
+
+/* ======================================================
+   Booking helpers (select from fleet / results)
+====================================================== */
 
 function populateBookingDurationSelect(vehicle) {
   const select = selectedDurationInput;
   if (!(select instanceof HTMLSelectElement)) return;
+
   const currentVal = select.value;
   let hasCurrentVal = false;
+
   Array.from(select.options).forEach((opt) => {
     const isValid = !vehicle || supportsDuration(vehicle, Number(opt.value));
     opt.disabled = !isValid;
     opt.hidden = !isValid;
     if (opt.value === currentVal && isValid) hasCurrentVal = true;
   });
+
   if (!hasCurrentVal) {
     const firstValid = Array.from(select.options).find((opt) => !opt.disabled);
     if (firstValid) select.value = firstValid.value;
   }
 }
 
-async function checkBookingFormAvailability() {
+async function bookFromVehicle(vehicleId) {
+  const vehicle = vehicles.find((v) => v.id === vehicleId);
+  if (!vehicle) return;
 
-  // If booking form not present, safely exit
-  if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput) {
-    return;
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultDate = pickupDateInput?.value || today;
+
+  if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
+  if (selectedPickupInput) selectedPickupInput.value = defaultDate;
+
+  if (selectedDurationInput) {
+    populateBookingDurationSelect(vehicle);
+    if (supportsDuration(vehicle, 1)) selectedDurationInput.value = "1";
   }
+
+  const durationDays = Number(selectedDurationInput?.value) || 1;
+  const pickupTime = DEFAULT_PICKUP_TIME;
+  const code = getCurrentDiscountCode();
+
+  selectedAvailability = await buildAvailability(vehicle, defaultDate, durationDays, pickupTime, code);
+
+  if (selectedBaseInput) selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+
+  await checkBookingFormAvailability();
+
+  const bookingSection = document.querySelector("#booking");
+  bookingSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  setTimeout(() => selectedPickupInput?.focus(), 600);
+}
+
+async function selectAvailability(vehicleId) {
+  const pickupDate = pickupDateInput?.value;
+  let pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+  const durationDays = Number(durationDaysInput?.value);
+  const vehicle = vehicles.find((item) => item.id === vehicleId);
+  if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) return;
+
+  if (is35T(vehicle) && durationDays === 0.5) {
+    if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) pickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
+  } else {
+    pickupTime = DEFAULT_PICKUP_TIME;
+  }
+
+  const code = getCurrentDiscountCode();
+  selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, code);
+
+  if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
+  if (selectedPickupInput) selectedPickupInput.value = pickupDate;
+  populateBookingDurationSelect(vehicle);
+  if (selectedDurationInput) selectedDurationInput.value = String(durationDays);
+  if (selectedBaseInput) selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+
+  const statusEl = document.getElementById("booking-availability-status");
+  if (statusEl) statusEl.hidden = true;
+  if (bookingSuccess) bookingSuccess.hidden = true;
+
+  updateCheckoutSummary();
+}
+
+async function checkBookingFormAvailability() {
+  if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput) return;
 
   const statusEl = document.getElementById("booking-availability-status");
 
@@ -1028,89 +922,100 @@ async function checkBookingFormAvailability() {
   }
 
   const pickupTime =
-    is35T(vehicle) && durationDays === 0.5
-      ? (selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME)
-      : DEFAULT_PICKUP_TIME;
+    is35T(vehicle) && durationDays === 0.5 ? selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME : DEFAULT_PICKUP_TIME;
 
-  const available = await isVehicleAvailable(
-  vehicle.id,
-  pickupDate,
-  durationDays,
-  pickupTime
-);
+  const available = await isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime);
 
   if (available) {
-       const code = getDiscountCode();
+    // ✅ Keep discount when rebuilding availability
+    const code = getCurrentDiscountCode();
 
-    selectedAvailability = await buildAvailability(
-      vehicle,
-      pickupDate,
-      durationDays,
-      pickupTime,
-      code
-    );
+    selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, code);
 
-    if (selectedBaseInput) {
-      selectedBaseInput.value = `£${(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
-    }
+    if (selectedBaseInput) selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
 
     if (statusEl) {
-      statusEl.textContent =
-        `${vehicle.name} is available for the selected date and duration.`;
+      statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
       statusEl.className = "availability-status ok full";
       statusEl.hidden = false;
     }
 
     if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
-
     updateCheckoutSummary();
   } else {
     if (statusEl) {
-      statusEl.textContent =
-        `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
+      statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
-
     if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
   }
 }
 
+/* ======================================================
+   Voucher apply button
+====================================================== */
 
-async function selectAvailability(vehicleId) {
-  const pickupDate = pickupDateInput.value;
-  let pickupTime = pickupTimeInput.value;
-  const durationDays = Number(durationDaysInput.value);
-  const vehicle = vehicles.find((item) => item.id === vehicleId);
-  if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) return;
+if (applyDiscountBtn) {
+  applyDiscountBtn.addEventListener("click", async () => {
+    if (!selectedAvailability) return;
 
-  // For 1/2 day 3.5T, restrict pickupTime to allowed slots
-  if (is35T(vehicle) && durationDays === 0.5) {
-    if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
-      pickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
+    const code = getCurrentDiscountCode();
+    if (!code) {
+      if (discountMessage) {
+        discountMessage.hidden = false;
+        discountMessage.textContent = "Please enter a voucher code.";
+        discountMessage.className = "voucher-message error tiny";
+      }
+      return;
     }
-  } else {
-    pickupTime = DEFAULT_PICKUP_TIME;
-  }
 
-    const code = getDiscountCode();
-  selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, code);
+    applyDiscountBtn.disabled = true;
+    applyDiscountBtn.textContent = "Applying…";
 
-  selectedLorryInput.value = vehicle.name;
-  selectedPickupInput.value = pickupDate;
-  populateBookingDurationSelect(vehicle);
-  selectedDurationInput.value = String(durationDays);
-  selectedBaseInput.value = `£${(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+    try {
+      const updated = await buildAvailability(
+        selectedAvailability.vehicle,
+        selectedAvailability.pickupDate,
+        selectedAvailability.durationDays,
+        selectedAvailability.pickupTime,
+        code
+      );
 
-  const statusEl = document.getElementById("booking-availability-status");
-  if (statusEl) { statusEl.hidden = true; }
-  bookingSuccess.hidden = true;
-  updateCheckoutSummary();
+      selectedAvailability = updated;
+      updateCheckoutSummary();
+
+      if (discountMessage) {
+        discountMessage.hidden = false;
+        if (Number(updated.discountAmount) > 0) {
+          discountMessage.textContent = "Voucher applied ✓";
+          discountMessage.className = "voucher-message ok tiny";
+        } else {
+          discountMessage.textContent = "Code valid but no discount applied.";
+          discountMessage.className = "voucher-message muted tiny";
+        }
+      }
+    } catch (err) {
+      if (discountMessage) {
+        discountMessage.hidden = false;
+        discountMessage.textContent = err?.message || "Invalid or expired voucher.";
+        discountMessage.className = "voucher-message error tiny";
+      }
+    } finally {
+      applyDiscountBtn.disabled = false;
+      applyDiscountBtn.textContent = "Apply";
+    }
+  });
 }
 
-function renderBookings() {
-  const bookings = getBookings().sort((a, b) => new Date(a.pickupAt) - new Date(b.pickupAt));
+/* ======================================================
+   Booking + Admin rendering
+====================================================== */
 
+function renderBookings() {
+  if (!bookingList) return;
+
+  const bookings = getBookings().sort((a, b) => new Date(a.pickupAt) - new Date(b.pickupAt));
   if (!bookings.length) {
     bookingList.innerHTML = '<div class="booking-item muted">No bookings yet. Your first booking will appear here.</div>';
     return;
@@ -1121,13 +1026,15 @@ function renderBookings() {
       const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
       return `
         <article class="booking-item">
-          <strong>${vehicle?.name || booking.vehicleId}</strong><br>
-          ${formatDateTime(booking.pickupAt)} → ${formatDateTime(booking.dropoffAt)}<br>
-          <span class="muted">Duration: ${formatDurationLabel(booking.durationDays)}</span><br>
-          ${booking.customerName} · ${booking.customerEmail}<br>
-          <span class="muted">Status: ${booking.status}</span><br>
-          <span class="muted">Paid now: £${booking.confirmationFee.toFixed(2)} · Outstanding: £${booking.outstandingAmount.toFixed(2)}</span><br>
-          <span class="muted">Total hire: £${booking.hireTotal.toFixed(2)}</span>
+          <strong>${escapeHtml(vehicle?.name || booking.vehicleId)}</strong><br>
+          ${escapeHtml(formatDateTime(booking.pickupAt))} → ${escapeHtml(formatDateTime(booking.dropoffAt))}<br>
+          <span class="muted">Duration: ${escapeHtml(formatDurationLabel(booking.durationDays))}</span><br>
+          ${escapeHtml(booking.customerName)} · ${escapeHtml(booking.customerEmail)}<br>
+          <span class="muted">Status: ${escapeHtml(booking.status)}</span><br>
+          <span class="muted">Paid now: £${Number(booking.confirmationFee).toFixed(2)} · Outstanding: £${Number(
+        booking.outstandingAmount
+      ).toFixed(2)}</span><br>
+          <span class="muted">Total hire: £${Number(booking.hireTotal).toFixed(2)}</span>
         </article>
       `;
     })
@@ -1135,6 +1042,8 @@ function renderBookings() {
 }
 
 function renderAdminBookings() {
+  if (!adminBookings) return;
+
   const bookings = getBookings().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   if (!bookings.length) {
     adminBookings.innerHTML = '<p class="empty-note">No bookings saved yet.</p>';
@@ -1146,20 +1055,24 @@ function renderAdminBookings() {
       const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
       return `
         <tr>
-          <td>${vehicle?.name || booking.vehicleId}</td>
-          <td>${booking.customerName}</td>
-          <td>${booking.customerEmail}</td>
-          <td>${booking.customerMobile}</td>
-          <td>${formatDateTime(booking.pickupAt)}</td>
-          <td>${formatDurationLabel(booking.durationDays)}</td>
+          <td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td>
+          <td>${escapeHtml(booking.customerName)}</td>
+          <td>${escapeHtml(booking.customerEmail)}</td>
+          <td>${escapeHtml(booking.customerMobile)}</td>
+          <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
+          <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
           <td>${booking.earlyPickup ? "Yes" : "No"}</td>
-          <td>${booking.dartfordCrossings}</td>
-          <td>£${booking.confirmationFee.toFixed(2)}</td>
-          <td>£${booking.outstandingAmount.toFixed(2)}</td>
+          <td>${Number(booking.dartfordCrossings || 0)}</td>
+          <td>£${Number(booking.confirmationFee).toFixed(2)}</td>
+          <td>£${Number(booking.outstandingAmount).toFixed(2)}</td>
           <td>${booking.requiredFormType === "short" ? "Short" : "Long"}</td>
-          <td>${booking.requiredFormLink ? `<a href="${escapeHtml(booking.requiredFormLink)}" target="_blank" rel="noopener">Open form</a>` : "—"}</td>
-          <td>${booking.status}</td>
-          <td>${formatDateTime(booking.reminderAt)}</td>
+          <td>${
+            booking.requiredFormLink
+              ? `<a href="${escapeHtml(booking.requiredFormLink)}" target="_blank" rel="noopener">Open form</a>`
+              : "—"
+          }</td>
+          <td>${escapeHtml(booking.status)}</td>
+          <td>${escapeHtml(formatDateTime(booking.reminderAt))}</td>
         </tr>
       `;
     })
@@ -1190,15 +1103,9 @@ function renderAdminBookings() {
   `;
 }
 
-function getDiscountCode() {
-  return document.getElementById("discount-code")?.value?.trim() || "";
-}
-
 function csvEscape(value) {
   const normalized = String(value ?? "");
-  if (/[",\n]/.test(normalized)) {
-    return `"${normalized.replace(/"/g, '""')}"`;
-  }
+  if (/[",\n]/.test(normalized)) return `"${normalized.replace(/"/g, '""')}"`;
   return normalized;
 }
 
@@ -1217,11 +1124,11 @@ function downloadFile(content, filename, mimeType) {
 function exportAdminCsv() {
   const bookings = getBookings().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const lines = [
-    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Outstanding Link,Deposit Link,Form A,Form B,Created"
+    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Created"
   ];
 
   if (!bookings.length) {
-    lines.push("No bookings saved,,,,,,,,,,,,,,,,,,,,,,");
+    lines.push("No bookings saved,,,,,,,,,,,,,,,,,,,");
   } else {
     bookings.forEach((booking) => {
       const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
@@ -1239,18 +1146,14 @@ function exportAdminCsv() {
           booking.durationDays,
           booking.earlyPickup ? "Yes" : "No",
           booking.dartfordCrossings,
-          `£${booking.hireTotal.toFixed(2)}`,
-          `£${booking.confirmationFee.toFixed(2)}`,
-          `£${booking.outstandingAmount.toFixed(2)}`,
-          `£${booking.depositAmount.toFixed(2)}`,
+          `£${Number(booking.hireTotal).toFixed(2)}`,
+          `£${Number(booking.confirmationFee).toFixed(2)}`,
+          `£${Number(booking.outstandingAmount).toFixed(2)}`,
+          `£${Number(booking.depositAmount).toFixed(2)}`,
           booking.requiredFormType === "short" ? "Short" : "Long",
           booking.requiredFormLink,
           booking.status,
           formatDateTime(booking.reminderAt),
-          booking.outstandingPaymentLink,
-          booking.depositLink,
-          booking.formLinkA,
-          booking.formLinkB,
           formatDateTime(booking.createdAt)
         ]
           .map(csvEscape)
@@ -1261,20 +1164,6 @@ function exportAdminCsv() {
 
   const stamp = new Date().toISOString().slice(0, 10);
   downloadFile(lines.join("\n"), `equine-bookings-${stamp}.csv`, "text/csv;charset=utf-8");
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function getAvailabilityCacheKey(vehicleId, pickupDate, durationDays, pickupTime, discountCode = "")
-{
-  return `${vehicleId}|${pickupDate}|${durationDays}|${pickupTime}|${discountCode}`;
 }
 
 function exportAdminPdf() {
@@ -1293,8 +1182,8 @@ function exportAdminPdf() {
               <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
               <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
               <td>${escapeHtml(booking.earlyPickup ? "Yes" : "No")}</td>
-              <td>${escapeHtml(`£${booking.confirmationFee.toFixed(2)}`)}</td>
-              <td>${escapeHtml(`£${booking.outstandingAmount.toFixed(2)}`)}</td>
+              <td>${escapeHtml(`£${Number(booking.confirmationFee).toFixed(2)}`)}</td>
+              <td>${escapeHtml(`£${Number(booking.outstandingAmount).toFixed(2)}`)}</td>
               <td>${escapeHtml(booking.status)}</td>
             </tr>
           `;
@@ -1385,32 +1274,37 @@ async function createStripeCheckoutSession(booking) {
 }
 
 function resetBookingCustomerFields() {
-  customerNameInput.value = "";
-  customerEmailInput.value = "";
-  customerMobileInput.value = "";
-  customerAddressInput.value = "";
-  customerDobInput.value = "";
-  hiredWithin3MonthsInput.checked = false;
-  dartfordEnabledInput.checked = false;
-  dartfordCountInput.value = "1";
-  dartfordCountInput.disabled = true;
-  earlyPickupEnabledInput.checked = false;
+  if (customerNameInput) customerNameInput.value = "";
+  if (customerEmailInput) customerEmailInput.value = "";
+  if (customerMobileInput) customerMobileInput.value = "";
+  if (customerAddressInput) customerAddressInput.value = "";
+  if (customerDobInput) customerDobInput.value = "";
+
+  if (hiredWithin3MonthsInput) hiredWithin3MonthsInput.checked = false;
+  if (dartfordEnabledInput) dartfordEnabledInput.checked = false;
+  if (dartfordCountInput) {
+    dartfordCountInput.value = "1";
+    dartfordCountInput.disabled = true;
+  }
+  if (earlyPickupEnabledInput) earlyPickupEnabledInput.checked = false;
+
   updateCheckoutSummary();
 }
-function renderAvailabilityLoading() {
-  if (!availabilityResults) return;
-  availabilityResults.innerHTML = `
-    <div class="loading-note">
-      <span class="spinner" aria-hidden="true"></span>
-      Checking availability…
-    </div>
-  `;
-}
 
-function renderAvailabilityError(message = "Something went wrong. Please try again.") {
-  if (!availabilityResults) return;
-  availabilityResults.innerHTML = `<p class="empty-note">${message}</p>`;
-}
+/* ======================================================
+   Events
+====================================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+  // year
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+  // pickup time options
+  syncPickupTimeOptions();
+});
+
+durationDaysInput?.addEventListener("change", syncPickupTimeOptions);
 
 if (availabilityForm) {
   availabilityForm.addEventListener("submit", async (event) => {
@@ -1421,12 +1315,11 @@ if (availabilityForm) {
     const durationDays = Number(durationDaysInput?.value);
 
     if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
-      availabilityResults.innerHTML =
-        '<p class="empty-note">Enter a valid pickup date and duration.</p>';
+      if (availabilityResults) availabilityResults.innerHTML = '<p class="empty-note">Enter a valid pickup date and duration.</p>';
       return;
     }
 
-    // Lock UI
+    // lock UI
     const submitBtn = availabilityForm.querySelector('button[type="submit"], input[type="submit"]');
     if (submitBtn) submitBtn.disabled = true;
     if (pickupDateInput) pickupDateInput.disabled = true;
@@ -1436,22 +1329,14 @@ if (availabilityForm) {
     renderAvailabilityLoading();
 
     try {
-      const availableLorries = await getAvailableLorries(
-        pickupDate,
-        durationDays,
-        pickupTime
-      );
-
+      const availableLorries = await getAvailableLorries(pickupDate, durationDays, pickupTime);
       renderAvailabilityResults(availableLorries);
-
-      // Optional: gentle scroll to results (nice UX)
-      availabilityResults.scrollIntoView({ behavior: "smooth", block: "start" });
-
+      availabilityResults?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (err) {
       console.warn("Availability search failed:", err);
       renderAvailabilityError("Couldn’t check availability right now. Please try again.");
     } finally {
-      // Unlock UI
+      // unlock UI
       if (submitBtn) submitBtn.disabled = false;
       if (pickupDateInput) pickupDateInput.disabled = false;
       if (pickupTimeInput) pickupTimeInput.disabled = false;
@@ -1460,46 +1345,26 @@ if (availabilityForm) {
   });
 }
 
-// ---- SAFE EVENT LISTENERS ----
-
-// Availability results
-if (availabilityResults) {
-  availabilityResults.addEventListener("click", (event) => {
-    const button = event.target.closest(".choose-lorry");
-    if (!button) return;
-    selectAvailability(button.dataset.vehicleId);
-  });
-}
+availabilityResults?.addEventListener("click", (event) => {
+  const button = event.target.closest(".choose-lorry");
+  if (!button) return;
+  selectAvailability(button.dataset.vehicleId);
+});
 
 // Extras
-if (dartfordEnabledInput) {
-  dartfordEnabledInput.addEventListener("change", () => {
-    dartfordCountInput.disabled = !dartfordEnabledInput.checked;
-    updateCheckoutSummary();
-  });
-}
+dartfordEnabledInput?.addEventListener("change", () => {
+  if (dartfordCountInput) dartfordCountInput.disabled = !dartfordEnabledInput.checked;
+  updateCheckoutSummary();
+});
+dartfordCountInput?.addEventListener("input", updateCheckoutSummary);
+earlyPickupEnabledInput?.addEventListener("change", updateCheckoutSummary);
+hiredWithin3MonthsInput?.addEventListener("change", updateCheckoutSummary);
 
-if (dartfordCountInput) {
-  dartfordCountInput.addEventListener("input", updateCheckoutSummary);
-}
+// booking selection changes
+selectedPickupInput?.addEventListener("change", checkBookingFormAvailability);
+selectedDurationInput?.addEventListener("change", checkBookingFormAvailability);
 
-if (earlyPickupEnabledInput) {
-  earlyPickupEnabledInput.addEventListener("change", updateCheckoutSummary);
-}
-
-if (hiredWithin3MonthsInput) {
-  hiredWithin3MonthsInput.addEventListener("change", updateCheckoutSummary);
-}
-
-if (selectedPickupInput) {
-  selectedPickupInput.addEventListener("change", checkBookingFormAvailability);
-}
-
-if (selectedDurationInput) {
-  selectedDurationInput.addEventListener("change", checkBookingFormAvailability);
-}
-
-// Booking form submit
+// Booking form submit (demo flow: store booking, then redirect to checkout)
 if (bookingForm) {
   bookingForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1510,37 +1375,29 @@ if (bookingForm) {
     }
 
     const stillAvailable = await isVehicleAvailable(
-  selectedAvailability.vehicle.id,
-  selectedAvailability.pickupDate,
-  selectedAvailability.durationDays,
-  selectedAvailability.pickupTime
-);
+      selectedAvailability.vehicle.id,
+      selectedAvailability.pickupDate,
+      selectedAvailability.durationDays,
+      selectedAvailability.pickupTime
+    );
 
     if (!stillAvailable) {
       alert("That lorry is no longer available for the selected dates. Please search again.");
       return;
     }
 
-    const dartfordCrossings = dartfordEnabledInput?.checked
-      ? Math.max(1, Number(dartfordCountInput?.value || 1))
-      : 0;
-
+    const dartfordCrossings = dartfordEnabledInput?.checked ? Math.max(1, Number(dartfordCountInput?.value || 1)) : 0;
     const earlyPickup = earlyPickupEnabledInput?.checked || false;
 
-    const crossingCharge = calculateCrossingCharge(dartfordCrossings);
-    const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickup);
     const baseCost = Number(selectedAvailability.baseCost || 0);
-const discountAmount = Number(selectedAvailability.discountAmount || 0);
-const discountedBase = Math.max(0, baseCost - discountAmount);
+    const discountAmount = Number(selectedAvailability.discountAmount || 0);
+    const discountedBase = Math.max(0, baseCost - discountAmount);
 
-const hireTotal = calculateHireTotal(
-  discountedBase,
-  dartfordCrossings,
-  earlyPickup
-);
+    const hireTotal = calculateHireTotal(discountedBase, dartfordCrossings, earlyPickup);
 
     const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
     const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+
     const hiredWithinLast3Months = hiredWithin3MonthsInput?.checked || false;
     const requiredFormType = hiredWithinLast3Months ? "short" : "long";
 
@@ -1549,8 +1406,7 @@ const hireTotal = calculateHireTotal(
 
     const shortFormLink = buildFormUrl(FORM_LINK_A, bookingId);
     const longFormLink = buildFormUrl(FORM_LINK_B, bookingId);
-    const requiredFormLink =
-      requiredFormType === "short" ? shortFormLink : longFormLink;
+    const requiredFormLink = requiredFormType === "short" ? shortFormLink : longFormLink;
 
     const booking = {
       id: bookingId,
@@ -1565,28 +1421,37 @@ const hireTotal = calculateHireTotal(
       durationDays: selectedAvailability.durationDays,
       durationHours: selectedAvailability.durationHours,
       pickupTime: selectedAvailability.pickupTime,
+
       customerName: customerNameInput?.value || "",
       customerEmail: customerEmailInput?.value || "",
       customerMobile: customerMobileInput?.value || "",
       customerAddress: customerAddressInput?.value || "",
       customerDob: customerDobInput?.value || "",
+
       dartfordCrossings,
-      crossingCharge,
+      crossingCharge: calculateCrossingCharge(dartfordCrossings),
       earlyPickup,
-      earlyPickupCharge,
+      earlyPickupCharge: calculateEarlyPickupCharge(earlyPickup),
+
+      baseCost,
+      discountAmount,
       hireTotal,
       confirmationFee,
       outstandingAmount,
+
       depositAmount: SECURITY_DEPOSIT_AMOUNT,
       status: "pending_confirmation_payment",
       reminderAt: getReminderAt(selectedAvailability.pickupAt.toISOString()),
+
       outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
       depositLink: DEPOSIT_PAYMENT_LINK,
+
       formLinkA: shortFormLink,
       formLinkB: longFormLink,
       requiredFormType,
       requiredFormLink,
       hiredWithinLast3Months,
+
       createdAt: new Date().toISOString()
     };
 
@@ -1612,30 +1477,63 @@ const hireTotal = calculateHireTotal(
 }
 
 // Admin buttons
-if (refreshAdminBtn) refreshAdminBtn.addEventListener("click", renderAdminBookings);
-if (exportAdminCsvBtn) exportAdminCsvBtn.addEventListener("click", exportAdminCsv);
-if (exportAdminPdfBtn) exportAdminPdfBtn.addEventListener("click", exportAdminPdf);
+refreshAdminBtn?.addEventListener("click", renderAdminBookings);
+exportAdminCsvBtn?.addEventListener("click", exportAdminCsv);
+exportAdminPdfBtn?.addEventListener("click", exportAdminPdf);
 
-if (clearAdminBtn) {
-  clearAdminBtn.addEventListener("click", () => {
-    if (!confirm("Clear all saved demo bookings?")) return;
+clearAdminBtn?.addEventListener("click", () => {
+  if (!confirm("Clear all saved demo bookings?")) return;
 
-    localStorage.removeItem(STORAGE_BOOKINGS);
-    selectedAvailability = null;
+  localStorage.removeItem(STORAGE_BOOKINGS);
+  selectedAvailability = null;
 
-    if (selectedLorryInput) selectedLorryInput.value = "";
-    if (selectedPickupInput) selectedPickupInput.value = "";
-    if (selectedBaseInput) selectedBaseInput.value = "";
+  if (selectedLorryInput) selectedLorryInput.value = "";
+  if (selectedPickupInput) selectedPickupInput.value = "";
+  if (selectedBaseInput) selectedBaseInput.value = "";
 
-    renderBookings();
-    renderAdminBookings();
-    updateCheckoutSummary();
-  });
-}
+  renderBookings();
+  renderAdminBookings();
+  updateCheckoutSummary();
+});
 
-// ---- SAFE INITIAL LOAD ----
+// Expose images for slideshow matching your filenames
+window.fleetImages = window.fleetImages || [
+  "3.5 T Stallion (MM68)1.webp",
+  "3.5 T Stallion (MM68)2.webp",
+  "3.5 T Stallion (MM68)3.webp",
+  "3.5 T Stallion (MM68)4.webp",
+  "3.5 T Stallion (MM68)5.webp",
+  "3.5 T With Breast Bar (CA21)1.webp",
+  "3.5 T With Breast Bar (CA21)2.webp",
+  "3.5 T With Breast Bar (CA21)3.webp",
+  "3.5 T With Breast Bar (CA21)4.webp",
+  "3.5 T With Breast Bar (CA21)5.webp",
+  "3.5 T With Breast Bar (CA21)6.webp",
+  "3.5T With Safety Bar (LS23)1.webp",
+  "3.5T With Safety Bar (LS23)2.webp",
+  "3.5T With Safety Bar (LS23)3.webp",
+  "3.5T With Safety Bar (LS23)4.webp",
+  "3.5T With Safety Bar (LS23)5.webp",
+  "3.5T With Safety Bar (LS23)6.webp",
+  "3.5T With Safety Bar (LS23)7.webp",
+  "3.5T With Safety Bar (LS23)8.webp",
+  "3.5T With Safety Bar (LS23)9.webp",
+  "3.5T With Safety Bar (LS23)10.webp",
+  "7.5 T 3 Horses with Living1.webp",
+  "7.5 T 3 Horses with Living2.webp",
+  "7.5 T 3 Horses with Living3.webp",
+  "7.5 T 3 Horses with Living4.webp",
+  "7.5 T 3 Horses with Living5.webp",
+  "7.5 T 3 Horses with Living6.webp",
+  "7.5 T 4 Horses No Living1.webp",
+  "7.5 T 4 Horses No Living2.webp",
+  "7.5 T 4 Horses No Living3.webp",
+  "7.5 T 4 Horses No Living4.webp"
+];
+
+// Initial render
 if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
-if (fleetGrid) renderFleet();
-if (bookingList) renderBookings();
-if (adminBookings) renderAdminBookings();
+renderFleet();
+renderBookings();
+renderAdminBookings();
 updateCheckoutSummary();
