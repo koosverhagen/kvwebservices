@@ -1924,3 +1924,8 @@ select {
   box-sizing: border-box;
   min-width: 0; /* critical for Safari */
 }
+
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
