@@ -94,7 +94,8 @@
 			</div>
 			<div id="fleet-grid" class="fleet-grid"></div>
 
-				  
+				   <!--
+removed duplicate, script is loaded at end of body -->
 		</section>
 
 		<section id="booking" class="section booking-wrap">
@@ -111,57 +112,49 @@
   <div class="booking-flow">
 
     <!-- STEP 1 -->
-<div class="booking-step active" id="step-1">
-  <div class="card">
-    <h3>Check availability</h3>
-    <p class="muted">Choose date and duration to see available lorries.</p>
+    <div class="booking-step active" id="step-1">
+      <div class="card">
+        <h3>Check availability</h3>
+        <p class="muted">Choose date and duration to see available lorries.</p>
+        
+      <form id="availability-form" class="availability-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="pickup-date">Pickup date</label>
+            <input id="pickup-date" type="date" required>
+          </div>
 
-    <form id="availability-form" class="form-grid">
+          <div class="form-field">
+            <label for="pickup-time">Pickup time</label>
+            <select id="pickup-time" required>
+              <option value="07:00">07:00</option>
+              <option value="13:00">13:00</option>
+            </select>
+          </div>
 
-      <!-- Pickup Date -->
-      <label>
-        Pickup date
-        <input
-          type="date"
-          id="pickup-date"
-          required
-        >
-      </label>
+          <div class="form-field">
+            <label for="duration-days">Duration</label>
+            <select id="duration-days" required>
+              <option value="0.5">1/2 day</option>
+              <option value="1" selected>1 day</option>
+              <option value="2">2 days</option>
+              <option value="3">3 days</option>
+              <option value="4">4 days</option>
+              <option value="5">5 days</option>
+              <option value="6">6 days</option>
+              <option value="7">Week</option>
+            </select>
+          </div>
 
-      <!-- Pickup Time -->
-      <label>
-        Pickup time
-        <select id="pickup-time" required>
-  <option value="07:00" selected>07:00</option>
-  <option value="13:00">13:00 (½ day PM only)</option>
-</select>
-      </label>
+          <div class="form-field form-field-actions">
+            <label class="sr-only" aria-hidden="true">Search</label>
+            <button class="btn" type="submit">Check availability</button>
+          </div>
+        </div>
+      </form>
 
-      <!-- Duration -->
-      <label>
-        Duration
-       <select id="duration-days" required>
-  <option value="0.5">½ day</option>
-  <option value="1" selected>1 day</option>
-  <option value="2">2 days</option>
-  <option value="3">3 days</option>
-  <option value="4">4 days</option>
-  <option value="5">5 days</option>
-  <option value="6">6 days</option>
-  <option value="7">Week</option>
-</select>
-      </label>
-
-      <div class="full">
-        <button type="submit" class="btn full">
-          Check availability
-        </button>
       </div>
-
-    </form>
-
-  </div>
-</div>
+    </div>
 
     <!-- STEP 2 -->
     <div class="booking-step" id="step-2">
@@ -175,50 +168,125 @@
     <div class="booking-step" id="step-3">
       <div class="card">
         <h3>Your details</h3>
-        <!-- KEEP your booking form fields here -->
+        
+      <form id="booking-form" class="booking-form">
+        <div class="form-grid two">
+          <div class="form-field">
+            <label for="selected-lorry">Selected lorry</label>
+            <input id="selected-lorry" type="text" readonly placeholder="Select a lorry first">
+          </div>
+
+          <div class="form-field">
+            <label for="selected-base">Base price</label>
+            <input id="selected-base" type="text" readonly placeholder="—">
+          </div>
+
+          <div class="form-field">
+            <label for="selected-pickup">Pickup date</label>
+            <input id="selected-pickup" type="date" required>
+          </div>
+
+          <div class="form-field">
+            <label for="selected-duration">Duration</label>
+            <select id="selected-duration" required>
+              <option value="0.5">1/2 day</option>
+              <option value="1" selected>1 day</option>
+              <option value="2">2 days</option>
+              <option value="3">3 days</option>
+              <option value="4">4 days</option>
+              <option value="5">5 days</option>
+              <option value="6">6 days</option>
+              <option value="7">Week</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="booking-availability-status" class="availability-status" hidden></div>
+
+        <div class="form-grid two">
+          <div class="form-field">
+            <label for="customer-name">Full name</label>
+            <input id="customer-name" type="text" autocomplete="name" required>
+          </div>
+
+          <div class="form-field">
+            <label for="customer-email">Email</label>
+            <input id="customer-email" type="email" autocomplete="email" required>
+          </div>
+
+          <div class="form-field">
+            <label for="customer-mobile">Mobile</label>
+            <input id="customer-mobile" type="tel" autocomplete="tel" required>
+          </div>
+
+          <div class="form-field">
+            <label for="customer-dob">Date of birth</label>
+            <input id="customer-dob" type="date">
+          </div>
+
+          <div class="form-field full">
+            <label for="customer-address">Address</label>
+            <input id="customer-address" type="text" autocomplete="street-address">
+          </div>
+        </div>
+
+        <div class="extras-grid">
+          <label class="check">
+            <input id="hired-within-3-months" type="checkbox">
+            <span>Hired within last 3 months</span>
+          </label>
+
+          <label class="check">
+            <input id="early-pickup-enabled" type="checkbox">
+            <span>Early pickup (+£20)</span>
+          </label>
+
+          <div class="dartford-row">
+            <label class="check">
+              <input id="dartford-enabled" type="checkbox">
+              <span>Dartford crossings</span>
+            </label>
+
+            <div class="dartford-count">
+              <label for="dartford-count" class="sr-only">Crossings count</label>
+              <input id="dartford-count" type="number" min="1" value="1" disabled>
+            </div>
+          </div>
+        </div>
+
+        <div id="booking-success" class="success-note" hidden></div>
+
+        <div class="form-actions">
+          <button id="booking-submit" class="btn" type="submit" disabled>Pay to confirm booking</button>
+        </div>
+      </form>
+
       </div>
     </div>
 
     <!-- STEP 4 -->
-<div class="booking-step" id="step-4">
-  <div class="card">
-    <h3>Review & confirm</h3>
+    <div class="booking-step" id="step-4">
+      <div class="card">
+        <h3>Review & confirm</h3>
 
-    <div id="checkout-summary" class="checkout-breakdown"></div>
+        <div id="checkout-summary" class="checkout-breakdown"></div>
 
-    <!-- Voucher Section -->
-    <div class="voucher-box">
-      <label for="discount-code">Voucher code</label>
-      <div class="voucher-row">
-        <input 
-          type="text" 
-          id="discount-code" 
-          placeholder="Enter voucher code"
-          autocomplete="off"
-        >
-        <button type="button" id="apply-discount" class="btn ghost small">
-          Apply
+        <div class="requirements-box">
+          <h4>Before collection</h4>
+          <ul>
+            <li>Complete hire form (short/long based on history)</li>
+            <li>Submit DVLA licence check code</li>
+            <li>Pay outstanding balance</li>
+            <li>£200 refundable deposit hold</li>
+            <li>Bring proof of address</li>
+          </ul>
+        </div>
+
+        <button id="booking-submit" class="btn full confirm-btn">
+          Pay £75 to confirm booking
         </button>
       </div>
-      <p id="discount-message" class="voucher-message muted tiny" hidden></p>
     </div>
-
-    <div class="requirements-box">
-      <h4>Before collection</h4>
-      <ul>
-        <li>Complete hire form (short/long based on history)</li>
-        <li>Submit DVLA licence check code</li>
-        <li>Pay outstanding balance</li>
-        <li>£200 refundable deposit hold</li>
-        <li>Bring proof of address</li>
-      </ul>
-    </div>
-
-    <button id="booking-submit" class="btn full confirm-btn">
-      Confirm & pay
-    </button>
-  </div>
-</div>
 
   </div>
 </div>
@@ -329,8 +397,6 @@
 
   </div>
 </div>
-
-
 <script>
 document.addEventListener("DOMContentLoaded", function(){
 
@@ -414,6 +480,7 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 <script src="https://elfsightcdn.com/platform.js" async></script>
-<script src="app.js"></script>
+
+  <script src="app_updated.js"></script>
 </body>
 </html>
