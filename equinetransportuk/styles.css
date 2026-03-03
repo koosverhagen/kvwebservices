@@ -1304,3 +1304,14 @@ input[type="date"] {
 .cal-dot-limited { background: #f59e0b; }
 .cal-dot-unavailable { background: #ef4444; }
 
+.cal-day.cal-available {
+  border-color: #22c55e;
+}
+
+.cal-day.cal-limited {
+  border-color: #f59e0b;
+}
+
+.cal-day.cal-unavailable {
+  border-color: #ef4444;
+}
