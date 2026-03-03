@@ -1,8 +1,16 @@
 
 /* ======================================================
-   EQUINE TRANSPORT UK — CLEAN PRODUCTION CSS
-   Optimized + deduplicated
+   EQUINE TRANSPORT UK — PRODUCTION CSS (DEDUPLICATED)
 ====================================================== */
+
+/* Safari desktop only: Increase button text size */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance:none) {
+    .btn, button.btn, a.btn {
+      font-size: 20px !important;
+    }
+  }
+}
 
 :root {
   --bg: #f5f7fa;
@@ -14,10 +22,6 @@
   --radius: 16px;
 }
 
-/* ======================================================
-   BASE
-====================================================== */
-
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
@@ -27,7 +31,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: var(--text);
   background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
   line-height: 1.45;
+}
+
+@supports (-webkit-touch-callout: none) {
+  body { background-attachment: scroll; }
 }
 
 .container {
@@ -35,15 +46,14 @@ body {
   margin: 0 auto;
 }
 
-/* ======================================================
-   HEADER
-====================================================== */
+/* ================= HEADER ================= */
 
 .site-header {
   position: sticky;
   top: 0;
   background: rgba(255,255,255,.85);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--line);
   z-index: 20;
 }
@@ -59,9 +69,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--text);
   text-decoration: none;
   font-weight: 700;
+  color: var(--text);
 }
 
 .brand-logo {
@@ -73,59 +83,16 @@ body {
   background: #fff;
 }
 
-.main-nav {
-  display: flex;
-  gap: 18px;
-}
-
+.main-nav { display: flex; gap: 18px; }
 .main-nav a {
   text-decoration: none;
   color: var(--muted);
   font-weight: 500;
 }
 
-/* ======================================================
-   BUTTONS
-====================================================== */
+/* ================= HERO ================= */
 
-.btn {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 44px;
-  border-radius: 12px;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: #fff;
-  padding: 0 16px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.btn.ghost {
-  background: #fff;
-  color: var(--accent);
-}
-
-.btn:disabled {
-  opacity: .55;
-  cursor: not-allowed;
-}
-
-/* ======================================================
-   HERO
-====================================================== */
-
-.hero {
-  padding: 80px 0 60px;
-}
+.hero { padding: 80px 0 60px; }
 
 .hero-grid {
   display: grid;
@@ -143,11 +110,38 @@ body {
   box-shadow: 0 40px 80px rgba(0,0,0,0.08);
 }
 
-/* ======================================================
-   FLEET
-====================================================== */
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  padding: 0 16px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.btn:hover { opacity: .9; transform: translateY(-1px); }
+.btn.ghost { background: #fff; color: var(--accent); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ================= FLEET ================= */
+
+.section { padding: 30px 0; }
 
 .fleet-grid {
+  margin-top: 14px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
@@ -160,12 +154,6 @@ body {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-  transition: transform .3s ease, box-shadow .3s ease;
-}
-
-.fleet-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
 .fleet-card img {
@@ -183,24 +171,30 @@ body {
 
 .fleet-card-book {
   margin-top: auto;
+  width: 100%;
 }
 
-/* ======================================================
-   BOOKING FORM
-====================================================== */
+/* ================= BOOKING LAYOUT ================= */
+
+.booking-wrap { padding: 34px 0; }
+
+.booking-grid {
+  display: grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
 
 .form-grid {
   display: grid;
-  gap: 18px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-label {
-  font-size: 13px;
-  color: var(--muted);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
 input, select, textarea {
@@ -213,62 +207,9 @@ input, select, textarea {
   background: #fafbfc;
 }
 
-textarea { min-height: 100px; }
-
 .full { grid-column: 1 / -1; }
 
-/* Safari mobile fix */
-input[type="date"],
-input[type="time"],
-select {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-input[type="date"] {
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-/* ======================================================
-   BOOKING FLOW
-====================================================== */
-
-.booking-steps {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 22px;
-  flex-wrap: wrap;
-}
-
-.step {
-  font-size: 14px;
-  color: var(--muted);
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: #fff;
-}
-
-.step.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
-.booking-step {
-  display: none;
-}
-
-.booking-step.active {
-  display: block;
-}
-
-/* ======================================================
-   SUMMARY CARD
-====================================================== */
+/* ================= SUMMARY ================= */
 
 .summary-card {
   background: #fff;
@@ -283,26 +224,46 @@ input[type="date"] {
   margin: 8px 0;
 }
 
-/* ======================================================
-   RESPONSIVE
-====================================================== */
+/* ================= VOUCHER ================= */
+
+.voucher-card {
+  margin: 0 0 16px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.85);
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.voucher-left input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,0.12);
+}
+
+.voucher-message.ok { color: #059669; }
+.voucher-message.error { color: #dc2626; }
+
+/* ================= SAFARI DATE FIX ================= */
+
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ================= RESPONSIVE ================= */
 
 @media (max-width: 980px) {
-  .hero-grid,
-  .fleet-grid {
-    grid-template-columns: 1fr 1fr;
+  .hero-grid, .booking-grid, .fleet-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
-  .hero-grid,
-  .fleet-grid,
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .btn {
-    width: 100%;
-  }
+  .form-grid { grid-template-columns: 1fr; }
+  .btn { width: 100%; }
 }
-
