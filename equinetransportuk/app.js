@@ -1652,7 +1652,46 @@ function showVehiclePreview(dateObj) {
   container.classList.remove("hidden");
 
 }
+/* ======================================================
+   Calendar Preview
+====================================================== */
 
+function clearPreview() {
+
+  document
+    .querySelectorAll(".cal-preview")
+    .forEach(el => el.classList.remove("cal-preview"));
+
+}
+
+function previewRental(startDate) {
+
+  const durationInput = document.getElementById("duration-days");
+  const durationDays = Number(durationInput?.value || 1);
+
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + durationDays - 1);
+
+  const cells = document.querySelectorAll("#cal-grid .cal-day");
+
+  cells.forEach(cell => {
+
+    const day = Number(cell.textContent);
+    if (!day) return;
+
+    const cellDate = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      day
+    );
+
+    if (cellDate >= startDate && cellDate <= endDate) {
+      cell.classList.add("cal-preview");
+    }
+
+  });
+
+}
 /* ======================================================
    Phase 4 — Calendar Module (Render Only)
    ====================================================== */
@@ -1912,12 +1951,15 @@ function renderCalendar() {
         /* preview (desktop hover) */
 
         dayEl.addEventListener("mouseenter", () => {
-          clearPreview();
-          previewRental(dayDate);
-          showVehiclePreview(dayDate);
-        });
 
-        dayEl.addEventListener("mouseleave", clearPreview);
+  if (dayEl.classList.contains("cal-unavailable")) return;
+
+  clearPreview();
+  previewRental(dayDate);
+
+});
+
+dayEl.addEventListener("mouseleave", clearPreview);
 
         /* preview (mobile touch) */
 
