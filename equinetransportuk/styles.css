@@ -1311,8 +1311,38 @@ input[type="date"] {
 /* Booking spans */
 
 .cal-booked {
+  position: relative;
   background: rgba(239,68,68,0.15);
 }
+
+.cal-booked::after {
+
+  content: "";
+  position: absolute;
+
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+
+  height: 6px;
+  border-radius: 4px;
+
+  background: #ef4444;
+
+}
+
+.cal-booking-start::after {
+  border-radius: 4px 0 0 4px;
+}
+
+.cal-booking-mid::after {
+  border-radius: 0;
+}
+
+.cal-booking-end::after {
+  border-radius: 0 4px 4px 0;
+}
+
 
 /* start of booking */
 
