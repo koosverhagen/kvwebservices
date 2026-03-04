@@ -1761,123 +1761,111 @@ function getVehicleAvailability(dateObj) {
 }
 
   /* ======================================================
-     Render Calendar
-     ====================================================== */
+   Render Calendar
+   ====================================================== */
 
-  function renderCalendar() {
+function renderCalendar() {
 
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
 
-    const monthNames = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
-    ];
+  const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
 
-    calTitle.textContent = `${monthNames[month]} ${year}`;
+  calTitle.textContent = `${monthNames[month]} ${year}`;
 
-    calGrid.innerHTML = "";
+  calGrid.innerHTML = "";
 
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
 
-    let startOffset = firstDay.getDay();
-    startOffset = startOffset === 0 ? 6 : startOffset - 1;
+  let startOffset = firstDay.getDay();
+  startOffset = startOffset === 0 ? 6 : startOffset - 1;
 
-    for (let i = 0; i < startOffset; i++) {
-      const empty = document.createElement("div");
-      calGrid.appendChild(empty);
-    }
+  for (let i = 0; i < startOffset; i++) {
+    const empty = document.createElement("div");
+    calGrid.appendChild(empty);
+  }
 
-    const today = new Date();
-    today.setHours(0,0,0,0);
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
-    for (let day = 1; day <= lastDay.getDate(); day++) {
+  for (let day = 1; day <= lastDay.getDate(); day++) {
 
-  const dayDate = new Date(year, month, day);
-  dayDate.setHours(0,0,0,0);
+    const dayDate = new Date(year, month, day);
+    dayDate.setHours(0,0,0,0);
 
-  const dayEl = document.createElement("div");
-  dayEl.className = "cal-day";
-  dayEl.textContent = day;
+    const dayEl = document.createElement("div");
+    dayEl.className = "cal-day";
+    dayEl.textContent = day;
 
-  if (dayDate < today) {
+    if (dayDate < today) {
 
-    dayEl.classList.add("cal-unavailable");
-
-  } else {
-
-    const status = checkDayLocalAvailability(dayDate);
-    const validStart = canStartRental(dayDate);
-
-    if (status === "available") {
-      dayEl.classList.add("cal-available");
-    }
-    else if (status === "limited") {
-      dayEl.classList.add("cal-limited");
-    }
-    else {
       dayEl.classList.add("cal-unavailable");
+
+    } else {
+
+      const status = checkDayLocalAvailability(dayDate);
+      const validStart = canStartRental(dayDate);
+
+      if (status === "available") {
+        dayEl.classList.add("cal-available");
+      }
+      else if (status === "limited") {
+        dayEl.classList.add("cal-limited");
+      }
+      else {
+        dayEl.classList.add("cal-unavailable");
+      }
+
+      if (!validStart) {
+        dayEl.classList.add("cal-unavailable");
+      }
+
+      /* only attach interactions to valid selectable days */
+
+      if (status !== "unavailable" && validStart) {
+
+        /* preview (desktop hover) */
+
+        dayEl.addEventListener("mouseenter", () => {
+          clearPreview();
+          previewRental(dayDate);
+          showVehiclePreview(dayDate);
+        });
+
+        dayEl.addEventListener("mouseleave", clearPreview);
+
+        /* preview (mobile touch) */
+
+        dayEl.addEventListener("touchstart", (e) => {
+          e.stopPropagation();
+          clearPreview();
+          previewRental(dayDate);
+          showVehiclePreview(dayDate);
+        });
+
+        /* select date */
+
+        dayEl.addEventListener("click", () => {
+          clearPreview();
+          selectDate(dayDate);
+          showVehiclePreview(dayDate);
+        });
+
+      }
+
     }
 
-    if (!validStart) {
-      dayEl.classList.add("cal-unavailable");
-    }
-
-    /* preview (desktop hover) */
-
-    dayEl.addEventListener("mouseenter", () => {
-
-      if (dayEl.classList.contains("cal-unavailable")) return;
-
-      clearPreview();
-      previewRental(dayDate);
-      showVehiclePreview(dayDate);
-
-    });
-
-    dayEl.addEventListener("mouseleave", clearPreview);
-
-
-    /* preview (mobile touch) */
-
-    dayEl.addEventListener("touchstart", (e) => {
-
-      e.stopPropagation();
-
-      if (dayEl.classList.contains("cal-unavailable")) return;
-
-      clearPreview();
-      previewRental(dayDate);
-      showVehiclePreview(dayDate);
-
-    });
-
-
-    /* selectable days */
-
-    if (status !== "unavailable" && validStart) {
-
-      dayEl.addEventListener("click", () => {
-
-        clearPreview();
-        selectDate(dayDate);
-        showVehiclePreview(dayDate);
-
-      });
-
-    }
+    calGrid.appendChild(dayEl);
 
   }
 
-  calGrid.appendChild(dayEl);
+  renderBookingBars(year, month);
 
 }
-
-renderBookingBars(year, month);
-
-}
-
   /* ======================================================
      Select date from calendar
      ====================================================== */
