@@ -1300,7 +1300,9 @@ input[type="date"] {
   background: rgba(245,158,11,0.08);
 }
 
-.cal-day.cal-unavailable {
+/* Prevent booked days from fading */
+
+.cal-day.cal-unavailable:not(.cal-booked) {
   border-color: #ef4444;
   opacity: 0.35;
   cursor: not-allowed;
@@ -1312,25 +1314,31 @@ input[type="date"] {
   background: rgba(239,68,68,0.15);
 }
 
+/* start of booking */
+
 .cal-booking-start {
   border-left: 3px solid #ef4444;
-  border-radius: 10px 4px 4px 10px;
 }
+
+/* middle booking days */
 
 .cal-booking-mid {
   background: rgba(239,68,68,0.22);
-  border-radius: 4px;
 }
+
+/* end of booking */
 
 .cal-booking-end {
   border-right: 3px solid #ef4444;
-  border-radius: 4px 10px 10px 4px;
 }
+
+/* disable hover animation on booked days */
 
 .cal-booked:hover {
   transform: none;
   cursor: not-allowed;
 }
+
 /* Legend */
 
 .cal-legend {
