@@ -1629,6 +1629,44 @@ updateCheckoutSummary();
     return "available";
   }
 
+  function renderBookingBars(year, month) {
+
+  const bookings = getBookings();
+
+  bookings.forEach(booking => {
+
+    const start = new Date(booking.pickupAt);
+    const end = new Date(booking.dropoffAt);
+
+    const startMonth = start.getMonth();
+    const endMonth = end.getMonth();
+
+    if (startMonth !== month && endMonth !== month) return;
+
+    let current = new Date(start);
+
+    while (current <= end) {
+
+      if (current.getMonth() === month) {
+
+        const day = current.getDate();
+
+        const cell = Array.from(calGrid.children)
+          .find(c => Number(c.textContent) === day);
+
+        if (cell) {
+          cell.classList.add("cal-booked");
+        }
+
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+  });
+
+}
+
   /* ======================================================
      Render Calendar
      ====================================================== */
@@ -1698,6 +1736,8 @@ updateCheckoutSummary();
 
       calGrid.appendChild(dayEl);
     }
+
+    renderBookingBars(year, month);
 
   }
 
