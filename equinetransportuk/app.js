@@ -1870,38 +1870,42 @@ function renderBookingBars(year, month) {
           dayEl.classList.add("cal-unavailable");
         }
 
-        if (status !== "unavailable" && validStart) {
+        /* preview should work on ALL days */
 
-          dayEl.addEventListener("mouseenter", (e) => {
+dayEl.addEventListener("mouseenter", (e) => {
 
-            clearPreview();
-            previewRental(dayDate);
-            showVehiclePreview(dayDate, e);
+  clearPreview();
+  previewRental(dayDate);
+  showVehiclePreview(dayDate, e);
 
-          });
+});
 
-          dayEl.addEventListener("mousemove", movePreview);
+dayEl.addEventListener("mousemove", movePreview);
 
-          dayEl.addEventListener("mouseleave", clearPreview);
+dayEl.addEventListener("mouseleave", clearPreview);
 
-          dayEl.addEventListener("touchend", (e) => {
+dayEl.addEventListener("touchend", (e) => {
 
-            e.stopPropagation();
+  e.stopPropagation();
 
-            clearPreview();
-            previewRental(dayDate);
-            showVehiclePreview(dayDate);
+  clearPreview();
+  previewRental(dayDate);
+  showVehiclePreview(dayDate);
 
-          });
+});
 
-          dayEl.addEventListener("click", () => {
+/* selection only if allowed */
 
-            clearPreview();
-            selectDate(dayDate);
+if (status !== "unavailable" && validStart) {
 
-          });
+  dayEl.addEventListener("click", () => {
 
-        }
+    clearPreview();
+    selectDate(dayDate);
+
+  });
+
+}
 
       }
 
