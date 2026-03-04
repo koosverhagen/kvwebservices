@@ -6,6 +6,13 @@
 
 let activeSlideshow = null;
 
+/* ======================================================
+   Operating Hours
+====================================================== */
+
+const OPENING_HOUR = 7;
+const CLOSING_HOUR = 19;
+
 // Storage + pricing constants
 const STORAGE_BOOKINGS = "equinetransportuk_bookings";
 const DARTFORD_CROSSING_PRICE = 4.2;
@@ -1578,150 +1585,191 @@ updateCheckoutSummary();
   if (!calGrid || !calTitle || !calWrap) return;
 
   let currentDate = new Date();
-  currentDate.setDate(1); // always first of month
-function checkDayLocalAvailability(dateObj) {
+  currentDate.setDate(1);
 
-  const durationInput = document.getElementById("duration-days");
-  if (!durationInput) return "unavailable";
+  /* ======================================================
+     Check availability for a specific calendar day
+     ====================================================== */
 
-  const durationDays = Number(durationInput.value || 1);
-  const pickupTime = "07:00";
+  function checkDayLocalAvailability(dateObj) {
 
-  const bookings = getBookings();
+    const bookings = getBookings();
+    let availableVehicles = 0;
 
-  let availableVehicles = 0;
+    vehicles.forEach(vehicle => {
 
-  vehicles.forEach(vehicle => {
+      const vehicleBookings = bookings.filter(
+        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+      );
 
-    if (!supportsDuration(vehicle, durationDays)) return;
+      // Entire calendar day window
+      const pickupAt = new Date(dateObj);
+      pickupAt.setHours(0,0,0,0);
 
-    const pickupAt = new Date(dateObj);
-    pickupAt.setHours(7, 0, 0, 0);
+      const dropoffAt = new Date(dateObj);
+      dropoffAt.setHours(23,59,59,999);
 
-    const durationHours = getDurationHours(vehicle, durationDays);
-    const dropoffAt = new Date(pickupAt.getTime() + durationHours * 60 * 60 * 1000);
+      const overlapsExisting = vehicleBookings.some(booking => {
 
-    const vehicleBookings = bookings.filter(
-      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-    );
+        const existingStart = new Date(booking.pickupAt);
+        const existingEnd = new Date(booking.dropoffAt);
 
-    const overlapsExisting = vehicleBookings.some(booking => {
-      const existingStart = new Date(booking.pickupAt);
-      const existingEnd = new Date(booking.dropoffAt);
-      return overlaps(pickupAt, dropoffAt, existingStart, existingEnd);
+        return overlaps(pickupAt, dropoffAt, existingStart, existingEnd);
+
+      });
+
+      if (!overlapsExisting) {
+        availableVehicles++;
+      }
+
     });
 
-    if (!overlapsExisting) availableVehicles++;
-  });
+    if (availableVehicles === 0) return "unavailable";
+    if (availableVehicles < vehicles.length) return "limited";
+    return "available";
+  }
 
-  if (availableVehicles === 0) return "unavailable";
-  if (availableVehicles < vehicles.length) return "limited";
-  return "available";
-}
+  /* ======================================================
+     Render Calendar
+     ====================================================== */
+
   function renderCalendar() {
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
 
-  const monthNames = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
 
-  calTitle.textContent = `${monthNames[month]} ${year}`;
+    const monthNames = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ];
 
-  calGrid.innerHTML = "";
+    calTitle.textContent = `${monthNames[month]} ${year}`;
 
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
+    calGrid.innerHTML = "";
 
-  let startOffset = firstDay.getDay();
-  startOffset = startOffset === 0 ? 6 : startOffset - 1;
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
 
-  for (let i = 0; i < startOffset; i++) {
-    const empty = document.createElement("div");
-    calGrid.appendChild(empty);
+    let startOffset = firstDay.getDay();
+    startOffset = startOffset === 0 ? 6 : startOffset - 1;
+
+    for (let i = 0; i < startOffset; i++) {
+      const empty = document.createElement("div");
+      calGrid.appendChild(empty);
+    }
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+
+      const dayDate = new Date(year, month, day);
+      dayDate.setHours(0,0,0,0);
+
+      const dayEl = document.createElement("div");
+      dayEl.className = "cal-day";
+      dayEl.textContent = day;
+
+      if (dayDate < today) {
+
+        dayEl.classList.add("cal-unavailable");
+
+      } else {
+
+        const status = checkDayLocalAvailability(dayDate);
+
+        if (status === "available") {
+          dayEl.classList.add("cal-available");
+        }
+        else if (status === "limited") {
+          dayEl.classList.add("cal-limited");
+        }
+        else {
+          dayEl.classList.add("cal-unavailable");
+        }
+
+        if (status !== "unavailable") {
+          dayEl.addEventListener("click", () => {
+            selectDate(dayDate);
+          });
+        }
+
+      }
+
+      calGrid.appendChild(dayEl);
+    }
+
   }
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
+  /* ======================================================
+     Select date from calendar
+     ====================================================== */
 
-  for (let day = 1; day <= lastDay.getDate(); day++) {
+  function selectDate(dateObj) {
 
-  const dayDate = new Date(year, month, day);
-  dayDate.setHours(0,0,0,0);
+    const pickupInput = document.getElementById("pickup-date");
+    if (!pickupInput) return;
 
-  const dayEl = document.createElement("div");
-  dayEl.className = "cal-day";
-  dayEl.textContent = day;
+    calGrid.querySelectorAll(".cal-selected")
+      .forEach(el => el.classList.remove("cal-selected"));
 
-  if (dayDate < today) {
-    dayEl.classList.add("cal-unavailable");
-  } else {
+    const cells = Array.from(calGrid.children);
 
-    const status = checkDayLocalAvailability(dayDate);
+    cells.forEach(cell => {
 
-    if (status === "available") {
-      dayEl.classList.add("cal-available");
-    } else if (status === "limited") {
-      dayEl.classList.add("cal-limited");
-    } else {
-      dayEl.classList.add("cal-unavailable");
-    }
+      if (!cell.textContent) return;
 
-    if (status !== "unavailable") {
-      dayEl.addEventListener("click", () => {
-        selectDate(dayDate);
-      });
-    }
+      if (Number(cell.textContent) === dateObj.getDate()) {
+        cell.classList.add("cal-selected");
+      }
+
+    });
+
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getDate()).padStart(2, "0");
+
+    pickupInput.value = `${year}-${month}-${day}`;
   }
 
-  calGrid.appendChild(dayEl);
-}
-}
-function selectDate(dateObj) {
-  const pickupInput = document.getElementById("pickup-date");
-  if (!pickupInput) return;
+  /* ======================================================
+     Month Navigation
+     ====================================================== */
 
-  // Remove previous selection
-  calGrid.querySelectorAll(".cal-selected")
-    .forEach(el => el.classList.remove("cal-selected"));
-
-  // Highlight clicked
-  const cells = Array.from(calGrid.children);
-  cells.forEach(cell => {
-    if (!cell.textContent) return;
-    if (Number(cell.textContent) === dateObj.getDate()) {
-      cell.classList.add("cal-selected");
-    }
-  });
-
-  // Format YYYY-MM-DD
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const day = String(dateObj.getDate()).padStart(2, "0");
-
-  pickupInput.value = `${year}-${month}-${day}`;
-}
   function changeMonth(direction) {
+
     currentDate.setMonth(currentDate.getMonth() + direction);
     renderCalendar();
+
   }
 
   calWrap.addEventListener("click", (e) => {
+
     const nav = e.target.closest("[data-cal-nav]");
     if (!nav) return;
 
     const direction = nav.dataset.calNav === "next" ? 1 : -1;
     changeMonth(direction);
+
   });
+
+  /* ======================================================
+     Initial render
+     ====================================================== */
 
   renderCalendar();
+
+  /* ======================================================
+     Re-render if duration changes
+     (UI sync only)
+     ====================================================== */
+
   const durationInput = document.getElementById("duration-days");
 
-if (durationInput) {
-  durationInput.addEventListener("change", () => {
-    renderCalendar();
-  });
-}
+  if (durationInput) {
+    durationInput.addEventListener("change", () => {
+      renderCalendar();
+    });
+  }
 
 })();
