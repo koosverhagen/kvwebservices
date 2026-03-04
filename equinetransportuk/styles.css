@@ -1395,3 +1395,26 @@ input[type="date"] {
 .vehicle-preview-booked {
   color: #ef4444;
 }
+
+/* ======================================================
+   Calendar tooltip
+====================================================== */
+
+.cal-tooltip {
+  position: absolute;
+  background: #1d2530;
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  transform: translate(-50%, -120%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.cal-tooltip.show {
+  opacity: 1;
+}
