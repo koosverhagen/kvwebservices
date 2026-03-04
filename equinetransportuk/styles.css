@@ -1342,8 +1342,8 @@ input[type="date"] {
 /* hover preview */
 
 .cal-preview {
-  background: rgba(31,111,235,0.15);
-  border-color: #7aa7f7;
+  background: rgba(31,111,235,0.12);
+  border-color: #1f6feb;
 }
 
 

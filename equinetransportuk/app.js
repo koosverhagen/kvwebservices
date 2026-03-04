@@ -1950,20 +1950,21 @@ function renderCalendar() {
 
         /* preview (desktop hover) */
 
-        dayEl.addEventListener("mouseenter", () => {
+        dayEl.addEventListener("mouseover", () => {
 
   if (dayEl.classList.contains("cal-unavailable")) return;
 
   clearPreview();
   previewRental(dayDate);
+  showVehiclePreview(dayDate);
 
 });
 
-dayEl.addEventListener("mouseleave", clearPreview);
+dayEl.addEventListener("mouseout", clearPreview);
 
         /* preview (mobile touch) */
 
-        dayEl.addEventListener("touchstart", (e) => {
+        dayEl.addEventListener("touchend", (e) => {
           e.stopPropagation();
           clearPreview();
           previewRental(dayDate);
