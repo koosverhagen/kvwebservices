@@ -1342,9 +1342,10 @@ input[type="date"] {
 /* hover preview */
 
 .cal-preview {
-  background: rgba(31,111,235,0.08);
+  background: rgba(31,111,235,0.12);
   border-color: #7aa7f7;
 }
+
 
 /* Legend */
 
@@ -1369,7 +1370,7 @@ input[type="date"] {
 .cal-dot-unavailable { background: #ef4444; }
 
 .vehicle-preview {
-  margin-top: 12px;
+  margin-top: 14px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
