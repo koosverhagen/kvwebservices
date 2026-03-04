@@ -1709,57 +1709,79 @@ updateCheckoutSummary();
 
     for (let day = 1; day <= lastDay.getDate(); day++) {
 
-      const dayDate = new Date(year, month, day);
-      dayDate.setHours(0,0,0,0);
+  const dayDate = new Date(year, month, day);
+  dayDate.setHours(0,0,0,0);
 
-      const dayEl = document.createElement("div");
-      dayEl.className = "cal-day";
-      dayEl.textContent = day;
+  const dayEl = document.createElement("div");
+  dayEl.className = "cal-day";
+  dayEl.textContent = day;
 
-      dayEl.addEventListener("mouseenter", () => {
+  /* preview (desktop hover) */
 
-  clearPreview();
+  dayEl.addEventListener("mouseenter", () => {
 
-  if (!dayEl.classList.contains("cal-unavailable")) {
+    if (dayEl.classList.contains("cal-unavailable")) return;
+
+    clearPreview();
     previewRental(dayDate);
-  }
 
-});
+  });
 
-dayEl.addEventListener("mouseleave", clearPreview);
+  dayEl.addEventListener("mouseleave", clearPreview);
 
-      if (dayDate < today) {
 
-        dayEl.classList.add("cal-unavailable");
+  /* preview (mobile touch) */
 
-      } else {
+  dayEl.addEventListener("touchstart", (e) => {
 
-        const status = checkDayLocalAvailability(dayDate);
+    e.stopPropagation();
 
-        if (status === "available") {
-          dayEl.classList.add("cal-available");
-        }
-        else if (status === "limited") {
-          dayEl.classList.add("cal-limited");
-        }
-        else {
-          dayEl.classList.add("cal-unavailable");
-        }
+    if (dayEl.classList.contains("cal-unavailable")) return;
 
-        if (status !== "unavailable") {
-          dayEl.addEventListener("click", () => {
-            selectDate(dayDate);
-          });
-        }
+    clearPreview();
+    previewRental(dayDate);
 
-      }
+  });
 
-      calGrid.appendChild(dayEl);
+
+  /* availability status */
+
+  if (dayDate < today) {
+
+    dayEl.classList.add("cal-unavailable");
+
+  } else {
+
+    const status = checkDayLocalAvailability(dayDate);
+
+    if (status === "available") {
+      dayEl.classList.add("cal-available");
+    }
+    else if (status === "limited") {
+      dayEl.classList.add("cal-limited");
+    }
+    else {
+      dayEl.classList.add("cal-unavailable");
     }
 
-    renderBookingBars(year, month);
+    /* selectable days */
+
+    if (status !== "unavailable") {
+      dayEl.addEventListener("click", () => {
+        clearPreview();
+        selectDate(dayDate);
+      });
+    }
 
   }
+
+  calGrid.appendChild(dayEl);
+
+}
+
+renderBookingBars(year, month);
+
+}
 
   /* ======================================================
      Select date from calendar
@@ -1800,7 +1822,7 @@ function previewRental(startDate) {
   const durationDays = Number(durationInput.value || 1);
 
   const previewEnd = new Date(startDate);
-  previewEnd.setDate(previewEnd.getDate() + durationDays);
+  previewEnd.setDate(previewEnd.getDate() + durationDays - 1);
 
   const cells = Array.from(calGrid.children);
 
@@ -1809,6 +1831,7 @@ function previewRental(startDate) {
     if (!cell.textContent) return;
 
     const day = Number(cell.textContent);
+
     const date = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
