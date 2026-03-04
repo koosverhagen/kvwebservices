@@ -1575,11 +1575,17 @@ updateCheckoutSummary();
    Calendar Preview Helpers
 ====================================================== */
 
+const vehiclePreview = document.getElementById("vehicle-preview");
+
 function clearPreview() {
 
   document
     .querySelectorAll(".cal-preview")
     .forEach(el => el.classList.remove("cal-preview"));
+
+  if (vehiclePreview) {
+    vehiclePreview.classList.add("hidden");
+  }
 
 }
 
@@ -1597,7 +1603,11 @@ function previewRental(startDate) {
     const day = Number(cell.textContent);
     if (!day) return;
 
-    const cellDate = new Date(startDate.getFullYear(), startDate.getMonth(), day);
+    const cellDate = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      day
+    );
 
     if (cellDate >= startDate && cellDate <= end) {
       cell.classList.add("cal-preview");
@@ -1607,20 +1617,28 @@ function previewRental(startDate) {
 
 }
 
-function showVehiclePreview(dateObj) {
+function movePreview(e) {
 
-  const container = document.getElementById("vehicle-preview");
-  if (!container) return;
+  if (!vehiclePreview) return;
+
+  vehiclePreview.style.left = e.pageX + 16 + "px";
+  vehiclePreview.style.top = e.pageY + 16 + "px";
+
+}
+
+function showVehiclePreview(dateObj, event) {
+
+  if (!vehiclePreview) return;
 
   const bookings = getBookings();
 
-  const duration = Number(document.getElementById("duration-days")?.value || 1);
-
   const start = new Date(dateObj);
-  const end = new Date(start);
-  end.setDate(end.getDate() + duration - 1);
+  start.setHours(0,0,0,0);
 
-  let html = "<strong>Vehicle availability</strong>";
+  const end = new Date(start);
+  end.setHours(23,59,59,999);
+
+  let html = `<strong>${start.toDateString()}</strong>`;
 
   vehicles.forEach(vehicle => {
 
@@ -1648,53 +1666,16 @@ function showVehiclePreview(dateObj) {
 
   });
 
-  container.innerHTML = html;
-  container.classList.remove("hidden");
+  vehiclePreview.innerHTML = html;
+  vehiclePreview.classList.remove("hidden");
 
-}
-/* ======================================================
-   Calendar Preview
-====================================================== */
-
-function clearPreview() {
-
-  document
-    .querySelectorAll(".cal-preview")
-    .forEach(el => el.classList.remove("cal-preview"));
+  if (event) movePreview(event);
 
 }
 
-function previewRental(startDate) {
-
-  const durationInput = document.getElementById("duration-days");
-  const durationDays = Number(durationInput?.value || 1);
-
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + durationDays - 1);
-
-  const cells = document.querySelectorAll("#cal-grid .cal-day");
-
-  cells.forEach(cell => {
-
-    const day = Number(cell.textContent);
-    if (!day) return;
-
-    const cellDate = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth(),
-      day
-    );
-
-    if (cellDate >= startDate && cellDate <= endDate) {
-      cell.classList.add("cal-preview");
-    }
-
-  });
-
-}
 /* ======================================================
    Phase 4 — Calendar Module (Render Only)
-   ====================================================== */
+====================================================== */
 
 (function () {
 
@@ -1709,7 +1690,7 @@ function previewRental(startDate) {
 
   /* ======================================================
      Check availability for a specific calendar day
-     ====================================================== */
+  ====================================================== */
 
   function checkDayLocalAvailability(dateObj) {
 
@@ -1722,7 +1703,6 @@ function previewRental(startDate) {
         b => b.vehicleId === vehicle.id && b.status !== "cancelled"
       );
 
-      // Entire calendar day window
       const pickupAt = new Date(dateObj);
       pickupAt.setHours(0,0,0,0);
 
@@ -1749,92 +1729,39 @@ function previewRental(startDate) {
     return "available";
   }
 
+  /* ======================================================
+     Check if rental can start
+  ====================================================== */
+
   function canStartRental(startDate) {
 
-  const durationInput = document.getElementById("duration-days");
-  if (!durationInput) return true;
+    const durationInput = document.getElementById("duration-days");
+    const durationDays = Number(durationInput?.value || 1);
 
-  const durationDays = Number(durationInput.value || 1);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + durationDays - 1);
 
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + durationDays - 1);
+    const bookings = getBookings();
 
-  const bookings = getBookings();
+    return !bookings.some(booking => {
 
-  return !bookings.some(booking => {
+      const existingStart = new Date(booking.pickupAt);
+      const existingEnd = new Date(booking.dropoffAt);
 
-    const existingStart = new Date(booking.pickupAt);
-    const existingEnd = new Date(booking.dropoffAt);
-
-    return overlaps(startDate, endDate, existingStart, existingEnd);
-
-  });
-
-}
-
-function getVehicleAvailability(dateObj) {
-
-  const bookings = getBookings();
-
-  const durationInput = document.getElementById("duration-days");
-  const durationDays = Number(durationInput?.value || 1);
-
-  const start = new Date(dateObj);
-  const end = new Date(start);
-  end.setDate(end.getDate() + durationDays - 1);
-
-  return vehicles.map(vehicle => {
-
-    const vehicleBookings = bookings.filter(
-      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-    );
-
-    const booked = vehicleBookings.some(b => {
-
-      const existingStart = new Date(b.pickupAt);
-      const existingEnd = new Date(b.dropoffAt);
-
-      return overlaps(start, end, existingStart, existingEnd);
+      return overlaps(startDate, endDate, existingStart, existingEnd);
 
     });
 
-    return {
-      name: vehicle.name,
-      available: !booked
-    };
+  }
 
-  });
+  /* ======================================================
+     Render Calendar
+  ====================================================== */
+/* ======================================================
+   Render Booking Bars (multi-day visual)
+====================================================== */
 
-}function showVehiclePreview(dateObj) {
-
-  const container = document.getElementById("vehicle-preview");
-  if (!container) return;
-
-  const vehiclesStatus = getVehicleAvailability(dateObj);
-
-  container.innerHTML = "<strong>Available vehicles</strong>";
-
-  vehiclesStatus.forEach(v => {
-
-    const row = document.createElement("div");
-    row.className = "vehicle-preview-item";
-
-    row.innerHTML = `
-      <span>${v.name}</span>
-      <span class="${v.available ? "vehicle-preview-available" : "vehicle-preview-booked"}">
-        ${v.available ? "✓ Available" : "✗ Booked"}
-      </span>
-    `;
-
-    container.appendChild(row);
-
-  });
-
-  container.classList.remove("hidden");
-
-}
-
-  function renderBookingBars(year, month) {
+function renderBookingBars(year, month) {
 
   const bookings = getBookings();
 
@@ -1847,12 +1774,16 @@ function getVehicleAvailability(dateObj) {
 
     while (current <= end) {
 
-      if (current.getFullYear() === year && current.getMonth() === month) {
+      if (
+        current.getFullYear() === year &&
+        current.getMonth() === month
+      ) {
 
         const day = current.getDate();
 
-        const cell = Array.from(calGrid.children)
-          .find(c => Number(c.textContent) === day);
+        const cell = Array.from(
+          document.querySelectorAll("#cal-grid .cal-day")
+        ).find(c => Number(c.textContent) === day);
 
         if (cell) {
 
@@ -1879,264 +1810,112 @@ function getVehicleAvailability(dateObj) {
   });
 
 }
+  function renderCalendar() {
 
-  /* ======================================================
-   Render Calendar
-   ====================================================== */
-/* ======================================================
-   Check if rental can start on this date
-====================================================== */
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
 
-function canStartRental(startDate) {
+    const monthNames = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ];
 
-  const durationInput = document.getElementById("duration-days");
-  const durationDays = Number(durationInput?.value || 1);
+    calTitle.textContent = `${monthNames[month]} ${year}`;
 
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + durationDays - 1);
+    calGrid.innerHTML = "";
 
-  const bookings = JSON.parse(
-    localStorage.getItem("equinetransportuk_bookings") || "[]"
-  );
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
 
-  for (const booking of bookings) {
+    let startOffset = firstDay.getDay();
+    startOffset = startOffset === 0 ? 6 : startOffset - 1;
 
-    const bookingStart = new Date(booking.pickupAt);
-    const bookingEnd = new Date(booking.dropoffAt);
-
-    bookingStart.setHours(0,0,0,0);
-    bookingEnd.setHours(0,0,0,0);
-
-    if (startDate <= bookingEnd && endDate >= bookingStart) {
-      return false;
+    for (let i = 0; i < startOffset; i++) {
+      calGrid.appendChild(document.createElement("div"));
     }
 
-  }
+    const today = new Date();
+    today.setHours(0,0,0,0);
 
-  return true;
+    for (let day = 1; day <= lastDay.getDate(); day++) {
 
-}
-/* ======================================================
-   Calendar Tooltip
-====================================================== */
+      const dayDate = new Date(year, month, day);
+      dayDate.setHours(0,0,0,0);
 
-const tooltip = document.getElementById("calendar-tooltip");
+      const dayEl = document.createElement("div");
+      dayEl.className = "cal-day";
+      dayEl.textContent = day;
 
-function showTooltip(el, text) {
+      if (dayDate < today) {
 
-  if (!tooltip) return;
-
-  tooltip.textContent = text;
-
-  const rect = el.getBoundingClientRect();
-
-  tooltip.style.left = rect.left + rect.width / 2 + "px";
-  tooltip.style.top = rect.top + window.scrollY + "px";
-
-  tooltip.classList.add("show");
-
-}
-
-function hideTooltip() {
-
-  if (!tooltip) return;
-
-  tooltip.classList.remove("show");
-
-}
-/* ======================================================
-   Vehicle preview popup (calendar hover)
-====================================================== */
-
-const vehiclePreview = document.getElementById("vehicle-preview");
-
-function showVehiclePreview(date) {
-
-  if (!vehiclePreview) return;
-
-  const bookings = getBookings();
-
-  const dateStart = new Date(date);
-  dateStart.setHours(0,0,0,0);
-
-  const dateEnd = new Date(dateStart);
-  dateEnd.setDate(dateEnd.getDate() + 1);
-
-  const booked = bookings.filter(b => {
-    const start = new Date(b.pickupAt);
-    const end = new Date(b.dropoffAt);
-    return start < dateEnd && end > dateStart;
-  });
-
-  let html = `<strong>${dateStart.toDateString()}</strong><br>`;
-
-  if (!booked.length) {
-    html += `<span class="muted">All vehicles available</span>`;
-  } else {
-
-    booked.forEach(b => {
-
-      const vehicle = vehicles.find(v => v.id === b.vehicleId);
-
-      html += `
-        <div class="preview-item">
-          ${vehicle ? vehicle.name : "Vehicle"}<br>
-          <span class="muted tiny">
-            ${new Date(b.pickupAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
-            →
-            ${new Date(b.dropoffAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
-          </span>
-        </div>
-      `;
-
-    });
-
-  }
-
-  vehiclePreview.innerHTML = html;
-  vehiclePreview.classList.remove("hidden");
-}
-
-function clearPreview() {
-
-  if (!vehiclePreview) return;
-
-  vehiclePreview.classList.add("hidden");
-}
-function renderCalendar() {
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  const monthNames = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-
-  calTitle.textContent = `${monthNames[month]} ${year}`;
-
-  calGrid.innerHTML = "";
-
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
-  let startOffset = firstDay.getDay();
-  startOffset = startOffset === 0 ? 6 : startOffset - 1;
-
-  for (let i = 0; i < startOffset; i++) {
-    const empty = document.createElement("div");
-    calGrid.appendChild(empty);
-  }
-
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  for (let day = 1; day <= lastDay.getDate(); day++) {
-
-    const dayDate = new Date(year, month, day);
-    dayDate.setHours(0,0,0,0);
-
-    const dayEl = document.createElement("div");
-    dayEl.className = "cal-day";
-    dayEl.textContent = day;
-
-    if (dayDate < today) {
-
-      dayEl.classList.add("cal-unavailable");
-
-    } else {
-
-      const status = checkDayLocalAvailability(dayDate);
-      const validStart = canStartRental(dayDate);
-
-      if (status === "available") {
-        dayEl.classList.add("cal-available");
-      }
-      else if (status === "limited") {
-        dayEl.classList.add("cal-limited");
-      }
-      else {
         dayEl.classList.add("cal-unavailable");
-      }
 
-      if (!validStart) {
-  dayEl.classList.remove("cal-available","cal-limited");
-  dayEl.classList.add("cal-unavailable");
-}
+      } else {
 
-      /* only attach interactions to valid selectable days */
+        const status = checkDayLocalAvailability(dayDate);
+        const validStart = canStartRental(dayDate);
 
-      if (status !== "unavailable" && validStart) {
+        if (status === "available") {
+          dayEl.classList.add("cal-available");
+        }
+        else if (status === "limited") {
+          dayEl.classList.add("cal-limited");
+        }
+        else {
+          dayEl.classList.add("cal-unavailable");
+        }
 
-        /* preview (desktop hover) */
+        if (!validStart) {
+          dayEl.classList.remove("cal-available","cal-limited");
+          dayEl.classList.add("cal-unavailable");
+        }
 
-        dayEl.addEventListener("mouseover", () => {
+        if (status !== "unavailable" && validStart) {
 
-  if (!canStartRental(dayDate)) {
+          dayEl.addEventListener("mouseenter", (e) => {
 
-    showTooltip(dayEl, "Rental cannot start here");
-    return;
+            clearPreview();
+            previewRental(dayDate);
+            showVehiclePreview(dayDate, e);
 
-  }
+          });
 
-  hideTooltip();
+          dayEl.addEventListener("mousemove", movePreview);
 
-  clearPreview();
-  previewRental(dayDate);
-  showVehiclePreview(dayDate);
+          dayEl.addEventListener("mouseleave", clearPreview);
 
-});
+          dayEl.addEventListener("touchend", (e) => {
 
-dayEl.addEventListener("mouseout", () => {
+            e.stopPropagation();
 
-  hideTooltip();
-  clearPreview();
+            clearPreview();
+            previewRental(dayDate);
+            showVehiclePreview(dayDate);
 
-});
+          });
 
-dayEl.addEventListener("mouseout", clearPreview);
+          dayEl.addEventListener("click", () => {
 
-        /* preview (mobile touch) */
+            clearPreview();
+            selectDate(dayDate);
 
-        dayEl.addEventListener("touchend", (e) => {
-          e.stopPropagation();
-          clearPreview();
-          previewRental(dayDate);
-          showVehiclePreview(dayDate);
-        });
+          });
 
-        /* select date */
-
-        dayEl.addEventListener("click", () => {
-          clearPreview();
-          selectDate(dayDate);
-          showVehiclePreview(dayDate);
-        });
+        }
 
       }
+
+      calGrid.appendChild(dayEl);
 
     }
 
-    calGrid.appendChild(dayEl);
+    renderBookingBars(year, month);
 
   }
 
-  renderBookingBars(year, month);
-
-}
-/* ======================================================
-   Initialize Calendar
-====================================================== */
-
-document.addEventListener("DOMContentLoaded", () => {
-
-  renderCalendar();
-
-});
-
   /* ======================================================
-     Select date from calendar
-     ====================================================== */
+     Select date
+  ====================================================== */
 
   function selectDate(dateObj) {
 
@@ -2146,11 +1925,7 @@ document.addEventListener("DOMContentLoaded", () => {
     calGrid.querySelectorAll(".cal-selected")
       .forEach(el => el.classList.remove("cal-selected"));
 
-    const cells = Array.from(calGrid.children);
-
-    cells.forEach(cell => {
-
-      if (!cell.textContent) return;
+    Array.from(calGrid.children).forEach(cell => {
 
       if (Number(cell.textContent) === dateObj.getDate()) {
         cell.classList.add("cal-selected");
@@ -2163,51 +1938,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const day = String(dateObj.getDate()).padStart(2, "0");
 
     pickupInput.value = `${year}-${month}-${day}`;
+
   }
-
-function previewRental(startDate) {
-
-  const durationInput = document.getElementById("duration-days");
-  if (!durationInput) return;
-
-  const durationDays = Number(durationInput.value || 1);
-
-  const previewEnd = new Date(startDate);
-  previewEnd.setDate(previewEnd.getDate() + durationDays - 1);
-
-  const cells = Array.from(calGrid.children);
-
-  cells.forEach(cell => {
-
-    if (!cell.textContent) return;
-
-    const day = Number(cell.textContent);
-
-    const date = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      day
-    );
-
-    if (date >= startDate && date <= previewEnd) {
-      cell.classList.add("cal-preview");
-    }
-
-  });
-
-}
-
-function clearPreview() {
-
-  calGrid.querySelectorAll(".cal-preview")
-    .forEach(el => el.classList.remove("cal-preview"));
-
-}
-
 
   /* ======================================================
      Month Navigation
-     ====================================================== */
+  ====================================================== */
 
   function changeMonth(direction) {
 
@@ -2228,24 +1964,15 @@ function clearPreview() {
 
   /* ======================================================
      Initial render
-     ====================================================== */
+  ====================================================== */
 
   renderCalendar();
-
-  /* ======================================================
-     Re-render if duration changes
-     (UI sync only)
-     ====================================================== */
 
   const durationInput = document.getElementById("duration-days");
 
   if (durationInput) {
-    durationInput.addEventListener("change", () => {
-      renderCalendar();
-    });
+    durationInput.addEventListener("change", renderCalendar);
   }
-
-  
 
 })();
 
