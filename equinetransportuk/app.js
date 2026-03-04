@@ -1632,13 +1632,16 @@ function showVehiclePreview(dateObj, event) {
 
   const bookings = getBookings();
 
+  const duration = Number(document.getElementById("duration-days")?.value || 1);
+
   const start = new Date(dateObj);
   start.setHours(0,0,0,0);
 
   const end = new Date(start);
-  end.setHours(23,59,59,999);
+  end.setDate(end.getDate() + duration - 1);
 
-  let html = `<strong>${start.toDateString()}</strong>`;
+  let available35 = 0;
+  let available75 = 0;
 
   vehicles.forEach(vehicle => {
 
@@ -1655,16 +1658,56 @@ function showVehiclePreview(dateObj, event) {
 
     });
 
+    if (!booked) {
+
+      if (vehicle.name.includes("7.5")) {
+        available75++;
+      } else {
+        available35++;
+      }
+
+    }
+
+  });
+
+  const totalAvailable = available35 + available75;
+
+  let headerStatus = "Available";
+  let headerClass = "preview-status-good";
+
+  if (totalAvailable === 0) {
+    headerStatus = "Fully booked";
+    headerClass = "preview-status-none";
+  }
+  else if (totalAvailable <= 2) {
+    headerStatus = "Limited availability";
+    headerClass = "preview-status-low";
+  }
+
+  let html = `
+    <div class="preview-header">
+      <strong>${start.toDateString()}</strong>
+      <div class="preview-status ${headerClass}">
+        ${headerStatus}
+      </div>
+    </div>
+  `;
+
+  if (totalAvailable > 0) {
+
     html += `
       <div class="vehicle-preview-item">
-        <span>${vehicle.name}</span>
-        <span class="${booked ? "vehicle-preview-booked" : "vehicle-preview-available"}">
-          ${booked ? "✗ booked" : "✓ available"}
-        </span>
+        <span>3.5T Horse Lorries</span>
+        <span>${available35} available</span>
+      </div>
+
+      <div class="vehicle-preview-item">
+        <span>7.5T Horse Lorries</span>
+        <span>${available75} available</span>
       </div>
     `;
 
-  });
+  }
 
   vehiclePreview.innerHTML = html;
   vehiclePreview.classList.remove("hidden");
@@ -1854,6 +1897,10 @@ function renderBookingBars(year, month) {
 
         const status = checkDayLocalAvailability(dayDate);
         const validStart = canStartRental(dayDate);
+
+        if (dayDate.getTime() === today.getTime()) {
+  dayEl.classList.add("cal-today");
+}
 
         if (status === "available") {
           dayEl.classList.add("cal-available");
