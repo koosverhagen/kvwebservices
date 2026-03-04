@@ -1883,6 +1883,67 @@ function getVehicleAvailability(dateObj) {
   /* ======================================================
    Render Calendar
    ====================================================== */
+/* ======================================================
+   Check if rental can start on this date
+====================================================== */
+
+function canStartRental(startDate) {
+
+  const durationInput = document.getElementById("duration-days");
+  const durationDays = Number(durationInput?.value || 1);
+
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + durationDays - 1);
+
+  const bookings = JSON.parse(
+    localStorage.getItem("equinetransportuk_bookings") || "[]"
+  );
+
+  for (const booking of bookings) {
+
+    const bookingStart = new Date(booking.pickupAt);
+    const bookingEnd = new Date(booking.dropoffAt);
+
+    bookingStart.setHours(0,0,0,0);
+    bookingEnd.setHours(0,0,0,0);
+
+    if (startDate <= bookingEnd && endDate >= bookingStart) {
+      return false;
+    }
+
+  }
+
+  return true;
+
+}
+/* ======================================================
+   Calendar Tooltip
+====================================================== */
+
+const tooltip = document.getElementById("calendar-tooltip");
+
+function showTooltip(el, text) {
+
+  if (!tooltip) return;
+
+  tooltip.textContent = text;
+
+  const rect = el.getBoundingClientRect();
+
+  tooltip.style.left = rect.left + rect.width / 2 + "px";
+  tooltip.style.top = rect.top + window.scrollY + "px";
+
+  tooltip.classList.add("show");
+
+}
+
+function hideTooltip() {
+
+  if (!tooltip) return;
+
+  tooltip.classList.remove("show");
+
+}
 
 function renderCalendar() {
 
@@ -1941,8 +2002,9 @@ function renderCalendar() {
       }
 
       if (!validStart) {
-        dayEl.classList.add("cal-unavailable");
-      }
+  dayEl.classList.remove("cal-available","cal-limited");
+  dayEl.classList.add("cal-unavailable");
+}
 
       /* only attach interactions to valid selectable days */
 
@@ -1952,11 +2014,25 @@ function renderCalendar() {
 
         dayEl.addEventListener("mouseover", () => {
 
-  if (dayEl.classList.contains("cal-unavailable")) return;
+  if (!canStartRental(dayDate)) {
+
+    showTooltip(dayEl, "Rental cannot start here");
+    return;
+
+  }
+
+  hideTooltip();
 
   clearPreview();
   previewRental(dayDate);
   showVehiclePreview(dayDate);
+
+});
+
+dayEl.addEventListener("mouseout", () => {
+
+  hideTooltip();
+  clearPreview();
 
 });
 
