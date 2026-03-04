@@ -1634,11 +1634,16 @@ function showVehiclePreview(dateObj, event) {
 
   const duration = Number(document.getElementById("duration-days")?.value || 1);
 
-  const start = new Date(dateObj);
-  start.setHours(0,0,0,0);
+ const pickupTime = document.getElementById("pickup-time")?.value || "07:00";
 
-  const end = new Date(start);
-  end.setDate(end.getDate() + duration - 1);
+const [hour, minute] = pickupTime.split(":");
+
+const start = new Date(dateObj);
+start.setHours(hour, minute, 0, 0);
+
+const end = new Date(start);
+end.setDate(end.getDate() + duration);
+end.setHours(19, 0, 0, 0);
 
   let available35 = 0;
   let available75 = 0;
