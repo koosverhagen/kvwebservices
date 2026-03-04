@@ -1339,6 +1339,13 @@ input[type="date"] {
   cursor: not-allowed;
 }
 
+/* hover preview */
+
+.cal-preview {
+  background: rgba(31,111,235,0.12);
+  border-color: var(--accent);
+}
+
 /* Legend */
 
 .cal-legend {

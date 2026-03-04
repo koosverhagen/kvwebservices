@@ -1716,6 +1716,18 @@ updateCheckoutSummary();
       dayEl.className = "cal-day";
       dayEl.textContent = day;
 
+      dayEl.addEventListener("mouseenter", () => {
+
+  clearPreview();
+
+  if (!dayEl.classList.contains("cal-unavailable")) {
+    previewRental(dayDate);
+  }
+
+});
+
+dayEl.addEventListener("mouseleave", clearPreview);
+
       if (dayDate < today) {
 
         dayEl.classList.add("cal-unavailable");
@@ -1779,6 +1791,45 @@ updateCheckoutSummary();
 
     pickupInput.value = `${year}-${month}-${day}`;
   }
+
+function previewRental(startDate) {
+
+  const durationInput = document.getElementById("duration-days");
+  if (!durationInput) return;
+
+  const durationDays = Number(durationInput.value || 1);
+
+  const previewEnd = new Date(startDate);
+  previewEnd.setDate(previewEnd.getDate() + durationDays);
+
+  const cells = Array.from(calGrid.children);
+
+  cells.forEach(cell => {
+
+    if (!cell.textContent) return;
+
+    const day = Number(cell.textContent);
+    const date = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      day
+    );
+
+    if (date >= startDate && date <= previewEnd) {
+      cell.classList.add("cal-preview");
+    }
+
+  });
+
+}
+
+function clearPreview() {
+
+  calGrid.querySelectorAll(".cal-preview")
+    .forEach(el => el.classList.remove("cal-preview"));
+
+}
+
 
   /* ======================================================
      Month Navigation
