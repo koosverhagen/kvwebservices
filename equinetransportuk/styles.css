@@ -1342,8 +1342,8 @@ input[type="date"] {
 /* hover preview */
 
 .cal-preview {
-  background: rgba(31,111,235,0.12);
-  border-color: var(--accent);
+  background: rgba(31,111,235,0.08);
+  border-color: #7aa7f7;
 }
 
 /* Legend */
@@ -1367,3 +1367,30 @@ input[type="date"] {
 .cal-dot-available { background: #22c55e; }
 .cal-dot-limited { background: #f59e0b; }
 .cal-dot-unavailable { background: #ef4444; }
+
+.vehicle-preview {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fafbfc;
+  font-size: 14px;
+}
+
+.vehicle-preview.hidden {
+  display: none;
+}
+
+.vehicle-preview-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.vehicle-preview-available {
+  color: #22c55e;
+}
+
+.vehicle-preview-booked {
+  color: #ef4444;
+}

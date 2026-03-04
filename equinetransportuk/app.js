@@ -1629,6 +1629,91 @@ updateCheckoutSummary();
     return "available";
   }
 
+  function canStartRental(startDate) {
+
+  const durationInput = document.getElementById("duration-days");
+  if (!durationInput) return true;
+
+  const durationDays = Number(durationInput.value || 1);
+
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + durationDays - 1);
+
+  const bookings = getBookings();
+
+  return !bookings.some(booking => {
+
+    const existingStart = new Date(booking.pickupAt);
+    const existingEnd = new Date(booking.dropoffAt);
+
+    return overlaps(startDate, endDate, existingStart, existingEnd);
+
+  });
+
+}
+
+function getVehicleAvailability(dateObj) {
+
+  const bookings = getBookings();
+
+  const durationInput = document.getElementById("duration-days");
+  const durationDays = Number(durationInput?.value || 1);
+
+  const start = new Date(dateObj);
+  const end = new Date(start);
+  end.setDate(end.getDate() + durationDays - 1);
+
+  return vehicles.map(vehicle => {
+
+    const vehicleBookings = bookings.filter(
+      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+    );
+
+    const booked = vehicleBookings.some(b => {
+
+      const existingStart = new Date(b.pickupAt);
+      const existingEnd = new Date(b.dropoffAt);
+
+      return overlaps(start, end, existingStart, existingEnd);
+
+    });
+
+    return {
+      name: vehicle.name,
+      available: !booked
+    };
+
+  });
+
+}function showVehiclePreview(dateObj) {
+
+  const container = document.getElementById("vehicle-preview");
+  if (!container) return;
+
+  const vehiclesStatus = getVehicleAvailability(dateObj);
+
+  container.innerHTML = "<strong>Available vehicles</strong>";
+
+  vehiclesStatus.forEach(v => {
+
+    const row = document.createElement("div");
+    row.className = "vehicle-preview-item";
+
+    row.innerHTML = `
+      <span>${v.name}</span>
+      <span class="${v.available ? "vehicle-preview-available" : "vehicle-preview-booked"}">
+        ${v.available ? "✓ Available" : "✗ Booked"}
+      </span>
+    `;
+
+    container.appendChild(row);
+
+  });
+
+  container.classList.remove("hidden");
+
+}
+
   function renderBookingBars(year, month) {
 
   const bookings = getBookings();
@@ -1716,36 +1801,6 @@ updateCheckoutSummary();
   dayEl.className = "cal-day";
   dayEl.textContent = day;
 
-  /* preview (desktop hover) */
-
-  dayEl.addEventListener("mouseenter", () => {
-
-    if (dayEl.classList.contains("cal-unavailable")) return;
-
-    clearPreview();
-    previewRental(dayDate);
-
-  });
-
-  dayEl.addEventListener("mouseleave", clearPreview);
-
-
-  /* preview (mobile touch) */
-
-  dayEl.addEventListener("touchstart", (e) => {
-
-    e.stopPropagation();
-
-    if (dayEl.classList.contains("cal-unavailable")) return;
-
-    clearPreview();
-    previewRental(dayDate);
-
-  });
-
-
-  /* availability status */
-
   if (dayDate < today) {
 
     dayEl.classList.add("cal-unavailable");
@@ -1753,6 +1808,7 @@ updateCheckoutSummary();
   } else {
 
     const status = checkDayLocalAvailability(dayDate);
+    const validStart = canStartRental(dayDate);
 
     if (status === "available") {
       dayEl.classList.add("cal-available");
@@ -1764,13 +1820,52 @@ updateCheckoutSummary();
       dayEl.classList.add("cal-unavailable");
     }
 
+    if (!validStart) {
+      dayEl.classList.add("cal-unavailable");
+    }
+
+    /* preview (desktop hover) */
+
+    dayEl.addEventListener("mouseenter", () => {
+
+      if (dayEl.classList.contains("cal-unavailable")) return;
+
+      clearPreview();
+      previewRental(dayDate);
+      showVehiclePreview(dayDate);
+
+    });
+
+    dayEl.addEventListener("mouseleave", clearPreview);
+
+
+    /* preview (mobile touch) */
+
+    dayEl.addEventListener("touchstart", (e) => {
+
+      e.stopPropagation();
+
+      if (dayEl.classList.contains("cal-unavailable")) return;
+
+      clearPreview();
+      previewRental(dayDate);
+      showVehiclePreview(dayDate);
+
+    });
+
+
     /* selectable days */
 
-    if (status !== "unavailable") {
+    if (status !== "unavailable" && validStart) {
+
       dayEl.addEventListener("click", () => {
+
         clearPreview();
         selectDate(dayDate);
+        showVehiclePreview(dayDate);
+
       });
+
     }
 
   }
