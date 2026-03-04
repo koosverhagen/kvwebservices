@@ -1638,16 +1638,11 @@ updateCheckoutSummary();
     const start = new Date(booking.pickupAt);
     const end = new Date(booking.dropoffAt);
 
-    const startMonth = start.getMonth();
-    const endMonth = end.getMonth();
-
-    if (startMonth !== month && endMonth !== month) return;
-
     let current = new Date(start);
 
     while (current <= end) {
 
-      if (current.getMonth() === month) {
+      if (current.getFullYear() === year && current.getMonth() === month) {
 
         const day = current.getDate();
 
@@ -1655,12 +1650,25 @@ updateCheckoutSummary();
           .find(c => Number(c.textContent) === day);
 
         if (cell) {
+
           cell.classList.add("cal-booked");
+
+          if (day === start.getDate()) {
+            cell.classList.add("cal-booking-start");
+          }
+          else if (day === end.getDate()) {
+            cell.classList.add("cal-booking-end");
+          }
+          else {
+            cell.classList.add("cal-booking-mid");
+          }
+
         }
 
       }
 
       current.setDate(current.getDate() + 1);
+
     }
 
   });

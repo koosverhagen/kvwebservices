@@ -1197,7 +1197,7 @@ input[type="date"] {
 }
 
 /* ======================================================
-   Phase 4 — Availability Calendar (ISOLATED)
+   Phase 4 — Availability Calendar
    ====================================================== */
 
 .cal-wrap {
@@ -1207,6 +1207,8 @@ input[type="date"] {
   border-radius: var(--radius);
   background: #fff;
 }
+
+/* Header */
 
 .cal-head {
   display: flex;
@@ -1236,6 +1238,8 @@ input[type="date"] {
   border-color: var(--accent);
 }
 
+/* Weekdays */
+
 .cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -1249,11 +1253,15 @@ input[type="date"] {
   padding: 6px 0;
 }
 
+/* Calendar grid */
+
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
 }
+
+/* Day cell */
 
 .cal-day {
   aspect-ratio: 1 / 1;
@@ -1273,16 +1281,57 @@ input[type="date"] {
   transform: translateY(-2px);
 }
 
+/* Selected date */
+
 .cal-day.cal-selected {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
 
+/* Availability states */
+
+.cal-day.cal-available {
+  border-color: #22c55e;
+}
+
+.cal-day.cal-limited {
+  border-color: #f59e0b;
+  background: rgba(245,158,11,0.08);
+}
+
 .cal-day.cal-unavailable {
+  border-color: #ef4444;
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* Booking spans */
+
+.cal-booked {
+  background: rgba(239,68,68,0.15);
+}
+
+.cal-booking-start {
+  border-left: 3px solid #ef4444;
+  border-radius: 10px 4px 4px 10px;
+}
+
+.cal-booking-mid {
+  background: rgba(239,68,68,0.22);
+  border-radius: 4px;
+}
+
+.cal-booking-end {
+  border-right: 3px solid #ef4444;
+  border-radius: 4px 10px 10px 4px;
+}
+
+.cal-booked:hover {
+  transform: none;
+  cursor: not-allowed;
+}
+/* Legend */
 
 .cal-legend {
   display: flex;
@@ -1303,20 +1352,3 @@ input[type="date"] {
 .cal-dot-available { background: #22c55e; }
 .cal-dot-limited { background: #f59e0b; }
 .cal-dot-unavailable { background: #ef4444; }
-
-.cal-day.cal-available {
-  border-color: #22c55e;
-}
-
-.cal-day.cal-limited {
-  border-color: #f59e0b;
-}
-
-.cal-day.cal-unavailable {
-  border-color: #ef4444;
-}
-
-.cal-booked {
-  background: rgba(239,68,68,0.18);
-  border-color: #ef4444;
-}
