@@ -1571,6 +1571,87 @@ renderBookings();
 renderAdminBookings();
 updateCheckoutSummary();
 
+/* ======================================================
+   Calendar Preview Helpers
+====================================================== */
+
+function clearPreview() {
+
+  document
+    .querySelectorAll(".cal-preview")
+    .forEach(el => el.classList.remove("cal-preview"));
+
+}
+
+function previewRental(startDate) {
+
+  const duration = Number(document.getElementById("duration-days")?.value || 1);
+
+  const end = new Date(startDate);
+  end.setDate(end.getDate() + duration - 1);
+
+  const cells = document.querySelectorAll("#cal-grid .cal-day");
+
+  cells.forEach(cell => {
+
+    const day = Number(cell.textContent);
+    if (!day) return;
+
+    const cellDate = new Date(startDate.getFullYear(), startDate.getMonth(), day);
+
+    if (cellDate >= startDate && cellDate <= end) {
+      cell.classList.add("cal-preview");
+    }
+
+  });
+
+}
+
+function showVehiclePreview(dateObj) {
+
+  const container = document.getElementById("vehicle-preview");
+  if (!container) return;
+
+  const bookings = getBookings();
+
+  const duration = Number(document.getElementById("duration-days")?.value || 1);
+
+  const start = new Date(dateObj);
+  const end = new Date(start);
+  end.setDate(end.getDate() + duration - 1);
+
+  let html = "<strong>Vehicle availability</strong>";
+
+  vehicles.forEach(vehicle => {
+
+    const vehicleBookings = bookings.filter(
+      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+    );
+
+    const booked = vehicleBookings.some(b => {
+
+      const s = new Date(b.pickupAt);
+      const e = new Date(b.dropoffAt);
+
+      return overlaps(start, end, s, e);
+
+    });
+
+    html += `
+      <div class="vehicle-preview-item">
+        <span>${vehicle.name}</span>
+        <span class="${booked ? "vehicle-preview-booked" : "vehicle-preview-available"}">
+          ${booked ? "✗ booked" : "✓ available"}
+        </span>
+      </div>
+    `;
+
+  });
+
+  container.innerHTML = html;
+  container.classList.remove("hidden");
+
+}
 
 /* ======================================================
    Phase 4 — Calendar Module (Render Only)
@@ -1866,6 +1947,16 @@ function renderCalendar() {
   renderBookingBars(year, month);
 
 }
+/* ======================================================
+   Initialize Calendar
+====================================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  renderCalendar();
+
+});
+
   /* ======================================================
      Select date from calendar
      ====================================================== */
@@ -1977,4 +2068,7 @@ function clearPreview() {
     });
   }
 
+  
+
 })();
+
