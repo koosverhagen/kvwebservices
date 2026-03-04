@@ -1944,7 +1944,65 @@ function hideTooltip() {
   tooltip.classList.remove("show");
 
 }
+/* ======================================================
+   Vehicle preview popup (calendar hover)
+====================================================== */
 
+const vehiclePreview = document.getElementById("vehicle-preview");
+
+function showVehiclePreview(date) {
+
+  if (!vehiclePreview) return;
+
+  const bookings = getBookings();
+
+  const dateStart = new Date(date);
+  dateStart.setHours(0,0,0,0);
+
+  const dateEnd = new Date(dateStart);
+  dateEnd.setDate(dateEnd.getDate() + 1);
+
+  const booked = bookings.filter(b => {
+    const start = new Date(b.pickupAt);
+    const end = new Date(b.dropoffAt);
+    return start < dateEnd && end > dateStart;
+  });
+
+  let html = `<strong>${dateStart.toDateString()}</strong><br>`;
+
+  if (!booked.length) {
+    html += `<span class="muted">All vehicles available</span>`;
+  } else {
+
+    booked.forEach(b => {
+
+      const vehicle = vehicles.find(v => v.id === b.vehicleId);
+
+      html += `
+        <div class="preview-item">
+          ${vehicle ? vehicle.name : "Vehicle"}<br>
+          <span class="muted tiny">
+            ${new Date(b.pickupAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
+            →
+            ${new Date(b.dropoffAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
+          </span>
+        </div>
+      `;
+
+    });
+
+  }
+
+  vehiclePreview.innerHTML = html;
+  vehiclePreview.classList.remove("hidden");
+}
+
+function clearPreview() {
+
+  if (!vehiclePreview) return;
+
+  vehiclePreview.classList.add("hidden");
+}
 function renderCalendar() {
 
   const year = currentDate.getFullYear();
