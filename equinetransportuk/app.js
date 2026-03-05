@@ -610,6 +610,13 @@ function renderAvailabilityResults(items) {
     .join("");
 
   availabilityResults.innerHTML = html;
+
+/* scroll only if vehicles available */
+
+availabilityResults.scrollIntoView({
+  behavior: "smooth",
+  block: "start"
+});
 }
 
 /* ======================================================
@@ -1626,105 +1633,90 @@ function movePreview(e){
 
 }
 
-function showVehiclePreview(dateObj, event) {
-
-  if (isMobile()) {
-
-  const panel = document.getElementById("mobile-preview");
-  if (!panel) return;
-
-  panel.innerHTML = html;
-  panel.classList.remove("hidden");
-
-  return;
-
-}
-
-  if (!vehiclePreview) return;
+function showVehiclePreview(date, event) {
 
   const bookings = getBookings();
 
-  const duration = Number(document.getElementById("duration-days")?.value || 1);
+  const dateStart = new Date(date);
+  dateStart.setHours(0,0,0,0);
 
- const pickupTime = document.getElementById("pickup-time")?.value || "07:00";
+  const dateEnd = new Date(dateStart);
+  dateEnd.setDate(dateEnd.getDate() + 1);
 
-const [hour, minute] = pickupTime.split(":");
+  const booked = bookings.filter(b => {
 
-const start = new Date(dateObj);
-start.setHours(hour, minute, 0, 0);
+    const start = new Date(b.pickupAt);
+    const end = new Date(b.dropoffAt);
 
-const end = new Date(start);
-end.setDate(end.getDate() + duration);
-end.setHours(19, 0, 0, 0);
-
-  let available35 = 0;
-  let available75 = 0;
-
-  vehicles.forEach(vehicle => {
-
-    const vehicleBookings = bookings.filter(
-      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-    );
-
-    const booked = vehicleBookings.some(b => {
-
-      const s = new Date(b.pickupAt);
-      const e = new Date(b.dropoffAt);
-
-      return overlaps(start, end, s, e);
-
-    });
-
-    if (!booked) {
-
-      if (vehicle.name.includes("7.5")) {
-        available75++;
-      } else {
-        available35++;
-      }
-
-    }
+    return start < dateEnd && end > dateStart;
 
   });
 
-  const totalAvailable = available35 + available75;
+  /* build preview html FIRST */
 
-  let headerStatus = "Available";
-  let headerClass = "preview-status-good";
+  let html = `<strong>${dateStart.toDateString()}</strong><br>`;
 
-  if (totalAvailable === 0) {
-    headerStatus = "Fully booked";
-    headerClass = "preview-status-none";
-  }
-  else if (totalAvailable <= 2) {
-    headerStatus = "Limited availability";
-    headerClass = "preview-status-low";
-  }
+/* availability status */
 
-  let html = `
-    <div class="preview-header">
-      <strong>${start.toDateString()}</strong>
-      <div class="preview-status ${headerClass}">
-        ${headerStatus}
-      </div>
-    </div>
-  `;
+if (!booked.length) {
 
-  if (totalAvailable > 0) {
+  html += `<div class="preview-status preview-status-good">Available</div>`;
+
+} else if (booked.length < vehicles.length) {
+
+  html += `<div class="preview-status preview-status-low">Limited availability</div>`;
+
+} else {
+
+  html += `<div class="preview-status preview-status-none">Not available</div>`;
+
+}
+
+/* booked vehicles list */
+
+if (!booked.length) {
+
+  html += `<span class="muted">All vehicles available</span>`;
+
+} else {
+
+  booked.forEach(b => {
+
+    const vehicle = vehicles.find(v => v.id === b.vehicleId);
 
     html += `
-      <div class="vehicle-preview-item">
-        <span>3.5T Horse Lorries</span>
-        <span>${available35} available</span>
-      </div>
-
-      <div class="vehicle-preview-item">
-        <span>7.5T Horse Lorries</span>
-        <span>${available75} available</span>
+      <div class="preview-item">
+        <strong>${vehicle ? vehicle.name : "Vehicle"}</strong><br>
+        <span class="muted tiny">
+          ${new Date(b.pickupAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
+          →
+          ${new Date(b.dropoffAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
+        </span>
       </div>
     `;
 
+  });
+
+}
+
+  /* MOBILE VERSION */
+
+  if (window.innerWidth < 768) {
+
+    const panel = document.getElementById("mobile-preview");
+    if (!panel) return;
+
+    panel.innerHTML = html;
+    panel.classList.remove("hidden");
+
+    return;
+
   }
+
+  /* DESKTOP VERSION */
+
+  const vehiclePreview = document.getElementById("vehicle-preview");
+  if (!vehiclePreview) return;
 
   vehiclePreview.innerHTML = html;
   vehiclePreview.classList.remove("hidden");
@@ -1943,9 +1935,13 @@ function renderBookingBars(year, month) {
       }
 
       if (!validStart) {
-        dayEl.classList.remove("cal-available","cal-limited");
-        dayEl.classList.add("cal-unavailable");
-      }
+
+  dayEl.classList.remove("cal-available","cal-limited");
+
+  dayEl.classList.add("cal-unavailable");
+  dayEl.classList.add("cal-no-start");
+
+}
 
       /* preview works on ALL days */
 
@@ -1975,16 +1971,16 @@ function renderBookingBars(year, month) {
 
       /* selection only if allowed */
 
-      if (status !== "unavailable" && validStart) {
+      if (validStart) {
 
-        dayEl.addEventListener("click", () => {
+  dayEl.addEventListener("click", () => {
 
-          clearPreview();
-          selectDate(dayDate);
+    clearPreview();
+    selectDate(dayDate);
 
-        });
+  });
 
-      }
+}
 
     }
 
@@ -2002,27 +1998,46 @@ function renderBookingBars(year, month) {
 
   function selectDate(dateObj) {
 
-    const pickupInput = document.getElementById("pickup-date");
-    if (!pickupInput) return;
+  const pickupInput = document.getElementById("pickup-date");
+  if (!pickupInput) return;
 
-    calGrid.querySelectorAll(".cal-selected")
-      .forEach(el => el.classList.remove("cal-selected"));
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
 
-    Array.from(calGrid.children).forEach(cell => {
+  const formatted = `${year}-${month}-${day}`;
 
-      if (Number(cell.textContent) === dateObj.getDate()) {
-        cell.classList.add("cal-selected");
-      }
+  /* fill pickup date */
 
-    });
+  pickupInput.value = formatted;
 
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-    const day = String(dateObj.getDate()).padStart(2, "0");
+  /* highlight selected day */
 
-    pickupInput.value = `${year}-${month}-${day}`;
+  const calGrid = document.getElementById("cal-grid");
 
+  calGrid.querySelectorAll(".cal-selected")
+    .forEach(el => el.classList.remove("cal-selected"));
+
+  Array.from(calGrid.children).forEach(cell => {
+
+    if (!cell.textContent) return;
+
+    if (Number(cell.textContent) === dateObj.getDate()) {
+      cell.classList.add("cal-selected");
+    }
+
+  });
+
+  /* auto run availability check */
+
+  const form = document.getElementById("availability-form");
+
+  if (form) {
+    form.requestSubmit();
   }
+
+
+}
 
   /* ======================================================
      Month Navigation

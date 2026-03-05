@@ -1639,3 +1639,8 @@ input[type="date"] {
   background: rgba(239,68,68,0.12);
 }
 
+.cal-day.cal-no-start {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
