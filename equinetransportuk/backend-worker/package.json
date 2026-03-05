@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "wrangler": "^4.8.0"
+  },
+  "dependencies": {
+    "stripe": "^20.4.0"
   }
 }
