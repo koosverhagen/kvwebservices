@@ -1628,6 +1628,18 @@ function movePreview(e){
 
 function showVehiclePreview(dateObj, event) {
 
+  if (isMobile()) {
+
+  const panel = document.getElementById("mobile-preview");
+  if (!panel) return;
+
+  panel.innerHTML = html;
+  panel.classList.remove("hidden");
+
+  return;
+
+}
+
   if (!vehiclePreview) return;
 
   const bookings = getBookings();
@@ -1719,6 +1731,10 @@ end.setHours(19, 0, 0, 0);
 
   if (event) movePreview(event);
 
+}
+
+function isMobile() {
+  return window.innerWidth < 768;
 }
 
 /* ======================================================
@@ -1941,7 +1957,9 @@ function renderBookingBars(year, month) {
 
       });
 
-      dayEl.addEventListener("mousemove", movePreview);
+      if (!isMobile()) {
+  dayEl.addEventListener("mousemove", movePreview);
+}
 
       dayEl.addEventListener("mouseleave", clearPreview);
 
