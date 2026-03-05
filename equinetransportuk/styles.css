@@ -1610,3 +1610,23 @@ input[type="date"] {
 .cal-day.cal-weekend.cal-unavailable{
   background: rgba(239,68,68,0.12);
 }
+
+/* ======================================================
+   Mobile availability preview panel
+====================================================== */
+
+.mobile-preview{
+  margin-bottom:16px;
+  padding:14px 16px;
+
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+
+  box-shadow:0 6px 16px rgba(0,0,0,0.06);
+  font-size:14px;
+}
+
+.mobile-preview.hidden{
+  display:none;
+}
