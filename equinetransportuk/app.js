@@ -7,6 +7,39 @@
 let activeSlideshow = null;
 
 /* ======================================================
+   Booking Step Controller
+====================================================== */
+
+let currentStep = 1;
+
+function goToStep(step) {
+
+  currentStep = step;
+
+  document.querySelectorAll(".booking-step").forEach(el=>{
+    el.classList.remove("active");
+  });
+
+  const stepEl = document.getElementById(`step-${step}`);
+  if(stepEl) stepEl.classList.add("active");
+
+  document.querySelectorAll(".booking-steps .step").forEach(el=>{
+    el.classList.remove("active");
+  });
+
+  const indicator = document.querySelector(`.booking-steps .step[data-step="${step}"]`);
+  if(indicator) indicator.classList.add("active");
+
+  setTimeout(()=>{
+  stepEl?.scrollIntoView({
+    behavior:"smooth",
+    block:"start"
+  });
+},100);
+
+}
+
+/* ======================================================
    Operating Hours
 ====================================================== */
 
@@ -617,7 +650,70 @@ availabilityResults.scrollIntoView({
   behavior: "smooth",
   block: "start"
 });
+
+goToStep(2);
+
 }
+
+availabilityResults.addEventListener("click", async (e)=>{
+
+  const btn = e.target.closest(".choose-lorry");
+  if(!btn) return;
+
+  const vehicleId = btn.dataset.vehicleId;
+
+  await selectAvailability(vehicleId);
+
+  goToStep(3);
+
+});
+
+
+
+const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
+
+bookingConfirmBtn?.addEventListener("click", async ()=>{
+
+  if(!selectedAvailability) return;
+
+
+  bookingConfirmBtn.disabled = true;
+  bookingConfirmBtn.textContent = "Redirecting to payment…";
+
+  const bookingData = {
+    vehicleId: selectedAvailability.vehicle.id,
+    vehicleName: selectedAvailability.vehicle.name,
+    pickupDate: selectedAvailability.pickupDate,
+    pickupTime: selectedAvailability.pickupTime,
+    durationDays: selectedAvailability.durationDays,
+
+    customerName: customerNameInput.value,
+    customerEmail: customerEmailInput.value,
+    customerMobile: customerMobileInput.value,
+    customerAddress: customerAddressInput.value,
+    customerDob: customerDobInput.value
+  };
+
+  try{
+
+    const res = await fetch(apiUrl("/api/bookings/create-checkout-session"),{
+  method:"POST",
+  headers:{ "Content-Type":"application/json" },
+  body: JSON.stringify(bookingData)
+});
+
+    const data = await res.json();
+
+    if(data.url){
+      window.location.href = data.url;
+    }
+
+  }catch(err){
+    console.error(err);
+    alert("Payment failed. Please try again.");
+  }
+
+});
 
 /* ======================================================
    Checkout summary (discount-safe)
@@ -1371,7 +1467,7 @@ if (availabilityForm) {
     try {
       const availableLorries = await getAvailableLorries(pickupDate, durationDays, pickupTime);
       renderAvailabilityResults(availableLorries);
-      availabilityResults?.scrollIntoView({ behavior: "smooth", block: "start" });
+      
     } catch (err) {
       console.warn("Availability search failed:", err);
       renderAvailabilityError("Couldn’t check availability right now. Please try again.");
@@ -1385,11 +1481,7 @@ if (availabilityForm) {
   });
 }
 
-availabilityResults?.addEventListener("click", (event) => {
-  const button = event.target.closest(".choose-lorry");
-  if (!button) return;
-  selectAvailability(button.dataset.vehicleId);
-});
+
 
 // Extras
 dartfordEnabledInput?.addEventListener("change", () => {

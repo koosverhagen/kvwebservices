@@ -1,4 +1,4 @@
-
+import Stripe from "stripe";
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8"
 };
@@ -180,8 +180,60 @@ function withCors(response, corsHeaders) {
    PLACEHOLDER ENDPOINTS
 ================================ */
 
+
 async function handleCreateCheckoutSession(request, env) {
-  return json({ message: "Checkout endpoint active" });
+
+  if (!booking.vehicleId || !booking.vehicleName) {
+  return json({ error: "Invalid booking data" }, 400);
+}
+
+  const booking = await request.json();
+
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    apiVersion: "2024-04-10"
+  });
+
+  const idempotencyKey = `${booking.vehicleId}-${booking.pickupDate}-${booking.customerEmail}`;
+
+  const confirmationFee = booking.vehicleId.startsWith("v35")
+    ? 7500
+    : 10000;
+
+  const session = await stripe.checkout.sessions.create({
+  payment_method_types: ["card"],
+  mode: "payment",
+
+  line_items: [
+    {
+      price_data: {
+        currency: "gbp",
+        product_data: {
+          name: `Horsebox booking — ${booking.vehicleName}`
+        },
+        unit_amount: confirmationFee
+      },
+      quantity: 1
+    }
+  ],
+
+  metadata: {
+    vehicleId: booking.vehicleId,
+    pickupDate: booking.pickupDate,
+    durationDays: booking.durationDays,
+    customerName: booking.customerName,
+    customerEmail: booking.customerEmail
+  },
+
+  success_url: "https://equinetransportuk.com/booking-success",
+  cancel_url: "https://equinetransportuk.com/#booking"
+
+}, {
+  idempotencyKey
+});
+
+  return json({
+    url: session.url
+  });
 }
 
 async function handleStripeWebhook(request, env) {

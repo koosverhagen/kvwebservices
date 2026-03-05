@@ -196,6 +196,10 @@ removed duplicate, script is loaded at end of body -->
     <div class="booking-step" id="step-3">
       <div class="card">
         <h3>Your details</h3>
+
+        <button class="btn ghost" onclick="goToStep(2)">
+Change lorry
+</button>
         
       <form id="booking-form" class="booking-form">
         <div class="form-grid two">
@@ -296,6 +300,9 @@ removed duplicate, script is loaded at end of body -->
     <div class="booking-step" id="step-4">
       <div class="card">
         <h3>Review & confirm</h3>
+        <button class="btn ghost" onclick="goToStep(3)">
+Edit details
+</button>
 
         <div id="checkout-summary" class="checkout-breakdown"></div>
 
