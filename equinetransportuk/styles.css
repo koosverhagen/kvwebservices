@@ -1206,6 +1206,10 @@ input[type="date"] {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
+  width:100%;
+  max-width:100%;
+  overflow:hidden;
+
 }
 
 /* Header */
@@ -1257,8 +1261,9 @@ input[type="date"] {
 
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  grid-template-columns:repeat(7, minmax(0,1fr));
+  gap: 10px;
+  width:100%;
 }
 
 /* Day cell */
@@ -1274,6 +1279,7 @@ input[type="date"] {
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
+  min-width:0;
 }
 
 .cal-day:hover {
