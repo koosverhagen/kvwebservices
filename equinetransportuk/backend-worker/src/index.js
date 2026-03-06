@@ -189,7 +189,7 @@ async function handleCreateCheckoutSession(request, env) {
   }
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-04-10"
+    apiVersion: "2024-06-20"
   });
 
   const confirmationFee = booking.vehicleId.startsWith("v35")
@@ -240,7 +240,7 @@ async function handleStripeWebhook(request, env) {
   }
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-04-10"
+    apiVersion: "2024-06-20"
   });
 
   let event;
