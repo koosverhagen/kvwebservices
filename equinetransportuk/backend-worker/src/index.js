@@ -25,9 +25,8 @@ export default {
       }
 
       if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
-        const response = await handleStripeWebhook(request, env);
-        return withCors(response, corsHeaders);
-      }
+  return await handleStripeWebhook(request, env);
+}
 
       if (request.method === "POST" && url.pathname === "/api/forms/submit") {
         const response = await handleFormSubmit(request, env);
@@ -236,6 +235,10 @@ async function handleStripeWebhook(request, env) {
   const payload = await request.text();
   const sig = request.headers.get("stripe-signature");
 
+  if (!sig) {
+    return json({ error: "Missing signature" }, 400);
+  }
+
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-04-10"
   });
@@ -252,6 +255,7 @@ async function handleStripeWebhook(request, env) {
 
   } catch (err) {
 
+    console.log("❌ Webhook verification failed:", err.message);
     return json({ error: "Webhook signature verification failed" }, 400);
 
   }
@@ -270,9 +274,7 @@ async function handleStripeWebhook(request, env) {
       status: "confirmed"
     };
 
-    console.log("Booking confirmed:", booking);
-
-    // Later we will store this in KV or database
+    console.log("✅ Booking confirmed:", booking);
 
   }
 
