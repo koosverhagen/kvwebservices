@@ -36,6 +36,11 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (request.method === "GET" && url.pathname === "/api/bookings/list") {
+  const response = await handleListBookings(env);
+  return withCors(response, corsHeaders);
+}
+
       return withCors(json({ error: "Not found" }, 404), corsHeaders);
 
     } catch (error) {
@@ -371,8 +376,33 @@ async function handleStripeWebhook(request, env) {
 
 }
 
+/* ===============================
+   LIST BOOKINGS API
+================================ */
 
+async function handleListBookings(env) {
 
+  const list = await env.BOOKINGS_KV.list({
+    prefix: "booking_"
+  });
+
+  const bookings = [];
+
+  for (const key of list.keys) {
+
+    const value = await env.BOOKINGS_KV.get(key.name);
+
+    if (value) {
+      bookings.push(JSON.parse(value));
+    }
+
+  }
+
+  return json({
+    bookings
+  });
+
+}
 
 /* ===============================
    HELPERS
