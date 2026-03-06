@@ -183,53 +183,48 @@ function withCors(response, corsHeaders) {
 
 async function handleCreateCheckoutSession(request, env) {
 
-  if (!booking.vehicleId || !booking.vehicleName) {
-  return json({ error: "Invalid booking data" }, 400);
-}
-
   const booking = await request.json();
+
+  if (!booking.vehicleId || !booking.vehicleName) {
+    return json({ error: "Invalid booking data" }, 400);
+  }
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-04-10"
   });
-
-  const idempotencyKey = `${booking.vehicleId}-${booking.pickupDate}-${booking.customerEmail}`;
 
   const confirmationFee = booking.vehicleId.startsWith("v35")
     ? 7500
     : 10000;
 
   const session = await stripe.checkout.sessions.create({
-  payment_method_types: ["card"],
-  mode: "payment",
+    payment_method_types: ["card"],
+    mode: "payment",
 
-  line_items: [
-    {
-      price_data: {
-        currency: "gbp",
-        product_data: {
-          name: `Horsebox booking — ${booking.vehicleName}`
+    line_items: [
+      {
+        price_data: {
+          currency: "gbp",
+          product_data: {
+            name: `Horsebox booking — ${booking.vehicleName}`
+          },
+          unit_amount: confirmationFee
         },
-        unit_amount: confirmationFee
-      },
-      quantity: 1
-    }
-  ],
+        quantity: 1
+      }
+    ],
 
-  metadata: {
-    vehicleId: booking.vehicleId,
-    pickupDate: booking.pickupDate,
-    durationDays: booking.durationDays,
-    customerName: booking.customerName,
-    customerEmail: booking.customerEmail
-  },
+    metadata: {
+      vehicleId: booking.vehicleId,
+      pickupDate: booking.pickupDate,
+      durationDays: booking.durationDays,
+      customerName: booking.customerName,
+      customerEmail: booking.customerEmail
+    },
 
-  success_url: "https://equinetransportuk.com/booking-success",
-  cancel_url: "https://equinetransportuk.com/#booking"
-
-}, {
-  idempotencyKey
-});
+    success_url: "https://equinetransportuk.com/booking-success",
+    cancel_url: "https://equinetransportuk.com/#booking"
+  });
 
   return json({
     url: session.url
