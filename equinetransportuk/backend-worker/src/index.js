@@ -236,10 +236,6 @@ async function handleStripeWebhook(request, env) {
   const payload = await request.text();
   const sig = request.headers.get("stripe-signature");
 
-  if (!sig) {
-    return json({ error: "Missing signature" }, 400);
-  }
-
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20"
   });
@@ -248,7 +244,7 @@ async function handleStripeWebhook(request, env) {
 
   try {
 
-    event = stripe.webhooks.constructEvent(
+    event = await stripe.webhooks.constructEventAsync(
       payload,
       sig,
       env.STRIPE_WEBHOOK_SECRET
@@ -257,7 +253,11 @@ async function handleStripeWebhook(request, env) {
   } catch (err) {
 
     console.log("❌ Webhook verification failed:", err.message);
-    return json({ error: "Webhook signature verification failed" }, 400);
+
+    return new Response(
+      JSON.stringify({ error: "Webhook signature verification failed" }),
+      { status: 400 }
+    );
 
   }
 
@@ -269,7 +269,6 @@ async function handleStripeWebhook(request, env) {
       vehicleId: session.metadata.vehicleId,
       pickupDate: session.metadata.pickupDate,
       durationDays: session.metadata.durationDays,
-      customerName: session.metadata.customerName,
       customerEmail: session.metadata.customerEmail,
       paymentId: session.id,
       status: "confirmed"
@@ -279,5 +278,9 @@ async function handleStripeWebhook(request, env) {
 
   }
 
-  return json({ received: true });
+  return new Response(
+    JSON.stringify({ received: true }),
+    { status: 200 }
+  );
+
 }
