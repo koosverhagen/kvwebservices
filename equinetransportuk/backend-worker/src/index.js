@@ -262,12 +262,12 @@ async function handleStripeWebhook(request, env) {
   }
 
   /* ===============================
-     Prevent duplicate webhook runs
+     Prevent duplicate processing
   ================================ */
 
   const eventId = event.id;
 
-  const alreadyProcessed = await env.BOOKING_DB.get(eventId);
+  const alreadyProcessed = await env.BOOKINGS_KV.get(eventId);
 
   if (alreadyProcessed) {
 
@@ -281,7 +281,7 @@ async function handleStripeWebhook(request, env) {
   }
 
   /* ===============================
-     Handle Stripe events
+     Handle Stripe event
   ================================ */
 
   if (event.type === "checkout.session.completed") {
@@ -303,7 +303,7 @@ async function handleStripeWebhook(request, env) {
 
     /* Store booking */
 
-    await env.BOOKING_DB.put(
+    await env.BOOKINGS_KV.put(
       `booking_${session.id}`,
       JSON.stringify(booking)
     );
@@ -312,7 +312,7 @@ async function handleStripeWebhook(request, env) {
 
   /* mark webhook processed */
 
-  await env.BOOKING_DB.put(eventId, "processed");
+  await env.BOOKINGS_KV.put(eventId, "processed");
 
   return new Response(
     JSON.stringify({ received: true }),
