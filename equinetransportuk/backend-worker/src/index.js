@@ -232,9 +232,49 @@ async function handleCreateCheckoutSession(request, env) {
 }
 
 async function handleStripeWebhook(request, env) {
-  return json({ message: "Webhook endpoint active" });
-}
 
-async function handleFormSubmit(request, env) {
-  return json({ message: "Form submission endpoint active" });
+  const payload = await request.text();
+  const sig = request.headers.get("stripe-signature");
+
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    apiVersion: "2024-04-10"
+  });
+
+  let event;
+
+  try {
+
+    event = stripe.webhooks.constructEvent(
+      payload,
+      sig,
+      env.STRIPE_WEBHOOK_SECRET
+    );
+
+  } catch (err) {
+
+    return json({ error: "Webhook signature verification failed" }, 400);
+
+  }
+
+  if (event.type === "checkout.session.completed") {
+
+    const session = event.data.object;
+
+    const booking = {
+      vehicleId: session.metadata.vehicleId,
+      pickupDate: session.metadata.pickupDate,
+      durationDays: session.metadata.durationDays,
+      customerName: session.metadata.customerName,
+      customerEmail: session.metadata.customerEmail,
+      paymentId: session.id,
+      status: "confirmed"
+    };
+
+    console.log("Booking confirmed:", booking);
+
+    // Later we will store this in KV or database
+
+  }
+
+  return json({ received: true });
 }

@@ -680,6 +680,9 @@ bookingConfirmBtn?.addEventListener("click", async ()=>{
   bookingConfirmBtn.disabled = true;
   bookingConfirmBtn.textContent = "Redirecting to payment…";
 
+  bookingConfirmBtn.disabled = false;
+bookingConfirmBtn.textContent = "Confirm & Pay";
+
   const bookingData = {
     vehicleId: selectedAvailability.vehicle.id,
     vehicleName: selectedAvailability.vehicle.name,
