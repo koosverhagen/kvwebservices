@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8"
 };
@@ -8,13 +9,16 @@ export default {
 
     const url = new URL(request.url);
 
-    /* STRIPE WEBHOOK FIRST (before anything else) */
+    /* ===============================
+       STRIPE WEBHOOK FIRST
+       (must bypass CORS)
+    ================================ */
 
     if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
       return handleStripeWebhook(request, env);
     }
 
-    const corsHeaders = buildCorsHeaders(request, env);
+    const corsHeaders = buildCorsHeaders();
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
@@ -23,7 +27,7 @@ export default {
     try {
 
       if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
-        const response = await handlePricingQuote(request, env);
+        const response = await handlePricingQuote(request);
         return withCors(response, corsHeaders);
       }
 
@@ -44,6 +48,9 @@ export default {
     }
   }
 };
+
+
+
 
 
 /* ===============================
@@ -69,15 +76,17 @@ const DISCOUNT_CODES = [
   }
 ];
 
-async function handlePricingQuote(request, env) {
+async function handlePricingQuote(request) {
+
   const payload = await request.json();
+
   const { vehicleId, durationDays, pickupDate, pickupTime, discountCode } = payload;
 
   if (!vehicleId || !durationDays || !pickupDate || !pickupTime) {
     return json({ error: "Missing required pricing fields" }, 400);
   }
 
-  const baseCost = calculateServerBaseCost(vehicleId, durationDays);
+  const baseCost = calculateServerBaseCost(vehicleId, durationDays, pickupDate);
 
   const discount = resolveDiscount({
     code: discountCode,
@@ -100,17 +109,82 @@ async function handlePricingQuote(request, env) {
   });
 }
 
-function calculateServerBaseCost(vehicleId, durationDays) {
+
+
+/* ===============================
+   VEHICLE PRICING ENGINE
+================================ */
+
+function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
+
   const duration = Number(durationDays);
+  const date = new Date(pickupDate);
+  const day = date.getDay();
 
-  if (duration === 0.5) return 75;
-  if (duration === 1) return 105;
-  if (duration === 7) return 700;
+  const isWeekend = (day === 0 || day === 6);
 
-  return 105 * duration;
+  /* 3.5T */
+
+  if (vehicleId.startsWith("v35")) {
+
+    const prices = {
+      0.5: 75,
+      1: 105,
+      2: 200,
+      3: 300,
+      4: 400,
+      5: 500,
+      6: 600,
+      7: 700
+    };
+
+    return prices[duration] ?? 105 * duration;
+  }
+
+  /* 7.5T WITH LIVING */
+
+  if (vehicleId === "v75-1") {
+
+    const prices = {
+      1: 175,
+      2: 350,
+      3: 525,
+      4: 700,
+      5: 875,
+      6: 1050,
+      7: 1225
+    };
+
+    return prices[duration] ?? 175 * duration;
+  }
+
+  /* 7.5T NO LIVING */
+
+  if (vehicleId === "v75-2") {
+
+    let total = 165 * duration;
+
+    if (isWeekend) {
+
+      if (duration === 1) total = 175;
+      if (duration === 2) total = 350;
+
+    }
+
+    return total;
+  }
+
+  return 0;
 }
 
+
+
+/* ===============================
+   DISCOUNT LOGIC
+================================ */
+
 function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
+
   if (!code) return { discountAmount: 0 };
 
   const entry = DISCOUNT_CODES.find(
@@ -121,6 +195,7 @@ function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
 
   const now = new Date();
   const expiry = new Date(entry.expires + "T23:59:59");
+
   if (now > expiry) return { error: "Code expired" };
 
   if (entry.vehicles !== "all" && !entry.vehicles.includes(vehicleId)) {
@@ -135,7 +210,9 @@ function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
 
   if (entry.type === "percent") {
     discountAmount = (baseCost * entry.value) / 100;
-  } else if (entry.type === "fixed") {
+  }
+
+  if (entry.type === "fixed") {
     discountAmount = entry.value;
   }
 
@@ -147,39 +224,11 @@ function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
 }
 
 
-/* ===============================
-   HELPERS
-================================ */
 
-function json(payload, status = 200) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: JSON_HEADERS
-  });
-}
-
-function buildCorsHeaders(request, env) {
-  return {
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET,POST,OPTIONS",
-    "access-control-allow-headers": "content-type,stripe-signature"
-  };
-}
-
-function withCors(response, corsHeaders) {
-  const headers = new Headers(response.headers);
-  Object.entries(corsHeaders).forEach(([key, value]) => headers.set(key, value));
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers
-  });
-}
 
 /* ===============================
-   PLACEHOLDER ENDPOINTS
+   STRIPE CHECKOUT SESSION
 ================================ */
-
 
 async function handleCreateCheckoutSession(request, env) {
 
@@ -198,6 +247,7 @@ async function handleCreateCheckoutSession(request, env) {
     : 10000;
 
   const session = await stripe.checkout.sessions.create({
+
     payment_method_types: ["card"],
     mode: "payment",
 
@@ -224,12 +274,20 @@ async function handleCreateCheckoutSession(request, env) {
 
     success_url: "https://equinetransportuk.com/booking-success",
     cancel_url: "https://equinetransportuk.com/#booking"
+
   });
 
   return json({
     url: session.url
   });
 }
+
+
+
+
+/* ===============================
+   STRIPE WEBHOOK
+================================ */
 
 async function handleStripeWebhook(request, env) {
 
@@ -261,9 +319,8 @@ async function handleStripeWebhook(request, env) {
 
   }
 
-  /* ===============================
-     Prevent duplicate processing
-  ================================ */
+
+  /* Prevent duplicate processing */
 
   const eventId = event.id;
 
@@ -273,22 +330,18 @@ async function handleStripeWebhook(request, env) {
 
     console.log("⚠️ Webhook already processed:", eventId);
 
-    return new Response(
-      JSON.stringify({ received: true }),
-      { status: 200 }
-    );
-
+    return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
-  /* ===============================
-     Handle Stripe event
-  ================================ */
+
+  /* Handle booking confirmation */
 
   if (event.type === "checkout.session.completed") {
 
     const session = event.data.object;
 
     const booking = {
+
       id: session.id,
       vehicleId: session.metadata.vehicleId,
       pickupDate: session.metadata.pickupDate,
@@ -297,20 +350,17 @@ async function handleStripeWebhook(request, env) {
       paymentId: session.payment_intent,
       status: "confirmed",
       created: new Date().toISOString()
+
     };
 
     console.log("✅ Booking confirmed:", booking);
-
-    /* Store booking */
 
     await env.BOOKINGS_KV.put(
       `booking_${session.id}`,
       JSON.stringify(booking)
     );
-
   }
 
-  /* mark webhook processed */
 
   await env.BOOKINGS_KV.put(eventId, "processed");
 
@@ -318,5 +368,46 @@ async function handleStripeWebhook(request, env) {
     JSON.stringify({ received: true }),
     { status: 200 }
   );
+
+}
+
+
+
+
+/* ===============================
+   HELPERS
+================================ */
+
+function json(payload, status = 200) {
+
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: JSON_HEADERS
+  });
+
+}
+
+function buildCorsHeaders() {
+
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,POST,OPTIONS",
+    "access-control-allow-headers": "content-type,stripe-signature"
+  };
+
+}
+
+function withCors(response, corsHeaders) {
+
+  const headers = new Headers(response.headers);
+
+  Object.entries(corsHeaders).forEach(([key, value]) =>
+    headers.set(key, value)
+  );
+
+  return new Response(response.body, {
+    status: response.status,
+    headers
+  });
 
 }
