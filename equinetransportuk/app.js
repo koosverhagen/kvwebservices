@@ -573,7 +573,7 @@ async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTim
   // discount does not affect availability, but buildAvailability needs it for times too.
   const candidate = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, "");
 
-  const vehicleBookings = getBookings().filter(
+  const vehicleBookings = (await getBookings()).filter(
     (booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled"
   );
 
@@ -593,7 +593,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAUL
 
     const availability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode);
 
-    const vehicleBookings = getBookings().filter(
+    const vehicleBookings = (await getBookings()).filter(
       (booking) => booking.vehicleId === vehicle.id && booking.status !== "cancelled"
     );
 
@@ -1173,10 +1173,10 @@ if (applyDiscountBtn) {
    Booking + Admin rendering
 ====================================================== */
 
-function renderBookings() {
+async function renderBookings() {
   if (!bookingList) return;
 
-  const bookings = getBookings().sort((a, b) => new Date(a.pickupAt) - new Date(b.pickupAt));
+  const bookings = (await getBookings()).sort((a, b) => new Date(a.pickupAt) - new Date(b.pickupAt));
   if (!bookings.length) {
     bookingList.innerHTML = '<div class="booking-item muted">No bookings yet. Your first booking will appear here.</div>';
     return;
@@ -1202,10 +1202,10 @@ function renderBookings() {
     .join("");
 }
 
-function renderAdminBookings() {
+async function renderAdminBookings() {
   if (!adminBookings) return;
 
-  const bookings = getBookings().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const bookings = (await getBookings()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   if (!bookings.length) {
     adminBookings.innerHTML = '<p class="empty-note">No bookings saved yet.</p>';
     return;
@@ -1282,8 +1282,8 @@ function downloadFile(content, filename, mimeType) {
   URL.revokeObjectURL(url);
 }
 
-function exportAdminCsv() {
-  const bookings = getBookings().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+async function exportAdminCsv() {
+  const bookings = (await getBookings()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const lines = [
     "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Created"
   ];
@@ -1327,8 +1327,8 @@ function exportAdminCsv() {
   downloadFile(lines.join("\n"), `equine-bookings-${stamp}.csv`, "text/csv;charset=utf-8");
 }
 
-function exportAdminPdf() {
-  const bookings = getBookings().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+async function exportAdminPdf() {
+  const bookings = (await getBookings()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const stamp = new Date().toISOString().slice(0, 10);
 
   const rows = bookings.length
@@ -2000,7 +2000,7 @@ async function renderBookingBars(year, month) {
   });
 
 }
-  function renderCalendar() {
+  async function renderCalendar() {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -2055,8 +2055,8 @@ async function renderBookingBars(year, month) {
 
     } else {
 
-      const status = checkDayLocalAvailability(dayDate);
-      const validStart = canStartRental(dayDate);
+      const status = await checkDayLocalAvailability(dayDate);
+const validStart = await canStartRental(dayDate);
 
       if (status === "available") {
         dayEl.classList.add("cal-available");
@@ -2177,10 +2177,10 @@ async function renderBookingBars(year, month) {
      Month Navigation
   ====================================================== */
 
-  function changeMonth(direction) {
+  async function changeMonth(direction) {
 
     currentDate.setMonth(currentDate.getMonth() + direction);
-    renderCalendar();
+    await renderCalendar();
 
   }
 
