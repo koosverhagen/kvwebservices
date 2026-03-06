@@ -694,51 +694,7 @@ availabilityResults.addEventListener("click", async (e)=>{
 
 const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
-bookingConfirmBtn?.addEventListener("click", async ()=>{
 
-  if(!selectedAvailability) return;
-
-
-  bookingConfirmBtn.disabled = true;
-  bookingConfirmBtn.textContent = "Redirecting to payment…";
-
-  bookingConfirmBtn.disabled = false;
-bookingConfirmBtn.textContent = "Confirm & Pay";
-
-  const bookingData = {
-    vehicleId: selectedAvailability.vehicle.id,
-    vehicleName: selectedAvailability.vehicle.name,
-    pickupDate: selectedAvailability.pickupDate,
-    pickupTime: selectedAvailability.pickupTime,
-    durationDays: selectedAvailability.durationDays,
-
-    customerName: customerNameInput.value,
-    customerEmail: customerEmailInput.value,
-    customerMobile: customerMobileInput.value,
-    customerAddress: customerAddressInput.value,
-    customerDob: customerDobInput.value
-  };
-
-  try{
-
-    const res = await fetch(apiUrl("/api/bookings/create-checkout-session"),{
-  method:"POST",
-  headers:{ "Content-Type":"application/json" },
-  body: JSON.stringify(bookingData)
-});
-
-    const data = await res.json();
-
-    if(data.url){
-      window.location.href = data.url;
-    }
-
-  }catch(err){
-    console.error(err);
-    alert("Payment failed. Please try again.");
-  }
-
-});
 
 /* ======================================================
    Checkout summary (discount-safe)
