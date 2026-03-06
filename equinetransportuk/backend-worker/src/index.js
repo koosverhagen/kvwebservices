@@ -261,22 +261,58 @@ async function handleStripeWebhook(request, env) {
 
   }
 
+  /* ===============================
+     Prevent duplicate webhook runs
+  ================================ */
+
+  const eventId = event.id;
+
+  const alreadyProcessed = await env.BOOKING_DB.get(eventId);
+
+  if (alreadyProcessed) {
+
+    console.log("⚠️ Webhook already processed:", eventId);
+
+    return new Response(
+      JSON.stringify({ received: true }),
+      { status: 200 }
+    );
+
+  }
+
+  /* ===============================
+     Handle Stripe events
+  ================================ */
+
   if (event.type === "checkout.session.completed") {
 
     const session = event.data.object;
 
     const booking = {
+      id: session.id,
       vehicleId: session.metadata.vehicleId,
       pickupDate: session.metadata.pickupDate,
       durationDays: session.metadata.durationDays,
       customerEmail: session.metadata.customerEmail,
-      paymentId: session.id,
-      status: "confirmed"
+      paymentId: session.payment_intent,
+      status: "confirmed",
+      created: new Date().toISOString()
     };
 
     console.log("✅ Booking confirmed:", booking);
 
+    /* Store booking */
+
+    await env.BOOKING_DB.put(
+      `booking_${session.id}`,
+      JSON.stringify(booking)
+    );
+
   }
+
+  /* mark webhook processed */
+
+  await env.BOOKING_DB.put(eventId, "processed");
 
   return new Response(
     JSON.stringify({ received: true }),
