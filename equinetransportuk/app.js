@@ -1394,22 +1394,38 @@ async function notifyBackend(booking, phase) {
 }
 
 async function createStripeCheckoutSession(booking) {
-  try {
-    const response = await fetch(apiUrl("/api/bookings/create-checkout-session"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ booking })
-    });
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data?.checkoutUrl) return data.checkoutUrl;
+  try {
+
+    const response = await fetch(
+      apiUrl("/api/bookings/create-checkout-session"),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(booking)
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Stripe session creation failed");
     }
+
+    const data = await response.json();
+
+    if (data?.url) {
+      return data.url;
+    }
+
   } catch (error) {
+
     console.warn("Stripe session endpoint unavailable.", error);
+
   }
 
-  return is35T(booking.vehicleSnapshot) ? STRIPE_PAYMENT_LINK_35T : STRIPE_PAYMENT_LINK_75T;
+  return is35T(booking.vehicleSnapshot)
+    ? STRIPE_PAYMENT_LINK_35T
+    : STRIPE_PAYMENT_LINK_75T;
+
 }
 
 function resetBookingCustomerFields() {
