@@ -116,7 +116,7 @@ const FORM_LINK_A = "https://www.equinetransportuk.com/shortformsubmit";
 const FORM_LINK_B = "https://www.equinetransportuk.com/longformsubmit";
 
 // If empty, API paths are relative (same origin)
-const BACKEND_API_BASE = "";
+const BACKEND_API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
 
 // Fleet data
 const vehicles = [
@@ -1402,7 +1402,14 @@ async function createStripeCheckoutSession(booking) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(booking)
+        body: JSON.stringify({
+          vehicleId: booking.vehicleId,
+          vehicleName: booking.vehicleSnapshot?.name,
+          pickupDate: booking.pickupAt,
+          durationDays: booking.durationDays,
+          customerEmail: booking.customerEmail,
+          bookingId: booking.id
+        })
       }
     );
 
@@ -1412,7 +1419,7 @@ async function createStripeCheckoutSession(booking) {
 
     const data = await response.json();
 
-    if (data?.url) {
+    if (data.url) {
       return data.url;
     }
 
@@ -1422,9 +1429,7 @@ async function createStripeCheckoutSession(booking) {
 
   }
 
-  return is35T(booking.vehicleSnapshot)
-    ? STRIPE_PAYMENT_LINK_35T
-    : STRIPE_PAYMENT_LINK_75T;
+  return null;
 
 }
 
