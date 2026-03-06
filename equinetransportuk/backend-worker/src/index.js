@@ -37,7 +37,7 @@ export default {
       }
 
       if (request.method === "GET" && url.pathname === "/api/bookings/list") {
-  const response = await handleListBookings(env);
+  const response = await handleListBookings(request, env);
   return withCors(response, corsHeaders);
 }
 
@@ -435,7 +435,12 @@ const booking = {
    LIST BOOKINGS API
 ================================ */
 
-async function handleListBookings(env) {
+async function handleListBookings(request, env) {
+
+  const url = new URL(request.url);
+
+  const from = url.searchParams.get("from");
+  const to = url.searchParams.get("to");
 
   const list = await env.BOOKINGS_KV.list({
     prefix: "booking_"
@@ -447,9 +452,21 @@ async function handleListBookings(env) {
 
     const value = await env.BOOKINGS_KV.get(key.name);
 
-    if (value) {
-      bookings.push(JSON.parse(value));
+    if (!value) continue;
+
+    const booking = JSON.parse(value);
+
+    if (from && to) {
+
+      const pickup = new Date(booking.pickupAt);
+
+      if (pickup < new Date(from) || pickup > new Date(to)) {
+        continue;
+      }
+
     }
+
+    bookings.push(booking);
 
   }
 
