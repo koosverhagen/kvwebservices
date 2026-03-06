@@ -345,18 +345,73 @@ async function handleStripeWebhook(request, env) {
 
     const session = event.data.object;
 
-    const booking = {
+    const pickupAt = new Date(session.metadata.pickupDate);
+const durationDays = Number(session.metadata.durationDays || 1);
 
-      id: session.id,
-      vehicleId: session.metadata.vehicleId,
-      pickupDate: session.metadata.pickupDate,
-      durationDays: session.metadata.durationDays,
-      customerEmail: session.metadata.customerEmail,
-      paymentId: session.payment_intent,
-      status: "confirmed",
-      created: new Date().toISOString()
+let dropoffAt = new Date(pickupAt);
 
-    };
+if (durationDays === 0.5) {
+
+  dropoffAt.setHours(dropoffAt.getHours() + 6);
+
+} else {
+
+  dropoffAt.setDate(dropoffAt.getDate() + Math.max(1, durationDays) - 1);
+  dropoffAt.setHours(19,0,0,0);
+
+}
+
+const confirmationFee = session.metadata.vehicleId.startsWith("v35")
+  ? 75
+  : 100;
+
+const booking = {
+
+  id: session.id,
+
+  vehicleId: session.metadata.vehicleId,
+
+  vehicleSnapshot: {
+    id: session.metadata.vehicleId,
+    name: session.metadata.vehicleName || "",
+    type: session.metadata.vehicleId.startsWith("v35") ? "3.5 tonne" : "7.5 tonne"
+  },
+
+  pickupAt: pickupAt.toISOString(),
+  dropoffAt: dropoffAt.toISOString(),
+
+  durationDays: durationDays,
+
+  pickupTime: pickupAt.toISOString().slice(11,16),
+
+  customerName: session.customer_details?.name || "",
+  customerEmail: session.customer_details?.email || session.metadata.customerEmail || "",
+
+  customerMobile: "",
+  customerAddress: "",
+  customerDob: "",
+
+  dartfordCrossings: 0,
+  crossingCharge: 0,
+
+  earlyPickup: false,
+  earlyPickupCharge: 0,
+
+  baseCost: 0,
+  discountAmount: 0,
+  hireTotal: 0,
+
+  confirmationFee: confirmationFee,
+
+  outstandingAmount: 0,
+
+  depositAmount: 200,
+
+  status: "confirmed",
+
+  createdAt: new Date().toISOString()
+
+};
 
     console.log("✅ Booking confirmed:", booking);
 
