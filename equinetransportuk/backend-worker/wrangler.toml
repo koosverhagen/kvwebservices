@@ -2,6 +2,8 @@ name = "equine-bookings-api"
 main = "src/index.js"
 compatibility_date = "2026-02-23"
 
+compatibility_flags = ["nodejs_compat"]
+
 kv_namespaces = [
   { binding = "BOOKINGS_KV", id = "808e112eb10245a49498c863bd923172" }
 ]
