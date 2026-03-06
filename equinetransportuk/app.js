@@ -6,11 +6,16 @@
 
 let activeSlideshow = null;
 
+let BOOKINGS_CACHE = null;
+
 /* ======================================================
    Booking Step Controller
 ====================================================== */
 
 let currentStep = 1;
+
+
+
 
 function goToStep(step) {
 
@@ -270,7 +275,11 @@ function asDate(dateString, timeString) {
   return new Date(`${dateString}T${timeString}:00`);
 }
 
-async function getBookings() {
+async function getBookings(forceRefresh = false) {
+
+  if (!forceRefresh && BOOKINGS_CACHE) {
+    return BOOKINGS_CACHE;
+  }
 
   try {
 
@@ -278,20 +287,21 @@ async function getBookings() {
       "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list"
     );
 
-    if (!res.ok) {
-      throw new Error("Failed to load bookings");
-    }
+    if (!res.ok) throw new Error("Failed to load bookings");
 
     const data = await res.json();
 
-    return data.bookings || [];
+    BOOKINGS_CACHE = data.bookings || [];
+
+    return BOOKINGS_CACHE;
 
   } catch (err) {
 
     console.warn("⚠️ Booking API unavailable, fallback to local storage");
 
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
+      BOOKINGS_CACHE = JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
+      return BOOKINGS_CACHE;
     } catch {
       return [];
     }
@@ -1592,10 +1602,12 @@ if (bookingForm) {
     const bookings = await getBookings();
     bookings.push(booking);
     saveBookings(bookings);
+    BOOKINGS_CACHE = null;
     AVAILABILITY_CACHE.clear();
 
-    renderBookings();
-    renderAdminBookings();
+   await getBookings(true);
+renderBookings();
+renderAdminBookings();
 
     await notifyBackend(booking, "booking_created");
 
@@ -1615,19 +1627,26 @@ refreshAdminBtn?.addEventListener("click", renderAdminBookings);
 exportAdminCsvBtn?.addEventListener("click", exportAdminCsv);
 exportAdminPdfBtn?.addEventListener("click", exportAdminPdf);
 
-clearAdminBtn?.addEventListener("click", () => {
+clearAdminBtn?.addEventListener("click", async () => {
+
   if (!confirm("Clear all saved demo bookings?")) return;
 
   localStorage.removeItem(STORAGE_BOOKINGS);
+
+  BOOKINGS_CACHE = null;   // clear API cache
+
   selectedAvailability = null;
 
   if (selectedLorryInput) selectedLorryInput.value = "";
   if (selectedPickupInput) selectedPickupInput.value = "";
   if (selectedBaseInput) selectedBaseInput.value = "";
 
+  await getBookings(true);
+
   renderBookings();
   renderAdminBookings();
   updateCheckoutSummary();
+
 });
 
 // Expose images for slideshow matching your filenames
@@ -1666,11 +1685,20 @@ window.fleetImages = window.fleetImages || [
 ];
 
 // Initial render
-if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
-renderFleet();
-renderBookings();
-renderAdminBookings();
-updateCheckoutSummary();
+(async () => {
+
+  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+
+  renderFleet();
+
+  await getBookings(true);
+
+  renderBookings();
+  renderAdminBookings();
+
+  updateCheckoutSummary();
+
+})();
 
 /* ======================================================
    Calendar Preview Helpers
