@@ -5,7 +5,15 @@ const JSON_HEADERS = {
 
 export default {
   async fetch(request, env, ctx) {
+
     const url = new URL(request.url);
+
+    /* STRIPE WEBHOOK FIRST (before anything else) */
+
+    if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
+      return handleStripeWebhook(request, env);
+    }
+
     const corsHeaders = buildCorsHeaders(request, env);
 
     if (request.method === "OPTIONS") {
@@ -24,22 +32,15 @@ export default {
         return withCors(response, corsHeaders);
       }
 
-      if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
-  return await handleStripeWebhook(request, env);
-}
-
-      if (request.method === "POST" && url.pathname === "/api/forms/submit") {
-        const response = await handleFormSubmit(request, env);
-        return withCors(response, corsHeaders);
-      }
-
       return withCors(json({ error: "Not found" }, 404), corsHeaders);
 
     } catch (error) {
+
       return withCors(
         json({ error: "Server error", detail: error?.message || "Unknown error" }, 500),
         corsHeaders
       );
+
     }
   }
 };
