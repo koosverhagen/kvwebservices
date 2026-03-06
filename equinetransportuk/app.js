@@ -1579,7 +1579,7 @@ if (bookingForm) {
     const hiredWithinLast3Months = hiredWithin3MonthsInput?.checked || false;
     const requiredFormType = hiredWithinLast3Months ? "short" : "long";
 
-    const existingIds = new Set(getBookings().map((item) => String(item.id)));
+    const existingIds = new Set((await getBookings()).map((item) => String(item.id)));
     const bookingId = generateNumericBookingId(existingIds);
 
     const shortFormLink = buildFormUrl(FORM_LINK_A, bookingId);
