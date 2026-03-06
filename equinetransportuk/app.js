@@ -270,12 +270,34 @@ function asDate(dateString, timeString) {
   return new Date(`${dateString}T${timeString}:00`);
 }
 
-function getBookings() {
+async function getBookings() {
+
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
-  } catch {
-    return [];
+
+    const res = await fetch(
+      "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list"
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to load bookings");
+    }
+
+    const data = await res.json();
+
+    return data.bookings || [];
+
+  } catch (err) {
+
+    console.warn("⚠️ Booking API unavailable, fallback to local storage");
+
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
+    } catch {
+      return [];
+    }
+
   }
+
 }
 
 function saveBookings(bookings) {
@@ -1611,7 +1633,7 @@ if (bookingForm) {
       createdAt: new Date().toISOString()
     };
 
-    const bookings = getBookings();
+    const bookings = await getBookings();
     bookings.push(booking);
     saveBookings(bookings);
     AVAILABILITY_CACHE.clear();
@@ -1749,9 +1771,9 @@ function movePreview(e){
 
 }
 
-function showVehiclePreview(date, event) {
+async function showVehiclePreview(date, event) {
 
-  const bookings = getBookings();
+  const bookings = await getBookings();
 
   const dateStart = new Date(date);
   dateStart.setHours(0,0,0,0);
@@ -1864,9 +1886,9 @@ function isMobile() {
      Check availability for a specific calendar day
   ====================================================== */
 
-  function checkDayLocalAvailability(dateObj) {
+  async function checkDayLocalAvailability(dateObj) {
 
-    const bookings = getBookings();
+    const bookings = await getBookings();
     let availableVehicles = 0;
 
     vehicles.forEach(vehicle => {
@@ -1905,7 +1927,7 @@ function isMobile() {
      Check if rental can start
   ====================================================== */
 
-  function canStartRental(startDate) {
+  async function canStartRental(startDate) {
 
     const durationInput = document.getElementById("duration-days");
     const durationDays = Number(durationInput?.value || 1);
@@ -1913,7 +1935,7 @@ function isMobile() {
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + durationDays - 1);
 
-    const bookings = getBookings();
+    const bookings = await getBookings();
 
     return !bookings.some(booking => {
 
@@ -1924,18 +1946,14 @@ function isMobile() {
 
     });
 
-  }
-
-  /* ======================================================
-     Render Calendar
-  ====================================================== */
+  } 
 /* ======================================================
    Render Booking Bars (multi-day visual)
 ====================================================== */
 
-function renderBookingBars(year, month) {
+async function renderBookingBars(year, month) {
 
-  const bookings = getBookings();
+  const bookings = await getBookings();
 
   bookings.forEach(booking => {
 
