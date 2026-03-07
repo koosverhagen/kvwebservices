@@ -827,12 +827,14 @@ function updatePickupTimeVisibility() {
   const duration = Number(durationDaysInput?.value || 0);
   const group = document.getElementById("pickup-time-group");
 
-  if (!group) return;
+  if (!group || !pickupTimeInput) return;
 
   if (duration === 0.5) {
     group.style.display = "block";
+    pickupTimeInput.value = ""; // force customer to choose
   } else {
     group.style.display = "none";
+    pickupTimeInput.value = "07:00"; // safe default for non-half-day
   }
 
 }
@@ -1489,8 +1491,57 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 durationDaysInput?.addEventListener("change", () => {
-  syncPickupTimeOptions();
+
   updatePickupTimeVisibility();
+  syncPickupTimeOptions();
+
+  /* do not auto-search for half-day until pickup time is chosen */
+
+  if (Number(durationDaysInput.value) === 0.5) {
+
+    const group = document.getElementById("pickup-time-group");
+
+    if (group) {
+      group.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+      group.classList.add("duration-highlight");
+
+      setTimeout(() => {
+        group.classList.remove("duration-highlight");
+      }, 2000);
+    }
+
+    return;
+  }
+
+  const form = document.getElementById("availability-form");
+  if (form && pickupDateInput?.value) {
+    form.requestSubmit();
+  }
+
+});
+
+pickupTimeInput?.addEventListener("change", () => {
+
+  const pickupDate = pickupDateInput?.value;
+  const pickupTime = pickupTimeInput?.value;
+  const durationDays = Number(durationDaysInput?.value);
+
+  if (!pickupDate) return;
+
+  /* for half day require time first */
+
+  if (durationDays === 0.5 && !pickupTime) return;
+
+  const form = document.getElementById("availability-form");
+
+  if (form) {
+    form.requestSubmit();
+  }
+
 });
 
 if (availabilityForm) {
@@ -1498,37 +1549,77 @@ if (availabilityForm) {
     event.preventDefault();
 
     const pickupDate = pickupDateInput?.value;
-    const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
     const durationDays = Number(durationDaysInput?.value);
+    const pickupTime = pickupTimeInput?.value;
 
     if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
-      if (availabilityResults) availabilityResults.innerHTML = '<p class="empty-note">Enter a valid pickup date and duration.</p>';
+      if (availabilityResults) {
+        availabilityResults.innerHTML =
+          '<p class="empty-note">Enter a valid pickup date and duration.</p>';
+      }
       return;
     }
 
-    // lock UI
-    const submitBtn = availabilityForm.querySelector('button[type="submit"], input[type="submit"]');
+    /* IMPORTANT: half day must select time first */
+
+    if (durationDays === 0.5 && !pickupTime) {
+
+      pickupTimeInput?.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+      pickupTimeInput?.classList.add("duration-highlight");
+
+      setTimeout(()=>{
+        pickupTimeInput?.classList.remove("duration-highlight");
+      },2000);
+
+      alert("Please select a pickup time for half-day hire.");
+      return;
+    }
+
+    let finalPickupTime = DEFAULT_PICKUP_TIME;
+
+if (durationDays === 0.5) {
+
+  if (!pickupTime) return;   // prevent search
+
+  finalPickupTime = pickupTime;
+
+}
+
+    const submitBtn = availabilityForm.querySelector(
+      'button[type="submit"], input[type="submit"]'
+    );
+
     if (submitBtn) submitBtn.disabled = true;
-    if (pickupDateInput) pickupDateInput.disabled = true;
-    if (pickupTimeInput) pickupTimeInput.disabled = true;
-    if (durationDaysInput) durationDaysInput.disabled = true;
 
     renderAvailabilityLoading();
 
     try {
-      const availableLorries = await getAvailableLorries(pickupDate, durationDays, pickupTime);
+
+      const availableLorries = await getAvailableLorries(
+        pickupDate,
+        durationDays,
+        finalPickupTime
+      );
+
       renderAvailabilityResults(availableLorries);
-      
+
     } catch (err) {
+
       console.warn("Availability search failed:", err);
-      renderAvailabilityError("Couldn’t check availability right now. Please try again.");
+      renderAvailabilityError(
+        "Couldn’t check availability right now. Please try again."
+      );
+
     } finally {
-      // unlock UI
+
       if (submitBtn) submitBtn.disabled = false;
-      if (pickupDateInput) pickupDateInput.disabled = false;
-      if (pickupTimeInput) pickupTimeInput.disabled = false;
-      if (durationDaysInput) durationDaysInput.disabled = false;
+
     }
+
   });
 }
 
