@@ -6,6 +6,10 @@
 
 let activeSlideshow = null;
 
+let PRESELECTED_VEHICLE = null;
+
+
+
 /* ===============================
    Booking cache
 ================================ */
@@ -49,6 +53,21 @@ function goToStep(step) {
     block:"start"
   });
 },100);
+
+}
+
+function startBooking(vehicleId) {
+
+  PRESELECTED_VEHICLE = vehicleId;
+
+  const bookingSection = document.getElementById("booking");
+
+  if (bookingSection) {
+    bookingSection.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
 
 }
 
@@ -951,7 +970,11 @@ function renderFleet() {
     card.className = "fleet-card";
 
     const livingLabel =
-      vehicle.pricingModel === "75_no_living_rules" ? "no living" : vehicle.overnight ? "living" : "no living";
+      vehicle.pricingModel === "75_no_living_rules"
+        ? "no living"
+        : vehicle.overnight
+        ? "living"
+        : "no living";
 
     // Find images
     const code = vehicle.code || "";
@@ -959,12 +982,18 @@ function renderFleet() {
 
     let imageFiles =
       window.fleetImages?.filter((img) => {
-        return (code && img.includes(code)) || img.replace(/[^\w]+/g, "").toLowerCase().includes(baseName);
+        return (
+          (code && img.includes(code)) ||
+          img.replace(/[^\w]+/g, "").toLowerCase().includes(baseName)
+        );
       }) || [];
 
-    if (!imageFiles.length) imageFiles = [vehicle.image.replace(/^images\//, "")];
+    if (!imageFiles.length)
+      imageFiles = [vehicle.image.replace(/^images\//, "")];
 
-    imageFiles = imageFiles.map((f) => (f.startsWith("images/") ? f : "images/" + f));
+    imageFiles = imageFiles.map((f) =>
+      f.startsWith("images/") ? f : "images/" + f
+    );
 
     // Image wrap
     const imageWrap = document.createElement("div");
@@ -996,6 +1025,7 @@ function renderFleet() {
 
     function startSlideshow() {
       if (images.length <= 1) return;
+
       playing = true;
       overlay.classList.add("playing");
 
@@ -1020,6 +1050,7 @@ function renderFleet() {
 
     function stopSlideshow() {
       if (interval) clearInterval(interval);
+
       playing = false;
       currentIndex = 0;
       img.src = images[0];
@@ -1038,7 +1069,8 @@ function renderFleet() {
     overlay.addEventListener("click", (e) => {
       e.stopPropagation();
 
-      if (activeSlideshow && activeSlideshow !== stopSlideshow) activeSlideshow();
+      if (activeSlideshow && activeSlideshow !== stopSlideshow)
+        activeSlideshow();
 
       if (!playing) startSlideshow();
       else stopSlideshow();
@@ -1050,12 +1082,18 @@ function renderFleet() {
     content.innerHTML = `
       <h3>${escapeHtml(vehicle.name)}</h3>
       <p class="muted">
-        ${escapeHtml(vehicle.type)}${vehicle.code ? ` · ${escapeHtml(vehicle.code)}` : ""} · 
-        ${vehicle.horses} horses · ${vehicle.seats} seats · ${escapeHtml(livingLabel)}
+        ${escapeHtml(vehicle.type)}
+        ${vehicle.code ? ` · ${escapeHtml(vehicle.code)}` : ""}
+        · ${vehicle.horses} horses · ${vehicle.seats} seats · ${escapeHtml(
+      livingLabel
+    )}
       </p>
       <p class="muted tiny">${escapeHtml(vehicle.summary)}</p>
       <p><strong>From £${Number(vehicle.dayRate).toFixed(0)}</strong> / day</p>
-      <button class="btn fleet-card-book" type="button" data-lorry-id="${escapeHtml(vehicle.id)}">
+
+      <button class="btn fleet-card-book" type="button" data-lorry-id="${
+        vehicle.id
+      }">
         Book this Lorry
       </button>
     `;
@@ -1063,10 +1101,13 @@ function renderFleet() {
     card.appendChild(imageWrap);
     card.appendChild(content);
 
-    content.querySelector(".fleet-card-book")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      bookFromVehicle(vehicle.id);
-    });
+    // Booking button
+    content
+      .querySelector(".fleet-card-book")
+      ?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        startBooking(vehicle.id);
+      });
 
     fleetGrid.appendChild(card);
   });
