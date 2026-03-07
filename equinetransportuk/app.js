@@ -250,6 +250,27 @@ let selectedAvailability = null;
    Helpers
 ====================================================== */
 
+function goBackToDates() {
+
+  /* go back to Step 1 */
+
+  goToStep(1);
+
+  /* scroll to calendar */
+
+  const calendar = document.getElementById("availability-calendar");
+
+  if (calendar) {
+
+    calendar.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  }
+
+}
+
 function resetBookingFlow() {
 
   /* clear availability + booking selection */
