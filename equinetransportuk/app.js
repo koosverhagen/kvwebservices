@@ -2198,9 +2198,8 @@ async function renderBookingBars(year, month) {
 
   const pickupInput = document.getElementById("pickup-date");
   const durationInput = document.getElementById("duration-days");
-  const durationSection = durationInput?.closest(".form-group");
 
-  if (!pickupInput) return;
+  if (!pickupInput || !durationInput) return;
 
   const year = dayDate.getFullYear();
   const month = String(dayDate.getMonth() + 1).padStart(2, "0");
@@ -2208,13 +2207,11 @@ async function renderBookingBars(year, month) {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
-  /* reset duration so user must choose it */
+  /* reset duration */
 
-  if (durationInput) {
-    durationInput.value = "";
-  }
+  durationInput.value = "";
 
-  /* highlight selected day */
+  /* highlight selected calendar day */
 
   document.querySelectorAll(".cal-selected")
     .forEach(el => el.classList.remove("cal-selected"));
@@ -2227,33 +2224,29 @@ async function renderBookingBars(year, month) {
     }
   });
 
-  /* delayed scroll to duration selector */
+  /* force scroll to duration selector */
 
-  if (durationSection) {
+  setTimeout(() => {
+
+    const y =
+      durationInput.getBoundingClientRect().top +
+      window.pageYOffset -
+      120;
+
+    window.scrollTo({
+      top: y,
+      behavior: "smooth"
+    });
+
+    /* highlight duration input */
+
+    durationInput.classList.add("duration-highlight");
 
     setTimeout(() => {
+      durationInput.classList.remove("duration-highlight");
+    }, 2000);
 
-      const offset = 140;
-
-      const top =
-        durationSection.getBoundingClientRect().top +
-        window.pageYOffset -
-        offset;
-
-      window.scrollTo({
-        top: top,
-        behavior: "smooth"
-      });
-
-      durationSection.classList.add("duration-highlight");
-
-      setTimeout(() => {
-        durationSection.classList.remove("duration-highlight");
-      }, 2000);
-
-    }, 120);
-
-  }
+  }, 200);
 
 }
 
