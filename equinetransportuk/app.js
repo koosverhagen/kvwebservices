@@ -1482,12 +1482,23 @@ function resetBookingCustomerFields() {
 ====================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-  // year
+
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-  // pickup time options
+  /* Step 1 logic */
   syncPickupTimeOptions();
+  updatePickupTimeVisibility();
+
+  /* Step 3 logic */
+  const selectedDurationInput = document.getElementById("selected-duration");
+
+  if (selectedDurationInput) {
+    selectedDurationInput.addEventListener("change", updateHalfDayPickup);
+  }
+
+  updateHalfDayPickup();
+
 });
 
 durationDaysInput?.addEventListener("change", () => {
