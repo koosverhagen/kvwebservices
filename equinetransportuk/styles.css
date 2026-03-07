@@ -1684,3 +1684,13 @@ html {
   50%{ transform:scale(1.02); }
   100%{ transform:scale(1); }
 }
+
+.details-actions{
+  display:flex;
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.reset-btn{
+  opacity:0.8;
+}
