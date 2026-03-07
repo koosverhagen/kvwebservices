@@ -1305,7 +1305,7 @@ input[type="date"] {
 
 .cal-day.cal-limited {
   border-color: #f59e0b;
-  background: rgba(245,158,11,0.08);
+  background: rgba(245,158,11,0.12);
 }
 
 /* Prevent booked days from fading */
@@ -1738,4 +1738,24 @@ html {
 
 .cal-day {
   padding-bottom: 10px;
+}
+
+/* =================================
+   Keep day number visible when selected
+================================= */
+
+.cal-day.cal-selected.cal-booked,
+.cal-day.cal-selected.cal-limited {
+
+  color: var(--text);           /* keep number dark */
+  background: inherit;          /* keep booking background */
+  border-color: var(--accent);  /* keep blue selection ring */
+
+}
+
+/* Optional: make selected outline clearer */
+
+.cal-day.cal-selected.cal-booked,
+.cal-day.cal-selected.cal-limited {
+  box-shadow: 0 0 0 2px var(--accent) inset;
 }
