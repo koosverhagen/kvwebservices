@@ -125,8 +125,8 @@ const STRIPE_PAYMENT_LINK_35T = "";
 const STRIPE_PAYMENT_LINK_75T = "";
 const OUTSTANDING_PAYMENT_LINK = "";
 const DEPOSIT_PAYMENT_LINK = "";
-const FORM_LINK_A = "https://www.equinetransportuk.com/shortformsubmit";
-const FORM_LINK_B = "https://www.equinetransportuk.com/longformsubmit";
+const FORM_LINK_A = "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/short-form.html";
+const FORM_LINK_B = "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/long-form.html";
 
 // If empty, API paths are relative (same origin)
 const BACKEND_API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
