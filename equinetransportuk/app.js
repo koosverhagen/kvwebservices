@@ -2232,6 +2232,8 @@ function isMobile() {
 
     });
 
+    renderAvailabilityDots(dayEl, availableVehicles);
+
     if (availableVehicles === 0) return "unavailable";
     if (availableVehicles < vehicles.length) return "limited";
     return "available";
@@ -2241,7 +2243,7 @@ function isMobile() {
      Check if rental can start
   ====================================================== */
 
-  function canStartRental(startDate, bookings) {
+ function canStartRental(startDate, bookings) {
 
   const durationInput = document.getElementById("duration-days");
   const durationDays = Number(durationInput?.value || 1);
@@ -2249,7 +2251,15 @@ function isMobile() {
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + durationDays - 1);
 
-  return !bookings.some(booking => {
+  /* check vehicle by vehicle */
+
+  return vehicles.some(vehicle => {
+
+    const vehicleBookings = bookings.filter(
+      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+    );
+
+    const overlapsExisting = vehicleBookings.some(booking => {
 
       const existingStart = new Date(booking.pickupAt);
       const existingEnd = new Date(booking.dropoffAt);
@@ -2258,7 +2268,13 @@ function isMobile() {
 
     });
 
-  } 
+    /* vehicle available */
+
+    return !overlapsExisting;
+
+  });
+
+}
 /* ======================================================
    Render Booking Bars (multi-day visual)
 ====================================================== */
@@ -2602,7 +2618,29 @@ async function watchBookingUpdates() {
 
 }
 
+function renderAvailabilityDots(dayEl, availableVehicles) {
 
+  const total = vehicles.length;
+
+  const dotsWrap = document.createElement("div");
+  dotsWrap.className = "cal-dots";
+
+  for (let i = 0; i < total; i++) {
+
+    const dot = document.createElement("span");
+    dot.className = "cal-dot";
+
+    if (i >= availableVehicles) {
+      dot.classList.add("cal-dot-booked");
+    }
+
+    dotsWrap.appendChild(dot);
+
+  }
+
+  dayEl.appendChild(dotsWrap);
+
+}
 
 /* ======================================================
    Initial render
