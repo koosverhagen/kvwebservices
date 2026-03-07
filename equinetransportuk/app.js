@@ -2639,14 +2639,20 @@ function renderAvailabilityDots(dayEl, bookings, dayDate) {
 
     const booked = bookings.some(b => {
 
-      if (b.vehicleId !== vehicle.id) return false;
+  if (b.vehicleId !== vehicle.id) return false;
 
-      const start = new Date(b.pickupAt);
-      const end = new Date(b.dropoffAt);
+  const start = new Date(b.pickupAt);
+  const end = new Date(b.dropoffAt);
 
-      return start <= dayDate && end >= dayDate;
+  const dayStart = new Date(dayDate);
+  dayStart.setHours(0,0,0,0);
 
-    });
+  const dayEnd = new Date(dayDate);
+  dayEnd.setHours(23,59,59,999);
+
+  return start <= dayEnd && end >= dayStart;
+
+});
 
     if (booked) {
       line.classList.add("booked");
