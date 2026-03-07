@@ -2631,23 +2631,18 @@ function renderAvailabilityDots(dayEl, availableVehicles) {
 
   const total = vehicles.length;
 
-  const dotsWrap = document.createElement("div");
-  dotsWrap.className = "cal-dots";
+  const barWrap = document.createElement("div");
+  barWrap.className = "cal-availability";
 
-  for (let i = 0; i < total; i++) {
+  const bar = document.createElement("div");
+  bar.className = "cal-availability-bar";
 
-    const dot = document.createElement("span");
-    dot.className = "cal-dot";
+  const percent = Math.max(0, Math.min(1, availableVehicles / total));
 
-    if (i >= availableVehicles) {
-      dot.classList.add("cal-dot-booked");
-    }
+  bar.style.width = (percent * 100) + "%";
 
-    dotsWrap.appendChild(dot);
-
-  }
-
-  dayEl.appendChild(dotsWrap);
+  barWrap.appendChild(bar);
+  dayEl.appendChild(barWrap);
 
 }
 
