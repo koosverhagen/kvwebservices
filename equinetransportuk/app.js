@@ -2232,7 +2232,7 @@ function isMobile() {
 
     });
 
-    renderAvailabilityDots(dayEl, availableVehicles);
+    
 
     if (availableVehicles === 0) return "unavailable";
     if (availableVehicles < vehicles.length) return "limited";
@@ -2397,6 +2397,15 @@ function renderBookingBars(year, month, bookings) {
 
    const status = checkDayLocalAvailability(dayDate, bookings);
 const validStart = canStartRental(dayDate, bookings);
+
+const availableVehicles = vehicles.length -
+  bookings.filter(b => {
+    const start = new Date(b.pickupAt);
+    const end = new Date(b.dropoffAt);
+    return start <= dayDate && end >= dayDate;
+  }).length;
+
+renderAvailabilityDots(dayEl, Math.max(availableVehicles,0));
 
     if (status === "available") {
       dayEl.classList.add("cal-available");
