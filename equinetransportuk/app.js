@@ -2045,6 +2045,10 @@ async function renderBookingBars(year, month) {
 }
   async function renderCalendar() {
 
+  /* prevent double rendering */
+  if (calGrid.dataset.rendering === "true") return;
+  calGrid.dataset.rendering = "true";
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -2092,72 +2096,86 @@ async function renderBookingBars(year, month) {
       dayEl.classList.add("cal-weekend");
     }
 
+    /* ===============================
+       PAST DATES
+    =============================== */
+
     if (dayDate < today) {
 
       dayEl.classList.add("cal-unavailable");
+      dayEl.classList.add("cal-past");
 
-    } else {
+      calGrid.appendChild(dayEl);
+      continue;
 
-      const status = await checkDayLocalAvailability(dayDate);
-const validStart = await canStartRental(dayDate);
+    }
 
-      if (status === "available") {
-        dayEl.classList.add("cal-available");
-      }
-      else if (status === "limited") {
-        dayEl.classList.add("cal-limited");
-      }
-      else {
-        dayEl.classList.add("cal-unavailable");
-      }
+    /* ===============================
+       AVAILABILITY CHECK
+    =============================== */
 
-      if (!validStart) {
+    const status = await checkDayLocalAvailability(dayDate);
+    const validStart = await canStartRental(dayDate);
 
-  dayEl.classList.remove("cal-available","cal-limited");
+    if (status === "available") {
+      dayEl.classList.add("cal-available");
+    }
+    else if (status === "limited") {
+      dayEl.classList.add("cal-limited");
+    }
+    else {
+      dayEl.classList.add("cal-unavailable");
+    }
 
-  dayEl.classList.add("cal-unavailable");
-  dayEl.classList.add("cal-no-start");
+    if (!validStart) {
 
-}
+      dayEl.classList.remove("cal-available","cal-limited");
 
-      /* preview works on ALL days */
+      dayEl.classList.add("cal-unavailable");
+      dayEl.classList.add("cal-no-start");
 
-      dayEl.addEventListener("mouseenter", (e) => {
+    }
+
+    /* ===============================
+       PREVIEW EVENTS
+    =============================== */
+
+    dayEl.addEventListener("mouseenter", (e) => {
+
+      clearPreview();
+      previewRental(dayDate);
+      showVehiclePreview(dayDate, e);
+
+    });
+
+    if (!isMobile()) {
+      dayEl.addEventListener("mousemove", movePreview);
+    }
+
+    dayEl.addEventListener("mouseleave", clearPreview);
+
+    dayEl.addEventListener("touchend", (e) => {
+
+      e.stopPropagation();
+
+      clearPreview();
+      previewRental(dayDate);
+      showVehiclePreview(dayDate);
+
+    });
+
+    /* ===============================
+       CLICK SELECTION
+    =============================== */
+
+    if (validStart) {
+
+      dayEl.addEventListener("click", () => {
 
         clearPreview();
-        previewRental(dayDate);
-        showVehiclePreview(dayDate, e);
+        selectDate(dayDate);
 
       });
-
-      if (!isMobile()) {
-  dayEl.addEventListener("mousemove", movePreview);
-}
-
-      dayEl.addEventListener("mouseleave", clearPreview);
-
-      dayEl.addEventListener("touchend", (e) => {
-
-        e.stopPropagation();
-
-        clearPreview();
-        previewRental(dayDate);
-        showVehiclePreview(dayDate);
-
-      });
-
-      /* selection only if allowed */
-
-      if (validStart) {
-
-  dayEl.addEventListener("click", () => {
-
-    clearPreview();
-    selectDate(dayDate);
-
-  });
-
-}
 
     }
 
@@ -2167,77 +2185,93 @@ const validStart = await canStartRental(dayDate);
 
   renderBookingBars(year, month);
 
+  /* unlock rendering */
+  calGrid.dataset.rendering = "false";
+
 }
 
   /* ======================================================
      Select date
   ====================================================== */
 
-  function selectDate(dateObj) {
+ function selectDate(dayDate) {
 
   const pickupInput = document.getElementById("pickup-date");
+  const durationInput = document.getElementById("duration-days");
+  const durationSection = durationInput?.closest(".form-group");
+
   if (!pickupInput) return;
 
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const day = String(dateObj.getDate()).padStart(2, "0");
+  const year = dayDate.getFullYear();
+  const month = String(dayDate.getMonth() + 1).padStart(2, "0");
+  const day = String(dayDate.getDate()).padStart(2, "0");
 
-  const formatted = `${year}-${month}-${day}`;
+  pickupInput.value = `${year}-${month}-${day}`;
 
-  /* fill pickup date */
+  /* reset duration so user must choose it */
 
-  pickupInput.value = formatted;
+  if (durationInput) {
+    durationInput.value = "";
+  }
 
   /* highlight selected day */
 
-  const calGrid = document.getElementById("cal-grid");
-
-  calGrid.querySelectorAll(".cal-selected")
+  document.querySelectorAll(".cal-selected")
     .forEach(el => el.classList.remove("cal-selected"));
 
+  const calGrid = document.getElementById("cal-grid");
+
   Array.from(calGrid.children).forEach(cell => {
-
-    if (!cell.textContent) return;
-
-    if (Number(cell.textContent) === dateObj.getDate()) {
+    if (Number(cell.textContent) === dayDate.getDate()) {
       cell.classList.add("cal-selected");
     }
-
   });
 
-  /* auto run availability check */
+  /* scroll to duration selector */
 
-  const form = document.getElementById("availability-form");
+  if (durationSection) {
 
-  if (form) {
-    form.requestSubmit();
+    durationSection.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    durationSection.classList.add("duration-highlight");
+
+    setTimeout(() => {
+      durationSection.classList.remove("duration-highlight");
+    }, 2000);
+
   }
-
 
 }
 
-  /* ======================================================
-     Month Navigation
-  ====================================================== */
+/* ======================================================
+   Month Navigation
+====================================================== */
 
-  async function changeMonth(direction) {
+async function changeMonth(direction) {
 
-    currentDate.setMonth(currentDate.getMonth() + direction);
-    await renderCalendar();
+  currentDate.setMonth(currentDate.getMonth() + direction);
+  await renderCalendar();
 
-  }
+}
 
-  calWrap.addEventListener("click", (e) => {
+calWrap.addEventListener("click", (e) => {
 
-    const nav = e.target.closest("[data-cal-nav]");
-    if (!nav) return;
+  const nav = e.target.closest("[data-cal-nav]");
+  if (!nav) return;
 
-    const direction = nav.dataset.calNav === "next" ? 1 : -1;
-    changeMonth(direction);
+  const direction = nav.dataset.calNav === "next" ? 1 : -1;
+  changeMonth(direction);
 
-  });
+});
 
-  async function watchBookingUpdates() {
+/* ======================================================
+   Live Booking Updates
+====================================================== */
+
+async function watchBookingUpdates() {
 
   try {
 
@@ -2279,17 +2313,42 @@ const validStart = await canStartRental(dayDate);
 
 }
 
-  /* ======================================================
-     Initial render
-  ====================================================== */
+/* ======================================================
+   Initial render
+====================================================== */
+
+renderCalendar();
+
+const durationInput = document.getElementById("duration-days");
+
+if (durationInput) {
+
+  durationInput.addEventListener("change", () => {
 
   renderCalendar();
 
-  const durationInput = document.getElementById("duration-days");
+  const pickupInput = document.getElementById("pickup-date");
 
-  if (durationInput) {
-    durationInput.addEventListener("change", renderCalendar);
+  /* only run search if date already selected */
+
+  if (pickupInput?.value) {
+
+    const form = document.getElementById("availability-form");
+
+    if (form) {
+      form.requestSubmit();
+    }
+
   }
+
+});
+
+}
+
+/* start live booking watcher */
+
+watchBookingUpdates();
+setInterval(watchBookingUpdates, 30000);
 
 })();
 
