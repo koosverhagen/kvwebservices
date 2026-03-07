@@ -1648,3 +1648,17 @@ input[type="date"] {
   min-height:42px;
 }
 
+/* past dates */
+
+.cal-past{
+  opacity:0.35;
+  pointer-events:none;
+  background:#f5f7fa;
+  color:#9aa3af;
+}
+
+.duration-highlight{
+  box-shadow:0 0 0 3px rgba(31,111,235,0.25);
+  border-color:#1f6feb;
+  transition:all .25s ease;
+}
