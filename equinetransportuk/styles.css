@@ -1779,3 +1779,48 @@ html {
   }
 
 }
+
+/* ===============================
+   Per-vehicle lines
+=============================== */
+
+.cal-lines {
+
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  right: 8px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  pointer-events: none;
+
+}
+
+.cal-line {
+
+  height: 3px;
+  border-radius: 2px;
+  background: #22c55e; /* available */
+
+}
+
+.cal-line.booked {
+
+  background: #ef4444; /* booked */
+
+}
+
+@media (max-width: 768px) {
+
+  .cal-line {
+    height: 1.5px;
+  }
+
+  .cal-lines {
+    gap: 1px;
+  }
+
+}
