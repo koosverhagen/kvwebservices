@@ -1658,9 +1658,9 @@ input[type="date"] {
 }
 
 .duration-highlight{
-  box-shadow:0 0 0 3px rgba(31,111,235,0.25);
+  animation: pulseHighlight 1.2s ease;
   border-color:#1f6feb;
-  transition:all .25s ease;
+  box-shadow:0 0 0 3px rgba(31,111,235,.15);
 }
 
 html {
@@ -1677,4 +1677,10 @@ html {
   0% { box-shadow: 0 0 0 0 rgba(31,111,235,0.4); }
   70% { box-shadow: 0 0 0 10px rgba(31,111,235,0); }
   100% { box-shadow: 0 0 0 0 rgba(31,111,235,0); }
+}
+
+@keyframes pulseHighlight{
+  0%{ transform:scale(1); }
+  50%{ transform:scale(1.02); }
+  100%{ transform:scale(1); }
 }

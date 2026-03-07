@@ -151,13 +151,14 @@ removed duplicate, script is loaded at end of body -->
             <input id="pickup-date" type="date" required>
           </div>
 
-          <div class="form-field">
-            <label for="pickup-time">Pickup time</label>
-            <select id="pickup-time" required>
-              <option value="07:00">07:00</option>
-              <option value="13:00">13:00</option>
-            </select>
-          </div>
+          <div class="form-field" id="pickup-time-group" style="display:none;">
+  <label for="pickup-time">Pickup time (½ day hire)</label>
+  <select id="pickup-time">
+    <option value="">Select pickup time</option>
+    <option value="07:00">07:00 — Morning (07:00 → 13:00)</option>
+    <option value="13:00">13:00 — Afternoon (13:00 → 19:00)</option>
+  </select>
+</div>
 
           <div class="form-field">
             <label for="duration-days">Duration</label>
