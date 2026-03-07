@@ -2405,7 +2405,7 @@ const availableVehicles = vehicles.length -
     return start <= dayDate && end >= dayDate;
   }).length;
 
-renderAvailabilityDots(dayEl, Math.max(availableVehicles,0));
+renderAvailabilityDots(dayEl, bookings, dayDate);
 
     if (status === "available") {
       dayEl.classList.add("cal-available");
@@ -2627,22 +2627,36 @@ async function watchBookingUpdates() {
 
 }
 
-function renderAvailabilityDots(dayEl, availableVehicles) {
+function renderAvailabilityDots(dayEl, bookings, dayDate) {
 
-  const total = vehicles.length;
+  const wrap = document.createElement("div");
+  wrap.className = "cal-lines";
 
-  const barWrap = document.createElement("div");
-  barWrap.className = "cal-availability";
+  vehicles.forEach(vehicle => {
 
-  const bar = document.createElement("div");
-  bar.className = "cal-availability-bar";
+    const line = document.createElement("div");
+    line.className = "cal-line";
 
-  const percent = Math.max(0, Math.min(1, availableVehicles / total));
+    const booked = bookings.some(b => {
 
-  bar.style.width = (percent * 100) + "%";
+      if (b.vehicleId !== vehicle.id) return false;
 
-  barWrap.appendChild(bar);
-  dayEl.appendChild(barWrap);
+      const start = new Date(b.pickupAt);
+      const end = new Date(b.dropoffAt);
+
+      return start <= dayDate && end >= dayDate;
+
+    });
+
+    if (booked) {
+      line.classList.add("booked");
+    }
+
+    wrap.appendChild(line);
+
+  });
+
+  dayEl.appendChild(wrap);
 
 }
 
