@@ -811,6 +811,32 @@ function updateCheckoutSummary() {
   `;
 }
 
+function updateHalfDayPickup() {
+
+  const duration = Number(document.getElementById("selected-duration")?.value || 0);
+  const row = document.getElementById("pickup-time-row");
+
+  if (!row) return;
+
+  row.style.display = duration === 0.5 ? "grid" : "none";
+
+}
+
+function updatePickupTimeVisibility() {
+
+  const duration = Number(durationDaysInput?.value || 0);
+  const group = document.getElementById("pickup-time-group");
+
+  if (!group) return;
+
+  if (duration === 0.5) {
+    group.style.display = "block";
+  } else {
+    group.style.display = "none";
+  }
+
+}
+
 /* ======================================================
    Fleet rendering
 ====================================================== */
@@ -1462,7 +1488,10 @@ document.addEventListener("DOMContentLoaded", () => {
   syncPickupTimeOptions();
 });
 
-durationDaysInput?.addEventListener("change", syncPickupTimeOptions);
+durationDaysInput?.addEventListener("change", () => {
+  syncPickupTimeOptions();
+  updatePickupTimeVisibility();
+});
 
 if (availabilityForm) {
   availabilityForm.addEventListener("submit", async (event) => {
@@ -1528,11 +1557,16 @@ if (bookingForm) {
       return;
     }
 
+    /* get pickup time (½ day selector) */
+
+    const bookingPickupTime =
+      document.getElementById("booking-pickup-time")?.value || "07:00";
+
     const stillAvailable = await isVehicleAvailable(
       selectedAvailability.vehicle.id,
       selectedAvailability.pickupDate,
       selectedAvailability.durationDays,
-      selectedAvailability.pickupTime
+      bookingPickupTime
     );
 
     if (!stillAvailable) {
@@ -1540,7 +1574,10 @@ if (bookingForm) {
       return;
     }
 
-    const dartfordCrossings = dartfordEnabledInput?.checked ? Math.max(1, Number(dartfordCountInput?.value || 1)) : 0;
+    const dartfordCrossings = dartfordEnabledInput?.checked
+      ? Math.max(1, Number(dartfordCountInput?.value || 1))
+      : 0;
+
     const earlyPickup = earlyPickupEnabledInput?.checked || false;
 
     const baseCost = Number(selectedAvailability.baseCost || 0);
@@ -1562,19 +1599,45 @@ if (bookingForm) {
     const longFormLink = buildFormUrl(FORM_LINK_B, bookingId);
     const requiredFormLink = requiredFormType === "short" ? shortFormLink : longFormLink;
 
+    /* build pickup / dropoff times */
+
+    let pickupAt = new Date(selectedAvailability.pickupAt);
+    let dropoffAt = new Date(selectedAvailability.dropoffAt);
+
+    if (selectedAvailability.durationDays === 0.5) {
+
+      const [h, m] = bookingPickupTime.split(":");
+
+      pickupAt.setHours(Number(h), Number(m), 0, 0);
+
+      dropoffAt = new Date(pickupAt);
+
+      if (bookingPickupTime === "07:00") {
+        dropoffAt.setHours(13, 0, 0, 0);
+      } else {
+        dropoffAt.setHours(19, 0, 0, 0);
+      }
+
+    }
+
     const booking = {
       id: bookingId,
+
       vehicleId: selectedAvailability.vehicle.id,
+
       vehicleSnapshot: {
         id: selectedAvailability.vehicle.id,
         name: selectedAvailability.vehicle.name,
         type: selectedAvailability.vehicle.type
       },
-      pickupAt: selectedAvailability.pickupAt.toISOString(),
-      dropoffAt: selectedAvailability.dropoffAt.toISOString(),
+
+      pickupAt: pickupAt.toISOString(),
+      dropoffAt: dropoffAt.toISOString(),
+
       durationDays: selectedAvailability.durationDays,
       durationHours: selectedAvailability.durationHours,
-      pickupTime: selectedAvailability.pickupTime,
+
+      pickupTime: bookingPickupTime,
 
       customerName: customerNameInput?.value || "",
       customerEmail: customerEmailInput?.value || "",
@@ -1584,6 +1647,7 @@ if (bookingForm) {
 
       dartfordCrossings,
       crossingCharge: calculateCrossingCharge(dartfordCrossings),
+
       earlyPickup,
       earlyPickupCharge: calculateEarlyPickupCharge(earlyPickup),
 
@@ -1594,8 +1658,10 @@ if (bookingForm) {
       outstandingAmount,
 
       depositAmount: SECURITY_DEPOSIT_AMOUNT,
+
       status: "pending_confirmation_payment",
-      reminderAt: getReminderAt(selectedAvailability.pickupAt.toISOString()),
+
+      reminderAt: getReminderAt(pickupAt.toISOString()),
 
       outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
       depositLink: DEPOSIT_PAYMENT_LINK,
@@ -1612,22 +1678,25 @@ if (bookingForm) {
     const bookings = await getBookings();
     bookings.push(booking);
     saveBookings(bookings);
+
     BOOKINGS_CACHE = null;
     AVAILABILITY_CACHE.clear();
 
-   await getBookings(true);
-renderBookings();
-renderAdminBookings();
+    await getBookings(true);
+    renderBookings();
+    renderAdminBookings();
 
     await notifyBackend(booking, "booking_created");
 
     const checkoutUrl = await createStripeCheckoutSession(booking);
+
     if (!checkoutUrl) {
       alert("Stripe checkout link is not configured yet.");
       return;
     }
 
     resetBookingCustomerFields();
+
     window.location.href = checkoutUrl;
   });
 }
@@ -2211,6 +2280,27 @@ async function renderBookingBars(year, month) {
 
   durationInput.value = "";
 
+  /* clear vehicle availability results */
+
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "";
+  }
+
+  /* reset selected vehicle */
+
+  selectedAvailability = null;
+
+  if (selectedLorryInput) selectedLorryInput.value = "";
+  if (selectedBaseInput) selectedBaseInput.value = "";
+
+  /* disable booking button again */
+
+  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+
+  /* refresh checkout summary */
+
+  updateCheckoutSummary();
+
   /* highlight selected calendar day */
 
   document.querySelectorAll(".cal-selected")
@@ -2224,7 +2314,7 @@ async function renderBookingBars(year, month) {
     }
   });
 
-  /* force scroll to duration selector */
+  /* scroll to duration selector */
 
   setTimeout(() => {
 
@@ -2249,7 +2339,6 @@ async function renderBookingBars(year, month) {
   }, 200);
 
 }
-
 /* ======================================================
    Month Navigation
 ====================================================== */

@@ -193,108 +193,127 @@ removed duplicate, script is loaded at end of body -->
     </div>
 
     <!-- STEP 3 -->
-    <div class="booking-step" id="step-3">
-      <div class="card">
-        <h3>Your details</h3>
+<div class="booking-step" id="step-3">
+  <div class="card">
+    <h3>Your details</h3>
 
-        <button class="btn ghost" onclick="goToStep(2)">
-Change lorry
-</button>
-        
-      <form id="booking-form" class="booking-form">
-        <div class="form-grid two">
-          <div class="form-field">
-            <label for="selected-lorry">Selected lorry</label>
-            <input id="selected-lorry" type="text" readonly placeholder="Select a lorry first">
-          </div>
+    <button class="btn ghost" onclick="goToStep(2)">
+      Change lorry
+    </button>
 
-          <div class="form-field">
-            <label for="selected-base">Base price</label>
-            <input id="selected-base" type="text" readonly placeholder="—">
-          </div>
+    <form id="booking-form" class="booking-form">
 
-          <div class="form-field">
-            <label for="selected-pickup">Pickup date</label>
-            <input id="selected-pickup" type="date" required>
-          </div>
-
-          <div class="form-field">
-            <label for="selected-duration">Duration</label>
-            <select id="selected-duration" required>
-              <option value="0.5">1/2 day</option>
-              <option value="1" selected>1 day</option>
-              <option value="2">2 days</option>
-              <option value="3">3 days</option>
-              <option value="4">4 days</option>
-              <option value="5">5 days</option>
-              <option value="6">6 days</option>
-              <option value="7">Week</option>
-            </select>
-          </div>
+      <div class="form-grid two">
+        <div class="form-field">
+          <label for="selected-lorry">Selected lorry</label>
+          <input id="selected-lorry" type="text" readonly placeholder="Select a lorry first">
         </div>
 
-        <div id="booking-availability-status" class="availability-status" hidden></div>
-
-        <div class="form-grid two">
-          <div class="form-field">
-            <label for="customer-name">Full name</label>
-            <input id="customer-name" type="text" autocomplete="name" required>
-          </div>
-
-          <div class="form-field">
-            <label for="customer-email">Email</label>
-            <input id="customer-email" type="email" autocomplete="email" required>
-          </div>
-
-          <div class="form-field">
-            <label for="customer-mobile">Mobile</label>
-            <input id="customer-mobile" type="tel" autocomplete="tel" required>
-          </div>
-
-          <div class="form-field">
-            <label for="customer-dob">Date of birth</label>
-            <input id="customer-dob" type="date">
-          </div>
-
-          <div class="form-field full">
-            <label for="customer-address">Address</label>
-            <input id="customer-address" type="text" autocomplete="street-address">
-          </div>
+        <div class="form-field">
+          <label for="selected-base">Base price</label>
+          <input id="selected-base" type="text" readonly placeholder="—">
         </div>
 
-        <div class="extras-grid">
-          <label class="check">
-            <input id="hired-within-3-months" type="checkbox">
-            <span>Hired within last 3 months</span>
-          </label>
-
-          <label class="check">
-            <input id="early-pickup-enabled" type="checkbox">
-            <span>Early pickup (+£20)</span>
-          </label>
-
-          <div class="dartford-row">
-            <label class="check">
-              <input id="dartford-enabled" type="checkbox">
-              <span>Dartford crossings</span>
-            </label>
-
-            <div class="dartford-count">
-              <label for="dartford-count" class="sr-only">Crossings count</label>
-              <input id="dartford-count" type="number" min="1" value="1" disabled>
-            </div>
-          </div>
+        <div class="form-field">
+          <label for="selected-pickup">Pickup date</label>
+          <input id="selected-pickup" type="date" required>
         </div>
 
-        <div id="booking-success" class="success-note" hidden></div>
-
-        <div class="form-actions">
-          <button id="booking-submit" class="btn" type="submit" disabled>Pay to confirm booking</button>
+        <div class="form-field">
+          <label for="selected-duration">Duration</label>
+          <select id="selected-duration" required>
+            <option value="0.5">1/2 day</option>
+            <option value="1" selected>1 day</option>
+            <option value="2">2 days</option>
+            <option value="3">3 days</option>
+            <option value="4">4 days</option>
+            <option value="5">5 days</option>
+            <option value="6">6 days</option>
+            <option value="7">Week</option>
+          </select>
         </div>
-      </form>
+      </div>
+
+      <!-- HALF DAY PICKUP TIME (hidden unless ½ day) -->
+
+      <div class="form-grid two" id="pickup-time-row" style="display:none;">
+        <div class="form-field">
+          <label for="booking-pickup-time">Pickup time (½ day hire)</label>
+          <select id="booking-pickup-time">
+            <option value="07:00">07:00 — Morning (07:00 → 13:00)</option>
+            <option value="13:00">13:00 — Afternoon (13:00 → 19:00)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="booking-availability-status" class="availability-status" hidden></div>
+
+      <div class="form-grid two">
+
+        <div class="form-field">
+          <label for="customer-name">Full name</label>
+          <input id="customer-name" type="text" autocomplete="name" required>
+        </div>
+
+        <div class="form-field">
+          <label for="customer-email">Email</label>
+          <input id="customer-email" type="email" autocomplete="email" required>
+        </div>
+
+        <div class="form-field">
+          <label for="customer-mobile">Mobile</label>
+          <input id="customer-mobile" type="tel" autocomplete="tel" required>
+        </div>
+
+        <div class="form-field">
+          <label for="customer-dob">Date of birth</label>
+          <input id="customer-dob" type="date">
+        </div>
+
+        <div class="form-field full">
+          <label for="customer-address">Address</label>
+          <input id="customer-address" type="text" autocomplete="street-address">
+        </div>
 
       </div>
-    </div>
+
+      <div class="extras-grid">
+
+        <label class="check">
+          <input id="hired-within-3-months" type="checkbox">
+          <span>Hired within last 3 months</span>
+        </label>
+
+        <label class="check">
+          <input id="early-pickup-enabled" type="checkbox">
+          <span>Early pickup (+£20)</span>
+        </label>
+
+        <div class="dartford-row">
+          <label class="check">
+            <input id="dartford-enabled" type="checkbox">
+            <span>Dartford crossings</span>
+          </label>
+
+          <div class="dartford-count">
+            <label for="dartford-count" class="sr-only">Crossings count</label>
+            <input id="dartford-count" type="number" min="1" value="1" disabled>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="booking-success" class="success-note" hidden></div>
+
+      <div class="form-actions">
+        <button id="booking-submit" class="btn" type="submit" disabled>
+          Pay to confirm booking
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
 
     <!-- STEP 4 -->
     <div class="booking-step" id="step-4">
