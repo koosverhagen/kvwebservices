@@ -1569,44 +1569,6 @@ input[type="date"] {
 }
 
 
-/* ======================================================
-   Booking bars
-====================================================== */
-
-.cal-booking-start,
-.cal-booking-mid,
-.cal-booking-end{
-  position:relative;
-}
-
-.cal-booking-start::after,
-.cal-booking-mid::after,
-.cal-booking-end::after{
-  content:"";
-  position:absolute;
-  left:6px;
-  right:6px;
-  bottom:6px;
-  height:6px;
-  background:#ef4444;
-}
-
-.cal-booking-mid::after{
-  left:0;
-  right:0;
-}
-
-.cal-booking-start::after{
-  left:6px;
-  right:0;
-  border-radius:4px 0 0 4px;
-}
-
-.cal-booking-end::after{
-  left:0;
-  right:6px;
-  border-radius:0 4px 4px 0;
-}
 
 
 /* ======================================================
@@ -1727,58 +1689,7 @@ html {
 }
 
 
-/* =================================
-   Calendar Availability Bar
-================================= */
 
-
-
-/* container */
-
-.cal-availability {
-  position: absolute;
-  bottom: 6px;
-  left: 8px;
-  right: 8px;
-  height: 4px;
-
-  background: rgba(0,0,0,0.08);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-/* available portion */
-
-.cal-availability-bar {
-  height: 100%;
-  background: #22c55e;
-  border-radius: 3px;
-  transition: width 0.25s ease;
-}
-
-/* limited availability */
-
-.cal-limited .cal-availability-bar {
-  background: #f59e0b;
-}
-
-/* fully booked */
-
-.cal-unavailable .cal-availability-bar {
-  background: #ef4444;
-  width: 100% !important;
-}
-
-@media (max-width: 768px) {
-
-  .cal-availability {
-    height: 2px;
-    left: 6px;
-    right: 6px;
-    bottom: 4px;
-  }
-
-}
 
 /* ===============================
    Per-vehicle lines
@@ -1823,4 +1734,8 @@ html {
     gap: 1px;
   }
 
+}
+
+.cal-day {
+  padding-bottom: 10px;
 }
