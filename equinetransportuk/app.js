@@ -2473,7 +2473,7 @@ renderAvailabilityDots(dayEl, Math.max(availableVehicles,0));
 
   }
 
-  renderBookingBars(year, month, bookings);
+  //renderBookingBars(year, month, bookings);
 
   /* unlock rendering */
   calGrid.dataset.rendering = "false";
