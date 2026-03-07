@@ -250,6 +250,60 @@ let selectedAvailability = null;
    Helpers
 ====================================================== */
 
+function resetBookingFlow() {
+
+  /* clear availability + booking selection */
+
+  selectedAvailability = null;
+
+  /* clear form fields */
+
+  if (selectedLorryInput) selectedLorryInput.value = "";
+  if (selectedPickupInput) selectedPickupInput.value = "";
+  if (selectedDurationInput) selectedDurationInput.value = "1";
+  if (selectedBaseInput) selectedBaseInput.value = "";
+
+  if (pickupDateInput) pickupDateInput.value = "";
+  if (pickupTimeInput) pickupTimeInput.value = "";
+
+  /* hide pickup time rows */
+
+  const row = document.getElementById("pickup-time-row");
+  if (row) row.style.display = "none";
+
+  const group = document.getElementById("pickup-time-group");
+  if (group) group.style.display = "none";
+
+  /* clear availability results */
+
+  if (availabilityResults) availabilityResults.innerHTML = "";
+
+  /* clear caches */
+
+  AVAILABILITY_CACHE.clear();
+  BOOKINGS_CACHE = null;
+
+  /* disable booking button */
+
+  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+
+  /* update summary */
+
+  updateCheckoutSummary();
+
+  /* go back to step 1 */
+
+  goToStep(1);
+
+  /* scroll to top */
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+}
+
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
   return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
