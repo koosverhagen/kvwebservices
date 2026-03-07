@@ -1666,3 +1666,15 @@ input[type="date"] {
 html {
   scroll-behavior: smooth;
 }
+
+.duration-highlight {
+  outline: 3px solid #1f6feb;
+  outline-offset: 4px;
+  animation: durationPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes durationPulse {
+  0% { box-shadow: 0 0 0 0 rgba(31,111,235,0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(31,111,235,0); }
+  100% { box-shadow: 0 0 0 0 rgba(31,111,235,0); }
+}
