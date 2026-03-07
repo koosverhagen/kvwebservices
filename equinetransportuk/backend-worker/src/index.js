@@ -41,6 +41,11 @@ export default {
   return withCors(response, corsHeaders);
 }
 
+if (request.method === "GET" && url.pathname === "/api/bookings/version") {
+  const response = await handleBookingsVersion(env);
+  return withCors(response, corsHeaders);
+}
+
       return withCors(json({ error: "Not found" }, 404), corsHeaders);
 
     } catch (error) {
@@ -472,6 +477,18 @@ async function handleListBookings(request, env) {
 
   return json({
     bookings
+  });
+
+}
+
+async function handleBookingsVersion(env) {
+
+  const list = await env.BOOKINGS_KV.list({
+    prefix: "booking_"
+  });
+
+  return json({
+    version: list.keys.length
   });
 
 }

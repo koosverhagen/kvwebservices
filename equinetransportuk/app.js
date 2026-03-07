@@ -8,6 +8,8 @@ let activeSlideshow = null;
 
 let BOOKINGS_CACHE = null;
 
+let BOOKINGS_VERSION = null;
+
 /* ======================================================
    Booking Step Controller
 ====================================================== */
@@ -283,9 +285,17 @@ async function getBookings(forceRefresh = false) {
 
   try {
 
-    const res = await fetch(
-      "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list"
-    );
+    const today = new Date();
+
+const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
+  .toISOString();
+
+const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  .toISOString();
+
+const res = await fetch(
+  `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list?from=${firstDay}&to=${lastDay}`
+);
 
     if (!res.ok) throw new Error("Failed to load bookings");
 
@@ -1700,6 +1710,12 @@ window.fleetImages = window.fleetImages || [
 
 })();
 
+/* ===============================
+   LIVE BOOKING WATCHER
+================================ */
+
+setInterval(watchBookingUpdates, 30000);
+
 /* ======================================================
    Calendar Preview Helpers
 ====================================================== */
@@ -2177,6 +2193,48 @@ const validStart = await canStartRental(dayDate);
     changeMonth(direction);
 
   });
+
+  async function watchBookingUpdates() {
+
+  try {
+
+    const res = await fetch(
+      "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/version"
+    );
+
+    const data = await res.json();
+
+    if (BOOKINGS_VERSION === null) {
+      BOOKINGS_VERSION = data.version;
+      return;
+    }
+
+    if (data.version !== BOOKINGS_VERSION) {
+
+      console.log("New booking detected — refreshing calendar");
+
+      BOOKINGS_VERSION = data.version;
+
+      BOOKINGS_CACHE = null;
+
+      await getBookings(true);
+
+      renderBookings();
+      renderAdminBookings();
+
+      if (typeof renderCalendar === "function") {
+        renderCalendar();
+      }
+
+    }
+
+  } catch (err) {
+
+    console.warn("Booking watcher failed", err);
+
+  }
+
+}
 
   /* ======================================================
      Initial render
