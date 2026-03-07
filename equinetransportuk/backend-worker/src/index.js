@@ -42,7 +42,7 @@ export default {
 }
 
 if (request.method === "GET" && url.pathname === "/api/bookings/version") {
-  const response = await handleBookingsVersion(env);
+  const response = await handleBookingsVersion();
   return withCors(response, corsHeaders);
 }
 
@@ -294,7 +294,24 @@ async function handleCreateCheckoutSession(request, env) {
   });
 }
 
+function getDatesBetween(start, end) {
 
+  const dates = [];
+  const current = new Date(start);
+
+  current.setHours(0,0,0,0);
+
+  while (current <= end) {
+
+    dates.push(current.toISOString().slice(0,10));
+
+    current.setDate(current.getDate() + 1);
+
+  }
+
+  return dates;
+
+}
 
 
 /* ===============================
@@ -359,7 +376,8 @@ let dropoffAt = new Date(pickupAt);
 
 const pickupTime = session.metadata.pickupTime || "07:00";
 
-pickupAt.setHours(...pickupTime.split(":"));
+const [hour, minute] = pickupTime.split(":").map(Number);
+pickupAt.setHours(hour, minute, 0, 0);
 
 if (durationDays === 0.5) {
 
@@ -430,10 +448,23 @@ const booking = {
 
     console.log("✅ Booking confirmed:", booking);
 
-    await env.BOOKINGS_KV.put(
-      `booking_${session.id}`,
-      JSON.stringify(booking)
-    );
+    /* store booking per day to avoid KV scan */
+
+const start = new Date(booking.pickupAt);
+const end = new Date(booking.dropoffAt);
+
+const days = getDatesBetween(start, end);
+
+for (const day of days) {
+
+  const key = `booking:${day}:${booking.id}`;
+
+  await env.BOOKINGS_KV.put(
+    key,
+    JSON.stringify(booking)
+  );
+
+}
   }
 
 
@@ -454,35 +485,38 @@ async function handleListBookings(request, env) {
 
   const url = new URL(request.url);
 
-  const from = url.searchParams.get("from");
-  const to = url.searchParams.get("to");
-
-  const list = await env.BOOKINGS_KV.list({
-    prefix: "booking_"
-  });
+  const from = new Date(url.searchParams.get("from"));
+  const to = new Date(url.searchParams.get("to"));
 
   const bookings = [];
+  const seen = new Set();
 
-  for (const key of list.keys) {
+  const current = new Date(from);
 
-    const value = await env.BOOKINGS_KV.get(key.name);
+  while (current <= to) {
 
-    if (!value) continue;
+    const day = current.toISOString().slice(0,10);
 
-    const booking = JSON.parse(value);
+    const list = await env.BOOKINGS_KV.list({
+      prefix: `booking:${day}:`
+    });
 
-    if (from && to) {
+    for (const key of list.keys) {
 
-      const pickup = new Date(booking.pickupAt);
+      if (seen.has(key.name)) continue;
 
-      if (pickup < new Date(from) || pickup > new Date(to)) {
-        continue;
-      }
+      const value = await env.BOOKINGS_KV.get(key.name);
+
+      if (!value) continue;
+
+      bookings.push(JSON.parse(value));
+
+      seen.add(key.name);
 
     }
 
-    bookings.push(booking);
- 
+    current.setDate(current.getDate() + 1);
+
   }
 
   return json({
@@ -491,17 +525,15 @@ async function handleListBookings(request, env) {
 
 }
 
-async function handleBookingsVersion(env) {
 
-  const list = await env.BOOKINGS_KV.list({
-    prefix: "booking_"
-  });
+  async function handleBookingsVersion() {
 
   return json({
-  version: Date.now()
-});
+    version: Date.now()
+  });
 
 }
+
 
 /* ===============================
    HELPERS
