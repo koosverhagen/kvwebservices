@@ -1662,3 +1662,7 @@ input[type="date"] {
   border-color:#1f6feb;
   transition:all .25s ease;
 }
+
+html {
+  scroll-behavior: smooth;
+}

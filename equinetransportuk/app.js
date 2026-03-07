@@ -2231,9 +2231,12 @@ async function renderBookingBars(year, month) {
 
   if (durationSection) {
 
-    durationSection.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
+    const offset = 120; // space for header / spacing
+    const top = durationSection.getBoundingClientRect().top + window.pageYOffset - offset;
+
+    window.scrollTo({
+      top: top,
+      behavior: "smooth"
     });
 
     durationSection.classList.add("duration-highlight");
