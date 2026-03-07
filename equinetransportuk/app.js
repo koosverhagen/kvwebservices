@@ -826,7 +826,23 @@ function updateHalfDayPickup() {
 
   if (!row) return;
 
-  row.style.display = duration === 0.5 ? "grid" : "none";
+  if (duration === 0.5) {
+
+    row.style.display = "grid";
+
+    /* highlight field so user notices it */
+
+    row.classList.add("duration-highlight");
+
+    setTimeout(()=>{
+      row.classList.remove("duration-highlight");
+    },2000);
+
+  } else {
+
+    row.style.display = "none";
+
+  }
 
 }
 
@@ -1037,32 +1053,77 @@ async function bookFromVehicle(vehicleId) {
 }
 
 async function selectAvailability(vehicleId) {
+
   const pickupDate = pickupDateInput?.value;
   let pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
   const durationDays = Number(durationDaysInput?.value);
+
   const vehicle = vehicles.find((item) => item.id === vehicleId);
+
   if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) return;
 
+  /* enforce correct pickup time rules */
+
   if (is35T(vehicle) && durationDays === 0.5) {
-    if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) pickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
+
+    if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
+      pickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
+    }
+
   } else {
+
     pickupTime = DEFAULT_PICKUP_TIME;
+
   }
 
   const code = getCurrentDiscountCode();
-  selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, code);
+
+  selectedAvailability = await buildAvailability(
+    vehicle,
+    pickupDate,
+    durationDays,
+    pickupTime,
+    code
+  );
+
+  /* populate Step 3 form */
 
   if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
+
   if (selectedPickupInput) selectedPickupInput.value = pickupDate;
+
   populateBookingDurationSelect(vehicle);
-  if (selectedDurationInput) selectedDurationInput.value = String(durationDays);
-  if (selectedBaseInput) selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+
+  if (selectedDurationInput) {
+    selectedDurationInput.value = String(durationDays);
+  }
+
+  /* show pickup time selector if ½ day */
+
+  updateHalfDayPickup();
+
+  /* sync pickup time into Step 3 selector */
+
+  const bookingTimeInput = document.getElementById("booking-pickup-time");
+
+  if (bookingTimeInput && durationDays === 0.5) {
+    bookingTimeInput.value = pickupTime;
+  }
+
+  /* update base price */
+
+  if (selectedBaseInput) {
+    selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+  }
 
   const statusEl = document.getElementById("booking-availability-status");
+
   if (statusEl) statusEl.hidden = true;
+
   if (bookingSuccess) bookingSuccess.hidden = true;
 
   updateCheckoutSummary();
+
 }
 
 async function checkBookingFormAvailability() {
