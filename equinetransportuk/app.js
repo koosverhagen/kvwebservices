@@ -2227,23 +2227,31 @@ async function renderBookingBars(year, month) {
     }
   });
 
-  /* scroll to duration selector */
+  /* delayed scroll to duration selector */
 
   if (durationSection) {
 
-    const offset = 120; // space for header / spacing
-    const top = durationSection.getBoundingClientRect().top + window.pageYOffset - offset;
-
-    window.scrollTo({
-      top: top,
-      behavior: "smooth"
-    });
-
-    durationSection.classList.add("duration-highlight");
-
     setTimeout(() => {
-      durationSection.classList.remove("duration-highlight");
-    }, 2000);
+
+      const offset = 140;
+
+      const top =
+        durationSection.getBoundingClientRect().top +
+        window.pageYOffset -
+        offset;
+
+      window.scrollTo({
+        top: top,
+        behavior: "smooth"
+      });
+
+      durationSection.classList.add("duration-highlight");
+
+      setTimeout(() => {
+        durationSection.classList.remove("duration-highlight");
+      }, 2000);
+
+    }, 120);
 
   }
 
