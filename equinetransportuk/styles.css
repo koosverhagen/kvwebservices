@@ -1644,3 +1644,7 @@ input[type="date"] {
   cursor: not-allowed;
 }
 
+.cal-day{
+  min-height:42px;
+}
+
