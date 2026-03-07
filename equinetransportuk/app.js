@@ -1710,6 +1710,49 @@ window.fleetImages = window.fleetImages || [
 
 })();
 
+/* ======================================================
+   LIVE BOOKING UPDATE WATCHER
+====================================================== */
+
+let bookingVersion = 0;
+
+async function watchBookingUpdates() {
+
+  try {
+
+    const res = await fetch(apiUrl("/api/bookings/list"));
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    if (!data.bookings) return;
+
+    const newVersion = data.bookings.length;
+
+    if (newVersion !== bookingVersion) {
+
+      bookingVersion = newVersion;
+
+      bookingsCache = data.bookings;
+
+      renderBookings();
+      renderAdminBookings();
+
+      if (typeof renderCalendar === "function") {
+        renderCalendar();
+      }
+
+      console.log("📅 Bookings updated");
+
+    }
+
+  } catch (err) {
+    console.warn("Booking watcher failed", err);
+  }
+
+}
+
 /* ===============================
    LIVE BOOKING WATCHER
 ================================ */
