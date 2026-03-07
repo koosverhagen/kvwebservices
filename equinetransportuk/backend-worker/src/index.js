@@ -274,13 +274,15 @@ async function handleCreateCheckoutSession(request, env) {
       }
     ],
 
-    metadata: {
-      vehicleId: booking.vehicleId,
-      pickupDate: booking.pickupDate,
-      durationDays: booking.durationDays,
-      customerName: booking.customerName,
-      customerEmail: booking.customerEmail
-    },
+  metadata: {
+  vehicleId: booking.vehicleId,
+  vehicleName: booking.vehicleName || "",
+  pickupDate: booking.pickupDate,
+  pickupTime: booking.pickupTime || "07:00",
+  durationDays: booking.durationDays,
+  customerName: booking.customerName,
+  customerEmail: booking.customerEmail
+},
 
     success_url: "https://equinetransportuk.com/booking-success",
     cancel_url: "https://equinetransportuk.com/#booking"
@@ -355,9 +357,17 @@ const durationDays = Number(session.metadata.durationDays || 1);
 
 let dropoffAt = new Date(pickupAt);
 
+const pickupTime = session.metadata.pickupTime || "07:00";
+
+pickupAt.setHours(...pickupTime.split(":"));
+
 if (durationDays === 0.5) {
 
-  dropoffAt.setHours(dropoffAt.getHours() + 6);
+  if (pickupTime === "07:00") {
+    dropoffAt.setHours(13,0,0,0);
+  } else {
+    dropoffAt.setHours(19,0,0,0);
+  }
 
 } else {
 
@@ -472,7 +482,7 @@ async function handleListBookings(request, env) {
     }
 
     bookings.push(booking);
-
+ 
   }
 
   return json({
@@ -488,8 +498,8 @@ async function handleBookingsVersion(env) {
   });
 
   return json({
-    version: list.keys.length
-  });
+  version: Date.now()
+});
 
 }
 
