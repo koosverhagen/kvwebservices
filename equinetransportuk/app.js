@@ -6,7 +6,13 @@
 
 let activeSlideshow = null;
 
+/* ===============================
+   Booking cache
+================================ */
+
 let BOOKINGS_CACHE = null;
+let BOOKINGS_CACHE_AT = 0;
+const BOOKINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 let BOOKINGS_VERSION = null;
 
@@ -279,29 +285,28 @@ function asDate(dateString, timeString) {
 
 async function getBookings(forceRefresh = false) {
 
-  if (!forceRefresh && BOOKINGS_CACHE) {
+  const now = Date.now();
+
+  if (!forceRefresh && BOOKINGS_CACHE && (now - BOOKINGS_CACHE_AT) < BOOKINGS_CACHE_TTL) {
     return BOOKINGS_CACHE;
   }
 
   try {
 
     const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
-const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-  .toISOString();
-
-const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-  .toISOString();
-
-const res = await fetch(
-  `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list?from=${firstDay}&to=${lastDay}`
-);
+    const res = await fetch(
+      `${apiUrl("/api/bookings/list")}?from=${encodeURIComponent(firstDay)}&to=${encodeURIComponent(lastDay)}`
+    );
 
     if (!res.ok) throw new Error("Failed to load bookings");
 
     const data = await res.json();
 
     BOOKINGS_CACHE = data.bookings || [];
+    BOOKINGS_CACHE_AT = now;
 
     return BOOKINGS_CACHE;
 
@@ -311,15 +316,18 @@ const res = await fetch(
 
     try {
       BOOKINGS_CACHE = JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
+      BOOKINGS_CACHE_AT = now;
       return BOOKINGS_CACHE;
     } catch {
       return [];
     }
 
   }
-
 }
 
+function getCalendarBookings() {
+  return getBookings(true);
+}
 function saveBookings(bookings) {
   localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(bookings));
 }
@@ -1887,48 +1895,6 @@ window.fleetImages = window.fleetImages || [
 
 let bookingVersion = 0;
 
-async function watchBookingUpdates() {
-
-  try {
-
-    const res = await fetch(apiUrl("/api/bookings/list"));
-
-    if (!res.ok) return;
-
-    const data = await res.json();
-
-    if (!data.bookings) return;
-
-    const newVersion = data.bookings.length;
-
-    if (newVersion !== bookingVersion) {
-
-      bookingVersion = newVersion;
-
-      bookingsCache = data.bookings;
-
-      renderBookings();
-      renderAdminBookings();
-
-      if (typeof renderCalendar === "function") {
-        renderCalendar();
-      }
-
-      console.log("📅 Bookings updated");
-
-    }
-
-  } catch (err) {
-    console.warn("Booking watcher failed", err);
-  }
-
-}
-
-/* ===============================
-   LIVE BOOKING WATCHER
-================================ */
-
-setInterval(watchBookingUpdates, 30000);
 
 /* ======================================================
    Calendar Preview Helpers
@@ -2099,10 +2065,8 @@ function isMobile() {
   /* ======================================================
      Check availability for a specific calendar day
   ====================================================== */
-
-  async function checkDayLocalAvailability(dateObj) {
-
-    const bookings = await getBookings();
+ 
+  function checkDayLocalAvailability(dateObj, bookings) {
     let availableVehicles = 0;
 
     vehicles.forEach(vehicle => {
@@ -2141,17 +2105,15 @@ function isMobile() {
      Check if rental can start
   ====================================================== */
 
-  async function canStartRental(startDate) {
+  function canStartRental(startDate, bookings) {
 
-    const durationInput = document.getElementById("duration-days");
-    const durationDays = Number(durationInput?.value || 1);
+  const durationInput = document.getElementById("duration-days");
+  const durationDays = Number(durationInput?.value || 1);
 
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + durationDays - 1);
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + durationDays - 1);
 
-    const bookings = await getBookings();
-
-    return !bookings.some(booking => {
+  return !bookings.some(booking => {
 
       const existingStart = new Date(booking.pickupAt);
       const existingEnd = new Date(booking.dropoffAt);
@@ -2165,10 +2127,7 @@ function isMobile() {
    Render Booking Bars (multi-day visual)
 ====================================================== */
 
-async function renderBookingBars(year, month) {
-
-  const bookings = await getBookings();
-
+function renderBookingBars(year, month, bookings) {
   bookings.forEach(booking => {
 
     const start = new Date(booking.pickupAt);
@@ -2216,9 +2175,8 @@ async function renderBookingBars(year, month) {
 }
   async function renderCalendar() {
 
-  /* prevent double rendering */
-  if (calGrid.dataset.rendering === "true") return;
-  calGrid.dataset.rendering = "true";
+  /* load bookings ONCE for the whole calendar */
+  const bookings = await getBookings();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -2285,8 +2243,8 @@ async function renderBookingBars(year, month) {
        AVAILABILITY CHECK
     =============================== */
 
-    const status = await checkDayLocalAvailability(dayDate);
-    const validStart = await canStartRental(dayDate);
+   const status = checkDayLocalAvailability(dayDate, bookings);
+const validStart = canStartRental(dayDate, bookings);
 
     if (status === "available") {
       dayEl.classList.add("cal-available");
@@ -2354,7 +2312,7 @@ async function renderBookingBars(year, month) {
 
   }
 
-  renderBookingBars(year, month);
+  renderBookingBars(year, month, bookings);
 
   /* unlock rendering */
   calGrid.dataset.rendering = "false";
@@ -2508,6 +2466,8 @@ async function watchBookingUpdates() {
 
 }
 
+
+
 /* ======================================================
    Initial render
 ====================================================== */
@@ -2540,10 +2500,10 @@ if (durationInput) {
 
 }
 
-/* start live booking watcher */
+//* start live booking watcher */
 
-watchBookingUpdates();
-setInterval(watchBookingUpdates, 30000);
+//watchBookingUpdates();
+//setInterval(watchBookingUpdates, 30000);
 
 })();
 
