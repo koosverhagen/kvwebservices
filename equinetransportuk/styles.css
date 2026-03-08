@@ -1950,6 +1950,14 @@ input[readonly]{
   background:#f8fafc;
 }
 
+/* remove inner card inside dartford */
+
+.dartford-row .check{
+  padding:0;
+  border:none;
+  background:transparent;
+}
+
 /* number input */
 
 .dartford-count input{
