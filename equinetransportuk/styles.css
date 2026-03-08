@@ -1903,6 +1903,56 @@ input[readonly]{
   text-align:center;
 }
 
+/* =========================
+   CHECKBOX STYLE
+========================= */
+
+.check input[type="checkbox"]{
+
+  appearance:none;
+  -webkit-appearance:none;
+
+  width:20px;
+  height:20px;
+
+  border:2px solid var(--line);
+  border-radius:6px;
+
+  background:#fff;
+
+  cursor:pointer;
+  position:relative;
+
+  flex-shrink:0;
+}
+
+/* checked */
+
+.check input[type="checkbox"]:checked{
+  background:var(--accent);
+  border-color:var(--accent);
+}
+
+/* checkmark */
+
+.check input[type="checkbox"]:checked::after{
+  content:"";
+  position:absolute;
+  left:5px;
+  top:2px;
+  width:6px;
+  height:11px;
+  border:solid #fff;
+  border-width:0 2px 2px 0;
+  transform:rotate(45deg);
+}
+
+/* label alignment */
+
+.check span{
+  line-height:1.3;
+}
+
 
 /* =========================
    PAYMENT BUTTON
