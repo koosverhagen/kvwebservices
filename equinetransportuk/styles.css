@@ -308,12 +308,6 @@ h1 {
    Inputs, labels, fields
 ====================================================== */
 
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
 label {
   font-size: 13px;
   color: var(--muted);
@@ -333,7 +327,7 @@ input, select, textarea {
 }
 
 textarea { min-height: 100px; }
-.full { grid-column: 1 / -1; }
+
 
 .checkline {
   display: grid;
@@ -1191,8 +1185,15 @@ textarea { min-height: 100px; }
   text-align:center;
 }
 
-.form-actions{ margin-top: 18px; }
-.form-actions .btn{ width:100%; }
+.form-actions{ margin-top: 18px; 
+  grid-column:1 / -1;
+  display:flex;
+  justify-content:center;
+}
+
+.form-actions .btn{
+  width:320px;
+ }
 
 /* ======================================================
    VOUCHERS & EXTRAS
@@ -1814,14 +1815,14 @@ html {
 ========================= */
 
 #booking-form{
-  display:flex;
-  flex-direction:column;
-  gap:22px;
-  max-width:680px;
+  max-width:720px;
   margin:20px auto 0;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:22px;
 }
 
-/* form field wrapper */
+/* field wrapper */
 
 .form-field{
   display:flex;
@@ -1837,7 +1838,7 @@ html {
   color:#1d2530;
 }
 
-/* inputs + selects */
+/* inputs */
 
 .form-field input,
 .form-field select{
@@ -1851,7 +1852,7 @@ html {
   transition:border .15s ease, box-shadow .15s ease;
 }
 
-/* focus state */
+/* focus */
 
 .form-field input:focus,
 .form-field select:focus{
@@ -1860,16 +1861,45 @@ html {
   box-shadow:0 0 0 3px rgba(31,111,235,0.12);
 }
 
-/* readonly fields */
+/* readonly */
 
 input[readonly]{
   background:#f5f7fa;
 }
 
-/* date icons alignment */
+/* date icon */
 
 .form-field input[type="date"]{
   padding-right:40px;
+}
+
+/* full width fields */
+
+.form-full{
+  grid-column:1 / -1;
+}
+
+/* desktop layout */
+
+@media (min-width:720px){
+
+  #booking-form{
+    grid-template-columns:1fr 1fr;
+  }
+
+}
+
+/* checkbox column */
+
+.extras-grid{
+  display:grid;
+  gap:16px;
+}
+
+.check{
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
 /* =========================
