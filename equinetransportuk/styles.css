@@ -1922,15 +1922,17 @@ input[readonly]{
 .check input[type="checkbox"]:checked::after{
   content:"";
   position:absolute;
-  left:6px;
-  top:3px;
+
+  left:50%;
+  top:50%;
 
   width:6px;
   height:12px;
 
   border:solid #fff;
   border-width:0 2px 2px 0;
-  transform:rotate(45deg);
+
+  transform:translate(-50%,-60%) rotate(45deg);
 }
 
 /* label text */
