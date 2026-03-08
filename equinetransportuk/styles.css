@@ -1923,6 +1923,13 @@ input[readonly]{
   color:var(--muted);
 }
 
+.dartford-row label{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  gap:12px;
+}
+
 /* dartford row */
 .dartford-row{
   display:flex;
