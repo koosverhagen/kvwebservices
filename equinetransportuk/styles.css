@@ -1156,51 +1156,6 @@ textarea { min-height: 100px; }
 .availability-status.ok{ border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.10); }
 .availability-status.error{ border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.10); }
 
-/* availability message */
-
-.availability-status{
-  grid-column: 1 / -1;
-  min-height: 120px;
-}
-
-.extras-grid{
-  margin:18px 0;
-  display:grid;
-  gap:12px;
-}
-
-.check{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  font-size:14px;
-}
-
-.dartford-row{
-  display:flex;
-  gap:12px;
-  align-items:center;
-  justify-content:space-between;
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid rgba(15,23,42,0.10);
-  background: rgba(15,23,42,0.03);
-}
-
-.dartford-count input{
-  width:90px;
-  text-align:center;
-}
-
-.form-actions{ margin-top: 18px; 
-  grid-column:1 / -1;
-  display:flex;
-  justify-content:center;
-}
-
-.form-actions .btn{
-  width:320px;
- }
 
 /* ======================================================
    VOUCHERS & EXTRAS
@@ -1894,6 +1849,20 @@ input[readonly]{
 }
 
 /* =========================
+   AVAILABILITY MESSAGE
+========================= */
+
+.availability-status{
+  padding:16px;
+  border-radius:14px;
+  border:1px solid #b6efcb;
+  background:#edfdf2;
+  color:#137a3d;
+  margin:18px 0;
+}
+
+
+/* =========================
    EXTRAS
 ========================= */
 
@@ -1901,17 +1870,19 @@ input[readonly]{
   display:flex;
   flex-direction:column;
   gap:16px;
+  margin:18px 0;
 }
 
-/* checkbox */
+/* checkbox rows */
 
 .check{
   display:flex;
   align-items:center;
   gap:12px;
+  font-size:14px;
 }
 
-/* dartford box */
+/* dartford row */
 
 .dartford-row{
   display:flex;
@@ -1924,10 +1895,21 @@ input[readonly]{
   background:#f8fafc;
 }
 
-/* payment button */
+/* dartford number */
+
+.dartford-count input{
+  width:80px;
+  height:42px;
+  text-align:center;
+}
+
+
+/* =========================
+   PAYMENT BUTTON
+========================= */
 
 .form-actions{
-  margin-top:10px;
+  margin-top:18px;
 }
 
 .form-actions .btn{
