@@ -169,6 +169,8 @@ h1 {
 
 .hero-image {
   width: 100%;
+  height:100%;
+  display:block;
   border-radius: 32px;
   object-fit: cover;
   aspect-ratio: 16 / 10;
@@ -188,6 +190,8 @@ h1 {
 
 .hero-image-wrap{
   position:relative;
+  border-radius:24px;
+  overflow:hidden;
 }
 
 .hero-image:hover {
@@ -2048,3 +2052,18 @@ input[readonly]{
   grid-column:1 / -1;
 }
 
+/* HERO OVERLAY */
+
+.hero-overlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:opacity .4s ease;
+}
+
+.hero-overlay.playing{
+  opacity:0;
+  pointer-events:none;
+}
