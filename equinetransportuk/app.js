@@ -59,6 +59,10 @@ function goToStep(step) {
 function startBooking(vehicleId) {
 
   PRESELECTED_VEHICLE = vehicleId;
+  selectedAvailability = null;
+
+  if (selectedLorryInput) selectedLorryInput.value = "";
+  if (selectedBaseInput) selectedBaseInput.value = "";
 
   const bookingSection = document.getElementById("booking");
 
@@ -69,6 +73,7 @@ function startBooking(vehicleId) {
     });
   }
 
+  goToStep(1);
 }
 
 /* ======================================================
@@ -746,7 +751,7 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
   availabilityResults.innerHTML = `<p class="empty-note">${escapeHtml(message)}</p>`;
 }
 
-function renderAvailabilityResults(items) {
+function renderAvailabilityResults(items) {function renderAvailabilityResults(items) {
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     if (availabilityResults) availabilityResults.innerHTML = "";
     return;
@@ -757,12 +762,35 @@ function renderAvailabilityResults(items) {
     return;
   }
 
+  /* ==========================================
+     If customer came from fleet card,
+     auto-select that lorry if available
+  ========================================== */
+
+  if (PRESELECTED_VEHICLE) {
+    const matched = items.find(
+      item => item.vehicle.id === PRESELECTED_VEHICLE
+    );
+
+    if (matched) {
+      selectAvailability(PRESELECTED_VEHICLE);
+      PRESELECTED_VEHICLE = null;
+      goToStep(3);
+      return;
+    }
+  }
+
   const html = items
     .map((item) => {
       const confirmationFee = getConfirmationFee(item.vehicle);
       const displayPrice = Number(item.discountedTotal ?? item.baseCost ?? 0);
+
+      const isPreselected =
+        PRESELECTED_VEHICLE &&
+        item.vehicle.id === PRESELECTED_VEHICLE;
+
       return `
-        <article class="availability-item">
+        <article class="availability-item ${isPreselected ? "preselected" : ""}">
           <div>
             <h4>${escapeHtml(item.vehicle.name)}</h4>
             <p class="muted">
@@ -778,7 +806,10 @@ function renderAvailabilityResults(items) {
             </p>
           </div>
 
-          <button class="btn choose-lorry" type="button" data-vehicle-id="${escapeHtml(item.vehicle.id)}">
+          <button
+            class="btn choose-lorry"
+            type="button"
+            data-vehicle-id="${escapeHtml(item.vehicle.id)}">
             Select
           </button>
         </article>
@@ -788,15 +819,12 @@ function renderAvailabilityResults(items) {
 
   availabilityResults.innerHTML = html;
 
-/* scroll only if vehicles available */
+  availabilityResults.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
-availabilityResults.scrollIntoView({
-  behavior: "smooth",
-  block: "start"
-});
-
-goToStep(2);
-
+  goToStep(2);
 }
 
 availabilityResults.addEventListener("click", async (e)=>{
