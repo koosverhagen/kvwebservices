@@ -59,6 +59,9 @@ function goToStep(step) {
 function startBooking(vehicleId) {
 
   PRESELECTED_VEHICLE = vehicleId;
+
+  updateCalendarVehicleLabel();
+
   selectedAvailability = null;
 
   if (selectedLorryInput) selectedLorryInput.value = "";
@@ -117,6 +120,12 @@ const FULL_DAY_DROPOFF_TIME = "19:00";
 // Availability cache (quote results)
 const AVAILABILITY_CACHE = new Map();
 const AVAILABILITY_CACHE_TTL = 60 * 1000; // 60 seconds
+
+/* ===============================
+   Calendar cache
+================================ */
+
+const CALENDAR_CACHE = new Map();
 
 // Duration price tables
 const RATE_35T_TOTALS = {
@@ -739,7 +748,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAUL
 
     const availability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode);
 
-    const vehicleBookings = (await getBookings()).filter(
+   const vehicleBookings = (await getBookings(false)).filter(
       (booking) => booking.vehicleId === vehicle.id && booking.status !== "cancelled"
     );
 
@@ -1155,6 +1164,24 @@ function renderFleet() {
 /* ======================================================
    Booking helpers (select from fleet / results)
 ====================================================== */
+
+function updateCalendarVehicleLabel() {
+
+  const label = document.getElementById("calendar-vehicle-label");
+  if (!label) return;
+
+  if (!PRESELECTED_VEHICLE) {
+    label.classList.add("hidden");
+    label.textContent = "";
+    return;
+  }
+
+  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+
+  label.textContent = `Booking: ${vehicle?.name || "Selected vehicle"}`;
+  label.classList.remove("hidden");
+
+}
 
 function populateBookingDurationSelect(vehicle) {
   const select = selectedDurationInput;
@@ -2169,7 +2196,7 @@ function movePreview(e){
 
 async function showVehiclePreview(date, event) {
 
-  const bookings = await getBookings();
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   const dateStart = new Date(date);
   dateStart.setHours(0,0,0,0);
@@ -2360,6 +2387,9 @@ function isMobile() {
 ====================================================== */
 
 function renderBookingBars(year, month, bookings) {
+
+  const cells = Array.from(document.querySelectorAll("#cal-grid .cal-day"));
+
   bookings.forEach(booking => {
 
     const start = new Date(booking.pickupAt);
@@ -2376,18 +2406,33 @@ function renderBookingBars(year, month, bookings) {
 
         const day = current.getDate();
 
-        const cell = Array.from(
-          document.querySelectorAll("#cal-grid .cal-day")
-        ).find(c => Number(c.textContent) === day);
+        const cell = cells.find(c => Number(c.textContent) === day);
 
         if (cell) {
 
           cell.classList.add("cal-booked");
 
-          if (day === start.getDate()) {
+          /* highlight selected vehicle */
+
+          if (PRESELECTED_VEHICLE) {
+
+            if (booking.vehicleId === PRESELECTED_VEHICLE) {
+              cell.classList.add("cal-booked-selected");
+            } else {
+              cell.classList.add("cal-booked-other");
+            }
+
+          }
+
+          /* booking segment type */
+
+          const isStart = current.toDateString() === start.toDateString();
+          const isEnd   = current.toDateString() === end.toDateString();
+
+          if (isStart) {
             cell.classList.add("cal-booking-start");
           }
-          else if (day === end.getDate()) {
+          else if (isEnd) {
             cell.classList.add("cal-booking-end");
           }
           else {
@@ -2405,160 +2450,149 @@ function renderBookingBars(year, month, bookings) {
   });
 
 }
-  async function renderCalendar() {
+ async function renderCalendar() {
 
-  /* load bookings ONCE for the whole calendar */
-  const bookings = await getBookings();
+/* load bookings (use cache if already available) */
+const bookings = BOOKINGS_CACHE || await getBookings(false);
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+const year = currentDate.getFullYear();
+const month = currentDate.getMonth();
 
-  const monthNames = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
+const monthNames = [
+"January","February","March","April","May","June",
+"July","August","September","October","November","December"
+];
 
-  calTitle.textContent = `${monthNames[month]} ${year}`;
+calTitle.textContent = `${monthNames[month]} ${year}`;
 
-  calGrid.innerHTML = "";
+calGrid.innerHTML = "";
 
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
+const firstDay = new Date(year, month, 1);
+const lastDay = new Date(year, month + 1, 0);
 
-  let startOffset = firstDay.getDay();
-  startOffset = startOffset === 0 ? 6 : startOffset - 1;
+let startOffset = firstDay.getDay();
+startOffset = startOffset === 0 ? 6 : startOffset - 1;
 
-  for (let i = 0; i < startOffset; i++) {
-    calGrid.appendChild(document.createElement("div"));
-  }
+for (let i = 0; i < startOffset; i++) {
+calGrid.appendChild(document.createElement("div"));
+}
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
+const today = new Date();
+today.setHours(0,0,0,0);
 
-  for (let day = 1; day <= lastDay.getDate(); day++) {
+for (let day = 1; day <= lastDay.getDate(); day++) {
 
-    const dayDate = new Date(year, month, day);
-    dayDate.setHours(0,0,0,0);
+const dayDate = new Date(year, month, day);
+dayDate.setHours(0,0,0,0);
 
-    const dayEl = document.createElement("div");
-    dayEl.className = "cal-day";
-    dayEl.textContent = day;
+const dayEl = document.createElement("div");
+dayEl.className = "cal-day";
+dayEl.textContent = day;
 
-    /* today marker */
+/* today marker */
+if (dayDate.getTime() === today.getTime()) {
+  dayEl.classList.add("cal-today");
+}
 
-    if (dayDate.getTime() === today.getTime()) {
-      dayEl.classList.add("cal-today");
-    }
+/* weekend shading */
+const weekday = dayDate.getDay();
+if (weekday === 0 || weekday === 6) {
+  dayEl.classList.add("cal-weekend");
+}
 
-    /* weekend shading */
+/* ===============================
+   PAST DATES
+=============================== */
 
-    const weekday = dayDate.getDay();
-    if (weekday === 0 || weekday === 6) {
-      dayEl.classList.add("cal-weekend");
-    }
+if (dayDate < today) {
 
-    /* ===============================
-       PAST DATES
-    =============================== */
+  dayEl.classList.add("cal-unavailable","cal-past");
+  calGrid.appendChild(dayEl);
+  continue;
 
-    if (dayDate < today) {
+}
 
-      dayEl.classList.add("cal-unavailable");
-      dayEl.classList.add("cal-past");
+/* ===============================
+   AVAILABILITY CHECK
+=============================== */
 
-      calGrid.appendChild(dayEl);
-      continue;
-
-    }
-
-    /* ===============================
-       AVAILABILITY CHECK
-    =============================== */
-
-   const status = checkDayLocalAvailability(dayDate, bookings);
+const status = checkDayLocalAvailability(dayDate, bookings);
 const validStart = canStartRental(dayDate, bookings);
-
-const availableVehicles = vehicles.length -
-  bookings.filter(b => {
-    const start = new Date(b.pickupAt);
-    const end = new Date(b.dropoffAt);
-    return start <= dayDate && end >= dayDate;
-  }).length;
 
 renderAvailabilityDots(dayEl, bookings, dayDate);
 
-    if (status === "available") {
-      dayEl.classList.add("cal-available");
-    }
-    else if (status === "limited") {
-      dayEl.classList.add("cal-limited");
-    }
-    else {
-      dayEl.classList.add("cal-unavailable");
-    }
+if (status === "available") {
+  dayEl.classList.add("cal-available");
+}
+else if (status === "limited") {
+  dayEl.classList.add("cal-limited");
+}
+else {
+  dayEl.classList.add("cal-unavailable");
+}
 
-    if (!validStart) {
+if (!validStart) {
 
-      dayEl.classList.remove("cal-available","cal-limited");
-
-      dayEl.classList.add("cal-unavailable");
-      dayEl.classList.add("cal-no-start");
-
-    }
-
-    /* ===============================
-       PREVIEW EVENTS
-    =============================== */
-
-    dayEl.addEventListener("mouseenter", (e) => {
-
-      clearPreview();
-      previewRental(dayDate);
-      showVehiclePreview(dayDate, e);
-
-    });
-
-    if (!isMobile()) {
-      dayEl.addEventListener("mousemove", movePreview);
-    }
-
-    dayEl.addEventListener("mouseleave", clearPreview);
-
-    dayEl.addEventListener("touchend", (e) => {
-
-      e.stopPropagation();
-
-      clearPreview();
-      previewRental(dayDate);
-      showVehiclePreview(dayDate);
-
-    });
-
-    /* ===============================
-       CLICK SELECTION
-    =============================== */
-
-    if (validStart) {
-
-      dayEl.addEventListener("click", () => {
-
-        clearPreview();
-        selectDate(dayDate);
-
-      });
-
-    }
-
-    calGrid.appendChild(dayEl);
-
-  }
-
-  //renderBookingBars(year, month, bookings);
-
-  /* unlock rendering */
-  calGrid.dataset.rendering = "false";
+  dayEl.classList.remove("cal-available","cal-limited");
+  dayEl.classList.add("cal-unavailable","cal-no-start");
 
 }
+
+/* ===============================
+   PREVIEW EVENTS
+=============================== */
+
+dayEl.addEventListener("mouseenter", (e) => {
+
+  clearPreview();
+  previewRental(dayDate);
+  showVehiclePreview(dayDate, e);
+
+});
+
+if (!isMobile()) {
+  dayEl.addEventListener("mousemove", movePreview);
+}
+
+dayEl.addEventListener("mouseleave", clearPreview);
+
+dayEl.addEventListener("touchend", (e) => {
+
+  e.stopPropagation();
+
+  clearPreview();
+  previewRental(dayDate);
+  showVehiclePreview(dayDate);
+
+});
+
+/* ===============================
+   CLICK SELECTION
+=============================== */
+
+if (validStart) {
+
+  dayEl.addEventListener("click", () => {
+
+    clearPreview();
+    selectDate(dayDate);
+
+  });
+
+}
+
+calGrid.appendChild(dayEl);
+
+
+}
+
+renderBookingBars(year, month, bookings);
+
+/* unlock rendering */
+calGrid.dataset.rendering = "false";
+
+}
+
 
   /* ======================================================
      Select date
