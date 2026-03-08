@@ -417,8 +417,10 @@ async function getBookings(forceRefresh = false) {
       `${apiUrl("/api/bookings/list")}?from=${encodeURIComponent(firstDay)}&to=${encodeURIComponent(lastDay)}`
     );
 
-    if (!res.ok) throw new Error("Failed to load bookings");
-
+    if (!res.ok) {
+  console.warn("Booking API returned", res.status);
+  throw new Error("Booking API unavailable");
+}
     const data = await res.json();
 
     BOOKINGS_CACHE = data.bookings || [];
