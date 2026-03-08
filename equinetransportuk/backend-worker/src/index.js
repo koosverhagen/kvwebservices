@@ -457,7 +457,8 @@ const days = getDatesBetween(start, end);
 
 for (const day of days) {
 
-  const key = `booking:${day}:${booking.id}`;
+  const month = day.slice(0,7); // YYYY-MM
+const key = `booking:${month}:${booking.id}`;
 
   await env.BOOKINGS_KV.put(
     key,
@@ -488,40 +489,33 @@ async function handleListBookings(request, env) {
   const from = new Date(url.searchParams.get("from"));
   const to = new Date(url.searchParams.get("to"));
 
+  const month = from.toISOString().slice(0,7); // YYYY-MM
+
+  const list = await env.BOOKINGS_KV.list({
+    prefix: `booking:${month}:`,
+    limit: 200
+  });
+
   const bookings = [];
-  const seen = new Set();
 
-  const current = new Date(from);
+  for (const key of list.keys) {
 
-  while (current <= to) {
+    const value = await env.BOOKINGS_KV.get(key.name);
 
-    const day = current.toISOString().slice(0,10);
+    if (!value) continue;
 
-    const list = await env.BOOKINGS_KV.list({
-      prefix: `booking:${day}:`
-    });
+    const booking = JSON.parse(value);
 
-    for (const key of list.keys) {
+    const pickup = new Date(booking.pickupAt);
+    const dropoff = new Date(booking.dropoffAt);
 
-      if (seen.has(key.name)) continue;
-
-      const value = await env.BOOKINGS_KV.get(key.name);
-
-      if (!value) continue;
-
-      bookings.push(JSON.parse(value));
-
-      seen.add(key.name);
-
+    if (pickup <= to && dropoff >= from) {
+      bookings.push(booking);
     }
-
-    current.setDate(current.getDate() + 1);
 
   }
 
-  return json({
-    bookings
-  });
+  return json({ bookings });
 
 }
 
