@@ -228,6 +228,46 @@ h1 {
   margin-top:20px;
 }
 
+/* FLOATING HERO CTA */
+
+.hero-floating-cta{
+  position:absolute;
+  bottom:22px;
+  left:22px;
+
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  padding:12px 18px;
+
+  background:rgba(30,30,30,0.75);
+  backdrop-filter:blur(10px);
+
+  color:white;
+  text-decoration:none;
+  font-weight:600;
+  font-size:14px;
+
+  border-radius:999px;
+
+  transition:all .25s ease;
+}
+
+.hero-floating-cta span{
+  font-size:16px;
+  transition:transform .25s ease;
+}
+
+.hero-floating-cta:hover{
+  background:rgba(20,20,20,0.9);
+  transform:translateY(-2px);
+}
+
+.hero-floating-cta:hover span{
+  transform:translateX(4px);
+}
+
 /* ======================================================
    BUTTON SYSTEM
 ====================================================== */
