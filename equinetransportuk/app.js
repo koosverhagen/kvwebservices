@@ -751,7 +751,8 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
   availabilityResults.innerHTML = `<p class="empty-note">${escapeHtml(message)}</p>`;
 }
 
-function renderAvailabilityResults(items) {function renderAvailabilityResults(items) {
+function renderAvailabilityResults(items) {
+
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     if (availabilityResults) availabilityResults.innerHTML = "";
     return;
@@ -762,12 +763,8 @@ function renderAvailabilityResults(items) {function renderAvailabilityResults(it
     return;
   }
 
-  /* ==========================================
-     If customer came from fleet card,
-     auto-select that lorry if available
-  ========================================== */
-
   if (PRESELECTED_VEHICLE) {
+
     const matched = items.find(
       item => item.vehicle.id === PRESELECTED_VEHICLE
     );
@@ -778,44 +775,38 @@ function renderAvailabilityResults(items) {function renderAvailabilityResults(it
       goToStep(3);
       return;
     }
+
   }
 
-  const html = items
-    .map((item) => {
-      const confirmationFee = getConfirmationFee(item.vehicle);
-      const displayPrice = Number(item.discountedTotal ?? item.baseCost ?? 0);
+  const html = items.map((item) => {
 
-      const isPreselected =
-        PRESELECTED_VEHICLE &&
-        item.vehicle.id === PRESELECTED_VEHICLE;
+    const confirmationFee = getConfirmationFee(item.vehicle);
+    const displayPrice = Number(item.discountedTotal ?? item.baseCost ?? 0);
 
-      return `
-        <article class="availability-item ${isPreselected ? "preselected" : ""}">
-          <div>
-            <h4>${escapeHtml(item.vehicle.name)}</h4>
-            <p class="muted">
-              ${item.vehicle.code ? `${escapeHtml(item.vehicle.code)} · ` : ""}
-              ${escapeHtml(formatDateOnly(item.pickupDate))} ${escapeHtml(item.pickupTime)} · 
-              ${escapeHtml(formatDurationLabel(item.durationDays))}
-            </p>
+    return `
+      <article class="availability-item">
+        <div>
+          <h4>${escapeHtml(item.vehicle.name)}</h4>
+          <p class="muted">
+            ${item.vehicle.code ? `${escapeHtml(item.vehicle.code)} · ` : ""}
+            ${escapeHtml(formatDateOnly(item.pickupDate))} ${escapeHtml(item.pickupTime)} · 
+            ${escapeHtml(formatDurationLabel(item.durationDays))}
+          </p>
 
-            <div class="price">£${displayPrice.toFixed(2)}</div>
+          <div class="price">£${displayPrice.toFixed(2)}</div>
 
-            <p class="muted tiny">
-              Pay now to confirm: £${confirmationFee.toFixed(2)}
-            </p>
-          </div>
+          <p class="muted tiny">
+            Pay now to confirm: £${confirmationFee.toFixed(2)}
+          </p>
+        </div>
 
-          <button
-            class="btn choose-lorry"
-            type="button"
-            data-vehicle-id="${escapeHtml(item.vehicle.id)}">
-            Select
-          </button>
-        </article>
-      `;
-    })
-    .join("");
+        <button class="btn choose-lorry" type="button" data-vehicle-id="${escapeHtml(item.vehicle.id)}">
+          Select
+        </button>
+      </article>
+    `;
+
+  }).join("");
 
   availabilityResults.innerHTML = html;
 
@@ -825,6 +816,7 @@ function renderAvailabilityResults(items) {function renderAvailabilityResults(it
   });
 
   goToStep(2);
+
 }
 
 availabilityResults.addEventListener("click", async (e)=>{
@@ -2773,4 +2765,4 @@ if (durationInput) {
 //setInterval(watchBookingUpdates, 30000);
 
 })();
-}
+
