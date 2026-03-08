@@ -1000,11 +1000,35 @@ function updatePickupTimeVisibility() {
   if (!group || !pickupTimeInput) return;
 
   if (duration === 0.5) {
+
     group.style.display = "block";
-    pickupTimeInput.value = ""; // force customer to choose
+    pickupTimeInput.value = "";
+
+    // Scroll to field
+    setTimeout(() => {
+
+      group.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+      // Highlight effect
+      group.classList.add("duration-highlight");
+
+      setTimeout(() => {
+        group.classList.remove("duration-highlight");
+      }, 2000);
+
+      // Auto focus
+      pickupTimeInput.focus();
+
+    }, 150);
+
   } else {
+
     group.style.display = "none";
-    pickupTimeInput.value = "07:00"; // safe default for non-half-day
+    pickupTimeInput.value = "07:00";
+
   }
 
 }
