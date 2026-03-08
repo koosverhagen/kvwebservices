@@ -1,4 +1,35 @@
-/* Apple-style modal centering and glass effect */
+/* ======================================================
+   EQUINE TRANSPORT BOOKING SYSTEM
+   MAIN STYLESHEET
+
+   Sections
+   01 Global Foundation
+   02 Layout
+   03 Hero
+   04 Buttons
+   05 Fleet Cards
+   06 Booking Layout
+   07 Forms
+   08 Admin
+   09 Signature Pad
+   10 Mobile Navigation
+   11 Fleet Slideshow
+   12 Reviews Modal
+   13 Booking Flow
+   14 Vouchers
+   15 Availability Calendar
+   16 Calendar Tooltip
+   17 Calendar Vehicle Preview
+   18 Mobile Calendar Preview
+   19 Booking Form Layout
+====================================================== */
+
+
+/* ======================================================
+   GLOBAL FOUNDATION
+   Reset, browser fixes, variables
+====================================================== */
+
 /* Safari desktop only: Increase button text size */
 @media not all and (min-resolution: 0.001dpcm) {
   @supports (-webkit-appearance:none) {
@@ -8,6 +39,9 @@
   }
 }
 
+/* ======================================================
+   ROOT VARIABLES
+====================================================== */
 
 :root {
   --bg: #f5f7fa;
@@ -40,6 +74,11 @@ body {
     background-attachment: scroll;
   }
 }
+
+/* ======================================================
+   PAGE LAYOUT
+   Containers, header, navigation
+====================================================== */
 
 .container {
   width: min(1120px, 92vw);
@@ -92,6 +131,10 @@ body {
   color: var(--muted);
   font-weight: 500;
 }
+
+/* ======================================================
+   HERO SECTION
+====================================================== */
 
 .hero {
   padding: 80px 0 60px;
@@ -148,6 +191,10 @@ h1 {
   margin-top: 20px;
 }
 
+/* ======================================================
+   BUTTON SYSTEM
+====================================================== */
+
 .btn {
   display: inline-flex;
   justify-content: center;
@@ -176,6 +223,11 @@ h1 {
 
 .section { padding: 30px 0; }
 .section-head h2 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 38px); }
+
+/* ======================================================
+   FLEET LISTING
+   Vehicle cards
+====================================================== */
 
 .fleet-grid {
   margin-top: 14px;
@@ -227,6 +279,11 @@ h1 {
 .muted { color: var(--muted); }
 .tiny { font-size: 13px; }
 
+/* ======================================================
+   BOOKING LAYOUT
+   Main booking UI grid
+====================================================== */
+
 .booking-wrap { padding: 34px 0; }
 .booking-grid {
   display: grid;
@@ -245,6 +302,11 @@ h1 {
   display: grid;
   gap: 16px;
 }
+
+/* ======================================================
+   FORM ELEMENTS
+   Inputs, labels, fields
+====================================================== */
 
 .form-grid {
   display: grid;
@@ -360,6 +422,10 @@ textarea { min-height: 100px; }
   border-radius: 12px;
   padding: 12px;
 }
+
+/* ======================================================
+   ADMIN PANEL
+====================================================== */
 
 .admin-actions {
   display: flex;
@@ -510,6 +576,10 @@ textarea { min-height: 100px; }
 
 
 }
+
+/* ======================================================
+   MOBILE NAVIGATION
+====================================================== */
 
 .nav-toggle {
   display: none;
@@ -731,13 +801,7 @@ textarea { min-height: 100px; }
    HERO CTA ROW — CLEAN VERSION
 ========================================== */
 
-.hero-cta-row {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  margin-top: 20px;
-  flex-wrap: nowrap;
-}
+
 
 .hero-actions {
   display: flex;
@@ -761,11 +825,6 @@ textarea { min-height: 100px; }
    FORCE REVIEWS TO MATCH BUTTON EXACTLY
 ========================================== */
 
-.hero-reviews {
-  display: flex;
-  align-items: center;
-  height: 44px;
-}
 
 .hero-reviews iframe,
 .hero-reviews > div {
@@ -787,7 +846,7 @@ textarea { min-height: 100px; }
 /* Ensure border thickness matches */
 .hero-reviews iframe {
   border-radius: 12px !important;
-}/* Apple-style modal centering and glass effect */
+}
 /* Safari desktop only: Increase button text size */
 
 /* ==========================================
@@ -808,9 +867,9 @@ textarea { min-height: 100px; }
 }
 
 
-/* ==========================================
-   REVIEWS OVERLAY MODAL
-========================================== */
+/* ======================================================
+   GOOGLE REVIEWS MODAL
+====================================================== */
 
 .reviews-overlay{
   position: fixed;
@@ -981,9 +1040,9 @@ textarea { min-height: 100px; }
   margin-top:8px;
 }
 
-/* ==========================================
-   APPLE STYLE BOOKING FLOW
-========================================== */
+/* ======================================================
+   BOOKING FLOW STEPS
+====================================================== */
 
 .booking-steps{
   display:flex;
@@ -1085,15 +1144,7 @@ textarea { min-height: 100px; }
   color: var(--text, #0f172a);
 }
 
-.form-field input,
-.form-field select{
-  width:100%;
-  padding:12px 14px;
-  border-radius:12px;
-  border:1px solid rgba(15,23,42,0.12);
-  background:#fff;
-  font: inherit;
-}
+
 
 .form-field.full{ grid-column: 1 / -1; }
 
@@ -1142,6 +1193,10 @@ textarea { min-height: 100px; }
 
 .form-actions{ margin-top: 18px; }
 .form-actions .btn{ width:100%; }
+
+/* ======================================================
+   VOUCHERS & EXTRAS
+====================================================== */
 
 .voucher-card{
   margin: 0 0 16px;
@@ -1197,9 +1252,8 @@ input[type="date"] {
 }
 
 /* ======================================================
-   Phase 4 — Availability Calendar
-   ====================================================== */
-
+   AVAILABILITY CALENDAR
+====================================================== */
 .cal-wrap {
   margin: 16px 0 20px;
   padding: 16px;
@@ -1391,18 +1445,11 @@ input[type="date"] {
 .cal-dot-limited { background: #f59e0b; }
 .cal-dot-unavailable { background: #ef4444; }
 
-.vehicle-preview {
-  margin-top: 14px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fafbfc;
-  font-size: 14px;
-}
 
 .vehicle-preview.hidden {
   display: none;
 }
+
 
 .vehicle-preview-item {
   display: flex;
@@ -1605,39 +1652,12 @@ input[type="date"] {
   color:#9aa3af;
 }
 
-.duration-highlight{
-  animation: pulseHighlight 1.2s ease;
-  border-color:#1f6feb;
-  box-shadow:0 0 0 3px rgba(31,111,235,.15);
-}
+
 
 html {
   scroll-behavior: smooth;
 }
 
-.duration-highlight {
-  outline: 3px solid #1f6feb;
-  outline-offset: 4px;
-  animation: durationPulse 1.2s ease-in-out infinite;
-}
-
-@keyframes durationPulse {
-  0% { box-shadow: 0 0 0 0 rgba(31,111,235,0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(31,111,235,0); }
-  100% { box-shadow: 0 0 0 0 rgba(31,111,235,0); }
-}
-
-@keyframes pulseHighlight{
-  0%{ transform:scale(1); }
-  50%{ transform:scale(1.02); }
-  100%{ transform:scale(1); }
-}
-
-.details-actions{
-  display:flex;
-  gap:12px;
-  margin-bottom:20px;
-}
 
 .reset-btn{
   opacity:0.8;
@@ -1770,10 +1790,10 @@ html {
   display: none;
 }
 
-.duration-highlight {
-
-  animation: highlightPulse 1.5s ease;
-
+.duration-highlight{
+  outline:3px solid #1f6feb;
+  outline-offset:4px;
+  animation:highlightPulse 1.5s ease;
 }
 
 @keyframes highlightPulse {
@@ -1789,3 +1809,111 @@ html {
   color:#c62828;
   margin-top:6px;
 }
+/* =========================
+   BOOKING FORM LAYOUT
+========================= */
+
+#booking-form{
+  display:flex;
+  flex-direction:column;
+  gap:22px;
+  max-width:680px;
+  margin:20px auto 0;
+}
+
+/* form field wrapper */
+
+.form-field{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+/* labels */
+
+.form-field label{
+  font-size:15px;
+  font-weight:500;
+  color:#1d2530;
+}
+
+/* inputs + selects */
+
+.form-field input,
+.form-field select{
+  height:54px;
+  padding:0 16px;
+  border-radius:14px;
+  border:1px solid #dbe1e8;
+  font-size:16px;
+  font-family:inherit;
+  background:#ffffff;
+  transition:border .15s ease, box-shadow .15s ease;
+}
+
+/* focus state */
+
+.form-field input:focus,
+.form-field select:focus{
+  outline:none;
+  border-color:#1f6feb;
+  box-shadow:0 0 0 3px rgba(31,111,235,0.12);
+}
+
+/* readonly fields */
+
+input[readonly]{
+  background:#f5f7fa;
+}
+
+/* date icons alignment */
+
+.form-field input[type="date"]{
+  padding-right:40px;
+}
+
+/* =========================
+   ACTION BUTTON ROW
+========================= */
+
+.details-actions{
+  display:flex;
+  gap:14px;
+  margin-bottom:30px;
+  flex-wrap:wrap;
+}
+
+.details-actions .btn{
+  flex:1;
+  min-width:140px;
+  text-align:center;
+}
+
+/* =========================
+   BOOKING SECTION SPACING
+========================= */
+
+#booking h2{
+  margin-bottom:30px;
+}
+
+/* =========================
+   DESKTOP FORM GRID
+========================= */
+
+@media (min-width: 720px){
+
+  #booking-form{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:22px 24px;
+  }
+
+}
+
+/* fields that should span full width */
+
+.form-full{
+  grid-column:1 / -1;
+}
+
