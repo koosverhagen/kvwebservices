@@ -45,7 +45,6 @@
 
     <div>
       <p class="kicker">Horsebox Rental</p>
-
       <h1>Find available lorries and book in minutes.</h1>
 
       <p class="lead">
@@ -54,20 +53,18 @@
       </p>
 
       <div class="hero-cta-row">
-
         <a class="btn" href="#booking">Start booking</a>
-
         <a class="btn ghost" href="#fleet">View fleet</a>
 
         <a class="btn ghost reviews-open" href="#">
           <span style="margin-right:8px;">G</span>
           Reviews
         </a>
-
       </div>
     </div>
 
-    <!-- HERO IMAGE WITH OVERLAY -->
+
+    <!-- HERO IMAGE WITH PLAY OVERLAY -->
 
     <div class="fleet-image-wrap hero-image-wrap">
 
@@ -81,7 +78,6 @@
       <div class="fleet-overlay hero-overlay">
 
         <div class="apple-play-btn" id="heroPlayBtn">
-
           <span>View gallery</span>
 
           <svg viewBox="0 0 24 24">
@@ -99,7 +95,7 @@
 
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function(){
 
   const images = [
     "images/hero1.webp",
@@ -110,24 +106,36 @@ document.addEventListener("DOMContentLoaded", function() {
   ];
 
   let idx = 0;
-  let heroInterval = null;
+  let interval = null;
 
   const el = document.getElementById("hero-slideshow");
   const playBtn = document.getElementById("heroPlayBtn");
   const overlay = document.querySelector(".hero-overlay");
 
-  function showNext() {
-    idx = (idx + 1) % images.length;
-    el.src = images[idx];
+  if(!el || !playBtn || !overlay) return;
+
+  function showNext(){
+
+    el.classList.add("fade-out");
+
+    setTimeout(()=>{
+
+      idx = (idx + 1) % images.length;
+      el.src = images[idx];
+
+      el.classList.remove("fade-out");
+
+    },350);
+
   }
 
-  playBtn?.addEventListener("click", () => {
+  playBtn.addEventListener("click",()=>{
 
-    if (heroInterval) return;
+    if(interval) return;
 
     overlay.classList.add("playing");
 
-    heroInterval = setInterval(showNext, 3200);
+    interval = setInterval(showNext,3200);
 
   });
 
