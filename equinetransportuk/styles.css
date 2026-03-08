@@ -1759,3 +1759,8 @@ html {
 .cal-day.cal-selected.cal-limited {
   box-shadow: 0 0 0 2px var(--accent) inset;
 }
+
+.availability-item.preselected {
+  border: 2px solid var(--accent);
+  box-shadow: 0 6px 20px rgba(31,111,235,0.12);
+}
