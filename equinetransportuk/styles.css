@@ -308,7 +308,7 @@ h1 {
    Inputs, labels, fields
 ====================================================== */
 
-label {
+.form-field label {
   font-size: 13px;
   color: var(--muted);
   display: flex;
