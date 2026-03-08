@@ -167,36 +167,45 @@ h1 {
   max-width: 62ch;
 }
 
+/* HERO IMAGE WRAPPER */
+
+.hero-image-wrap{
+  aspect-ratio: 16 / 10;
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background: transparent;
+  line-height: 0; /* removes bottom image gap */
+}
+
 /* HERO IMAGE */
 
 .hero-image{
-  position: absolute;
-  inset: 0;
-
   width: 100%;
-  height: 100%;
-
-  object-fit: cover;
+  height: auto;
   display: block;
 
-  transition: opacity .6s ease;
+  border-radius: inherit;
+  object-fit: cover;
+
+  transition: opacity .6s ease, transform .6s ease;
 }
+
+/* fade animation */
 
 .hero-image.fade-out{
-  opacity:0;
+  opacity: 0;
 }
 
-.hero-image-wrap{
-  position:relative;
-  border-radius:28px;
-  overflow:hidden;
+/* subtle hover zoom instead of moving image */
+
+.hero-image-wrap:hover .hero-image{
+  transform: scale(1.02);
 }
 
-.hero-image:hover {
-  transform: translateY(-4px);
-}
+/* hero buttons */
 
-.hero-actions {
+.hero-actions{
   display: flex;
   gap: 12px;
   margin-top: 20px;
