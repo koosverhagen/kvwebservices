@@ -122,7 +122,11 @@ removed duplicate, script is loaded at end of body -->
         <!-- =========================
      Phase 4: Calendar UI (NEW)
      ========================= -->
+<!-- Selected vehicle label -->
+<div id="calendar-vehicle-label" class="calendar-vehicle-label hidden"></div>
+
 <div class="cal-wrap" id="availability-calendar" aria-label="Availability calendar">
+
   <div class="cal-head">
     <button class="cal-nav" type="button" data-cal-nav="prev" aria-label="Previous month">‹</button>
     <div class="cal-title" id="cal-title">Month YYYY</div>
@@ -136,9 +140,11 @@ removed duplicate, script is loaded at end of body -->
   <div class="cal-grid" id="cal-grid" role="grid" aria-label="Calendar days"></div>
 
   <div class="cal-legend" aria-hidden="true">
-  <span class="cal-dot cal-dot-available"></span><span class="cal-legend-text">Available</span>
-  <span class="cal-dot cal-dot-limited"></span><span class="cal-legend-text">Limited</span>
-  <span class="cal-dot cal-dot-unavailable"></span><span class="cal-legend-text">Fully booked</span>
+    <span class="cal-dot cal-dot-available"></span><span class="cal-legend-text">Available</span>
+    <span class="cal-dot cal-dot-limited"></span><span class="cal-legend-text">Limited</span>
+    <span class="cal-dot cal-dot-unavailable"></span><span class="cal-legend-text">Fully booked</span>
+  </div>
+
 </div>
 
 <div id="vehicle-preview" class="vehicle-preview hidden"></div>
@@ -356,7 +362,6 @@ Edit details
     </div>
 
   </div>
-</div>
 		</section>
 
 		<section class="section container">

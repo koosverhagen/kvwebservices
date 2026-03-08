@@ -1764,3 +1764,25 @@ html {
   border: 2px solid var(--accent);
   box-shadow: 0 6px 20px rgba(31,111,235,0.12);
 }
+
+.calendar-vehicle-label {
+  max-width: 1100px;
+  margin: 0 auto 12px auto;
+  padding: 10px 14px;
+  border-radius: 10px;
+
+  background: #eef4ff;
+  border: 1px solid #cfe0ff;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f3b8b;
+}
+
+.calendar-vehicle-label strong {
+  font-weight: 600;
+}
+
+.calendar-vehicle-label.hidden {
+  display: none;
+}
