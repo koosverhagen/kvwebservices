@@ -78,6 +78,10 @@ function startBooking(vehicleId) {
 
   goToStep(1);
 
+/* refresh calendar immediately */
+
+renderCalendar();
+
   /* auto trigger availability search if date already selected */
 
   const pickupDate = pickupDateInput?.value;
@@ -2312,7 +2316,9 @@ function isMobile() {
   function checkDayLocalAvailability(dateObj, bookings) {
     let availableVehicles = 0;
 
-    vehicles.forEach(vehicle => {
+    vehicles
+  .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
+  .forEach(vehicle => {
 
       const vehicleBookings = bookings.filter(
         b => b.vehicleId === vehicle.id && b.status !== "cancelled"
@@ -2341,9 +2347,11 @@ function isMobile() {
 
     
 
-    if (availableVehicles === 0) return "unavailable";
-    if (availableVehicles < vehicles.length) return "limited";
-    return "available";
+    const totalVehicles = PRESELECTED_VEHICLE ? 1 : vehicles.length;
+
+if (availableVehicles === 0) return "unavailable";
+if (availableVehicles < totalVehicles) return "limited";
+return "available";
   }
 
   /* ======================================================
@@ -2746,7 +2754,9 @@ function renderAvailabilityDots(dayEl, bookings, dayDate) {
   const wrap = document.createElement("div");
   wrap.className = "cal-lines";
 
-  vehicles.forEach(vehicle => {
+  vehicles
+  .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
+  .forEach(vehicle => {
 
     const line = document.createElement("div");
     line.className = "cal-line";
