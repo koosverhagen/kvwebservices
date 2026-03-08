@@ -593,13 +593,12 @@ function syncPickupTimeOptions() {
     .find(opt => opt.value === "13:00");
 
   if (duration === 0.5) {
-    // Add PM option if missing
     if (!existingPmOption) {
-      const pmOption = document.createElement("option");
-      pmOption.value = "13:00";
-      pmOption.textContent = "13:00";
-      pickupTimeInput.appendChild(pmOption);
-    }
+  const pmOption = document.createElement("option");
+  pmOption.value = "13:00";
+  pmOption.textContent = "13:00 — Afternoon";
+  pickupTimeInput.appendChild(pmOption);
+}
   } else {
     // Remove PM option entirely for all other durations
     if (existingPmOption) {
