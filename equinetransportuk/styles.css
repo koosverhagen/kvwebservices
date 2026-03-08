@@ -1156,6 +1156,13 @@ textarea { min-height: 100px; }
 .availability-status.ok{ border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.10); }
 .availability-status.error{ border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.10); }
 
+/* availability message */
+
+.availability-status{
+  grid-column: 1 / -1;
+  min-height: 120px;
+}
+
 .extras-grid{
   margin:18px 0;
   display:grid;
@@ -1816,10 +1823,18 @@ html {
 
 #booking-form{
   max-width:720px;
-  margin:20px auto 0;
+  margin:20px auto;
   display:grid;
-  grid-template-columns:1fr;
-  gap:22px;
+  grid-template-columns:1fr 1fr;
+  gap:22px 24px;
+}
+
+@media (max-width:720px){
+
+  #booking-form{
+    grid-template-columns:1fr;
+  }
+
 }
 
 /* field wrapper */
@@ -1889,17 +1904,49 @@ input[readonly]{
 
 }
 
+/* force identical field sizes */
+
+#booking-form input,
+#booking-form select {
+  width: 100%;
+  height: 54px;
+  box-sizing: border-box;
+}
+
 /* checkbox column */
 
+/* extras block */
+
 .extras-grid{
+  grid-column: 1 / -1;
+
   display:grid;
-  gap:16px;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  margin-top:10px;
 }
+
+/* checkbox rows */
 
 .check{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:12px;
+}
+
+/* dartford box */
+
+.dartford-row{
+  grid-column:1 / -1;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#f8fafc;
 }
 
 /* =========================
