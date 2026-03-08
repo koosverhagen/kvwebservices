@@ -1316,58 +1316,42 @@ input[type="date"] {
   cursor: not-allowed;
 }
 
-/* Booking spans */
+/* ======================================
+   Booking spans — thin booking bars only
+====================================== */
 
 .cal-booked {
   position: relative;
-  background: rgba(239,68,68,0.15);
 }
 
 .cal-booked::after {
-
   content: "";
   position: absolute;
-
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-
-  height: 6px;
-  border-radius: 4px;
-
+  left: 10%;
+  right: 10%;
+  bottom: 10px;
+  height: 2px;               /* thin line */
   background: #ef4444;
-
+  border-radius: 2px;
 }
-
-.cal-booking-start::after {
-  border-radius: 4px 0 0 4px;
-}
-
-.cal-booking-mid::after {
-  border-radius: 0;
-}
-
-.cal-booking-end::after {
-  border-radius: 0 4px 4px 0;
-}
-
 
 /* start of booking */
 
-.cal-booking-start {
-  border-left: 3px solid #ef4444;
+.cal-booking-start::after {
+  left: 50%;
 }
 
-/* middle booking days */
+/* middle days */
 
-.cal-booking-mid {
-  background: rgba(239,68,68,0.22);
+.cal-booking-mid::after {
+  left: 10%;
+  right: 10%;
 }
 
 /* end of booking */
 
-.cal-booking-end {
-  border-right: 3px solid #ef4444;
+.cal-booking-end::after {
+  right: 50%;
 }
 
 /* disable hover animation on booked days */
@@ -1719,9 +1703,8 @@ html {
 }
 
 .cal-line.booked {
-
-  background: #ef4444; /* booked */
-
+  background:#ef4444;
+  opacity:0.9;
 }
 
 @media (max-width: 768px) {
