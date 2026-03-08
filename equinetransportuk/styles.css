@@ -1783,3 +1783,9 @@ html {
   100% { box-shadow: 0 0 0 rgba(31,111,235,0); }
 
 }
+
+.field-error{
+  font-size:13px;
+  color:#c62828;
+  margin-top:6px;
+}

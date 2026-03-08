@@ -1853,21 +1853,39 @@ if (availabilityForm) {
 
     if (durationDays === 0.5 && !pickupTime) {
 
-      pickupTimeInput?.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
+  const group = document.getElementById("pickup-time-group");
 
-      pickupTimeInput?.classList.add("duration-highlight");
+  group?.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
 
-      setTimeout(()=>{
-        pickupTimeInput?.classList.remove("duration-highlight");
-      },2000);
+  group?.classList.add("duration-highlight");
 
-      alert("Please select a pickup time for half-day hire.");
-      return;
-    }
+  setTimeout(() => {
+    group?.classList.remove("duration-highlight");
+  }, 2000);
 
+  pickupTimeInput?.focus();
+
+  /* show small message */
+
+  let note = group.querySelector(".field-error");
+
+  if (!note) {
+
+    note = document.createElement("div");
+    note.className = "field-error";
+    note.textContent = "Please choose a pickup time for half-day hire.";
+
+    group.appendChild(note);
+
+    setTimeout(() => note.remove(), 3000);
+
+  }
+
+  return;
+}
     let finalPickupTime = DEFAULT_PICKUP_TIME;
 
 if (durationDays === 0.5) {
