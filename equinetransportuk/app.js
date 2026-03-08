@@ -2773,4 +2773,4 @@ if (durationInput) {
 //setInterval(watchBookingUpdates, 30000);
 
 })();
-
+}
