@@ -4,6 +4,10 @@ const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8"
 };
 
+let BOOKINGS_RESPONSE_CACHE = null;
+let BOOKINGS_RESPONSE_CACHE_AT = 0;
+const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
+
 export default {
   async fetch(request, env, ctx) {
 
@@ -466,6 +470,9 @@ const key = `booking:${month}:${booking.id}`;
   );
 
 }
+BOOKINGS_RESPONSE_CACHE = null;
+BOOKINGS_RESPONSE_CACHE_AT = 0;
+
   }
 
 
@@ -486,37 +493,73 @@ async function handleListBookings(request, env) {
 
   const url = new URL(request.url);
 
-  const from = new Date(url.searchParams.get("from"));
-  const to = new Date(url.searchParams.get("to"));
+  const fromParam = url.searchParams.get("from");
+  const toParam = url.searchParams.get("to");
 
-  const month = from.toISOString().slice(0,7); // YYYY-MM
+  if (!fromParam || !toParam) {
+    return json({ error: "Missing from/to parameters" }, 400);
+  }
 
-  const list = await env.BOOKINGS_KV.list({
-    prefix: `booking:${month}:`,
-    limit: 200
-  });
+  const from = new Date(fromParam);
+  const to = new Date(toParam);
+
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+    return json({ error: "Invalid from/to parameters" }, 400);
+  }
+
+  const cacheKey = `${from.toISOString()}|${to.toISOString()}`;
+  const now = Date.now();
+
+  if (
+    BOOKINGS_RESPONSE_CACHE &&
+    BOOKINGS_RESPONSE_CACHE.key === cacheKey &&
+    (now - BOOKINGS_RESPONSE_CACHE_AT) < BOOKINGS_RESPONSE_CACHE_TTL
+  ) {
+    return json(BOOKINGS_RESPONSE_CACHE.payload);
+  }
 
   const bookings = [];
+  const seenBookingIds = new Set();
 
-  for (const key of list.keys) {
+  const current = new Date(from);
+  current.setHours(0, 0, 0, 0);
 
-    const value = await env.BOOKINGS_KV.get(key.name);
+  const end = new Date(to);
+  end.setHours(23, 59, 59, 999);
 
-    if (!value) continue;
+  while (current <= end) {
 
-    const booking = JSON.parse(value);
+    const month = current.toISOString().slice(0, 7);
 
-    const pickup = new Date(booking.pickupAt);
-    const dropoff = new Date(booking.dropoffAt);
+const list = await env.BOOKINGS_KV.list({
+  prefix: `booking:${month}:`
+});
 
-    if (pickup <= to && dropoff >= from) {
+    for (const key of list.keys) {
+
+      const value = await env.BOOKINGS_KV.get(key.name);
+      if (!value) continue;
+
+      const booking = JSON.parse(value);
+
+      if (seenBookingIds.has(booking.id)) continue;
+      seenBookingIds.add(booking.id);
+
       bookings.push(booking);
     }
 
+    current.setDate(current.getDate() + 1);
   }
 
-  return json({ bookings });
+  const payload = { bookings };
 
+  BOOKINGS_RESPONSE_CACHE = {
+    key: cacheKey,
+    payload
+  };
+  BOOKINGS_RESPONSE_CACHE_AT = now;
+
+  return json(payload);
 }
 
 
