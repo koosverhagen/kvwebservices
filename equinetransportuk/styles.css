@@ -269,7 +269,7 @@ h1 {
 }
 
 .hero-floating-cta{
-  z-index:5;
+  z-index:2;
 }
 
 /* ======================================================
@@ -2130,9 +2130,15 @@ input[readonly]{
   pointer-events:none;
   justify-content:center;
   transition:opacity .4s ease;
+  z-index:4;
 }
 
 .hero-overlay.playing{
   opacity:0;
   pointer-events:none;
+}
+
+.apple-play-btn{
+  position:relative;
+  z-index:5;
 }
