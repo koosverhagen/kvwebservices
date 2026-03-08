@@ -74,6 +74,23 @@ function startBooking(vehicleId) {
   }
 
   goToStep(1);
+
+  /* auto trigger availability search if date already selected */
+
+  const pickupDate = pickupDateInput?.value;
+  const durationDays = Number(durationDaysInput?.value || 1);
+  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+
+  if (pickupDate && durationDays > 0) {
+
+    setTimeout(() => {
+
+      availabilityForm?.requestSubmit();
+
+    }, 300);
+
+  }
+
 }
 
 /* ======================================================
