@@ -1713,14 +1713,20 @@ async function createStripeCheckoutSession(booking) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+
         body: JSON.stringify({
           vehicleId: booking.vehicleId,
           vehicleName: booking.vehicleSnapshot?.name,
+
           pickupDate: booking.pickupAt,
+          pickupTime: booking.pickupTime,   // ✅ ADD THIS
+
           durationDays: booking.durationDays,
+
           customerEmail: booking.customerEmail,
           bookingId: booking.id
         })
+
       }
     );
 
