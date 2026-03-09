@@ -1207,8 +1207,18 @@ textarea { min-height: 100px; }
 }
 
 @media (min-width: 720px){
-  .booking-form .form-grid.two{ grid-template-columns: 1fr 1fr; }
-  .availability-form .form-grid{ grid-template-columns: 1fr 1fr 1fr auto; align-items:end; }
+
+  /* Availability form stays multi-column */
+  .availability-form .form-grid{
+    grid-template-columns: 1fr 1fr 1fr auto;
+    align-items:end;
+  }
+
+  /* Booking form stays single column */
+  .booking-form .form-grid{
+    grid-template-columns: 1fr;
+  }
+
 }
 
 .form-field label{
@@ -2104,15 +2114,6 @@ input[readonly]{
    DESKTOP FORM GRID
 ========================= */
 
-@media (min-width: 720px){
-
-  #booking-form{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:22px 24px;
-  }
-
-}
 
 /* fields that should span full width */
 
