@@ -1742,6 +1742,7 @@ html {
 }
 
 /* half-day booking overlays */
+
 .cal-line.booked-am::after,
 .cal-line.booked-pm::after {
   content: "";
@@ -1751,17 +1752,19 @@ html {
   background: #ef4444;
 }
 
-/* left half = morning */
+/* morning = left half */
+
 .cal-line.booked-am::after {
   left: 0;
-  width: 50%;
+  width: 47%;
   border-radius: 999px 0 0 999px;
 }
 
-/* right half = afternoon */
+/* afternoon = right half */
+
 .cal-line.booked-pm::after {
   right: 0;
-  width: 50%;
+  width: 47%;
   border-radius: 0 999px 999px 0;
 }
 
