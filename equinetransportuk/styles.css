@@ -1425,7 +1425,7 @@ input[type="date"] {
 }
 
 /* ======================================
-   Booking spans — thin booking bars only
+   Booking bars
 ====================================== */
 
 .cal-booked {
@@ -1437,43 +1437,24 @@ input[type="date"] {
 .cal-booked::after{
   content:"";
   position:absolute;
-  left:10%;
-  right:10%;
-  height:2px;
+  left:14%;
+  right:14%;
+  height:3px;
   background:#ef4444;
-  border-radius:2px;
-}
-
-/* start of booking */
-
-.cal-booking-start::after {
-  left: 50%;
-}
-
-/* middle days */
-
-.cal-booking-mid::after {
-  left: 10%;
-  right: 10%;
-}
-
-/* end of booking */
-
-.cal-booking-end::after {
-  right: 50%;
+  border-radius:999px;
+  z-index:3;
 }
 
 /* morning */
 
 .cal-booking-morning::after{
-  top:8px;
+  top:10px;
 }
-
 
 /* afternoon */
 
 .cal-booking-afternoon::after{
-  bottom:8px;
+  bottom:10px;
 }
 
 /* full day */
@@ -2173,22 +2154,4 @@ input[readonly]{
   z-index:5;
 }
 
-/* half-day bookings */
 
-.cal-booking-am{
-  background: linear-gradient(
-    to right,
-    #ef4444 0%,
-    #ef4444 48%,
-    transparent 48%
-  );
-}
-
-.cal-booking-pm{
-  background: linear-gradient(
-    to right,
-    transparent 52%,
-    #ef4444 52%,
-    #ef4444 100%
-  );
-}
