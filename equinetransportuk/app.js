@@ -2853,13 +2853,17 @@ function renderAvailabilityDots(dayEl, bookings, dayDate) {
       }
     });
 
-    if (hasFullDay || (hasMorning && hasAfternoon)) {
-      line.classList.add("booked-full");
-    } else if (hasMorning) {
-      line.classList.add("booked-am");
-    } else if (hasAfternoon) {
-      line.classList.add("booked-pm");
-    }
+    if (hasFullDay) {
+  line.classList.add("booked-full");
+}
+
+if (hasMorning) {
+  line.classList.add("booked-am");
+}
+
+if (hasAfternoon) {
+  line.classList.add("booked-pm");
+}
 
     wrap.appendChild(line);
 
