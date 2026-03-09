@@ -2644,7 +2644,7 @@ calGrid.appendChild(dayEl);
 
 }
 
-renderBookingBars(year, month, bookings);
+//renderBookingBars(year, month, bookings);
 
 /* unlock rendering */
 calGrid.dataset.rendering = "false";
@@ -2801,29 +2801,69 @@ async function watchBookingUpdates() {
 
 function renderAvailabilityDots(dayEl, bookings, dayDate) {
 
-  const bookedCount = bookings.filter(b => {
-    const start = new Date(b.pickupAt);
-    const end = new Date(b.dropoffAt);
-
-    const dayStart = new Date(dayDate);
-    dayStart.setHours(0,0,0,0);
-
-    const dayEnd = new Date(dayDate);
-    dayEnd.setHours(23,59,59,999);
-
-    return start <= dayEnd && end >= dayStart;
-  }).length;
-
-  const availableCount = Math.max(0, vehicles.length - bookedCount);
-
   const wrap = document.createElement("div");
   wrap.className = "cal-lines";
 
-  for (let i = 0; i < availableCount; i++) {
+  vehicles.forEach(vehicle => {
+
     const line = document.createElement("div");
     line.className = "cal-line";
+
+    const dayStart = new Date(dayDate);
+    dayStart.setHours(0, 0, 0, 0);
+
+    const dayEnd = new Date(dayDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const vehicleBookings = bookings.filter(b => {
+      if (b.vehicleId !== vehicle.id) return false;
+      if (b.status === "cancelled") return false;
+
+      const start = new Date(b.pickupAt);
+      const end = new Date(b.dropoffAt);
+
+      return start <= dayEnd && end >= dayStart;
+    });
+
+    let hasMorning = false;
+    let hasAfternoon = false;
+    let hasFullDay = false;
+
+    vehicleBookings.forEach(b => {
+      const start = new Date(b.pickupAt);
+      const end = new Date(b.dropoffAt);
+
+      const sameDay =
+        start.getFullYear() === dayDate.getFullYear() &&
+        start.getMonth() === dayDate.getMonth() &&
+        start.getDate() === dayDate.getDate() &&
+        end.getFullYear() === dayDate.getFullYear() &&
+        end.getMonth() === dayDate.getMonth() &&
+        end.getDate() === dayDate.getDate();
+
+      const startHour = start.getHours();
+      const endHour = end.getHours();
+
+      if (sameDay && startHour === 7 && endHour === 13) {
+        hasMorning = true;
+      } else if (sameDay && startHour === 13 && endHour === 19) {
+        hasAfternoon = true;
+      } else {
+        hasFullDay = true;
+      }
+    });
+
+    if (hasFullDay || (hasMorning && hasAfternoon)) {
+      line.classList.add("booked-full");
+    } else if (hasMorning) {
+      line.classList.add("booked-am");
+    } else if (hasAfternoon) {
+      line.classList.add("booked-pm");
+    }
+
     wrap.appendChild(line);
-  }
+
+  });
 
   dayEl.appendChild(wrap);
 
