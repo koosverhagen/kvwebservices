@@ -14,52 +14,80 @@ export default {
     const url = new URL(request.url);
 
     /* ===============================
-       STRIPE WEBHOOK FIRST
-       (must bypass CORS)
-    ================================ */
+   STRIPE WEBHOOK FIRST
+   (must bypass CORS)
+================================ */
 
-    if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
-      return handleStripeWebhook(request, env);
-    }
-
-    const corsHeaders = buildCorsHeaders();
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders });
-    }
-
-    try {
-
-      if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
-        const response = await handlePricingQuote(request);
-        return withCors(response, corsHeaders);
-      }
-
-      if (request.method === "POST" && url.pathname === "/api/bookings/create-checkout-session") {
-        const response = await handleCreateCheckoutSession(request, env);
-        return withCors(response, corsHeaders);
-      }
-
-      if (request.method === "GET" && url.pathname === "/api/bookings/list") {
-  const response = await handleListBookings(request, env);
-  return withCors(response, corsHeaders);
+if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
+  return handleStripeWebhook(request, env);
 }
 
-if (request.method === "GET" && url.pathname === "/api/bookings/version") {
-  const response = await handleBookingsVersion();
-  return withCors(response, corsHeaders);
+const corsHeaders = buildCorsHeaders();
+
+if (request.method === "OPTIONS") {
+  return new Response(null, { status: 204, headers: corsHeaders });
 }
 
-      return withCors(json({ error: "Not found" }, 404), corsHeaders);
+try {
 
-    } catch (error) {
+  /* ===============================
+     PRICING ENGINE
+  ================================ */
 
-      return withCors(
-        json({ error: "Server error", detail: error?.message || "Unknown error" }, 500),
-        corsHeaders
-      );
+  if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
+    const response = await handlePricingQuote(request);
+    return withCors(response, corsHeaders);
+  }
 
-    }
+  /* ===============================
+     STRIPE CHECKOUT SESSION
+  ================================ */
+
+  if (request.method === "POST" && url.pathname === "/api/bookings/create-checkout-session") {
+    const response = await handleCreateCheckoutSession(request, env);
+    return withCors(response, corsHeaders);
+  }
+
+  /* ===============================
+     LIST BOOKINGS
+  ================================ */
+
+  if (request.method === "GET" && url.pathname === "/api/bookings/list") {
+    const response = await handleListBookings(request, env);
+    return withCors(response, corsHeaders);
+  }
+
+  /* ===============================
+     CLEAR BOOKINGS (ADMIN)
+  ================================ */
+
+  if (request.method === "POST" && url.pathname === "/api/bookings/clear") {
+    const response = await handleClearBookings(env);
+    return withCors(response, corsHeaders);
+  }
+
+  /* ===============================
+     BOOKINGS VERSION
+  ================================ */
+
+  if (request.method === "GET" && url.pathname === "/api/bookings/version") {
+    const response = await handleBookingsVersion();
+    return withCors(response, corsHeaders);
+  }
+
+  return withCors(json({ error: "Not found" }, 404), corsHeaders);
+
+} catch (error) {
+
+  return withCors(
+    json(
+      { error: "Server error", detail: error?.message || "Unknown error" },
+      500
+    ),
+    corsHeaders
+  );
+
+}
   }
 };
 
@@ -554,6 +582,21 @@ async function handleListBookings(request, env) {
   return json({
     version: Date.now()
   });
+
+}
+
+async function handleClearBookings(env) {
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  await Promise.all(
+    list.keys.map(key => env.BOOKINGS_KV.delete(key.name))
+  );
+
+  BOOKINGS_RESPONSE_CACHE = null;
+  BOOKINGS_RESPONSE_CACHE_AT = 0;
+
+  return json({ success: true });
 
 }
 
