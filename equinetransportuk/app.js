@@ -2473,7 +2473,7 @@ function renderBookingBars(year, month, bookings) {
   bookings.forEach(booking => {
 
     const start = new Date(booking.pickupAt);
-    const end   = new Date(booking.dropoffAt);
+    const end = new Date(booking.dropoffAt);
 
     if (
       start.getFullYear() !== year ||
@@ -2481,37 +2481,27 @@ function renderBookingBars(year, month, bookings) {
     ) return;
 
     const day = start.getDate();
-
     const cell = cells.find(c => Number(c.textContent) === day);
-    if (!cell) return;
 
-    const startHour = start.getHours();
-    const endHour   = end.getHours();
+    if (!cell) return;
 
     cell.classList.add("cal-booked");
 
-    /* MORNING SLOT */
+    const startHour = start.getHours();
+    const endHour = end.getHours();
+
+    cell.classList.remove(
+      "cal-booking-morning",
+      "cal-booking-afternoon",
+      "cal-booking-full"
+    );
 
     if (startHour === 7 && endHour === 13) {
-
       cell.classList.add("cal-booking-morning");
-
-    }
-
-    /* AFTERNOON SLOT */
-
-    else if (startHour === 13 && endHour === 19) {
-
+    } else if (startHour === 13 && endHour === 19) {
       cell.classList.add("cal-booking-afternoon");
-
-    }
-
-    /* FULL DAY */
-
-    else {
-
+    } else {
       cell.classList.add("cal-booking-full");
-
     }
 
   });
@@ -2811,40 +2801,29 @@ async function watchBookingUpdates() {
 
 function renderAvailabilityDots(dayEl, bookings, dayDate) {
 
+  const bookedCount = bookings.filter(b => {
+    const start = new Date(b.pickupAt);
+    const end = new Date(b.dropoffAt);
+
+    const dayStart = new Date(dayDate);
+    dayStart.setHours(0,0,0,0);
+
+    const dayEnd = new Date(dayDate);
+    dayEnd.setHours(23,59,59,999);
+
+    return start <= dayEnd && end >= dayStart;
+  }).length;
+
+  const availableCount = Math.max(0, vehicles.length - bookedCount);
+
   const wrap = document.createElement("div");
   wrap.className = "cal-lines";
 
-  vehicles
-  .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
-  .forEach(vehicle => {
-
+  for (let i = 0; i < availableCount; i++) {
     const line = document.createElement("div");
     line.className = "cal-line";
-
-    const booked = bookings.some(b => {
-
-  if (b.vehicleId !== vehicle.id) return false;
-
-  const start = new Date(b.pickupAt);
-  const end = new Date(b.dropoffAt);
-
-  const dayStart = new Date(dayDate);
-  dayStart.setHours(0,0,0,0);
-
-  const dayEnd = new Date(dayDate);
-  dayEnd.setHours(23,59,59,999);
-
-  return start <= dayEnd && end >= dayStart;
-
-});
-
-    if (booked) {
-      line.classList.add("booked");
-    }
-
     wrap.appendChild(line);
-
-  });
+  }
 
   dayEl.appendChild(wrap);
 
