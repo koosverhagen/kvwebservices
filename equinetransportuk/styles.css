@@ -1462,6 +1462,14 @@ input[type="date"] {
   right: 50%;
 }
 
+.cal-booking-morning::after{
+  top:8px;
+}
+
+.cal-booking-afternoon::after{
+  bottom:8px;
+}
+
 /* disable hover animation on booked days */
 
 .cal-booked:hover {
