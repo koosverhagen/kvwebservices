@@ -1432,15 +1432,16 @@ input[type="date"] {
   position: relative;
 }
 
-.cal-booked::after {
-  content: "";
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  bottom: 10px;
-  height: 2px;               /* thin line */
-  background: #ef4444;
-  border-radius: 2px;
+/* single booking bar */
+
+.cal-booked::after{
+  content:"";
+  position:absolute;
+  left:10%;
+  right:10%;
+  height:2px;
+  background:#ef4444;
+  border-radius:2px;
 }
 
 /* start of booking */
@@ -1462,12 +1463,24 @@ input[type="date"] {
   right: 50%;
 }
 
+/* morning */
+
 .cal-booking-morning::after{
   top:8px;
 }
 
+
+/* afternoon */
+
 .cal-booking-afternoon::after{
   bottom:8px;
+}
+
+/* full day */
+
+.cal-booking-full::after{
+  top:50%;
+  transform:translateY(-50%);
 }
 
 /* disable hover animation on booked days */

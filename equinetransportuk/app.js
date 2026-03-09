@@ -2473,81 +2473,51 @@ function renderBookingBars(year, month, bookings) {
   bookings.forEach(booking => {
 
     const start = new Date(booking.pickupAt);
-    const end = new Date(booking.dropoffAt);
+    const end   = new Date(booking.dropoffAt);
+
+    if (
+      start.getFullYear() !== year ||
+      start.getMonth() !== month
+    ) return;
+
+    const day = start.getDate();
+
+    const cell = cells.find(c => Number(c.textContent) === day);
+    if (!cell) return;
 
     const startHour = start.getHours();
-    const endHour = end.getHours();
+    const endHour   = end.getHours();
 
-    const isHalfDayMorning = startHour === 7 && endHour === 13;
-    const isHalfDayAfternoon = startHour === 13 && endHour === 19;
+    cell.classList.add("cal-booked");
 
-    let current = new Date(start);
+    /* MORNING SLOT */
 
-    while (current <= end) {
+    if (startHour === 7 && endHour === 13) {
 
-      if (
-        current.getFullYear() === year &&
-        current.getMonth() === month
-      ) {
+      cell.classList.add("cal-booking-morning");
 
-        const day = current.getDate();
+    }
 
-        const cell = cells.find(c => Number(c.textContent) === day);
+    /* AFTERNOON SLOT */
 
-        if (cell) {
+    else if (startHour === 13 && endHour === 19) {
 
-          cell.classList.add("cal-booked");
+      cell.classList.add("cal-booking-afternoon");
 
-          /* highlight selected vehicle */
+    }
 
-          if (PRESELECTED_VEHICLE) {
+    /* FULL DAY */
 
-            if (booking.vehicleId === PRESELECTED_VEHICLE) {
-              cell.classList.add("cal-booked-selected");
-            } else {
-              cell.classList.add("cal-booked-other");
-            }
+    else {
 
-          }
-
-          /* detect booking segment */
-
-          const isStart = current.toDateString() === start.toDateString();
-          const isEnd   = current.toDateString() === end.toDateString();
-
-          if (isHalfDayMorning) {
-
-            cell.classList.add("cal-booking-am");
-
-          } else if (isHalfDayAfternoon) {
-
-            cell.classList.add("cal-booking-pm");
-
-          } else {
-
-            if (isStart) {
-              cell.classList.add("cal-booking-start");
-            }
-            else if (isEnd) {
-              cell.classList.add("cal-booking-end");
-            }
-            else {
-              cell.classList.add("cal-booking-mid");
-            }
-
-          }
-
-        }
-
-      }
-
-      current.setDate(current.getDate() + 1);
+      cell.classList.add("cal-booking-full");
 
     }
 
   });
 
 }
+
  async function renderCalendar() {
 
 /* load bookings (use cache if already available) */
