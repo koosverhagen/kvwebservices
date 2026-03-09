@@ -1364,8 +1364,15 @@ async function checkBookingFormAvailability() {
     return;
   }
 
-  const pickupTime =
-    is35T(vehicle) && durationDays === 0.5 ? selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME : DEFAULT_PICKUP_TIME;
+  const bookingPickupTime =
+  document.getElementById("booking-pickup-time")?.value ||
+  selectedAvailability.pickupTime ||
+  DEFAULT_PICKUP_TIME;
+
+const pickupTime =
+  is35T(vehicle) && durationDays === 0.5
+    ? bookingPickupTime
+    : DEFAULT_PICKUP_TIME;
 
   const available = await isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime);
 
