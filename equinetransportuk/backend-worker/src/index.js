@@ -452,24 +452,38 @@ const booking = {
 
     console.log("✅ Booking confirmed:", booking);
 
-    /* store booking per day to avoid KV scan */
+    /* ===============================
+   STORE BOOKING (MONTHLY BUCKET)
+================================ */
 
-const start = new Date(booking.pickupAt);
-const end = new Date(booking.dropoffAt);
+const pickupMonth = booking.pickupAt.slice(0,7); // YYYY-MM
+const key = `bookings:${pickupMonth}`;
 
-const days = getDatesBetween(start, end);
+/* Load existing month */
 
-for (const day of days) {
+let existing = await env.BOOKINGS_KV.get(key);
 
-  const month = day.slice(0,7); // YYYY-MM
-const key = `booking:${month}:${booking.id}`;
+let list = [];
 
-  await env.BOOKINGS_KV.put(
-    key,
-    JSON.stringify(booking)
-  );
-
+if (existing) {
+  try {
+    list = JSON.parse(existing);
+  } catch {
+    list = [];
+  }
 }
+
+/* Add booking */
+
+list.push(booking);
+
+/* Save back */
+
+await env.BOOKINGS_KV.put(
+  key,
+  JSON.stringify(list)
+);
+
 BOOKINGS_RESPONSE_CACHE = null;
 BOOKINGS_RESPONSE_CACHE_AT = 0;
 
@@ -486,7 +500,7 @@ BOOKINGS_RESPONSE_CACHE_AT = 0;
 }
 
 /* ===============================
-   LIST BOOKINGS API
+   LIST BOOKINGS API (MONTH BASED)
 ================================ */
 
 async function handleListBookings(request, env) {
@@ -507,59 +521,31 @@ async function handleListBookings(request, env) {
     return json({ error: "Invalid from/to parameters" }, 400);
   }
 
-  const cacheKey = `${from.toISOString()}|${to.toISOString()}`;
-  const now = Date.now();
+  const fromMonth = fromParam.slice(0,7);
+  const toMonth = toParam.slice(0,7);
 
-  if (
-    BOOKINGS_RESPONSE_CACHE &&
-    BOOKINGS_RESPONSE_CACHE.key === cacheKey &&
-    (now - BOOKINGS_RESPONSE_CACHE_AT) < BOOKINGS_RESPONSE_CACHE_TTL
-  ) {
-    return json(BOOKINGS_RESPONSE_CACHE.payload);
+  const months = new Set([fromMonth, toMonth]);
+
+  let bookings = [];
+
+  for (const month of months) {
+
+    const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+
+    if (!data) continue;
+
+    try {
+
+      const parsed = JSON.parse(data);
+
+      bookings.push(...parsed);
+
+    } catch {}
+
   }
 
-  const bookings = [];
-  const seenBookingIds = new Set();
+  return json({ bookings });
 
-  const current = new Date(from);
-  current.setHours(0, 0, 0, 0);
-
-  const end = new Date(to);
-  end.setHours(23, 59, 59, 999);
-
-  while (current <= end) {
-
-    const month = current.toISOString().slice(0, 7);
-
-const list = await env.BOOKINGS_KV.list({
-  prefix: `booking:${month}:`
-});
-
-    for (const key of list.keys) {
-
-      const value = await env.BOOKINGS_KV.get(key.name);
-      if (!value) continue;
-
-      const booking = JSON.parse(value);
-
-      if (seenBookingIds.has(booking.id)) continue;
-      seenBookingIds.add(booking.id);
-
-      bookings.push(booking);
-    }
-
-    current.setDate(current.getDate() + 1);
-  }
-
-  const payload = { bookings };
-
-  BOOKINGS_RESPONSE_CACHE = {
-    key: cacheKey,
-    payload
-  };
-  BOOKINGS_RESPONSE_CACHE_AT = now;
-
-  return json(payload);
 }
 
 
