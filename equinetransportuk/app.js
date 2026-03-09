@@ -1775,11 +1775,23 @@ document.addEventListener("DOMContentLoaded", () => {
   syncPickupTimeOptions();
   updatePickupTimeVisibility();
 
-  /* Step 3 logic */
-  const selectedDurationInput = document.getElementById("selected-duration");
+  /* Step 3 logic (use existing global selectedDurationInput) */
 
   if (selectedDurationInput) {
-    selectedDurationInput.addEventListener("change", updateHalfDayPickup);
+
+    selectedDurationInput.addEventListener("change", () => {
+
+      updateHalfDayPickup();
+
+      /* ensure booking pickup time stays valid */
+      const bookingTimeInput = document.getElementById("booking-pickup-time");
+
+      if (bookingTimeInput && Number(selectedDurationInput.value) !== 0.5) {
+        bookingTimeInput.value = "07:00";
+      }
+
+    });
+
   }
 
   updateHalfDayPickup();
@@ -2115,15 +2127,22 @@ clearAdminBtn?.addEventListener("click", async () => {
 
   if (!confirm("Clear all saved demo bookings?")) return;
 
-  localStorage.removeItem(STORAGE_BOOKINGS);
+  try {
 
-  BOOKINGS_CACHE = null;   // clear API cache
+    await fetch(apiUrl("/api/bookings/clear"), {
+      method: "POST"
+    });
 
+  } catch (err) {
+
+    console.warn("Backend clear failed, falling back to local storage");
+
+    localStorage.removeItem(STORAGE_BOOKINGS);
+
+  }
+
+  BOOKINGS_CACHE = null;
   selectedAvailability = null;
-
-  if (selectedLorryInput) selectedLorryInput.value = "";
-  if (selectedPickupInput) selectedPickupInput.value = "";
-  if (selectedBaseInput) selectedBaseInput.value = "";
 
   await getBookings(true);
 
@@ -2132,7 +2151,6 @@ clearAdminBtn?.addEventListener("click", async () => {
   updateCheckoutSummary();
 
 });
-
 // Expose images for slideshow matching your filenames
 window.fleetImages = window.fleetImages || [
   "3.5 T Stallion (MM68)1.webp",
@@ -2451,6 +2469,12 @@ function renderBookingBars(year, month, bookings) {
     const start = new Date(booking.pickupAt);
     const end = new Date(booking.dropoffAt);
 
+    const startHour = start.getHours();
+    const endHour = end.getHours();
+
+    const isHalfDayMorning = startHour === 7 && endHour === 13;
+    const isHalfDayAfternoon = startHour === 13 && endHour === 19;
+
     let current = new Date(start);
 
     while (current <= end) {
@@ -2480,19 +2504,31 @@ function renderBookingBars(year, month, bookings) {
 
           }
 
-          /* booking segment type */
+          /* detect booking segment */
 
           const isStart = current.toDateString() === start.toDateString();
           const isEnd   = current.toDateString() === end.toDateString();
 
-          if (isStart) {
-            cell.classList.add("cal-booking-start");
-          }
-          else if (isEnd) {
-            cell.classList.add("cal-booking-end");
-          }
-          else {
-            cell.classList.add("cal-booking-mid");
+          if (isHalfDayMorning) {
+
+            cell.classList.add("cal-booking-am");
+
+          } else if (isHalfDayAfternoon) {
+
+            cell.classList.add("cal-booking-pm");
+
+          } else {
+
+            if (isStart) {
+              cell.classList.add("cal-booking-start");
+            }
+            else if (isEnd) {
+              cell.classList.add("cal-booking-end");
+            }
+            else {
+              cell.classList.add("cal-booking-mid");
+            }
+
           }
 
         }

@@ -2151,3 +2151,23 @@ input[readonly]{
   position:relative;
   z-index:5;
 }
+
+/* half-day bookings */
+
+.cal-booking-am{
+  background: linear-gradient(
+    to right,
+    #ef4444 0%,
+    #ef4444 48%,
+    transparent 48%
+  );
+}
+
+.cal-booking-pm{
+  background: linear-gradient(
+    to right,
+    transparent 52%,
+    #ef4444 52%,
+    #ef4444 100%
+  );
+}
