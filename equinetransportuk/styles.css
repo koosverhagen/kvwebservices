@@ -1731,46 +1731,44 @@ html {
 .cal-line {
   position: relative;
   height: 3px;
-  border-radius: 999px;
-  background: rgba(34,197,94,0.25);
-  overflow: hidden;
+  border-radius: 2px;
+  background: #d7e9d7; /* available */
 }
 
-/* full day booking = full red line */
+/* FULL DAY */
+
 .cal-line.booked-full {
   background: #ef4444;
 }
 
-/* half-day booking overlays */
+/* MORNING */
 
-.cal-line.booked-am::after,
-.cal-line.booked-pm::after {
+.cal-line.booked-am::before {
   content: "";
   position: absolute;
+  left: 0;
+  width: 50%;
   top: 0;
   bottom: 0;
   background: #ef4444;
+  border-radius: 2px 0 0 2px;
 }
 
-/* morning = left half */
-
-.cal-line.booked-am::after {
-  left: 0;
-  width: 44%;
-  border-radius: 999px 0 0 999px;
-}
-
-/* afternoon = right half */
+/* AFTERNOON */
 
 .cal-line.booked-pm::after {
+  content: "";
+  position: absolute;
   right: 0;
-  width: 44%;
-  border-radius: 0 999px 999px 0;
+  width: 50%;
+  top: 0;
+  bottom: 0;
+  background: #ef4444;
+  border-radius: 0 2px 2px 0;
 }
 
-
-
 @media (max-width: 768px) {
+
   .cal-line {
     height: 1.5px;
   }
@@ -1778,6 +1776,7 @@ html {
   .cal-lines {
     gap: 1px;
   }
+
 }
 
 
