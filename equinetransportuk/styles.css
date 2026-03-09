@@ -1768,6 +1768,25 @@ html {
   border-radius: 0 999px 999px 0;
 }
 
+.cal-line.booked-am.booked-pm::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:0;
+  bottom:0;
+
+  background: linear-gradient(
+    to right,
+    #ef4444 0%,
+    #ef4444 44%,
+    transparent 44%,
+    transparent 56%,
+    #ef4444 56%,
+    #ef4444 100%
+  );
+}
+
 @media (max-width: 768px) {
   .cal-line {
     height: 1.5px;
