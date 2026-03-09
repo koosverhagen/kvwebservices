@@ -1681,37 +1681,6 @@ html {
   opacity:0.8;
 }
 
-/* ===============================
-   Calendar availability dots
-================================ */
-
-
-.cal-dots {
-  position: absolute;
-  bottom: 6px;
-  left: 0;
-  right: 0;
-
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-
-  pointer-events: none;
-}
-
-.cal-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #22c55e; /* green = available */
-}
-
-.cal-dot-booked {
-  background: #ef4444; /* red = booked */
-}
-
-
-
 
 /* ===============================
    Per-vehicle lines
