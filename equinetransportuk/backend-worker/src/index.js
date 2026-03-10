@@ -169,7 +169,7 @@ if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
       });
     }
 
-   /* ===============================
+/* ===============================
    CUSTOMER LOOKUP (RETURNING CUSTOMER)
 ================================ */
 
@@ -227,6 +227,46 @@ if (url.pathname === "/api/customers/lookup" && request.method === "GET") {
 }
 };
 
+
+/* ===============================
+   CUSTOMER BOOKING HISTORY
+================================ */
+
+if (url.pathname === "/api/customers/bookings" && request.method === "GET") {
+
+  const customerId = url.searchParams.get("customer_id");
+
+  if (!customerId) {
+    return withCors(
+      json({ bookings: [] }),
+      corsHeaders
+    );
+  }
+
+  const bookings = await env.DB.prepare(`
+    SELECT
+      id,
+      vehicle_id,
+      pickup_at,
+      dropoff_at,
+      duration_days,
+      status
+    FROM bookings
+    WHERE customer_id = ?
+    ORDER BY pickup_at DESC
+    LIMIT 5
+  `)
+  .bind(customerId)
+  .all();
+
+  return withCors(
+    json({
+      bookings: bookings.results || []
+    }),
+    corsHeaders
+  );
+
+}
 
 
 
