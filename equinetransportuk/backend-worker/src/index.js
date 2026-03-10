@@ -75,6 +75,61 @@ try {
     return withCors(response, corsHeaders);
   }
 
+  if (url.pathname === "/api/customers" && request.method === "POST") {
+
+  const body = await request.json();
+
+  const name = body.full_name?.trim();
+  const email = body.email?.trim().toLowerCase();
+  const mobile = body.mobile?.trim();
+
+  if (!name) {
+    return new Response(JSON.stringify({ error: "Name required" }), { status: 400 });
+  }
+
+  if (!email && !mobile) {
+    return new Response(JSON.stringify({ error: "Email or mobile required" }), { status: 400 });
+  }
+
+  const existing = await findCustomerByEmailOrMobile(env, email, mobile);
+
+  if (existing) {
+    return Response.json({
+      ok: true,
+      mode: "existing",
+      customer: existing
+    });
+  }
+
+  const id = "cus_" + crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(`
+    INSERT INTO customers (
+      id,
+      full_name,
+      email,
+      mobile,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?)
+  `)
+  .bind(id, name, email, mobile, now, now)
+  .run();
+
+  const customer = await env.DB.prepare(
+    "SELECT * FROM customers WHERE id = ?"
+  ).bind(id).first();
+
+  return Response.json({
+    ok: true,
+    mode: "created",
+    customer
+  });
+
+}
+
   return withCors(json({ error: "Not found" }, 404), corsHeaders);
 
 } catch (error) {
@@ -432,6 +487,8 @@ const confirmationFee = session.metadata.vehicleId.startsWith("v35")
 
 const booking = {
 
+  
+
   id: session.id,
 
   vehicleId: session.metadata.vehicleId,
@@ -479,6 +536,78 @@ const booking = {
 };
 
     console.log("✅ Booking confirmed:", booking);
+
+/* ===============================
+   SAVE BOOKING IN DATABASE
+================================ */
+
+let customer = await findCustomerByEmailOrMobile(
+  env,
+  booking.customerEmail,
+  booking.customerMobile
+);
+
+if (!customer) {
+
+  const customerId = "cus_" + crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(`
+    INSERT INTO customers (
+      id,
+      full_name,
+      email,
+      mobile,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?)
+  `)
+  .bind(
+    customerId,
+    booking.customerName,
+    booking.customerEmail,
+    booking.customerMobile,
+    now,
+    now
+  )
+  .run();
+
+  customer = await env.DB.prepare(
+  "SELECT * FROM customers WHERE id = ?"
+).bind(customerId).first();
+}
+
+await env.DB.prepare(`
+  INSERT INTO bookings (
+    id,
+    customer_id,
+    vehicle_id,
+    pickup_at,
+    dropoff_at,
+    duration_days,
+    price_total,
+    paid_now,
+    status,
+    created_at,
+    updated_at
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`)
+.bind(
+  booking.id,
+  customer.id,
+  booking.vehicleId,
+  booking.pickupAt,
+  booking.dropoffAt,
+  booking.durationDays,
+  booking.hireTotal || 0,
+  booking.confirmationFee || 0,
+  booking.status,
+  booking.createdAt,
+  booking.createdAt
+)
+.run();
 
     /* ===============================
    STORE BOOKING (MONTHLY BUCKET)
@@ -600,6 +729,26 @@ async function handleClearBookings(env) {
 
 }
 
+async function findCustomerByEmailOrMobile(env, email, mobile) {
+
+  if (email) {
+    const result = await env.DB.prepare(
+      "SELECT * FROM customers WHERE email = ? LIMIT 1"
+    ).bind(email).first();
+
+    if (result) return result;
+  }
+
+  if (mobile) {
+    const result = await env.DB.prepare(
+      "SELECT * FROM customers WHERE mobile = ? LIMIT 1"
+    ).bind(mobile).first();
+
+    if (result) return result;
+  }
+
+  return null;
+}
 
 /* ===============================
    HELPERS
