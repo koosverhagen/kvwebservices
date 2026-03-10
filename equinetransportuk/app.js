@@ -868,13 +868,19 @@ async function renderAvailabilityResults(items) {
 
     const matched = filtered[0];
 
-    await selectAvailability(matched.vehicle.id);
+await selectAvailability(matched.vehicle.id);
 
-    PRESELECTED_VEHICLE = null;
+/* ensure Step 3 shows selected vehicle */
 
-    goToStep(3);
+if (selectedLorryInput) {
+  selectedLorryInput.value = matched.vehicle.name;
+}
 
-    return;
+PRESELECTED_VEHICLE = null;
+
+goToStep(3);
+
+return;
   }
 
   /* ---------------------------------
