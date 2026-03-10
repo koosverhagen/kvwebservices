@@ -831,67 +831,65 @@ function renderAvailabilityResults(items) {
   }
 
   /* ---------------------------------
-   PRESELECTED VEHICLE FILTER
----------------------------------- */
-
-if (PRESELECTED_VEHICLE) {
-
-  const filtered = items.filter(
-    item => item.vehicle.id === PRESELECTED_VEHICLE
-  );
-
-  if (!filtered.length) {
-
-    availabilityResults.innerHTML =
-      '<p class="empty-note">Sorry, this lorry is not available for the selected date.</p>';
-
-    PRESELECTED_VEHICLE = null;
-    return;
-
-  }
-
-  items = filtered;
-
-}
-
-  /* ---------------------------------------------------
-     PRESELECTED VEHICLE (fleet card flow)
-  --------------------------------------------------- */
+     PRESELECTED VEHICLE MODE
+  ---------------------------------- */
 
   if (PRESELECTED_VEHICLE) {
 
-    const matched = items.find(
+    const filtered = items.filter(
       item => item.vehicle.id === PRESELECTED_VEHICLE
     );
 
-    if (matched) {
-
-      selectAvailability(PRESELECTED_VEHICLE);
-
-      PRESELECTED_VEHICLE = null;
-
-      goToStep(3);
-
-      return;
-
-    } else {
-
-      /* chosen lorry not available */
+    if (!filtered.length) {
 
       availabilityResults.innerHTML =
         '<p class="empty-note">Sorry, this lorry is not available for the selected date.</p>';
 
       PRESELECTED_VEHICLE = null;
-
       return;
 
     }
 
+    const matched = filtered[0];
+
+    /* AUTO SELECT VEHICLE */
+
+    selectAvailability(matched);
+
+    PRESELECTED_VEHICLE = null;
+
+    goToStep(3);
+
+    return;
+
   }
 
-  /* ---------------------------------------------------
-     NORMAL FLOW (choose from available vehicles)
-  --------------------------------------------------- */
+  /* ---------------------------------
+     NORMAL FLOW
+  ---------------------------------- */
+
+  if (!items.length) {
+
+    availabilityResults.innerHTML =
+      '<p class="empty-note">No lorries available for this date and duration.</p>';
+
+    return;
+
+  }
+
+  /* If only one vehicle available skip Step 2 */
+
+  if (items.length === 1) {
+
+    selectAvailability(items[0]);
+
+    goToStep(3);
+
+    return;
+
+  }
+
+  /* Multiple vehicles → show selection */
 
   const html = items.map((item) => {
 
@@ -937,7 +935,6 @@ if (PRESELECTED_VEHICLE) {
   goToStep(2);
 
 }
-
 availabilityResults.addEventListener("click", async (e)=>{
 
   const btn = e.target.closest(".choose-lorry");
