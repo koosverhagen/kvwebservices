@@ -262,6 +262,25 @@ window.vehicles = vehicles;
 // DOM
 const fleetGrid = document.getElementById("fleet-grid");
 const availabilityForm = document.getElementById("availability-form");
+/* =====================================
+   FIX: PRESELECTED VEHICLE AVAILABILITY
+   ===================================== */
+
+durationDaysInput?.addEventListener("change", () => {
+
+  if (!PRESELECTED_VEHICLE) return;
+
+  const pickupDate = pickupDateInput?.value;
+  const durationDays = Number(durationDaysInput?.value || 1);
+  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+
+  if (!pickupDate || !durationDays) return;
+
+  setTimeout(() => {
+    availabilityForm?.requestSubmit();
+  }, 100);
+
+});
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
 const durationDaysInput = document.getElementById("duration-days");
