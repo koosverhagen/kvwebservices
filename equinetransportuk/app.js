@@ -742,31 +742,55 @@ async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTim
   });
 }
 
-async function getAvailableLorries(pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
+async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
+
   const results = [];
-  const discountCode = getCurrentDiscountCode(); // show discounted prices in list if code is already entered
 
-  for (const vehicle of vehicles) {
-    if (!supportsDuration(vehicle, durationDays)) continue;
+  /* -----------------------------
+     PRESELECTED VEHICLE MODE
+  ----------------------------- */
 
-    const availability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode);
+  if (PRESELECTED_VEHICLE) {
 
-   const vehicleBookings = (await getBookings(false)).filter(
-      (booking) => booking.vehicleId === vehicle.id && booking.status !== "cancelled"
+    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+
+    if (!vehicle) return [];
+
+    const availability = await buildAvailability(
+      vehicle,
+      pickupDate,
+      durationDays,
+      pickupTime
     );
 
-    const overlapsExisting = vehicleBookings.some((booking) => {
-      const existingStart = new Date(booking.pickupAt);
-      const existingEnd = new Date(booking.dropoffAt);
-      return overlaps(availability.pickupAt, availability.dropoffAt, existingStart, existingEnd);
-    });
+    if (availability.available) {
+      results.push(availability);
+    }
 
-    if (!overlapsExisting) results.push(availability);
+    return results;
+  }
+
+  /* -----------------------------
+     NORMAL MODE
+  ----------------------------- */
+
+  for (const vehicle of vehicles) {
+
+    const availability = await buildAvailability(
+      vehicle,
+      pickupDate,
+      durationDays,
+      pickupTime
+    );
+
+    if (availability.available) {
+      results.push(availability);
+    }
+
   }
 
   return results;
 }
-
 function renderAvailabilityLoading() {
   if (!availabilityResults) return;
   availabilityResults.innerHTML = `
