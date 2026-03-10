@@ -272,6 +272,9 @@ const durationDaysInput = document.getElementById("duration-days");
 
 durationDaysInput?.addEventListener("change", () => {
 
+  updatePickupTimeVisibility();
+  syncPickupTimeOptions();
+
   if (!PRESELECTED_VEHICLE) return;
 
   const pickupDate = pickupDateInput?.value;
@@ -1982,39 +1985,6 @@ if (badge) {
 
 });
 
-durationDaysInput?.addEventListener("change", () => {
-
-  updatePickupTimeVisibility();
-  syncPickupTimeOptions();
-
-  /* do not auto-search for half-day until pickup time is chosen */
-
-  if (Number(durationDaysInput.value) === 0.5) {
-
-    const group = document.getElementById("pickup-time-group");
-
-    if (group) {
-      group.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-
-      group.classList.add("duration-highlight");
-
-      setTimeout(() => {
-        group.classList.remove("duration-highlight");
-      }, 2000);
-    }
-
-    return;
-  }
-
-  const form = document.getElementById("availability-form");
-  if (form && pickupDateInput?.value) {
-    form.requestSubmit();
-  }
-
-});
 
 pickupTimeInput?.addEventListener("change", () => {
 
