@@ -1777,6 +1777,47 @@ document.addEventListener("DOMContentLoaded", () => {
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
+  /* ======================================================
+     RETURNING CUSTOMER AUTO LOOKUP
+  ====================================================== */
+
+  if (customerEmailInput) {
+
+    customerEmailInput.addEventListener("blur", async () => {
+
+      const email = customerEmailInput.value.trim().toLowerCase();
+      if (!email) return;
+
+      try {
+
+        const res = await fetch(apiUrl(`/api/customers/lookup?email=${encodeURIComponent(email)}`));
+        const data = await res.json();
+
+        if (!data.found) {
+          window.RETURNING_CUSTOMER = false;
+          return;
+        }
+
+        console.log("Returning customer detected:", data.customer);
+
+        if (customerNameInput && !customerNameInput.value)
+          customerNameInput.value = data.customer.full_name || "";
+
+        if (customerMobileInput && !customerMobileInput.value)
+          customerMobileInput.value = data.customer.mobile || "";
+
+        window.RETURNING_CUSTOMER = true;
+
+      } catch (err) {
+
+        console.warn("Customer lookup failed:", err);
+
+      }
+
+    });
+
+  }
+
   /* Step 1 logic */
   syncPickupTimeOptions();
   updatePickupTimeVisibility();
