@@ -2105,4 +2105,15 @@ input[readonly]{
   z-index:5;
 }
 
+.customer-badge {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.customer-badge.hidden {
+  display: none;
+}
+
 
