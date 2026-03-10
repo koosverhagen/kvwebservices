@@ -5665,6 +5665,30 @@ var src_default = {
         return withCors(response, corsHeaders);
       }
       if (request.method === "GET" && url.pathname === "/api/bookings/version") {
+        if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
+          const email = url.searchParams.get("email")?.trim().toLowerCase();
+          const mobile = url.searchParams.get("mobile")?.trim();
+          if (!email && !mobile) {
+            return withCors(
+              json({ error: "Email or mobile required" }, 400),
+              corsHeaders
+            );
+          }
+          const customer = await findCustomerByEmailOrMobile(env, email, mobile);
+          if (!customer) {
+            return withCors(
+              json({ found: false }),
+              corsHeaders
+            );
+          }
+          return withCors(
+            json({
+              found: true,
+              customer
+            }),
+            corsHeaders
+          );
+        }
         const response = await handleBookingsVersion();
         return withCors(response, corsHeaders);
       }
@@ -5688,24 +5712,43 @@ var src_default = {
           });
         }
         const id = "cus_" + crypto.randomUUID();
-        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const now2 = (/* @__PURE__ */ new Date()).toISOString();
         await env.DB.prepare(`
-    INSERT INTO customers (
-      id,
-      full_name,
-      email,
-      mobile,
-      created_at,
-      updated_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(id, name, email, mobile, now, now).run();
+        INSERT INTO customers (
+          id,
+          full_name,
+          email,
+          mobile,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(id, name, email, mobile, now2, now2).run();
         const customer = await env.DB.prepare(
           "SELECT * FROM customers WHERE id = ?"
         ).bind(id).first();
         return Response.json({
           ok: true,
           mode: "created",
+          customer
+        });
+      }
+      if (url.pathname === "/api/customers/lookup" && request.method === "GET") {
+        const email = url.searchParams.get("email");
+        if (!email) {
+          return Response.json({ found: false });
+        }
+        const customer = await env.DB.prepare(`
+        SELECT id, full_name, email, mobile, hire_count, last_hire_at
+        FROM customers
+        WHERE email = ?
+        LIMIT 1
+      `).bind(email.toLowerCase()).first();
+        if (!customer) {
+          return Response.json({ found: false });
+        }
+        return Response.json({
+          found: true,
           customer
         });
       }
@@ -5811,9 +5854,9 @@ function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
     (d) => d.code.toUpperCase() === code.toUpperCase()
   );
   if (!entry) return { error: "Invalid code" };
-  const now = /* @__PURE__ */ new Date();
+  const now2 = /* @__PURE__ */ new Date();
   const expiry = /* @__PURE__ */ new Date(entry.expires + "T23:59:59");
-  if (now > expiry) return { error: "Code expired" };
+  if (now2 > expiry) return { error: "Code expired" };
   if (entry.vehicles !== "all" && !entry.vehicles.includes(vehicleId)) {
     return { error: "Code not valid for this vehicle" };
   }
@@ -5957,7 +6000,7 @@ async function handleStripeWebhook(request, env) {
     );
     if (!customer) {
       const customerId = "cus_" + crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
+      const now2 = (/* @__PURE__ */ new Date()).toISOString();
       await env.DB.prepare(`
     INSERT INTO customers (
       id,
@@ -5973,8 +6016,8 @@ async function handleStripeWebhook(request, env) {
         booking.customerName,
         booking.customerEmail,
         booking.customerMobile,
-        now,
-        now
+        now2,
+        now2
       ).run();
       customer = await env.DB.prepare(
         "SELECT * FROM customers WHERE id = ?"
@@ -6007,6 +6050,24 @@ async function handleStripeWebhook(request, env) {
       booking.status,
       booking.createdAt,
       booking.createdAt
+    ).run();
+    const hireNow = (/* @__PURE__ */ new Date()).toISOString();
+    await env.DB.prepare(`
+  UPDATE customers
+  SET
+    hire_count = COALESCE(hire_count,0) + 1,
+    last_hire_at = ?,
+    first_hire_at = COALESCE(first_hire_at, ?),
+    updated_at = ?
+  WHERE id = ?
+`).bind(
+      now,
+      // last hire
+      now,
+      // first hire if empty
+      now,
+      // updated_at
+      customer.id
     ).run();
     const pickupMonth = booking.pickupAt.slice(0, 7);
     const key = `bookings:${pickupMonth}`;
@@ -6162,7 +6223,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-uigYDi/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-nCoLVf/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -6194,7 +6255,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-uigYDi/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-nCoLVf/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

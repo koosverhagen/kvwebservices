@@ -11,139 +11,209 @@ const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
 export default {
   async fetch(request, env, ctx) {
 
-    const url = new URL(request.url);
+  const url = new URL(request.url);
+
+  /* ===============================
+     STRIPE WEBHOOK FIRST
+     (must bypass CORS)
+  ================================ */
+
+  if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
+    return handleStripeWebhook(request, env);
+  }
+
+  const corsHeaders = buildCorsHeaders();
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  try {
 
     /* ===============================
-   STRIPE WEBHOOK FIRST
-   (must bypass CORS)
+       PRICING ENGINE
+    ================================ */
+
+    if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
+      const response = await handlePricingQuote(request);
+      return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
+       STRIPE CHECKOUT SESSION
+    ================================ */
+
+    if (request.method === "POST" && url.pathname === "/api/bookings/create-checkout-session") {
+      const response = await handleCreateCheckoutSession(request, env);
+      return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
+       LIST BOOKINGS
+    ================================ */
+
+    if (request.method === "GET" && url.pathname === "/api/bookings/list") {
+      const response = await handleListBookings(request, env);
+      return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
+       CLEAR BOOKINGS (ADMIN)
+    ================================ */
+
+    if (request.method === "POST" && url.pathname === "/api/bookings/clear") {
+      const response = await handleClearBookings(env);
+      return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
+       BOOKINGS VERSION
+    ================================ */
+
+    if (request.method === "GET" && url.pathname === "/api/bookings/version") {
+
+      /* ===============================
+   CUSTOMER LOOKUP
 ================================ */
 
-if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
-  return handleStripeWebhook(request, env);
-}
+if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
 
-const corsHeaders = buildCorsHeaders();
-
-if (request.method === "OPTIONS") {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
-
-try {
-
-  /* ===============================
-     PRICING ENGINE
-  ================================ */
-
-  if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
-    const response = await handlePricingQuote(request);
-    return withCors(response, corsHeaders);
-  }
-
-  /* ===============================
-     STRIPE CHECKOUT SESSION
-  ================================ */
-
-  if (request.method === "POST" && url.pathname === "/api/bookings/create-checkout-session") {
-    const response = await handleCreateCheckoutSession(request, env);
-    return withCors(response, corsHeaders);
-  }
-
-  /* ===============================
-     LIST BOOKINGS
-  ================================ */
-
-  if (request.method === "GET" && url.pathname === "/api/bookings/list") {
-    const response = await handleListBookings(request, env);
-    return withCors(response, corsHeaders);
-  }
-
-  /* ===============================
-     CLEAR BOOKINGS (ADMIN)
-  ================================ */
-
-  if (request.method === "POST" && url.pathname === "/api/bookings/clear") {
-    const response = await handleClearBookings(env);
-    return withCors(response, corsHeaders);
-  }
-
-  /* ===============================
-     BOOKINGS VERSION
-  ================================ */
-
-  if (request.method === "GET" && url.pathname === "/api/bookings/version") {
-    const response = await handleBookingsVersion();
-    return withCors(response, corsHeaders);
-  }
-
-  if (url.pathname === "/api/customers" && request.method === "POST") {
-
-  const body = await request.json();
-
-  const name = body.full_name?.trim();
-  const email = body.email?.trim().toLowerCase();
-  const mobile = body.mobile?.trim();
-
-  if (!name) {
-    return new Response(JSON.stringify({ error: "Name required" }), { status: 400 });
-  }
+  const email = url.searchParams.get("email")?.trim().toLowerCase();
+  const mobile = url.searchParams.get("mobile")?.trim();
 
   if (!email && !mobile) {
-    return new Response(JSON.stringify({ error: "Email or mobile required" }), { status: 400 });
+    return withCors(
+      json({ error: "Email or mobile required" }, 400),
+      corsHeaders
+    );
   }
 
-  const existing = await findCustomerByEmailOrMobile(env, email, mobile);
+  const customer = await findCustomerByEmailOrMobile(env, email, mobile);
 
-  if (existing) {
-    return Response.json({
-      ok: true,
-      mode: "existing",
-      customer: existing
-    });
+  if (!customer) {
+    return withCors(
+      json({ found: false }),
+      corsHeaders
+    );
   }
-
-  const id = "cus_" + crypto.randomUUID();
-  const now = new Date().toISOString();
-
-  await env.DB.prepare(`
-    INSERT INTO customers (
-      id,
-      full_name,
-      email,
-      mobile,
-      created_at,
-      updated_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?)
-  `)
-  .bind(id, name, email, mobile, now, now)
-  .run();
-
-  const customer = await env.DB.prepare(
-    "SELECT * FROM customers WHERE id = ?"
-  ).bind(id).first();
-
-  return Response.json({
-    ok: true,
-    mode: "created",
-    customer
-  });
-
-}
-
-  return withCors(json({ error: "Not found" }, 404), corsHeaders);
-
-} catch (error) {
 
   return withCors(
-    json(
-      { error: "Server error", detail: error?.message || "Unknown error" },
-      500
-    ),
+    json({
+      found: true,
+      customer
+    }),
     corsHeaders
   );
 
 }
+
+      const response = await handleBookingsVersion();
+      return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
+       CREATE / FIND CUSTOMER
+    ================================ */
+
+    if (url.pathname === "/api/customers" && request.method === "POST") {
+
+      const body = await request.json();
+
+      const name = body.full_name?.trim();
+      const email = body.email?.trim().toLowerCase();
+      const mobile = body.mobile?.trim();
+
+      if (!name) {
+        return new Response(JSON.stringify({ error: "Name required" }), { status: 400 });
+      }
+
+      if (!email && !mobile) {
+        return new Response(JSON.stringify({ error: "Email or mobile required" }), { status: 400 });
+      }
+
+      const existing = await findCustomerByEmailOrMobile(env, email, mobile);
+
+      if (existing) {
+        return Response.json({
+          ok: true,
+          mode: "existing",
+          customer: existing
+        });
+      }
+
+      const id = "cus_" + crypto.randomUUID();
+      const now = new Date().toISOString();
+
+      await env.DB.prepare(`
+        INSERT INTO customers (
+          id,
+          full_name,
+          email,
+          mobile,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+      `)
+      .bind(id, name, email, mobile, now, now)
+      .run();
+
+      const customer = await env.DB.prepare(
+        "SELECT * FROM customers WHERE id = ?"
+      ).bind(id).first();
+
+      return Response.json({
+        ok: true,
+        mode: "created",
+        customer
+      });
+    }
+
+    /* ===============================
+       CUSTOMER LOOKUP (RETURNING CUSTOMER)
+    ================================ */
+
+    if (url.pathname === "/api/customers/lookup" && request.method === "GET") {
+
+      const email = url.searchParams.get("email");
+
+      if (!email) {
+        return Response.json({ found: false });
+      }
+
+      const customer = await env.DB.prepare(`
+        SELECT id, full_name, email, mobile, hire_count, last_hire_at
+        FROM customers
+        WHERE email = ?
+        LIMIT 1
+      `)
+      .bind(email.toLowerCase())
+      .first();
+
+      if (!customer) {
+        return Response.json({ found: false });
+      }
+
+      return Response.json({
+        found: true,
+        customer
+      });
+    }
+
+    return withCors(json({ error: "Not found" }, 404), corsHeaders);
+
+  } catch (error) {
+
+    return withCors(
+      json(
+        { error: "Server error", detail: error?.message || "Unknown error" },
+        500
+      ),
+      corsHeaders
+    );
+
   }
+}
 };
 
 
@@ -594,6 +664,9 @@ await env.DB.prepare(`
   )
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `)
+
+
+
 .bind(
   booking.id,
   customer.id,
@@ -606,6 +679,29 @@ await env.DB.prepare(`
   booking.status,
   booking.createdAt,
   booking.createdAt
+)
+.run();
+
+/* ===============================
+   UPDATE CUSTOMER HISTORY
+================================ */
+
+const hireNow = new Date().toISOString();
+
+await env.DB.prepare(`
+  UPDATE customers
+  SET
+    hire_count = COALESCE(hire_count,0) + 1,
+    last_hire_at = ?,
+    first_hire_at = COALESCE(first_hire_at, ?),
+    updated_at = ?
+  WHERE id = ?
+`)
+.bind(
+  now,   // last hire
+  now,   // first hire if empty
+  now,   // updated_at
+  customer.id
 )
 .run();
 
