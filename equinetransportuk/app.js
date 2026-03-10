@@ -262,6 +262,10 @@ window.vehicles = vehicles;
 // DOM
 const fleetGrid = document.getElementById("fleet-grid");
 const availabilityForm = document.getElementById("availability-form");
+
+const pickupDateInput = document.getElementById("pickup-date");
+const pickupTimeInput = document.getElementById("pickup-time");
+const durationDaysInput = document.getElementById("duration-days");
 /* =====================================
    FIX: PRESELECTED VEHICLE AVAILABILITY
    ===================================== */
@@ -281,9 +285,6 @@ durationDaysInput?.addEventListener("change", () => {
   }, 100);
 
 });
-const pickupDateInput = document.getElementById("pickup-date");
-const pickupTimeInput = document.getElementById("pickup-time");
-const durationDaysInput = document.getElementById("duration-days");
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
