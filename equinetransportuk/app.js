@@ -854,7 +854,7 @@ function renderAvailabilityResults(items) {
 
     /* AUTO SELECT VEHICLE */
 
-    selectAvailability(matched);
+   selectAvailability(matched.vehicle.id);
 
     PRESELECTED_VEHICLE = null;
 
