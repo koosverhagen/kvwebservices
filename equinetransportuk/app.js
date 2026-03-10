@@ -790,9 +790,14 @@ function renderAvailabilityResults(items) {
   }
 
   if (!items.length) {
-    availabilityResults.innerHTML = '<p class="empty-note">No lorries available for this date and duration.</p>';
+    availabilityResults.innerHTML =
+      '<p class="empty-note">No lorries available for this date and duration.</p>';
     return;
   }
+
+  /* ---------------------------------------------------
+     PRESELECTED VEHICLE (fleet card flow)
+  --------------------------------------------------- */
 
   if (PRESELECTED_VEHICLE) {
 
@@ -801,13 +806,33 @@ function renderAvailabilityResults(items) {
     );
 
     if (matched) {
+
       selectAvailability(PRESELECTED_VEHICLE);
+
       PRESELECTED_VEHICLE = null;
+
       goToStep(3);
+
       return;
+
+    } else {
+
+      /* chosen lorry not available */
+
+      availabilityResults.innerHTML =
+        '<p class="empty-note">Sorry, this lorry is not available for the selected date.</p>';
+
+      PRESELECTED_VEHICLE = null;
+
+      return;
+
     }
 
   }
+
+  /* ---------------------------------------------------
+     NORMAL FLOW (choose from available vehicles)
+  --------------------------------------------------- */
 
   const html = items.map((item) => {
 
@@ -818,9 +843,10 @@ function renderAvailabilityResults(items) {
       <article class="availability-item">
         <div>
           <h4>${escapeHtml(item.vehicle.name)}</h4>
+
           <p class="muted">
             ${item.vehicle.code ? `${escapeHtml(item.vehicle.code)} · ` : ""}
-            ${escapeHtml(formatDateOnly(item.pickupDate))} ${escapeHtml(item.pickupTime)} · 
+            ${escapeHtml(formatDateOnly(item.pickupDate))} ${escapeHtml(item.pickupTime)} ·
             ${escapeHtml(formatDurationLabel(item.durationDays))}
           </p>
 
@@ -831,7 +857,10 @@ function renderAvailabilityResults(items) {
           </p>
         </div>
 
-        <button class="btn choose-lorry" type="button" data-vehicle-id="${escapeHtml(item.vehicle.id)}">
+        <button
+          class="btn choose-lorry"
+          type="button"
+          data-vehicle-id="${escapeHtml(item.vehicle.id)}">
           Select
         </button>
       </article>
@@ -1231,8 +1260,12 @@ function populateBookingDurationSelect(vehicle) {
 }
 
 async function bookFromVehicle(vehicleId) {
+
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   if (!vehicle) return;
+
+  /* remember selected vehicle */
+  PRESELECTED_VEHICLE = vehicleId;
 
   const today = new Date().toISOString().slice(0, 10);
   const defaultDate = pickupDateInput?.value || today;
@@ -1249,9 +1282,20 @@ async function bookFromVehicle(vehicleId) {
   const pickupTime = DEFAULT_PICKUP_TIME;
   const code = getCurrentDiscountCode();
 
-  selectedAvailability = await buildAvailability(vehicle, defaultDate, durationDays, pickupTime, code);
+  selectedAvailability = await buildAvailability(
+    vehicle,
+    defaultDate,
+    durationDays,
+    pickupTime,
+    code
+  );
 
-  if (selectedBaseInput) selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+  if (selectedBaseInput) {
+    selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+  }
+
+  /* skip vehicle selection step */
+  goToStep(3);
 
   await checkBookingFormAvailability();
 
