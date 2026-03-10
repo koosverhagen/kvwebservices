@@ -10,3 +10,8 @@ kv_namespaces = [
 
 [triggers]
 crons = ["*/30 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "equine-rental-db"
+database_id = "f65671fd-8b3b-4396-97b7-fa1b82f41bd3"
