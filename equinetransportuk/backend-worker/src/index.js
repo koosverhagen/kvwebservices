@@ -3,15 +3,12 @@ import Stripe from "stripe";
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8"
 };
-
-let BOOKINGS_RESPONSE_CACHE = null;
-let BOOKINGS_RESPONSE_CACHE_AT = 0;
 const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
 
 export default {
   async fetch(request, env, ctx) {
 
-  const url = new URL(request.url);
+    const url = new URL(request.url);
 
   /* ===============================
      STRIPE WEBHOOK FIRST
@@ -66,50 +63,17 @@ export default {
       return withCors(response, corsHeaders);
     }
 
-    /* ===============================
-       BOOKINGS VERSION
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/bookings/version") {
-
-      /* ===============================
-   CUSTOMER LOOKUP
+/* ===============================
+   BOOKINGS VERSION
 ================================ */
 
-if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
+if (request.method === "GET" && url.pathname === "/api/bookings/version") {
 
-  const email = url.searchParams.get("email")?.trim().toLowerCase();
-  const mobile = url.searchParams.get("mobile")?.trim();
-
-  if (!email && !mobile) {
-    return withCors(
-      json({ error: "Email or mobile required" }, 400),
-      corsHeaders
-    );
-  }
-
-  const customer = await findCustomerByEmailOrMobile(env, email, mobile);
-
-  if (!customer) {
-    return withCors(
-      json({ found: false }),
-      corsHeaders
-    );
-  }
-
-  return withCors(
-    json({
-      found: true,
-      customer
-    }),
-    corsHeaders
-  );
+  const response = await handleBookingsVersion();
+  return withCors(response, corsHeaders);
 
 }
 
-      const response = await handleBookingsVersion();
-      return withCors(response, corsHeaders);
-    }
 
     /* ===============================
        CREATE / FIND CUSTOMER
@@ -134,11 +98,14 @@ if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
       const existing = await findCustomerByEmailOrMobile(env, email, mobile);
 
       if (existing) {
-        return Response.json({
-          ok: true,
-          mode: "existing",
-          customer: existing
-        });
+      return withCors(
+  json({
+    ok: true,
+    mode: "existing",
+    customer: existing
+  }),
+  corsHeaders
+);
       }
 
       const id = "cus_" + crypto.randomUUID();
@@ -162,36 +129,33 @@ if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
         "SELECT * FROM customers WHERE id = ?"
       ).bind(id).first();
 
-      return Response.json({
-        ok: true,
-        mode: "created",
-        customer
-      });
+   return withCors(
+  json({
+    ok: true,
+    mode: "created",
+    customer
+  }),
+  corsHeaders
+);
     }
 
 /* ===============================
-   CUSTOMER LOOKUP (RETURNING CUSTOMER)
+   CUSTOMER LOOKUP
 ================================ */
 
-if (url.pathname === "/api/customers/lookup" && request.method === "GET") {
+if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
 
   const email = url.searchParams.get("email")?.trim().toLowerCase();
   const mobile = url.searchParams.get("mobile")?.trim();
 
   if (!email && !mobile) {
-    return withCors(
-      json({ found: false }),
-      corsHeaders
-    );
+    return withCors(json({ found:false }), corsHeaders);
   }
 
   const customer = await findCustomerByEmailOrMobile(env, email, mobile);
 
   if (!customer) {
-    return withCors(
-      json({ found: false }),
-      corsHeaders
-    );
+    return withCors(json({ found:false }), corsHeaders);
   }
 
   return withCors(
@@ -211,39 +175,20 @@ if (url.pathname === "/api/customers/lookup" && request.method === "GET") {
 
 }
 
-    return withCors(json({ error: "Not found" }, 404), corsHeaders);
-
-  } catch (error) {
-
-    return withCors(
-      json(
-        { error: "Server error", detail: error?.message || "Unknown error" },
-        500
-      ),
-      corsHeaders
-    );
-
-  }
-}
-};
-
 
 /* ===============================
    CUSTOMER BOOKING HISTORY
 ================================ */
 
-if (url.pathname === "/api/customers/bookings" && request.method === "GET") {
+if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
 
   const customerId = url.searchParams.get("customer_id");
 
   if (!customerId) {
-    return withCors(
-      json({ bookings: [] }),
-      corsHeaders
-    );
+    return withCors(json({ bookings: [] }), corsHeaders);
   }
 
-  const bookings = await env.DB.prepare(`
+  const result = await env.DB.prepare(`
     SELECT
       id,
       vehicle_id,
@@ -261,16 +206,29 @@ if (url.pathname === "/api/customers/bookings" && request.method === "GET") {
 
   return withCors(
     json({
-      bookings: bookings.results || []
+      bookings: result.results || []
     }),
     corsHeaders
   );
 
 }
 
+return withCors(json({ error: "Not found" }, 404), corsHeaders);
 
+} catch (error) {
 
+  return withCors(
+    json(
+      { error: "Server error", detail: error?.message || "Unknown error" },
+      500
+    ),
+    corsHeaders
+  );
 
+}
+
+}
+};
 /* ===============================
    PRICING + DISCOUNT ENGINE
 ================================ */
@@ -749,9 +707,9 @@ await env.DB.prepare(`
   WHERE id = ?
 `)
 .bind(
-  now,   // last hire
-  now,   // first hire if empty
-  now,   // updated_at
+  hireNow,
+  hireNow,
+  hireNow,
   customer.id
 )
 .run();
@@ -787,9 +745,6 @@ await env.BOOKINGS_KV.put(
   key,
   JSON.stringify(list)
 );
-
-BOOKINGS_RESPONSE_CACHE = null;
-BOOKINGS_RESPONSE_CACHE_AT = 0;
 
   }
 
@@ -868,10 +823,7 @@ async function handleClearBookings(env) {
   await Promise.all(
     list.keys.map(key => env.BOOKINGS_KV.delete(key.name))
   );
-
-  BOOKINGS_RESPONSE_CACHE = null;
-  BOOKINGS_RESPONSE_CACHE_AT = 0;
-
+  
   return json({ success: true });
 
 }
