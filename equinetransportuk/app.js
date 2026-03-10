@@ -275,18 +275,6 @@ durationDaysInput?.addEventListener("change", () => {
   updatePickupTimeVisibility();
   syncPickupTimeOptions();
 
-  if (!PRESELECTED_VEHICLE) return;
-
-  const pickupDate = pickupDateInput?.value;
-  const durationDays = Number(durationDaysInput?.value || 1);
-  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
-
-  if (!pickupDate || !durationDays) return;
-
-  setTimeout(() => {
-    availabilityForm?.requestSubmit();
-  }, 100);
-
 });
 const availabilityResults = document.getElementById("availability-results");
 
@@ -1994,21 +1982,8 @@ if (badge) {
 
 pickupTimeInput?.addEventListener("change", () => {
 
-  const pickupDate = pickupDateInput?.value;
-  const pickupTime = pickupTimeInput?.value;
-  const durationDays = Number(durationDaysInput?.value);
-
-  if (!pickupDate) return;
-
-  /* for half day require time first */
-
-  if (durationDays === 0.5 && !pickupTime) return;
-
-  const form = document.getElementById("availability-form");
-
-  if (form) {
-    form.requestSubmit();
-  }
+  // no automatic availability search
+  // user must press "Check availability"
 
 });
 
