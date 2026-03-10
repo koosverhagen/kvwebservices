@@ -5734,23 +5734,35 @@ var src_default = {
         });
       }
       if (url.pathname === "/api/customers/lookup" && request.method === "GET") {
-        const email = url.searchParams.get("email");
-        if (!email) {
-          return Response.json({ found: false });
+        const email = url.searchParams.get("email")?.trim().toLowerCase();
+        const mobile = url.searchParams.get("mobile")?.trim();
+        if (!email && !mobile) {
+          return withCors(
+            json({ found: false }),
+            corsHeaders
+          );
         }
-        const customer = await env.DB.prepare(`
-        SELECT id, full_name, email, mobile, hire_count, last_hire_at
-        FROM customers
-        WHERE email = ?
-        LIMIT 1
-      `).bind(email.toLowerCase()).first();
+        const customer = await findCustomerByEmailOrMobile(env, email, mobile);
         if (!customer) {
-          return Response.json({ found: false });
+          return withCors(
+            json({ found: false }),
+            corsHeaders
+          );
         }
-        return Response.json({
-          found: true,
-          customer
-        });
+        return withCors(
+          json({
+            found: true,
+            customer: {
+              id: customer.id,
+              full_name: customer.full_name,
+              email: customer.email,
+              mobile: customer.mobile,
+              hire_count: customer.hire_count || 0,
+              last_hire_at: customer.last_hire_at
+            }
+          }),
+          corsHeaders
+        );
       }
       return withCors(json({ error: "Not found" }, 404), corsHeaders);
     } catch (error) {
@@ -6223,7 +6235,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-nCoLVf/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-uPUdae/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -6255,7 +6267,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-nCoLVf/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-uPUdae/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

@@ -169,36 +169,47 @@ if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
       });
     }
 
-    /* ===============================
-       CUSTOMER LOOKUP (RETURNING CUSTOMER)
-    ================================ */
+   /* ===============================
+   CUSTOMER LOOKUP (RETURNING CUSTOMER)
+================================ */
 
-    if (url.pathname === "/api/customers/lookup" && request.method === "GET") {
+if (url.pathname === "/api/customers/lookup" && request.method === "GET") {
 
-      const email = url.searchParams.get("email");
+  const email = url.searchParams.get("email")?.trim().toLowerCase();
+  const mobile = url.searchParams.get("mobile")?.trim();
 
-      if (!email) {
-        return Response.json({ found: false });
+  if (!email && !mobile) {
+    return withCors(
+      json({ found: false }),
+      corsHeaders
+    );
+  }
+
+  const customer = await findCustomerByEmailOrMobile(env, email, mobile);
+
+  if (!customer) {
+    return withCors(
+      json({ found: false }),
+      corsHeaders
+    );
+  }
+
+  return withCors(
+    json({
+      found: true,
+      customer: {
+        id: customer.id,
+        full_name: customer.full_name,
+        email: customer.email,
+        mobile: customer.mobile,
+        hire_count: customer.hire_count || 0,
+        last_hire_at: customer.last_hire_at
       }
+    }),
+    corsHeaders
+  );
 
-      const customer = await env.DB.prepare(`
-        SELECT id, full_name, email, mobile, hire_count, last_hire_at
-        FROM customers
-        WHERE email = ?
-        LIMIT 1
-      `)
-      .bind(email.toLowerCase())
-      .first();
-
-      if (!customer) {
-        return Response.json({ found: false });
-      }
-
-      return Response.json({
-        found: true,
-        customer
-      });
-    }
+}
 
     return withCors(json({ error: "Not found" }, 404), corsHeaders);
 
