@@ -789,11 +789,29 @@ function renderAvailabilityResults(items) {
     return;
   }
 
-  if (!items.length) {
+  /* ---------------------------------
+   PRESELECTED VEHICLE FILTER
+---------------------------------- */
+
+if (PRESELECTED_VEHICLE) {
+
+  const filtered = items.filter(
+    item => item.vehicle.id === PRESELECTED_VEHICLE
+  );
+
+  if (!filtered.length) {
+
     availabilityResults.innerHTML =
-      '<p class="empty-note">No lorries available for this date and duration.</p>';
+      '<p class="empty-note">Sorry, this lorry is not available for the selected date.</p>';
+
+    PRESELECTED_VEHICLE = null;
     return;
+
   }
+
+  items = filtered;
+
+}
 
   /* ---------------------------------------------------
      PRESELECTED VEHICLE (fleet card flow)
