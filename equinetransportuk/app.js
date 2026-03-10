@@ -182,9 +182,10 @@ const DEPOSIT_PAYMENT_LINK = "";
 const FORM_LINK_A = "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/short-form.html";
 const FORM_LINK_B = "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/long-form.html";
 
-// If empty, API paths are relative (same origin)
-const BACKEND_API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
-
+const BACKEND_API_BASE =
+  location.hostname === "127.0.0.1" || location.hostname === "localhost"
+    ? "http://localhost:8787"
+    : "https://equine-bookings-api.kverhagen.workers.dev";
 // Fleet data
 const vehicles = [
   {
@@ -192,7 +193,6 @@ const vehicles = [
     name: "3.5T Safety Bar Lorry",
     code: "LS23",
     type: "3.5 tonne",
-    horses: 2,
     seats: 3,
     overnight: false,
     dayRate: 105,
