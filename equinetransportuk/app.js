@@ -80,7 +80,7 @@ function startBooking(vehicleId) {
 
 /* refresh calendar immediately */
 
-renderCalendar();
+// renderCalendar();   // disabled
 
   /* auto trigger availability search if date already selected */
 
