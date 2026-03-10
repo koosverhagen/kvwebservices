@@ -1798,12 +1798,32 @@ if (customerEmailInput) {
 
       console.log("Customer lookup response:", data);
 
-      if (!data.found) {
-        window.RETURNING_CUSTOMER = false;
-        return;
-      }
+     if (!data.found) {
+
+  window.RETURNING_CUSTOMER = false;
+
+  const badge = document.getElementById("returning-customer-badge");
+  if (badge) badge.classList.add("hidden");
+
+  return;
+
+}
 
       console.log("Returning customer detected:", data.customer);
+      const badge = document.getElementById("returning-customer-badge");
+
+if (badge) {
+
+  const hires = Number(data.customer.hire_count || 0);
+
+  badge.textContent =
+    hires > 0
+      ? `✔ Returning customer — ${hires} previous hire${hires > 1 ? "s" : ""}`
+      : `✔ Returning customer`;
+
+  badge.classList.remove("hidden");
+
+}
 
       if (customerNameInput && !customerNameInput.value) {
         customerNameInput.value = data.customer.full_name || "";
