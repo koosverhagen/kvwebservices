@@ -823,16 +823,12 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
   availabilityResults.innerHTML = `<p class="empty-note">${escapeHtml(message)}</p>`;
 }
 
-function renderAvailabilityResults(items) {
+async function renderAvailabilityResults(items) {
 
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     if (availabilityResults) availabilityResults.innerHTML = "";
     return;
   }
-
-  /* ---------------------------------
-     PRESELECTED VEHICLE MODE
-  ---------------------------------- */
 
   if (PRESELECTED_VEHICLE) {
 
@@ -841,27 +837,21 @@ function renderAvailabilityResults(items) {
     );
 
     if (!filtered.length) {
-
       availabilityResults.innerHTML =
         '<p class="empty-note">Sorry, this lorry is not available for the selected date.</p>';
-
       PRESELECTED_VEHICLE = null;
       return;
-
     }
 
     const matched = filtered[0];
 
-    /* AUTO SELECT VEHICLE */
-
-   selectAvailability(matched.vehicle.id);
+    await selectAvailability(matched.vehicle.id);
 
     PRESELECTED_VEHICLE = null;
 
     goToStep(3);
 
     return;
-
   }
 
   /* ---------------------------------
