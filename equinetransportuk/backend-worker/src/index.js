@@ -410,7 +410,12 @@ async function handleCreateCheckoutSession(request, env) {
 
   const booking = await request.json();
 
-  if (!booking.vehicleId || !booking.vehicleName) {
+  const vehicleName =
+    booking.vehicleName ||
+    booking.vehicleSnapshot?.name ||
+    "Horsebox";
+
+  if (!booking.vehicleId) {
     return json({ error: "Invalid booking data" }, 400);
   }
 
@@ -432,7 +437,7 @@ async function handleCreateCheckoutSession(request, env) {
         price_data: {
           currency: "gbp",
           product_data: {
-            name: `Horsebox booking — ${booking.vehicleName}`
+            name: `Horsebox booking — ${vehicleName}`
           },
           unit_amount: confirmationFee
         },
@@ -440,15 +445,15 @@ async function handleCreateCheckoutSession(request, env) {
       }
     ],
 
-  metadata: {
-  vehicleId: booking.vehicleId,
-  vehicleName: booking.vehicleName || "",
-  pickupDate: booking.pickupDate,
-  pickupTime: booking.pickupTime || "07:00",
-  durationDays: booking.durationDays,
-  customerName: booking.customerName,
-  customerEmail: booking.customerEmail
-},
+    metadata: {
+      vehicleId: booking.vehicleId,
+      vehicleName: vehicleName,
+      pickupDate: booking.pickupDate,
+      pickupTime: booking.pickupTime || "07:00",
+      durationDays: booking.durationDays,
+      customerName: booking.customerName,
+      customerEmail: booking.customerEmail
+    },
 
     success_url: "https://equinetransportuk.com/booking-success",
     cancel_url: "https://equinetransportuk.com/#booking"

@@ -1067,6 +1067,9 @@ function updateCheckoutSummary() {
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
   const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
 
+  const crossingLabel =
+    crossingsCount === 1 ? "Dartford crossing" : "Dartford crossings";
+
   checkoutSummary.innerHTML = `
     <div class="summary-card">
       <h4>${escapeHtml(selectedAvailability.vehicle.name)}</h4>
@@ -1087,15 +1090,27 @@ function updateCheckoutSummary() {
           : ""
       }
 
-      <div class="summary-row">
-        <span>Dartford crossings</span>
-        <strong>£${crossingCharge.toFixed(2)}</strong>
-      </div>
+      ${
+        crossingsCount > 0
+          ? `
+        <div class="summary-row">
+          <span>${crossingLabel} (${crossingsCount})</span>
+          <strong>£${crossingCharge.toFixed(2)}</strong>
+        </div>
+        `
+          : ""
+      }
 
-      <div class="summary-row">
-        <span>Early pickup</span>
-        <strong>£${earlyPickupCharge.toFixed(2)}</strong>
-      </div>
+      ${
+        earlyPickupEnabled
+          ? `
+        <div class="summary-row">
+          <span>Early pickup</span>
+          <strong>£${earlyPickupCharge.toFixed(2)}</strong>
+        </div>
+        `
+          : ""
+      }
 
       <hr>
 
@@ -2309,6 +2324,26 @@ if (bookingForm) {
 
     await notifyBackend(booking, "booking_created");
 
+    // store booking temporarily for Step 4
+window.pendingBooking = booking;
+
+// move to review step
+goToStep(4);
+  });
+}
+
+const confirmBtn = document.getElementById("booking-confirm-btn");
+
+if (confirmBtn) {
+  confirmBtn.addEventListener("click", async () => {
+
+    const booking = window.pendingBooking;
+
+    if (!booking) {
+      alert("Booking information missing.");
+      return;
+    }
+
     const checkoutUrl = await createStripeCheckoutSession(booking);
 
     if (!checkoutUrl) {
@@ -2319,6 +2354,7 @@ if (bookingForm) {
     resetBookingCustomerFields();
 
     window.location.href = checkoutUrl;
+
   });
 }
 
@@ -3074,10 +3110,20 @@ else if (hasFullDay) {
 
 function updateCheckoutSummary(pricing) {
 
-  if (!pricing) return;
+  if (!pricing) {
+    console.log("No pricing yet");
+    return;
+  }
 
   const lines = document.getElementById("summary-lines");
-  if (!lines) return;
+  const totalEl = document.getElementById("summary-total");
+  const dueEl = document.getElementById("summary-due");
+  const remainingEl = document.getElementById("summary-remaining");
+
+  if (!lines || !totalEl || !dueEl || !remainingEl) {
+    console.log("Summary elements not ready");
+    return;
+  }
 
   lines.innerHTML = "";
 
@@ -3096,14 +3142,10 @@ function updateCheckoutSummary(pricing) {
     row("Voucher discount", "-" + pricing.voucher_discount);
   }
 
-  document.getElementById("summary-total").innerText =
-    "£" + (pricing.total ?? 0);
+  totalEl.innerText = "£" + (pricing.total ?? 0);
+  dueEl.innerText = "£" + (pricing.deposit_due ?? 0);
+  remainingEl.innerText = "£" + (pricing.remaining ?? 0);
 
-  document.getElementById("summary-due").innerText =
-    "£" + (pricing.deposit_due ?? 0);
-
-  document.getElementById("summary-remaining").innerText =
-    "£" + (pricing.remaining ?? 0);
 }
 
 /* ======================================================
