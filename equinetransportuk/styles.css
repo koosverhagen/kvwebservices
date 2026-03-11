@@ -2116,4 +2116,68 @@ input[readonly]{
   display: none;
 }
 
+/* ===================================
+BOOKING SUMMARY CARD
+=================================== */
+
+.booking-summary-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:22px;
+  margin-top:24px;
+  margin-bottom:18px;
+  max-width:520px;
+}
+
+.summary-title{
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:14px;
+}
+
+.summary-lines{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.summary-row{
+  display:flex;
+  justify-content:space-between;
+  font-size:15px;
+  color:var(--text);
+}
+
+.summary-row.muted{
+  color:var(--muted);
+}
+
+.summary-divider{
+  height:1px;
+  background:var(--line);
+  margin:12px 0;
+}
+
+.summary-total{
+  display:flex;
+  justify-content:space-between;
+  font-size:17px;
+  font-weight:600;
+}
+
+.summary-due{
+  display:flex;
+  justify-content:space-between;
+  font-size:18px;
+  font-weight:700;
+  color:var(--accent);
+}
+
+.summary-remaining{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+  color:var(--muted);
+}
 

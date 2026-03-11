@@ -398,31 +398,72 @@ removed duplicate, script is loaded at end of body -->
 </div>
 
     <!-- STEP 4 -->
-    <div class="booking-step" id="step-4">
-      <div class="card">
-        <h3>Review & confirm</h3>
-        <button class="btn ghost" onclick="goToStep(3)">
-Edit details
-</button>
+<div class="booking-step" id="step-4">
+  <div class="card">
 
-        <div id="checkout-summary" class="checkout-breakdown"></div>
+    <h3>Review & confirm</h3>
 
-        <div class="requirements-box">
-          <h4>Before collection</h4>
-          <ul>
-            <li>Complete hire form (short/long based on history)</li>
-            <li>Submit DVLA licence check code</li>
-            <li>Pay outstanding balance</li>
-            <li>£200 refundable deposit hold</li>
-            <li>Bring proof of address</li>
-          </ul>
-        </div>
+    <button class="btn ghost" onclick="goToStep(3)">
+      Edit details
+    </button>
 
-        <button id="booking-confirm-btn" class="btn full confirm-btn" type="button">
-  Confirm & Pay
-</button>
+    <!-- ===============================
+         BOOKING PRICE SUMMARY
+    ================================= -->
+
+    <div class="booking-summary-card" id="booking-summary-card">
+
+      <h3 class="summary-title">Booking summary</h3>
+
+      <div class="summary-lines" id="summary-lines"></div>
+
+      <div class="summary-divider"></div>
+
+      <div class="summary-total">
+        <span>Total hire price</span>
+        <strong id="summary-total">£0</strong>
       </div>
+
+      <div class="summary-divider"></div>
+
+      <div class="summary-due">
+        <span>Due today</span>
+        <strong id="summary-due">£0</strong>
+      </div>
+
+      <div class="summary-remaining">
+        <span>Remaining on pickup</span>
+        <strong id="summary-remaining">£0</strong>
+      </div>
+
     </div>
+
+    <!-- ===============================
+         REQUIREMENTS
+    ================================= -->
+
+    <div class="requirements-box">
+
+      <h4>Before collection</h4>
+
+      <ul>
+        <li>Complete hire form (short/long based on history)</li>
+        <li>Submit DVLA licence check code</li>
+        <li>Pay outstanding balance</li>
+        <li>£200 refundable deposit hold</li>
+        <li>Bring proof of address</li>
+      </ul>
+
+    </div>
+
+    <!-- PAY BUTTON -->
+
+    <button id="booking-confirm-btn" class="btn full confirm-btn" type="button">
+      Pay £75 to confirm booking
+    </button>
+
+  </div>
+</div>
 
   </div>
 		</section>

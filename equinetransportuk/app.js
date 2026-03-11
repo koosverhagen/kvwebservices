@@ -680,40 +680,72 @@ async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime, d
 }
 
 async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode = "") {
+
   // time rules
   let actualPickupTime = pickupTime;
   let dropoffTime = FULL_DAY_DROPOFF_TIME;
   let durationHours = getDurationHours(vehicle, durationDays);
 
   if (is35T(vehicle) && Number(durationDays) === 0.5) {
+
     if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
       actualPickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
     }
+
     dropoffTime = HALF_DAY_DROPOFF_TIMES_35T[actualPickupTime];
     durationHours = 6;
+
   } else {
+
     actualPickupTime = DEFAULT_PICKUP_TIME;
     dropoffTime = FULL_DAY_DROPOFF_TIME;
+
   }
 
   const pickupAt = asDate(pickupDate, actualPickupTime);
 
   let dropoffAt;
+
   if (is35T(vehicle) && Number(durationDays) === 0.5) {
+
     dropoffAt = asDate(pickupDate, dropoffTime);
+
   } else {
+
     const dropoffDate = addDays(pickupAt, Math.max(0, Number(durationDays) - 1));
     dropoffAt = asDate(dropoffDate.toISOString().slice(0, 10), dropoffTime);
+
   }
 
-  // quote cache (includes discount code)
-  const cacheKey = getAvailabilityCacheKey(vehicle.id, pickupDate, durationDays, actualPickupTime, discountCode || "");
-  const cached = AVAILABILITY_CACHE.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < AVAILABILITY_CACHE_TTL) return cached.data;
 
-  const pricing = await fetchServerQuote(vehicle, durationDays, pickupDate, actualPickupTime, discountCode);
+  // quote cache (includes discount code)
+  const cacheKey = getAvailabilityCacheKey(
+    vehicle.id,
+    pickupDate,
+    durationDays,
+    actualPickupTime,
+    discountCode || ""
+  );
+
+  const cached = AVAILABILITY_CACHE.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < AVAILABILITY_CACHE_TTL) {
+    return cached.data;
+  }
+
+
+  // fetch pricing from server
+  const pricing = await fetchServerQuote(
+    vehicle,
+    durationDays,
+    pickupDate,
+    actualPickupTime,
+    discountCode
+  );
+
 
   const availabilityObject = {
+
     vehicle,
     pickupDate,
     pickupTime: actualPickupTime,
@@ -721,12 +753,49 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, 
     durationHours,
     pickupAt,
     dropoffAt,
+
     baseCost: pricing.baseCost,
     discountAmount: pricing.discountAmount,
     discountedTotal: pricing.discountedTotal
+
   };
 
-  AVAILABILITY_CACHE.set(cacheKey, { timestamp: Date.now(), data: availabilityObject });
+
+  /* =====================================================
+     UPDATE CHECKOUT SUMMARY UI
+     ===================================================== */
+
+  try {
+
+    const deposit = vehicle.deposit || 75; // fallback
+
+    updateCheckoutSummary({
+
+      base: pricing.baseCost,
+
+      voucher_discount: pricing.discountAmount,
+
+      total: pricing.discountedTotal,
+
+      deposit_due: deposit,
+
+      remaining: Math.max(0, pricing.discountedTotal - deposit)
+
+    });
+
+  } catch (e) {
+
+    console.warn("Summary UI not ready yet");
+
+  }
+
+
+  AVAILABILITY_CACHE.set(cacheKey, {
+    timestamp: Date.now(),
+    data: availabilityObject
+  });
+
+
   return availabilityObject;
 }
 
@@ -3001,6 +3070,52 @@ else if (hasFullDay) {
 
   dayEl.appendChild(wrap);
 
+}
+
+function updateCheckoutSummary(pricing){
+
+  const lines = document.getElementById("summary-lines")
+
+  lines.innerHTML = ""
+
+  function row(label, value, muted=false){
+
+    const div = document.createElement("div")
+    div.className = "summary-row" + (muted ? " muted":"")
+
+    div.innerHTML = `
+      <span>${label}</span>
+      <span>£${value}</span>
+    `
+
+    lines.appendChild(div)
+
+  }
+
+  if(pricing.base){
+    row("Base hire", pricing.base)
+  }
+
+  if(pricing.extras){
+    row("Extras", pricing.extras)
+  }
+
+  if(pricing.weekend){
+    row("Weekend surcharge", pricing.weekend)
+  }
+
+  if(pricing.voucher_discount){
+    row("Voucher discount", "-"+pricing.voucher_discount)
+  }
+
+  document.getElementById("summary-total").innerText =
+    "£"+pricing.total
+
+  document.getElementById("summary-due").innerText =
+    "£"+pricing.deposit_due
+
+  document.getElementById("summary-remaining").innerText =
+    "£"+pricing.remaining
 }
 
 /* ======================================================
