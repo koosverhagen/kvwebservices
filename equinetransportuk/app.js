@@ -1883,17 +1883,6 @@ async function exportAdminPdf() {
   printWindow.print();
 }
 
-async function notifyBackend(booking, phase) {
-  try {
-    await fetch(apiUrl("/api/bookings/automation"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phase, booking })
-    });
-  } catch (error) {
-    console.warn("Automation endpoint unavailable.", error);
-  }
-}
 
 async function createStripeCheckoutSession(booking) {
 
@@ -2321,8 +2310,6 @@ if (bookingForm) {
     await getBookings(true);
     renderBookings();
     renderAdminBookings();
-
-    await notifyBackend(booking, "booking_created");
 
     // store booking temporarily for Step 4
 window.pendingBooking = booking;

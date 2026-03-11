@@ -6,4 +6,21 @@
 
 # Logs
 npm-debug.log*
-.DS_Store
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Wrangler local files
+.wrangler/
+
+# SQLite / local DB files
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Dev secrets
+.dev.vars
