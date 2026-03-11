@@ -33,15 +33,19 @@ async function cleanupExpiredReservations(env) {
 
     if (!reservation.createdAt) continue;
 
-    const age = now - Number(reservation.createdAt);
+const createdAt = Number(reservation.createdAt);
 
-    if (age > EXPIRY_TIME) {
+if (!Number.isFinite(createdAt)) continue;
 
-      await env.BOOKINGS_KV.delete(key.name);
+const age = now - createdAt;
 
-      console.log("⏳ Expired reservation removed:", key.name);
+if (age > EXPIRY_TIME) {
 
-    }
+  await env.BOOKINGS_KV.delete(key.name);
+
+  console.log("⏳ Expired reservation removed:", key.name);
+
+}
 
   }
 
@@ -83,6 +87,8 @@ export default {
       return withCors(response, corsHeaders);
     }
 
+    
+
     /* ===============================
        STRIPE CHECKOUT SESSION
     ================================ */
@@ -99,6 +105,24 @@ export default {
     if (request.method === "GET" && url.pathname === "/api/bookings/list") {
       const response = await handleListBookings(request, env);
       return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
+       AVAILABILITY API
+    ================================ */
+
+    if (request.method === "GET" && url.pathname === "/api/availability") {
+     const response = await handleAvailability(request, env);
+     return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
+       VEHICLE AVAILABILITY
+   ================================ */
+
+    if (request.method === "GET" && url.pathname === "/api/vehicles/available") {
+     const response = await handleVehicleAvailability(request, env);
+     return withCors(response, corsHeaders);
     }
 
     /* ===============================
@@ -501,7 +525,55 @@ if (durationDays === 0.5) {
 
 const reservedDates = getDatesBetween(pickupDate, dropoffDate);
 
-/* check existing reservations */
+/* ===============================
+   CHECK CONFIRMED BOOKINGS
+================================ */
+
+const pickupMonth = booking.pickupDate.slice(0, 7);
+const existingMonth = await env.BOOKINGS_KV.get(`bookings:${pickupMonth}`);
+
+if (existingMonth) {
+
+  try {
+
+    const confirmedBookings = JSON.parse(existingMonth);
+
+    for (const confirmed of confirmedBookings) {
+
+      if (confirmed.vehicleId !== booking.vehicleId) continue;
+
+      const confirmedDates = getDatesBetween(
+        new Date(confirmed.pickupAt),
+        new Date(confirmed.dropoffAt)
+      );
+
+      for (const d of confirmedDates) {
+
+        if (reservedDates.includes(d)) {
+
+          console.log("⚠️ Vehicle already booked:", d);
+
+          return json({
+            error: "Vehicle already booked for selected dates."
+          }, 409);
+
+        }
+
+      }
+
+    }
+
+  } catch (err) {
+
+    console.log("⚠️ Failed to read confirmed bookings:", err);
+
+  }
+
+}
+
+/* ===============================
+   CHECK TEMP RESERVATIONS
+================================ */
 
 for (const date of reservedDates) {
 
@@ -759,7 +831,7 @@ for (const date of reservedDates) {
 }
 
 const pickupAt = new Date(session.metadata?.pickupDate);
-const durationDaysConfirmed = Number(session.metadata.durationDays || 1);
+const durationDaysConfirmed = Number(session.metadata?.durationDays || 1);
 
 let dropoffAt = new Date(pickupAt);
 
@@ -793,12 +865,13 @@ const booking = {
 
   vehicleId: session.metadata?.vehicleId,
 
-  vehicleSnapshot: {
-    id: session.metadata.vehicleId,
-    name: session.metadata?.vehicleName || "",
-    type: session.metadata.vehicleId.startsWith("v35") ? "3.5 tonne" : "7.5 tonne"
-  },
-
+ vehicleSnapshot: {
+  id: session.metadata?.vehicleId,
+  name: session.metadata?.vehicleName || "",
+  type: session.metadata?.vehicleId?.startsWith("v35")
+    ? "3.5 tonne"
+    : "7.5 tonne"
+},
   pickupAt: pickupAt.toISOString(),
   dropoffAt: dropoffAt.toISOString(),
 
@@ -1061,6 +1134,167 @@ async function handleListBookings(request, env) {
     bookings,
     reservations
   });
+
+}
+
+async function handleAvailability(request, env) {
+
+  const url = new URL(request.url);
+
+  const fromParam = url.searchParams.get("from");
+  const toParam = url.searchParams.get("to");
+
+  if (!fromParam || !toParam) {
+    return json({ error: "Missing from/to parameters" }, 400);
+  }
+
+  const fromMonth = fromParam.slice(0,7);
+  const toMonth = toParam.slice(0,7);
+
+  const months = new Set([fromMonth, toMonth]);
+
+  const availability = [];
+
+  /* ===============================
+     CONFIRMED BOOKINGS
+  ================================ */
+
+  for (const month of months) {
+
+    const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+
+    if (!data) continue;
+
+    try {
+
+      const bookings = JSON.parse(data);
+
+      for (const booking of bookings) {
+
+        const dates = getDatesBetween(
+          new Date(booking.pickupAt),
+          new Date(booking.dropoffAt)
+        );
+
+        for (const d of dates) {
+
+          availability.push({
+            vehicleId: booking.vehicleId,
+            date: d,
+            status: "booked"
+          });
+
+        }
+
+      }
+
+    } catch {}
+
+  }
+
+  /* ===============================
+     TEMP RESERVATIONS
+  ================================ */
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
+
+  for (const key of list.keys) {
+
+    const parts = key.name.split(":");
+
+    if (parts.length !== 3) continue;
+
+    availability.push({
+      vehicleId: parts[1],
+      date: parts[2],
+      status: "reserved"
+    });
+
+  }
+
+  return json({ availability });
+
+}
+
+async function handleVehicleAvailability(request, env) {
+
+  const url = new URL(request.url);
+  const date = url.searchParams.get("date");
+
+  if (!date) {
+    return json({ error: "Missing date parameter" }, 400);
+  }
+
+  const vehicles = [
+    "v35-1",
+    "v35-2",
+    "v35-3",
+    "v75-1",
+    "v75-2"
+  ];
+
+  const booked = new Set();
+  const reserved = new Set();
+
+  const month = date.slice(0,7);
+
+  /* ===============================
+     CHECK CONFIRMED BOOKINGS
+  ================================ */
+
+  const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+
+  if (data) {
+
+    try {
+
+      const bookings = JSON.parse(data);
+
+      for (const booking of bookings) {
+
+        const dates = getDatesBetween(
+          new Date(booking.pickupAt),
+          new Date(booking.dropoffAt)
+        );
+
+        if (dates.includes(date)) {
+          booked.add(booking.vehicleId);
+        }
+
+      }
+
+    } catch {}
+
+  }
+
+  /* ===============================
+     CHECK TEMP RESERVATIONS
+  ================================ */
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
+
+  for (const key of list.keys) {
+
+    const parts = key.name.split(":");
+
+    if (parts.length !== 3) continue;
+
+    if (parts[2] === date) {
+      reserved.add(parts[1]);
+    }
+
+  }
+
+  /* ===============================
+     BUILD RESPONSE
+  ================================ */
+
+  const result = vehicles.map(v => ({
+    vehicleId: v,
+    available: !(booked.has(v) || reserved.has(v))
+  }));
+
+  return json({ vehicles: result });
 
 }
 
