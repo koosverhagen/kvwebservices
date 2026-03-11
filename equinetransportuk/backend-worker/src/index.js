@@ -5,7 +5,54 @@ const JSON_HEADERS = {
 };
 const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
 
+/* ===============================
+   RESERVATION CLEANUP
+================================ */
+
+async function cleanupExpiredReservations(env) {
+
+  const EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
+
+  const now = Date.now();
+
+  for (const key of list.keys) {
+
+    const data = await env.BOOKINGS_KV.get(key.name);
+
+    if (!data) continue;
+
+    let reservation;
+
+    try {
+      reservation = JSON.parse(data);
+    } catch {
+      continue;
+    }
+
+    if (!reservation.createdAt) continue;
+
+    const age = now - Number(reservation.createdAt);
+
+    if (age > EXPIRY_TIME) {
+
+      await env.BOOKINGS_KV.delete(key.name);
+
+      console.log("⏳ Expired reservation removed:", key.name);
+
+    }
+
+  }
+
+}
+
 export default {
+
+  /* ===============================
+     HTTP REQUEST HANDLER
+  ================================ */
+
   async fetch(request, env, ctx) {
 
     const url = new URL(request.url);
@@ -63,17 +110,16 @@ export default {
       return withCors(response, corsHeaders);
     }
 
-/* ===============================
-   BOOKINGS VERSION
-================================ */
+    /* ===============================
+       BOOKINGS VERSION
+    ================================ */
 
-if (request.method === "GET" && url.pathname === "/api/bookings/version") {
+    if (request.method === "GET" && url.pathname === "/api/bookings/version") {
 
-  const response = await handleBookingsVersion();
-  return withCors(response, corsHeaders);
+      const response = await handleBookingsVersion();
+      return withCors(response, corsHeaders);
 
-}
-
+    }
 
     /* ===============================
        CREATE / FIND CUSTOMER
@@ -98,14 +144,14 @@ if (request.method === "GET" && url.pathname === "/api/bookings/version") {
       const existing = await findCustomerByEmailOrMobile(env, email, mobile);
 
       if (existing) {
-      return withCors(
-  json({
-    ok: true,
-    mode: "existing",
-    customer: existing
-  }),
-  corsHeaders
-);
+        return withCors(
+          json({
+            ok: true,
+            mode: "existing",
+            customer: existing
+          }),
+          corsHeaders
+        );
       }
 
       const id = "cus_" + crypto.randomUUID();
@@ -129,106 +175,121 @@ if (request.method === "GET" && url.pathname === "/api/bookings/version") {
         "SELECT * FROM customers WHERE id = ?"
       ).bind(id).first();
 
-   return withCors(
-  json({
-    ok: true,
-    mode: "created",
-    customer
-  }),
-  corsHeaders
-);
+      return withCors(
+        json({
+          ok: true,
+          mode: "created",
+          customer
+        }),
+        corsHeaders
+      );
+
     }
 
-/* ===============================
-   CUSTOMER LOOKUP
-================================ */
+    /* ===============================
+       CUSTOMER LOOKUP
+    ================================ */
 
-if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
+    if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
 
-  const email = url.searchParams.get("email")?.trim().toLowerCase();
-  const mobile = url.searchParams.get("mobile")?.trim();
+      const email = url.searchParams.get("email")?.trim().toLowerCase();
+      const mobile = url.searchParams.get("mobile")?.trim();
 
-  if (!email && !mobile) {
-    return withCors(json({ found:false }), corsHeaders);
-  }
-
-  const customer = await findCustomerByEmailOrMobile(env, email, mobile);
-
-  if (!customer) {
-    return withCors(json({ found:false }), corsHeaders);
-  }
-
-  return withCors(
-    json({
-      found: true,
-      customer: {
-        id: customer.id,
-        full_name: customer.full_name,
-        email: customer.email,
-        mobile: customer.mobile,
-        hire_count: customer.hire_count || 0,
-        last_hire_at: customer.last_hire_at
+      if (!email && !mobile) {
+        return withCors(json({ found:false }), corsHeaders);
       }
-    }),
-    corsHeaders
-  );
 
-}
+      const customer = await findCustomerByEmailOrMobile(env, email, mobile);
 
+      if (!customer) {
+        return withCors(json({ found:false }), corsHeaders);
+      }
 
-/* ===============================
-   CUSTOMER BOOKING HISTORY
-================================ */
+      return withCors(
+        json({
+          found: true,
+          customer: {
+            id: customer.id,
+            full_name: customer.full_name,
+            email: customer.email,
+            mobile: customer.mobile,
+            hire_count: customer.hire_count || 0,
+            last_hire_at: customer.last_hire_at
+          }
+        }),
+        corsHeaders
+      );
 
-if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
+    }
 
-  const customerId = url.searchParams.get("customer_id");
+    /* ===============================
+       CUSTOMER BOOKING HISTORY
+    ================================ */
 
-  if (!customerId) {
-    return withCors(json({ bookings: [] }), corsHeaders);
+    if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
+
+      const customerId = url.searchParams.get("customer_id");
+
+      if (!customerId) {
+        return withCors(json({ bookings: [] }), corsHeaders);
+      }
+
+      const result = await env.DB.prepare(`
+        SELECT
+          id,
+          vehicle_id,
+          pickup_at,
+          dropoff_at,
+          duration_days,
+          status
+        FROM bookings
+        WHERE customer_id = ?
+        ORDER BY pickup_at DESC
+        LIMIT 5
+      `)
+      .bind(customerId)
+      .all();
+
+      return withCors(
+        json({
+          bookings: result.results || []
+        }),
+        corsHeaders
+      );
+
+    }
+
+    return withCors(json({ error: "Not found" }, 404), corsHeaders);
+
+  } catch (error) {
+
+    return withCors(
+      json(
+        { error: "Server error", detail: error?.message || "Unknown error" },
+        500
+      ),
+      corsHeaders
+    );
+
   }
 
-  const result = await env.DB.prepare(`
-    SELECT
-      id,
-      vehicle_id,
-      pickup_at,
-      dropoff_at,
-      duration_days,
-      status
-    FROM bookings
-    WHERE customer_id = ?
-    ORDER BY pickup_at DESC
-    LIMIT 5
-  `)
-  .bind(customerId)
-  .all();
+  },
 
-  return withCors(
-    json({
-      bookings: result.results || []
-    }),
-    corsHeaders
-  );
+  /* ===============================
+     CRON JOB — RESERVATION CLEANUP
+  ================================ */
 
-}
+  async scheduled(event, env, ctx) {
 
-return withCors(json({ error: "Not found" }, 404), corsHeaders);
+    console.log("🧹 Running reservation cleanup");
 
-} catch (error) {
+    await cleanupExpiredReservations(env);
 
-  return withCors(
-    json(
-      { error: "Server error", detail: error?.message || "Unknown error" },
-      500
-    ),
-    corsHeaders
-  );
+  }
 
-}
-
-}
 };
+
+
 /* ===============================
    PRICING + DISCOUNT ENGINE
 ================================ */
@@ -471,7 +532,7 @@ for (const date of reservedDates) {
     JSON.stringify({
       vehicleId: booking.vehicleId,
       date,
-      createdAt: new Date().toISOString()
+      createdAt: Date.now()
     }),
     { expirationTtl: 600 } // 10 minutes
   );
@@ -642,11 +703,28 @@ if (event.type === "checkout.session.completed") {
   const session = event.data.object;
 
   /* ===============================
+     SAFETY CHECK
+  ================================ */
+
+  if (!session?.metadata?.vehicleId) {
+
+    console.log("⚠️ Stripe session missing metadata");
+
+    return new Response(
+      JSON.stringify({ received: true }),
+      { status: 200 }
+    );
+
+  }
+
+  
+
+  /* ===============================
    RELEASE TEMPORARY RESERVATIONS
 ================================ */
 
-const pickupDate = new Date(session.metadata.pickupDate);
-const durationDays = Number(session.metadata.durationDays || 1);
+const pickupDate = new Date(session.metadata?.pickupDate);
+const durationDays = Number(session.metadata?.durationDays || 1);
 
 let dropoffDate = new Date(pickupDate);
 
@@ -680,12 +758,12 @@ for (const date of reservedDates) {
 
 }
 
-const pickupAt = new Date(session.metadata.pickupDate);
+const pickupAt = new Date(session.metadata?.pickupDate);
 const durationDaysConfirmed = Number(session.metadata.durationDays || 1);
 
 let dropoffAt = new Date(pickupAt);
 
-const pickupTime = session.metadata.pickupTime || "07:00";
+const pickupTime = session.metadata?.pickupTime || "07:00";
 
 const [hour, minute] = pickupTime.split(":").map(Number);
 pickupAt.setHours(hour, minute, 0, 0);
@@ -705,7 +783,7 @@ if (durationDaysConfirmed === 0.5) {
 
 }
 
-const confirmationFee = session.metadata.vehicleId.startsWith("v35")
+const confirmationFee = session.metadata?.vehicleId?.startsWith("v35")
   ? 75
   : 100;
 
@@ -713,11 +791,11 @@ const booking = {
 
   id: session.id,
 
-  vehicleId: session.metadata.vehicleId,
+  vehicleId: session.metadata?.vehicleId,
 
   vehicleSnapshot: {
     id: session.metadata.vehicleId,
-    name: session.metadata.vehicleName || "",
+    name: session.metadata?.vehicleName || "",
     type: session.metadata.vehicleId.startsWith("v35") ? "3.5 tonne" : "7.5 tonne"
   },
 
