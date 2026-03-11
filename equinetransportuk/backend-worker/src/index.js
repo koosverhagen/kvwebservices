@@ -419,7 +419,68 @@ async function handleCreateCheckoutSession(request, env) {
     return json({ error: "Invalid booking data" }, 400);
   }
 
-  /* Ensure Stripe key exists */
+  /* ===============================
+   TEMPORARY VEHICLE RESERVATION
+================================ */
+
+const pickupDate = new Date(booking.pickupDate);
+const durationDays = Number(booking.durationDays || 1);
+
+let dropoffDate = new Date(pickupDate);
+
+if (durationDays === 0.5) {
+
+  dropoffDate = new Date(pickupDate);
+
+} else {
+
+  dropoffDate.setDate(dropoffDate.getDate() + Math.max(1, durationDays) - 1);
+
+}
+
+const reservedDates = getDatesBetween(pickupDate, dropoffDate);
+
+/* check existing reservations */
+
+for (const date of reservedDates) {
+
+  const reservationKey = `reservation:${booking.vehicleId}:${date}`;
+
+  const existingReservation = await env.BOOKINGS_KV.get(reservationKey);
+
+  if (existingReservation) {
+
+    console.log("⚠️ Vehicle already reserved:", reservationKey);
+
+    return json({
+      error: "Vehicle temporarily reserved. Please try again shortly."
+    }, 409);
+
+  }
+
+}
+
+/* create reservations for all dates */
+
+for (const date of reservedDates) {
+
+  const reservationKey = `reservation:${booking.vehicleId}:${date}`;
+
+  await env.BOOKINGS_KV.put(
+    reservationKey,
+    JSON.stringify({
+      vehicleId: booking.vehicleId,
+      date,
+      createdAt: new Date().toISOString()
+    }),
+    { expirationTtl: 600 } // 10 minutes
+  );
+
+}
+
+  /* ===============================
+     STRIPE INITIALISATION
+  ================================ */
 
   if (!env.STRIPE_SECRET_KEY) {
 
@@ -576,12 +637,51 @@ async function handleStripeWebhook(request, env) {
 
   /* Handle booking confirmation */
 
-  if (event.type === "checkout.session.completed") {
+if (event.type === "checkout.session.completed") {
 
-    const session = event.data.object;
+  const session = event.data.object;
 
-    const pickupAt = new Date(session.metadata.pickupDate);
+  /* ===============================
+   RELEASE TEMPORARY RESERVATIONS
+================================ */
+
+const pickupDate = new Date(session.metadata.pickupDate);
 const durationDays = Number(session.metadata.durationDays || 1);
+
+let dropoffDate = new Date(pickupDate);
+
+if (durationDays === 0.5) {
+
+  dropoffDate = new Date(pickupDate);
+
+} else {
+
+  dropoffDate.setDate(dropoffDate.getDate() + Math.max(1, durationDays) - 1);
+
+}
+
+const reservedDates = getDatesBetween(pickupDate, dropoffDate);
+
+for (const date of reservedDates) {
+
+  const reservationKey =
+    `reservation:${session.metadata.vehicleId}:${date}`;
+
+  try {
+
+    await env.BOOKINGS_KV.delete(reservationKey);
+    console.log("🔓 Reservation released:", reservationKey);
+
+  } catch (err) {
+
+    console.log("⚠️ Reservation release failed:", reservationKey, err);
+
+  }
+
+}
+
+const pickupAt = new Date(session.metadata.pickupDate);
+const durationDaysConfirmed = Number(session.metadata.durationDays || 1);
 
 let dropoffAt = new Date(pickupAt);
 
@@ -590,7 +690,7 @@ const pickupTime = session.metadata.pickupTime || "07:00";
 const [hour, minute] = pickupTime.split(":").map(Number);
 pickupAt.setHours(hour, minute, 0, 0);
 
-if (durationDays === 0.5) {
+if (durationDaysConfirmed === 0.5) {
 
   if (pickupTime === "07:00") {
     dropoffAt.setHours(13,0,0,0);
@@ -600,7 +700,7 @@ if (durationDays === 0.5) {
 
 } else {
 
-  dropoffAt.setDate(dropoffAt.getDate() + Math.max(1, durationDays) - 1);
+  dropoffAt.setDate(dropoffAt.getDate() + Math.max(1, durationDaysConfirmed) - 1);
   dropoffAt.setHours(19,0,0,0);
 
 }
@@ -610,8 +710,6 @@ const confirmationFee = session.metadata.vehicleId.startsWith("v35")
   : 100;
 
 const booking = {
-
-  
 
   id: session.id,
 
@@ -626,7 +724,7 @@ const booking = {
   pickupAt: pickupAt.toISOString(),
   dropoffAt: dropoffAt.toISOString(),
 
-  durationDays: durationDays,
+  durationDays: durationDaysConfirmed,
 
   pickupTime: pickupAt.toISOString().slice(11,16),
 
@@ -659,7 +757,7 @@ const booking = {
 
 };
 
-    console.log("✅ Booking confirmed:", booking);
+console.log("✅ Booking confirmed:", booking);
 
 /* ===============================
    SAVE BOOKING IN DATABASE
