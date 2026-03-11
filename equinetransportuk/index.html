@@ -397,7 +397,7 @@ removed duplicate, script is loaded at end of body -->
   </div>
 </div>
 
-    <!-- STEP 4 -->
+   <!-- STEP 4 -->
 <div class="booking-step" id="step-4">
   <div class="card">
 
@@ -407,45 +407,12 @@ removed duplicate, script is loaded at end of body -->
       Edit details
     </button>
 
-    <!-- ===============================
-         BOOKING PRICE SUMMARY
-    ================================= -->
+    <!-- BOOKING SUMMARY (used by app.js) -->
+    <div id="checkout-summary" class="checkout-breakdown"></div>
 
-    <div class="booking-summary-card" id="booking-summary-card">
-
-      <h3 class="summary-title">Booking summary</h3>
-
-      <div class="summary-lines" id="summary-lines"></div>
-
-      <div class="summary-divider"></div>
-
-      <div class="summary-total">
-        <span>Total hire price</span>
-        <strong id="summary-total">£0</strong>
-      </div>
-
-      <div class="summary-divider"></div>
-
-      <div class="summary-due">
-        <span>Due today</span>
-        <strong id="summary-due">£0</strong>
-      </div>
-
-      <div class="summary-remaining">
-        <span>Remaining on pickup</span>
-        <strong id="summary-remaining">£0</strong>
-      </div>
-
-    </div>
-
-    <!-- ===============================
-         REQUIREMENTS
-    ================================= -->
-
+    <!-- REQUIREMENTS -->
     <div class="requirements-box">
-
       <h4>Before collection</h4>
-
       <ul>
         <li>Complete hire form (short/long based on history)</li>
         <li>Submit DVLA licence check code</li>
@@ -453,10 +420,7 @@ removed duplicate, script is loaded at end of body -->
         <li>£200 refundable deposit hold</li>
         <li>Bring proof of address</li>
       </ul>
-
     </div>
-
-    <!-- PAY BUTTON -->
 
     <button id="booking-confirm-btn" class="btn full confirm-btn" type="button">
       Pay £75 to confirm booking
