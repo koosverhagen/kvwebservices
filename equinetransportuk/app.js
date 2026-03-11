@@ -3072,50 +3072,38 @@ else if (hasFullDay) {
 
 }
 
-function updateCheckoutSummary(pricing){
+function updateCheckoutSummary(pricing) {
 
-  const lines = document.getElementById("summary-lines")
+  if (!pricing) return;
 
-  lines.innerHTML = ""
+  const lines = document.getElementById("summary-lines");
+  if (!lines) return;
 
-  function row(label, value, muted=false){
+  lines.innerHTML = "";
 
-    const div = document.createElement("div")
-    div.className = "summary-row" + (muted ? " muted":"")
-
-    div.innerHTML = `
-      <span>${label}</span>
-      <span>£${value}</span>
-    `
-
-    lines.appendChild(div)
-
+  function row(label, value) {
+    const div = document.createElement("div");
+    div.className = "summary-row";
+    div.innerHTML = `<span>${label}</span><span>£${value}</span>`;
+    lines.appendChild(div);
   }
 
-  if(pricing.base){
-    row("Base hire", pricing.base)
+  if (pricing.base) {
+    row("Base hire", pricing.base);
   }
 
-  if(pricing.extras){
-    row("Extras", pricing.extras)
-  }
-
-  if(pricing.weekend){
-    row("Weekend surcharge", pricing.weekend)
-  }
-
-  if(pricing.voucher_discount){
-    row("Voucher discount", "-"+pricing.voucher_discount)
+  if (pricing.voucher_discount) {
+    row("Voucher discount", "-" + pricing.voucher_discount);
   }
 
   document.getElementById("summary-total").innerText =
-    "£"+pricing.total
+    "£" + (pricing.total ?? 0);
 
   document.getElementById("summary-due").innerText =
-    "£"+pricing.deposit_due
+    "£" + (pricing.deposit_due ?? 0);
 
   document.getElementById("summary-remaining").innerText =
-    "£"+pricing.remaining
+    "£" + (pricing.remaining ?? 0);
 }
 
 /* ======================================================
