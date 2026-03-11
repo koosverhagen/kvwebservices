@@ -118,10 +118,19 @@ export default {
 
     /* ===============================
        VEHICLE AVAILABILITY
-   ================================ */
+    ================================ */
 
     if (request.method === "GET" && url.pathname === "/api/vehicles/available") {
      const response = await handleVehicleAvailability(request, env);
+     return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
+       MONTH AVAILABILITY (CALENDAR)
+    ================================ */
+
+    if (request.method === "GET" && url.pathname === "/api/availability/month") {
+     const response = await handleMonthAvailability(request, env);
      return withCors(response, corsHeaders);
     }
 
@@ -880,7 +889,7 @@ const booking = {
   pickupTime: pickupAt.toISOString().slice(11,16),
 
   customerName: session.customer_details?.name || "",
-  customerEmail: session.customer_details?.email || session.metadata.customerEmail || "",
+  customerEmail: session.customer_details?.email || session.metadata?.customerEmail || "",
 
   customerMobile: "",
   customerAddress: "",
@@ -1039,6 +1048,21 @@ await env.BOOKINGS_KV.put(
   key,
   JSON.stringify(list)
 );
+
+/* ===============================
+   STORE VEHICLE-DAY INDEX
+================================ */
+
+for (const date of reservedDates) {
+
+  const indexKey = `booking:${booking.vehicleId}:${date}`;
+
+  await env.BOOKINGS_KV.put(
+    indexKey,
+    booking.id
+  );
+
+}
 
   }
 
@@ -1236,36 +1260,35 @@ async function handleVehicleAvailability(request, env) {
   const booked = new Set();
   const reserved = new Set();
 
-  const month = date.slice(0,7);
+
 
   /* ===============================
-     CHECK CONFIRMED BOOKINGS
-  ================================ */
+   CHECK CONFIRMED BOOKINGS (FAST INDEX)
+================================ */
 
-  const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+const checks = vehicles.map(vehicle =>
+  env.BOOKINGS_KV.get(`booking:${vehicle}:${date}`)
+);
 
-  if (data) {
+let results = [];
 
-    try {
+try {
 
-      const bookings = JSON.parse(data);
+  results = await Promise.all(checks);
 
-      for (const booking of bookings) {
+} catch (err) {
 
-        const dates = getDatesBetween(
-          new Date(booking.pickupAt),
-          new Date(booking.dropoffAt)
-        );
+  console.log("⚠️ Booking index lookup batch failed:", err);
 
-        if (dates.includes(date)) {
-          booked.add(booking.vehicleId);
-        }
+}
 
-      }
+results.forEach((exists, i) => {
 
-    } catch {}
-
+  if (exists) {
+    booked.add(vehicles[i]);
   }
+
+});
 
   /* ===============================
      CHECK TEMP RESERVATIONS
@@ -1295,6 +1318,95 @@ async function handleVehicleAvailability(request, env) {
   }));
 
   return json({ vehicles: result });
+
+}
+
+/* ===============================
+   MONTH AVAILABILITY (FAST)
+================================ */
+
+async function handleMonthAvailability(request, env) {
+
+  const url = new URL(request.url);
+
+  const month = url.searchParams.get("month");
+
+  if (!month) {
+    return json({ error: "Missing month parameter (YYYY-MM)" }, 400);
+  }
+
+  const vehicles = [
+    "v35-1",
+    "v35-2",
+    "v35-3",
+    "v75-1",
+    "v75-2"
+  ];
+
+  const days = [];
+
+  const start = new Date(month + "-01");
+  const end = new Date(start);
+
+  end.setMonth(end.getMonth() + 1);
+  end.setDate(0);
+
+  const current = new Date(start);
+
+  while (current <= end) {
+
+    const date = current.toISOString().slice(0,10);
+
+    const booked = new Set();
+    const reserved = new Set();
+
+    /* ===============================
+       CONFIRMED BOOKINGS (FAST INDEX)
+    ================================ */
+
+    const checks = vehicles.map(v =>
+      env.BOOKINGS_KV.get(`booking:${v}:${date}`)
+    );
+
+    const results = await Promise.all(checks);
+
+    results.forEach((exists, i) => {
+      if (exists) booked.add(vehicles[i]);
+    });
+
+    /* ===============================
+       TEMP RESERVATIONS
+    ================================ */
+
+    const reservations = await env.BOOKINGS_KV.list({
+      prefix: "reservation:"
+    });
+
+    for (const key of reservations.keys) {
+
+      const parts = key.name.split(":");
+
+      if (parts.length !== 3) continue;
+
+      if (parts[2] === date) {
+        reserved.add(parts[1]);
+      }
+
+    }
+
+    days.push({
+      date,
+      vehicles: vehicles.map(v => ({
+        vehicleId: v,
+        available: !(booked.has(v) || reserved.has(v))
+      }))
+    });
+
+    current.setDate(current.getDate() + 1);
+
+  }
+
+  return json({ days });
 
 }
 
