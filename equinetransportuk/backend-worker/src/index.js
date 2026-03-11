@@ -419,6 +419,19 @@ async function handleCreateCheckoutSession(request, env) {
     return json({ error: "Invalid booking data" }, 400);
   }
 
+  /* Ensure Stripe key exists */
+
+  if (!env.STRIPE_SECRET_KEY) {
+
+    console.log("❌ STRIPE_SECRET_KEY missing in Worker environment");
+
+    return json({
+      error: "Stripe not configured",
+      detail: "Missing STRIPE_SECRET_KEY"
+    }, 500);
+
+  }
+
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20"
   });
@@ -427,42 +440,69 @@ async function handleCreateCheckoutSession(request, env) {
     ? 7500
     : 10000;
 
-  const session = await stripe.checkout.sessions.create({
+  let session;
 
-    payment_method_types: ["card"],
-    mode: "payment",
+  try {
 
-    line_items: [
-      {
-        price_data: {
-          currency: "gbp",
-          product_data: {
-            name: `Horsebox booking — ${vehicleName}`
+    session = await stripe.checkout.sessions.create({
+
+      payment_method_types: ["card"],
+      mode: "payment",
+
+      line_items: [
+        {
+          price_data: {
+            currency: "gbp",
+            product_data: {
+              name: `Horsebox booking — ${vehicleName}`
+            },
+            unit_amount: confirmationFee
           },
-          unit_amount: confirmationFee
-        },
-        quantity: 1
-      }
-    ],
+          quantity: 1
+        }
+      ],
 
-    metadata: {
-      vehicleId: booking.vehicleId,
-      vehicleName: vehicleName,
-      pickupDate: booking.pickupDate,
-      pickupTime: booking.pickupTime || "07:00",
-      durationDays: booking.durationDays,
-      customerName: booking.customerName,
-      customerEmail: booking.customerEmail
-    },
+      metadata: {
+        vehicleId: booking.vehicleId,
+        vehicleName: vehicleName,
+        pickupDate: booking.pickupDate,
+        pickupTime: booking.pickupTime || "07:00",
+        durationDays: booking.durationDays,
+        customerName: booking.customerName,
+        customerEmail: booking.customerEmail
+      },
 
-    success_url: "https://equinetransportuk.com/booking-success",
-    cancel_url: "https://equinetransportuk.com/#booking"
+      success_url: "https://equinetransportuk.com/booking-success",
+      cancel_url: "https://equinetransportuk.com/#booking"
 
-  });
+    });
+
+  } catch (err) {
+
+    console.log("❌ STRIPE CHECKOUT ERROR");
+    console.log(err);
+
+    return json({
+      error: "Stripe session creation failed",
+      detail: err?.message || "Unknown Stripe error"
+    }, 500);
+
+  }
+
+  if (!session?.url) {
+
+    console.log("❌ Stripe session created but URL missing");
+
+    return json({
+      error: "Stripe session invalid"
+    }, 500);
+
+  }
 
   return json({
     url: session.url
   });
+
 }
 
 function getDatesBetween(start, end) {
