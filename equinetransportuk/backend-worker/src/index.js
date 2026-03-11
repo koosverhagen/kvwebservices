@@ -946,7 +946,43 @@ async function handleListBookings(request, env) {
 
   }
 
-  return json({ bookings });
+  /* ===============================
+     LOAD ACTIVE RESERVATIONS
+  ================================ */
+
+  const reservations = [];
+
+  try {
+
+    const list = await env.BOOKINGS_KV.list({
+      prefix: "reservation:"
+    });
+
+    for (const key of list.keys) {
+
+      const parts = key.name.split(":");
+
+      if (parts.length === 3) {
+
+        reservations.push({
+          vehicleId: parts[1],
+          date: parts[2]
+        });
+
+      }
+
+    }
+
+  } catch (err) {
+
+    console.log("⚠️ Reservation scan failed:", err);
+
+  }
+
+  return json({
+    bookings,
+    reservations
+  });
 
 }
 
