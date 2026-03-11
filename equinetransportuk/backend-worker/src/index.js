@@ -144,6 +144,15 @@ export default {
     }
 
     /* ===============================
+       REBUILD BOOKING INDEX (ADMIN)
+    ================================ */
+
+    if (request.method === "POST" && url.pathname === "/api/bookings/rebuild-index") {
+     const response = await handleRebuildBookingIndex(env);
+     return withCors(response, corsHeaders);
+    }
+
+    /* ===============================
        BOOKINGS VERSION
     ================================ */
 
@@ -1450,6 +1459,52 @@ async function findCustomerByEmailOrMobile(env, email, mobile) {
   }
 
   return null;
+}
+async function handleRebuildBookingIndex(env) {
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  let indexed = 0;
+
+  for (const key of list.keys) {
+
+    const data = await env.BOOKINGS_KV.get(key.name);
+
+    if (!data) continue;
+
+    let bookings = [];
+
+    try {
+      bookings = JSON.parse(data);
+    } catch {
+      continue;
+    }
+
+    for (const booking of bookings) {
+
+      const dates = getDatesBetween(
+        new Date(booking.pickupAt),
+        new Date(booking.dropoffAt)
+      );
+
+      for (const date of dates) {
+
+        const indexKey = `booking:${booking.vehicleId}:${date}`;
+
+        await env.BOOKINGS_KV.put(indexKey, booking.id);
+        indexed++;
+
+      }
+
+    }
+
+  }
+
+  return json({
+    success: true,
+    indexed
+  });
+
 }
 
 /* ===============================
