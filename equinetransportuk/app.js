@@ -2543,14 +2543,22 @@ if (!booked.length) {
     const vehicle = vehicles.find(v => v.id === b.vehicleId);
 
     html += `
-      <div class="preview-item">
-        <strong>${vehicle ? vehicle.name : "Vehicle"}</strong><br>
-        <span class="muted tiny">
-          ${new Date(b.pickupAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
-          →
-          ${new Date(b.dropoffAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
-        </span>
-      </div>
+     <div class="preview-item">
+  <strong>${vehicle ? vehicle.name : "Vehicle"}</strong><br>
+  <span class="muted tiny">
+    ${new Date(b.pickupAt).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })}
+    →
+    ${new Date(b.dropoffAt).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })}
+  </span>
+</div>
     `;
 
   });
