@@ -2546,9 +2546,19 @@ if (!booked.length) {
   <div class="preview-item">
   <strong>${vehicle ? vehicle.name : "Vehicle"}</strong><br>
   <span class="muted tiny">
-    ${String(new Date(b.pickupAt).getUTCHours()).padStart(2,"0")}:00
+    ${new Date(b.pickupAt).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "UTC"
+    })}
     →
-    ${String(new Date(b.dropoffAt).getUTCHours()).padStart(2,"0")}:00
+    ${new Date(b.dropoffAt).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "UTC"
+    })}
   </span>
 </div>
     `;
@@ -2705,11 +2715,10 @@ function renderBookingBars(year, month, bookings) {
     const cell = cells.find(c => Number(c.textContent) === day);
 
     if (!cell) return;
-
     cell.classList.add("cal-booked");
 
-    const startHour = start.getHours();
-    const endHour = end.getHours();
+    const startHour = start.getUTCHours();
+const endHour = end.getUTCHours();
 
     cell.classList.remove(
       "cal-booking-morning",
@@ -3062,8 +3071,8 @@ function renderAvailabilityDots(dayEl, bookings, dayDate) {
         end.getMonth() === dayDate.getMonth() &&
         end.getDate() === dayDate.getDate();
 
-      const startHour = start.getHours();
-      const endHour = end.getHours();
+      const startHour = start.getUTCHours();
+const endHour = end.getUTCHours();
 
       if (sameDay && startHour === 7 && endHour === 13) {
         hasMorning = true;
