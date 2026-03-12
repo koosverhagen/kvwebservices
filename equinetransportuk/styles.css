@@ -1391,6 +1391,7 @@ input[type="date"] {
   min-width:0;
   position: relative;
   padding-bottom: 14px;
+   z-index: 1;
 }
 
 .cal-day:hover {
@@ -1404,6 +1405,7 @@ input[type="date"] {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
+  color: var(--text);
 }
 
 /* Availability states */
@@ -1702,6 +1704,7 @@ html {
   height: 3px;
   border-radius: 2px;
   background: #d7e9d7; /* available */
+  z-index: 0;
 }
 
 /* FULL DAY */
@@ -1734,6 +1737,11 @@ html {
   bottom: 0;
   background: #ef4444;
   border-radius: 0 2px 2px 0;
+}
+
+.cal-day::before {
+  position: relative;
+  z-index: 2;
 }
 
 @media (max-width: 768px) {
