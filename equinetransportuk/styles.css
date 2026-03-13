@@ -1083,37 +1083,6 @@ textarea { min-height: 100px; }
 
 }
 
-.summary-card {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-}
-
-.summary-row {
-  display:flex;
-  justify-content:space-between;
-  margin:8px 0;
-}
-
-.summary-row.total {
-  font-size:18px;
-}
-
-.summary-row.pay-now {
-  color:#1f6feb;
-  font-weight:600;
-}
-
-.summary-row.outstanding {
-  color:#555;
-}
-
-.summary-note {
-  font-size:13px;
-  color:#666;
-  margin-top:8px;
-}
 
 /* ======================================================
    BOOKING FLOW STEPS
@@ -1305,174 +1274,6 @@ input[type="date"] {
   appearance: none;
 }
 
-/* ======================================================
-   AVAILABILITY CALENDAR
-====================================================== */
-.cal-wrap {
-  margin: 16px 0 20px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fff;
-  width:100%;
-  max-width:100%;
-  overflow:hidden;
-
-}
-
-/* Header */
-
-.cal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.cal-title {
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.cal-nav {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: #fafbfc;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cal-nav:hover {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
-/* Weekdays */
-
-.cal-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.cal-weekdays div {
-  text-align: center;
-  padding: 6px 0;
-}
-
-/* Calendar grid */
-
-.cal-grid {
-  display: grid;
-  grid-template-columns:repeat(7, minmax(0,1fr));
-  gap: 10px;
-  width:100%;
-}
-
-/* Day cell */
-
-.cal-day {
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: #fafbfc;
-  font-size: 13px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  min-width:0;
-  position: relative;
-  padding-bottom: 14px;
-   z-index: 1;
-}
-
-.cal-day:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-/* Selected date */
-
-.cal-day.cal-selected {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-  color: var(--text);
-}
-
-/* Availability states */
-
-.cal-day.cal-available {
-  border-color: #22c55e;
-}
-
-.cal-day.cal-limited {
-  border-color: #f59e0b;
-  background: rgba(245,158,11,0.12);
-}
-
-/* Prevent booked days from fading */
-
-.cal-day.cal-unavailable:not(.cal-booked) {
-  border-color: #ef4444;
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-
-/* disable hover animation on booked days */
-
-.cal-booked:hover {
-  transform: none;
-  cursor: not-allowed;
-}
-
-/* hover preview */
-
-.cal-preview {
-  background: rgba(31,111,235,0.12);
-  border-color: #1f6feb;
-}
-
-.cal-date {
-  position: relative;
-  z-index: 2;
-}
-
-/* Legend */
-
-.cal-legend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.cal-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.cal-dot-available { background: #22c55e; }
-.cal-dot-limited { background: #f59e0b; }
-.cal-dot-unavailable { background: #ef4444; }
-
-
-.vehicle-preview.hidden {
-  display: none;
-}
 
 /* ======================================================
    AVAILABILITY CALENDAR
@@ -1733,12 +1534,38 @@ input[type="date"] {
   background:#ef4444;
 }
 
-/* mobile */
 
-@media(max-width:768px){
 
-  .cal-line{ height:1.5px }
-  .cal-lines{ gap:1px }
+/* ======================================================
+   Mobile calendar optimisation
+====================================================== */
+
+@media (max-width: 480px) {
+
+  .cal-wrap{
+    padding:12px;
+  }
+
+  .cal-grid{
+    gap:6px;              /* smaller spacing */
+  }
+
+  .cal-day{
+    font-size:12px;
+    border-radius:8px;
+    padding-bottom:12px;
+  }
+
+  .cal-lines{
+    left:6px;
+    right:6px;
+    bottom:5px;
+    gap:1px ;
+  }
+
+  .cal-line{
+   height:1.5px;
+  }
 
 }
 
@@ -1888,19 +1715,6 @@ html {
   position: relative;
   z-index: 2;
 }
-
-@media (max-width: 768px) {
-
-  .cal-line {
-    height: 1.5px;
-  }
-
-  .cal-lines {
-    gap: 1px;
-  }
-
-}
-
 
 
 /* =================================
@@ -2272,16 +2086,28 @@ input[readonly]{
 /* ===================================
 BOOKING SUMMARY CARD
 =================================== */
+/* ===================================
+BOOKING SUMMARY
+=================================== */
 
+.summary-card,
 .booking-summary-card{
   background:#fff;
-  border:1px solid var(--line);
   border-radius:16px;
+  border:1px solid var(--line);
   padding:22px;
-  margin-top:24px;
-  margin-bottom:18px;
   max-width:520px;
 }
+
+.summary-card{
+  box-shadow:0 10px 30px rgba(0,0,0,0.05);
+}
+
+.booking-summary-card{
+  margin:24px 0 18px;
+}
+
+/* title */
 
 .summary-title{
   font-size:18px;
@@ -2289,22 +2115,44 @@ BOOKING SUMMARY CARD
   margin-bottom:14px;
 }
 
+/* rows container */
+
 .summary-lines{
   display:flex;
   flex-direction:column;
   gap:6px;
 }
 
+/* base row */
+
 .summary-row{
   display:flex;
   justify-content:space-between;
+  align-items:center;
   font-size:15px;
   color:var(--text);
 }
 
+/* variations */
+
 .summary-row.muted{
   color:var(--muted);
 }
+
+.summary-row.total{
+  font-size:18px;
+}
+
+.summary-row.pay-now{
+  color:var(--accent);
+  font-weight:600;
+}
+
+.summary-row.outstanding{
+  color:#555;
+}
+
+/* divider */
 
 .summary-divider{
   height:1px;
@@ -2312,26 +2160,40 @@ BOOKING SUMMARY CARD
   margin:12px 0;
 }
 
-.summary-total{
+/* totals */
+
+.summary-total,
+.summary-due,
+.summary-remaining{
   display:flex;
   justify-content:space-between;
+}
+
+.summary-total{
   font-size:17px;
   font-weight:600;
 }
 
 .summary-due{
-  display:flex;
-  justify-content:space-between;
   font-size:18px;
   font-weight:700;
   color:var(--accent);
+  background:rgba(31,111,235,0.08);
+  padding:6px 10px;
+  border-radius:8px;
 }
 
 .summary-remaining{
-  display:flex;
-  justify-content:space-between;
   font-size:14px;
   color:var(--muted);
+}
+
+/* note */
+
+.summary-note{
+  font-size:13px;
+  color:#666;
+  margin-top:8px;
 }
 
 #step-4 .btn.ghost {
