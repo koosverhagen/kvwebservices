@@ -66,6 +66,9 @@ function startBooking(vehicleId) {
 
   PRESELECTED_VEHICLE = vehicleId;
 
+  const vehicle = vehicles.find(v => v.id === vehicleId);
+  updateDurationOptionsForVehicle(vehicle);
+
   updateCalendarVehicleLabel();
 
   selectedAvailability = null;
@@ -1440,6 +1443,33 @@ function renderFleet() {
 /* ======================================================
    Booking helpers (select from fleet / results)
 ====================================================== */
+
+function updateDurationOptionsForVehicle(vehicle) {
+
+  const durationSelect = document.getElementById("duration-days");
+  if (!durationSelect) return;
+
+  const halfDayOption = durationSelect.querySelector('option[value="0.5"]');
+
+  if (!halfDayOption) return;
+
+  if (is35T(vehicle)) {
+
+    // allow half day
+    halfDayOption.style.display = "block";
+
+  } else {
+
+    // remove half day for 7.5T
+    halfDayOption.style.display = "none";
+
+    if (durationSelect.value === "0.5") {
+      durationSelect.value = "1";
+    }
+
+  }
+
+}
 
 function updateCalendarVehicleLabel() {
 
