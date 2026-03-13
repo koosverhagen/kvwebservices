@@ -26,6 +26,12 @@ let BOOKINGS_VERSION = null;
 
 let currentStep = 1;
 
+/* ===============================
+   Stripe checkout protection
+================================ */
+
+let checkoutLock = false;
+
 
 
 
@@ -1245,6 +1251,37 @@ function updatePickupTimeVisibility() {
 }
 
 /* ======================================================
+   PREVENT IMPOSSIBLE DURATIONS
+====================================================== */
+
+function validateDurationSelection(){
+
+  const duration = Number(durationDaysInput?.value || 0);
+  const selectedDate = pickupDateInput?.value;
+
+  if(!selectedDate || !duration) return true;
+
+  if(!selectedAvailability) return true;
+
+  const maxDuration = selectedAvailability.max_duration_days;
+
+  if(maxDuration && duration > maxDuration){
+
+    alert(`This lorry is only available for ${maxDuration} day(s) from the selected date.`);
+
+    durationDaysInput.value = maxDuration;
+
+    updateCheckoutSummary();
+
+    return false;
+
+  }
+
+  return true;
+
+}
+
+/* ======================================================
    Fleet rendering
 ====================================================== */
 
@@ -1922,6 +1959,10 @@ async function exportAdminPdf() {
 
 async function createStripeCheckoutSession(booking) {
 
+  /* prevent double Stripe session creation */
+  if (checkoutLock) return null;
+  checkoutLock = true;
+
   try {
 
     const response = await fetch(
@@ -1935,14 +1976,13 @@ async function createStripeCheckoutSession(booking) {
           vehicleName: booking.vehicleSnapshot?.name,
 
           pickupDate: booking.pickupAt,
-          pickupTime: booking.pickupTime,   // ✅ ADD THIS
+          pickupTime: booking.pickupTime,
 
           durationDays: booking.durationDays,
 
           customerEmail: booking.customerEmail,
           bookingId: booking.id
         })
-
       }
     );
 
@@ -1959,6 +1999,13 @@ async function createStripeCheckoutSession(booking) {
   } catch (error) {
 
     console.warn("Stripe session endpoint unavailable.", error);
+
+  } finally {
+
+    /* release checkout lock after short delay */
+    setTimeout(() => {
+      checkoutLock = false;
+    }, 2000);
 
   }
 
@@ -2086,6 +2133,39 @@ if (badge) {
 
   updateHalfDayPickup();
 
+  /* ======================================================
+   SMART SUMMARY AUTO-UPDATE
+====================================================== */
+
+function initSmartSummaryUpdates(){
+
+  const triggers = [
+    pickupDateInput,
+    durationDaysInput,
+    pickupTimeInput,
+    selectedLorryInput,
+    dartfordCrossingInput,
+    earlyPickupInput,
+    voucherInput
+  ];
+
+  triggers.forEach(el=>{
+    if(!el) return;
+
+    el.addEventListener("change", ()=>{
+      try{
+        updateCheckoutSummary();
+      }catch(e){
+        console.warn("Summary update failed:", e);
+      }
+    });
+
+  });
+
+}
+
+document.addEventListener("DOMContentLoaded", initSmartSummaryUpdates);
+
 });
 
 
@@ -2099,6 +2179,9 @@ pickupTimeInput?.addEventListener("change", () => {
 if (availabilityForm) {
   availabilityForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+
+    /* prevent impossible duration selections */
+    if (!validateDurationSelection()) return;
 
     const pickupDate = pickupDateInput?.value;
     const durationDays = Number(durationDaysInput?.value);
@@ -2116,48 +2199,49 @@ if (availabilityForm) {
 
     if (durationDays === 0.5 && !pickupTime) {
 
-  const group = document.getElementById("pickup-time-group");
+      const group = document.getElementById("pickup-time-group");
 
-  group?.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
+      group?.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
 
-  group?.classList.add("duration-highlight");
+      group?.classList.add("duration-highlight");
 
-  setTimeout(() => {
-    group?.classList.remove("duration-highlight");
-  }, 2000);
+      setTimeout(() => {
+        group?.classList.remove("duration-highlight");
+      }, 2000);
 
-  pickupTimeInput?.focus();
+      pickupTimeInput?.focus();
 
-  /* show small message */
+      /* show small message */
 
-  let note = group.querySelector(".field-error");
+      let note = group.querySelector(".field-error");
 
-  if (!note) {
+      if (!note) {
 
-    note = document.createElement("div");
-    note.className = "field-error";
-    note.textContent = "Please choose a pickup time for half-day hire.";
+        note = document.createElement("div");
+        note.className = "field-error";
+        note.textContent = "Please choose a pickup time for half-day hire.";
 
-    group.appendChild(note);
+        group.appendChild(note);
 
-    setTimeout(() => note.remove(), 3000);
+        setTimeout(() => note.remove(), 3000);
 
-  }
+      }
 
-  return;
-}
+      return;
+    }
+
     let finalPickupTime = DEFAULT_PICKUP_TIME;
 
-if (durationDays === 0.5) {
+    if (durationDays === 0.5) {
 
-  if (!pickupTime) return;   // prevent search
+      if (!pickupTime) return;   // prevent search
 
-  finalPickupTime = pickupTime;
+      finalPickupTime = pickupTime;
 
-}
+    }
 
     const submitBtn = availabilityForm.querySelector(
       'button[type="submit"], input[type="submit"]'
@@ -2998,6 +3082,24 @@ calGrid.dataset.rendering = "false";
   }, 200);
 
 }
+
+function onCalendarDayClick(date){
+
+  pickupDateInput.value = date;
+
+  updateCheckoutSummary();
+
+  const durationGroup = document.getElementById("duration-group");
+
+  if(durationGroup){
+    durationGroup.scrollIntoView({
+      behavior:"smooth",
+      block:"center"
+    });
+  }
+
+}
+
 /* ======================================================
    Month Navigation
 ====================================================== */

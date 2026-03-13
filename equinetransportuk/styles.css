@@ -1401,12 +1401,12 @@ input[type="date"] {
 
 /* Selected date */
 
-.cal-day.cal-selected {
+.cal-day.selected {
   background: var(--accent);
-  color: #fff;
+  color: white;
   border-color: var(--accent);
-  color: var(--text);
 }
+
 
 /* Availability states */
 
@@ -1425,6 +1425,16 @@ input[type="date"] {
   border-color: #ef4444;
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/* override booked/limited when selected */
+
+.cal-day.cal-booked.selected,
+.cal-day.cal-limited.selected,
+.cal-day.cal-available.selected {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 
