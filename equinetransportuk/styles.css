@@ -1899,8 +1899,7 @@ html {
 
   color: var(--text);           /* keep number dark */
   background: inherit;          /* keep booking background */
-  border-color: var(--accent);  /* keep blue selection ring */
-
+  
 }
 
 /* Optional: make selected outline clearer */
