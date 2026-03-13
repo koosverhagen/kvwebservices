@@ -1535,40 +1535,6 @@ input[type="date"] {
 }
 
 
-
-/* ======================================================
-   Mobile calendar optimisation
-====================================================== */
-
-@media (max-width: 480px) {
-
-  .cal-wrap{
-    padding:12px;
-  }
-
-  .cal-grid{
-    gap:6px;              /* smaller spacing */
-  }
-
-  .cal-day{
-    font-size:12px;
-    border-radius:8px;
-    padding-bottom:12px;
-  }
-
-  .cal-lines{
-    left:6px;
-    right:6px;
-    bottom:5px;
-    gap:1px ;
-  }
-
-  .cal-line{
-   height:1.5px;
-  }
-
-}
-
 /* ------------------------------------------------------
    Legend
 ------------------------------------------------------ */
