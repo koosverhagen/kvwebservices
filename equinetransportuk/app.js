@@ -345,6 +345,20 @@ function goBackToDates() {
 
 }
 
+function changeLorry(){
+
+  goToStep(2);
+
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "Checking availability...";
+  }
+
+  setTimeout(()=>{
+    availabilityForm?.requestSubmit();
+  },100);
+
+}
+
 function resetBookingFlow() {
 
   /* clear availability + booking selection */
