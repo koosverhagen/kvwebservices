@@ -394,11 +394,6 @@ removed duplicate, script is loaded at end of body -->
       </div>
 
     </form>
-
-    <!-- BOOKING SUMMARY -->
-    <div id="checkout-summary" class="checkout-breakdown"></div>
-
-
   </div>
 </div>
 
@@ -406,13 +401,15 @@ removed duplicate, script is loaded at end of body -->
 <div class="booking-step" id="step-4">
   <div class="card">
 
-    <h3>Payment</h3>
+    <h3>Review & confirm</h3>
 
     <button class="btn ghost" onclick="goToStep(3)">
       Edit details
     </button>
 
-  
+    <!-- BOOKING SUMMARY (used by app.js) -->
+    <div id="checkout-summary" class="checkout-breakdown"></div>
+
     <!-- REQUIREMENTS -->
     <div class="requirements-box">
       <h4>Before collection</h4>
