@@ -1653,7 +1653,7 @@ input[type="date"] {
 }
 
 .cal-day.cal-weekend.cal-available{
-  background:rgba(69, 190, 217, 0.1);
+  background:rgba(34,197,94,.10);
 }
 
 .cal-day.cal-weekend.cal-limited{
@@ -1733,40 +1733,12 @@ input[type="date"] {
   background:#ef4444;
 }
 
+/* mobile */
 
-/* ======================================================
-   Mobile calendar optimisation
-====================================================== */
+@media(max-width:768px){
 
-@media (max-width: 480px) {
-
-  .cal-wrap{
-    padding:12px;
-  }
-
-  .cal-grid{
-    gap:6px;              /* smaller spacing */
-  }
-
-  .cal-day{
-    font-size:12px;
-    border-radius:8px;
-    padding-bottom:12px;
-  }
-
-  .cal-lines{
-    left:6px;
-    right:6px;
-    bottom:5px;
-    gap:1px ;
-  }
-
-  .cal-line{
-    left:6px;
-    right:6px;
-    bottom:5px;
-    height:1.5px;
-  }
+  .cal-line{ height:1.5px }
+  .cal-lines{ gap:1px }
 
 }
 
