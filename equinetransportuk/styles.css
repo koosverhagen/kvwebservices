@@ -2325,3 +2325,14 @@ BOOKING SUMMARY CARD
   margin-bottom: 22px;
 }
 
+/* =================================
+   FORCE SAME STYLE FOR SELECTED DAY
+================================= */
+
+.cal-day.cal-selected{
+  border-color: var(--accent) !important;
+  background: rgba(37,99,235,0.10) !important;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.25);
+  color: var(--text) !important;
+  font-weight:600;
+}
