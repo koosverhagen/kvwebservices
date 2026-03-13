@@ -2347,14 +2347,3 @@ BOOKING SUMMARY CARD
   font-weight:600;
 }
 
-/* ===============================
-   Sticky booking summary (desktop)
-=============================== */
-@media (min-width: 900px) {
-
-  #checkout-summary {
-    position: sticky;
-    top: 120px;
-  }
-
-}
