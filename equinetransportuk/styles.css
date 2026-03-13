@@ -1653,7 +1653,7 @@ input[type="date"] {
 }
 
 .cal-day.cal-weekend.cal-available{
-  background:rgba(34,197,94,.10);
+  background:rgba(69, 190, 217, 0.1);
 }
 
 .cal-day.cal-weekend.cal-limited{
