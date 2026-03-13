@@ -1444,6 +1444,21 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
+function changeLorry() {
+
+  // disable preselected vehicle mode
+  PRESELECTED_VEHICLE = null;
+
+  // clear previous results
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "";
+  }
+
+  // go to lorry selection step
+  goToStep(2);
+
+}
+
 function updateDurationOptionsForVehicle(vehicle) {
 
   const durationSelect = document.getElementById("duration-days");
@@ -3277,41 +3292,79 @@ else if (hasFullDay) {
 
 function updateCheckoutSummary(pricing) {
 
-  if (!pricing) {
-    console.log("No pricing yet");
-    return;
-  }
-
   const lines = document.getElementById("summary-lines");
   const totalEl = document.getElementById("summary-total");
   const dueEl = document.getElementById("summary-due");
   const remainingEl = document.getElementById("summary-remaining");
 
-  if (!lines || !totalEl || !dueEl || !remainingEl) {
-    console.log("Summary elements not ready");
+  if (!lines || !totalEl || !dueEl || !remainingEl) return;
+
+  /* --------------------------------
+     MODE 1: Pricing preview
+  -------------------------------- */
+
+  if (pricing) {
+
+    lines.innerHTML = "";
+
+    function row(label, value) {
+      const div = document.createElement("div");
+      div.className = "summary-row";
+      div.innerHTML = `<span>${label}</span><span>£${value}</span>`;
+      lines.appendChild(div);
+    }
+
+    if (pricing.base) {
+      row("Base hire", pricing.base);
+    }
+
+    if (pricing.voucher_discount) {
+      row("Voucher discount", "-" + pricing.voucher_discount);
+    }
+
+    totalEl.innerText = "£" + (pricing.total ?? 0);
+    dueEl.innerText = "£" + (pricing.deposit_due ?? 0);
+    remainingEl.innerText = "£" + (pricing.remaining ?? 0);
+
     return;
   }
 
-  lines.innerHTML = "";
+  /* --------------------------------
+     MODE 2: Booking summary
+  -------------------------------- */
 
-  function row(label, value) {
-    const div = document.createElement("div");
-    div.className = "summary-row";
-    div.innerHTML = `<span>${label}</span><span>£${value}</span>`;
-    lines.appendChild(div);
+  if (!selectedAvailability) {
+    lines.innerHTML = "<div class='summary-row muted'>Select a lorry to continue</div>";
+    return;
   }
 
-  if (pricing.base) {
-    row("Base hire", pricing.base);
-  }
+  const vehicle = selectedAvailability.vehicle;
+  const baseCost = Number(selectedAvailability.baseCost || 0);
+  const discountAmount = Number(selectedAvailability.discountAmount || 0);
 
-  if (pricing.voucher_discount) {
-    row("Voucher discount", "-" + pricing.voucher_discount);
-  }
+  const confirmationFee = getConfirmationFee(vehicle);
+  const total = baseCost - discountAmount;
+  const remaining = Math.max(0, total - confirmationFee);
 
-  totalEl.innerText = "£" + (pricing.total ?? 0);
-  dueEl.innerText = "£" + (pricing.deposit_due ?? 0);
-  remainingEl.innerText = "£" + (pricing.remaining ?? 0);
+  lines.innerHTML = `
+    <div class="summary-row">
+      <span>${vehicle.name}</span>
+      <span>£${baseCost.toFixed(2)}</span>
+    </div>
+
+    ${
+      discountAmount > 0
+        ? `<div class="summary-row discount">
+            <span>Discount</span>
+            <span>-£${discountAmount.toFixed(2)}</span>
+          </div>`
+        : ""
+    }
+  `;
+
+  totalEl.innerText = "£" + total.toFixed(2);
+  dueEl.innerText = "£" + confirmationFee.toFixed(2);
+  remainingEl.innerText = "£" + remaining.toFixed(2);
 
 }
 
