@@ -1460,16 +1460,21 @@ function renderFleet() {
 
 function changeLorry() {
 
-  // disable preselected vehicle mode
-  PRESELECTED_VEHICLE = null;
+  goToStep(2);
 
-  // clear previous results
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "";
+  const pickupDate = pickupDateInput?.value;
+  const duration = durationDaysInput?.value;
+
+  if (!pickupDate || !duration) {
+    availabilityResults.innerHTML = "Select a date and duration first.";
+    return;
   }
 
-  // go to lorry selection step
-  goToStep(2);
+  availabilityResults.innerHTML = "Checking availability...";
+
+  setTimeout(() => {
+    availabilityForm?.dispatchEvent(new Event("submit", { cancelable: true }));
+  }, 150);
 
 }
 
