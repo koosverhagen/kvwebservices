@@ -1597,6 +1597,11 @@ async function selectAvailability(vehicleId) {
 
   updateCheckoutSummary();
 
+  checkoutSummary?.scrollIntoView({
+  behavior: "smooth",
+  block: "nearest"
+});
+
 }
 
 async function checkBookingFormAvailability() {
