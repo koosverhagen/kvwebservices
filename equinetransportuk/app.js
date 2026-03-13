@@ -1074,6 +1074,42 @@ function updateCheckoutSummary() {
     <div class="summary-card">
       <h4>${escapeHtml(selectedAvailability.vehicle.name)}</h4>
 
+      ${selectedAvailability.pickupAt ? `
+<div class="summary-row muted">
+  <span>Hire period</span>
+  <strong>
+    ${new Date(selectedAvailability.pickupAt).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })}
+    →
+    ${new Date(selectedAvailability.dropoffAt).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })}
+  </strong>
+</div>
+` : ""}
+
+${selectedAvailability.durationDays ? `
+<div class="summary-row muted">
+  <span>Duration</span>
+  <strong>
+    ${Number(selectedAvailability.durationDays) === 0.5
+      ? "½ day"
+      : Number(selectedAvailability.durationDays) === 1
+      ? "1 day"
+      : selectedAvailability.durationDays + " days"}
+  </strong>
+</div>
+` : ""}
+
       <div class="summary-row">
         <span>Base hire</span>
         <strong>£${baseCost.toFixed(2)}</strong>
