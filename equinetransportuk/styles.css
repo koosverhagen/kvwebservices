@@ -1405,6 +1405,7 @@ input[type="date"] {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
+  color: var(--text);
 }
 
 /* Availability states */
@@ -1441,6 +1442,10 @@ input[type="date"] {
   border-color: #1f6feb;
 }
 
+.cal-date {
+  position: relative;
+  z-index: 2;
+}
 
 /* Legend */
 
@@ -1469,46 +1474,286 @@ input[type="date"] {
   display: none;
 }
 
-
-.vehicle-preview-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
-  margin-top: 4px;
-}
-
-.vehicle-preview-available {
-  color: #22c55e;
-}
-
-.vehicle-preview-booked {
-  color: #ef4444;
-}
-
 /* ======================================================
-   Calendar tooltip
+   AVAILABILITY CALENDAR
 ====================================================== */
 
-.cal-tooltip {
-  position: absolute;
-  background: #1d2530;
-  color: #fff;
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 1000;
-  transform: translate(-50%, -120%);
-  opacity: 0;
-  transition: opacity 0.15s ease;
+.cal-wrap{
+  margin:16px 0 20px;
+  padding:16px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:#fff;
+  width:100%;
+  overflow:hidden;
 }
 
-.cal-tooltip.show {
-  opacity: 1;
+/* ------------------------------------------------------
+   Header
+------------------------------------------------------ */
+
+.cal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
 }
+
+.cal-title{
+  font-weight:600;
+  font-size:16px;
+}
+
+.cal-nav{
+  width:34px;
+  height:34px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:#fafbfc;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.cal-nav:hover{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent);
+}
+
+/* ------------------------------------------------------
+   Weekdays
+------------------------------------------------------ */
+
+.cal-weekdays{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.cal-weekdays div{
+  text-align:center;
+  padding:6px 0;
+}
+
+/* ------------------------------------------------------
+   Calendar grid
+------------------------------------------------------ */
+
+.cal-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:10px;
+}
+
+/* ------------------------------------------------------
+   Day cell
+------------------------------------------------------ */
+
+.cal-day{
+  aspect-ratio:1/1;
+  border-radius:10px;
+  border:2px solid transparent;
+  background:#fafbfc;
+  font-size:13px;
+  font-weight:500;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  cursor:pointer;
+  transition:.15s;
+
+  position:relative;
+  min-height:42px;
+  padding-bottom:14px;
+  z-index:1;
+}
+
+.cal-day:hover{
+  border-color:var(--accent);
+  transform:translateY(-2px);
+}
+
+/* ------------------------------------------------------
+   Selected day
+------------------------------------------------------ */
+
+.cal-day.cal-selected{
+  border-color:var(--accent);
+  background:rgba(37,99,235,.08);
+  box-shadow:0 0 0 2px rgba(37,99,235,.25);
+  font-weight:600;
+  color:var(--text);
+}
+
+/* ------------------------------------------------------
+   Availability states
+------------------------------------------------------ */
+
+.cal-day.cal-available{
+  border-color:#22c55e;
+  background:rgba(34,197,94,.06);
+}
+
+.cal-day.cal-limited{
+  border-color:#f59e0b;
+  background:rgba(245,158,11,.08);
+}
+
+.cal-day.cal-unavailable{
+  border-color:#ef4444;
+  background:rgba(239,68,68,.06);
+  opacity:.85;
+}
+
+.cal-day.cal-no-start{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+/* past days */
+
+.cal-past{
+  opacity:.35;
+  pointer-events:none;
+  background:#f5f7fa;
+  color:#9aa3af;
+}
+
+/* ------------------------------------------------------
+   Today marker
+------------------------------------------------------ */
+
+.cal-day.cal-today{
+  border:2px solid var(--accent);
+}
+
+/* ------------------------------------------------------
+   Weekend shading
+------------------------------------------------------ */
+
+.cal-day.cal-weekend{
+  background:rgba(0,0,0,.06);
+}
+
+.cal-day.cal-weekend.cal-available{
+  background:rgba(34,197,94,.10);
+}
+
+.cal-day.cal-weekend.cal-limited{
+  background:rgba(245,158,11,.12);
+}
+
+.cal-day.cal-weekend.cal-unavailable{
+  background:rgba(239,68,68,.12);
+}
+
+/* ------------------------------------------------------
+   Preview highlight
+------------------------------------------------------ */
+
+.cal-preview{
+  background:rgba(31,111,235,.12);
+  border-color:#1f6feb;
+}
+
+/* ------------------------------------------------------
+   Vehicle booking bars
+------------------------------------------------------ */
+
+.cal-lines{
+  position:absolute;
+  bottom:6px;
+  left:8px;
+  right:8px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  pointer-events:none;
+  z-index:0;
+}
+
+.cal-line{
+  height:3px;
+  border-radius:2px;
+  background:#cde8cd;
+  position:relative;
+  overflow:hidden;
+}
+
+/* full day */
+
+.cal-line.booked-full{
+  background:#ef4444;
+}
+
+/* morning */
+
+.cal-line.booked-am::before{
+  content:"";
+  position:absolute;
+  left:0;
+  width:50%;
+  top:0;
+  bottom:0;
+  background:#ef4444;
+}
+
+/* afternoon */
+
+.cal-line.booked-pm::after{
+  content:"";
+  position:absolute;
+  right:0;
+  width:50%;
+  top:0;
+  bottom:0;
+  background:#ef4444;
+}
+
+/* both halves */
+
+.cal-line.booked-am.booked-pm{
+  background:#ef4444;
+}
+
+/* mobile */
+
+@media(max-width:768px){
+
+  .cal-line{ height:1.5px }
+  .cal-lines{ gap:1px }
+
+}
+
+/* ------------------------------------------------------
+   Legend
+------------------------------------------------------ */
+
+.cal-legend{
+  display:flex;
+  gap:12px;
+  margin-top:12px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.cal-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  display:inline-block;
+}
+
+.cal-dot-available{background:#22c55e}
+.cal-dot-limited{background:#f59e0b}
+.cal-dot-unavailable{background:#ef4444}
+
 /* ======================================================
-   Calendar vehicle preview
+   Vehicle preview popup
 ====================================================== */
 
 .vehicle-preview{
@@ -1517,94 +1762,35 @@ input[type="date"] {
   background:#fff;
   border:1px solid var(--line);
   border-radius:12px;
-  box-shadow:0 8px 22px rgba(0,0,0,0.08);
+  box-shadow:0 8px 22px rgba(0,0,0,.08);
   font-size:13px;
   z-index:20;
-
   pointer-events:none;
-
-  transform: translate(-50%, -110%);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform:translate(-50%,-110%);
   opacity:0;
+  transition:.15s;
 }
 
-.vehicle-preview:not(.hidden){
-  opacity:1;
-}
+.vehicle-preview:not(.hidden){opacity:1}
 
-.vehicle-preview.hidden{
-  display:none;
-}
+.preview-item{margin-top:6px}
 
-.preview-header{
-  margin-bottom:6px;
-}
-
-.preview-status{
-  font-size:12px;
-  margin-top:2px;
-}
-
-.preview-status-good{
-  color:#22c55e;
-}
-
-.preview-status-low{
-  color:#f59e0b;
-}
-
-.preview-status-none{
-  color:#ef4444;
-}
-
-.preview-item{
-  margin-top:6px;
-}
-
-.vehicle-preview-item{
-  display:flex;
-  justify-content:space-between;
-  margin-top:6px;
-}
-
-.vehicle-preview-reason{
-  margin-top:8px;
-  padding-top:6px;
-  border-top:1px solid var(--line);
-  font-size:12px;
-  color:var(--muted);
-}
-
-.vehicle-preview-good{
-  color:#22c55e;
-  font-weight:600;
-}
-
-.vehicle-preview-low{
-  color:#f59e0b;
-  font-weight:600;
-}
-
-.vehicle-preview-none{
-  color:#ef4444;
-  font-weight:600;
-}
+.preview-status-good{color:#22c55e}
+.preview-status-low{color:#f59e0b}
+.preview-status-none{color:#ef4444}
 
 /* ======================================================
-   Mobile calendar preview panel
+   Mobile preview panel
 ====================================================== */
 
 .mobile-preview{
   margin-bottom:14px;
   padding:14px 16px;
-
   background:#fff;
   border:1px solid var(--line);
   border-radius:14px;
-
-  box-shadow:0 6px 16px rgba(0,0,0,0.06);
+  box-shadow:0 6px 16px rgba(0,0,0,.06);
   font-size:14px;
-
   line-height:1.45;
 }
 
@@ -1616,59 +1802,6 @@ input[type="date"] {
 
 .mobile-preview.hidden{
   display:none;
-}
-
-
-
-
-/* ======================================================
-   Today marker
-====================================================== */
-
-.cal-day.cal-today{
-  border:2px solid var(--accent);
-  font-weight:600;
-}
-
-
-/* ======================================================
-   Weekend shading (clear borders)
-====================================================== */
-
-.cal-day.cal-weekend{
-  background: rgba(0,0,0,0.06);
-}
-
-/* keep availability colours visible */
-
-.cal-day.cal-weekend.cal-available{
-  background: rgba(34,197,94,0.10);
-}
-
-.cal-day.cal-weekend.cal-limited{
-  background: rgba(245,158,11,0.12);
-}
-
-.cal-day.cal-weekend.cal-unavailable{
-  background: rgba(239,68,68,0.12);
-}
-
-.cal-day.cal-no-start {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.cal-day{
-  min-height:42px;
-}
-
-/* past dates */
-
-.cal-past{
-  opacity:0.35;
-  pointer-events:none;
-  background:#f5f7fa;
-  color:#9aa3af;
 }
 
 
@@ -1738,7 +1871,10 @@ html {
   border-radius: 0 2px 2px 0;
 }
 
-
+.cal-day::before {
+  position: relative;
+  z-index: 2;
+}
 
 @media (max-width: 768px) {
 
