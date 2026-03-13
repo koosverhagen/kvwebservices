@@ -2046,78 +2046,84 @@ document.addEventListener("DOMContentLoaded", () => {
   if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
   /* ======================================================
-   RETURNING CUSTOMER AUTO LOOKUP
-====================================================== */
+     RETURNING CUSTOMER AUTO LOOKUP
+  ====================================================== */
 
-if (customerEmailInput) {
+  if (customerEmailInput) {
 
-  customerEmailInput.addEventListener("change", async () => {
+    customerEmailInput.addEventListener("change", async () => {
 
-    const email = customerEmailInput.value.trim().toLowerCase();
-    if (!email) return;
+      const email = customerEmailInput.value.trim().toLowerCase();
+      if (!email) return;
 
-    try {
+      try {
 
-      const res = await fetch(
-        apiUrl(`/api/customers/lookup?email=${encodeURIComponent(email)}`)
-      );
+        const res = await fetch(
+          apiUrl(`/api/customers/lookup?email=${encodeURIComponent(email)}`)
+        );
 
-      const data = await res.json();
+        const data = await res.json();
 
-      console.log("Customer lookup response:", data);
+        console.log("Customer lookup response:", data);
 
-     if (!data.found) {
+        if (!data.found) {
 
-  window.RETURNING_CUSTOMER = false;
+          window.RETURNING_CUSTOMER = false;
 
-  const badge = document.getElementById("returning-customer-badge");
-  if (badge) badge.classList.add("hidden");
+          const badge = document.getElementById("returning-customer-badge");
+          if (badge) badge.classList.add("hidden");
 
-  return;
+          return;
 
-}
+        }
 
-      console.log("Returning customer detected:", data.customer);
-      const badge = document.getElementById("returning-customer-badge");
+        console.log("Returning customer detected:", data.customer);
 
-if (badge) {
+        const badge = document.getElementById("returning-customer-badge");
 
-  const hires = Number(data.customer.hire_count || 0);
+        if (badge) {
 
-  badge.textContent =
-    hires > 0
-      ? `✔ Returning customer — ${hires} previous hire${hires > 1 ? "s" : ""}`
-      : `✔ Returning customer`;
+          const hires = Number(data.customer.hire_count || 0);
 
-  badge.classList.remove("hidden");
+          badge.textContent =
+            hires > 0
+              ? `✔ Returning customer — ${hires} previous hire${hires > 1 ? "s" : ""}`
+              : `✔ Returning customer`;
 
-}
+          badge.classList.remove("hidden");
 
-      if (customerNameInput && !customerNameInput.value) {
-        customerNameInput.value = data.customer.full_name || "";
+        }
+
+        if (customerNameInput && !customerNameInput.value) {
+          customerNameInput.value = data.customer.full_name || "";
+        }
+
+        if (customerMobileInput && !customerMobileInput.value) {
+          customerMobileInput.value = data.customer.mobile || "";
+        }
+
+        window.RETURNING_CUSTOMER = true;
+
+      } catch (err) {
+
+        console.warn("Customer lookup failed:", err);
+
       }
 
-      if (customerMobileInput && !customerMobileInput.value) {
-        customerMobileInput.value = data.customer.mobile || "";
-      }
+    });
 
-      window.RETURNING_CUSTOMER = true;
+  }
 
-    } catch (err) {
+  /* ======================================================
+     STEP 1 LOGIC
+  ====================================================== */
 
-      console.warn("Customer lookup failed:", err);
-
-    }
-
-  });
-
-}
-
-  /* Step 1 logic */
   syncPickupTimeOptions();
   updatePickupTimeVisibility();
 
-  /* Step 3 logic (use existing global selectedDurationInput) */
+  /* ======================================================
+     STEP 3 LOGIC
+  ====================================================== */
 
   if (selectedDurationInput) {
 
@@ -2125,7 +2131,6 @@ if (badge) {
 
       updateHalfDayPickup();
 
-      /* ensure booking pickup time stays valid */
       const bookingTimeInput = document.getElementById("booking-pickup-time");
 
       if (bookingTimeInput && Number(selectedDurationInput.value) !== 0.5) {
@@ -2139,39 +2144,53 @@ if (badge) {
   updateHalfDayPickup();
 
   /* ======================================================
-   SMART SUMMARY AUTO-UPDATE
+     SMART SUMMARY AUTO UPDATE
+  ====================================================== */
+
+  initSmartSummaryUpdates();
+
+});
+
+
+/* ======================================================
+   SUMMARY AUTO UPDATE HELPER
 ====================================================== */
 
-function initSmartSummaryUpdates(){
+function initSmartSummaryUpdates() {
 
   const triggers = [
     pickupDateInput,
     durationDaysInput,
     pickupTimeInput,
     selectedLorryInput,
-    dartfordCrossingInput,
-    earlyPickupInput,
-    voucherInput
+    dartfordEnabledInput,
+    dartfordCountInput,
+    earlyPickupEnabledInput,
+    hiredWithin3MonthsInput
   ];
 
-  triggers.forEach(el=>{
-    if(!el) return;
+  triggers.forEach(el => {
 
-    el.addEventListener("change", ()=>{
-      try{
+    if (!el) return;
+
+    const handler = () => {
+      try {
         updateCheckoutSummary();
-      }catch(e){
+      } catch (e) {
         console.warn("Summary update failed:", e);
       }
-    });
+    };
+
+    /* prevent duplicate listeners */
+    el.removeEventListener("change", handler);
+    el.removeEventListener("input", handler);
+
+    el.addEventListener("change", handler);
+    el.addEventListener("input", handler);
 
   });
 
 }
-
-document.addEventListener("DOMContentLoaded", initSmartSummaryUpdates);
-
-});
 
 
 pickupTimeInput?.addEventListener("change", () => {
