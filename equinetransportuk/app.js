@@ -1098,7 +1098,7 @@ function updateCheckoutSummary() {
       <div class="summary-vehicle">
 
   <img 
-    src="${selectedAvailability.vehicle.image}" 
+    src="${getVehicleMainImage(selectedAvailability.vehicle)}"
     alt="${escapeHtml(selectedAvailability.vehicle.name)}"
     class="summary-vehicle-image"
   >
@@ -1467,6 +1467,21 @@ function renderFleet() {
 /* ======================================================
    Booking helpers (select from fleet / results)
 ====================================================== */
+function getVehicleMainImage(vehicle){
+
+  if(!vehicle) return "";
+
+  const map = {
+    "v35-1": "images/3.5T With Safety Bar (LS23)1.webp",
+    "v35-2": "images/3.5 T Stallion (MM68)1.webp",
+    "v35-3": "images/3.5 T With Breast Bar (CA21)1.webp",
+    "v75-1": "images/7.5 T 3 Horses with Living1.webp",
+    "v75-2": "images/7.5 T 4 Horses No Living1.webp"
+  };
+
+  return map[vehicle.id] || "";
+}
+
 
 function changeLorry() {
 
