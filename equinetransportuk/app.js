@@ -1337,15 +1337,25 @@ function renderFleet() {
 
     // Find images
     const code = vehicle.code || "";
-    const baseName = vehicle.name.replace(/[^\w]+/g, "").toLowerCase();
 
-    let imageFiles =
-      window.fleetImages?.filter((img) => {
-        return (
-          (code && img.includes(code)) ||
-          img.replace(/[^\w]+/g, "").toLowerCase().includes(baseName)
-        );
-      }) || [];
+const normalizedVehicle = vehicle.name
+  .replace(/[^\w]+/g,"")
+  .toLowerCase()
+  .replace("horse","horses");
+
+let imageFiles =
+  window.fleetImages?.filter(img => {
+
+    const normalizedImage = img
+      .replace(/[^\w]+/g,"")
+      .toLowerCase();
+
+    return (
+      (code && img.includes(code)) ||
+      normalizedImage.includes(normalizedVehicle)
+    );
+
+  }) || [];
 
     if (!imageFiles.length)
       imageFiles = [vehicle.image.replace(/^images\//, "")];
