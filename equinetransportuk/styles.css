@@ -1115,6 +1115,28 @@ textarea { min-height: 100px; }
   margin-top:8px;
 }
 
+/* =================================
+   Summary vehicle preview
+================================= */
+
+.summary-vehicle{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.summary-vehicle-image{
+  width:70px;
+  height:55px;
+  object-fit:cover;
+  border-radius:8px;
+}
+
+.summary-vehicle-name{
+  font-weight:600;
+}
+
 /* ======================================================
    BOOKING FLOW STEPS
 ====================================================== */

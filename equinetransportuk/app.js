@@ -3366,20 +3366,36 @@ function updateCheckoutSummary(pricing) {
   const remaining = Math.max(0, total - confirmationFee);
 
   lines.innerHTML = `
-    <div class="summary-row">
-      <span>${vehicle.name}</span>
-      <span>£${baseCost.toFixed(2)}</span>
+
+  <div class="summary-vehicle">
+
+    <img 
+      src="${vehicle.image}" 
+      alt="${vehicle.name}" 
+      class="summary-vehicle-image"
+    >
+
+    <div class="summary-vehicle-name">
+      ${vehicle.name}
     </div>
 
-    ${
-      discountAmount > 0
-        ? `<div class="summary-row discount">
-            <span>Discount</span>
-            <span>-£${discountAmount.toFixed(2)}</span>
-          </div>`
-        : ""
-    }
-  `;
+  </div>
+
+  <div class="summary-row">
+    <span>Base hire</span>
+    <span>£${baseCost.toFixed(2)}</span>
+  </div>
+
+  ${
+    discountAmount > 0
+      ? `<div class="summary-row discount">
+          <span>Discount</span>
+          <span>-£${discountAmount.toFixed(2)}</span>
+        </div>`
+      : ""
+  }
+
+`;
 
   totalEl.innerText = "£" + total.toFixed(2);
   dueEl.innerText = "£" + confirmationFee.toFixed(2);
