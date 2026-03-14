@@ -1316,9 +1316,22 @@ function validateDurationSelection(){
 
 }
 
-/* ======================================================
+//* ======================================================
    Fleet rendering
 ====================================================== */
+
+function getVehicleImagePrefix(vehicle){
+
+  const name = vehicle.name.toLowerCase();
+
+  if(name.includes("stallion")) return "3.5 T Stallion (MM68)";
+  if(name.includes("safety")) return "3.5T With Safety Bar (LS23)";
+  if(name.includes("breast")) return "3.5 T With Breast Bar (CA21)";
+  if(name.includes("3 horse")) return "7.5 T 3 Horses with Living";
+  if(name.includes("4 horse")) return "7.5 T 4 Horses No Living";
+
+  return null;
+}
 
 function renderFleet() {
   if (!fleetGrid) return;
@@ -1335,27 +1348,21 @@ function renderFleet() {
         ? "living"
         : "no living";
 
-    // Find images
-    const code = vehicle.code || "";
+    /* ===============================
+       Find images for this vehicle
+    =============================== */
 
-const normalizedVehicle = vehicle.name
-  .replace(/[^\w]+/g,"")
-  .toLowerCase()
-  .replace("horse","horses");
+    const prefix = getVehicleImagePrefix(vehicle);
 
-let imageFiles =
-  window.fleetImages?.filter(img => {
+    let imageFiles = [];
 
-    const normalizedImage = img
-      .replace(/[^\w]+/g,"")
-      .toLowerCase();
+    if(prefix && window.fleetImages){
 
-    return (
-      (code && img.includes(code)) ||
-      normalizedImage.includes(normalizedVehicle)
-    );
+      imageFiles = window.fleetImages.filter(img =>
+        img.startsWith(prefix)
+      );
 
-  }) || [];
+    }
 
     if (!imageFiles.length)
       imageFiles = [vehicle.image.replace(/^images\//, "")];
@@ -1364,7 +1371,10 @@ let imageFiles =
       f.startsWith("images/") ? f : "images/" + f
     );
 
-    // Image wrap
+    /* ===============================
+       Image wrap
+    =============================== */
+
     const imageWrap = document.createElement("div");
     imageWrap.className = "fleet-image-wrap";
 
@@ -1386,7 +1396,10 @@ let imageFiles =
     imageWrap.appendChild(img);
     imageWrap.appendChild(overlay);
 
-    // Slideshow logic (one at a time)
+    /* ===============================
+       Slideshow logic
+    =============================== */
+
     let currentIndex = 0;
     let playing = false;
     let interval = null;
@@ -1445,7 +1458,10 @@ let imageFiles =
       else stopSlideshow();
     });
 
-    // Content
+    /* ===============================
+       Card content
+    =============================== */
+
     const content = document.createElement("div");
     content.className = "fleet-content";
     content.innerHTML = `
@@ -1453,16 +1469,12 @@ let imageFiles =
       <p class="muted">
         ${escapeHtml(vehicle.type)}
         ${vehicle.code ? ` · ${escapeHtml(vehicle.code)}` : ""}
-        · ${vehicle.horses} horses · ${vehicle.seats} seats · ${escapeHtml(
-      livingLabel
-    )}
+        · ${vehicle.horses} horses · ${vehicle.seats} seats · ${escapeHtml(livingLabel)}
       </p>
       <p class="muted tiny">${escapeHtml(vehicle.summary)}</p>
       <p><strong>From £${Number(vehicle.dayRate).toFixed(0)}</strong> / day</p>
 
-      <button class="btn fleet-card-book" type="button" data-lorry-id="${
-        vehicle.id
-      }">
+      <button class="btn fleet-card-book" type="button" data-lorry-id="${vehicle.id}">
         Book this Lorry
       </button>
     `;
@@ -1470,7 +1482,10 @@ let imageFiles =
     card.appendChild(imageWrap);
     card.appendChild(content);
 
-    // Booking button
+    /* ===============================
+       Booking button
+    =============================== */
+
     content
       .querySelector(".fleet-card-book")
       ?.addEventListener("click", (e) => {
