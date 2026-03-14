@@ -2779,36 +2779,62 @@ if (!booked.length) {
 
 if (!booked.length) {
 
-  html += `<span class="muted">All vehicles available</span>`;
+  html += `<div class="muted tiny">All vehicles available</div>`;
+
+  vehicles.forEach(vehicle => {
+
+    const img = getVehicleMainImage(vehicle);
+
+    html += `
+      <div class="preview-item">
+
+        ${img ? `<img src="${img}" class="preview-img">` : ""}
+
+        <div class="preview-text">
+          <strong>${vehicle.name}</strong>
+        </div>
+
+      </div>
+    `;
+
+  });
 
 } else {
 
   booked.forEach(b => {
 
-    const vehicle = vehicles.find(v => v.id === b.vehicleId);
+  const vehicle = vehicles.find(v => v.id === b.vehicleId);
+  const img = vehicle ? getVehicleMainImage(vehicle) : null;
 
-    html += `
+  html += `
   <div class="preview-item">
-  <strong>${vehicle ? vehicle.name : "Vehicle"}</strong><br>
-  <span class="muted tiny">
-    ${new Date(b.pickupAt).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "UTC"
-    })}
-    →
-    ${new Date(b.dropoffAt).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "UTC"
-    })}
-  </span>
-</div>
-    `;
 
-  });
+    ${img ? `<img src="${img}" class="preview-img">` : ""}
+
+    <div class="preview-text">
+      <strong>${vehicle ? vehicle.name : "Vehicle"}</strong><br>
+
+      <span class="muted tiny">
+        ${new Date(b.pickupAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: "UTC"
+        })}
+        →
+        ${new Date(b.dropoffAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: "UTC"
+        })}
+      </span>
+    </div>
+
+  </div>
+  `;
+
+});
 
 }
 
