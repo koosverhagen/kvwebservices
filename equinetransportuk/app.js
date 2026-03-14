@@ -996,9 +996,17 @@ return;
     const displayPrice = Number(item.discountedTotal ?? item.baseCost ?? 0);
 
     return `
-      <article class="availability-item">
-        <div>
-          <h4>${escapeHtml(item.vehicle.name)}</h4>
+  <article class="availability-item">
+
+    <img
+      src="${getVehicleMainImage(item.vehicle)}"
+      alt="${escapeHtml(item.vehicle.name)}"
+      class="availability-image"
+    >
+
+    <div class="availability-info">
+
+      <h4>${escapeHtml(item.vehicle.name)}</h4>
 
           <p class="muted">
             ${item.vehicle.code ? `${escapeHtml(item.vehicle.code)} · ` : ""}

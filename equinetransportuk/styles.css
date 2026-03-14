@@ -461,7 +461,7 @@ textarea { min-height: 100px; }
   border-radius: 12px;
   padding: 12px;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 120px 1fr auto;
   gap: 10px;
   align-items: center;
 }
@@ -469,6 +469,30 @@ textarea { min-height: 100px; }
 .availability-item h4 {
   margin: 0 0 6px;
   font-size: 16px;
+}
+
+.availability-image{
+  width:120px;
+  height:85px;
+  object-fit:cover;
+  border-radius:10px;
+}
+
+.availability-info{
+  min-width:0;
+}
+
+.availability-item .choose-lorry{
+  align-self:center;
+}
+
+.availability-item{
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.availability-item:hover{
+  transform: translateY(-2px);
+  box-shadow:0 4px 14px rgba(0,0,0,0.08);
 }
 
 .btn:disabled {
