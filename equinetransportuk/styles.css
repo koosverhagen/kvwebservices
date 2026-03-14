@@ -1844,7 +1844,27 @@ input[type="date"] {
 
 .vehicle-preview:not(.hidden){opacity:1}
 
-.preview-item{margin-top:6px}
+.preview-item{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-top:6px;
+}
+
+.preview-img{
+  width:60px;
+  height:45px;
+  object-fit:cover;
+  border-radius:6px;
+}
+
+.preview-text{
+  flex:1;
+}
+
+.preview-status{
+  margin-bottom:6px;
+}
 
 .preview-status-good{color:#22c55e}
 .preview-status-low{color:#f59e0b}
