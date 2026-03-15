@@ -976,11 +976,32 @@ return;
 
   }
 
-  /* If only one vehicle available skip Step 2 */
+  /* If only one vehicle truly available for this slot skip Step 2 */
 
-  if (items.length === 1) {
+const duration = Number(durationDaysInput?.value);
+const pickupTime = pickupTimeInput?.value || "07:00";
 
-  await selectAvailability(items[0].vehicle.id);
+/* count slot-compatible vehicles */
+
+const compatible = items.filter(item => {
+
+  if (duration !== 0.5) return true;
+
+  if (pickupTime === "13:00") {
+    return item.pickupTime === "13:00";
+  }
+
+  if (pickupTime === "07:00") {
+    return item.pickupTime === "07:00";
+  }
+
+  return true;
+
+});
+
+if (compatible.length === 1) {
+
+  await selectAvailability(compatible[0].vehicle.id);
 
   goToStep(3);
 
