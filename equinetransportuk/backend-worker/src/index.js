@@ -513,26 +513,44 @@ async function handleCreateCheckoutSession(request, env) {
     return json({ error: "Invalid booking data" }, 400);
   }
 
-  /* ===============================
+/* ===============================
    TEMPORARY VEHICLE RESERVATION
 ================================ */
 
 const pickupDate = new Date(booking.pickupDate);
 const durationDays = Number(booking.durationDays || 1);
+const pickupTime = booking.pickupTime || "07:00";
 
 let dropoffDate = new Date(pickupDate);
 
 if (durationDays === 0.5) {
-
   dropoffDate = new Date(pickupDate);
-
 } else {
-
   dropoffDate.setDate(dropoffDate.getDate() + Math.max(1, durationDays) - 1);
-
 }
 
 const reservedDates = getDatesBetween(pickupDate, dropoffDate);
+
+function getReservationSlot(dateString, durationDaysValue, pickupTimeValue) {
+  if (Number(durationDaysValue) !== 0.5) return "full";
+  return pickupTimeValue === "13:00" ? "pm" : "am";
+}
+
+function getConfirmedSlot(confirmedBooking) {
+  if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
+  return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
+}
+
+function slotsConflict(a, b) {
+  if (a === "full" || b === "full") return true;
+  return a === b;
+}
+
+const requestedSlot = getReservationSlot(
+  booking.pickupDate,
+  durationDays,
+  pickupTime
+);
 
 /* ===============================
    CHECK CONFIRMED BOOKINGS
@@ -556,11 +574,13 @@ if (existingMonth) {
         new Date(confirmed.dropoffAt)
       );
 
+      const confirmedSlot = getConfirmedSlot(confirmed);
+
       for (const d of confirmedDates) {
 
-        if (reservedDates.includes(d)) {
+        if (reservedDates.includes(d) && slotsConflict(requestedSlot, confirmedSlot)) {
 
-          console.log("⚠️ Vehicle already booked:", d);
+          console.log("⚠️ Vehicle already booked:", d, requestedSlot, confirmedSlot);
 
           return json({
             error: "Vehicle already booked for selected dates."
@@ -586,7 +606,7 @@ if (existingMonth) {
 
 for (const date of reservedDates) {
 
-  const reservationKey = `reservation:${booking.vehicleId}:${date}`;
+  const reservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
 
   const existingReservation = await env.BOOKINGS_KV.get(reservationKey);
 
@@ -600,22 +620,50 @@ for (const date of reservedDates) {
 
   }
 
+  /* full day conflicts with both half-day holds */
+  if (requestedSlot === "full") {
+
+    const amReservation = await env.BOOKINGS_KV.get(`reservation:${booking.vehicleId}:${date}:am`);
+    const pmReservation = await env.BOOKINGS_KV.get(`reservation:${booking.vehicleId}:${date}:pm`);
+
+    if (amReservation || pmReservation) {
+      return json({
+        error: "Vehicle temporarily reserved. Please try again shortly."
+      }, 409);
+    }
+
+  }
+
+  /* half day conflicts with an existing full-day hold */
+  if (requestedSlot === "am" || requestedSlot === "pm") {
+
+    const fullReservation = await env.BOOKINGS_KV.get(`reservation:${booking.vehicleId}:${date}:full`);
+
+    if (fullReservation) {
+      return json({
+        error: "Vehicle temporarily reserved. Please try again shortly."
+      }, 409);
+    }
+
+  }
+
 }
 
 /* create reservations for all dates */
 
 for (const date of reservedDates) {
 
-  const reservationKey = `reservation:${booking.vehicleId}:${date}`;
+  const reservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
 
   await env.BOOKINGS_KV.put(
     reservationKey,
     JSON.stringify({
       vehicleId: booking.vehicleId,
       date,
+      slot: requestedSlot,
       createdAt: Date.now()
     }),
-    { expirationTtl: 600 } // 10 minutes
+    { expirationTtl: 600 }
   );
 
 }
@@ -821,10 +869,15 @@ if (durationDays === 0.5) {
 
 const reservedDates = getDatesBetween(pickupDate, dropoffDate);
 
+const confirmedSlot =
+  Number(session.metadata?.durationDays || 1) === 0.5
+    ? ((session.metadata?.pickupTime || "07:00") === "13:00" ? "pm" : "am")
+    : "full";
+
 for (const date of reservedDates) {
 
   const reservationKey =
-    `reservation:${session.metadata.vehicleId}:${date}`;
+    `reservation:${session.metadata.vehicleId}:${date}:${confirmedSlot}`;
 
   try {
 
@@ -1135,18 +1188,19 @@ async function handleListBookings(request, env) {
 
     for (const key of list.keys) {
 
-      const parts = key.name.split(":");
+  const parts = key.name.split(":");
 
-      if (parts.length === 3) {
+  if (parts.length >= 3) {
 
-        reservations.push({
-          vehicleId: parts[1],
-          date: parts[2]
-        });
+    reservations.push({
+      vehicleId: parts[1],
+      date: parts[2],
+      slot: parts[3] || "full"
+    });
 
-      }
+  }
 
-    }
+}
 
   } catch (err) {
 
@@ -1224,17 +1278,18 @@ async function handleAvailability(request, env) {
 
   for (const key of list.keys) {
 
-    const parts = key.name.split(":");
+  const parts = key.name.split(":");
 
-    if (parts.length !== 3) continue;
+  if (parts.length < 3) continue;
 
-    availability.push({
-      vehicleId: parts[1],
-      date: parts[2],
-      status: "reserved"
-    });
+  availability.push({
+    vehicleId: parts[1],
+    date: parts[2],
+    slot: parts[3] || "full",
+    status: "reserved"
+  });
 
-  }
+}
 
   return json({ availability });
 
@@ -1298,15 +1353,15 @@ results.forEach((exists, i) => {
 
   for (const key of list.keys) {
 
-    const parts = key.name.split(":");
+  const parts = key.name.split(":");
 
-    if (parts.length !== 3) continue;
+  if (parts.length < 3) continue;
 
-    if (parts[2] === date) {
-      reserved.add(parts[1]);
-    }
-
+  if (parts[2] === date) {
+    reserved.add(parts[1]);
   }
+
+}
 
   /* ===============================
      BUILD RESPONSE
@@ -1386,7 +1441,7 @@ async function handleMonthAvailability(request, env) {
 
       const parts = key.name.split(":");
 
-      if (parts.length !== 3) continue;
+      if (parts.length < 3) continue;
 
       if (parts[2] === date) {
         reserved.add(parts[1]);
