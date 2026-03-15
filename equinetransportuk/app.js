@@ -999,33 +999,24 @@ const pickupTime = pickupTimeInput?.value || "07:00";
 
 /* count slot-compatible vehicles */
 
-const compatible = items.filter(item => {
+/* determine true slot availability across full fleet */
 
-  if (duration !== 0.5) return true;
+const compatible = [];
 
-  /* afternoon hire */
-  if (pickupTime === "13:00") {
+for (const vehicle of vehicles) {
 
-    return (
-      item.pickupTime === "13:00" ||   // afternoon slot
-      item.durationDays >= 1           // full day vehicle also valid
-    );
+  const available = await isVehicleAvailable(
+    vehicle.id,
+    pickupDateInput.value,
+    duration,
+    pickupTime
+  );
 
+  if (available) {
+    compatible.push(vehicle);
   }
 
-  /* morning hire */
-  if (pickupTime === "07:00") {
-
-    return (
-      item.pickupTime === "07:00" ||
-      item.durationDays >= 1
-    );
-
-  }
-
-  return true;
-
-});
+}
 
 if (compatible.length === 1) {
 
