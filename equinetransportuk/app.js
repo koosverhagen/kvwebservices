@@ -838,7 +838,7 @@ async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTim
     (booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled"
   );
 
-  return !vehicleBookings.some((booking) => {
+ return !vehicleBookings.some((booking) => {
 
   const existingStart = new Date(booking.pickupAt);
   const existingEnd = new Date(booking.dropoffAt);
@@ -847,16 +847,32 @@ async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTim
 
   if (Number(durationDays) === 0.5) {
 
-    const slotStart = candidate.pickupAt;
-    const slotEnd = candidate.dropoffAt;
+    const slotStart = candidate.pickupAt.getTime();
+    const slotEnd = candidate.dropoffAt.getTime();
 
-    return overlaps(slotStart, slotEnd, existingStart, existingEnd);
+    const existingStartMs = existingStart.getTime();
+    const existingEndMs = existingEnd.getTime();
+
+    /* allow bookings that touch but do not overlap */
+
+    const overlapsSlot =
+      slotStart < existingEndMs &&
+      existingStartMs < slotEnd &&
+      slotStart !== existingEndMs &&
+      slotEnd !== existingStartMs;
+
+    return overlapsSlot;
 
   }
 
   /* normal full-day overlap */
 
-  return overlaps(candidate.pickupAt, candidate.dropoffAt, existingStart, existingEnd);
+  return overlaps(
+    candidate.pickupAt,
+    candidate.dropoffAt,
+    existingStart,
+    existingEnd
+  );
 
 });
 }
