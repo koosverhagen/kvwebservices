@@ -881,67 +881,32 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
   const results = [];
 
-  /* -----------------------------
-     PRESELECTED VEHICLE MODE
-  ----------------------------- */
-
-  if (PRESELECTED_VEHICLE) {
-
-    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
-
-    if (!vehicle) return [];
-
-    const available = await isVehicleAvailable(
-  vehicle.id,
-  pickupDate,
-  durationDays,
-  pickupTime
-);
-
-if (available) {
-
-  const availability = await buildAvailability(
-    vehicle,
-    pickupDate,
-    durationDays,
-    pickupTime
-  );
-
-  results.push(availability);
-}
-
-    return results;
-  }
-
-  /* -----------------------------
-     NORMAL MODE
-  ----------------------------- */
-
   for (const vehicle of vehicles) {
 
     const available = await isVehicleAvailable(
-  vehicle.id,
-  pickupDate,
-  durationDays,
-  pickupTime
-);
+      vehicle.id,
+      pickupDate,
+      durationDays,
+      pickupTime
+    );
 
-if (available) {
+    if (available) {
 
-  const availability = await buildAvailability(
-    vehicle,
-    pickupDate,
-    durationDays,
-    pickupTime
-  );
+      const availability = await buildAvailability(
+        vehicle,
+        pickupDate,
+        durationDays,
+        pickupTime
+      );
 
-  results.push(availability);
+      results.push(availability);
 
-}
+    }
 
   }
 
   return results;
+
 }
 function renderAvailabilityLoading() {
   if (!availabilityResults) return;
