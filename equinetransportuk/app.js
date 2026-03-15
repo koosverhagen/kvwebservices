@@ -2418,11 +2418,33 @@ if (availabilityForm) {
 
     try {
 
-      const availableLorries = await getAvailableLorries(
-        pickupDate,
-        durationDays,
-        finalPickupTime
-      );
+     /* get full fleet availability */
+
+const availableLorries = [];
+
+for (const vehicle of vehicles) {
+
+  const available = await isVehicleAvailable(
+    vehicle.id,
+    pickupDate,
+    durationDays,
+    finalPickupTime
+  );
+
+  if (available) {
+
+    const availability = await buildAvailability(
+      vehicle,
+      pickupDate,
+      durationDays,
+      finalPickupTime
+    );
+
+    availableLorries.push(availability);
+
+  }
+
+}
 
       renderAvailabilityResults(availableLorries);
 
