@@ -2868,43 +2868,50 @@ async function showVehiclePreview(date, event) {
 
   el.addEventListener("click", async () => {
 
-    const vehicleId = el.dataset.vehicleId;
-    const slot = (el.dataset.slot || "").toLowerCase();
+  const vehicleId = el.dataset.vehicleId;
+  const slot = (el.dataset.slot || "").toLowerCase();
 
-    /* set selected date */
+  /* set selected date */
 
-    if (pickupDateInput) {
-      pickupDateInput.value = dateStart.toISOString().slice(0,10);
-    }
+  if (pickupDateInput) {
+    pickupDateInput.value = dateStart.toISOString().slice(0,10);
+  }
 
-    /* set correct duration + time */
+  let duration = "1";
+  let pickupTime = "07:00";
 
-    if (slot.includes("morning")) {
+  if (slot.includes("morning")) {
+    duration = "0.5";
+    pickupTime = "07:00";
+  }
+  else if (slot.includes("afternoon")) {
+    duration = "0.5";
+    pickupTime = "13:00";
+  }
 
-      durationDaysInput.value = "0.5";
-      pickupTimeInput.value = "07:00";
+  /* update inputs */
 
-    }
-    else if (slot.includes("afternoon")) {
+  durationDaysInput.value = duration;
+  pickupTimeInput.value = pickupTime;
 
-      durationDaysInput.value = "0.5";
-      pickupTimeInput.value = "13:00";
+  /* IMPORTANT: sync UI behaviour */
 
-    }
-    else {
+  syncPickupTimeOptions();
+  updatePickupTimeVisibility();
 
-      durationDaysInput.value = "1";
-      pickupTimeInput.value = "07:00";
+  /* ensure pickup time sticks */
 
-    }
+  pickupTimeInput.value = pickupTime;
 
-    await selectAvailability(vehicleId);
+  /* now select vehicle */
 
-    panel.classList.add("hidden");
+  await selectAvailability(vehicleId);
 
-    goToStep(3);
+  panel.classList.add("hidden");
 
-  });
+  goToStep(3);
+
+});
 
 });
 
