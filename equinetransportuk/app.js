@@ -3145,6 +3145,17 @@ calTitle.textContent = `${monthNames[month]} ${year}`;
 
 calGrid.innerHTML = "";
 
+/* selected date (for restoring highlight) */
+
+const selectedDateValue = pickupDateInput?.value;
+let selectedTimestamp = null;
+
+if (selectedDateValue) {
+  const selectedDate = new Date(selectedDateValue);
+  selectedDate.setHours(0,0,0,0);
+  selectedTimestamp = selectedDate.getTime();
+}
+
 const firstDay = new Date(year, month, 1);
 const lastDay = new Date(year, month + 1, 0);
 
@@ -3152,7 +3163,7 @@ let startOffset = firstDay.getDay();
 startOffset = startOffset === 0 ? 6 : startOffset - 1;
 
 for (let i = 0; i < startOffset; i++) {
-calGrid.appendChild(document.createElement("div"));
+  calGrid.appendChild(document.createElement("div"));
 }
 
 const today = new Date();
@@ -3171,28 +3182,18 @@ dayEl.textContent = day;
    RESTORE SELECTED DATE
 =============================== */
 
-const selectedDate = pickupDateInput?.value;
-
-if (selectedDate) {
-
-  const y = dayDate.getFullYear();
-  const m = String(dayDate.getMonth() + 1).padStart(2,"0");
-  const d = String(dayDate.getDate()).padStart(2,"0");
-
-  const formatted = `${y}-${m}-${d}`;
-
-  if (formatted === selectedDate) {
-    dayEl.classList.add("cal-selected");
-  }
-
+if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
+  dayEl.classList.add("cal-selected");
 }
 
 /* today marker */
+
 if (dayDate.getTime() === today.getTime()) {
   dayEl.classList.add("cal-today");
 }
 
 /* weekend shading */
+
 const weekday = dayDate.getDay();
 if (weekday === 0 || weekday === 6) {
   dayEl.classList.add("cal-weekend");
@@ -3256,7 +3257,6 @@ dayEl.addEventListener("mouseleave", clearPreview);
 
 dayEl.addEventListener("touchend", async (e) => {
 
-  /* prevent click firing afterwards */
   e.preventDefault();
   e.stopPropagation();
 
@@ -3275,19 +3275,14 @@ if (validStart) {
 
   dayEl.addEventListener("click", async (e) => {
 
-    /* MOBILE → show preview instead of selecting date */
-
     if (isMobile()) {
 
       clearPreview();
       previewRental(dayDate);
       await showVehiclePreview(dayDate, e);
-
       return;
 
     }
-
-    /* DESKTOP → normal behaviour */
 
     clearPreview();
     selectDate(dayDate);
@@ -3298,12 +3293,10 @@ if (validStart) {
 
 calGrid.appendChild(dayEl);
 
-
 }
 
-//renderBookingBars(year, month, bookings);
-
 /* unlock rendering */
+
 calGrid.dataset.rendering = "false";
 
 }
