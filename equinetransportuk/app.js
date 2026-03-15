@@ -1020,7 +1020,7 @@ for (const vehicle of vehicles) {
 
 if (compatible.length === 1) {
 
-  await selectAvailability(compatible[0].vehicle.id);
+  await selectAvailability(compatible[0].id);
 
   goToStep(3);
 
