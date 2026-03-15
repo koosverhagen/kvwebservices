@@ -2775,13 +2775,23 @@ if (!booked.length) {
 
 }
 
-/* booked vehicles list */
+/* available vehicles list */
 
-if (!booked.length) {
+const bookedVehicleIds = booked.map(b => b.vehicleId);
 
-  html += `<div class="muted tiny">All vehicles available</div>`;
+const availableVehicles = vehicles.filter(
+  v => !bookedVehicleIds.includes(v.id)
+);
 
-  vehicles.forEach(vehicle => {
+if (!availableVehicles.length) {
+
+  html += `<div class="muted tiny">Fully booked</div>`;
+
+} else {
+
+  html += `<div class="muted tiny">Available vehicles (${availableVehicles.length})</div>`;
+
+  availableVehicles.forEach(vehicle => {
 
     const img = getVehicleMainImage(vehicle);
 
@@ -2799,44 +2809,9 @@ if (!booked.length) {
 
   });
 
-} else {
-
-  booked.forEach(b => {
-
-  const vehicle = vehicles.find(v => v.id === b.vehicleId);
-  const img = vehicle ? getVehicleMainImage(vehicle) : null;
-
-  html += `
-  <div class="preview-item">
-
-    ${img ? `<img src="${img}" class="preview-img">` : ""}
-
-    <div class="preview-text">
-      <strong>${vehicle ? vehicle.name : "Vehicle"}</strong><br>
-
-      <span class="muted tiny">
-        ${new Date(b.pickupAt).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-          timeZone: "UTC"
-        })}
-        →
-        ${new Date(b.dropoffAt).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-          timeZone: "UTC"
-        })}
-      </span>
-    </div>
-
-  </div>
-  `;
-
-});
-
 }
+
+
 
   /* MOBILE VERSION */
 
