@@ -2775,12 +2775,39 @@ if (!booked.length) {
 
 }
 
-/* available vehicles list */
+/* ======================================================
+   AVAILABLE VEHICLES (½ day aware)
+====================================================== */
 
-const bookedVehicleIds = booked.map(b => b.vehicleId);
+const availability = vehicles.map(vehicle => {
 
-const availableVehicles = vehicles.filter(
-  v => !bookedVehicleIds.includes(v.id)
+  const vehicleBookings = booked.filter(
+    b => b.vehicleId === vehicle.id
+  );
+
+  let morningBooked = false;
+  let afternoonBooked = false;
+
+  vehicleBookings.forEach(b => {
+
+    const startHour = new Date(b.pickupAt).getUTCHours();
+    const endHour = new Date(b.dropoffAt).getUTCHours();
+
+    if (startHour <= 7 && endHour >= 13) morningBooked = true;
+    if (startHour <= 13 && endHour >= 19) afternoonBooked = true;
+
+  });
+
+  return {
+    vehicle,
+    morningAvailable: !morningBooked,
+    afternoonAvailable: !afternoonBooked
+  };
+
+});
+
+const availableVehicles = availability.filter(
+  a => a.morningAvailable || a.afternoonAvailable
 );
 
 if (!availableVehicles.length) {
@@ -2791,9 +2818,20 @@ if (!availableVehicles.length) {
 
   html += `<div class="muted tiny">Available vehicles (${availableVehicles.length})</div>`;
 
-  availableVehicles.forEach(vehicle => {
+  availableVehicles.forEach(a => {
 
+    const vehicle = a.vehicle;
     const img = getVehicleMainImage(vehicle);
+
+    let slotText = "";
+
+    if (a.morningAvailable && a.afternoonAvailable) {
+      slotText = "Full day available";
+    } else if (a.morningAvailable) {
+      slotText = "Morning available";
+    } else if (a.afternoonAvailable) {
+      slotText = "Afternoon available";
+    }
 
     html += `
       <div class="preview-item">
@@ -2801,7 +2839,8 @@ if (!availableVehicles.length) {
         ${img ? `<img src="${img}" class="preview-img">` : ""}
 
         <div class="preview-text">
-          <strong>${vehicle.name}</strong>
+          <strong>${vehicle.name}</strong><br>
+          <span class="muted tiny">${slotText}</span>
         </div>
 
       </div>
@@ -2811,31 +2850,29 @@ if (!availableVehicles.length) {
 
 }
 
+/* MOBILE VERSION */
 
+if (window.innerWidth < 768) {
 
-  /* MOBILE VERSION */
+  const panel = document.getElementById("mobile-preview");
+  if (!panel) return;
 
-  if (window.innerWidth < 768) {
+  panel.innerHTML = html;
+  panel.classList.remove("hidden");
 
-    const panel = document.getElementById("mobile-preview");
-    if (!panel) return;
+  return;
 
-    panel.innerHTML = html;
-    panel.classList.remove("hidden");
+}
 
-    return;
+/* DESKTOP VERSION */
 
-  }
+const vehiclePreview = document.getElementById("vehicle-preview");
+if (!vehiclePreview) return;
 
-  /* DESKTOP VERSION */
+vehiclePreview.innerHTML = html;
+vehiclePreview.classList.remove("hidden");
 
-  const vehiclePreview = document.getElementById("vehicle-preview");
-  if (!vehiclePreview) return;
-
-  vehiclePreview.innerHTML = html;
-  vehiclePreview.classList.remove("hidden");
-
-  if (event) movePreview(event);
+if (event) movePreview(event);
 
 }
 
