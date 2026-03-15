@@ -925,50 +925,16 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
 
 async function renderAvailabilityResults(items) {
 
-  console.log("render items:", items.map(v => v.vehicle.name))
+  console.log("render items:", items.map(v => v.vehicle.name));
 
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
-    if (availabilityResults) availabilityResults.innerHTML = "";
+    availabilityResults.innerHTML = "";
     return;
   }
 
-  /* =====================================
-     PRESELECTED VEHICLE FLOW
-  ===================================== */
-
-  if (PRESELECTED_VEHICLE) {
-
-    const filtered = items.filter(
-      item => item.vehicle.id === PRESELECTED_VEHICLE
-    );
-
-    if (!filtered.length) {
-
-      availabilityResults.innerHTML =
-        '<p class="empty-note">Sorry, this lorry is not available for the selected date.</p>';
-
-      PRESELECTED_VEHICLE = null;
-      return;
-
-    }
-
-    const matched = filtered[0];
-
-    await selectAvailability(matched.vehicle.id);
-
-    if (selectedLorryInput) {
-      selectedLorryInput.value = matched.vehicle.name;
-    }
-
-    PRESELECTED_VEHICLE = null;
-
-    goToStep(3);
-    return;
-  }
-
-  /* =====================================
-     NORMAL FLOW
-  ===================================== */
+  /* ===============================
+     NO VEHICLES
+  =============================== */
 
   if (!items.length) {
 
@@ -979,24 +945,21 @@ async function renderAvailabilityResults(items) {
 
   }
 
-  /* =====================================
-     If only ONE vehicle available
-     skip "Select lorry"
-  ===================================== */
+  /* ===============================
+     ONLY ONE VEHICLE → SKIP STEP 2
+  =============================== */
 
   if (items.length === 1) {
 
     await selectAvailability(items[0].vehicle.id);
-
     goToStep(3);
-
     return;
 
   }
 
-  /* =====================================
-     MULTIPLE VEHICLES → SHOW SELECTION
-  ===================================== */
+  /* ===============================
+     MULTIPLE VEHICLES → SHOW STEP 2
+  =============================== */
 
   const html = items.map((item) => {
 
