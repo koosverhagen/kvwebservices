@@ -1001,7 +1001,7 @@ for (const vehicle of vehicles) {
 
 if (compatible.length === 1) {
 
-  await selectAvailability(compatible[0].id);
+  await selectAvailability(items[0].vehicle.id);
 
   goToStep(3);
 
