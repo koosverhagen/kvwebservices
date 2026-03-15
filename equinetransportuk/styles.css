@@ -2436,3 +2436,10 @@ BOOKING SUMMARY CARD
   font-weight:600;
 }
 
+.cal-selected{
+  outline:2px solid var(--accent);
+  outline-offset:-2px;
+  background:rgba(31,111,235,0.08);
+  transition:all .15s ease;
+}
+

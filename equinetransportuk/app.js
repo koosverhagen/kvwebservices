@@ -941,6 +941,15 @@ async function renderAvailabilityResults(items) {
     availabilityResults.innerHTML =
       '<p class="empty-note">No lorries available for this date and duration.</p>';
 
+    /* scroll to results */
+
+    setTimeout(() => {
+      availabilityResults?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 150);
+
     return;
 
   }
@@ -1007,13 +1016,29 @@ async function renderAvailabilityResults(items) {
 
   availabilityResults.innerHTML = html;
 
-  availabilityResults.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+  /* show availability count */
+
+  availabilityResults.insertAdjacentHTML(
+    "afterbegin",
+    `<p class="muted">${items.length} lorry${items.length > 1 ? "ies" : ""} available</p>`
+  );
 
   goToStep(2);
+
+  /* scroll to results */
+
+  setTimeout(() => {
+
+    availabilityResults?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  }, 150);
+
 }
+
+
 availabilityResults.addEventListener("click", async (e)=>{
 
   const btn = e.target.closest(".choose-lorry");
@@ -1036,6 +1061,8 @@ const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 /* ======================================================
    Checkout summary (discount-safe)
 ====================================================== */
+
+
 
 function updateCheckoutSummary() {
   if (!checkoutSummary) return;
@@ -1256,6 +1283,38 @@ function updatePickupTimeVisibility() {
   }
 
 }
+
+/* ======================================================
+   AUTO AVAILABILITY SEARCH
+====================================================== */
+
+function autoCheckAvailability() {
+
+  const pickupDate = pickupDateInput?.value;
+  const duration = durationDaysInput?.value;
+
+  if (!pickupDate || !duration) return;
+
+  availabilityForm?.requestSubmit();
+
+}
+
+/* trigger when date changes */
+
+pickupDateInput?.addEventListener("change", () => {
+  autoCheckAvailability();
+});
+
+/* trigger when duration changes */
+
+durationDaysInput?.addEventListener("change", () => {
+
+  updatePickupTimeVisibility();
+  syncPickupTimeOptions();
+
+  autoCheckAvailability();
+
+});
 
 /* ======================================================
    PREVENT IMPOSSIBLE DURATIONS
@@ -3107,6 +3166,26 @@ dayDate.setHours(0,0,0,0);
 const dayEl = document.createElement("div");
 dayEl.className = "cal-day";
 dayEl.textContent = day;
+
+/* ===============================
+   RESTORE SELECTED DATE
+=============================== */
+
+const selectedDate = pickupDateInput?.value;
+
+if (selectedDate) {
+
+  const y = dayDate.getFullYear();
+  const m = String(dayDate.getMonth() + 1).padStart(2,"0");
+  const d = String(dayDate.getDate()).padStart(2,"0");
+
+  const formatted = `${y}-${m}-${d}`;
+
+  if (formatted === selectedDate) {
+    dayEl.classList.add("cal-selected");
+  }
+
+}
 
 /* today marker */
 if (dayDate.getTime() === today.getTime()) {
