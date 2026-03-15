@@ -839,10 +839,26 @@ async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTim
   );
 
   return !vehicleBookings.some((booking) => {
-    const existingStart = new Date(booking.pickupAt);
-    const existingEnd = new Date(booking.dropoffAt);
-    return overlaps(candidate.pickupAt, candidate.dropoffAt, existingStart, existingEnd);
-  });
+
+  const existingStart = new Date(booking.pickupAt);
+  const existingEnd = new Date(booking.dropoffAt);
+
+  /* special rule for half-day bookings */
+
+  if (Number(durationDays) === 0.5) {
+
+    const slotStart = candidate.pickupAt;
+    const slotEnd = candidate.dropoffAt;
+
+    return overlaps(slotStart, slotEnd, existingStart, existingEnd);
+
+  }
+
+  /* normal full-day overlap */
+
+  return overlaps(candidate.pickupAt, candidate.dropoffAt, existingStart, existingEnd);
+
+});
 }
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
