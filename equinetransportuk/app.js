@@ -3174,13 +3174,16 @@ if (!isMobile()) {
 
 dayEl.addEventListener("mouseleave", clearPreview);
 
-dayEl.addEventListener("touchend", (e) => {
+dayEl.addEventListener("touchend", async (e) => {
 
+  /* prevent click firing afterwards */
+  e.preventDefault();
   e.stopPropagation();
 
   clearPreview();
   previewRental(dayDate);
-  showVehiclePreview(dayDate);
+
+  await showVehiclePreview(dayDate, e);
 
 });
 
