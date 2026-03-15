@@ -980,13 +980,13 @@ return;
 
   if (items.length === 1) {
 
-    selectAvailability(items[0]);
+  await selectAvailability(items[0].vehicle.id);
 
-    goToStep(3);
+  goToStep(3);
 
-    return;
+  return;
 
-  }
+}
 
   /* Multiple vehicles → show selection */
 
