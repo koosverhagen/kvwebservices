@@ -2759,127 +2759,150 @@ async function showVehiclePreview(date, event) {
 
   let html = `<strong>${dateStart.toDateString()}</strong><br>`;
 
-/* availability status */
+  /* availability status */
 
-if (!booked.length) {
+  if (!booked.length) {
 
-  html += `<div class="preview-status preview-status-good">Available</div>`;
+    html += `<div class="preview-status preview-status-good">Available</div>`;
 
-} else if (booked.length < vehicles.length) {
+  } else if (booked.length < vehicles.length) {
 
-  html += `<div class="preview-status preview-status-low">Limited availability</div>`;
+    html += `<div class="preview-status preview-status-low">Limited availability</div>`;
 
-} else {
+  } else {
 
-  html += `<div class="preview-status preview-status-none">Not available</div>`;
+    html += `<div class="preview-status preview-status-none">Not available</div>`;
 
-}
+  }
 
-/* ======================================================
-   AVAILABLE VEHICLES (½ day aware)
-====================================================== */
+  /* ======================================================
+     AVAILABLE VEHICLES (½ day aware)
+  ====================================================== */
 
-const availability = vehicles.map(vehicle => {
+  const availability = vehicles.map(vehicle => {
 
-  const vehicleBookings = booked.filter(
-    b => b.vehicleId === vehicle.id
+    const vehicleBookings = booked.filter(
+      b => b.vehicleId === vehicle.id
+    );
+
+    let morningBooked = false;
+    let afternoonBooked = false;
+
+    vehicleBookings.forEach(b => {
+
+      const startHour = new Date(b.pickupAt).getUTCHours();
+      const endHour = new Date(b.dropoffAt).getUTCHours();
+
+      if (startHour <= 7 && endHour >= 13) morningBooked = true;
+      if (startHour <= 13 && endHour >= 19) afternoonBooked = true;
+
+    });
+
+    return {
+      vehicle,
+      morningAvailable: !morningBooked,
+      afternoonAvailable: !afternoonBooked
+    };
+
+  });
+
+  const availableVehicles = availability.filter(
+    a => a.morningAvailable || a.afternoonAvailable
   );
 
-  let morningBooked = false;
-  let afternoonBooked = false;
+  if (!availableVehicles.length) {
 
-  vehicleBookings.forEach(b => {
+    html += `<div class="muted tiny">Fully booked</div>`;
 
-    const startHour = new Date(b.pickupAt).getUTCHours();
-    const endHour = new Date(b.dropoffAt).getUTCHours();
+  } else {
 
-    if (startHour <= 7 && endHour >= 13) morningBooked = true;
-    if (startHour <= 13 && endHour >= 19) afternoonBooked = true;
+    html += `<div class="muted tiny">Available vehicles (${availableVehicles.length})</div>`;
 
-  });
+    availableVehicles.forEach(a => {
 
-  return {
-    vehicle,
-    morningAvailable: !morningBooked,
-    afternoonAvailable: !afternoonBooked
-  };
+      const vehicle = a.vehicle;
+      const img = getVehicleMainImage(vehicle);
 
-});
+      let slotText = "";
 
-const availableVehicles = availability.filter(
-  a => a.morningAvailable || a.afternoonAvailable
-);
+      if (a.morningAvailable && a.afternoonAvailable) {
+        slotText = "Full day available";
+      } else if (a.morningAvailable) {
+        slotText = "Morning available";
+      } else if (a.afternoonAvailable) {
+        slotText = "Afternoon available";
+      }
 
-if (!availableVehicles.length) {
+      html += `
+        <div class="preview-item preview-select" data-vehicle-id="${vehicle.id}">
 
-  html += `<div class="muted tiny">Fully booked</div>`;
+          ${img ? `<img src="${img}" class="preview-img">` : ""}
 
-} else {
+          <div class="preview-text">
+            <strong>${vehicle.name}</strong><br>
+            <span class="muted tiny">${slotText}</span>
+          </div>
 
-  html += `<div class="muted tiny">Available vehicles (${availableVehicles.length})</div>`;
-
-  availableVehicles.forEach(a => {
-
-    const vehicle = a.vehicle;
-    const img = getVehicleMainImage(vehicle);
-
-    let slotText = "";
-
-    if (a.morningAvailable && a.afternoonAvailable) {
-      slotText = "Full day available";
-    } else if (a.morningAvailable) {
-      slotText = "Morning available";
-    } else if (a.afternoonAvailable) {
-      slotText = "Afternoon available";
-    }
-
-    html += `
-      <div class="preview-item">
-
-        ${img ? `<img src="${img}" class="preview-img">` : ""}
-
-        <div class="preview-text">
-          <strong>${vehicle.name}</strong><br>
-          <span class="muted tiny">${slotText}</span>
         </div>
+      `;
 
-      </div>
-    `;
+    });
 
-  });
+  }
 
-}
+  /* MOBILE VERSION */
 
-/* MOBILE VERSION */
+  if (window.innerWidth < 768) {
 
-if (window.innerWidth < 768) {
+    const panel = document.getElementById("mobile-preview");
+    if (!panel) return;
 
-  const panel = document.getElementById("mobile-preview");
-  if (!panel) return;
+    panel.innerHTML = html;
+    panel.classList.remove("hidden");
 
-  panel.innerHTML = html;
-  panel.classList.remove("hidden");
+    /* make preview vehicles selectable */
 
-  return;
+    panel.querySelectorAll(".preview-select").forEach(el => {
 
-}
+      el.addEventListener("click", async () => {
 
-/* DESKTOP VERSION */
+        const vehicleId = el.dataset.vehicleId;
 
-const vehiclePreview = document.getElementById("vehicle-preview");
-if (!vehiclePreview) return;
+        const pickupDate = document.getElementById("pickup-date")?.value;
+        const durationDays = Number(document.getElementById("duration-days")?.value);
+        const pickupTime = document.getElementById("pickup-time")?.value || "07:00";
 
-vehiclePreview.innerHTML = html;
-vehiclePreview.classList.remove("hidden");
+        if (!pickupDate || !durationDays) return;
 
-if (event) movePreview(event);
+        await selectAvailability(vehicleId);
+
+        panel.classList.add("hidden");
+
+        goToStep(3);
+
+      });
+
+    });
+
+    return;
+
+  }
+
+  /* DESKTOP VERSION */
+
+  const vehiclePreview = document.getElementById("vehicle-preview");
+  if (!vehiclePreview) return;
+
+  vehiclePreview.innerHTML = html;
+  vehiclePreview.classList.remove("hidden");
+
+  if (event) movePreview(event);
 
 }
 
 function isMobile() {
   return window.innerWidth < 768;
 }
-
 /* ======================================================
    Phase 4 — Calendar Module (Render Only)
 ====================================================== */

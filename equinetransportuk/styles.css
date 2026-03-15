@@ -1866,6 +1866,14 @@ input[type="date"] {
   margin-bottom:6px;
 }
 
+.preview-select {
+  cursor: pointer;
+}
+
+.preview-select:active {
+  transform: scale(0.98);
+}
+
 .preview-status-good{color:#22c55e}
 .preview-status-low{color:#f59e0b}
 .preview-status-none{color:#ef4444}
