@@ -987,12 +987,24 @@ const compatible = items.filter(item => {
 
   if (duration !== 0.5) return true;
 
+  /* afternoon hire */
   if (pickupTime === "13:00") {
-    return item.pickupTime === "13:00";
+
+    return (
+      item.pickupTime === "13:00" ||   // afternoon slot
+      item.durationDays >= 1           // full day vehicle also valid
+    );
+
   }
 
+  /* morning hire */
   if (pickupTime === "07:00") {
-    return item.pickupTime === "07:00";
+
+    return (
+      item.pickupTime === "07:00" ||
+      item.durationDays >= 1
+    );
+
   }
 
   return true;
