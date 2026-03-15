@@ -275,16 +275,7 @@ const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
 const durationDaysInput = document.getElementById("duration-days");
-/* =====================================
-   FIX: PRESELECTED VEHICLE AVAILABILITY
-   ===================================== */
 
-durationDaysInput?.addEventListener("change", () => {
-
-  updatePickupTimeVisibility();
-  syncPickupTimeOptions();
-
-});
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
@@ -1307,10 +1298,42 @@ pickupDateInput?.addEventListener("change", () => {
 
 /* trigger when duration changes */
 
-durationDaysInput?.addEventListener("change", () => {
+durationDaysInput?.addEventListener("change", async () => {
 
   updatePickupTimeVisibility();
   syncPickupTimeOptions();
+
+  /* ===============================
+     Instant price preview
+  =============================== */
+
+  const pickupDate = pickupDateInput?.value;
+  const duration = Number(durationDaysInput?.value || 0);
+
+  if (pickupDate && duration) {
+
+    const vehicle = vehicles[0];
+
+    const preview = await buildAvailability(
+      vehicle,
+      pickupDate,
+      duration,
+      pickupTimeInput?.value || "07:00"
+    );
+
+    updateCheckoutSummary({
+      base: preview.baseCost,
+      voucher_discount: preview.discountAmount,
+      total: preview.discountedTotal,
+      deposit_due: getConfirmationFee(vehicle),
+      remaining: preview.discountedTotal - getConfirmationFee(vehicle)
+    });
+
+  }
+
+  /* ===============================
+     Auto check availability
+  =============================== */
 
   autoCheckAvailability();
 
@@ -3303,10 +3326,10 @@ calGrid.dataset.rendering = "false";
 
 
   /* ======================================================
-     Select date
-  ====================================================== */
+   Select date
+====================================================== */
 
- function selectDate(dayDate) {
+function selectDate(dayDate) {
 
   const pickupInput = document.getElementById("pickup-date");
   const durationInput = document.getElementById("duration-days");
@@ -3344,7 +3367,9 @@ calGrid.dataset.rendering = "false";
 
   updateCheckoutSummary();
 
-  /* highlight selected calendar day */
+  /* =====================================
+     Highlight selected calendar day
+  ===================================== */
 
   document.querySelectorAll(".cal-selected")
     .forEach(el => el.classList.remove("cal-selected"));
@@ -3357,7 +3382,9 @@ calGrid.dataset.rendering = "false";
     }
   });
 
-  /* scroll to duration selector */
+  /* =====================================
+     Scroll to duration selector
+  ===================================== */
 
   setTimeout(() => {
 
@@ -3375,9 +3402,11 @@ calGrid.dataset.rendering = "false";
 
     durationInput.classList.add("duration-highlight");
 
-    setTimeout(() => {
+    /* remove highlight once user selects duration */
+
+    durationInput.addEventListener("change", () => {
       durationInput.classList.remove("duration-highlight");
-    }, 2000);
+    }, { once: true });
 
   }, 200);
 

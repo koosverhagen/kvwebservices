@@ -2039,6 +2039,7 @@ html {
   outline:3px solid #1f6feb;
   outline-offset:4px;
   animation:highlightPulse 1.5s ease;
+  transition:outline .2s ease;
 }
 
 @keyframes highlightPulse {
