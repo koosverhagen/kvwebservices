@@ -930,6 +930,10 @@ async function renderAvailabilityResults(items) {
     return;
   }
 
+  /* =====================================
+     PRESELECTED VEHICLE FLOW
+  ===================================== */
+
   if (PRESELECTED_VEHICLE) {
 
     const filtered = items.filter(
@@ -937,32 +941,32 @@ async function renderAvailabilityResults(items) {
     );
 
     if (!filtered.length) {
+
       availabilityResults.innerHTML =
         '<p class="empty-note">Sorry, this lorry is not available for the selected date.</p>';
+
       PRESELECTED_VEHICLE = null;
       return;
+
     }
 
     const matched = filtered[0];
 
-await selectAvailability(matched.vehicle.id);
+    await selectAvailability(matched.vehicle.id);
 
-/* ensure Step 3 shows selected vehicle */
+    if (selectedLorryInput) {
+      selectedLorryInput.value = matched.vehicle.name;
+    }
 
-if (selectedLorryInput) {
-  selectedLorryInput.value = matched.vehicle.name;
-}
+    PRESELECTED_VEHICLE = null;
 
-PRESELECTED_VEHICLE = null;
-
-goToStep(3);
-
-return;
+    goToStep(3);
+    return;
   }
 
-  /* ---------------------------------
+  /* =====================================
      NORMAL FLOW
-  ---------------------------------- */
+  ===================================== */
 
   if (!items.length) {
 
@@ -973,43 +977,24 @@ return;
 
   }
 
-  /* If only one vehicle truly available for this slot skip Step 2 */
+  /* =====================================
+     If only ONE vehicle available
+     skip "Select lorry"
+  ===================================== */
 
-const duration = Number(durationDaysInput?.value);
-const pickupTime = pickupTimeInput?.value || "07:00";
+  if (items.length === 1) {
 
-/* count slot-compatible vehicles */
+    await selectAvailability(items[0].vehicle.id);
 
-/* determine true slot availability across full fleet */
+    goToStep(3);
 
-const compatible = [];
+    return;
 
-for (const vehicle of vehicles) {
-
-  const available = await isVehicleAvailable(
-    vehicle.id,
-    pickupDateInput.value,
-    duration,
-    pickupTime
-  );
-
-  if (available) {
-    compatible.push(vehicle);
   }
 
-}
-
-if (compatible.length === 1) {
-
-  await selectAvailability(items[0].vehicle.id);
-
-  goToStep(3);
-
-  return;
-
-}
-
-  /* Multiple vehicles → show selection */
+  /* =====================================
+     MULTIPLE VEHICLES → SHOW SELECTION
+  ===================================== */
 
   const html = items.map((item) => {
 
@@ -1017,17 +1002,17 @@ if (compatible.length === 1) {
     const displayPrice = Number(item.discountedTotal ?? item.baseCost ?? 0);
 
     return `
-  <article class="availability-item">
+      <article class="availability-item">
 
-    <img
-      src="${getVehicleMainImage(item.vehicle)}"
-      alt="${escapeHtml(item.vehicle.name)}"
-      class="availability-image"
-    >
+        <img
+          src="${getVehicleMainImage(item.vehicle)}"
+          alt="${escapeHtml(item.vehicle.name)}"
+          class="availability-image"
+        >
 
-    <div class="availability-info">
+        <div class="availability-info">
 
-      <h4>${escapeHtml(item.vehicle.name)}</h4>
+          <h4>${escapeHtml(item.vehicle.name)}</h4>
 
           <p class="muted">
             ${item.vehicle.code ? `${escapeHtml(item.vehicle.code)} · ` : ""}
@@ -1040,6 +1025,7 @@ if (compatible.length === 1) {
           <p class="muted tiny">
             Pay now to confirm: £${confirmationFee.toFixed(2)}
           </p>
+
         </div>
 
         <button
@@ -1048,6 +1034,7 @@ if (compatible.length === 1) {
           data-vehicle-id="${escapeHtml(item.vehicle.id)}">
           Select
         </button>
+
       </article>
     `;
 
@@ -1061,7 +1048,6 @@ if (compatible.length === 1) {
   });
 
   goToStep(2);
-
 }
 availabilityResults.addEventListener("click", async (e)=>{
 
