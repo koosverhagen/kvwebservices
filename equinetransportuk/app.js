@@ -2834,7 +2834,9 @@ async function showVehiclePreview(date, event) {
       }
 
       html += `
-        <div class="preview-item preview-select" data-vehicle-id="${vehicle.id}">
+        <div class="preview-item preview-select"
+     data-vehicle-id="${vehicle.id}"
+     data-slot="${slotText}">
 
           ${img ? `<img src="${img}" class="preview-img">` : ""}
 
@@ -2867,15 +2869,33 @@ async function showVehiclePreview(date, event) {
   el.addEventListener("click", async () => {
 
     const vehicleId = el.dataset.vehicleId;
+    const slot = el.dataset.slot;
 
-    /* ensure date + duration exist */
+    /* set selected date */
 
     if (pickupDateInput) {
       pickupDateInput.value = dateStart.toISOString().slice(0,10);
     }
 
-    if (!durationDaysInput?.value) {
+    /* set correct duration + time */
+
+    if (slot === "Morning available") {
+
+      durationDaysInput.value = "0.5";
+      pickupTimeInput.value = "07:00";
+
+    } 
+    else if (slot === "Afternoon available") {
+
+      durationDaysInput.value = "0.5";
+      pickupTimeInput.value = "13:00";
+
+    } 
+    else {
+
       durationDaysInput.value = "1";
+      pickupTimeInput.value = "07:00";
+
     }
 
     await selectAvailability(vehicleId);
