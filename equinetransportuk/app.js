@@ -831,50 +831,50 @@ async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTim
   if (!vehicle) return false;
   if (!supportsDuration(vehicle, durationDays)) return false;
 
-  // discount does not affect availability, but buildAvailability needs it for times too.
   const candidate = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, "");
 
   const vehicleBookings = (await getBookings()).filter(
     (booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled"
   );
 
- return !vehicleBookings.some((booking) => {
+  return !vehicleBookings.some((booking) => {
 
-  const existingStart = new Date(booking.pickupAt);
-  const existingEnd = new Date(booking.dropoffAt);
+    const existingStart = new Date(booking.pickupAt);
+    const existingEnd = new Date(booking.dropoffAt);
 
-  /* special rule for half-day bookings */
+    /* ======================================
+       HALF-DAY BUSINESS RULES
+       morning and afternoon on same day
+       should be allowed together
+    ====================================== */
+    if (Number(durationDays) === 0.5) {
 
-  if (Number(durationDays) === 0.5) {
+      const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
+      const existingDuration = Number(booking.durationDays || 1);
+      const existingDate = booking.pickupAt?.slice(0, 10);
+      const sameDate = existingDate === pickupDate;
 
-    const slotStart = candidate.pickupAt.getTime();
-    const slotEnd = candidate.dropoffAt.getTime();
+      /* another half-day booking on same date */
+      if (existingDuration === 0.5 && sameDate) {
 
-    const existingStartMs = existingStart.getTime();
-    const existingEndMs = existingEnd.getTime();
+        const existingSlot =
+          (booking.pickupTime === "13:00") ? "pm" : "am";
 
-    /* allow bookings that touch but do not overlap */
+        /* same slot = blocked, opposite slot = allowed */
+        return existingSlot === requestedSlot;
 
-    const overlapsSlot =
-      slotStart < existingEndMs &&
-      existingStartMs < slotEnd &&
-      slotStart !== existingEndMs &&
-      slotEnd !== existingStartMs;
+      }
 
-    return overlapsSlot;
+      /* full-day or multi-day bookings still block normally */
+      return overlaps(candidate.pickupAt, candidate.dropoffAt, existingStart, existingEnd);
+    }
 
-  }
+    /* ======================================
+       NORMAL FULL-DAY / MULTI-DAY OVERLAP
+    ====================================== */
+    return overlaps(candidate.pickupAt, candidate.dropoffAt, existingStart, existingEnd);
 
-  /* normal full-day overlap */
-
-  return overlaps(
-    candidate.pickupAt,
-    candidate.dropoffAt,
-    existingStart,
-    existingEnd
-  );
-
-});
+  });
 }
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
