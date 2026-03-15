@@ -2869,7 +2869,7 @@ async function showVehiclePreview(date, event) {
   el.addEventListener("click", async () => {
 
     const vehicleId = el.dataset.vehicleId;
-    const slot = el.dataset.slot;
+    const slot = (el.dataset.slot || "").toLowerCase();
 
     /* set selected date */
 
@@ -2879,18 +2879,18 @@ async function showVehiclePreview(date, event) {
 
     /* set correct duration + time */
 
-    if (slot === "Morning available") {
+    if (slot.includes("morning")) {
 
       durationDaysInput.value = "0.5";
       pickupTimeInput.value = "07:00";
 
-    } 
-    else if (slot === "Afternoon available") {
+    }
+    else if (slot.includes("afternoon")) {
 
       durationDaysInput.value = "0.5";
       pickupTimeInput.value = "13:00";
 
-    } 
+    }
     else {
 
       durationDaysInput.value = "1";
