@@ -925,6 +925,8 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
 
 async function renderAvailabilityResults(items) {
 
+  console.log("render items:", items.map(v => v.vehicle.name))
+
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     if (availabilityResults) availabilityResults.innerHTML = "";
     return;
