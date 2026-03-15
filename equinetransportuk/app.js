@@ -2864,25 +2864,29 @@ async function showVehiclePreview(date, event) {
 
     panel.querySelectorAll(".preview-select").forEach(el => {
 
-      el.addEventListener("click", async () => {
+  el.addEventListener("click", async () => {
 
-        const vehicleId = el.dataset.vehicleId;
+    const vehicleId = el.dataset.vehicleId;
 
-        const pickupDate = document.getElementById("pickup-date")?.value;
-        const durationDays = Number(document.getElementById("duration-days")?.value);
-        const pickupTime = document.getElementById("pickup-time")?.value || "07:00";
+    /* ensure date + duration exist */
 
-        if (!pickupDate || !durationDays) return;
+    if (pickupDateInput) {
+      pickupDateInput.value = dateStart.toISOString().slice(0,10);
+    }
 
-        await selectAvailability(vehicleId);
+    if (!durationDaysInput?.value) {
+      durationDaysInput.value = "1";
+    }
 
-        panel.classList.add("hidden");
+    await selectAvailability(vehicleId);
 
-        goToStep(3);
+    panel.classList.add("hidden");
 
-      });
+    goToStep(3);
 
-    });
+  });
+
+});
 
     return;
 
