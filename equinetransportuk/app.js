@@ -3190,7 +3190,21 @@ dayEl.addEventListener("touchend", (e) => {
 
 if (validStart) {
 
-  dayEl.addEventListener("click", () => {
+  dayEl.addEventListener("click", async (e) => {
+
+    /* MOBILE → show preview instead of selecting date */
+
+    if (isMobile()) {
+
+      clearPreview();
+      previewRental(dayDate);
+      await showVehiclePreview(dayDate, e);
+
+      return;
+
+    }
+
+    /* DESKTOP → normal behaviour */
 
     clearPreview();
     selectDate(dayDate);
