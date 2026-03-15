@@ -1855,7 +1855,7 @@ input[type="date"] {
   width:60px;
   height:45px;
   object-fit:cover;
-  border-radius:6px;
+  border-radius:8px;
 }
 
 .preview-text{
