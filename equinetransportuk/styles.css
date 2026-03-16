@@ -2273,16 +2273,24 @@ BOOKING SUMMARY CARD
 /* "1 left" label inside calendar */
 .cal-last-label{
   position:absolute;
-  top:6px;
-  right:6px;
+  top:5px;
+  right:5px;
+
+  width:18px;
+  height:18px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
   font-size:10px;
-  font-weight:600;
-  color:#b45309;
-  background:#fff4e5;
-  border:1px solid #ffd7a3;
-  padding:2px 6px;
-  border-radius:6px;
-  z-index:5;
+  font-weight:700;
+
+  color:#92400e;
+  background:#fde68a;
+  border-radius:50%;
+
+  z-index:3;
 }
 
 /* tile highlight when only one vehicle left */

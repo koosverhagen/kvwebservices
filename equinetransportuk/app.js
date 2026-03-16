@@ -3508,7 +3508,7 @@ if (availableVehicles === 1) {
 
   const label = document.createElement("div");
   label.className = "cal-last-label";
-  label.textContent = "1 left";
+  label.textContent = "1";
 
   dayEl.appendChild(label);
 
