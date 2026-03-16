@@ -1107,7 +1107,17 @@ if (!items.length) {
             ${escapeHtml(formatDurationLabel(item.durationDays))}
           </p>
 
-          <div class="price">£${displayPrice.toFixed(2)}</div>
+          <div class="price-preview">
+
+  <div class="price-main">
+    £${displayPrice.toFixed(2)}
+  </div>
+
+  <div class="price-confirm">
+    Pay now £${confirmationFee.toFixed(2)}
+  </div>
+
+</div>
 
           <p class="muted tiny">
             Pay now to confirm: £${confirmationFee.toFixed(2)}
