@@ -333,6 +333,44 @@ availabilityResults?.addEventListener("click",(e)=>{
    Helpers
 ====================================================== */
 
+function renderReviewSummary(){
+
+  const review = document.getElementById("review-summary");
+  if(!review) return;
+
+  const booking = window.pendingBooking;
+  if(!booking) return;
+
+  const vehicle = vehicles.find(v => v.id === booking.vehicleId);
+
+  review.innerHTML = `
+    <div class="summary-row">
+      <span>Lorry</span>
+      <strong>${vehicle?.name || ""}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Pickup</span>
+      <strong>${new Date(booking.pickupAt).toLocaleString()}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Duration</span>
+      <strong>${formatDurationLabel(booking.durationDays)}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Total hire</span>
+      <strong>£${Number(booking.hireTotal).toFixed(2)}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Pay now</span>
+      <strong>£${Number(booking.confirmationFee).toFixed(2)}</strong>
+    </div>
+  `;
+}
+
 function updateCheckoutSummary(pricing) {
 
   const lines = document.getElementById("summary-lines");
@@ -2696,7 +2734,8 @@ if (bookingForm) {
     // store booking temporarily for Step 4
 window.pendingBooking = booking;
 
-// move to review step
+renderReviewSummary();   // ADD THIS
+
 goToStep(4);
   });
 }
