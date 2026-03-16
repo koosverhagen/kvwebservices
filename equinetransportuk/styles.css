@@ -2254,7 +2254,7 @@ BOOKING SUMMARY CARD
    Urgency banner
 ================================ */
 
-.urgency-banner {
+.urgency-banner{
   background:#fff4e5;
   border:1px solid #ffd7a3;
   color:#a15c00;
@@ -2264,7 +2264,14 @@ BOOKING SUMMARY CARD
   font-weight:600;
   margin-bottom:14px;
 }
-.cal-last-label {
+
+/* calendar tile must be relative */
+.cal-day{
+  position:relative;
+}
+
+/* "1 left" label inside calendar */
+.cal-last-label{
   position:absolute;
   top:6px;
   right:6px;
@@ -2273,13 +2280,13 @@ BOOKING SUMMARY CARD
   color:#b45309;
   background:#fff4e5;
   border:1px solid #ffd7a3;
-  padding:2px 5px;
-  border-radius:4px;
-  z-index:3;
+  padding:2px 6px;
+  border-radius:6px;
+  z-index:5;
 }
 
-.cal-last {
+/* tile highlight when only one vehicle left */
+.cal-last{
   border-color:#f59e0b;
   background:#fff7ed;
 }
-
