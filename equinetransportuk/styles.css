@@ -2483,3 +2483,15 @@ BOOKING SUMMARY CARD
   font-weight:600;
   margin-bottom:14px;
 }
+
+.cal-last-label{
+  font-size:11px;
+  font-weight:600;
+  color:#c2410c;
+  margin-top:4px;
+}
+
+.cal-last{
+  border-color:#f59e0b;
+  background:#fff7ed;
+}

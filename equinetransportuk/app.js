@@ -3430,6 +3430,53 @@ const validStart = canStartRental(dayDate, bookings);
 
 renderAvailabilityDots(dayEl, bookings, dayDate);
 
+/* ======================================
+   COUNT AVAILABLE VEHICLES
+====================================== */
+
+let availableVehicles = 0;
+
+for (const vehicle of vehicles) {
+
+  const vehicleBookings = bookings.filter(
+    b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+  );
+
+  const overlap = vehicleBookings.some(booking => {
+
+    const start = new Date(booking.pickupAt);
+    const end = new Date(booking.dropoffAt);
+
+    return overlaps(dayDate, dayDate, start, end);
+
+  });
+
+  if (!overlap) {
+    availableVehicles++;
+  }
+
+}
+
+/* ===============================
+   SHOW "1 LEFT" LABEL
+=============================== */
+
+if (availableVehicles === 1) {
+
+  dayEl.classList.add("cal-last");
+
+  const label = document.createElement("div");
+  label.className = "cal-last-label";
+  label.textContent = "1 left";
+
+  dayEl.appendChild(label);
+
+}
+
+/* ===============================
+   STATUS COLOURING
+=============================== */
+
 if (status === "available") {
   dayEl.classList.add("cal-available");
 }
@@ -3470,11 +3517,7 @@ dayEl.addEventListener("touchend", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  /* set pickup date */
-
   selectDate(dayDate);
-
-  /* show preview */
 
   clearPreview();
   previewRental(dayDate);
