@@ -3442,21 +3442,20 @@ for (const vehicle of vehicles) {
     b => b.vehicleId === vehicle.id && b.status !== "cancelled"
   );
 
-  const overlap = vehicleBookings.some(booking => {
+  const hasBookingThatDay = vehicleBookings.some(booking => {
 
     const start = new Date(booking.pickupAt);
     const end = new Date(booking.dropoffAt);
 
-    return overlaps(dayDate, dayDate, start, end);
+    return dayDate >= start && dayDate <= end;
 
   });
 
-  if (!overlap) {
+  if (!hasBookingThatDay) {
     availableVehicles++;
   }
 
 }
-
 /* ===============================
    SHOW "1 LEFT" LABEL
 =============================== */
