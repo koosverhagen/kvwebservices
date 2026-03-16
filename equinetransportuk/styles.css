@@ -1292,7 +1292,7 @@ textarea { min-height: 100px; }
    VOUCHERS & EXTRAS
 ====================================================== */
 
-.voucher-card{
+.voucher-card {
   margin: 0 0 16px;
   padding: 14px;
   border-radius: 16px;
@@ -1305,33 +1305,33 @@ textarea { min-height: 100px; }
 }
 
 .voucher-left{ flex:1; }
-.voucher-left label{
+.voucher-left label {
   display:block;
   font-size:14px;
   font-weight:600;
   margin:0 0 6px;
 }
-.voucher-left input{
+.voucher-left input {
   width:100%;
   padding:12px 14px;
   border-radius:12px;
   border:1px solid rgba(15,23,42,0.12);
 }
 
-.voucher-right{
+.voucher-right {
   display:flex;
   flex-direction:column;
   gap:8px;
   align-items:flex-end;
 }
 
-.btn.btn-ghost{
+.btn.btn-ghost {
   background: transparent;
   border: 1px solid rgba(31,111,235,0.35);
   color: var(--accent, #1f6feb);
 }
 
-.voucher-message{
+.voucher-message {
   font-size: 13px;
   line-height: 1.25;
 }
@@ -1350,7 +1350,7 @@ input[type="date"] {
    AVAILABILITY CALENDAR
 ====================================================== */
 
-.cal-wrap{
+.cal-wrap {
   margin:16px 0 20px;
   padding:16px;
   border:1px solid var(--line);
@@ -1364,19 +1364,19 @@ input[type="date"] {
    Header
 ------------------------------------------------------ */
 
-.cal-head{
+.cal-head {
   display:flex;
   align-items:center;
   justify-content:space-between;
   margin-bottom:12px;
 }
 
-.cal-title{
+.cal-title {
   font-weight:600;
   font-size:16px;
 }
 
-.cal-nav{
+.cal-nav {
   width:34px;
   height:34px;
   border-radius:8px;
@@ -1386,7 +1386,7 @@ input[type="date"] {
   transition:.2s;
 }
 
-.cal-nav:hover{
+.cal-nav:hover {
   background:var(--accent);
   color:#fff;
   border-color:var(--accent);
@@ -1396,7 +1396,7 @@ input[type="date"] {
    Weekdays
 ------------------------------------------------------ */
 
-.cal-weekdays{
+.cal-weekdays {
   display:grid;
   grid-template-columns:repeat(7,1fr);
   font-size:12px;
@@ -1404,7 +1404,7 @@ input[type="date"] {
   margin-bottom:6px;
 }
 
-.cal-weekdays div{
+.cal-weekdays div {
   text-align:center;
   padding:6px 0;
 }
@@ -1413,7 +1413,7 @@ input[type="date"] {
    Calendar grid
 ------------------------------------------------------ */
 
-.cal-grid{
+.cal-grid {
   display:grid;
   grid-template-columns:repeat(7,minmax(0,1fr));
   gap:10px;
@@ -1423,7 +1423,7 @@ input[type="date"] {
    Day cell
 ------------------------------------------------------ */
 
-.cal-day{
+.cal-day {
   aspect-ratio:1/1;
   border-radius:10px;
   border:2px solid transparent;
@@ -1532,11 +1532,11 @@ input[type="date"] {
    Vehicle booking bars
 ------------------------------------------------------ */
 
-.cal-line{
+.cal-line {
+  position:relative;
   height:3px;
   border-radius:2px;
   background:#cde8cd;
-  position:relative;
   overflow:hidden;
 }
 
@@ -1715,13 +1715,6 @@ html {
   pointer-events: none;
 }
 
-.cal-line {
-  position: relative;
-  height: 3px;
-  border-radius: 2px;
-  background: #d7e9d7; /* available */
-  z-index: 0;
-}
 
 /* FULL DAY */
 
