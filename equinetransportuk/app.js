@@ -1156,10 +1156,26 @@ if (!items.length) {
 
   availabilityResults.innerHTML = html;
 
-  availabilityResults.insertAdjacentHTML(
-    "afterbegin",
-    `<p class="muted">${items.length} lorry${items.length > 1 ? "ies" : ""} available</p>`
-  );
+  let availabilityNote = `
+<p class="muted">
+  ${items.length} lorry${items.length > 1 ? "ies" : ""} available
+</p>
+`;
+
+if (items.length === 1) {
+
+  availabilityNote = `
+  <div class="urgency-banner">
+    ⚠ Only 1 lorry left for this date
+  </div>
+  `;
+
+}
+
+availabilityResults.insertAdjacentHTML(
+  "afterbegin",
+  availabilityNote
+);
 
   goToStep(2);
 
