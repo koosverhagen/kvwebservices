@@ -333,6 +333,52 @@ availabilityResults?.addEventListener("click",(e)=>{
    Helpers
 ====================================================== */
  
+function getRemainingSlots(dateObj, bookings){
+
+  let remainingSlots = 0;
+
+  vehicles
+    .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
+    .forEach(vehicle => {
+
+      const vehicleBookings = bookings.filter(
+        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+      );
+
+      const dayStart = new Date(dateObj);
+      dayStart.setHours(0,0,0,0);
+
+      const dayEnd = new Date(dateObj);
+      dayEnd.setHours(23,59,59,999);
+
+      let morningBooked = false;
+      let afternoonBooked = false;
+
+      vehicleBookings.forEach(b => {
+
+        const start = new Date(b.pickupAt);
+        const end = new Date(b.dropoffAt);
+
+        if(start <= dayEnd && end >= dayStart){
+
+          const startHour = start.getHours();
+          const endHour = end.getHours();
+
+          if(startHour <= 12) morningBooked = true;
+          if(endHour >= 13) afternoonBooked = true;
+
+        }
+
+      });
+
+      if(!morningBooked) remainingSlots++;
+      if(!afternoonBooked) remainingSlots++;
+
+    });
+
+  return remainingSlots;
+}
+
 function getAvailableVehicleCount(dayDate, bookings){
 
   let count = 0;
@@ -3500,9 +3546,9 @@ renderAvailabilityDots(dayEl, bookings, dayDate);
    LAST VEHICLE LABEL
 =============================== */
 
-const availableVehicles = getAvailableVehicleCount(dayDate, bookings);
+const remainingSlots = getRemainingSlots(dayDate, bookings);
 
-if (availableVehicles === 1) {
+if (remainingSlots === 1){
 
   dayEl.classList.add("cal-last");
 
