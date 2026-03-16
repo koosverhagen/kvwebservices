@@ -53,6 +53,12 @@ function goToStep(step) {
   const indicator = document.querySelector(`.booking-steps .step[data-step="${step}"]`);
   if(indicator) indicator.classList.add("active");
 
+  /* ⭐ refresh summary when entering payment step */
+
+  if(step === 4){
+    updateCheckoutSummary();
+  }
+
   setTimeout(()=>{
   stepEl?.scrollIntoView({
     behavior:"smooth",
@@ -1925,6 +1931,7 @@ const pickupTime =
     const code = getCurrentDiscountCode();
 
     selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, code);
+    window.selectedAvailability = selectedAvailability;
 
     if (selectedBaseInput) selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
 
