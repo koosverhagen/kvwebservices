@@ -1262,6 +1262,9 @@ function updateCheckoutSummary() {
 
   checkoutSummary.innerHTML = `
     <div class="summary-card">
+    <div class="urgency-banner">
+  ⚠ Only one lorry available for this date
+</div>
       <div class="summary-vehicle">
 
   <img 
