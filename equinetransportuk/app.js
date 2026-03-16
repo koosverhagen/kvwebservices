@@ -3401,6 +3401,8 @@ const endHour = end.getUTCHours();
 /* load bookings (use cache if already available) */
 const bookings = BOOKINGS_CACHE || await getBookings(false);
 
+ console.log("Calendar bookings:", bookings);
+
 const year = currentDate.getFullYear();
 const month = currentDate.getMonth();
 
