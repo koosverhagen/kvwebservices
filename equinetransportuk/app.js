@@ -1864,9 +1864,12 @@ async function selectAvailability(vehicleId) {
 
   if (bookingSuccess) bookingSuccess.hidden = true;
 
-  updateCheckoutSummary();
+ updateCheckoutSummary();
 
-  await checkBookingFormAvailability();   // ← ADD THIS LINE
+/* force Step-4 review render */
+renderReviewSummary();
+
+await checkBookingFormAvailability();
 
 
   checkoutSummary?.scrollIntoView({
