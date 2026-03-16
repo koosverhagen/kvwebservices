@@ -315,6 +315,48 @@ let selectedAvailability = null;
    Helpers
 ====================================================== */
 
+function getMaxAvailableDuration(startDate, bookings) {
+
+  let maxDays = 0;
+
+  for (let d = 1; d <= 14; d++) { // max hire length
+
+    const end = new Date(startDate);
+    end.setDate(end.getDate() + d - 1);
+
+    const possible = vehicles.some(vehicle => {
+
+      const vehicleBookings = bookings.filter(
+        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+      );
+
+      const overlap = vehicleBookings.some(booking => {
+
+        const existingStart = new Date(booking.pickupAt);
+        const existingEnd = new Date(booking.dropoffAt);
+
+        return overlaps(startDate, end, existingStart, existingEnd);
+
+      });
+
+      return !overlap;
+
+    });
+
+    if (!possible) break;
+
+    maxDays = d;
+
+  }
+
+  return maxDays;
+
+}
+
+function isMobile() {
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
 function goBackToDates() {
 
   /* go back to Step 1 */
@@ -3360,6 +3402,8 @@ function selectDate(dayDate) {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
+  updateDurationOptions(dayDate);
+
   /* reset duration */
 
   durationInput.value = "";
@@ -3431,6 +3475,28 @@ function selectDate(dayDate) {
   }, { once: true });
 
 }, 200);
+
+}
+
+async function updateDurationOptions(startDate) {
+
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+  const maxDuration = getMaxAvailableDuration(startDate, bookings);
+
+  const durationInput = document.getElementById("duration-days");
+
+  if (!durationInput) return;
+
+  Array.from(durationInput.options).forEach(opt => {
+
+    const days = Number(opt.value);
+
+    if (!days) return;
+
+    opt.disabled = days > maxDuration;
+
+  });
 
 }
 
@@ -3671,9 +3737,7 @@ function updateCheckoutSummary(pricing) {
 
 }
 
-function isMobile() {
-  return window.matchMedia("(max-width: 768px)").matches;
-}
+
 
 /* ======================================================
    Initial render
