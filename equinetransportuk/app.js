@@ -3488,47 +3488,11 @@ const validStart = canStartRental(dayDate, bookings);
 
 renderAvailabilityDots(dayEl, bookings, dayDate);
 
-const availableCount = getAvailableVehicleCount(dayDate, bookings);
-
-if (availableCount === 1) {
-
-  const label = document.createElement("div");
-  label.className = "cal-last-label";
-  label.textContent = "1 left";
-
-  dayEl.appendChild(label);
-
-}
-
-/* ======================================
-   COUNT AVAILABLE VEHICLES
-====================================== */
-
-let availableVehicles = 0;
-
-for (const vehicle of vehicles) {
-
-  const vehicleBookings = bookings.filter(
-    b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-  );
-
-  const hasBookingThatDay = vehicleBookings.some(booking => {
-
-    const start = new Date(booking.pickupAt);
-    const end = new Date(booking.dropoffAt);
-
-    return dayDate >= start && dayDate <= end;
-
-  });
-
-  if (!hasBookingThatDay) {
-    availableVehicles++;
-  }
-
-}
 /* ===============================
-   SHOW "1 LEFT" LABEL
+   LAST VEHICLE LABEL
 =============================== */
+
+const availableVehicles = getAvailableVehicleCount(dayDate, bookings);
 
 if (availableVehicles === 1) {
 
