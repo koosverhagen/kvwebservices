@@ -2452,3 +2452,20 @@ BOOKING SUMMARY CARD
   margin-top:6px;
 }
 
+.price-preview{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.price-main{
+  font-size:20px;
+  font-weight:700;
+  color:var(--text);
+}
+
+.price-confirm{
+  font-size:13px;
+  color:var(--muted);
+}
+
