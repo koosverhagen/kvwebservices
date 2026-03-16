@@ -3705,82 +3705,99 @@ else if (hasFullDay) {
 
 }
 
-function updateCheckoutSummary(pricing) {
+function updateCheckoutSummary(pricing){
 
-  const lines = document.getElementById("summary-lines");
-  const totalEl = document.getElementById("summary-total");
-  const dueEl = document.getElementById("summary-due");
-  const remainingEl = document.getElementById("summary-remaining");
+  const box = document.getElementById("checkout-summary");
+  if(!box) return;
 
-  if (!lines || !totalEl || !dueEl || !remainingEl) return;
+  /* ==========================
+     MODE 1 — preview pricing
+  ========================== */
 
-  /* --------------------------------
-     MODE 1: Pricing preview
-  -------------------------------- */
+  if(pricing){
 
-  if (pricing) {
+    box.innerHTML = `
+      <div class="summary-row">
+        <span>Base hire</span>
+        <strong>£${Number(pricing.base || 0).toFixed(2)}</strong>
+      </div>
 
-    lines.innerHTML = "";
+      ${
+        pricing.voucher_discount
+        ? `<div class="summary-row">
+             <span>Voucher discount</span>
+             <strong>-£${Number(pricing.voucher_discount).toFixed(2)}</strong>
+           </div>`
+        : ""
+      }
 
-    function row(label, value) {
-      const div = document.createElement("div");
-      div.className = "summary-row";
-      div.innerHTML = `<span>${label}</span><span>£${value}</span>`;
-      lines.appendChild(div);
-    }
+      <div class="summary-row total">
+        <span>Total hire</span>
+        <strong>£${Number(pricing.total || 0).toFixed(2)}</strong>
+      </div>
 
-    if (pricing.base) {
-      row("Base hire", pricing.base);
-    }
+      <div class="summary-row pay-now">
+        <span>Pay now</span>
+        <strong>£${Number(pricing.deposit_due || 0).toFixed(2)}</strong>
+      </div>
 
-    if (pricing.voucher_discount) {
-      row("Voucher discount", "-" + pricing.voucher_discount);
-    }
-
-    totalEl.innerText = "£" + (pricing.total ?? 0);
-    dueEl.innerText = "£" + (pricing.deposit_due ?? 0);
-    remainingEl.innerText = "£" + (pricing.remaining ?? 0);
+      <div class="summary-row muted">
+        <span>Remaining balance</span>
+        <span>£${Number(pricing.remaining || 0).toFixed(2)}</span>
+      </div>
+    `;
 
     return;
   }
 
-  /* --------------------------------
-     MODE 2: Booking summary
-  -------------------------------- */
+  /* ==========================
+     MODE 2 — selected booking
+  ========================== */
 
-  if (!selectedAvailability) {
-    lines.innerHTML = "<div class='summary-row muted'>Select a lorry to continue</div>";
+  if(!selectedAvailability){
+    box.innerHTML = `<div class="muted">Select a lorry to continue</div>`;
     return;
   }
 
-  const vehicle = selectedAvailability.vehicle;
-  const baseCost = Number(selectedAvailability.baseCost || 0);
-  const discountAmount = Number(selectedAvailability.discountAmount || 0);
+  const v = selectedAvailability.vehicle;
 
-  const confirmationFee = getConfirmationFee(vehicle);
-  const total = baseCost - discountAmount;
-  const remaining = Math.max(0, total - confirmationFee);
+  const base = Number(selectedAvailability.baseCost || 0);
+  const discount = Number(selectedAvailability.discountAmount || 0);
+  const total = base - discount;
+  const deposit = getConfirmationFee(v);
+  const remaining = Math.max(0,total - deposit);
 
-  lines.innerHTML = `
+  box.innerHTML = `
     <div class="summary-row">
-      <span>${vehicle.name}</span>
-      <span>£${baseCost.toFixed(2)}</span>
+      <span>Lorry</span>
+      <strong>${v.name}</strong>
     </div>
 
-    ${
-      discountAmount > 0
-        ? `<div class="summary-row discount">
-            <span>Discount</span>
-            <span>-£${discountAmount.toFixed(2)}</span>
-          </div>`
-        : ""
-    }
+    <div class="summary-row">
+      <span>Pickup</span>
+      <span>${selectedAvailability.pickupDate} ${selectedAvailability.pickupTime}</span>
+    </div>
+
+    <div class="summary-row">
+      <span>Duration</span>
+      <span>${formatDurationLabel(selectedAvailability.durationDays)}</span>
+    </div>
+
+    <div class="summary-row total">
+      <span>Total hire</span>
+      <strong>£${total.toFixed(2)}</strong>
+    </div>
+
+    <div class="summary-row pay-now">
+      <span>Pay now</span>
+      <strong>£${deposit.toFixed(2)}</strong>
+    </div>
+
+    <div class="summary-row muted">
+      <span>Remaining balance</span>
+      <span>£${remaining.toFixed(2)}</span>
+    </div>
   `;
-
-  totalEl.innerText = "£" + total.toFixed(2);
-  dueEl.innerText = "£" + confirmationFee.toFixed(2);
-  remainingEl.innerText = "£" + remaining.toFixed(2);
-
 }
 
 
