@@ -311,9 +311,52 @@ const discountMessage = document.getElementById("discount-message");
 
 let selectedAvailability = null;
 
+
+/* ===============================
+   Next available date button
+================================ */
+
+availabilityResults?.addEventListener("click",(e)=>{
+
+  const btn = e.target.closest(".next-date-btn");
+  if(!btn) return;
+
+  const date = btn.dataset.date;
+
+  pickupDateInput.value = date;
+
+  availabilityForm?.requestSubmit();
+
+});
+
 /* ======================================================
    Helpers
 ====================================================== */
+
+async function findNextAvailableDate(startDate, durationDays, pickupTime) {
+
+  for (let i = 1; i <= 14; i++) {
+
+    const testDate = new Date(startDate);
+    testDate.setDate(testDate.getDate() + i);
+
+    const dateString = testDate.toISOString().slice(0,10);
+
+    const available = await getAvailableLorries(
+      dateString,
+      durationDays,
+      pickupTime
+    );
+
+    if (available.length > 0) {
+      return testDate;
+    }
+
+  }
+
+  return null;
+
+}
 
 function getMaxAvailableDuration(startDate, bookings) {
 
@@ -965,27 +1008,64 @@ async function renderAvailabilityResults(items) {
     return;
   }
 
-  /* ===============================
-     NO VEHICLES
-  =============================== */
+ /* ===============================
+   NO VEHICLES
+=============================== */
 
-  if (!items.length) {
+if (!items.length) {
 
-    availabilityResults.innerHTML =
-      '<p class="empty-note">No lorries available for this date and duration.</p>';
+  const pickupDate = pickupDateInput.value;
+  const duration = Number(durationDaysInput.value);
+  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
 
-    /* scroll to results */
+  const nextDate = await findNextAvailableDate(
+    new Date(pickupDate),
+    duration,
+    pickupTime
+  );
 
-    setTimeout(() => {
-      availabilityResults?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }, 150);
+  let suggestionHTML = "";
 
-    return;
+  if (nextDate) {
+
+    const formatted = nextDate.toLocaleDateString(undefined,{
+      day:"numeric",
+      month:"long"
+    });
+
+    const nextValue = nextDate.toISOString().slice(0,10);
+
+    suggestionHTML = `
+      <div class="next-available">
+        Next available: <strong>${formatted}</strong><br>
+        <button class="btn ghost next-date-btn"
+          data-date="${nextValue}">
+          Check ${formatted}
+        </button>
+      </div>
+    `;
 
   }
+
+  availabilityResults.innerHTML = `
+    <p class="empty-note">
+      No lorries available for this date and duration.
+    </p>
+    ${suggestionHTML}
+  `;
+
+  /* scroll to results */
+
+  setTimeout(() => {
+    availabilityResults?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 150);
+
+  return;
+
+}
 
   /* ===============================
      ONLY ONE VEHICLE → SKIP STEP 2
@@ -1090,164 +1170,6 @@ availabilityResults.addEventListener("click", async (e)=>{
 const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
 
-
-/* ======================================================
-   Checkout summary (discount-safe)
-====================================================== */
-
-
-
-function updateCheckoutSummary() {
-  if (!checkoutSummary) return;
-
-  if (!selectedAvailability) {
-    checkoutSummary.textContent = "Select an available lorry to continue.";
-    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
-    return;
-  }
-
-  if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
-
-  const dartfordEnabled = dartfordEnabledInput?.checked || false;
-  const crossingsCount = dartfordEnabled ? Math.max(1, Number(dartfordCountInput?.value || 1)) : 0;
-  const earlyPickupEnabled = earlyPickupEnabledInput?.checked || false;
-
-  const crossingCharge = calculateCrossingCharge(crossingsCount);
-  const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
-
-  const baseCost = Number(selectedAvailability.baseCost || 0);
-  const discountAmount = Number(selectedAvailability.discountAmount || 0);
-  const discountedBase = Math.max(0, baseCost - discountAmount);
-
-  const hireTotal = calculateHireTotal(discountedBase, crossingsCount, earlyPickupEnabled);
-
-  const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
-
-  if (bookingSubmitBtn) {
-    bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
-  }
-
-  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
-  const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
-
-  const crossingLabel =
-    crossingsCount === 1 ? "Dartford crossing" : "Dartford crossings";
-
-  checkoutSummary.innerHTML = `
-    <div class="summary-card">
-      <div class="summary-vehicle">
-
-  <img 
-    src="${getVehicleMainImage(selectedAvailability.vehicle)}"
-    alt="${escapeHtml(selectedAvailability.vehicle.name)}"
-    class="summary-vehicle-image"
-  >
-
-  <h4>${escapeHtml(selectedAvailability.vehicle.name)}</h4>
-
-</div>
-
-      ${selectedAvailability.pickupAt ? `
-<div class="summary-row muted">
-  <span>Hire period</span>
-  <strong>
-    ${new Date(selectedAvailability.pickupAt).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    })}
-    →
-    ${new Date(selectedAvailability.dropoffAt).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    })}
-  </strong>
-</div>
-` : ""}
-
-${selectedAvailability.durationDays ? `
-<div class="summary-row muted">
-  <span>Duration</span>
-  <strong>
-    ${Number(selectedAvailability.durationDays) === 0.5
-      ? "½ day"
-      : Number(selectedAvailability.durationDays) === 1
-      ? "1 day"
-      : selectedAvailability.durationDays + " days"}
-  </strong>
-</div>
-` : ""}
-
-      <div class="summary-row">
-        <span>Base hire</span>
-        <strong>£${baseCost.toFixed(2)}</strong>
-      </div>
-
-      ${
-        discountAmount > 0
-          ? `
-        <div class="summary-row discount">
-          <span>Discount</span>
-          <strong>-£${discountAmount.toFixed(2)}</strong>
-        </div>
-        `
-          : ""
-      }
-
-      ${
-        crossingsCount > 0
-          ? `
-        <div class="summary-row">
-          <span>${crossingLabel} (${crossingsCount})</span>
-          <strong>£${crossingCharge.toFixed(2)}</strong>
-        </div>
-        `
-          : ""
-      }
-
-      ${
-        earlyPickupEnabled
-          ? `
-        <div class="summary-row">
-          <span>Early pickup</span>
-          <strong>£${earlyPickupCharge.toFixed(2)}</strong>
-        </div>
-        `
-          : ""
-      }
-
-      <hr>
-
-      <div class="summary-row total">
-        <span>Total hire</span>
-        <strong>£${hireTotal.toFixed(2)}</strong>
-      </div>
-
-      <div class="summary-row pay-now">
-        <span>Pay now (confirmation)</span>
-        <strong>£${confirmationFee.toFixed(2)}</strong>
-      </div>
-
-      <div class="summary-row outstanding">
-        <span>Remaining balance</span>
-        <strong>£${outstandingAmount.toFixed(2)}</strong>
-      </div>
-
-      <div class="summary-note">
-        Security deposit £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)} — card hold the day before collection.
-      </div>
-
-      <div class="summary-note">
-        Required form: <strong>${escapeHtml(requiredFormType)}</strong>
-      </div>
-    </div>
-  `;
-}
 
 function updateHalfDayPickup() {
 
@@ -2400,6 +2322,9 @@ function initSmartSummaryUpdates(){
 }
 
 });
+
+
+
 
 
 pickupTimeInput?.addEventListener("change", () => {
