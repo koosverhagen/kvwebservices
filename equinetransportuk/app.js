@@ -345,12 +345,18 @@ function getAvailableVehicleCount(dayDate, bookings){
 
     const hasOverlap = vehicleBookings.some(b => {
 
-      const start = new Date(b.pickupAt);
-      const end = new Date(b.dropoffAt);
+  const start = new Date(b.pickupAt);
+  const end = new Date(b.dropoffAt);
 
-      return dayDate >= start && dayDate <= end;
+  const dayStart = new Date(dayDate);
+  dayStart.setHours(0,0,0,0);
 
-    });
+  const dayEnd = new Date(dayDate);
+  dayEnd.setHours(23,59,59,999);
+
+  return start <= dayEnd && end >= dayStart;
+
+});
 
     if(!hasOverlap) count++;
 
