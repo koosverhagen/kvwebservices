@@ -3494,6 +3494,8 @@ renderAvailabilityDots(dayEl, bookings, dayDate);
 
 const availableVehicles = getAvailableVehicleCount(dayDate, bookings);
 
+console.log("Vehicles available:", availableVehicles, dayDate);
+
 if (availableVehicles === 1) {
 
   dayEl.classList.add("cal-last");
