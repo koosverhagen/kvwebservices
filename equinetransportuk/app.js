@@ -3288,8 +3288,8 @@ async function showVehiclePreview(date, event) {
 
     vehicleBookings.forEach(b => {
 
-      const startHour = new Date(b.pickupAt).getHours();
-const endHour = new Date(b.dropoffAt).getHours();
+      const startHour = new Date(b.pickupAt).getUTCHours();
+      const endHour = new Date(b.dropoffAt).getUTCHours();
 
       if (startHour <= 7 && endHour >= 13) morningBooked = true;
       if (startHour <= 13 && endHour >= 19) afternoonBooked = true;
@@ -4026,8 +4026,8 @@ function renderAvailabilityDots(dayEl, bookings, dayDate) {
         end.getMonth() === dayDate.getMonth() &&
         end.getDate() === dayDate.getDate();
 
-const startHour = start.getHours();
-const endHour = end.getHours();
+      const startHour = start.getUTCHours();
+const endHour = end.getUTCHours();
 
       if (sameDay && startHour === 7 && endHour === 13) {
         hasMorning = true;
