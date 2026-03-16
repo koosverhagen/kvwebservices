@@ -1423,7 +1423,26 @@ input[type="date"] {
    Day cell
 ------------------------------------------------------ */
 
+.cal-day{
+  aspect-ratio:1/1;
+  border-radius:10px;
+  border:2px solid transparent;
+  background:#fafbfc;
+  font-size:13px;
+  font-weight:500;
 
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  cursor:pointer;
+  transition:.15s;
+
+  position:relative;   /* important for labels */
+  min-height:42px;
+  padding-bottom:14px;
+  z-index:1;
+}
 
 
 /* ------------------------------------------------------
@@ -1561,8 +1580,8 @@ input[type="date"] {
 
 @media(max-width:768px){
 
-  .cal-line{ height:1.5px }
-  .cal-lines{ gap:1px }
+  .cal-line { height:1.5px }
+  .cal-lines { gap:1px }
 
 }
 
