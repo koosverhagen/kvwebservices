@@ -1439,6 +1439,7 @@ input[type="date"] {
   transition:.15s;
 
   position:relative;   /* important for labels */
+  overflow:hidden;
   min-height:42px;
   padding-bottom:14px;
   z-index:1;
@@ -1538,6 +1539,7 @@ input[type="date"] {
   border-radius:2px;
   background:#cde8cd;
   overflow:hidden;
+  opacity:.9;
 }
 
 /* full day */
@@ -1706,13 +1708,14 @@ html {
 
 .cal-lines {
   position: absolute;
-  bottom: 6px;
+  bottom: 8px;
   left: 8px;
   right: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   pointer-events: none;
+  z-index:2;
 }
 
 
