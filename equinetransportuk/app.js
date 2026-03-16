@@ -3746,6 +3746,7 @@ async function updateDurationOptions(startDate) {
   const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   const maxDuration = getMaxAvailableDuration(startDate, bookings);
+  const remainingSlots = getRemainingSlots(startDate, bookings);
 
   const durationInput = document.getElementById("duration-days");
 
@@ -3754,10 +3755,19 @@ async function updateDurationOptions(startDate) {
   Array.from(durationInput.options).forEach(opt => {
 
     const days = Number(opt.value);
-
     if (!days) return;
 
-    opt.disabled = days > maxDuration;
+    /* normal multi-day rule */
+
+    let disabled = days > maxDuration;
+
+    /* NEW RULE — if only 1 half-day slot left */
+
+    if (remainingSlots === 1 && days >= 1) {
+      disabled = true;
+    }
+
+    opt.disabled = disabled;
 
   });
 
