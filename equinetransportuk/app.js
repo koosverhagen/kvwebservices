@@ -3295,6 +3295,12 @@ dayEl.addEventListener("touchend", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
+  /* set pickup date */
+
+  selectDate(dayDate);
+
+  /* show preview */
+
   clearPreview();
   previewRental(dayDate);
 
@@ -3400,6 +3406,10 @@ function selectDate(dayDate) {
 
   setTimeout(() => {
 
+  /* desktop scroll only */
+
+  if (!isMobile()) {
+
     const y =
       durationInput.getBoundingClientRect().top +
       window.pageYOffset -
@@ -3410,17 +3420,17 @@ function selectDate(dayDate) {
       behavior: "smooth"
     });
 
-    /* highlight duration input */
+  }
 
-    durationInput.classList.add("duration-highlight");
+  /* highlight duration */
 
-    /* remove highlight once user selects duration */
+  durationInput.classList.add("duration-highlight");
 
-    durationInput.addEventListener("change", () => {
-      durationInput.classList.remove("duration-highlight");
-    }, { once: true });
+  durationInput.addEventListener("change", () => {
+    durationInput.classList.remove("duration-highlight");
+  }, { once: true });
 
-  }, 200);
+}, 200);
 
 }
 
@@ -3659,6 +3669,10 @@ function updateCheckoutSummary(pricing) {
   dueEl.innerText = "£" + confirmationFee.toFixed(2);
   remainingEl.innerText = "£" + remaining.toFixed(2);
 
+}
+
+function isMobile() {
+  return window.matchMedia("(max-width: 768px)").matches;
 }
 
 /* ======================================================
