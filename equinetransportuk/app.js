@@ -1329,6 +1329,18 @@ durationDaysInput?.addEventListener("change", async () => {
       remaining: preview.discountedTotal - getConfirmationFee(vehicle)
     });
 
+    /* show preview above lorry list */
+
+const previewBox = document.getElementById("price-preview");
+
+if (previewBox) {
+  previewBox.innerHTML = `
+    <div class="quote">
+      Estimated hire price: <strong>£${preview.discountedTotal.toFixed(2)}</strong>
+    </div>
+  `;
+}
+
   }
 
   /* ===============================
