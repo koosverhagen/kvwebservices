@@ -333,6 +333,56 @@ availabilityResults?.addEventListener("click",(e)=>{
    Helpers
 ====================================================== */
  
+function getRemainingHalfDaySlots(dateObj, bookings){
+
+  let morningAvailable = false;
+  let afternoonAvailable = false;
+
+  vehicles
+    .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
+    .forEach(vehicle => {
+
+      const vehicleBookings = bookings.filter(
+        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+      );
+
+      const dayStart = new Date(dateObj);
+      dayStart.setHours(0,0,0,0);
+
+      const dayEnd = new Date(dateObj);
+      dayEnd.setHours(23,59,59,999);
+
+      let morningBooked = false;
+      let afternoonBooked = false;
+
+      vehicleBookings.forEach(b => {
+
+        const start = new Date(b.pickupAt);
+        const end = new Date(b.dropoffAt);
+
+        if(start <= dayEnd && end >= dayStart){
+
+          const startHour = start.getHours();
+          const endHour = end.getHours();
+
+          if(startHour <= 12) morningBooked = true;
+          if(endHour >= 13) afternoonBooked = true;
+
+        }
+
+      });
+
+      if(!morningBooked) morningAvailable = true;
+      if(!afternoonBooked) afternoonAvailable = true;
+
+    });
+
+  return {
+    morningAvailable,
+    afternoonAvailable
+  };
+}
+
 function getRemainingSlots(dateObj, bookings){
 
   let remainingSlots = 0;
@@ -409,6 +459,81 @@ function getAvailableVehicleCount(dayDate, bookings){
   }
 
   return count;
+
+}
+
+/* =================================
+   HALF DAY SLOT AVAILABILITY
+================================ */
+
+function getRemainingHalfDaySlots(dateObj, bookings){
+
+  let morningAvailable = false;
+  let afternoonAvailable = false;
+
+  vehicles
+    .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
+    .forEach(vehicle => {
+
+      const vehicleBookings = bookings.filter(
+        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+      );
+
+      const dayStart = new Date(dateObj);
+      dayStart.setHours(0,0,0,0);
+
+      const dayEnd = new Date(dateObj);
+      dayEnd.setHours(23,59,59,999);
+
+      let morningBooked = false;
+      let afternoonBooked = false;
+
+      vehicleBookings.forEach(b => {
+
+        const start = new Date(b.pickupAt);
+        const end = new Date(b.dropoffAt);
+
+        if(start <= dayEnd && end >= dayStart){
+
+          const startHour = start.getHours();
+          const endHour = end.getHours();
+
+          if(startHour <= 12) morningBooked = true;
+          if(endHour >= 13) afternoonBooked = true;
+
+        }
+
+      });
+
+      if(!morningBooked) morningAvailable = true;
+      if(!afternoonBooked) afternoonAvailable = true;
+
+    });
+
+  return { morningAvailable, afternoonAvailable };
+
+}
+
+/* =================================
+   DISABLE AM / PM OPTIONS
+================================ */
+
+async function syncPickupTimeOptions(startDate){
+
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+  const { morningAvailable, afternoonAvailable } =
+    getRemainingHalfDaySlots(startDate, bookings);
+
+  const pickupSelect = document.getElementById("pickup-time");
+
+  if(!pickupSelect) return;
+
+  const morningOption = pickupSelect.querySelector('option[value="07:00"]');
+  const afternoonOption = pickupSelect.querySelector('option[value="13:00"]');
+
+  if(morningOption) morningOption.disabled = !morningAvailable;
+  if(afternoonOption) afternoonOption.disabled = !afternoonAvailable;
 
 }
 
@@ -3666,6 +3791,8 @@ function selectDate(dayDate) {
   pickupInput.value = `${year}-${month}-${day}`;
 
   updateDurationOptions(dayDate);
+
+  syncPickupTimeOptions(dayDate);
 
   /* reset duration */
 
