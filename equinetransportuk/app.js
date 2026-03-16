@@ -3494,8 +3494,6 @@ renderAvailabilityDots(dayEl, bookings, dayDate);
 
 const availableVehicles = getAvailableVehicleCount(dayDate, bookings);
 
-console.log("Vehicles available:", availableVehicles, dayDate);
-
 if (availableVehicles === 1) {
 
   dayEl.classList.add("cal-last");
@@ -3957,8 +3955,6 @@ function updateCheckoutSummary(pricing) {
 renderCalendar();
 
 const durationInput = document.getElementById("duration-days");
-
-console.log("Bookings loaded:", bookings);
 
 if (durationInput) {
 
