@@ -413,7 +413,26 @@ removed duplicate, script is loaded at end of body -->
     </button>
 
     <!-- BOOKING SUMMARY (used by app.js) -->
-    <div id="checkout-summary" class="checkout-breakdown"></div>
+    <div id="checkout-summary" class="checkout-breakdown">
+
+  <div id="summary-lines"></div>
+
+  <div class="summary-row total">
+    <span>Total hire</span>
+    <strong id="summary-total">£0</strong>
+  </div>
+
+  <div class="summary-row pay-now">
+    <span>Pay now</span>
+    <strong id="summary-due">£0</strong>
+  </div>
+
+  <div class="summary-row muted">
+    <span>Remaining balance</span>
+    <span id="summary-remaining">£0</span>
+  </div>
+
+</div>
 
     <!-- REQUIREMENTS -->
     <div class="requirements-box">
