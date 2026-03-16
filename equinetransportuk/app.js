@@ -332,6 +332,33 @@ availabilityResults?.addEventListener("click",(e)=>{
 /* ======================================================
    Helpers
 ====================================================== */
+ 
+function getAvailableVehicleCount(dayDate, bookings){
+
+  let count = 0;
+
+  for(const vehicle of vehicles){
+
+    const vehicleBookings = bookings.filter(
+      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+    );
+
+    const hasOverlap = vehicleBookings.some(b => {
+
+      const start = new Date(b.pickupAt);
+      const end = new Date(b.dropoffAt);
+
+      return dayDate >= start && dayDate <= end;
+
+    });
+
+    if(!hasOverlap) count++;
+
+  }
+
+  return count;
+
+}
 
 async function findNextAvailableDate(startDate, durationDays, pickupTime) {
 
@@ -3429,6 +3456,18 @@ const status = checkDayLocalAvailability(dayDate, bookings);
 const validStart = canStartRental(dayDate, bookings);
 
 renderAvailabilityDots(dayEl, bookings, dayDate);
+
+const availableCount = getAvailableVehicleCount(dayDate, bookings);
+
+if (availableCount === 1) {
+
+  const label = document.createElement("div");
+  label.className = "cal-last-label";
+  label.textContent = "1 left";
+
+  dayEl.appendChild(label);
+
+}
 
 /* ======================================
    COUNT AVAILABLE VEHICLES
