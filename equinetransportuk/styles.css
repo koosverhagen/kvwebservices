@@ -2444,3 +2444,11 @@ BOOKING SUMMARY CARD
   transition:all .15s ease;
 }
 
+.next-available{
+  margin-top:12px;
+}
+
+.next-available .btn{
+  margin-top:6px;
+}
+
