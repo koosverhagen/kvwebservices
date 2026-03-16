@@ -1097,11 +1097,21 @@ if (!items.length) {
 
   if (items.length === 1) {
 
-    await selectAvailability(items[0].vehicle.id);
-    goToStep(3);
-    return;
+  availabilityResults.innerHTML = `
+    <div class="urgency-banner">
+      ⚠ Only 1 lorry left for this date
+    </div>
+  `;
 
-  }
+  await selectAvailability(items[0].vehicle.id);
+
+  setTimeout(() => {
+    goToStep(3);
+  }, 600);
+
+  return;
+
+}
 
   /* ===============================
      MULTIPLE VEHICLES → SHOW STEP 2
