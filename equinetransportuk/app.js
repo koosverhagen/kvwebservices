@@ -1124,17 +1124,9 @@ if (!items.length) {
 
   if (items.length === 1) {
 
-  availabilityResults.innerHTML = `
-    <div class="urgency-banner">
-      ⚠ Only 1 lorry left for this date
-    </div>
-  `;
-
   await selectAvailability(items[0].vehicle.id);
 
-  setTimeout(() => {
-    goToStep(3);
-  }, 600);
+  goToStep(3);
 
   return;
 
@@ -1251,7 +1243,8 @@ const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
 
 
-function updateCheckoutSummary() {
+async function updateCheckoutSummary() {
+
   if (!checkoutSummary) return;
 
   if (!selectedAvailability) {
@@ -1261,6 +1254,38 @@ function updateCheckoutSummary() {
   }
 
   if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
+
+  /* ===============================
+     CHECK HOW MANY VEHICLES LEFT
+  =============================== */
+
+  let urgencyHTML = "";
+
+  try {
+
+    const availableVehicles = await getAvailableLorries(
+      selectedAvailability.pickupDate,
+      selectedAvailability.durationDays,
+      selectedAvailability.pickupTime
+    );
+
+    if (availableVehicles.length === 1) {
+
+      urgencyHTML = `
+      <div class="urgency-banner">
+        ⚠ Only one lorry available for this date
+      </div>
+      `;
+
+    }
+
+  } catch(e){
+    console.warn("Availability check failed");
+  }
+
+  /* ===============================
+     PRICE CALCULATIONS
+  =============================== */
 
   const dartfordEnabled = dartfordEnabledInput?.checked || false;
   const crossingsCount = dartfordEnabled ? Math.max(1, Number(dartfordCountInput?.value || 1)) : 0;
@@ -1287,58 +1312,63 @@ function updateCheckoutSummary() {
   const crossingLabel =
     crossingsCount === 1 ? "Dartford crossing" : "Dartford crossings";
 
+  /* ===============================
+     SUMMARY HTML
+  =============================== */
+
   checkoutSummary.innerHTML = `
-    <div class="summary-card">
-    <div class="urgency-banner">
-  ⚠ Only one lorry available for this date
-</div>
+
+  <div class="summary-card">
+
+    ${urgencyHTML}
+
       <div class="summary-vehicle">
 
-  <img 
-    src="${getVehicleMainImage(selectedAvailability.vehicle)}"
-    alt="${escapeHtml(selectedAvailability.vehicle.name)}"
-    class="summary-vehicle-image"
-  >
+        <img 
+          src="${getVehicleMainImage(selectedAvailability.vehicle)}"
+          alt="${escapeHtml(selectedAvailability.vehicle.name)}"
+          class="summary-vehicle-image"
+        >
 
-  <h4>${escapeHtml(selectedAvailability.vehicle.name)}</h4>
+        <h4>${escapeHtml(selectedAvailability.vehicle.name)}</h4>
 
-</div>
+      </div>
 
       ${selectedAvailability.pickupAt ? `
-<div class="summary-row muted">
-  <span>Hire period</span>
-  <strong>
-    ${new Date(selectedAvailability.pickupAt).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    })}
-    →
-    ${new Date(selectedAvailability.dropoffAt).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    })}
-  </strong>
-</div>
-` : ""}
+      <div class="summary-row muted">
+        <span>Hire period</span>
+        <strong>
+          ${new Date(selectedAvailability.pickupAt).toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+          })}
+          →
+          ${new Date(selectedAvailability.dropoffAt).toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+          })}
+        </strong>
+      </div>
+      ` : ""}
 
-${selectedAvailability.durationDays ? `
-<div class="summary-row muted">
-  <span>Duration</span>
-  <strong>
-    ${Number(selectedAvailability.durationDays) === 0.5
-      ? "½ day"
-      : Number(selectedAvailability.durationDays) === 1
-      ? "1 day"
-      : selectedAvailability.durationDays + " days"}
-  </strong>
-</div>
-` : ""}
+      ${selectedAvailability.durationDays ? `
+      <div class="summary-row muted">
+        <span>Duration</span>
+        <strong>
+          ${Number(selectedAvailability.durationDays) === 0.5
+            ? "½ day"
+            : Number(selectedAvailability.durationDays) === 1
+            ? "1 day"
+            : selectedAvailability.durationDays + " days"}
+        </strong>
+      </div>
+      ` : ""}
 
       <div class="summary-row">
         <span>Base hire</span>
@@ -1402,6 +1432,7 @@ ${selectedAvailability.durationDays ? `
       <div class="summary-note">
         Required form: <strong>${escapeHtml(requiredFormType)}</strong>
       </div>
+
     </div>
   `;
 }
