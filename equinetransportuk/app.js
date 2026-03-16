@@ -3958,6 +3958,8 @@ renderCalendar();
 
 const durationInput = document.getElementById("duration-days");
 
+console.log("Bookings loaded:", bookings);
+
 if (durationInput) {
 
   durationInput.addEventListener("change", () => {
