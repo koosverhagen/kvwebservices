@@ -1008,6 +1008,32 @@ async function renderAvailabilityResults(items) {
     return;
   }
 
+  /* ===============================
+     PRICE PREVIEW (STEP HEADER)
+  =============================== */
+
+  const pricePreview = document.getElementById("price-preview");
+
+  if (pricePreview) {
+
+    if (items.length === 1) {
+
+      const price = Number(items[0].discountedTotal ?? items[0].baseCost ?? 0);
+
+      pricePreview.innerHTML =
+        `Estimated hire price: <strong>£${price.toFixed(2)}</strong>`;
+
+      pricePreview.style.display = "block";
+
+    } else {
+
+      pricePreview.innerHTML = "";
+      pricePreview.style.display = "none";
+
+    }
+
+  }
+
  /* ===============================
    NO VEHICLES
 =============================== */
@@ -1053,8 +1079,6 @@ if (!items.length) {
     </p>
     ${suggestionHTML}
   `;
-
-  /* scroll to results */
 
   setTimeout(() => {
     availabilityResults?.scrollIntoView({
@@ -1108,20 +1132,13 @@ if (!items.length) {
           </p>
 
           <div class="price-preview">
-
-  <div class="price-main">
-    £${displayPrice.toFixed(2)}
-  </div>
-
-  <div class="price-confirm">
-    Pay now £${confirmationFee.toFixed(2)}
-  </div>
-
-</div>
-
-          <p class="muted tiny">
-            Pay now to confirm: £${confirmationFee.toFixed(2)}
-          </p>
+            <div class="price-main">
+              £${displayPrice.toFixed(2)}
+            </div>
+            <div class="price-confirm">
+              Pay now £${confirmationFee.toFixed(2)}
+            </div>
+          </div>
 
         </div>
 
@@ -1139,8 +1156,6 @@ if (!items.length) {
 
   availabilityResults.innerHTML = html;
 
-  /* show availability count */
-
   availabilityResults.insertAdjacentHTML(
     "afterbegin",
     `<p class="muted">${items.length} lorry${items.length > 1 ? "ies" : ""} available</p>`
@@ -1148,15 +1163,11 @@ if (!items.length) {
 
   goToStep(2);
 
-  /* scroll to results */
-
   setTimeout(() => {
-
     availabilityResults?.scrollIntoView({
       behavior: "smooth",
       block: "start"
     });
-
   }, 150);
 
 }
