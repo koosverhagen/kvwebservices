@@ -53,12 +53,6 @@ function goToStep(step) {
   const indicator = document.querySelector(`.booking-steps .step[data-step="${step}"]`);
   if(indicator) indicator.classList.add("active");
 
-  /* ⭐ refresh summary when entering payment step */
-
-  if(step === 4){
-    updateCheckoutSummary();
-  }
-
   setTimeout(()=>{
   stepEl?.scrollIntoView({
     behavior:"smooth",
@@ -338,123 +332,6 @@ availabilityResults?.addEventListener("click",(e)=>{
 /* ======================================================
    Helpers
 ====================================================== */
-
-function renderReviewSummary(){
-
-  const review = document.getElementById("review-summary");
-  if(!review) return;
-
-  const booking = window.pendingBooking;
-  if(!booking) return;
-
-  const vehicle = vehicles.find(v => v.id === booking.vehicleId);
-
-  review.innerHTML = `
-    <div class="summary-row">
-      <span>Lorry</span>
-      <strong>${vehicle?.name || ""}</strong>
-    </div>
-
-    <div class="summary-row">
-      <span>Pickup</span>
-      <strong>${new Date(booking.pickupAt).toLocaleString()}</strong>
-    </div>
-
-    <div class="summary-row">
-      <span>Duration</span>
-      <strong>${formatDurationLabel(booking.durationDays)}</strong>
-    </div>
-
-    <div class="summary-row">
-      <span>Total hire</span>
-      <strong>£${Number(booking.hireTotal).toFixed(2)}</strong>
-    </div>
-
-    <div class="summary-row">
-      <span>Pay now</span>
-      <strong>£${Number(booking.confirmationFee).toFixed(2)}</strong>
-    </div>
-  `;
-}
-
-function updateCheckoutSummary(pricing) {
-
-  const lines = document.getElementById("summary-lines");
-  const totalEl = document.getElementById("summary-total");
-  const dueEl = document.getElementById("summary-due");
-  const remainingEl = document.getElementById("summary-remaining");
-
-  if (!lines || !totalEl || !dueEl || !remainingEl) return;
-
-  /* ---------------------------
-     MODE 1: Price preview
-  ---------------------------- */
-
-  if (pricing) {
-
-    lines.innerHTML = "";
-
-    function row(label, value){
-      const div = document.createElement("div");
-      div.className = "summary-row";
-      div.innerHTML = `<span>${label}</span><span>£${value}</span>`;
-      lines.appendChild(div);
-    }
-
-    if (pricing.base){
-      row("Base hire", pricing.base);
-    }
-
-    if (pricing.voucher_discount){
-      row("Voucher discount", "-" + pricing.voucher_discount);
-    }
-
-    totalEl.innerText = "£" + (pricing.total ?? 0);
-    dueEl.innerText = "£" + (pricing.deposit_due ?? 0);
-    remainingEl.innerText = "£" + (pricing.remaining ?? 0);
-
-    return;
-  }
-
-  /* ---------------------------
-     MODE 2: No vehicle selected
-  ---------------------------- */
-
-  if (!selectedAvailability){
-    lines.innerHTML = "<div class='summary-row muted'>Select a lorry to continue</div>";
-    return;
-  }
-
-  const vehicle = selectedAvailability.vehicle;
-
-  const baseCost = Number(selectedAvailability.baseCost || 0);
-  const discountAmount = Number(selectedAvailability.discountAmount || 0);
-
-  const confirmationFee = getConfirmationFee(vehicle);
-
-  const total = baseCost - discountAmount;
-  const remaining = Math.max(0, total - confirmationFee);
-
-  lines.innerHTML = `
-    <div class="summary-row">
-      <span>${vehicle.name}</span>
-      <span>£${baseCost.toFixed(2)}</span>
-    </div>
-
-    ${
-      discountAmount > 0
-        ? `<div class="summary-row discount">
-            <span>Discount</span>
-            <span>-£${discountAmount.toFixed(2)}</span>
-          </div>`
-        : ""
-    }
-  `;
-
-  totalEl.innerText = "£" + total.toFixed(2);
-  dueEl.innerText = "£" + confirmationFee.toFixed(2);
-  remainingEl.innerText = "£" + remaining.toFixed(2);
-}
 
 async function findNextAvailableDate(startDate, durationDays, pickupTime) {
 
@@ -1294,6 +1171,164 @@ const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
 
 
+/* ======================================================
+   Checkout summary (discount-safe)
+====================================================== */
+
+
+
+function updateCheckoutSummary() {
+  if (!checkoutSummary) return;
+
+  if (!selectedAvailability) {
+    checkoutSummary.textContent = "Select an available lorry to continue.";
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+    return;
+  }
+
+  if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
+
+  const dartfordEnabled = dartfordEnabledInput?.checked || false;
+  const crossingsCount = dartfordEnabled ? Math.max(1, Number(dartfordCountInput?.value || 1)) : 0;
+  const earlyPickupEnabled = earlyPickupEnabledInput?.checked || false;
+
+  const crossingCharge = calculateCrossingCharge(crossingsCount);
+  const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
+
+  const baseCost = Number(selectedAvailability.baseCost || 0);
+  const discountAmount = Number(selectedAvailability.discountAmount || 0);
+  const discountedBase = Math.max(0, baseCost - discountAmount);
+
+  const hireTotal = calculateHireTotal(discountedBase, crossingsCount, earlyPickupEnabled);
+
+  const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+
+  if (bookingSubmitBtn) {
+    bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
+  }
+
+  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+  const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
+
+  const crossingLabel =
+    crossingsCount === 1 ? "Dartford crossing" : "Dartford crossings";
+
+  checkoutSummary.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-vehicle">
+
+  <img 
+    src="${getVehicleMainImage(selectedAvailability.vehicle)}"
+    alt="${escapeHtml(selectedAvailability.vehicle.name)}"
+    class="summary-vehicle-image"
+  >
+
+  <h4>${escapeHtml(selectedAvailability.vehicle.name)}</h4>
+
+</div>
+
+      ${selectedAvailability.pickupAt ? `
+<div class="summary-row muted">
+  <span>Hire period</span>
+  <strong>
+    ${new Date(selectedAvailability.pickupAt).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })}
+    →
+    ${new Date(selectedAvailability.dropoffAt).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })}
+  </strong>
+</div>
+` : ""}
+
+${selectedAvailability.durationDays ? `
+<div class="summary-row muted">
+  <span>Duration</span>
+  <strong>
+    ${Number(selectedAvailability.durationDays) === 0.5
+      ? "½ day"
+      : Number(selectedAvailability.durationDays) === 1
+      ? "1 day"
+      : selectedAvailability.durationDays + " days"}
+  </strong>
+</div>
+` : ""}
+
+      <div class="summary-row">
+        <span>Base hire</span>
+        <strong>£${baseCost.toFixed(2)}</strong>
+      </div>
+
+      ${
+        discountAmount > 0
+          ? `
+        <div class="summary-row discount">
+          <span>Discount</span>
+          <strong>-£${discountAmount.toFixed(2)}</strong>
+        </div>
+        `
+          : ""
+      }
+
+      ${
+        crossingsCount > 0
+          ? `
+        <div class="summary-row">
+          <span>${crossingLabel} (${crossingsCount})</span>
+          <strong>£${crossingCharge.toFixed(2)}</strong>
+        </div>
+        `
+          : ""
+      }
+
+      ${
+        earlyPickupEnabled
+          ? `
+        <div class="summary-row">
+          <span>Early pickup</span>
+          <strong>£${earlyPickupCharge.toFixed(2)}</strong>
+        </div>
+        `
+          : ""
+      }
+
+      <hr>
+
+      <div class="summary-row total">
+        <span>Total hire</span>
+        <strong>£${hireTotal.toFixed(2)}</strong>
+      </div>
+
+      <div class="summary-row pay-now">
+        <span>Pay now (confirmation)</span>
+        <strong>£${confirmationFee.toFixed(2)}</strong>
+      </div>
+
+      <div class="summary-row outstanding">
+        <span>Remaining balance</span>
+        <strong>£${outstandingAmount.toFixed(2)}</strong>
+      </div>
+
+      <div class="summary-note">
+        Security deposit £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)} — card hold the day before collection.
+      </div>
+
+      <div class="summary-note">
+        Required form: <strong>${escapeHtml(requiredFormType)}</strong>
+      </div>
+    </div>
+  `;
+}
+
 function updateHalfDayPickup() {
 
   const duration = Number(document.getElementById("selected-duration")?.value || 0);
@@ -1870,13 +1905,7 @@ async function selectAvailability(vehicleId) {
 
   if (bookingSuccess) bookingSuccess.hidden = true;
 
- updateCheckoutSummary();
-
-/* force Step-4 review render */
-renderReviewSummary();
-
-await checkBookingFormAvailability();
-
+  updateCheckoutSummary();
 
   checkoutSummary?.scrollIntoView({
   behavior: "smooth",
@@ -1931,7 +1960,6 @@ const pickupTime =
     const code = getCurrentDiscountCode();
 
     selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, code);
-    window.selectedAvailability = selectedAvailability;
 
     if (selectedBaseInput) selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
 
@@ -2744,8 +2772,7 @@ if (bookingForm) {
     // store booking temporarily for Step 4
 window.pendingBooking = booking;
 
-renderReviewSummary();   // ADD THIS
-
+// move to review step
 goToStep(4);
   });
 }
@@ -3715,99 +3742,82 @@ else if (hasFullDay) {
 
 }
 
-function updateCheckoutSummary(pricing){
+function updateCheckoutSummary(pricing) {
 
-  const box = document.getElementById("checkout-summary");
-  if(!box) return;
+  const lines = document.getElementById("summary-lines");
+  const totalEl = document.getElementById("summary-total");
+  const dueEl = document.getElementById("summary-due");
+  const remainingEl = document.getElementById("summary-remaining");
 
-  /* ==========================
-     MODE 1 — preview pricing
-  ========================== */
+  if (!lines || !totalEl || !dueEl || !remainingEl) return;
 
-  if(pricing){
+  /* --------------------------------
+     MODE 1: Pricing preview
+  -------------------------------- */
 
-    box.innerHTML = `
-      <div class="summary-row">
-        <span>Base hire</span>
-        <strong>£${Number(pricing.base || 0).toFixed(2)}</strong>
-      </div>
+  if (pricing) {
 
-      ${
-        pricing.voucher_discount
-        ? `<div class="summary-row">
-             <span>Voucher discount</span>
-             <strong>-£${Number(pricing.voucher_discount).toFixed(2)}</strong>
-           </div>`
+    lines.innerHTML = "";
+
+    function row(label, value) {
+      const div = document.createElement("div");
+      div.className = "summary-row";
+      div.innerHTML = `<span>${label}</span><span>£${value}</span>`;
+      lines.appendChild(div);
+    }
+
+    if (pricing.base) {
+      row("Base hire", pricing.base);
+    }
+
+    if (pricing.voucher_discount) {
+      row("Voucher discount", "-" + pricing.voucher_discount);
+    }
+
+    totalEl.innerText = "£" + (pricing.total ?? 0);
+    dueEl.innerText = "£" + (pricing.deposit_due ?? 0);
+    remainingEl.innerText = "£" + (pricing.remaining ?? 0);
+
+    return;
+  }
+
+  /* --------------------------------
+     MODE 2: Booking summary
+  -------------------------------- */
+
+  if (!selectedAvailability) {
+    lines.innerHTML = "<div class='summary-row muted'>Select a lorry to continue</div>";
+    return;
+  }
+
+  const vehicle = selectedAvailability.vehicle;
+  const baseCost = Number(selectedAvailability.baseCost || 0);
+  const discountAmount = Number(selectedAvailability.discountAmount || 0);
+
+  const confirmationFee = getConfirmationFee(vehicle);
+  const total = baseCost - discountAmount;
+  const remaining = Math.max(0, total - confirmationFee);
+
+  lines.innerHTML = `
+    <div class="summary-row">
+      <span>${vehicle.name}</span>
+      <span>£${baseCost.toFixed(2)}</span>
+    </div>
+
+    ${
+      discountAmount > 0
+        ? `<div class="summary-row discount">
+            <span>Discount</span>
+            <span>-£${discountAmount.toFixed(2)}</span>
+          </div>`
         : ""
-      }
-
-      <div class="summary-row total">
-        <span>Total hire</span>
-        <strong>£${Number(pricing.total || 0).toFixed(2)}</strong>
-      </div>
-
-      <div class="summary-row pay-now">
-        <span>Pay now</span>
-        <strong>£${Number(pricing.deposit_due || 0).toFixed(2)}</strong>
-      </div>
-
-      <div class="summary-row muted">
-        <span>Remaining balance</span>
-        <span>£${Number(pricing.remaining || 0).toFixed(2)}</span>
-      </div>
-    `;
-
-    return;
-  }
-
-  /* ==========================
-     MODE 2 — selected booking
-  ========================== */
-
-  if(!selectedAvailability){
-    box.innerHTML = `<div class="muted">Select a lorry to continue</div>`;
-    return;
-  }
-
-  const v = selectedAvailability.vehicle;
-
-  const base = Number(selectedAvailability.baseCost || 0);
-  const discount = Number(selectedAvailability.discountAmount || 0);
-  const total = base - discount;
-  const deposit = getConfirmationFee(v);
-  const remaining = Math.max(0,total - deposit);
-
-  box.innerHTML = `
-    <div class="summary-row">
-      <span>Lorry</span>
-      <strong>${v.name}</strong>
-    </div>
-
-    <div class="summary-row">
-      <span>Pickup</span>
-      <span>${selectedAvailability.pickupDate} ${selectedAvailability.pickupTime}</span>
-    </div>
-
-    <div class="summary-row">
-      <span>Duration</span>
-      <span>${formatDurationLabel(selectedAvailability.durationDays)}</span>
-    </div>
-
-    <div class="summary-row total">
-      <span>Total hire</span>
-      <strong>£${total.toFixed(2)}</strong>
-    </div>
-
-    <div class="summary-row pay-now">
-      <span>Pay now</span>
-      <strong>£${deposit.toFixed(2)}</strong>
-    </div>
-
-    <div class="summary-row muted">
-      <span>Remaining balance</span>
-      <span>£${remaining.toFixed(2)}</span>
-    </div>
+    }
   `;
+
+  totalEl.innerText = "£" + total.toFixed(2);
+  dueEl.innerText = "£" + confirmationFee.toFixed(2);
+  remainingEl.innerText = "£" + remaining.toFixed(2);
+
 }
 
 
