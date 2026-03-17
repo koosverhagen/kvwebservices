@@ -522,6 +522,146 @@ textarea { min-height: 100px; }
   padding: 12px;
 }
 
+/* ===============================
+   STEP 2 — SEARCH SUMMARY
+=============================== */
+
+.availability-search-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+.search-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.search-chip-accent {
+  background: rgba(31, 111, 235, 0.08);
+  border-color: rgba(31, 111, 235, 0.18);
+  color: var(--accent);
+}
+
+/* ===============================
+   STEP 2 — RESULT CARD POLISH
+=============================== */
+
+.availability-item {
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+}
+
+.availability-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 8px;
+}
+
+.availability-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.availability-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.availability-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.availability-price-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.availability-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.availability-item .choose-lorry {
+  min-width: 170px;
+}
+
+.availability-empty-state {
+  padding: 8px 0 2px;
+}
+
+/* ===============================
+   STEP 2 — PRICE PREVIEW
+=============================== */
+
+.price-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 10px;
+}
+
+.price-main {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.price-confirm {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .availability-item {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-actions {
+    justify-content: stretch;
+  }
+
+  .availability-item .choose-lorry {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .availability-search-summary {
+    gap: 6px;
+  }
+
+  .search-chip {
+    width: 100%;
+    border-radius: 12px;
+  }
+
+  .availability-price {
+    font-size: 22px;
+  }
+}
+
 /* ======================================================
    ADMIN PANEL
 ====================================================== */
