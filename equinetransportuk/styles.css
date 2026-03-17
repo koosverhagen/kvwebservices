@@ -2314,27 +2314,29 @@ BOOKING SUMMARY CARD
     left: 50%;
     right: auto;
 
-     color: #FFFF00;
+    color: #FFFF00;
 
     transform: translate(-50%, -50%);
 
-    /* force proper centering */
+    /* perfect centering */
     display: flex;
+    flex-direction: column;        /* 👈 KEY for 2 lines */
     align-items: center;
     justify-content: center;
     text-align: center;
 
-    /* 👇 KEY FIXES */
-    min-width: 48px;
-    min-height: 28px;
+    /* sizing */
+    min-width: 52px;              /* slightly wider for 2 lines */
+    min-height: 36px;             /* 👈 important for vertical balance */
 
     padding: 6px 10px;
-    line-height: 1;          /* prevents vertical shift */
-    
-    /* make text sit visually centered */
+
+    /* typography */
+    line-height: 1.05;            /* 👈 better for stacked text */
     font-size: 13px;
     font-weight: 600;
 
+    /* your colours untouched */
     background: rgba(21, 59, 250, 0.562);
     backdrop-filter: blur(6px);
 
@@ -2352,8 +2354,8 @@ BOOKING SUMMARY CARD
 @media (max-width: 768px) {
 
   .cal-last {
-  border-color: #f59e0b;
-  background: rgba(245, 159, 11, 0);
-}
+    border-color: #f59e0b;
+    background: transparent; /* cleaner than rgba(...,0) */
+  }
 
 }
