@@ -2314,6 +2314,8 @@ BOOKING SUMMARY CARD
     left: 50%;
     right: auto;
 
+     color: #dc2626; /* 🔴 red-600 (clean, not too aggressive) */
+
     transform: translate(-50%, -50%);
 
     /* force proper centering */
@@ -2333,7 +2335,7 @@ BOOKING SUMMARY CARD
     font-size: 13px;
     font-weight: 600;
 
-    background: rgba(250, 204, 21, 0.562);
+    background: rgba(21, 59, 250, 0.562);
     backdrop-filter: blur(6px);
 
     border-radius: 14px;
