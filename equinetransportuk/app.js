@@ -894,35 +894,6 @@ function getAvailabilityCacheKey(vehicleId, pickupDate, durationDays, pickupTime
   return `${vehicleId}|${pickupDate}|${durationDays}|${pickupTime}|${discountCode}`;
 }
 
-/* ======================================================
-   Pickup time locking (½ day only)
-====================================================== */
-
-function syncPickupTimeOptions() {
-  if (!durationDaysInput || !pickupTimeInput) return;
-
-  const duration = Number(durationDaysInput.value);
-
-  const existingPmOption = Array.from(pickupTimeInput.options)
-    .find(opt => opt.value === "13:00");
-
-  if (duration === 0.5) {
-    if (!existingPmOption) {
-  const pmOption = document.createElement("option");
-  pmOption.value = "13:00";
-  pmOption.textContent = "13:00 — Afternoon";
-  pickupTimeInput.appendChild(pmOption);
-}
-  } else {
-    // Remove PM option entirely for all other durations
-    if (existingPmOption) {
-      pickupTimeInput.removeChild(existingPmOption);
-    }
-
-    // Force 07:00 if needed
-    pickupTimeInput.value = "07:00";
-  }
-}
 
 /* ======================================================
    Pricing API (server quote with local fallback)
