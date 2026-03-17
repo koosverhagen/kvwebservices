@@ -3744,7 +3744,7 @@ const label = document.createElement("div");
 label.className = "cal-last-label";
 
 if (window.innerWidth < 768) {
-  label.textContent = "1 Slot Left!";
+  label.textContent = "1 Left!";
 } else {
   label.textContent = "1 Slot Left!";
 }

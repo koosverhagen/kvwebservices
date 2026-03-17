@@ -2310,24 +2310,26 @@ BOOKING SUMMARY CARD
 
   .cal-last-label {
 
-    /* center it */
     top: 50%;
     left: 50%;
     right: auto;
 
     transform: translate(-50%, -50%);
 
-    /* make it larger */
+    /* 👇 ADD THESE */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
     font-size: 13px;
     padding: 6px 10px;
+    white-space: nowrap;
 
-    /* glass / transparent look */
-    background: rgba(250, 204, 21, 0.52);
+    background: rgba(250, 204, 21, 0.85);
     backdrop-filter: blur(6px);
 
-    /* slightly softer */
     border-radius: 14px;
-
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 
   }
