@@ -2314,7 +2314,7 @@ BOOKING SUMMARY CARD
     left: 50%;
     right: auto;
 
-     color: #dc2626; /* 🔴 red-600 (clean, not too aggressive) */
+     color: #FFFF00;
 
     transform: translate(-50%, -50%);
 
