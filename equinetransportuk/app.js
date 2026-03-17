@@ -275,7 +275,29 @@ const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
 const durationDaysInput = document.getElementById("duration-days");
+/* ===============================
+   INPUT CHANGE HANDLERS
+=============================== */
 
+/* When duration changes */
+durationDaysInput?.addEventListener("change", () => {
+
+  updatePickupTimeVisibility();
+  syncPickupTimeOptions();
+
+});
+
+/* When pickup time changes (IMPORTANT FIX) */
+pickupTimeInput?.addEventListener("change", async () => {
+
+  const pickupDate = pickupDateInput?.value;
+  if (!pickupDate) return;
+
+  await updateDurationOptions(
+    new Date(`${pickupDate}T00:00:00`)
+  );
+
+});
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
@@ -1869,10 +1891,26 @@ pickupDateInput?.addEventListener("change", () => {
 
 durationDaysInput?.addEventListener("change", async () => {
 
+  /* ===============================
+     🔥 FIX: recalc valid durations
+  =============================== */
+
+  const pickupDate = pickupDateInput?.value;
+
+  if (pickupDate) {
+    await updateDurationOptions(
+      new Date(`${pickupDate}T00:00:00`)
+    );
+  }
+
+  /* ===============================
+     Existing logic
+  =============================== */
+
   updatePickupTimeVisibility();
 
-  const selectedDate = pickupDateInput?.value
-    ? new Date(`${pickupDateInput.value}T00:00:00`)
+  const selectedDate = pickupDate
+    ? new Date(`${pickupDate}T00:00:00`)
     : null;
 
   await syncPickupTimeOptions(selectedDate);
@@ -1881,7 +1919,6 @@ durationDaysInput?.addEventListener("change", async () => {
      Instant price preview
   =============================== */
 
-  const pickupDate = pickupDateInput?.value;
   const duration = Number(durationDaysInput?.value || 0);
 
   if (pickupDate && duration) {
@@ -1903,17 +1940,15 @@ durationDaysInput?.addEventListener("change", async () => {
       remaining: preview.discountedTotal - getConfirmationFee(vehicle)
     });
 
-    /* show preview above lorry list */
+    const previewBox = document.getElementById("price-preview");
 
-const previewBox = document.getElementById("price-preview");
-
-if (previewBox) {
-  previewBox.innerHTML = `
-    <div class="quote">
-      Estimated hire price: <strong>£${preview.discountedTotal.toFixed(2)}</strong>
-    </div>
-  `;
-}
+    if (previewBox) {
+      previewBox.innerHTML = `
+        <div class="quote">
+          Estimated hire price: <strong>£${preview.discountedTotal.toFixed(2)}</strong>
+        </div>
+      `;
+    }
 
   }
 
@@ -2935,17 +2970,6 @@ function initSmartSummaryUpdates(){
   });
 
 }
-
-});
-
-
-
-
-
-pickupTimeInput?.addEventListener("change", () => {
-
-  // no automatic availability search
-  // user must press "Check availability"
 
 });
 
@@ -4046,36 +4070,57 @@ await syncPickupTimeOptions(dayDate);
 
 async function updateDurationOptions(startDate) {
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
-
-  const maxDuration = getMaxAvailableDuration(startDate, bookings);
-  const remainingSlots = getRemainingSlots(startDate, bookings);
-
   const durationInput = document.getElementById("duration-days");
+  if (!durationInput || !startDate) return;
 
-  if (!durationInput) return;
+  const dateString = startDate.toISOString().slice(0, 10);
 
-  Array.from(durationInput.options).forEach(opt => {
+  const currentPickupTime =
+    pickupTimeInput?.value ||
+    DEFAULT_PICKUP_TIME;
 
+  const remainingSlots = getRemainingSlots(
+    startDate,
+    BOOKINGS_CACHE || await getBookings(false)
+  );
+
+  const options = Array.from(durationInput.options);
+
+  for (const opt of options) {
     const days = Number(opt.value);
-    if (!days) return;
+    if (!days) continue;
 
-    /* normal multi-day rule */
+    let testPickupTime = DEFAULT_PICKUP_TIME;
 
-    let disabled = days > maxDuration;
+    if (days === 0.5) {
+      testPickupTime = currentPickupTime || DEFAULT_PICKUP_TIME;
+    }
 
-    /* NEW RULE — if only 1 half-day slot left */
+    const available = await getAvailableLorries(
+      dateString,
+      days,
+      testPickupTime
+    );
 
-    if (remainingSlots === 1 && days >= 1) {
+    let disabled = available.length === 0;
+
+    /* extra rule:
+       if calendar says only 1 slot left,
+       only allow 1/2 day and 1 day
+    */
+    if (remainingSlots === 1 && days > 1) {
       disabled = true;
     }
 
     opt.disabled = disabled;
+  }
 
-  });
-
+  /* keep current selection valid */
+  const selectedOption = durationInput.options[durationInput.selectedIndex];
+  if (selectedOption?.disabled) {
+    durationInput.value = "";
+  }
 }
-
 function onCalendarDayClick(date){
 
   pickupDateInput.value = date;
