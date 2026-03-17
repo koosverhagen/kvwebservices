@@ -409,8 +409,8 @@ async function syncBookingPickupTimeOptions(dateObj, vehicleId) {
       const startHour = start.getHours();
       const endHour = end.getHours();
 
-      if (startHour <= 12) morningBooked = true;
-      if (endHour >= 13) afternoonBooked = true;
+   if (startHour < 13) morningBooked = true;
+if (endHour > 12) afternoonBooked = true;
 
     }
 
@@ -634,11 +634,20 @@ async function syncPickupTimeOptions(startDate) {
   const existingPmOption = Array.from(pickupTimeInput.options)
     .find(opt => opt.value === "13:00");
 
-  if (duration !== 0.5) {
-    if (existingPmOption) existingPmOption.disabled = false;
-    pickupTimeInput.value = "07:00";
-    return;
-  }
+ if (duration !== 0.5) {
+
+  const morningOption = pickupTimeInput.querySelector('option[value="07:00"]');
+  const afternoonOption = pickupTimeInput.querySelector('option[value="13:00"]');
+
+  if (morningOption) morningOption.disabled = false;
+
+  /* 🔥 FIX: always disable afternoon for multi-day */
+  if (afternoonOption) afternoonOption.disabled = true;
+
+  pickupTimeInput.value = "07:00";
+
+  return;
+}
 
   if (!startDate) return;
 
