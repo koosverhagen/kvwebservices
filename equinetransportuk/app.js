@@ -3722,7 +3722,7 @@ dayEl.addEventListener("touchend", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  selectDate(dayDate);
+  await selectDate(dayDate);
 
   clearPreview();
   previewRental(dayDate);
@@ -3749,7 +3749,7 @@ if (validStart) {
     }
 
     clearPreview();
-    selectDate(dayDate);
+    await selectDate(dayDate);
 
   });
 
