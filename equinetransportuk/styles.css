@@ -2299,7 +2299,7 @@ BOOKING SUMMARY CARD
 
 .cal-last {
   border-color: #f59e0b;
-  background: #fff7ed;
+  background: rgba(245, 158, 11, 0.08);
 }
 
 /* ===============================
@@ -2341,8 +2341,8 @@ BOOKING SUMMARY CARD
 @media (max-width: 768px) {
 
   .cal-last {
-    background: transparent;   /* remove orange fill */
-    border-color: #ef4444;     /* subtle urgency (red outline) */
-  }
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
 
 }
