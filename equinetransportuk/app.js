@@ -1696,7 +1696,12 @@ pickupDateInput?.addEventListener("change", () => {
 durationDaysInput?.addEventListener("change", async () => {
 
   updatePickupTimeVisibility();
-  syncPickupTimeOptions();
+
+  const selectedDate = pickupDateInput?.value
+    ? new Date(`${pickupDateInput.value}T00:00:00`)
+    : null;
+
+  await syncPickupTimeOptions(selectedDate);
 
   /* ===============================
      Instant price preview
