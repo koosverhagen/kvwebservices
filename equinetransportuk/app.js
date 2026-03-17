@@ -518,23 +518,40 @@ function getRemainingHalfDaySlots(dateObj, bookings){
    DISABLE AM / PM OPTIONS
 ================================ */
 
-async function syncPickupTimeOptions(startDate){
+async function syncPickupTimeOptions(startDate) {
+  if (!pickupTimeInput || !durationDaysInput) return;
+
+  const duration = Number(durationDaysInput.value || 0);
+
+  const existingPmOption = Array.from(pickupTimeInput.options)
+    .find(opt => opt.value === "13:00");
+
+  if (duration !== 0.5) {
+    if (existingPmOption) existingPmOption.disabled = false;
+    pickupTimeInput.value = "07:00";
+    return;
+  }
+
+  if (!startDate) return;
 
   const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   const { morningAvailable, afternoonAvailable } =
     getRemainingHalfDaySlots(startDate, bookings);
 
-  const pickupSelect = document.getElementById("pickup-time");
+  const morningOption = pickupTimeInput.querySelector('option[value="07:00"]');
+  const afternoonOption = pickupTimeInput.querySelector('option[value="13:00"]');
 
-  if(!pickupSelect) return;
+  if (morningOption) morningOption.disabled = !morningAvailable;
+  if (afternoonOption) afternoonOption.disabled = !afternoonAvailable;
 
-  const morningOption = pickupSelect.querySelector('option[value="07:00"]');
-  const afternoonOption = pickupSelect.querySelector('option[value="13:00"]');
-
-  if(morningOption) morningOption.disabled = !morningAvailable;
-  if(afternoonOption) afternoonOption.disabled = !afternoonAvailable;
-
+  if (pickupTimeInput.value === "07:00" && !morningAvailable && afternoonAvailable) {
+    pickupTimeInput.value = "13:00";
+  } else if (pickupTimeInput.value === "13:00" && !afternoonAvailable && morningAvailable) {
+    pickupTimeInput.value = "07:00";
+  } else if (!morningAvailable && !afternoonAvailable) {
+    pickupTimeInput.value = "";
+  }
 }
 
 async function findNextAvailableDate(startDate, durationDays, pickupTime) {
