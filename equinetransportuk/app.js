@@ -3770,7 +3770,7 @@ calGrid.dataset.rendering = "false";
    Select date
 ====================================================== */
 
-function selectDate(dayDate) {
+async function selectDate(dayDate) {
 
   const pickupInput = document.getElementById("pickup-date");
   const durationInput = document.getElementById("duration-days");
@@ -3783,9 +3783,8 @@ function selectDate(dayDate) {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
-  updateDurationOptions(dayDate);
-
-  syncPickupTimeOptions(dayDate);
+await updateDurationOptions(dayDate);
+await syncPickupTimeOptions(dayDate);
 
   /* reset duration */
 
