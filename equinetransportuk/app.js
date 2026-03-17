@@ -333,6 +333,71 @@ availabilityResults?.addEventListener("click",(e)=>{
    Helpers
 ====================================================== */
  
+async function syncBookingPickupTimeOptions(dateObj, vehicleId) {
+
+  const select = document.getElementById("booking-pickup-time");
+  if (!select || !dateObj || !vehicleId) return;
+
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+  let morningAvailable = false;
+  let afternoonAvailable = false;
+
+  const vehicleBookings = bookings.filter(
+    b => b.vehicleId === vehicleId && b.status !== "cancelled"
+  );
+
+  const dayStart = new Date(dateObj);
+  dayStart.setHours(0,0,0,0);
+
+  const dayEnd = new Date(dateObj);
+  dayEnd.setHours(23,59,59,999);
+
+  let morningBooked = false;
+  let afternoonBooked = false;
+
+  vehicleBookings.forEach(b => {
+
+    const start = new Date(b.pickupAt);
+    const end = new Date(b.dropoffAt);
+
+    if (start <= dayEnd && end >= dayStart) {
+
+      const startHour = start.getHours();
+      const endHour = end.getHours();
+
+      if (startHour <= 12) morningBooked = true;
+      if (endHour >= 13) afternoonBooked = true;
+
+    }
+
+  });
+
+  morningAvailable = !morningBooked;
+  afternoonAvailable = !afternoonBooked;
+
+  const morningOption = select.querySelector('option[value="07:00"]');
+  const afternoonOption = select.querySelector('option[value="13:00"]');
+
+  if (morningOption) morningOption.disabled = !morningAvailable;
+  if (afternoonOption) afternoonOption.disabled = !afternoonAvailable;
+
+  /* auto-fix selection */
+
+  if (select.value === "07:00" && !morningAvailable && afternoonAvailable) {
+    select.value = "13:00";
+  }
+
+  if (select.value === "13:00" && !afternoonAvailable && morningAvailable) {
+    select.value = "07:00";
+  }
+
+  if (!morningAvailable && !afternoonAvailable) {
+    select.value = "";
+  }
+
+}
+
 function getRemainingHalfDaySlots(dateObj, bookings){
 
   let morningAvailable = false;
@@ -2185,6 +2250,11 @@ async function selectAvailability(vehicleId) {
 
   updateCheckoutSummary();
 
+  await syncBookingPickupTimeOptions(
+  new Date(pickupDate),
+  vehicle.id
+);
+
   checkoutSummary?.scrollIntoView({
   behavior: "smooth",
   block: "nearest"
@@ -2709,18 +2779,18 @@ if (badge) {
 
   if (selectedDurationInput) {
 
-    selectedDurationInput.addEventListener("change", () => {
+    selectedDurationInput.addEventListener("change", async () => {
 
-      updateHalfDayPickup();
+  updateHalfDayPickup();
 
-      /* ensure booking pickup time stays valid */
-      const bookingTimeInput = document.getElementById("booking-pickup-time");
+  const vehicle = selectedAvailability?.vehicle;
+  const date = selectedPickupInput?.value;
 
-      if (bookingTimeInput && Number(selectedDurationInput.value) !== 0.5) {
-        bookingTimeInput.value = "07:00";
-      }
+  if (vehicle && date) {
+    await syncBookingPickupTimeOptions(new Date(date), vehicle.id);
+  }
 
-    });
+});
 
   }
 
