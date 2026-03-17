@@ -318,17 +318,38 @@ let selectedAvailability = null;
 
 availabilityResults?.addEventListener("click",(e)=>{
 
-  const btn = e.target.closest(".next-date-btn");
-  if(!btn) return;
+  const nextBtn = e.target.closest(".next-date-btn");
+  if (nextBtn) {
+    const date = nextBtn.dataset.date;
+    pickupDateInput.value = date;
 
-  const date = btn.dataset.date;
+    const selectedDate = new Date(`${date}T00:00:00`);
+    if (!Number.isNaN(selectedDate.getTime())) {
+      document.querySelectorAll(".cal-selected")
+        .forEach(el => el.classList.remove("cal-selected"));
 
-  pickupDateInput.value = date;
+      document.querySelectorAll("#cal-grid .cal-day").forEach(el => {
+        if (Number(el.textContent) === selectedDate.getDate()) {
+          el.classList.add("cal-selected");
+        }
+      });
+    }
 
-  availabilityForm?.requestSubmit();
+    availabilityForm?.requestSubmit();
+    return;
+  }
+
+  const chooseBtn = e.target.closest(".choose-lorry");
+  if (chooseBtn) {
+    const vehicleId = chooseBtn.dataset.vehicleId;
+    if (vehicleId) {
+      selectAvailability(vehicleId).then(() => {
+        goToStep(3);
+      });
+    }
+  }
 
 });
-
 /* ======================================================
    Helpers
 ====================================================== */
@@ -896,6 +917,72 @@ function formatDurationLabel(durationDays) {
   return `${numeric} days`;
 }
 
+function formatStepSearchDate(value) {
+  if (!value) return "—";
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return value;
+
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function formatPickupTimeLabel(value) {
+  if (value === "07:00") return "Morning";
+  if (value === "13:00") return "Afternoon";
+  return value || "—";
+}
+
+function updateAvailabilitySearchSummary(items = []) {
+  const box = document.getElementById("availability-search-summary");
+  if (!box) return;
+
+  const pickupDate = pickupDateInput?.value || "";
+  const durationDays = Number(durationDaysInput?.value || 0);
+  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+
+  if (!pickupDate || !durationDays) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+
+  const chips = [
+    `<span class="search-chip"><strong>Date:</strong> ${escapeHtml(formatStepSearchDate(pickupDate))}</span>`,
+    `<span class="search-chip"><strong>Duration:</strong> ${escapeHtml(formatDurationLabel(durationDays))}</span>`
+  ];
+
+  if (durationDays === 0.5) {
+    chips.push(
+      `<span class="search-chip"><strong>Pickup:</strong> ${escapeHtml(formatPickupTimeLabel(pickupTime))}</span>`
+    );
+  }
+
+  if (items.length > 0) {
+    chips.push(
+      `<span class="search-chip search-chip-accent"><strong>${items.length}</strong> ${items.length === 1 ? "lorry" : "lorries"} available</span>`
+    );
+  }
+
+  box.innerHTML = chips.join("");
+  box.hidden = false;
+}
+
+function scrollStep2IntoView() {
+  const step2 = document.getElementById("step-2");
+  if (!step2) return;
+
+  setTimeout(() => {
+    step2.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 120);
+}
+
 function isWeekendDate(date) {
   const day = date.getDay();
   return day === 0 || day === 6;
@@ -1265,11 +1352,13 @@ async function renderAvailabilityResults(items) {
     return;
   }
 
-  /* ===============================
-     PRICE PREVIEW (STEP HEADER)
-  =============================== */
+  updateAvailabilitySearchSummary(items);
 
   const pricePreview = document.getElementById("price-preview");
+
+  /* ===============================
+     PRICE PREVIEW (HEADER)
+  =============================== */
 
   if (pricePreview) {
 
@@ -1277,8 +1366,12 @@ async function renderAvailabilityResults(items) {
 
       const price = Number(items[0].discountedTotal ?? items[0].baseCost ?? 0);
 
-      pricePreview.innerHTML =
-        `Estimated hire price: <strong>£${price.toFixed(2)}</strong>`;
+      pricePreview.innerHTML = `
+        <div class="price-main">Only one lorry available</div>
+        <div class="price-confirm">
+          ${escapeHtml(items[0].vehicle.name)} · Estimated hire price £${price.toFixed(2)}
+        </div>
+      `;
 
       pricePreview.style.display = "block";
 
@@ -1291,122 +1384,140 @@ async function renderAvailabilityResults(items) {
 
   }
 
- /* ===============================
-   NO VEHICLES
-=============================== */
+  /* ===============================
+     NO VEHICLES
+  =============================== */
 
-if (!items.length) {
+  if (!items.length) {
 
-  const pickupDate = pickupDateInput.value;
-  const duration = Number(durationDaysInput.value);
-  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+    const pickupDate = pickupDateInput.value;
+    const duration = Number(durationDaysInput.value);
+    const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
 
-  const nextDate = await findNextAvailableDate(
-    new Date(pickupDate),
-    duration,
-    pickupTime
-  );
+    const nextDate = await findNextAvailableDate(
+      new Date(pickupDate),
+      duration,
+      pickupTime
+    );
 
-  let suggestionHTML = "";
+    let suggestionHTML = "";
 
-  if (nextDate) {
+    if (nextDate) {
 
-    const formatted = nextDate.toLocaleDateString(undefined,{
-      day:"numeric",
-      month:"long"
-    });
+      const formatted = nextDate.toLocaleDateString(undefined,{
+        day:"numeric",
+        month:"long"
+      });
 
-    const nextValue = nextDate.toISOString().slice(0,10);
+      const nextValue = nextDate.toISOString().slice(0,10);
 
-    suggestionHTML = `
-      <div class="next-available">
-        Next available: <strong>${formatted}</strong><br>
-        <button class="btn ghost next-date-btn"
-          data-date="${nextValue}">
-          Check ${formatted}
-        </button>
+      suggestionHTML = `
+        <div class="next-available">
+          Next available: <strong>${formatted}</strong><br>
+          <button class="btn ghost next-date-btn"
+            data-date="${nextValue}">
+            Check ${formatted}
+          </button>
+        </div>
+      `;
+
+    }
+
+    availabilityResults.innerHTML = `
+      <div class="availability-empty-state">
+        <p class="empty-note">
+          No lorries available for this date and duration.
+        </p>
+        ${suggestionHTML}
       </div>
     `;
 
+    setTimeout(() => {
+      availabilityResults?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 150);
+
+    return;
   }
 
-  availabilityResults.innerHTML = `
-    <p class="empty-note">
-      No lorries available for this date and duration.
-    </p>
-    ${suggestionHTML}
-  `;
-
-  setTimeout(() => {
-    availabilityResults?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }, 150);
-
-  return;
-
-}
-
   /* ===============================
-     ONLY ONE VEHICLE → SKIP STEP 2
+     ONLY ONE VEHICLE → SKIP
   =============================== */
 
   if (items.length === 1) {
 
-  await selectAvailability(items[0].vehicle.id);
+    await selectAvailability(items[0].vehicle.id);
+    goToStep(3);
 
-  goToStep(3);
-
-  return;
-
-}
+    return;
+  }
 
   /* ===============================
-     MULTIPLE VEHICLES → SHOW STEP 2
+     MULTIPLE VEHICLES → STEP 2
   =============================== */
 
   const html = items.map((item) => {
 
-    const confirmationFee = getConfirmationFee(item.vehicle);
+    const vehicle = item.vehicle;
+    const confirmationFee = getConfirmationFee(vehicle);
     const displayPrice = Number(item.discountedTotal ?? item.baseCost ?? 0);
+
+    const durationLabel = formatDurationLabel(item.durationDays);
+
+    const pickupLabel =
+      Number(item.durationDays) === 0.5
+        ? ` · ${formatPickupTimeLabel(item.pickupTime)}`
+        : "";
 
     return `
       <article class="availability-item">
 
         <img
-          src="${getVehicleMainImage(item.vehicle)}"
-          alt="${escapeHtml(item.vehicle.name)}"
+          src="${getVehicleMainImage(vehicle)}"
+          alt="${escapeHtml(vehicle.name)}"
           class="availability-image"
         >
 
         <div class="availability-info">
 
-          <h4>${escapeHtml(item.vehicle.name)}</h4>
+          <h4>${escapeHtml(vehicle.name)}</h4>
 
-          <p class="muted">
-            ${item.vehicle.code ? `${escapeHtml(item.vehicle.code)} · ` : ""}
-            ${escapeHtml(formatDateOnly(item.pickupDate))} ${escapeHtml(item.pickupTime)} ·
-            ${escapeHtml(formatDurationLabel(item.durationDays))}
+          <p class="muted tiny">
+            ${vehicle.code ? `${escapeHtml(vehicle.code)} · ` : ""}
+            ${escapeHtml(formatDateOnly(item.pickupDate))} ·
+            ${escapeHtml(durationLabel)}${escapeHtml(pickupLabel)}
           </p>
 
-          <div class="price-preview">
-            <div class="price-main">
+          <div class="availability-meta">
+            <span class="availability-meta-pill">
+              ${escapeHtml(formatDateOnly(item.pickupDate))}
+            </span>
+            <span class="availability-meta-pill">
+              ${escapeHtml(durationLabel)}
+            </span>
+          </div>
+
+          <div class="availability-price-row">
+            <span class="availability-price">
               £${displayPrice.toFixed(2)}
-            </div>
-            <div class="price-confirm">
+            </span>
+            <span class="availability-price-note">
               Pay now £${confirmationFee.toFixed(2)}
-            </div>
+            </span>
           </div>
 
         </div>
 
-        <button
-          class="btn choose-lorry"
-          type="button"
-          data-vehicle-id="${escapeHtml(item.vehicle.id)}">
-          Select
-        </button>
+        <div class="availability-actions">
+          <button
+            class="btn choose-lorry"
+            type="button"
+            data-vehicle-id="${escapeHtml(vehicle.id)}">
+            Choose this lorry
+          </button>
+        </div>
 
       </article>
     `;
@@ -1415,35 +1526,33 @@ if (!items.length) {
 
   availabilityResults.innerHTML = html;
 
+  /* ===============================
+     AVAILABILITY NOTE / URGENCY
+  =============================== */
+
   let availabilityNote = `
-<p class="muted">
-  ${items.length} lorry${items.length > 1 ? "ies" : ""} available
-</p>
-`;
-
-if (items.length === 1) {
-
-  availabilityNote = `
-  <div class="urgency-banner">
-    ⚠ Only 1 lorry left for this date
-  </div>
+    <p class="muted">
+      ${items.length} lorr${items.length > 1 ? "ies" : "y"} available
+    </p>
   `;
 
-}
+  availabilityResults.insertAdjacentHTML(
+    "afterbegin",
+    availabilityNote
+  );
 
-availabilityResults.insertAdjacentHTML(
-  "afterbegin",
-  availabilityNote
-);
+  /* ===============================
+     STEP CONTROL + SCROLL
+  =============================== */
 
   goToStep(2);
 
   setTimeout(() => {
-    availabilityResults?.scrollIntoView({
+    document.getElementById("step-2")?.scrollIntoView({
       behavior: "smooth",
       block: "start"
     });
-  }, 150);
+  }, 120);
 
 }
 
