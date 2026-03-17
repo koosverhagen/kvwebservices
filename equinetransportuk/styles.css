@@ -2286,7 +2286,7 @@ BOOKING SUMMARY CARD
   padding: 4px 6px;
   border-radius: 10px;
 
-  background: #facc15; /* amber */
+  background: #facc157c; /* amber */
   color: #111;
 
   z-index: 5;
@@ -2299,7 +2299,7 @@ BOOKING SUMMARY CARD
 
 .cal-last {
   border-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.08);
+  background: rgba(245, 159, 11, 0);
 }
 
 /* ===============================
@@ -2322,7 +2322,7 @@ BOOKING SUMMARY CARD
     padding: 6px 10px;
 
     /* glass / transparent look */
-    background: rgba(250, 204, 21, 0.85);
+    background: rgba(250, 204, 21, 0.52);
     backdrop-filter: blur(6px);
 
     /* slightly softer */
@@ -2342,7 +2342,7 @@ BOOKING SUMMARY CARD
 
   .cal-last {
   border-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.08);
+  background: rgba(245, 159, 11, 0);
 }
 
 }
