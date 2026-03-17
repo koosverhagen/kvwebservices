@@ -2270,43 +2270,79 @@ BOOKING SUMMARY CARD
   position:relative;
 }
 
+/* ===============================
+   LAST SLOT BADGE
+=============================== */
+
 /* "1 left" label inside calendar */
-.cal-last-label{
-  position:absolute;
-  top:5px;
-  right:5px;
+.cal-last-label {
+  position: absolute;
+  top: 6px;
+  right: 6px;
 
-  width:18px;
-  height:18px;
+  font-size: 12px;
+  font-weight: 600;
 
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  padding: 4px 6px;
+  border-radius: 10px;
 
-  font-size:10px;
-  font-weight:700;
+  background: #facc15; /* amber */
+  color: #111;
 
-  color:#92400e;
-  background:#fde68a;
-  border-radius:50%;
-
-  z-index:3;
+  z-index: 5;
 }
 
-/* tile highlight when only one vehicle left */
-.cal-last{
-  border-color:#f59e0b;
-  background:#fff7ed;
+
+/* ===============================
+   LAST SLOT TILE (DESKTOP)
+=============================== */
+
+.cal-last {
+  border-color: #f59e0b;
+  background: #fff7ed;
 }
 
-@media (max-width: 640px) {
+/* ===============================
+   MOBILE VERSION
+=============================== */
 
-  .cal-last-label{
-    top:4px;
-    right:4px;
-    font-size:9px;
-    padding:1px 4px;
-    border-radius:3px;
+@media (max-width: 768px) {
+
+  .cal-last-label {
+
+    /* center it */
+    top: 50%;
+    left: 50%;
+    right: auto;
+
+    transform: translate(-50%, -50%);
+
+    /* make it larger */
+    font-size: 13px;
+    padding: 6px 10px;
+
+    /* glass / transparent look */
+    background: rgba(250, 204, 21, 0.85);
+    backdrop-filter: blur(6px);
+
+    /* slightly softer */
+    border-radius: 14px;
+
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+
+  }
+
+}
+
+/* ===============================
+   MOBILE — let badge do the work
+=============================== */
+
+@media (max-width: 768px) {
+
+  .cal-last {
+    background: transparent;   /* remove orange fill */
+    border-color: #ef4444;     /* subtle urgency (red outline) */
   }
 
 }

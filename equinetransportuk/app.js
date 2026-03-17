@@ -3740,9 +3740,14 @@ if (remainingSlots === 1){
 
   dayEl.classList.add("cal-last");
 
-  const label = document.createElement("div");
-  label.className = "cal-last-label";
-  label.textContent = "1";
+const label = document.createElement("div");
+label.className = "cal-last-label";
+
+if (window.innerWidth < 768) {
+  label.textContent = "1 Left!";
+} else {
+  label.textContent = "1 Slot Left!";
+}
 
   dayEl.appendChild(label);
 
