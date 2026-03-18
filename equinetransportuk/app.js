@@ -1572,7 +1572,11 @@ async function updateCheckoutSummary() {
 
   console.log("FINAL vehicleId:", vehicleId);
 
-  const confirmationFee = getConfirmationFeeFromId(vehicleId);
+ let confirmationFee = 75;
+
+if (vehicleId && vehicleId.startsWith("v75")) {
+  confirmationFee = 100;
+}
 
   /* ===============================
      CHECK HOW MANY VEHICLES LEFT
@@ -3050,7 +3054,11 @@ if (bookingForm) {
        CONFIRMATION FEE (🔥 FIXED)
     =============================== */
 
-    const confirmationFee = getConfirmationFeeFromId(vehicleId);
+    let confirmationFee = 75;
+
+if (vehicleId && vehicleId.startsWith("v75")) {
+  confirmationFee = 100;
+}
     const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
     /* ===============================
