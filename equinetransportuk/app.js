@@ -1563,7 +1563,22 @@ async function updateCheckoutSummary() {
      SAFE VEHICLE ID (🔥 FIX)
   =============================== */
 
- 
+ const vehicleId =
+  selectedAvailability.vehicle?.id ||
+  selectedAvailability.vehicleId ||
+  vehicles.find(v =>
+    v.name === selectedAvailability.vehicle?.name
+  )?.id;
+
+  console.log("FINAL vehicleId:", vehicleId);
+
+ let confirmationFee = 75;
+
+if (vehicleId && vehicleId.startsWith("v75")) {
+  confirmationFee = 100;
+
+  console.log("💰 SUBMIT confirmationFee:", confirmationFee);
+}
 
   /* ===============================
      CHECK HOW MANY VEHICLES LEFT
@@ -1610,6 +1625,8 @@ async function updateCheckoutSummary() {
 
   if (bookingSubmitBtn) {
     bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
+    
+    console.log("💰 BUTTON confirmationFee:", confirmationFee);
   }
 
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
@@ -3045,6 +3062,8 @@ if (bookingForm) {
 
 if (vehicleId && vehicleId.startsWith("v75")) {
   confirmationFee = 100;
+
+  console.log("💰 SUMMARY confirmationFee:", confirmationFee);
 }
     const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
