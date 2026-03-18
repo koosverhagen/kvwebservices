@@ -1151,10 +1151,19 @@ async function handleListBookings(request, env) {
     return json({ error: "Invalid from/to parameters" }, 400);
   }
 
-  const fromMonth = fromParam.slice(0,7);
-  const toMonth = toParam.slice(0,7);
+  const months = [];
 
-  const months = new Set([fromMonth, toMonth]);
+const current = new Date(from);
+current.setDate(1);
+
+while (current <= to) {
+
+  const monthKey = current.toISOString().slice(0,7);
+  months.push(monthKey);
+
+  current.setMonth(current.getMonth() + 1);
+
+}
 
   let bookings = [];
 
@@ -1168,7 +1177,7 @@ async function handleListBookings(request, env) {
 
       const parsed = JSON.parse(data);
 
-      bookings.push(...parsed);
+      bookings = bookings.concat(parsed);
 
     } catch {}
 
