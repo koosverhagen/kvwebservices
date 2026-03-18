@@ -53,12 +53,15 @@ function goToStep(step) {
   const indicator = document.querySelector(`.booking-steps .step[data-step="${step}"]`);
   if(indicator) indicator.classList.add("active");
 
+// Only auto scroll for steps AFTER step 1
+if (step > 1) {
   setTimeout(()=>{
-  stepEl?.scrollIntoView({
-    behavior:"smooth",
-    block:"start"
-  });
-},100);
+    stepEl?.scrollIntoView({
+      behavior:"smooth",
+      block:"start"
+    });
+  },100);
+}
 
 }
 
@@ -4036,11 +4039,18 @@ if (PRESELECTED_VEHICLE) {
     const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
     warningBox.innerHTML = `
-      <div class="availability-warning">
-        Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
-        is not available on this date.
-      </div>
-    `;
+  <div class="availability-warning">
+    Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
+    is not available on this date.
+  </div>
+`;
+
+setTimeout(() => {
+  warningBox?.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}, 50);
 
     warningBox.style.display = "block";
 
