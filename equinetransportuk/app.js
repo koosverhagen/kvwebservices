@@ -4018,10 +4018,6 @@ if (isBlocked && warningBox) {
 
   BLOCK_AUTO_SCROLL = true;
 
-setTimeout(() => {
-  BLOCK_AUTO_SCROLL = false;
-}, 300);
-
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
   warningBox.innerHTML = `
@@ -4068,9 +4064,11 @@ syncPickupTimeOptions(dayDate);
 
   durationInput.value = "";
 
-  if (!triggeredFallbackSearch && availabilityResults) {
-  availabilityResults.innerHTML = "";
-}
+  /* clear vehicle availability results */
+
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "";
+  }
 
   /* reset selected vehicle */
 
