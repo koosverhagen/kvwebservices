@@ -813,9 +813,15 @@ async function getBookings(forceRefresh = false) {
 
   try {
 
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59).toISOString();
+const firstDay = new Date();
+firstDay.setMonth(firstDay.getMonth() - 2);
+firstDay.setDate(1);
+firstDay.setHours(0,0,0,0);
+
+const lastDay = new Date();
+lastDay.setMonth(lastDay.getMonth() + 3);
+lastDay.setDate(0);
+lastDay.setHours(23,59,59,999);
 
     const res = await fetch(
       `${apiUrl("/api/bookings/list")}?from=${encodeURIComponent(firstDay)}&to=${encodeURIComponent(lastDay)}`
