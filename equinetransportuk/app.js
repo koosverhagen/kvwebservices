@@ -2166,7 +2166,16 @@ function changeLorry() {
     return;
   }
 
-  availabilityResults.innerHTML = "Checking availability...";
+  availabilityResults.innerHTML = `
+  <div class="availability-loading">
+    <div class="loader-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="loader-text">Checking availability</div>
+  </div>
+`;
 
   setTimeout(() => {
     availabilityForm?.dispatchEvent(new Event("submit", { cancelable: true }));
@@ -3981,9 +3990,6 @@ Array.from(calGrid.children).forEach(cell => {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
-  if (availabilityResults) {
-  availabilityResults.innerHTML = "Checking availability...";
-}
 
 /*******************************
   PRESELECTED LORRY CHECK (EARLY)
@@ -4020,9 +4026,6 @@ if (isBlocked && warningBox) {
 
   BLOCK_AUTO_SCROLL = true;
 
-setTimeout(() => {
-  BLOCK_AUTO_SCROLL = false;
-}, 300);
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
