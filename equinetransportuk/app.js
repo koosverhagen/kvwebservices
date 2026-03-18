@@ -4302,6 +4302,8 @@ function updateCheckoutSummary(pricing) {
 
   if (pricing) {
 
+    console.log("🟡 SUMMARY MODE: pricing preview", pricing);
+
     lines.innerHTML = "";
 
     function row(label, value) {
@@ -4331,21 +4333,40 @@ function updateCheckoutSummary(pricing) {
   -------------------------------- */
 
   if (!selectedAvailability) {
+    console.log("🔴 No selectedAvailability");
     lines.innerHTML = "<div class='summary-row muted'>Select a lorry to continue</div>";
     return;
   }
 
   const vehicle = selectedAvailability.vehicle;
+
+  console.log("🟢 selectedAvailability:", selectedAvailability);
+  console.log("🟢 vehicle object:", vehicle);
+
+  /* 🔥 SAFE VEHICLE ID DETECTION */
+
+  const vehicleId =
+    vehicle?.id ||
+    selectedAvailability.vehicleId ||
+    vehicles.find(v => v.name === vehicle?.name)?.id;
+
+  console.log("🔵 resolved vehicleId:", vehicleId);
+
   const baseCost = Number(selectedAvailability.baseCost || 0);
   const discountAmount = Number(selectedAvailability.discountAmount || 0);
 
-  const confirmationFee = getConfirmationFee(vehicle);
+  /* 🔥 USE FIXED FEE FUNCTION */
+
+  const confirmationFee = getConfirmationFeeFromId(vehicleId);
+
+  console.log("🟣 confirmationFee:", confirmationFee);
+
   const total = baseCost - discountAmount;
   const remaining = Math.max(0, total - confirmationFee);
 
   lines.innerHTML = `
     <div class="summary-row">
-      <span>${vehicle.name}</span>
+      <span>${vehicle?.name || "Unknown vehicle"}</span>
       <span>£${baseCost.toFixed(2)}</span>
     </div>
 
