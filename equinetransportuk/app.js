@@ -1629,6 +1629,14 @@ if (vehicleId && vehicleId.startsWith("v75")) {
     console.log("💰 BUTTON confirmationFee:", confirmationFee);
   }
 
+  /* 🔥 ADD THIS BLOCK */
+const confirmBtn = document.getElementById("booking-confirm-btn");
+
+if (confirmBtn) {
+  confirmBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
+  console.log("💰 CONFIRM BTN updated:", confirmationFee);
+}
+
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
   const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
 
