@@ -4012,9 +4012,10 @@ if (PRESELECTED_VEHICLE) {
 
   const warningBox = document.getElementById("preselected-warning");
 
-  if (isBlocked && warningBox) {
+  let triggeredFallbackSearch = false;
 
-  // ✅ block ALL other auto-scrolls
+if (isBlocked && warningBox) {
+
   BLOCK_AUTO_SCROLL = true;
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
@@ -4022,13 +4023,13 @@ if (PRESELECTED_VEHICLE) {
   warningBox.innerHTML = `
     <div class="availability-warning">
       Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
-      is not available on this date.
+      is not available on this date.<br>
+      Showing other available lorries instead.
     </div>
   `;
 
   warningBox.style.display = "block";
 
-  // ✅ scroll AFTER render
   setTimeout(() => {
     warningBox.scrollIntoView({
       behavior: "smooth",
@@ -4036,13 +4037,21 @@ if (PRESELECTED_VEHICLE) {
     });
   }, 60);
 
-  // 🚨 CRITICAL: stop further execution
-  return;
+  // 🔥 fallback to full fleet
+  PRESELECTED_VEHICLE = null;
 
-}
-if (warningBox) {
+  // 🚀 trigger availability search
+  triggeredFallbackSearch = true;
+
+  setTimeout(() => {
+    availabilityForm?.requestSubmit();
+  }, 120);
+
+} else if (warningBox) {
+
   warningBox.innerHTML = "";
   warningBox.style.display = "none";
+
 }
 
 }
@@ -4055,11 +4064,9 @@ syncPickupTimeOptions(dayDate);
 
   durationInput.value = "";
 
-  /* clear vehicle availability results */
-
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "";
-  }
+  if (!triggeredFallbackSearch && availabilityResults) {
+  availabilityResults.innerHTML = "";
+}
 
   /* reset selected vehicle */
 
