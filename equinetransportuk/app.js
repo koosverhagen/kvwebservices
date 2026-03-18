@@ -1563,9 +1563,14 @@ async function updateCheckoutSummary() {
      SAFE VEHICLE ID (🔥 FIX)
   =============================== */
 
-  const vehicleId =
-    selectedAvailability.vehicle?.id ||
-    selectedAvailability.vehicleId;
+ const vehicleId =
+  selectedAvailability.vehicle?.id ||
+  selectedAvailability.vehicleId ||
+  vehicles.find(v =>
+    v.name === selectedAvailability.vehicle?.name
+  )?.id;
+
+  console.log("FINAL vehicleId:", vehicleId);
 
   const confirmationFee = getConfirmationFeeFromId(vehicleId);
 
@@ -1803,14 +1808,6 @@ durationDaysInput?.addEventListener("change", async () => {
       duration,
       pickupTimeInput?.value || "07:00"
     );
-
-    updateCheckoutSummary({
-      base: preview.baseCost,
-      voucher_discount: preview.discountAmount,
-      total: preview.discountedTotal,
-      deposit_due: getConfirmationFee(vehicle),
-      remaining: preview.discountedTotal - getConfirmationFee(vehicle)
-    });
 
     const previewBox = document.getElementById("price-preview");
 
@@ -4288,109 +4285,6 @@ else if (hasFullDay) {
   dayEl.appendChild(wrap);
 
 }
-
-function updateCheckoutSummary(pricing) {
-
-  console.log("🔥 OLD summary function running");
-
-  const lines = document.getElementById("summary-lines");
-  const totalEl = document.getElementById("summary-total");
-  const dueEl = document.getElementById("summary-due");
-  const remainingEl = document.getElementById("summary-remaining");
-
-  if (!lines || !totalEl || !dueEl || !remainingEl) return;
-
-  /* --------------------------------
-     MODE 1: Pricing preview
-  -------------------------------- */
-
-  if (pricing) {
-
-    console.log("🟡 SUMMARY MODE: pricing preview", pricing);
-
-    lines.innerHTML = "";
-
-    function row(label, value) {
-      const div = document.createElement("div");
-      div.className = "summary-row";
-      div.innerHTML = `<span>${label}</span><span>£${value}</span>`;
-      lines.appendChild(div);
-    }
-
-    if (pricing.base) {
-      row("Base hire", pricing.base);
-    }
-
-    if (pricing.voucher_discount) {
-      row("Voucher discount", "-" + pricing.voucher_discount);
-    }
-
-    totalEl.innerText = "£" + (pricing.total ?? 0);
-    dueEl.innerText = "£" + (pricing.deposit_due ?? 0);
-    remainingEl.innerText = "£" + (pricing.remaining ?? 0);
-
-    return;
-  }
-
-  /* --------------------------------
-     MODE 2: Booking summary
-  -------------------------------- */
-
-  if (!selectedAvailability) {
-    console.log("🔴 No selectedAvailability");
-    lines.innerHTML = "<div class='summary-row muted'>Select a lorry to continue</div>";
-    return;
-  }
-
-  const vehicle = selectedAvailability.vehicle;
-
-  console.log("🟢 selectedAvailability:", selectedAvailability);
-  console.log("🟢 vehicle object:", vehicle);
-
-  /* 🔥 SAFE VEHICLE ID DETECTION */
-
-  const vehicleId =
-    vehicle?.id ||
-    selectedAvailability.vehicleId ||
-    vehicles.find(v => v.name === vehicle?.name)?.id;
-
-  console.log("🔵 resolved vehicleId:", vehicleId);
-
-  const baseCost = Number(selectedAvailability.baseCost || 0);
-  const discountAmount = Number(selectedAvailability.discountAmount || 0);
-
-  /* 🔥 USE FIXED FEE FUNCTION */
-
-  const confirmationFee = getConfirmationFeeFromId(vehicleId);
-
-  console.log("🟣 confirmationFee:", confirmationFee);
-
-  const total = baseCost - discountAmount;
-  const remaining = Math.max(0, total - confirmationFee);
-
-  lines.innerHTML = `
-    <div class="summary-row">
-      <span>${vehicle?.name || "Unknown vehicle"}</span>
-      <span>£${baseCost.toFixed(2)}</span>
-    </div>
-
-    ${
-      discountAmount > 0
-        ? `<div class="summary-row discount">
-            <span>Discount</span>
-            <span>-£${discountAmount.toFixed(2)}</span>
-          </div>`
-        : ""
-    }
-  `;
-
-  totalEl.innerText = "£" + total.toFixed(2);
-  dueEl.innerText = "£" + confirmationFee.toFixed(2);
-  remainingEl.innerText = "£" + remaining.toFixed(2);
-
-}
-
-
 
 /* ======================================================
    Initial render
