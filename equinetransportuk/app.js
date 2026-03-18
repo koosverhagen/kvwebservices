@@ -3463,51 +3463,61 @@ async function showVehiclePreview(date, event) {
 
   });
 
-  const availableVehicles = availability.filter(
-    a => a.morningAvailable || a.afternoonAvailable
-  );
+  const fullDayVehicles = availability.filter(
+  a => a.morningAvailable && a.afternoonAvailable
+);
 
-  if (!availableVehicles.length) {
+const partialVehicles = availability.filter(
+  a =>
+    (a.morningAvailable || a.afternoonAvailable) &&
+    !(a.morningAvailable && a.afternoonAvailable)
+);
 
-    html += `<div class="muted tiny">Fully booked</div>`;
+if (!fullDayVehicles.length && !partialVehicles.length) {
 
-  } else {
+  html += `<div class="muted tiny">Fully booked</div>`;
 
-    html += `<div class="muted tiny">Available vehicles (${availableVehicles.length})</div>`;
+} else {
 
-    availableVehicles.forEach(a => {
+  html += `
+    <div class="muted tiny">
+      Full-day vehicles (${fullDayVehicles.length})
+      ${partialVehicles.length ? ` · Half-day only (${partialVehicles.length})` : ""}
+    </div>
+  `;
 
-      const vehicle = a.vehicle;
-      const img = getVehicleMainImage(vehicle);
+  [...fullDayVehicles, ...partialVehicles].forEach(a => {
 
-      let slotText = "";
+    const vehicle = a.vehicle;
+    const img = getVehicleMainImage(vehicle);
 
-      if (a.morningAvailable && a.afternoonAvailable) {
-        slotText = "Full day available";
-      } else if (a.morningAvailable) {
-        slotText = "Morning available";
-      } else if (a.afternoonAvailable) {
-        slotText = "Afternoon available";
-      }
+    let slotText = "";
 
-      html += `
-        <div class="preview-item preview-select"
-     data-vehicle-id="${vehicle.id}"
-     data-slot="${slotText}">
+    if (a.morningAvailable && a.afternoonAvailable) {
+      slotText = "Full day available";
+    } else if (a.morningAvailable) {
+      slotText = "Morning only";
+    } else if (a.afternoonAvailable) {
+      slotText = "Afternoon only";
+    }
 
-          ${img ? `<img src="${img}" class="preview-img">` : ""}
+    html += `
+      <div class="preview-item preview-select"
+        data-vehicle-id="${vehicle.id}"
+        data-slot="${slotText}">
 
-          <div class="preview-text">
-            <strong>${vehicle.name}</strong><br>
-            <span class="muted tiny">${slotText}</span>
-          </div>
+        ${img ? `<img src="${img}" class="preview-img">` : ""}
 
+        <div class="preview-text">
+          <strong>${vehicle.name}</strong><br>
+          <span class="muted tiny">${slotText}</span>
         </div>
-      `;
 
-    });
+      </div>
+    `;
+  });
 
-  }
+}
 
   /* MOBILE VERSION */
 
