@@ -4169,6 +4169,10 @@ async function updateDurationOptions(startDate) {
     durationInput.value = "";
   }
 }
+
+/* 🔥 expose globally */
+window.updateDurationOptions = updateDurationOptions;
+
 function onCalendarDayClick(date){
 
   pickupDateInput.value = date;
