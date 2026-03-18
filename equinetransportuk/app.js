@@ -3463,61 +3463,51 @@ async function showVehiclePreview(date, event) {
 
   });
 
-  const fullDayVehicles = availability.filter(
-  a => a.morningAvailable && a.afternoonAvailable
-);
+  const availableVehicles = availability.filter(
+    a => a.morningAvailable || a.afternoonAvailable
+  );
 
-const partialVehicles = availability.filter(
-  a =>
-    (a.morningAvailable || a.afternoonAvailable) &&
-    !(a.morningAvailable && a.afternoonAvailable)
-);
+  if (!availableVehicles.length) {
 
-if (!fullDayVehicles.length && !partialVehicles.length) {
+    html += `<div class="muted tiny">Fully booked</div>`;
 
-  html += `<div class="muted tiny">Fully booked</div>`;
+  } else {
 
-} else {
+    html += `<div class="muted tiny">Available vehicles (${availableVehicles.length})</div>`;
 
-  html += `
-    <div class="muted tiny">
-      Full-day vehicles (${fullDayVehicles.length})
-      ${partialVehicles.length ? ` · Half-day only (${partialVehicles.length})` : ""}
-    </div>
-  `;
+    availableVehicles.forEach(a => {
 
-  [...fullDayVehicles, ...partialVehicles].forEach(a => {
+      const vehicle = a.vehicle;
+      const img = getVehicleMainImage(vehicle);
 
-    const vehicle = a.vehicle;
-    const img = getVehicleMainImage(vehicle);
+      let slotText = "";
 
-    let slotText = "";
+      if (a.morningAvailable && a.afternoonAvailable) {
+        slotText = "Full day available";
+      } else if (a.morningAvailable) {
+        slotText = "Morning available";
+      } else if (a.afternoonAvailable) {
+        slotText = "Afternoon available";
+      }
 
-    if (a.morningAvailable && a.afternoonAvailable) {
-      slotText = "Full day available";
-    } else if (a.morningAvailable) {
-      slotText = "Morning only";
-    } else if (a.afternoonAvailable) {
-      slotText = "Afternoon only";
-    }
+      html += `
+        <div class="preview-item preview-select"
+     data-vehicle-id="${vehicle.id}"
+     data-slot="${slotText}">
 
-    html += `
-      <div class="preview-item preview-select"
-        data-vehicle-id="${vehicle.id}"
-        data-slot="${slotText}">
+          ${img ? `<img src="${img}" class="preview-img">` : ""}
 
-        ${img ? `<img src="${img}" class="preview-img">` : ""}
+          <div class="preview-text">
+            <strong>${vehicle.name}</strong><br>
+            <span class="muted tiny">${slotText}</span>
+          </div>
 
-        <div class="preview-text">
-          <strong>${vehicle.name}</strong><br>
-          <span class="muted tiny">${slotText}</span>
         </div>
+      `;
 
-      </div>
-    `;
-  });
+    });
 
-}
+  }
 
   /* MOBILE VERSION */
 
@@ -4047,9 +4037,8 @@ if (warningBox) {
 
 }
 
-// run async WITHOUT blocking UI
-updateDurationOptions(dayDate);
-syncPickupTimeOptions(dayDate);
+await updateDurationOptions(dayDate);
+await syncPickupTimeOptions(dayDate);
 
   /* reset duration */
 
@@ -4115,20 +4104,20 @@ async function updateDurationOptions(startDate) {
   const durationInput = document.getElementById("duration-days");
   if (!durationInput || !startDate) return;
 
-  const dateString = formatLocalDate(startDate);
+  const dateString = startDate.toISOString().slice(0, 10);
 
   const currentPickupTime =
-    pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+    pickupTimeInput?.value ||
+    DEFAULT_PICKUP_TIME;
 
-  // ✅ LOAD BOOKINGS ONCE
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
-
-  const remainingSlots = getRemainingSlots(startDate, bookings);
+  const remainingSlots = getRemainingSlots(
+    startDate,
+    BOOKINGS_CACHE || await getBookings(false)
+  );
 
   const options = Array.from(durationInput.options);
 
   for (const opt of options) {
-
     const days = Number(opt.value);
     if (!days) continue;
 
@@ -4138,76 +4127,23 @@ async function updateDurationOptions(startDate) {
       testPickupTime = currentPickupTime || DEFAULT_PICKUP_TIME;
     }
 
-    let disabled = false;
-
-    // ✅ FAST EXIT: no slots at all
-    if (remainingSlots === 0) {
-      opt.disabled = true;
-      continue;
-    }
-
-    // ✅ RULE: if only 1 slot left → restrict durations
-    if (remainingSlots === 1 && days > 1) {
-      opt.disabled = true;
-      continue;
-    }
-
-    // ⚡ ONLY NOW call heavy availability check
     const available = await getAvailableLorries(
       dateString,
       days,
       testPickupTime
     );
 
-    disabled = available.length === 0;
+    let disabled = available.length === 0;
 
-    /* ======================================
-       SPECIAL FIX FOR 1 DAY (CRITICAL)
-    ====================================== */
-
-    if (days === 1 && disabled) {
-
-      const hasFullDay = vehicles.some(vehicle => {
-
-        const vehicleBookings = bookings.filter(
-          b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-        );
-
-        const dayStart = new Date(startDate);
-        dayStart.setHours(0,0,0,0);
-
-        const dayEnd = new Date(startDate);
-        dayEnd.setHours(23,59,59,999);
-
-        let morningBooked = false;
-        let afternoonBooked = false;
-
-        vehicleBookings.forEach(b => {
-
-          const start = new Date(b.pickupAt);
-          const end = new Date(b.dropoffAt);
-
-          if (start <= dayEnd && end >= dayStart) {
-
-            if (start.getHours() < 13) morningBooked = true;
-            if (end.getHours() > 13) afternoonBooked = true;
-
-          }
-
-        });
-
-        return !morningBooked && !afternoonBooked;
-
-      });
-
-      if (hasFullDay) {
-        disabled = false;
-      }
-
+    /* extra rule:
+       if calendar says only 1 slot left,
+       only allow 1/2 day and 1 day
+    */
+    if (remainingSlots === 1 && days > 1) {
+      disabled = true;
     }
 
     opt.disabled = disabled;
-
   }
 
   /* keep current selection valid */
@@ -4215,7 +4151,6 @@ async function updateDurationOptions(startDate) {
   if (selectedOption?.disabled) {
     durationInput.value = "";
   }
-
 }
 
 /* 🔥 expose globally */
