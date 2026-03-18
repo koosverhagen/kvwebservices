@@ -821,9 +821,10 @@ async function getBookings(forceRefresh = false) {
     );
 
     if (!res.ok) {
-  console.warn("Booking API returned", res.status);
-  throw new Error("Booking API unavailable");
-}
+      console.warn("Booking API returned", res.status);
+      throw new Error("Booking API unavailable");
+    }
+
     const data = await res.json();
 
     BOOKINGS_CACHE = data.bookings || [];
@@ -833,24 +834,18 @@ async function getBookings(forceRefresh = false) {
 
   } catch (err) {
 
-    console.warn("⚠️ Booking API unavailable, fallback to local storage");
+    console.warn("⚠️ Booking API unavailable — returning empty");
 
-    try {
-      BOOKINGS_CACHE = JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
-      BOOKINGS_CACHE_AT = now;
-      return BOOKINGS_CACHE;
-    } catch {
-      return [];
-    }
+    BOOKINGS_CACHE = [];
+    BOOKINGS_CACHE_AT = now;
+
+    return BOOKINGS_CACHE;
 
   }
 }
 
 function getCalendarBookings() {
   return getBookings(true);
-}
-function saveBookings(bookings) {
-  localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(bookings));
 }
 
 function formatDateTime(value) {
@@ -3211,9 +3206,30 @@ if (bookingForm) {
       createdAt: new Date().toISOString()
     };
 
-    const bookings = await getBookings();
-    bookings.push(booking);
-    saveBookings(bookings);
+   try {
+
+  const res = await fetch(apiUrl("/api/bookings/create"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(booking)
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to save booking");
+  }
+
+  console.log("✅ Booking saved to backend");
+
+} catch (err) {
+
+  console.error("❌ Booking save failed:", err);
+
+  alert("Something went wrong saving your booking.");
+  return;
+
+}
 
     BOOKINGS_CACHE = null;
     AVAILABILITY_CACHE.clear();
