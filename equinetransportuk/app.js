@@ -3237,7 +3237,7 @@ if (bookingForm) {
     await getBookings(true);
     renderBookings();
     renderAdminBookings();
-    renderCalendar(true);
+  //renderCalendar(true);
 
     // store booking temporarily for Step 4
 window.pendingBooking = booking;
