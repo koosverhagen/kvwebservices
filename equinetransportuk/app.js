@@ -821,10 +821,9 @@ async function getBookings(forceRefresh = false) {
     );
 
     if (!res.ok) {
-      console.warn("Booking API returned", res.status);
-      throw new Error("Booking API unavailable");
-    }
-
+  console.warn("Booking API returned", res.status);
+  throw new Error("Booking API unavailable");
+}
     const data = await res.json();
 
     BOOKINGS_CACHE = data.bookings || [];
@@ -834,12 +833,15 @@ async function getBookings(forceRefresh = false) {
 
   } catch (err) {
 
-    console.warn("⚠️ Booking API unavailable — returning empty");
+    console.warn("⚠️ Booking API unavailable, fallback to local storage");
 
-    BOOKINGS_CACHE = [];
-    BOOKINGS_CACHE_AT = now;
-
-    return BOOKINGS_CACHE;
+    try {
+      BOOKINGS_CACHE = JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
+      BOOKINGS_CACHE_AT = now;
+      return BOOKINGS_CACHE;
+    } catch {
+      return [];
+    }
 
   }
 }
@@ -3770,7 +3772,7 @@ const endHour = end.getUTCHours();
  async function renderCalendar() {
 
 /* load bookings (use cache if already available) */
-const bookings = await getBookings(true);
+const bookings = BOOKINGS_CACHE || await getBookings(false);
 
  console.log("Calendar bookings:", bookings);
 
