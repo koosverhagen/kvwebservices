@@ -4329,7 +4329,7 @@ async function watchBookingUpdates() {
       renderAdminBookings();
 
       if (typeof renderCalendar === "function") {
-        renderCalendar(true);
+        renderCalendar();
       }
 
     }
