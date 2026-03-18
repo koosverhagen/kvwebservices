@@ -606,7 +606,7 @@ async function syncPickupTimeOptions(startDate) {
 
   if (!startDate) return;
 
- const bookings = BOOKINGS_CACHE ?? await getBookings(false);
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   const { morningAvailable, afternoonAvailable } =
     getRemainingHalfDaySlots(startDate, bookings);
@@ -3420,7 +3420,7 @@ function movePreview(e){
 
 async function showVehiclePreview(date, event) {
 
-  const bookings = BOOKINGS_CACHE ?? await getBookings(false);
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   const dateStart = new Date(date);
   dateStart.setHours(0,0,0,0);
@@ -3473,7 +3473,7 @@ async function showVehiclePreview(date, event) {
     vehicleBookings.forEach(b => {
 
    const startHour = new Date(b.pickupAt).getHours();
-   const endHour = new Date(b.dropoffAt).getHours();
+const endHour = new Date(b.dropoffAt).getHours();
 
       if (startHour <= 7 && endHour >= 13) morningBooked = true;
       if (startHour <= 13 && endHour >= 19) afternoonBooked = true;
@@ -4501,7 +4501,7 @@ function updateCheckoutSummary(pricing) {
    Initial render
 ====================================================== */
 
-renderCalendar(true);
+renderCalendar();
 
 const durationInput = document.getElementById("duration-days");
 
