@@ -2514,3 +2514,32 @@ BOOKING SUMMARY CARD
   margin-bottom: 12px;
   line-height: 1.4;
 }
+
+.preselected-warning {
+  margin-top: 12px;
+}
+
+.preselected-warning .availability-warning {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #b91c1c;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.availability-warning {
+  animation: fadeSlideIn 0.25s ease;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
