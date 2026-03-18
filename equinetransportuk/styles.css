@@ -2499,3 +2499,18 @@ BOOKING SUMMARY CARD
   }
 
 }
+
+/* ===============================
+   PRESELECTED WARNING
+=============================== */
+
+.availability-warning {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #b91c1c;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
