@@ -2166,16 +2166,7 @@ function changeLorry() {
     return;
   }
 
-  availabilityResults.innerHTML = `
-  <div class="availability-loading">
-    <div class="loader-dots">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-    <div class="loader-text">Checking availability</div>
-  </div>
-`;
+  availabilityResults.innerHTML = "Checking availability...";
 
   setTimeout(() => {
     availabilityForm?.dispatchEvent(new Event("submit", { cancelable: true }));
@@ -3211,30 +3202,9 @@ if (bookingForm) {
       createdAt: new Date().toISOString()
     };
 
-   try {
-
-  const res = await fetch(apiUrl("/api/bookings/create"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(booking)
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to save booking");
-  }
-
-  console.log("✅ Booking saved to backend");
-
-} catch (err) {
-
-  console.error("❌ Booking save failed:", err);
-
-  alert("Something went wrong saving your booking.");
-  return;
-
-}
+    const bookings = await getBookings();
+    bookings.push(booking);
+    saveBookings(bookings);
 
     BOOKINGS_CACHE = null;
     AVAILABILITY_CACHE.clear();
@@ -3985,8 +3955,6 @@ async function selectDate(dayDate) {
 
   BLOCK_AUTO_SCROLL = false;
 
-  let triggeredFallbackSearch = false;
-
   /* 🔥 INSTANT UI FEEDBACK */
 
 document.querySelectorAll(".cal-selected")
@@ -4011,6 +3979,9 @@ Array.from(calGrid.children).forEach(cell => {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
+  if (availabilityResults) {
+  availabilityResults.innerHTML = "Checking availability...";
+}
 
 /*******************************
   PRESELECTED LORRY CHECK (EARLY)
@@ -4047,6 +4018,9 @@ if (isBlocked && warningBox) {
 
   BLOCK_AUTO_SCROLL = true;
 
+setTimeout(() => {
+  BLOCK_AUTO_SCROLL = false;
+}, 300);
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
