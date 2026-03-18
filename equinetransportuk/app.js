@@ -881,7 +881,14 @@ function is35T(vehicle) {
   return String(vehicle?.type || "").toLowerCase().includes("3.5");
 }
 
+function getConfirmationFee(vehicle) {
+  const id = String(vehicle?.id || "");
 
+  if (id.startsWith("v35")) return 75;
+  if (id.startsWith("v75")) return 100;
+
+  return 75; // fallback
+}
 
 function getDurationKey(durationDays) {
   return String(Number(durationDays || 0));
@@ -3047,13 +3054,8 @@ if (bookingForm) {
        CONFIRMATION FEE (🔥 FIXED)
     =============================== */
 
-    let confirmationFee = 75;
 
-if (vehicleId && vehicleId.startsWith("v75")) {
-  confirmationFee = 100;
-}
-    const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
-
+   
     /* ===============================
        BOOKING ID
     =============================== */
