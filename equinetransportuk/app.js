@@ -1376,6 +1376,7 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
 
 async function renderAvailabilityResults(items) {
 
+
   console.log("render items:", items.map(v => v.vehicle.name));
 
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
@@ -1473,44 +1474,6 @@ async function renderAvailabilityResults(items) {
     return;
   }
   
-/*******************************
-  PRESELECTED VEHICLE FLOW
-********************************/
-
-if (PRESELECTED_VEHICLE) {
-
-  const selected = items.find(
-    item => item.vehicle.id === PRESELECTED_VEHICLE
-  );
-
-  if (selected) {
-
-    await selectAvailability(selected.vehicle.id);
-
-    goToStep(3);
-
-    return;
-
-  }
-
-  /* ❌ selected lorry NOT available */
-
-  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
-
-  PRESELECTED_VEHICLE = null;
-
-  availabilityResults.insertAdjacentHTML(
-    "afterbegin",
-    `
-    <div class="availability-warning">
-      Sorry, <strong>${escapeHtml(vehicle?.name || "this lorry")}</strong>
-      is not available for this date.<br>
-      Please choose an alternative below.
-    </div>
-    `
-  );
-
-}
 
   /* ===============================
      ONLY ONE VEHICLE → SKIP
@@ -4038,6 +4001,57 @@ async function selectDate(dayDate) {
   const day = String(dayDate.getDate()).padStart(2, "0");
 
   pickupInput.value = `${year}-${month}-${day}`;
+
+  /*******************************
+  PRESELECTED LORRY CHECK (EARLY)
+********************************/
+
+if (PRESELECTED_VEHICLE) {
+
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+  const vehicleBookings = bookings.filter(
+    b => b.vehicleId === PRESELECTED_VEHICLE && b.status !== "cancelled"
+  );
+
+  const dayStart = new Date(dayDate);
+  dayStart.setHours(0,0,0,0);
+
+  const dayEnd = new Date(dayDate);
+  dayEnd.setHours(23,59,59,999);
+
+  const isBlocked = vehicleBookings.some(b => {
+
+    const start = new Date(b.pickupAt);
+    const end = new Date(b.dropoffAt);
+
+    return start <= dayEnd && end >= dayStart;
+
+  });
+
+  const warningBox = document.getElementById("preselected-warning");
+
+  if (isBlocked && warningBox) {
+
+    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+
+    warningBox.innerHTML = `
+      <div class="availability-warning">
+        Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
+        is not available on this date.
+      </div>
+    `;
+
+    warningBox.style.display = "block";
+
+  } else if (warningBox) {
+
+    warningBox.innerHTML = "";
+    warningBox.style.display = "none";
+
+  }
+
+}
 
 await updateDurationOptions(dayDate);
 await syncPickupTimeOptions(dayDate);
