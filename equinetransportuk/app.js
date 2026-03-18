@@ -4064,11 +4064,9 @@ syncPickupTimeOptions(dayDate);
 
   durationInput.value = "";
 
-  /* clear vehicle availability results */
-
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "";
-  }
+  if (!triggeredFallbackSearch && availabilityResults) {
+  availabilityResults.innerHTML = "";
+}
 
   /* reset selected vehicle */
 
