@@ -1563,20 +1563,7 @@ async function updateCheckoutSummary() {
      SAFE VEHICLE ID (🔥 FIX)
   =============================== */
 
- const vehicleId =
-  selectedAvailability.vehicle?.id ||
-  selectedAvailability.vehicleId ||
-  vehicles.find(v =>
-    v.name === selectedAvailability.vehicle?.name
-  )?.id;
-
-  console.log("FINAL vehicleId:", vehicleId);
-
- let confirmationFee = 75;
-
-if (vehicleId && vehicleId.startsWith("v75")) {
-  confirmationFee = 100;
-}
+ 
 
   /* ===============================
      CHECK HOW MANY VEHICLES LEFT
@@ -3054,8 +3041,13 @@ if (bookingForm) {
        CONFIRMATION FEE (🔥 FIXED)
     =============================== */
 
+    let confirmationFee = 75;
 
-   
+if (vehicleId && vehicleId.startsWith("v75")) {
+  confirmationFee = 100;
+}
+    const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+
     /* ===============================
        BOOKING ID
     =============================== */
