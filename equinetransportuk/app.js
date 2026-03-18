@@ -4510,7 +4510,7 @@ if (durationInput) {
 
   durationInput.addEventListener("change", () => {
 
-  renderCalendar();
+  renderCalendar(true);
 
   const pickupInput = document.getElementById("pickup-date");
 
