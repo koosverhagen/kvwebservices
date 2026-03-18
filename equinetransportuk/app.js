@@ -3947,7 +3947,7 @@ calGrid.dataset.rendering = "false";
 }
 
 
-/* ======================================================
+  /* ======================================================
    Select date
 ====================================================== */
 
@@ -4012,55 +4012,45 @@ if (PRESELECTED_VEHICLE) {
 
   const warningBox = document.getElementById("preselected-warning");
 
-  
+  if (isBlocked && warningBox) {
 
-if (isBlocked && warningBox) {
+    // keep scroll blocked for THIS message only
+    BLOCK_AUTO_SCROLL = true;
 
-  BLOCK_AUTO_SCROLL = true;
+    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
-setTimeout(() => {
-  BLOCK_AUTO_SCROLL = false;
-}, 300);
+    warningBox.innerHTML = `
+      <div class="availability-warning">
+        Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
+        is not available on this date.<br>
+        Showing other available lorries instead.
+      </div>
+    `;
 
-  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+    warningBox.style.display = "block";
 
-  warningBox.innerHTML = `
-    <div class="availability-warning">
-      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
-      is not available on this date.<br>
-      Showing other available lorries instead.
-    </div>
-  `;
+    setTimeout(() => {
+      warningBox.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }, 60);
 
-  warningBox.style.display = "block";
+    // 🔥 KEY FIX: fallback to full fleet
+    PRESELECTED_VEHICLE = null;
 
-  setTimeout(() => {
-  warningBox.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
+    setTimeout(() => {
+  availabilityForm?.requestSubmit();
+}, 120);
 
-  // ✅ allow normal scrolling again AFTER warning scroll
-  BLOCK_AUTO_SCROLL = false;
+    // ❌ DO NOT RETURN ANYMORE
 
-}, 60);
+  } else if (warningBox) {
 
-  // 🔥 fallback to full fleet
-  PRESELECTED_VEHICLE = null;
+    warningBox.innerHTML = "";
+    warningBox.style.display = "none";
 
-  // 🚀 trigger availability search
-  triggeredFallbackSearch = true;
-
-  setTimeout(() => {
-    availabilityForm?.requestSubmit();
-  }, 120);
-
-} else if (warningBox) {
-
-  warningBox.innerHTML = "";
-  warningBox.style.display = "none";
-
-}
+  }
 
 }
 
@@ -4072,9 +4062,11 @@ syncPickupTimeOptions(dayDate);
 
   durationInput.value = "";
 
-  if (!triggeredFallbackSearch && availabilityResults) {
-  availabilityResults.innerHTML = "";
-}
+  /* clear vehicle availability results */
+
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "";
+  }
 
   /* reset selected vehicle */
 
