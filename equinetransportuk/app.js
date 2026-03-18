@@ -882,7 +882,12 @@ function is35T(vehicle) {
 }
 
 function getConfirmationFee(vehicle) {
-  return is35T(vehicle) ? CONFIRMATION_FEE_35T : CONFIRMATION_FEE_75T;
+  const id = String(vehicle?.id || "");
+
+  if (id.startsWith("v35")) return 75;
+  if (id.startsWith("v75")) return 100;
+
+  return 75; // fallback
 }
 
 function getDurationKey(durationDays) {
