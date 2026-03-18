@@ -4166,38 +4166,23 @@ async function updateDurationOptions(startDate) {
     }
 
     /* ======================================
-   MULTI DAY (STRICT RANGE CHECK)
-====================================== */
-else {
+       MULTI DAY
+    ====================================== */
+    else {
+      const dateString = [
+        startDate.getFullYear(),
+        String(startDate.getMonth() + 1).padStart(2, "0"),
+        String(startDate.getDate()).padStart(2, "0")
+      ].join("-");
 
-  disabled = !vehicles.some(vehicle => {
+      const available = await getAvailableLorries(
+        dateString,
+        days,
+        DEFAULT_PICKUP_TIME
+      );
 
-    if (PRESELECTED_VEHICLE && vehicle.id !== PRESELECTED_VEHICLE) {
-      return false;
+      disabled = available.length === 0;
     }
-
-    const vehicleBookings = bookings.filter(
-      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-    );
-
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(startDate);
-    end.setDate(end.getDate() + days - 1);
-    end.setHours(23, 59, 59, 999);
-
-    const hasOverlap = vehicleBookings.some(b => {
-      const bStart = new Date(b.pickupAt);
-      const bEnd = new Date(b.dropoffAt);
-      return overlaps(start, end, bStart, bEnd);
-    });
-
-    return !hasOverlap;
-
-  });
-
-}
 
     /* extra rule:
        if only 1 slot left,
