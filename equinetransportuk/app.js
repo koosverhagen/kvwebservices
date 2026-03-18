@@ -1318,8 +1318,14 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
 
 async function renderAvailabilityResults(items) {
 
-
   console.log("render items:", items.map(v => v.vehicle.name));
+
+  // 🚀 PRESELECTED LORRY FILTER
+if (PRESELECTED_VEHICLE) {
+  items = items.filter(
+    item => item.vehicle.id === PRESELECTED_VEHICLE
+  );
+}
 
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     availabilityResults.innerHTML = "";
