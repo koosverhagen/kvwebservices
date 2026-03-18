@@ -1472,6 +1472,31 @@ async function renderAvailabilityResults(items) {
 
     return;
   }
+  
+/*******************************
+  PRESELECTED VEHICLE FLOW
+********************************/
+
+if (PRESELECTED_VEHICLE) {
+
+  const selected = items.find(
+    item => item.vehicle.id === PRESELECTED_VEHICLE
+  );
+
+  if (selected) {
+
+    await selectAvailability(selected.vehicle.id);
+
+    goToStep(3);
+
+    return;
+
+  }
+
+  /* fallback: selected vehicle not available */
+  PRESELECTED_VEHICLE = null;
+
+}
 
   /* ===============================
      ONLY ONE VEHICLE → SKIP
