@@ -3955,6 +3955,8 @@ async function selectDate(dayDate) {
 
   BLOCK_AUTO_SCROLL = false;
 
+  let triggeredFallbackSearch = false;
+
   /* 🔥 INSTANT UI FEEDBACK */
 
 document.querySelectorAll(".cal-selected")
@@ -4012,7 +4014,7 @@ if (PRESELECTED_VEHICLE) {
 
   const warningBox = document.getElementById("preselected-warning");
 
-  let triggeredFallbackSearch = false;
+  
 
 if (isBlocked && warningBox) {
 
