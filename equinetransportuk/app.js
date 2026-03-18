@@ -3226,9 +3226,9 @@ if (bookingForm) {
 
   console.error("❌ Booking save failed:", err);
 
-  alert("Booking not saved to server (dev mode). Continuing…");
+  alert("Something went wrong saving your booking.");
+  return;
 
-  // ❗ DO NOT RETURN
 }
 
     BOOKINGS_CACHE = null;
@@ -3237,7 +3237,6 @@ if (bookingForm) {
     await getBookings(true);
     renderBookings();
     renderAdminBookings();
-  //renderCalendar(true);
 
     // store booking temporarily for Step 4
 window.pendingBooking = booking;
@@ -4502,7 +4501,7 @@ function updateCheckoutSummary(pricing) {
    Initial render
 ====================================================== */
 
-renderCalendar(true);
+renderCalendar();
 
 const durationInput = document.getElementById("duration-days");
 
@@ -4510,7 +4509,7 @@ if (durationInput) {
 
   durationInput.addEventListener("change", () => {
 
-  renderCalendar(true);
+  renderCalendar();
 
   const pickupInput = document.getElementById("pickup-date");
 
