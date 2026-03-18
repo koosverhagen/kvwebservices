@@ -1493,8 +1493,22 @@ if (PRESELECTED_VEHICLE) {
 
   }
 
-  /* fallback: selected vehicle not available */
+  /* ❌ selected lorry NOT available */
+
+  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+
   PRESELECTED_VEHICLE = null;
+
+  availabilityResults.insertAdjacentHTML(
+    "afterbegin",
+    `
+    <div class="availability-warning">
+      Sorry, <strong>${escapeHtml(vehicle?.name || "this lorry")}</strong>
+      is not available for this date.<br>
+      Please choose an alternative below.
+    </div>
+    `
+  );
 
 }
 
