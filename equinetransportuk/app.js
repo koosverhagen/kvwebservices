@@ -4282,7 +4282,7 @@ function onCalendarDayClick(date){
 async function changeMonth(direction) {
 
   currentDate.setMonth(currentDate.getMonth() + direction);
-  await renderCalendar(true);
+  await renderCalendar();
 
 }
 
@@ -4501,7 +4501,7 @@ function updateCheckoutSummary(pricing) {
    Initial render
 ====================================================== */
 
-renderCalendar();
+renderCalendar(true);
 
 const durationInput = document.getElementById("duration-days");
 
