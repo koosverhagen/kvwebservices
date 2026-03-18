@@ -4012,47 +4012,45 @@ if (PRESELECTED_VEHICLE) {
 
   const warningBox = document.getElementById("preselected-warning");
 
-  let triggeredFallbackSearch = false;
+  if (isBlocked && warningBox) {
 
-if (isBlocked && warningBox) {
+    // keep scroll blocked for THIS message only
+    BLOCK_AUTO_SCROLL = true;
 
-  BLOCK_AUTO_SCROLL = true;
+    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
-  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+    warningBox.innerHTML = `
+      <div class="availability-warning">
+        Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
+        is not available on this date.<br>
+        Showing other available lorries instead.
+      </div>
+    `;
 
-  warningBox.innerHTML = `
-    <div class="availability-warning">
-      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
-      is not available on this date.<br>
-      Showing other available lorries instead.
-    </div>
-  `;
+    warningBox.style.display = "block";
 
-  warningBox.style.display = "block";
+    setTimeout(() => {
+      warningBox.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }, 60);
 
-  setTimeout(() => {
-    warningBox.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
-  }, 60);
+    // 🔥 KEY FIX: fallback to full fleet
+    PRESELECTED_VEHICLE = null;
 
-  // 🔥 fallback to full fleet
-  PRESELECTED_VEHICLE = null;
+    setTimeout(() => {
+  availabilityForm?.requestSubmit();
+}, 120);
 
-  // 🚀 trigger availability search
-  triggeredFallbackSearch = true;
+    // ❌ DO NOT RETURN ANYMORE
 
-  setTimeout(() => {
-    availabilityForm?.requestSubmit();
-  }, 120);
+  } else if (warningBox) {
 
-} else if (warningBox) {
+    warningBox.innerHTML = "";
+    warningBox.style.display = "none";
 
-  warningBox.innerHTML = "";
-  warningBox.style.display = "none";
-
-}
+  }
 
 }
 
