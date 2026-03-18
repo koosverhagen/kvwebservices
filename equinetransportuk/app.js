@@ -2166,7 +2166,16 @@ function changeLorry() {
     return;
   }
 
-  availabilityResults.innerHTML = "Checking availability...";
+  availabilityResults.innerHTML = `
+  <div class="availability-loading">
+    <div class="loader-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="loader-text">Checking availability</div>
+  </div>
+`;
 
   setTimeout(() => {
     availabilityForm?.dispatchEvent(new Event("submit", { cancelable: true }));
@@ -3947,13 +3956,15 @@ calGrid.dataset.rendering = "false";
 }
 
 
-  /* ======================================================
+/* ======================================================
    Select date
 ====================================================== */
 
 async function selectDate(dayDate) {
 
   BLOCK_AUTO_SCROLL = false;
+
+  let triggeredFallbackSearch = false;
 
   /* 🔥 INSTANT UI FEEDBACK */
 
@@ -3979,9 +3990,6 @@ Array.from(calGrid.children).forEach(cell => {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
-  if (availabilityResults) {
-  availabilityResults.innerHTML = "Checking availability...";
-}
 
 /*******************************
   PRESELECTED LORRY CHECK (EARLY)
@@ -4012,11 +4020,12 @@ if (PRESELECTED_VEHICLE) {
 
   const warningBox = document.getElementById("preselected-warning");
 
-  let triggeredFallbackSearch = false;
+  
 
 if (isBlocked && warningBox) {
 
   BLOCK_AUTO_SCROLL = true;
+
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
@@ -4031,11 +4040,15 @@ if (isBlocked && warningBox) {
   warningBox.style.display = "block";
 
   setTimeout(() => {
-    warningBox.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
-  }, 60);
+  warningBox.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+
+  // ✅ allow normal scrolling again AFTER warning scroll
+  BLOCK_AUTO_SCROLL = false;
+
+}, 60);
 
   // 🔥 fallback to full fleet
   PRESELECTED_VEHICLE = null;
