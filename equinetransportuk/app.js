@@ -3947,7 +3947,7 @@ calGrid.dataset.rendering = "false";
 }
 
 
-  /* ======================================================
+/* ======================================================
    Select date
 ====================================================== */
 
@@ -4018,6 +4018,10 @@ if (isBlocked && warningBox) {
 
   BLOCK_AUTO_SCROLL = true;
 
+setTimeout(() => {
+  BLOCK_AUTO_SCROLL = false;
+}, 300);
+
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
   warningBox.innerHTML = `
@@ -4031,11 +4035,15 @@ if (isBlocked && warningBox) {
   warningBox.style.display = "block";
 
   setTimeout(() => {
-    warningBox.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
-  }, 60);
+  warningBox.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+
+  // ✅ allow normal scrolling again AFTER warning scroll
+  BLOCK_AUTO_SCROLL = false;
+
+}, 60);
 
   // 🔥 fallback to full fleet
   PRESELECTED_VEHICLE = null;
@@ -4064,11 +4072,9 @@ syncPickupTimeOptions(dayDate);
 
   durationInput.value = "";
 
-  /* clear vehicle availability results */
-
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "";
-  }
+  if (!triggeredFallbackSearch && availabilityResults) {
+  availabilityResults.innerHTML = "";
+}
 
   /* reset selected vehicle */
 
