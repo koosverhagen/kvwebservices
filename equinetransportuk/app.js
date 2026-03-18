@@ -2166,16 +2166,7 @@ function changeLorry() {
     return;
   }
 
-  availabilityResults.innerHTML = `
-  <div class="availability-loading">
-    <div class="loader-dots">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-    <div class="loader-text">Checking availability</div>
-  </div>
-`;
+  availabilityResults.innerHTML = "Checking availability...";
 
   setTimeout(() => {
     availabilityForm?.dispatchEvent(new Event("submit", { cancelable: true }));
