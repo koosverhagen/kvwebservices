@@ -1547,6 +1547,8 @@ const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
 async function updateCheckoutSummary() {
 
+  console.log("🔥 NEW summary function running");
+
   if (!checkoutSummary) return;
 
   if (!selectedAvailability) {
@@ -4288,6 +4290,8 @@ else if (hasFullDay) {
 }
 
 function updateCheckoutSummary(pricing) {
+
+  console.log("🔥 OLD summary function running");
 
   const lines = document.getElementById("summary-lines");
   const totalEl = document.getElementById("summary-total");
