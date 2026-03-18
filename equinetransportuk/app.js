@@ -1644,47 +1644,114 @@ if (confirmBtn) {
     crossingsCount === 1 ? "Dartford crossing" : "Dartford crossings";
 
   checkoutSummary.innerHTML = `
-  <div class="summary-card">
+<div class="summary-card">
 
-    ${urgencyHTML}
+  ${urgencyHTML}
 
-    <div class="summary-vehicle">
-      <img 
-        src="${getVehicleMainImage(selectedAvailability.vehicle)}"
-        alt="${escapeHtml(selectedAvailability.vehicle?.name || "")}"
-        class="summary-vehicle-image"
-      >
-      <h4>${escapeHtml(selectedAvailability.vehicle?.name || "")}</h4>
-    </div>
-
-    <div class="summary-row">
-      <span>Base hire</span>
-      <strong>£${baseCost.toFixed(2)}</strong>
-    </div>
-
-    <hr>
-
-    <div class="summary-row total">
-      <span>Total hire</span>
-      <strong>£${hireTotal.toFixed(2)}</strong>
-    </div>
-
-    <div class="summary-row pay-now">
-      <span>Pay now (confirmation)</span>
-      <strong>£${confirmationFee.toFixed(2)}</strong>
-    </div>
-
-    <div class="summary-row outstanding">
-      <span>Remaining balance</span>
-      <strong>£${outstandingAmount.toFixed(2)}</strong>
-    </div>
-
-    <div class="summary-note">
-      Security deposit £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)}
-    </div>
-
+  <div class="summary-vehicle">
+    <img 
+      src="${getVehicleMainImage(selectedAvailability.vehicle)}"
+      alt="${escapeHtml(selectedAvailability.vehicle?.name || "")}"
+      class="summary-vehicle-image"
+    >
+    <h4>${escapeHtml(selectedAvailability.vehicle?.name || "")}</h4>
   </div>
-  `;
+
+  ${
+    selectedAvailability.pickupAt ? `
+    <div class="summary-row muted">
+      <span>Hire period</span>
+      <strong>
+        ${new Date(selectedAvailability.pickupAt).toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        })}
+        →
+        ${new Date(selectedAvailability.dropoffAt).toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        })}
+      </strong>
+    </div>
+    ` : ""
+  }
+
+  ${
+    selectedAvailability.durationDays ? `
+    <div class="summary-row muted">
+      <span>Duration</span>
+      <strong>
+        ${Number(selectedAvailability.durationDays) === 0.5
+          ? "½ day"
+          : Number(selectedAvailability.durationDays) === 1
+          ? "1 day"
+          : selectedAvailability.durationDays + " days"}
+      </strong>
+    </div>
+    ` : ""
+  }
+
+  <div class="summary-row">
+    <span>Base hire</span>
+    <strong>£${baseCost.toFixed(2)}</strong>
+  </div>
+
+  ${
+    discountAmount > 0 ? `
+    <div class="summary-row discount">
+      <span>Discount</span>
+      <strong>-£${discountAmount.toFixed(2)}</strong>
+    </div>
+    ` : ""
+  }
+
+  ${
+    crossingsCount > 0 ? `
+    <div class="summary-row">
+      <span>Dartford crossings (${crossingsCount})</span>
+      <strong>£${crossingCharge.toFixed(2)}</strong>
+    </div>
+    ` : ""
+  }
+
+  ${
+    earlyPickupEnabled ? `
+    <div class="summary-row">
+      <span>Early pickup</span>
+      <strong>£${earlyPickupCharge.toFixed(2)}</strong>
+    </div>
+    ` : ""
+  }
+
+  <hr>
+
+  <div class="summary-row total">
+    <span>Total hire</span>
+    <strong>£${hireTotal.toFixed(2)}</strong>
+  </div>
+
+  <div class="summary-row pay-now">
+    <span>Pay now (confirmation)</span>
+    <strong>£${confirmationFee.toFixed(2)}</strong>
+  </div>
+
+  <div class="summary-row outstanding">
+    <span>Remaining balance</span>
+    <strong>£${outstandingAmount.toFixed(2)}</strong>
+  </div>
+
+  <div class="summary-note">
+    Security deposit £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)}
+  </div>
+
+</div>
+`;
 }
 
 function updateHalfDayPickup() {
