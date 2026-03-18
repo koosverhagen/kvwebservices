@@ -8,6 +8,8 @@ let activeSlideshow = null;
 
 let PRESELECTED_VEHICLE = null;
 
+let BLOCK_AUTO_SCROLL = false;
+
 
 
 /* ===============================
@@ -54,7 +56,7 @@ function goToStep(step) {
   if(indicator) indicator.classList.add("active");
 
 // Only auto scroll for steps AFTER step 1
-if (step > 1) {
+if (step > 1 && !BLOCK_AUTO_SCROLL) {
   setTimeout(()=>{
     stepEl?.scrollIntoView({
       behavior:"smooth",
@@ -62,7 +64,6 @@ if (step > 1) {
     });
   },100);
 }
-
 }
 
 function startBooking(vehicleId) {
@@ -412,8 +413,8 @@ async function syncBookingPickupTimeOptions(dateObj, vehicleId) {
       const startHour = start.getHours();
       const endHour = end.getHours();
 
-   if (startHour < 13) morningBooked = true;
-if (endHour > 12) afternoonBooked = true;
+      if (startHour < 13) morningBooked = true;
+      if (endHour > 13) afternoonBooked = true;
 
     }
 
@@ -444,55 +445,6 @@ if (endHour > 12) afternoonBooked = true;
 
 }
 
-function getRemainingHalfDaySlots(dateObj, bookings){
-
-  let morningAvailable = false;
-  let afternoonAvailable = false;
-
-  vehicles
-    .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
-    .forEach(vehicle => {
-
-      const vehicleBookings = bookings.filter(
-        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-      );
-
-      const dayStart = new Date(dateObj);
-      dayStart.setHours(0,0,0,0);
-
-      const dayEnd = new Date(dateObj);
-      dayEnd.setHours(23,59,59,999);
-
-      let morningBooked = false;
-      let afternoonBooked = false;
-
-      vehicleBookings.forEach(b => {
-
-        const start = new Date(b.pickupAt);
-        const end = new Date(b.dropoffAt);
-
-        if(start <= dayEnd && end >= dayStart){
-
-          const startHour = start.getHours();
-          const endHour = end.getHours();
-
-          if(startHour <= 12) morningBooked = true;
-          if(endHour >= 13) afternoonBooked = true;
-
-        }
-
-      });
-
-      if(!morningBooked) morningAvailable = true;
-      if(!afternoonBooked) afternoonAvailable = true;
-
-    });
-
-  return {
-    morningAvailable,
-    afternoonAvailable
-  };
-}
 
 function getRemainingSlots(dateObj, bookings){
 
@@ -525,8 +477,8 @@ function getRemainingSlots(dateObj, bookings){
           const startHour = start.getHours();
           const endHour = end.getHours();
 
-          if(startHour <= 12) morningBooked = true;
-          if(endHour >= 13) afternoonBooked = true;
+          if (startHour < 13) morningBooked = true;
+          if (endHour > 13) afternoonBooked = true;
 
         }
 
@@ -762,19 +714,6 @@ function goBackToDates() {
 
 }
 
-function changeLorry(){
-
-  goToStep(2);
-
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "Checking availability...";
-  }
-
-  setTimeout(()=>{
-    availabilityForm?.requestSubmit();
-  },100);
-
-}
 
 function resetBookingFlow() {
 
@@ -1841,6 +1780,8 @@ function updateHalfDayPickup() {
 
 function updatePickupTimeVisibility() {
 
+  if (BLOCK_AUTO_SCROLL) return;
+
   const duration = Number(durationDaysInput?.value || 0);
   const group = document.getElementById("pickup-time-group");
 
@@ -1853,6 +1794,8 @@ function updatePickupTimeVisibility() {
 
     // Scroll to field
     setTimeout(() => {
+
+      if (BLOCK_AUTO_SCROLL) return; // 👈 ADD THIS
 
       group.scrollIntoView({
         behavior: "smooth",
@@ -3994,6 +3937,8 @@ calGrid.dataset.rendering = "false";
 
 async function selectDate(dayDate) {
 
+  BLOCK_AUTO_SCROLL = false;
+
   const pickupInput = document.getElementById("pickup-date");
   const durationInput = document.getElementById("duration-days");
 
@@ -4005,7 +3950,7 @@ async function selectDate(dayDate) {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
-  /*******************************
+/*******************************
   PRESELECTED LORRY CHECK (EARLY)
 ********************************/
 
@@ -4036,30 +3981,36 @@ if (PRESELECTED_VEHICLE) {
 
   if (isBlocked && warningBox) {
 
-    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+  // ✅ block ALL other auto-scrolls
+  BLOCK_AUTO_SCROLL = true;
 
-    warningBox.innerHTML = `
-  <div class="availability-warning">
-    Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
-    is not available on this date.
-  </div>
-`;
+  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
-setTimeout(() => {
-  warningBox?.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
-}, 50);
+  warningBox.innerHTML = `
+    <div class="availability-warning">
+      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
+      is not available on this date.
+    </div>
+  `;
 
-    warningBox.style.display = "block";
+  warningBox.style.display = "block";
 
-  } else if (warningBox) {
+  // ✅ scroll AFTER render
+  setTimeout(() => {
+    warningBox.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }, 60);
 
-    warningBox.innerHTML = "";
-    warningBox.style.display = "none";
+  // 🚨 CRITICAL: stop further execution
+  return;
 
-  }
+}
+if (warningBox) {
+  warningBox.innerHTML = "";
+  warningBox.style.display = "none";
+}
 
 }
 
@@ -4110,9 +4061,9 @@ await syncPickupTimeOptions(dayDate);
      Scroll to duration selector
   ===================================== */
 
-  setTimeout(() => {
+ setTimeout(() => {
 
-  /* desktop scroll only */
+  if (BLOCK_AUTO_SCROLL) return; // 👈 ADD THIS LINE
 
   if (!isMobile()) {
 
