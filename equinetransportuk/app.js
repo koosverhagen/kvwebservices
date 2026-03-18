@@ -4047,8 +4047,9 @@ if (warningBox) {
 
 }
 
-await updateDurationOptions(dayDate);
-await syncPickupTimeOptions(dayDate);
+// run async WITHOUT blocking UI
+updateDurationOptions(dayDate);
+syncPickupTimeOptions(dayDate);
 
   /* reset duration */
 
@@ -4114,20 +4115,20 @@ async function updateDurationOptions(startDate) {
   const durationInput = document.getElementById("duration-days");
   if (!durationInput || !startDate) return;
 
-  const dateString = startDate.toISOString().slice(0, 10);
+  const dateString = formatLocalDate(startDate);
 
   const currentPickupTime =
-    pickupTimeInput?.value ||
-    DEFAULT_PICKUP_TIME;
+    pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
 
-  const remainingSlots = getRemainingSlots(
-    startDate,
-    BOOKINGS_CACHE || await getBookings(false)
-  );
+  // ✅ LOAD BOOKINGS ONCE
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+  const remainingSlots = getRemainingSlots(startDate, bookings);
 
   const options = Array.from(durationInput.options);
 
   for (const opt of options) {
+
     const days = Number(opt.value);
     if (!days) continue;
 
@@ -4137,23 +4138,76 @@ async function updateDurationOptions(startDate) {
       testPickupTime = currentPickupTime || DEFAULT_PICKUP_TIME;
     }
 
+    let disabled = false;
+
+    // ✅ FAST EXIT: no slots at all
+    if (remainingSlots === 0) {
+      opt.disabled = true;
+      continue;
+    }
+
+    // ✅ RULE: if only 1 slot left → restrict durations
+    if (remainingSlots === 1 && days > 1) {
+      opt.disabled = true;
+      continue;
+    }
+
+    // ⚡ ONLY NOW call heavy availability check
     const available = await getAvailableLorries(
       dateString,
       days,
       testPickupTime
     );
 
-    let disabled = available.length === 0;
+    disabled = available.length === 0;
 
-    /* extra rule:
-       if calendar says only 1 slot left,
-       only allow 1/2 day and 1 day
-    */
-    if (remainingSlots === 1 && days > 1) {
-      disabled = true;
+    /* ======================================
+       SPECIAL FIX FOR 1 DAY (CRITICAL)
+    ====================================== */
+
+    if (days === 1 && disabled) {
+
+      const hasFullDay = vehicles.some(vehicle => {
+
+        const vehicleBookings = bookings.filter(
+          b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+        );
+
+        const dayStart = new Date(startDate);
+        dayStart.setHours(0,0,0,0);
+
+        const dayEnd = new Date(startDate);
+        dayEnd.setHours(23,59,59,999);
+
+        let morningBooked = false;
+        let afternoonBooked = false;
+
+        vehicleBookings.forEach(b => {
+
+          const start = new Date(b.pickupAt);
+          const end = new Date(b.dropoffAt);
+
+          if (start <= dayEnd && end >= dayStart) {
+
+            if (start.getHours() < 13) morningBooked = true;
+            if (end.getHours() > 13) afternoonBooked = true;
+
+          }
+
+        });
+
+        return !morningBooked && !afternoonBooked;
+
+      });
+
+      if (hasFullDay) {
+        disabled = false;
+      }
+
     }
 
     opt.disabled = disabled;
+
   }
 
   /* keep current selection valid */
@@ -4161,6 +4215,7 @@ async function updateDurationOptions(startDate) {
   if (selectedOption?.disabled) {
     durationInput.value = "";
   }
+
 }
 
 /* 🔥 expose globally */
