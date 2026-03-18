@@ -4014,43 +4014,36 @@ if (PRESELECTED_VEHICLE) {
 
   if (isBlocked && warningBox) {
 
-    // keep scroll blocked for THIS message only
-    BLOCK_AUTO_SCROLL = true;
+  // ✅ block ALL other auto-scrolls
+  BLOCK_AUTO_SCROLL = true;
 
-    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
-    warningBox.innerHTML = `
-      <div class="availability-warning">
-        Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
-        is not available on this date.<br>
-        Showing other available lorries instead.
-      </div>
-    `;
+  warningBox.innerHTML = `
+    <div class="availability-warning">
+      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
+      is not available on this date.
+    </div>
+  `;
 
-    warningBox.style.display = "block";
+  warningBox.style.display = "block";
 
-    setTimeout(() => {
-      warningBox.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    }, 60);
+  // ✅ scroll AFTER render
+  setTimeout(() => {
+    warningBox.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }, 60);
 
-    // 🔥 KEY FIX: fallback to full fleet
-    PRESELECTED_VEHICLE = null;
+  // 🚨 CRITICAL: stop further execution
+  return;
 
-    setTimeout(() => {
-  availabilityForm?.requestSubmit();
-}, 120);
-
-    // ❌ DO NOT RETURN ANYMORE
-
-  } else if (warningBox) {
-
-    warningBox.innerHTML = "";
-    warningBox.style.display = "none";
-
-  }
+}
+if (warningBox) {
+  warningBox.innerHTML = "";
+  warningBox.style.display = "none";
+}
 
 }
 
