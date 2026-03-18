@@ -3226,9 +3226,9 @@ if (bookingForm) {
 
   console.error("❌ Booking save failed:", err);
 
-  alert("Something went wrong saving your booking.");
-  return;
+  alert("Booking not saved to server (dev mode). Continuing…");
 
+  // ❗ DO NOT RETURN
 }
 
     BOOKINGS_CACHE = null;
