@@ -56,7 +56,7 @@ function goToStep(step) {
   if(indicator) indicator.classList.add("active");
 
 // Only auto scroll for steps AFTER step 1
-if (step > 1 && !BLOCK_AUTO_SCROLL) {
+if (step > 1) {
   setTimeout(()=>{
     stepEl?.scrollIntoView({
       behavior:"smooth",
@@ -64,6 +64,7 @@ if (step > 1 && !BLOCK_AUTO_SCROLL) {
     });
   },100);
 }
+
 }
 
 function startBooking(vehicleId) {
@@ -1318,14 +1319,8 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
 
 async function renderAvailabilityResults(items) {
 
-  console.log("render items:", items.map(v => v.vehicle.name));
 
-  // 🚀 PRESELECTED LORRY FILTER
-if (PRESELECTED_VEHICLE) {
-  items = items.filter(
-    item => item.vehicle.id === PRESELECTED_VEHICLE
-  );
-}
+  console.log("render items:", items.map(v => v.vehicle.name));
 
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     availabilityResults.innerHTML = "";
@@ -3945,19 +3940,6 @@ async function selectDate(dayDate) {
 
   BLOCK_AUTO_SCROLL = false;
 
-  /* 🔥 INSTANT UI FEEDBACK */
-
-document.querySelectorAll(".cal-selected")
-  .forEach(el => el.classList.remove("cal-selected"));
-
-const calGrid = document.getElementById("cal-grid");
-
-Array.from(calGrid.children).forEach(cell => {
-  if (Number(cell.textContent) === dayDate.getDate()) {
-    cell.classList.add("cal-selected");
-  }
-});
-
   const pickupInput = document.getElementById("pickup-date");
   const durationInput = document.getElementById("duration-days");
 
@@ -4061,6 +4043,20 @@ await syncPickupTimeOptions(dayDate);
 
   updateCheckoutSummary();
 
+  /* =====================================
+     Highlight selected calendar day
+  ===================================== */
+
+  document.querySelectorAll(".cal-selected")
+    .forEach(el => el.classList.remove("cal-selected"));
+
+  const calGrid = document.getElementById("cal-grid");
+
+  Array.from(calGrid.children).forEach(cell => {
+    if (Number(cell.textContent) === dayDate.getDate()) {
+      cell.classList.add("cal-selected");
+    }
+  });
 
   /* =====================================
      Scroll to duration selector
