@@ -683,15 +683,34 @@ for (const date of reservedDates) {
 
   }
 
-  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20"
   });
 
-  const confirmationFee = booking.vehicleId.startsWith("v35")
-    ? 7500
-    : 10000;
+function getExpectedConfirmationFee(vehicleId) {
+  const id = String(vehicleId || "").trim();
 
-  let session;
+  if (id.startsWith("v35")) return 7500;
+  if (id.startsWith("v75")) return 10000;
+
+  return 7500;
+}
+
+const expectedConfirmationFee = getExpectedConfirmationFee(booking.vehicleId);
+const requestedConfirmationFee = Number(booking.confirmationFee || 0) * 100;
+
+const confirmationFee =
+  requestedConfirmationFee === expectedConfirmationFee
+    ? requestedConfirmationFee
+    : expectedConfirmationFee;
+
+console.log("vehicleId:", booking.vehicleId);
+console.log("booking.confirmationFee:", booking.confirmationFee);
+console.log("requestedConfirmationFee:", requestedConfirmationFee);
+console.log("expectedConfirmationFee:", expectedConfirmationFee);
+console.log("finalConfirmationFee:", confirmationFee);
+
+let session;
 
   try {
 

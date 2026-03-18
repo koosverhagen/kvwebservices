@@ -2743,17 +2743,19 @@ async function createStripeCheckoutSession(booking) {
         headers: { "Content-Type": "application/json" },
 
         body: JSON.stringify({
-          vehicleId: booking.vehicleId,
-          vehicleName: booking.vehicleSnapshot?.name,
+  vehicleId: booking.vehicleId,
+  vehicleName: booking.vehicleSnapshot?.name,
 
-          pickupDate: booking.pickupAt,
-          pickupTime: booking.pickupTime,
+  pickupDate: booking.pickupAt,
+  pickupTime: booking.pickupTime,
 
-          durationDays: booking.durationDays,
+  durationDays: booking.durationDays,
 
-          customerEmail: booking.customerEmail,
-          bookingId: booking.id
-        })
+  customerEmail: booking.customerEmail,
+  bookingId: booking.id,
+
+  confirmationFee: booking.confirmationFee
+})
       }
     );
 
