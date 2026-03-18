@@ -1602,7 +1602,13 @@ async function updateCheckoutSummary() {
 
   const hireTotal = calculateHireTotal(discountedBase, crossingsCount, earlyPickupEnabled);
 
-  const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+  const vehicleId =
+  selectedAvailability.vehicle?.id ||
+  selectedAvailability.vehicleId;
+
+const realVehicle = vehicles.find(v => v.id === vehicleId);
+
+const confirmationFee = getConfirmationFee(realVehicle);
 
   if (bookingSubmitBtn) {
     bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
@@ -3097,7 +3103,13 @@ if (bookingForm) {
 
     const hireTotal = calculateHireTotal(discountedBase, dartfordCrossings, earlyPickup);
 
-    const confirmationFee = getConfirmationFee(selectedAvailability.vehicle);
+    const vehicleId =
+  selectedAvailability.vehicle?.id ||
+  selectedAvailability.vehicleId;
+
+const realVehicle = vehicles.find(v => v.id === vehicleId);
+
+const confirmationFee = getConfirmationFee(realVehicle);
     const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
     const hiredWithinLast3Months = hiredWithin3MonthsInput?.checked || false;
