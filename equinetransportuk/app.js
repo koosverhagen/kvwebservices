@@ -3969,10 +3969,6 @@ Array.from(calGrid.children).forEach(cell => {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
-  if (availabilityResults) {
-  availabilityResults.innerHTML = "Checking availability...";
-}
-
 /*******************************
   PRESELECTED LORRY CHECK (EARLY)
 ********************************/
@@ -4064,6 +4060,7 @@ await syncPickupTimeOptions(dayDate);
   /* refresh checkout summary */
 
   updateCheckoutSummary();
+
 
   /* =====================================
      Scroll to duration selector
