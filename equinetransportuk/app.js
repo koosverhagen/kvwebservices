@@ -3945,6 +3945,19 @@ async function selectDate(dayDate) {
 
   BLOCK_AUTO_SCROLL = false;
 
+  /* 🔥 INSTANT UI FEEDBACK */
+
+document.querySelectorAll(".cal-selected")
+  .forEach(el => el.classList.remove("cal-selected"));
+
+const calGrid = document.getElementById("cal-grid");
+
+Array.from(calGrid.children).forEach(cell => {
+  if (Number(cell.textContent) === dayDate.getDate()) {
+    cell.classList.add("cal-selected");
+  }
+});
+
   const pickupInput = document.getElementById("pickup-date");
   const durationInput = document.getElementById("duration-days");
 
@@ -3955,6 +3968,10 @@ async function selectDate(dayDate) {
   const day = String(dayDate.getDate()).padStart(2, "0");
 
   pickupInput.value = `${year}-${month}-${day}`;
+
+  if (availabilityResults) {
+  availabilityResults.innerHTML = "Checking availability...";
+}
 
 /*******************************
   PRESELECTED LORRY CHECK (EARLY)
@@ -4047,21 +4064,6 @@ await syncPickupTimeOptions(dayDate);
   /* refresh checkout summary */
 
   updateCheckoutSummary();
-
-  /* =====================================
-     Highlight selected calendar day
-  ===================================== */
-
-  document.querySelectorAll(".cal-selected")
-    .forEach(el => el.classList.remove("cal-selected"));
-
-  const calGrid = document.getElementById("cal-grid");
-
-  Array.from(calGrid.children).forEach(cell => {
-    if (Number(cell.textContent) === dayDate.getDate()) {
-      cell.classList.add("cal-selected");
-    }
-  });
 
   /* =====================================
      Scroll to duration selector
