@@ -1188,30 +1188,6 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, 
      UPDATE CHECKOUT SUMMARY UI
      ===================================================== */
 
-  try {
-
-    const deposit = vehicle.deposit || 75; // fallback
-
-    updateCheckoutSummary({
-
-      base: pricing.baseCost,
-
-      voucher_discount: pricing.discountAmount,
-
-      total: pricing.discountedTotal,
-
-      deposit_due: deposit,
-
-      remaining: Math.max(0, pricing.discountedTotal - deposit)
-
-    });
-
-  } catch (e) {
-
-    console.warn("Summary UI not ready yet");
-
-  }
-
 
   AVAILABILITY_CACHE.set(cacheKey, {
     timestamp: Date.now(),
