@@ -3212,11 +3212,15 @@ if (confirmBtn) {
 ====================================================== */
 
 function getConfirmationFeeFromId(vehicleId) {
-  const id = String(vehicleId || "");
 
-  if (id.startsWith("v35")) return 75;
+  const id = String(vehicleId || "").toLowerCase();
+
+  console.log("💰 fee check for:", id);
+
   if (id.startsWith("v75")) return 100;
+  if (id.startsWith("v35")) return 75;
 
+  console.log("⚠️ fallback fee used");
   return 75;
 }
 
