@@ -849,6 +849,9 @@ async function getBookings(forceRefresh = false) {
 function getCalendarBookings() {
   return getBookings(true);
 }
+function saveBookings(bookings) {
+  localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(bookings));
+}
 
 function formatDateTime(value) {
   const date = new Date(value);
