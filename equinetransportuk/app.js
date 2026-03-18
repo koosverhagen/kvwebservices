@@ -3767,14 +3767,12 @@ const endHour = end.getUTCHours();
 
 }
 
- async function renderCalendar(forceFresh = false) {
+ async function renderCalendar() {
 
-/* load bookings */
-const bookings = forceFresh
-  ? await getBookings(true)
-  : BOOKINGS_CACHE || await getBookings(false);
+/* load bookings (use cache if already available) */
+const bookings = await getBookings(true);
 
-console.log("Calendar bookings:", bookings);
+ console.log("Calendar bookings:", bookings);
 
 const year = currentDate.getFullYear();
 const month = currentDate.getMonth();
