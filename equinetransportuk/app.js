@@ -3947,15 +3947,13 @@ calGrid.dataset.rendering = "false";
 }
 
 
-/* ======================================================
+  /* ======================================================
    Select date
 ====================================================== */
 
 async function selectDate(dayDate) {
 
   BLOCK_AUTO_SCROLL = false;
-
-  let triggeredFallbackSearch = false;
 
   /* 🔥 INSTANT UI FEEDBACK */
 
@@ -4014,12 +4012,15 @@ if (PRESELECTED_VEHICLE) {
 
   const warningBox = document.getElementById("preselected-warning");
 
-  
+  let triggeredFallbackSearch = false;
 
 if (isBlocked && warningBox) {
 
   BLOCK_AUTO_SCROLL = true;
 
+setTimeout(() => {
+  BLOCK_AUTO_SCROLL = false;
+}, 300);
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
