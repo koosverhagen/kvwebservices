@@ -313,12 +313,9 @@ export default {
   ================================ */
 
   async scheduled(event, env, ctx) {
-
-    console.log("🧹 Running reservation cleanup");
-
-    await cleanupExpiredReservations(env);
-
-  }
+  console.log("🧹 Running reservation cleanup");
+  ctx.waitUntil(cleanupExpiredReservations(env));
+}
 
 };
 
@@ -350,7 +347,14 @@ async function handlePricingQuote(request) {
 
   const payload = await request.json();
 
-  const { vehicleId, durationDays, pickupDate, pickupTime, discountCode } = payload;
+  const {
+  vehicleId,
+  durationDays,
+  pickupDate,
+  pickupTime,
+  discountCode,
+  extras = {}
+} = payload;
 
   if (!vehicleId || !durationDays || !pickupDate || !pickupTime) {
     return json({ error: "Missing required pricing fields" }, 400);
@@ -358,25 +362,41 @@ async function handlePricingQuote(request) {
 
   const baseCost = calculateServerBaseCost(vehicleId, durationDays, pickupDate);
 
-  const discount = resolveDiscount({
-    code: discountCode,
-    vehicleId,
-    durationDays,
-    baseCost
-  });
+const discount = resolveDiscount({
+  code: discountCode,
+  vehicleId,
+  durationDays,
+  baseCost
+});
 
-  if (discount.error) {
-    return json({ error: discount.error }, 400);
-  }
+if (discount.error) {
+  return json({ error: discount.error }, 400);
+}
 
-  const discountAmount = discount.discountAmount || 0;
-  const discountedTotal = Math.max(0, baseCost - discountAmount);
+const discountAmount = discount.discountAmount || 0;
 
-  return json({
-    baseCost,
-    discountAmount,
-    discountedTotal
-  });
+/* ===============================
+   🔥 ADD HERE (EXACT SPOT)
+================================ */
+
+const dartfordTotal = (extras.dartford || 0) * 4.2;
+const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
+const extrasTotal = dartfordTotal + earlyPickupTotal;
+
+/* ===============================
+   TOTAL
+================================ */
+
+const discountedTotal = Math.max(
+  0,
+  baseCost - discountAmount + extrasTotal
+);
+return json({
+  baseCost,
+  discountAmount,
+  extrasTotal,
+  total: discountedTotal
+});
 }
 
 
@@ -547,7 +567,29 @@ async function handleCreateCheckoutSession(request, env) {
   }
 
   const discountAmount = discount.discountAmount || 0;
-  const totalHire = Math.max(0, baseCost - discountAmount);
+
+  /* ===============================
+     🔥 EXTRAS (NEW FIX)
+  =============================== */
+
+  const extras = booking.extras || {};
+
+  const dartfordCount = Number(extras.dartford || 0);
+  const dartfordTotal = dartfordCount * 4.2;
+
+  const earlyPickup = extras.earlyPickup ? 1 : 0;
+  const earlyPickupTotal = earlyPickup ? 20 : 0;
+
+  const extrasTotal = dartfordTotal + earlyPickupTotal;
+
+  /* ===============================
+     FINAL TOTAL (FIXED)
+  =============================== */
+
+  const totalHire = Math.max(
+    0,
+    baseCost - discountAmount + extrasTotal
+  );
 
   function getExpectedConfirmationFee(vehicleId) {
     const id = String(vehicleId || "").trim();
@@ -564,12 +606,14 @@ async function handleCreateCheckoutSession(request, env) {
   console.log("💰 BACKEND PRICING:");
   console.log("baseCost:", baseCost);
   console.log("discountAmount:", discountAmount);
+  console.log("extrasTotal:", extrasTotal);
   console.log("totalHire:", totalHire);
   console.log("confirmationFee:", confirmationFee);
   console.log("outstandingAmount:", outstandingAmount);
 
   /* ===============================
-     TEMPORARY VEHICLE RESERVATION
+     TEMP RESERVATION LOGIC
+     (UNCHANGED)
   =============================== */
 
   let dropoffDate = new Date(pickupDate);
@@ -604,38 +648,51 @@ async function handleCreateCheckoutSession(request, env) {
   =============================== */
 
   const pickupMonth = booking.pickupDate.slice(0, 7);
-  const existingMonth = await env.BOOKINGS_KV.get(`bookings:${pickupMonth}`);
+const existingMonth = await env.BOOKINGS_KV.get(`bookings:${pickupMonth}`);
 
-  if (existingMonth) {
-    try {
-      const confirmedBookings = JSON.parse(existingMonth);
+if (existingMonth) {
 
-      for (const confirmed of confirmedBookings) {
+  /* ===============================
+     SAFE PARSE (CLEAN)
+  =============================== */
 
-        if (confirmed.vehicleId !== booking.vehicleId) continue;
+  let confirmedBookings = [];
 
-        const confirmedDates = getDatesBetween(
-          new Date(confirmed.pickupAt),
-          new Date(confirmed.dropoffAt)
-        );
+  try {
+    confirmedBookings = JSON.parse(existingMonth);
+    if (!Array.isArray(confirmedBookings)) confirmedBookings = [];
+  } catch {
+    confirmedBookings = [];
+  }
 
-        const confirmedSlot = getConfirmedSlot(confirmed);
+  /* ===============================
+     CHECK CONFLICTS
+  =============================== */
 
-        for (const d of confirmedDates) {
-          if (reservedDates.includes(d) && slotsConflict(requestedSlot, confirmedSlot)) {
-            console.log("⚠️ Vehicle already booked:", d);
+  for (const confirmed of confirmedBookings) {
 
-            return json({
-              error: "Vehicle already booked for selected dates."
-            }, 409);
-          }
-        }
+    if (confirmed.vehicleId !== booking.vehicleId) continue;
+
+    const confirmedDates = getDatesBetween(
+      new Date(confirmed.pickupAt),
+      new Date(confirmed.dropoffAt)
+    );
+
+    const confirmedSlot = getConfirmedSlot(confirmed);
+
+    for (const d of confirmedDates) {
+      if (
+        reservedDates.includes(d) &&
+        slotsConflict(requestedSlot, confirmedSlot)
+      ) {
+        return json({
+          error: "Vehicle already booked for selected dates."
+        }, 409);
       }
-
-    } catch (err) {
-      console.log("⚠️ Failed to read confirmed bookings:", err);
     }
   }
+
+}
 
   /* ===============================
      CHECK TEMP RESERVATIONS
@@ -689,11 +746,10 @@ async function handleCreateCheckoutSession(request, env) {
       }),
       { expirationTtl: 600 }
     );
-
   }
 
   /* ===============================
-     STRIPE INITIALISATION
+     STRIPE
   =============================== */
 
   if (!env.STRIPE_SECRET_KEY) {
@@ -727,21 +783,31 @@ async function handleCreateCheckoutSession(request, env) {
       ],
 
       metadata: {
+
         vehicleId: booking.vehicleId,
         vehicleName: vehicleName,
+
         pickupDate: booking.pickupDate,
         pickupTime,
         durationDays: String(durationDays),
-        customerName: booking.customerName || "",
-        customerEmail: booking.customerEmail || "",
-        customerMobile: booking.customerMobile || "",
+
+        customerName: (booking.customerName || "").slice(0, 100),
+        customerEmail: (booking.customerEmail || "").slice(0, 100),
+        customerMobile: (booking.customerMobile || "").slice(0, 30),
+
         discountCode: booking.discountCode || "",
 
         baseCost: String(baseCost),
         discountAmount: String(discountAmount),
+
+        dartfordTotal: String(dartfordTotal),
+        earlyPickupTotal: String(earlyPickupTotal),
+        extrasTotal: String(extrasTotal),
+
         totalHire: String(totalHire),
         confirmationFee: String(confirmationFee),
         outstandingAmount: String(outstandingAmount)
+
       },
 
       success_url: "https://equinetransportuk.com/booking-success",
@@ -762,9 +828,7 @@ async function handleCreateCheckoutSession(request, env) {
     return json({ error: "Stripe session invalid" }, 500);
   }
 
-  return json({
-    url: session.url
-  });
+  return json({ url: session.url });
 }
 
 function getDatesBetween(start, end) {
@@ -838,14 +902,20 @@ async function handleStripeWebhook(request, env) {
     const outstandingAmount = Number(session.metadata?.outstandingAmount || 0);
     const baseCost = Number(session.metadata?.baseCost || totalHire || 0);
     const discountAmount = Number(session.metadata?.discountAmount || 0);
+    const dartfordTotal = Number(session.metadata?.dartfordTotal || 0);
+    const earlyPickupTotal = Number(session.metadata?.earlyPickupTotal || 0);
+    const extrasTotal = Number(session.metadata?.extrasTotal || 0);
 
     console.log("💰 WEBHOOK PRICING:", {
-      baseCost,
-      discountAmount,
-      totalHire,
-      confirmationFee,
-      outstandingAmount
-    });
+  baseCost,
+  discountAmount,
+  dartfordTotal,
+  earlyPickupTotal,
+  extrasTotal,
+  totalHire,
+  confirmationFee,
+  outstandingAmount
+});
 
     /* ===============================
        DATES
@@ -894,6 +964,11 @@ async function handleStripeWebhook(request, env) {
 
       baseCost,
       discountAmount,
+
+      dartfordTotal,
+      earlyPickupTotal,
+      extrasTotal,
+
       hireTotal: totalHire,
 
       confirmationFee,
