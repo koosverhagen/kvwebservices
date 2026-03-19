@@ -646,17 +646,36 @@ function updateEarlyPickupAvailability() {
 const textSpan = label?.querySelector("span:last-child");
 
 if (isHalfDayAfternoon) {
+
+  // UI state
   earlyPickupCheckbox.checked = false;
   earlyPickupCheckbox.disabled = true;
 
+  // 🔥 CRITICAL: force extras state OFF
+  if (typeof selectedExtras !== "undefined") {
+    selectedExtras.earlyPickup = 0;
+  }
+
+  // 🔥 also ensure checkbox is not read anywhere else
+  if (earlyPickupEnabledInput) {
+    earlyPickupEnabledInput.checked = false;
+  }
+
+  // Update label text
   if (textSpan) {
     textSpan.innerText =
       "Early pickup unavailable for afternoon bookings. Select a morning slot to enable.";
   }
 
+  // 🔥 refresh pricing + summary
+  refreshPricingWithExtras?.();
+  updateCheckoutSummary?.();
+
 } else {
+
   earlyPickupCheckbox.disabled = false;
 
+  // Update label text back
   if (textSpan) {
     textSpan.innerText = "Early pickup (+£20)";
   }
@@ -1144,11 +1163,16 @@ if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
   const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
 
   const extras = {
-    dartford: dartfordEnabledInput?.checked
-      ? Number(dartfordCountInput?.value || 0)
-      : 0,
-    earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
-  };
+  dartford: dartfordEnabledInput?.checked
+    ? Number(dartfordCountInput?.value || 0)
+    : 0,
+
+  earlyPickup:
+    earlyPickupEnabledInput?.checked &&
+    !earlyPickupEnabledInput?.disabled
+      ? 1
+      : 0
+};
 
   console.log("🚚 EXTRAS SENT:", extras);
 
@@ -1176,11 +1200,16 @@ try {
   =============================== */
 
   const extras = {
-    dartford: dartfordEnabledInput?.checked
-      ? Number(dartfordCountInput?.value || 0)
-      : 0,
-    earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
-  };
+  dartford: dartfordEnabledInput?.checked
+    ? Number(dartfordCountInput?.value || 0)
+    : 0,
+
+  earlyPickup:
+    earlyPickupEnabledInput?.checked &&
+    !earlyPickupEnabledInput?.disabled
+      ? 1
+      : 0
+};
 
   const res = await fetch(apiUrl("/api/pricing/quote"), {
     method: "POST",
@@ -1217,11 +1246,16 @@ try {
   const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
 
   const extras = {
-    dartford: dartfordEnabledInput?.checked
-      ? Number(dartfordCountInput?.value || 0)
-      : 0,
-    earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
-  };
+  dartford: dartfordEnabledInput?.checked
+    ? Number(dartfordCountInput?.value || 0)
+    : 0,
+
+  earlyPickup:
+    earlyPickupEnabledInput?.checked &&
+    !earlyPickupEnabledInput?.disabled
+      ? 1
+      : 0
+};
 
   const extrasTotal =
     (extras.dartford || 0) * 4.2 +
