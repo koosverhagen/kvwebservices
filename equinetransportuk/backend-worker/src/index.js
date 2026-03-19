@@ -966,8 +966,14 @@ async function handleStripeWebhook(request, env) {
       discountAmount,
 
       dartfordTotal,
-      earlyPickupTotal,
-      extrasTotal,
+earlyPickupTotal,
+extrasTotal,
+
+// ✅ ADD THIS
+extras: {
+  dartford: Math.round(dartfordTotal / 4.2),
+  earlyPickup: earlyPickupTotal > 0 ? 1 : 0
+},
 
       hireTotal: totalHire,
 
@@ -1235,17 +1241,7 @@ while (current <= to) {
 
   const transformedBookings = bookings.map(booking => {
 
-  let extras = null;
-
-  try {
-    extras = booking.extrasJson
-      ? typeof booking.extrasJson === "string"
-        ? JSON.parse(booking.extrasJson)
-        : booking.extrasJson
-      : null;
-  } catch {
-    extras = null;
-  }
+  const extras = booking.extras || null;
 
   return {
     ...booking,
