@@ -522,6 +522,12 @@ textarea { min-height: 100px; }
   padding: 12px;
 }
 
+.booking-item .muted {
+  display: inline-block;
+  margin-top: 2px;
+}
+
+
 /* ===============================
    STEP 2 — SEARCH SUMMARY
 =============================== */

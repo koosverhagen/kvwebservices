@@ -2499,23 +2499,60 @@ async function renderBookings() {
   }
 
   bookingList.innerHTML = bookings
-    .map((booking) => {
-      const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
-      return `
-        <article class="booking-item">
-          <strong>${escapeHtml(vehicle?.name || booking.vehicleId)}</strong><br>
-          ${escapeHtml(formatDateTime(booking.pickupAt))} → ${escapeHtml(formatDateTime(booking.dropoffAt))}<br>
-          <span class="muted">Duration: ${escapeHtml(formatDurationLabel(booking.durationDays))}</span><br>
-          ${escapeHtml(booking.customerName)} · ${escapeHtml(booking.customerEmail)}<br>
-          <span class="muted">Status: ${escapeHtml(booking.status)}</span><br>
-          <span class="muted">Paid now: £${Number(booking.confirmationFee).toFixed(2)} · Outstanding: £${Number(
-        booking.outstandingAmount
-      ).toFixed(2)}</span><br>
-          <span class="muted">Total hire: £${Number(booking.hireTotal).toFixed(2)}</span>
-        </article>
-      `;
-    })
-    .join("");
+  .map((booking) => {
+    const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
+
+    /* ===============================
+       🔥 EXTRAS (NEW)
+    =============================== */
+
+    const extrasParts = [];
+
+    if (booking.extras?.earlyPickup) {
+      extrasParts.push("Early pickup (£20)");
+    }
+
+    if (booking.extras?.dartford) {
+      extrasParts.push(
+        `Dartford x${booking.extras.dartford} (£${(booking.extras.dartford * 4.2).toFixed(2)})`
+      );
+    }
+
+    const extrasLine = extrasParts.length
+      ? `<span class="muted">Extras: ${extrasParts.join(" · ")}</span><br>`
+      : "";
+
+    /* ===============================
+       CARD
+    =============================== */
+
+    return `
+      <article class="booking-item">
+        <strong>${escapeHtml(vehicle?.name || booking.vehicleId)}</strong><br>
+        ${escapeHtml(formatDateTime(booking.pickupAt))} → ${escapeHtml(formatDateTime(booking.dropoffAt))}<br>
+
+        <span class="muted">
+          Duration: ${escapeHtml(formatDurationLabel(booking.durationDays))}
+        </span><br>
+
+        ${escapeHtml(booking.customerName)} · ${escapeHtml(booking.customerEmail)}<br>
+
+        <span class="muted">Status: ${escapeHtml(booking.status)}</span><br>
+
+        ${extrasLine} <!-- ✅ NEW LINE -->
+
+        <span class="muted">
+          Paid now: £${Number(booking.confirmationFee).toFixed(2)} · 
+          Outstanding: £${Number(booking.outstandingAmount).toFixed(2)}
+        </span><br>
+
+        <span class="muted">
+          Total hire: £${Number(booking.hireTotal).toFixed(2)}
+        </span>
+      </article>
+    `;
+  })
+  .join("");
 }
 
 async function renderAdminBookings() {
