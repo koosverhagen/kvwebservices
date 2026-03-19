@@ -3142,11 +3142,12 @@ dartfordEnabledInput?.addEventListener("change", () => {
   if (dartfordCountInput) {
     dartfordCountInput.disabled = !dartfordEnabledInput.checked;
   }
-  updateCheckoutSummary();
+
+  refreshPricingWithExtras(); // ✅ THIS FIXES EVERYTHING
 });
 
-dartfordCountInput?.addEventListener("input", updateCheckoutSummary);
-earlyPickupEnabledInput?.addEventListener("change", updateCheckoutSummary);
+dartfordCountInput?.addEventListener("input", refreshPricingWithExtras);
+earlyPickupEnabledInput?.addEventListener("change", refreshPricingWithExtras);
 hiredWithin3MonthsInput?.addEventListener("change", updateCheckoutSummary);
 
 // booking selection changes
