@@ -936,21 +936,51 @@ async function handleStripeWebhook(request, env) {
        DATES
     =============================== */
 
-    const pickupAt = new Date(session.metadata.pickupDate);
-    const durationDays = Number(session.metadata.durationDays || 1);
-    const pickupTime = session.metadata.pickupTime || "07:00";
+   const durationDays = Number(session.metadata.durationDays || 1);
+const pickupTime = session.metadata.pickupTime || "07:00";
 
-    const [hour, minute] = pickupTime.split(":").map(Number);
-    pickupAt.setHours(hour, minute, 0, 0);
+/* ===============================
+   🔥 FIXED PICKUP (NO TIME SHIFT)
+=============================== */
 
-    let dropoffAt = new Date(pickupAt);
+const pickupAt = new Date(
+  `${session.metadata.pickupDate}T${pickupTime}:00`
+);
 
-    if (durationDays === 0.5) {
-      dropoffAt.setHours(pickupTime === "07:00" ? 13 : 19, 0, 0, 0);
-    } else {
-      dropoffAt.setDate(dropoffAt.getDate() + Math.max(1, durationDays) - 1);
-      dropoffAt.setHours(19, 0, 0, 0);
-    }
+/* ===============================
+   🔥 FIXED DROPOFF (MATCH RULES)
+=============================== */
+
+let dropoffAt;
+
+if (durationDays === 0.5) {
+
+  const dropTime = pickupTime === "07:00" ? "13:00" : "19:00";
+
+  dropoffAt = new Date(
+    `${session.metadata.pickupDate}T${dropTime}:00`
+  );
+
+} else {
+
+  const dropDate = new Date(
+    `${session.metadata.pickupDate}T${pickupTime}:00`
+  );
+
+  dropDate.setDate(
+    dropDate.getDate() + Math.max(1, durationDays) - 1
+  );
+
+  // 🔥 FIX: DO NOT USE toISOString()
+  const year = dropDate.getFullYear();
+  const month = String(dropDate.getMonth() + 1).padStart(2, "0");
+  const day = String(dropDate.getDate()).padStart(2, "0");
+
+  dropoffAt = new Date(
+    `${year}-${month}-${day}T19:00:00`
+  );
+
+}
 
     /* ===============================
        BOOKING OBJECT
