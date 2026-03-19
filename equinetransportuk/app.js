@@ -321,6 +321,33 @@ const hiredWithin3MonthsInput = document.getElementById("hired-within-3-months")
 const dartfordEnabledInput = document.getElementById("dartford-enabled");
 const dartfordCountInput = document.getElementById("dartford-count");
 const earlyPickupEnabledInput = document.getElementById("early-pickup-enabled");
+/* ===============================
+   🔥 EXTRAS CHANGE → REPRICE
+=============================== */
+
+[dartfordEnabledInput, dartfordCountInput, earlyPickupEnabledInput]
+  .forEach(input => {
+    input?.addEventListener("change", refreshPricingWithExtras);
+  });
+
+async function refreshPricingWithExtras() {
+
+  if (!selectedAvailability) return;
+
+  const vehicle = selectedAvailability.vehicle;
+
+  const updated = await buildAvailability(
+    vehicle,
+    selectedAvailability.pickupDate,
+    selectedAvailability.durationDays,
+    selectedAvailability.pickupTime,
+    getCurrentDiscountCode()
+  );
+
+  selectedAvailability = updated;
+
+  updateCheckoutSummary();
+}
 
 const checkoutSummary = document.getElementById("checkout-summary");
 const bookingSubmitBtn = document.getElementById("booking-submit");
@@ -1065,6 +1092,8 @@ if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
     earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
   };
 
+  console.log("🚚 EXTRAS SENT:", extras);
+
   const extrasTotal =
     (extras.dartford || 0) * 4.2 +
     (extras.earlyPickup ? 20 : 0);
@@ -1077,6 +1106,9 @@ if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
     extrasTotal,
     total
   };
+
+
+
 }
 
 try {
