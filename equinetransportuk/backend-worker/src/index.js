@@ -936,11 +936,11 @@ async function handleStripeWebhook(request, env) {
        DATES
     =============================== */
 
-   const durationDays = Number(session.metadata.durationDays || 1);
+const durationDays = Number(session.metadata.durationDays || 1);
 const pickupTime = session.metadata.pickupTime || "07:00";
 
 /* ===============================
-   🔥 FIXED PICKUP (NO TIME SHIFT)
+   FIXED PICKUP
 =============================== */
 
 const pickupAt = new Date(
@@ -948,7 +948,7 @@ const pickupAt = new Date(
 );
 
 /* ===============================
-   🔥 FIXED DROPOFF (MATCH RULES)
+   FIXED DROPOFF
 =============================== */
 
 let dropoffAt;
@@ -971,7 +971,6 @@ if (durationDays === 0.5) {
     dropDate.getDate() + Math.max(1, durationDays) - 1
   );
 
-  // 🔥 FIX: DO NOT USE toISOString()
   const year = dropDate.getFullYear();
   const month = String(dropDate.getMonth() + 1).padStart(2, "0");
   const day = String(dropDate.getDate()).padStart(2, "0");
@@ -981,6 +980,15 @@ if (durationDays === 0.5) {
   );
 
 }
+
+/* ===============================
+   🔥 ADD LOG HERE (EXACT SPOT)
+=============================== */
+
+console.log("📅 WEBHOOK TIMES:", {
+  pickupAt: pickupAt.toISOString(),
+  dropoffAt: dropoffAt.toISOString()
+});
 
     /* ===============================
        BOOKING OBJECT
