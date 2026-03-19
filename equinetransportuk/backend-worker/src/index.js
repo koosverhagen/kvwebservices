@@ -890,9 +890,16 @@ async function handleStripeWebhook(request, env) {
 
   if (event.type === "checkout.session.completed") {
 
+  try {
+
+    console.log("🔥 WEBHOOK START");
+
     const session = event.data.object;
 
+    console.log("👉 session received");
+
     if (!session?.metadata?.vehicleId) {
+      console.log("⚠️ Missing vehicleId");
       await env.BOOKINGS_KV.put(eventId, "processed");
       return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
@@ -911,88 +918,70 @@ async function handleStripeWebhook(request, env) {
     const earlyPickupTotal = Number(session.metadata?.earlyPickupTotal || 0);
     const extrasTotal = Number(session.metadata?.extrasTotal || 0);
 
-    /* ===============================
-       🔥 RECONSTRUCT EXTRAS (FIXED)
-    =============================== */
-
     const extras = {
-      dartford: Math.round(dartfordTotal / 4.2), // safe reverse calc
+      dartford: Math.round(dartfordTotal / 4.2),
       earlyPickup: earlyPickupTotal > 0 ? 1 : 0
     };
 
-    console.log("💰 WEBHOOK PRICING:", {
-      baseCost,
-      discountAmount,
-      dartfordTotal,
-      earlyPickupTotal,
-      extrasTotal,
-      totalHire,
-      confirmationFee,
-      outstandingAmount,
-      extras
-    });
+    console.log("💰 PRICING OK");
 
     /* ===============================
        DATES
     =============================== */
 
-const durationDays = Number(session.metadata.durationDays || 1);
-const pickupTime = session.metadata.pickupTime || "07:00";
+    console.log("📅 BEFORE DATE BUILD");
 
-/* ===============================
-   FIXED PICKUP
-=============================== */
+    const durationDays = Number(session.metadata.durationDays || 1);
+    const pickupTime = session.metadata.pickupTime || "07:00";
 
-const pickupAt = new Date(
-  `${session.metadata.pickupDate}T${pickupTime}:00`
-);
+    const pickupAt = new Date(
+      `${session.metadata.pickupDate}T${pickupTime}:00`
+    );
 
-/* ===============================
-   FIXED DROPOFF
-=============================== */
+    let dropoffAt;
 
-let dropoffAt;
+    if (durationDays === 0.5) {
 
-if (durationDays === 0.5) {
+      const dropTime = pickupTime === "07:00" ? "13:00" : "19:00";
 
-  const dropTime = pickupTime === "07:00" ? "13:00" : "19:00";
+      dropoffAt = new Date(
+        `${session.metadata.pickupDate}T${dropTime}:00`
+      );
 
-  dropoffAt = new Date(
-    `${session.metadata.pickupDate}T${dropTime}:00`
-  );
+    } else {
 
-} else {
+      const dropDate = new Date(
+        `${session.metadata.pickupDate}T${pickupTime}:00`
+      );
 
-  const dropDate = new Date(
-    `${session.metadata.pickupDate}T${pickupTime}:00`
-  );
+      dropDate.setDate(
+        dropDate.getDate() + Math.max(1, durationDays) - 1
+      );
 
-  dropDate.setDate(
-    dropDate.getDate() + Math.max(1, durationDays) - 1
-  );
+      const year = dropDate.getFullYear();
+      const month = String(dropDate.getMonth() + 1).padStart(2, "0");
+      const day = String(dropDate.getDate()).padStart(2, "0");
 
-  const year = dropDate.getFullYear();
-  const month = String(dropDate.getMonth() + 1).padStart(2, "0");
-  const day = String(dropDate.getDate()).padStart(2, "0");
+      dropoffAt = new Date(
+        `${year}-${month}-${day}T19:00:00`
+      );
 
-  dropoffAt = new Date(
-    `${year}-${month}-${day}T19:00:00`
-  );
+    }
 
-}
+    if (isNaN(pickupAt) || isNaN(dropoffAt)) {
+      throw new Error("Invalid pickup/dropoff date");
+    }
 
-/* ===============================
-   🔥 ADD LOG HERE (EXACT SPOT)
-=============================== */
-
-console.log("📅 WEBHOOK TIMES:", {
-  pickupAt: pickupAt.toISOString(),
-  dropoffAt: dropoffAt.toISOString()
-});
+    console.log("📅 DATES OK", {
+      pickupAt: pickupAt.toISOString(),
+      dropoffAt: dropoffAt.toISOString()
+    });
 
     /* ===============================
        BOOKING OBJECT
     =============================== */
+
+    console.log("📦 BUILD BOOKING");
 
     const booking = {
       id: session.id,
@@ -1021,8 +1010,6 @@ console.log("📅 WEBHOOK TIMES:", {
       dartfordTotal,
       earlyPickupTotal,
       extrasTotal,
-
-      // ✅ CRITICAL FIX (NOW STORED PROPERLY)
       extras,
 
       hireTotal: totalHire,
@@ -1030,16 +1017,17 @@ console.log("📅 WEBHOOK TIMES:", {
       outstandingAmount,
 
       depositAmount: 200,
-
       status: "confirmed",
       createdAt: new Date().toISOString()
     };
 
-    console.log("✅ Booking confirmed:", booking);
+    console.log("✅ BOOKING BUILT");
 
     /* ===============================
        SAVE CUSTOMER
     =============================== */
+
+    console.log("👤 FIND CUSTOMER");
 
     let customer = await findCustomerByEmailOrMobile(
       env,
@@ -1048,6 +1036,8 @@ console.log("📅 WEBHOOK TIMES:", {
     );
 
     if (!customer) {
+
+      console.log("👤 CREATE CUSTOMER");
 
       const customerId = "cus_" + crypto.randomUUID();
       const now = new Date().toISOString();
@@ -1072,9 +1062,17 @@ console.log("📅 WEBHOOK TIMES:", {
       ).bind(customerId).first();
     }
 
+    if (!customer?.id) {
+      throw new Error("Customer creation failed");
+    }
+
+    console.log("👤 CUSTOMER OK");
+
     /* ===============================
        SAVE BOOKING (DB)
     =============================== */
+
+    console.log("💾 SAVE BOOKING DB");
 
     await env.DB.prepare(`
       INSERT INTO bookings (
@@ -1107,9 +1105,13 @@ console.log("📅 WEBHOOK TIMES:", {
     )
     .run();
 
+    console.log("✅ DB SAVED");
+
     /* ===============================
-       SAVE BOOKING TO KV
+       SAVE TO KV
     =============================== */
+
+    console.log("📦 SAVE KV");
 
     const bookingMonth = booking.pickupAt.slice(0, 7);
     const monthKey = `bookings:${bookingMonth}`;
@@ -1118,68 +1120,33 @@ console.log("📅 WEBHOOK TIMES:", {
 
     try {
       const existingMonthData = await env.BOOKINGS_KV.get(monthKey);
-
       if (existingMonthData) {
         existingMonthBookings = JSON.parse(existingMonthData);
-
         if (!Array.isArray(existingMonthBookings)) {
           existingMonthBookings = [];
         }
       }
-    } catch {
-      existingMonthBookings = [];
-    }
+    } catch {}
 
-    const alreadyExists = existingMonthBookings.some(b => b.id === booking.id);
-
-    if (!alreadyExists) {
-      existingMonthBookings.push(booking);
-
-      await env.BOOKINGS_KV.put(
-        monthKey,
-        JSON.stringify(existingMonthBookings)
-      );
-    }
-
-    /* ===============================
-       INDEX + CLEANUP
-    =============================== */
-
-    const bookedDates = getDatesBetween(
-      new Date(booking.pickupAt),
-      new Date(booking.dropoffAt)
-    );
-
-    for (const date of bookedDates) {
-      await env.BOOKINGS_KV.put(
-        `booking:${booking.vehicleId}:${date}`,
-        booking.id
-      );
-    }
-
-    const confirmedSlot =
-      Number(booking.durationDays) === 0.5
-        ? (booking.pickupTime === "13:00" ? "pm" : "am")
-        : "full";
-
-    for (const date of bookedDates) {
-      await env.BOOKINGS_KV.delete(
-        `reservation:${booking.vehicleId}:${date}:${confirmedSlot}`
-      );
-    }
-
-    if (confirmedSlot === "full") {
-      for (const date of bookedDates) {
-        await env.BOOKINGS_KV.delete(`reservation:${booking.vehicleId}:${date}:am`);
-        await env.BOOKINGS_KV.delete(`reservation:${booking.vehicleId}:${date}:pm`);
-      }
-    }
+    existingMonthBookings.push(booking);
 
     await env.BOOKINGS_KV.put(
-      "bookings:version",
-      String(Date.now())
+      monthKey,
+      JSON.stringify(existingMonthBookings)
+    );
+
+    console.log("✅ KV SAVED");
+
+  } catch (err) {
+
+    console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
+
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500 }
     );
   }
+}
 
   await env.BOOKINGS_KV.put(eventId, "processed");
 
