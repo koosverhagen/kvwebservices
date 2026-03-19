@@ -286,10 +286,9 @@ const durationDaysInput = document.getElementById("duration-days");
 
 /* When duration changes */
 durationDaysInput?.addEventListener("change", () => {
-
-  updatePickupTimeVisibility();
-  syncPickupTimeOptions();
-
+  updatePickupTimeVisibility?.();
+  syncPickupTimeOptions?.();
+  updateEarlyPickupAvailability();   // ✅ HERE
 });
 
 /* When pickup time changes (IMPORTANT FIX) */
@@ -301,6 +300,9 @@ pickupTimeInput?.addEventListener("change", async () => {
   await updateDurationOptions(
     new Date(`${pickupDate}T00:00:00`)
   );
+
+  // ✅ ADD THIS
+  updateEarlyPickupAvailability();
 
 });
 const availabilityResults = document.getElementById("availability-results");
@@ -321,6 +323,8 @@ const hiredWithin3MonthsInput = document.getElementById("hired-within-3-months")
 const dartfordEnabledInput = document.getElementById("dartford-enabled");
 const dartfordCountInput = document.getElementById("dartford-count");
 const earlyPickupEnabledInput = document.getElementById("early-pickup-enabled");
+
+const earlyPickupCheckbox = document.getElementById("early-pickup-enabled");
 /* ===============================
    🔥 EXTRAS CHANGE → REPRICE
 =============================== */
@@ -603,6 +607,22 @@ function getRemainingHalfDaySlots(dateObj, bookings){
 
   return { morningAvailable, afternoonAvailable };
 
+}
+
+function updateEarlyPickupAvailability() {
+  const duration = Number(durationDaysInput?.value || 1);
+  const pickupTime = pickupTimeInput?.value;
+
+  const isHalfDayAfternoon = duration === 0.5 && pickupTime === "13:00";
+
+  if (!earlyPickupCheckbox) return;
+
+  if (isHalfDayAfternoon) {
+    earlyPickupCheckbox.checked = false;
+    earlyPickupCheckbox.disabled = true;
+  } else {
+    earlyPickupCheckbox.disabled = false;
+  }
 }
 
 /* =================================
@@ -2997,6 +3017,8 @@ if (badge) {
   /* Step 1 logic */
   syncPickupTimeOptions();
   updatePickupTimeVisibility();
+
+  updateEarlyPickupAvailability();
 
   /* Step 3 logic (use existing global selectedDurationInput) */
 
