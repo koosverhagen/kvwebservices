@@ -513,120 +513,126 @@ async function handleCreateCheckoutSession(request, env) {
     return json({ error: "Invalid booking data" }, 400);
   }
 
-/* ===============================
-   TEMPORARY VEHICLE RESERVATION
-================================ */
+  /* ===============================
+     NORMALISE INPUT
+  =============================== */
 
-const pickupDate = new Date(booking.pickupDate);
-const durationDays = Number(booking.durationDays || 1);
-const pickupTime = booking.pickupTime || "07:00";
+  const pickupDate = new Date(booking.pickupDate);
+  const durationDays = Number(booking.durationDays || 1);
+  const pickupTime = booking.pickupTime || "07:00";
 
-let dropoffDate = new Date(pickupDate);
+  /* ===============================
+     🔥 PRICING (NEW - FIX)
+  =============================== */
 
-if (durationDays === 0.5) {
-  dropoffDate = new Date(pickupDate);
-} else {
-  dropoffDate.setDate(dropoffDate.getDate() + Math.max(1, durationDays) - 1);
-}
+  const totalHire = Number(booking.hireTotal || 0);
 
-const reservedDates = getDatesBetween(pickupDate, dropoffDate);
+  function getExpectedConfirmationFee(vehicleId) {
+    const id = String(vehicleId || "").trim();
 
-function getReservationSlot(dateString, durationDaysValue, pickupTimeValue) {
-  if (Number(durationDaysValue) !== 0.5) return "full";
-  return pickupTimeValue === "13:00" ? "pm" : "am";
-}
+    if (id.startsWith("v35")) return 75;
+    if (id.startsWith("v75")) return 100;
 
-function getConfirmedSlot(confirmedBooking) {
-  if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
-  return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
-}
+    return 75;
+  }
 
-function slotsConflict(a, b) {
-  if (a === "full" || b === "full") return true;
-  return a === b;
-}
+  const confirmationFee = getExpectedConfirmationFee(booking.vehicleId);
+  const outstandingAmount = Math.max(0, totalHire - confirmationFee);
 
-const requestedSlot = getReservationSlot(
-  booking.pickupDate,
-  durationDays,
-  pickupTime
-);
+  console.log("💰 BACKEND PRICING:");
+  console.log("totalHire:", totalHire);
+  console.log("confirmationFee:", confirmationFee);
+  console.log("outstandingAmount:", outstandingAmount);
 
-/* ===============================
-   CHECK CONFIRMED BOOKINGS
-================================ */
+  /* ===============================
+     TEMPORARY VEHICLE RESERVATION
+  =============================== */
 
-const pickupMonth = booking.pickupDate.slice(0, 7);
-const existingMonth = await env.BOOKINGS_KV.get(`bookings:${pickupMonth}`);
+  let dropoffDate = new Date(pickupDate);
 
-if (existingMonth) {
+  if (durationDays === 0.5) {
+    dropoffDate = new Date(pickupDate);
+  } else {
+    dropoffDate.setDate(dropoffDate.getDate() + Math.max(1, durationDays) - 1);
+  }
 
-  try {
+  const reservedDates = getDatesBetween(pickupDate, dropoffDate);
 
-    const confirmedBookings = JSON.parse(existingMonth);
+  function getReservationSlot(dateString, durationDaysValue, pickupTimeValue) {
+    if (Number(durationDaysValue) !== 0.5) return "full";
+    return pickupTimeValue === "13:00" ? "pm" : "am";
+  }
 
-    for (const confirmed of confirmedBookings) {
+  function getConfirmedSlot(confirmedBooking) {
+    if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
+    return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
+  }
 
-      if (confirmed.vehicleId !== booking.vehicleId) continue;
+  function slotsConflict(a, b) {
+    if (a === "full" || b === "full") return true;
+    return a === b;
+  }
 
-      const confirmedDates = getDatesBetween(
-        new Date(confirmed.pickupAt),
-        new Date(confirmed.dropoffAt)
-      );
+  const requestedSlot = getReservationSlot(
+    booking.pickupDate,
+    durationDays,
+    pickupTime
+  );
 
-      const confirmedSlot = getConfirmedSlot(confirmed);
+  /* ===============================
+     CHECK CONFIRMED BOOKINGS
+  =============================== */
 
-      for (const d of confirmedDates) {
+  const pickupMonth = booking.pickupDate.slice(0, 7);
+  const existingMonth = await env.BOOKINGS_KV.get(`bookings:${pickupMonth}`);
 
-        if (reservedDates.includes(d) && slotsConflict(requestedSlot, confirmedSlot)) {
+  if (existingMonth) {
+    try {
+      const confirmedBookings = JSON.parse(existingMonth);
 
-          console.log("⚠️ Vehicle already booked:", d, requestedSlot, confirmedSlot);
+      for (const confirmed of confirmedBookings) {
 
-          return json({
-            error: "Vehicle already booked for selected dates."
-          }, 409);
+        if (confirmed.vehicleId !== booking.vehicleId) continue;
+
+        const confirmedDates = getDatesBetween(
+          new Date(confirmed.pickupAt),
+          new Date(confirmed.dropoffAt)
+        );
+
+        const confirmedSlot = getConfirmedSlot(confirmed);
+
+        for (const d of confirmedDates) {
+
+          if (reservedDates.includes(d) && slotsConflict(requestedSlot, confirmedSlot)) {
+
+            console.log("⚠️ Vehicle already booked:", d);
+
+            return json({
+              error: "Vehicle already booked for selected dates."
+            }, 409);
+
+          }
 
         }
 
       }
 
+    } catch (err) {
+      console.log("⚠️ Failed to read confirmed bookings:", err);
     }
-
-  } catch (err) {
-
-    console.log("⚠️ Failed to read confirmed bookings:", err);
-
   }
 
-}
+  /* ===============================
+     CHECK TEMP RESERVATIONS
+  =============================== */
 
-/* ===============================
-   CHECK TEMP RESERVATIONS
-================================ */
+  for (const date of reservedDates) {
 
-for (const date of reservedDates) {
+    const reservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
 
-  const reservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
+    const existingReservation = await env.BOOKINGS_KV.get(reservationKey);
 
-  const existingReservation = await env.BOOKINGS_KV.get(reservationKey);
-
-  if (existingReservation) {
-
-    console.log("⚠️ Vehicle already reserved:", reservationKey);
-
-    return json({
-      error: "Vehicle temporarily reserved. Please try again shortly."
-    }, 409);
-
-  }
-
-  /* full day conflicts with both half-day holds */
-  if (requestedSlot === "full") {
-
-    const amReservation = await env.BOOKINGS_KV.get(`reservation:${booking.vehicleId}:${date}:am`);
-    const pmReservation = await env.BOOKINGS_KV.get(`reservation:${booking.vehicleId}:${date}:pm`);
-
-    if (amReservation || pmReservation) {
+    if (existingReservation) {
       return json({
         error: "Vehicle temporarily reserved. Please try again shortly."
       }, 409);
@@ -634,83 +640,40 @@ for (const date of reservedDates) {
 
   }
 
-  /* half day conflicts with an existing full-day hold */
-  if (requestedSlot === "am" || requestedSlot === "pm") {
+  /* ===============================
+     CREATE TEMP RESERVATIONS
+  =============================== */
 
-    const fullReservation = await env.BOOKINGS_KV.get(`reservation:${booking.vehicleId}:${date}:full`);
+  for (const date of reservedDates) {
 
-    if (fullReservation) {
-      return json({
-        error: "Vehicle temporarily reserved. Please try again shortly."
-      }, 409);
-    }
+    const reservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
+
+    await env.BOOKINGS_KV.put(
+      reservationKey,
+      JSON.stringify({
+        vehicleId: booking.vehicleId,
+        date,
+        slot: requestedSlot,
+        createdAt: Date.now()
+      }),
+      { expirationTtl: 600 }
+    );
 
   }
-
-}
-
-/* create reservations for all dates */
-
-for (const date of reservedDates) {
-
-  const reservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
-
-  await env.BOOKINGS_KV.put(
-    reservationKey,
-    JSON.stringify({
-      vehicleId: booking.vehicleId,
-      date,
-      slot: requestedSlot,
-      createdAt: Date.now()
-    }),
-    { expirationTtl: 600 }
-  );
-
-}
 
   /* ===============================
      STRIPE INITIALISATION
-  ================================ */
+  =============================== */
 
   if (!env.STRIPE_SECRET_KEY) {
-
-    console.log("❌ STRIPE_SECRET_KEY missing in Worker environment");
-
-    return json({
-      error: "Stripe not configured",
-      detail: "Missing STRIPE_SECRET_KEY"
-    }, 500);
-
+    return json({ error: "Stripe not configured" }, 500);
   }
 
-    const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20"
   });
 
-function getExpectedConfirmationFee(vehicleId) {
-  const id = String(vehicleId || "").trim();
-
-  if (id.startsWith("v35")) return 7500;
-  if (id.startsWith("v75")) return 10000;
-
-  return 7500;
-}
-
-const expectedConfirmationFee = getExpectedConfirmationFee(booking.vehicleId);
-const requestedConfirmationFee = Number(booking.confirmationFee || 0) * 100;
-
-const confirmationFee =
-  requestedConfirmationFee === expectedConfirmationFee
-    ? requestedConfirmationFee
-    : expectedConfirmationFee;
-
-console.log("vehicleId:", booking.vehicleId);
-console.log("booking.confirmationFee:", booking.confirmationFee);
-console.log("requestedConfirmationFee:", requestedConfirmationFee);
-console.log("expectedConfirmationFee:", expectedConfirmationFee);
-console.log("finalConfirmationFee:", confirmationFee);
-
-let session;
+  let session;
 
   try {
 
@@ -726,7 +689,7 @@ let session;
             product_data: {
               name: `Horsebox booking — ${vehicleName}`
             },
-            unit_amount: confirmationFee
+            unit_amount: confirmationFee * 100
           },
           quantity: 1
         }
@@ -739,7 +702,12 @@ let session;
         pickupTime: booking.pickupTime || "07:00",
         durationDays: booking.durationDays,
         customerName: booking.customerName,
-        customerEmail: booking.customerEmail
+        customerEmail: booking.customerEmail,
+
+        /* 🔥 SAVE PRICING */
+        totalHire: String(totalHire),
+        confirmationFee: String(confirmationFee),
+        outstandingAmount: String(outstandingAmount)
       },
 
       success_url: "https://equinetransportuk.com/booking-success",
@@ -749,9 +717,6 @@ let session;
 
   } catch (err) {
 
-    console.log("❌ STRIPE CHECKOUT ERROR");
-    console.log(err);
-
     return json({
       error: "Stripe session creation failed",
       detail: err?.message || "Unknown Stripe error"
@@ -760,13 +725,7 @@ let session;
   }
 
   if (!session?.url) {
-
-    console.log("❌ Stripe session created but URL missing");
-
-    return json({
-      error: "Stripe session invalid"
-    }, 500);
-
+    return json({ error: "Stripe session invalid" }, 500);
   }
 
   return json({
@@ -811,341 +770,181 @@ async function handleStripeWebhook(request, env) {
   let event;
 
   try {
-
     event = await stripe.webhooks.constructEventAsync(
       payload,
       sig,
       env.STRIPE_WEBHOOK_SECRET
     );
-
   } catch (err) {
-
     console.log("❌ Webhook verification failed:", err.message);
-
-    return new Response(
-      JSON.stringify({ error: "Webhook signature verification failed" }),
-      { status: 400 }
-    );
-
+    return new Response(JSON.stringify({ error: "Webhook signature verification failed" }), { status: 400 });
   }
-
-
-  /* Prevent duplicate processing */
 
   const eventId = event.id;
 
   const alreadyProcessed = await env.BOOKINGS_KV.get(eventId);
-
   if (alreadyProcessed) {
-
     console.log("⚠️ Webhook already processed:", eventId);
-
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
-
-  /* Handle booking confirmation */
-
-if (event.type === "checkout.session.completed") {
-
-  const session = event.data.object;
-
   /* ===============================
-     SAFETY CHECK
-  ================================ */
+     HANDLE SUCCESSFUL PAYMENT
+  =============================== */
 
-  if (!session?.metadata?.vehicleId) {
+  if (event.type === "checkout.session.completed") {
 
-    console.log("⚠️ Stripe session missing metadata");
+    const session = event.data.object;
 
-    return new Response(
-      JSON.stringify({ received: true }),
-      { status: 200 }
-    );
-
-  }
-
-  
-
-  /* ===============================
-   RELEASE TEMPORARY RESERVATIONS
-================================ */
-
-const pickupDate = new Date(session.metadata?.pickupDate);
-const durationDays = Number(session.metadata?.durationDays || 1);
-
-let dropoffDate = new Date(pickupDate);
-
-if (durationDays === 0.5) {
-
-  dropoffDate = new Date(pickupDate);
-
-} else {
-
-  dropoffDate.setDate(dropoffDate.getDate() + Math.max(1, durationDays) - 1);
-
-}
-
-const reservedDates = getDatesBetween(pickupDate, dropoffDate);
-
-const confirmedSlot =
-  Number(session.metadata?.durationDays || 1) === 0.5
-    ? ((session.metadata?.pickupTime || "07:00") === "13:00" ? "pm" : "am")
-    : "full";
-
-for (const date of reservedDates) {
-
-  const reservationKey =
-    `reservation:${session.metadata.vehicleId}:${date}:${confirmedSlot}`;
-
-  try {
-
-    await env.BOOKINGS_KV.delete(reservationKey);
-    console.log("🔓 Reservation released:", reservationKey);
-
-  } catch (err) {
-
-    console.log("⚠️ Reservation release failed:", reservationKey, err);
-
-  }
-
-}
-
-const pickupAt = new Date(session.metadata?.pickupDate);
-const durationDaysConfirmed = Number(session.metadata?.durationDays || 1);
-
-let dropoffAt = new Date(pickupAt);
-
-const pickupTime = session.metadata?.pickupTime || "07:00";
-
-const [hour, minute] = pickupTime.split(":").map(Number);
-pickupAt.setHours(hour, minute, 0, 0);
-
-if (durationDaysConfirmed === 0.5) {
-
-  if (pickupTime === "07:00") {
-    dropoffAt.setHours(13,0,0,0);
-  } else {
-    dropoffAt.setHours(19,0,0,0);
-  }
-
-} else {
-
-  dropoffAt.setDate(dropoffAt.getDate() + Math.max(1, durationDaysConfirmed) - 1);
-  dropoffAt.setHours(19,0,0,0);
-
-}
-
-const confirmationFee = session.metadata?.vehicleId?.startsWith("v35")
-  ? 75
-  : 100;
-
-const booking = {
-
-  id: session.id,
-
-  vehicleId: session.metadata?.vehicleId,
-
- vehicleSnapshot: {
-  id: session.metadata?.vehicleId,
-  name: session.metadata?.vehicleName || "",
-  type: session.metadata?.vehicleId?.startsWith("v35")
-    ? "3.5 tonne"
-    : "7.5 tonne"
-},
-  pickupAt: pickupAt.toISOString(),
-  dropoffAt: dropoffAt.toISOString(),
-
-  durationDays: durationDaysConfirmed,
-
-  pickupTime: pickupAt.toISOString().slice(11,16),
-
-  customerName: session.customer_details?.name || "",
-  customerEmail: session.customer_details?.email || session.metadata?.customerEmail || "",
-
-  customerMobile: "",
-  customerAddress: "",
-  customerDob: "",
-
-  dartfordCrossings: 0,
-  crossingCharge: 0,
-
-  earlyPickup: false,
-  earlyPickupCharge: 0,
-
-  baseCost: 0,
-  discountAmount: 0,
-  hireTotal: 0,
-
-  confirmationFee: confirmationFee,
-
-  outstandingAmount: 0,
-
-  depositAmount: 200,
-
-  status: "confirmed",
-
-  createdAt: new Date().toISOString()
-
-};
-
-console.log("✅ Booking confirmed:", booking);
-
-/* ===============================
-   SAVE BOOKING IN DATABASE
-================================ */
-
-let customer = await findCustomerByEmailOrMobile(
-  env,
-  booking.customerEmail,
-  booking.customerMobile
-);
-
-if (!customer) {
-
-  const customerId = "cus_" + crypto.randomUUID();
-  const now = new Date().toISOString();
-
-  await env.DB.prepare(`
-    INSERT INTO customers (
-      id,
-      full_name,
-      email,
-      mobile,
-      created_at,
-      updated_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?)
-  `)
-  .bind(
-    customerId,
-    booking.customerName,
-    booking.customerEmail,
-    booking.customerMobile,
-    now,
-    now
-  )
-  .run();
-
-  customer = await env.DB.prepare(
-  "SELECT * FROM customers WHERE id = ?"
-).bind(customerId).first();
-}
-
-await env.DB.prepare(`
-  INSERT INTO bookings (
-    id,
-    customer_id,
-    vehicle_id,
-    pickup_at,
-    dropoff_at,
-    duration_days,
-    price_total,
-    paid_now,
-    status,
-    created_at,
-    updated_at
-  )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`)
-
-
-
-.bind(
-  booking.id,
-  customer.id,
-  booking.vehicleId,
-  booking.pickupAt,
-  booking.dropoffAt,
-  booking.durationDays,
-  booking.hireTotal || 0,
-  booking.confirmationFee || 0,
-  booking.status,
-  booking.createdAt,
-  booking.createdAt
-)
-.run();
-
-/* ===============================
-   UPDATE CUSTOMER HISTORY
-================================ */
-
-const hireNow = new Date().toISOString();
-
-await env.DB.prepare(`
-  UPDATE customers
-  SET
-    hire_count = COALESCE(hire_count,0) + 1,
-    last_hire_at = ?,
-    first_hire_at = COALESCE(first_hire_at, ?),
-    updated_at = ?
-  WHERE id = ?
-`)
-.bind(
-  hireNow,
-  hireNow,
-  hireNow,
-  customer.id
-)
-.run();
+    if (!session?.metadata?.vehicleId) {
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
 
     /* ===============================
-   STORE BOOKING (MONTHLY BUCKET)
-================================ */
+       🔥 PRICING FROM STRIPE (FIX)
+    =============================== */
 
-const pickupMonth = booking.pickupAt.slice(0,7); // YYYY-MM
-const key = `bookings:${pickupMonth}`;
+    const totalHire = Number(session.metadata?.totalHire || 0);
+    const confirmationFee = Number(session.metadata?.confirmationFee || 0);
+    const outstandingAmount = Number(session.metadata?.outstandingAmount || 0);
 
-/* Load existing month */
+    console.log("💰 WEBHOOK PRICING:", {
+      totalHire,
+      confirmationFee,
+      outstandingAmount
+    });
 
-let existing = await env.BOOKINGS_KV.get(key);
+    /* ===============================
+       DATES
+    =============================== */
 
-let list = [];
+    const pickupAt = new Date(session.metadata.pickupDate);
+    const durationDays = Number(session.metadata.durationDays || 1);
+    const pickupTime = session.metadata.pickupTime || "07:00";
 
-if (existing) {
-  try {
-    list = JSON.parse(existing);
-  } catch {
-    list = [];
+    const [hour, minute] = pickupTime.split(":").map(Number);
+    pickupAt.setHours(hour, minute, 0, 0);
+
+    let dropoffAt = new Date(pickupAt);
+
+    if (durationDays === 0.5) {
+      dropoffAt.setHours(pickupTime === "07:00" ? 13 : 19, 0, 0, 0);
+    } else {
+      dropoffAt.setDate(dropoffAt.getDate() + Math.max(1, durationDays) - 1);
+      dropoffAt.setHours(19, 0, 0, 0);
+    }
+
+    /* ===============================
+       BOOKING OBJECT
+    =============================== */
+
+    const booking = {
+
+      id: session.id,
+
+      vehicleId: session.metadata.vehicleId,
+
+      vehicleSnapshot: {
+        id: session.metadata.vehicleId,
+        name: session.metadata.vehicleName || "",
+        type: session.metadata.vehicleId.startsWith("v35")
+          ? "3.5 tonne"
+          : "7.5 tonne"
+      },
+
+      pickupAt: pickupAt.toISOString(),
+      dropoffAt: dropoffAt.toISOString(),
+      durationDays,
+
+      pickupTime: pickupTime,
+
+      customerName: session.customer_details?.name || "",
+      customerEmail: session.customer_details?.email || session.metadata.customerEmail || "",
+
+      /* 🔥 CORRECT PRICING */
+      baseCost: totalHire,
+      discountAmount: 0,
+      hireTotal: totalHire,
+
+      confirmationFee,
+      outstandingAmount,
+
+      depositAmount: 200,
+
+      status: "confirmed",
+      createdAt: new Date().toISOString()
+    };
+
+    console.log("✅ Booking confirmed:", booking);
+
+    /* ===============================
+       SAVE CUSTOMER
+    =============================== */
+
+    let customer = await findCustomerByEmailOrMobile(
+      env,
+      booking.customerEmail,
+      ""
+    );
+
+    if (!customer) {
+
+      const customerId = "cus_" + crypto.randomUUID();
+      const now = new Date().toISOString();
+
+      await env.DB.prepare(`
+        INSERT INTO customers (
+          id, full_name, email, mobile, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `)
+      .bind(customerId, booking.customerName, booking.customerEmail, "", now, now)
+      .run();
+
+      customer = await env.DB.prepare(
+        "SELECT * FROM customers WHERE id = ?"
+      ).bind(customerId).first();
+    }
+
+    /* ===============================
+       SAVE BOOKING
+    =============================== */
+
+    await env.DB.prepare(`
+      INSERT INTO bookings (
+        id,
+        customer_id,
+        vehicle_id,
+        pickup_at,
+        dropoff_at,
+        duration_days,
+        price_total,
+        paid_now,
+        status,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .bind(
+      booking.id,
+      customer.id,
+      booking.vehicleId,
+      booking.pickupAt,
+      booking.dropoffAt,
+      booking.durationDays,
+      booking.hireTotal,
+      booking.confirmationFee,
+      booking.status,
+      booking.createdAt,
+      booking.createdAt
+    )
+    .run();
+
   }
-}
-
-/* Add booking */
-
-list.push(booking);
-
-/* Save back */
-
-await env.BOOKINGS_KV.put(
-  key,
-  JSON.stringify(list)
-);
-
-/* ===============================
-   STORE VEHICLE-DAY INDEX
-================================ */
-
-for (const date of reservedDates) {
-
-  const indexKey = `booking:${booking.vehicleId}:${date}`;
-
-  await env.BOOKINGS_KV.put(
-    indexKey,
-    booking.id
-  );
-
-}
-
-  }
-
 
   await env.BOOKINGS_KV.put(eventId, "processed");
 
-  return new Response(
-    JSON.stringify({ received: true }),
-    { status: 200 }
-  );
-
+  return new Response(JSON.stringify({ received: true }), { status: 200 });
 }
 
 /* ===============================
