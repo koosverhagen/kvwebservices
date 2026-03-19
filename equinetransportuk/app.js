@@ -442,8 +442,8 @@ async function syncBookingPickupTimeOptions(dateObj, vehicleId) {
 
     if (start <= dayEnd && end >= dayStart) {
 
-      const startHour = start.getHours();
-      const endHour = end.getHours();
+      const startHour = getLondonHour(start);
+      const endHour = getLondonHour(end);
 
       if (startHour < 13) morningBooked = true;
       if (endHour > 13) afternoonBooked = true;
@@ -506,8 +506,8 @@ function getRemainingSlots(dateObj, bookings){
 
         if(start <= dayEnd && end >= dayStart){
 
-          const startHour = start.getHours();
-          const endHour = end.getHours();
+          const startHour = getLondonHour(start);
+          const endHour = getLondonHour(end);
 
           if (startHour < 13) morningBooked = true;
           if (endHour > 13) afternoonBooked = true;
@@ -557,6 +557,16 @@ function getAvailableVehicleCount(dayDate, bookings){
 
 }
 
+function getLondonHour(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    hour: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+
+  return Number(parts.find(p => p.type === "hour")?.value || 0);
+}
+
 /* =================================
    HALF DAY SLOT AVAILABILITY
 ================================ */
@@ -590,8 +600,8 @@ function getRemainingHalfDaySlots(dateObj, bookings){
 
         if(start <= dayEnd && end >= dayStart){
 
-          const startHour = start.getHours();
-          const endHour = end.getHours();
+          const startHour = getLondonHour(start);
+          const endHour = getLondonHour(end);
 
           if(startHour <= 12) morningBooked = true;
           if(endHour >= 13) afternoonBooked = true;
