@@ -149,7 +149,7 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/api/bookings/version") {
 
-      const response = await handleBookingsVersion();
+      const response = await handleBookingsVersion(env);
       return withCors(response, corsHeaders);
 
     }
@@ -395,7 +395,7 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
 
   /* 3.5T */
 
-  if (vehicleId.startsWith("v35")) {
+  if (String(vehicleId || "").startsWith("v35")) {
 
     const prices = {
       0.5: 75,
@@ -521,11 +521,33 @@ async function handleCreateCheckoutSession(request, env) {
   const durationDays = Number(booking.durationDays || 1);
   const pickupTime = booking.pickupTime || "07:00";
 
+  if (Number.isNaN(pickupDate.getTime())) {
+    return json({ error: "Invalid pickup date" }, 400);
+  }
+
   /* ===============================
-     🔥 PRICING (NEW - FIX)
+     🔥 SERVER-SIDE PRICING
   =============================== */
 
-  const totalHire = Number(booking.hireTotal || 0);
+  const baseCost = calculateServerBaseCost(
+    booking.vehicleId,
+    durationDays,
+    booking.pickupDate
+  );
+
+  const discount = resolveDiscount({
+    code: booking.discountCode,
+    vehicleId: booking.vehicleId,
+    durationDays,
+    baseCost
+  });
+
+  if (discount.error) {
+    return json({ error: discount.error }, 400);
+  }
+
+  const discountAmount = discount.discountAmount || 0;
+  const totalHire = Math.max(0, baseCost - discountAmount);
 
   function getExpectedConfirmationFee(vehicleId) {
     const id = String(vehicleId || "").trim();
@@ -540,6 +562,8 @@ async function handleCreateCheckoutSession(request, env) {
   const outstandingAmount = Math.max(0, totalHire - confirmationFee);
 
   console.log("💰 BACKEND PRICING:");
+  console.log("baseCost:", baseCost);
+  console.log("discountAmount:", discountAmount);
   console.log("totalHire:", totalHire);
   console.log("confirmationFee:", confirmationFee);
   console.log("outstandingAmount:", outstandingAmount);
@@ -558,7 +582,7 @@ async function handleCreateCheckoutSession(request, env) {
 
   const reservedDates = getDatesBetween(pickupDate, dropoffDate);
 
-  function getReservationSlot(dateString, durationDaysValue, pickupTimeValue) {
+  function getReservationSlot(durationDaysValue, pickupTimeValue) {
     if (Number(durationDaysValue) !== 0.5) return "full";
     return pickupTimeValue === "13:00" ? "pm" : "am";
   }
@@ -573,11 +597,7 @@ async function handleCreateCheckoutSession(request, env) {
     return a === b;
   }
 
-  const requestedSlot = getReservationSlot(
-    booking.pickupDate,
-    durationDays,
-    pickupTime
-  );
+  const requestedSlot = getReservationSlot(durationDays, pickupTime);
 
   /* ===============================
      CHECK CONFIRMED BOOKINGS
@@ -602,19 +622,14 @@ async function handleCreateCheckoutSession(request, env) {
         const confirmedSlot = getConfirmedSlot(confirmed);
 
         for (const d of confirmedDates) {
-
           if (reservedDates.includes(d) && slotsConflict(requestedSlot, confirmedSlot)) {
-
             console.log("⚠️ Vehicle already booked:", d);
 
             return json({
               error: "Vehicle already booked for selected dates."
             }, 409);
-
           }
-
         }
-
       }
 
     } catch (err) {
@@ -628,16 +643,32 @@ async function handleCreateCheckoutSession(request, env) {
 
   for (const date of reservedDates) {
 
-    const reservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
+    const exactReservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
+    const fullReservationKey = `reservation:${booking.vehicleId}:${date}:full`;
 
-    const existingReservation = await env.BOOKINGS_KV.get(reservationKey);
+    const existingExactReservation = await env.BOOKINGS_KV.get(exactReservationKey);
+    const existingFullReservation = await env.BOOKINGS_KV.get(fullReservationKey);
 
-    if (existingReservation) {
-      return json({
-        error: "Vehicle temporarily reserved. Please try again shortly."
-      }, 409);
+    if (requestedSlot === "full") {
+      const existingAmReservation = await env.BOOKINGS_KV.get(
+        `reservation:${booking.vehicleId}:${date}:am`
+      );
+      const existingPmReservation = await env.BOOKINGS_KV.get(
+        `reservation:${booking.vehicleId}:${date}:pm`
+      );
+
+      if (existingFullReservation || existingAmReservation || existingPmReservation) {
+        return json({
+          error: "Vehicle temporarily reserved. Please try again shortly."
+        }, 409);
+      }
+    } else {
+      if (existingExactReservation || existingFullReservation) {
+        return json({
+          error: "Vehicle temporarily reserved. Please try again shortly."
+        }, 409);
+      }
     }
-
   }
 
   /* ===============================
@@ -689,7 +720,7 @@ async function handleCreateCheckoutSession(request, env) {
             product_data: {
               name: `Horsebox booking — ${vehicleName}`
             },
-            unit_amount: confirmationFee * 100
+            unit_amount: Math.round(confirmationFee * 100)
           },
           quantity: 1
         }
@@ -699,12 +730,15 @@ async function handleCreateCheckoutSession(request, env) {
         vehicleId: booking.vehicleId,
         vehicleName: vehicleName,
         pickupDate: booking.pickupDate,
-        pickupTime: booking.pickupTime || "07:00",
-        durationDays: booking.durationDays,
-        customerName: booking.customerName,
-        customerEmail: booking.customerEmail,
+        pickupTime,
+        durationDays: String(durationDays),
+        customerName: booking.customerName || "",
+        customerEmail: booking.customerEmail || "",
+        customerMobile: booking.customerMobile || "",
+        discountCode: booking.discountCode || "",
 
-        /* 🔥 SAVE PRICING */
+        baseCost: String(baseCost),
+        discountAmount: String(discountAmount),
         totalHire: String(totalHire),
         confirmationFee: String(confirmationFee),
         outstandingAmount: String(outstandingAmount)
@@ -731,7 +765,6 @@ async function handleCreateCheckoutSession(request, env) {
   return json({
     url: session.url
   });
-
 }
 
 function getDatesBetween(start, end) {
@@ -777,7 +810,10 @@ async function handleStripeWebhook(request, env) {
     );
   } catch (err) {
     console.log("❌ Webhook verification failed:", err.message);
-    return new Response(JSON.stringify({ error: "Webhook signature verification failed" }), { status: 400 });
+    return new Response(
+      JSON.stringify({ error: "Webhook signature verification failed" }),
+      { status: 400 }
+    );
   }
 
   const eventId = event.id;
@@ -788,27 +824,24 @@ async function handleStripeWebhook(request, env) {
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
-  /* ===============================
-     HANDLE SUCCESSFUL PAYMENT
-  =============================== */
-
   if (event.type === "checkout.session.completed") {
 
     const session = event.data.object;
 
     if (!session?.metadata?.vehicleId) {
+      await env.BOOKINGS_KV.put(eventId, "processed");
       return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
-
-    /* ===============================
-       🔥 PRICING FROM STRIPE (FIX)
-    =============================== */
 
     const totalHire = Number(session.metadata?.totalHire || 0);
     const confirmationFee = Number(session.metadata?.confirmationFee || 0);
     const outstandingAmount = Number(session.metadata?.outstandingAmount || 0);
+    const baseCost = Number(session.metadata?.baseCost || totalHire || 0);
+    const discountAmount = Number(session.metadata?.discountAmount || 0);
 
     console.log("💰 WEBHOOK PRICING:", {
+      baseCost,
+      discountAmount,
       totalHire,
       confirmationFee,
       outstandingAmount
@@ -839,7 +872,6 @@ async function handleStripeWebhook(request, env) {
     =============================== */
 
     const booking = {
-
       id: session.id,
 
       vehicleId: session.metadata.vehicleId,
@@ -855,15 +887,13 @@ async function handleStripeWebhook(request, env) {
       pickupAt: pickupAt.toISOString(),
       dropoffAt: dropoffAt.toISOString(),
       durationDays,
+      pickupTime,
 
-      pickupTime: pickupTime,
-
-      customerName: session.customer_details?.name || "",
+      customerName: session.customer_details?.name || session.metadata.customerName || "",
       customerEmail: session.customer_details?.email || session.metadata.customerEmail || "",
 
-      /* 🔥 CORRECT PRICING */
-      baseCost: totalHire,
-      discountAmount: 0,
+      baseCost,
+      discountAmount,
       hireTotal: totalHire,
 
       confirmationFee,
@@ -897,7 +927,14 @@ async function handleStripeWebhook(request, env) {
           id, full_name, email, mobile, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?)
       `)
-      .bind(customerId, booking.customerName, booking.customerEmail, "", now, now)
+      .bind(
+        customerId,
+        booking.customerName,
+        booking.customerEmail,
+        session.metadata.customerMobile || "",
+        now,
+        now
+      )
       .run();
 
       customer = await env.DB.prepare(
@@ -940,7 +977,93 @@ async function handleStripeWebhook(request, env) {
     )
     .run();
 
+    /* ===============================
+       SAVE BOOKING TO KV (CALENDAR FIX)
+    =============================== */
+
+    const bookingMonth = booking.pickupAt.slice(0, 7);
+    const monthKey = `bookings:${bookingMonth}`;
+
+    let existingMonthBookings = [];
+
+    try {
+      const existingMonthData = await env.BOOKINGS_KV.get(monthKey);
+
+      if (existingMonthData) {
+        existingMonthBookings = JSON.parse(existingMonthData);
+
+        if (!Array.isArray(existingMonthBookings)) {
+          existingMonthBookings = [];
+        }
+      }
+    } catch (err) {
+      console.log("⚠️ Failed to parse month bookings KV:", err);
+      existingMonthBookings = [];
+    }
+
+    const alreadyExists = existingMonthBookings.some(b => b.id === booking.id);
+
+    if (!alreadyExists) {
+      existingMonthBookings.push(booking);
+
+      await env.BOOKINGS_KV.put(
+        monthKey,
+        JSON.stringify(existingMonthBookings)
+      );
+    }
+
+    /* ===============================
+       SAVE FAST INDEX (VEHICLE AVAILABILITY FIX)
+    =============================== */
+
+    const bookedDates = getDatesBetween(
+      new Date(booking.pickupAt),
+      new Date(booking.dropoffAt)
+    );
+
+    for (const date of bookedDates) {
+      await env.BOOKINGS_KV.put(
+        `booking:${booking.vehicleId}:${date}`,
+        booking.id
+      );
+    }
+
+    /* ===============================
+       CLEAR TEMP RESERVATIONS
+    =============================== */
+
+    const confirmedSlot =
+      Number(booking.durationDays) === 0.5
+        ? (booking.pickupTime === "13:00" ? "pm" : "am")
+        : "full";
+
+    for (const date of bookedDates) {
+      await env.BOOKINGS_KV.delete(
+        `reservation:${booking.vehicleId}:${date}:${confirmedSlot}`
+      );
+    }
+
+    /* If full-day booking, clear partial locks too */
+    if (confirmedSlot === "full") {
+      for (const date of bookedDates) {
+        await env.BOOKINGS_KV.delete(`reservation:${booking.vehicleId}:${date}:am`);
+        await env.BOOKINGS_KV.delete(`reservation:${booking.vehicleId}:${date}:pm`);
+      }
+    }
+
+    /* ===============================
+       🔄 BUMP VERSION (FRONTEND REFRESH)
+    =============================== */
+
+    await env.BOOKINGS_KV.put(
+      "bookings:version",
+      String(Date.now())
+    );
   }
+
+  /* ===============================
+     ALWAYS MARK + RETURN
+  =============================== */
 
   await env.BOOKINGS_KV.put(eventId, "processed");
 
@@ -1053,73 +1176,60 @@ async function handleAvailability(request, env) {
     return json({ error: "Missing from/to parameters" }, 400);
   }
 
-  const fromMonth = fromParam.slice(0,7);
-  const toMonth = toParam.slice(0,7);
+  const fromMonth = fromParam.slice(0, 7);
+  const toMonth = toParam.slice(0, 7);
 
   const months = new Set([fromMonth, toMonth]);
-
   const availability = [];
 
   /* ===============================
      CONFIRMED BOOKINGS
-  ================================ */
+  =============================== */
 
   for (const month of months) {
 
     const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
-
     if (!data) continue;
 
     try {
-
       const bookings = JSON.parse(data);
 
       for (const booking of bookings) {
-
         const dates = getDatesBetween(
           new Date(booking.pickupAt),
           new Date(booking.dropoffAt)
         );
 
         for (const d of dates) {
-
           availability.push({
             vehicleId: booking.vehicleId,
             date: d,
             status: "booked"
           });
-
         }
-
       }
-
     } catch {}
-
   }
 
   /* ===============================
      TEMP RESERVATIONS
-  ================================ */
+  =============================== */
 
   const list = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
 
   for (const key of list.keys) {
+    const parts = key.name.split(":");
+    if (parts.length < 4) continue;
 
-  const parts = key.name.split(":");
-
-  if (parts.length < 3) continue;
-
-  availability.push({
-    vehicleId: parts[1],
-    date: parts[2],
-    slot: parts[3] || "full",
-    status: "reserved"
-  });
-
-}
+    availability.push({
+      vehicleId: parts[1],
+      date: parts[2],
+      slot: parts[3] || "full",
+      status: "reserved"
+    });
+  }
 
   return json({ availability });
-
 }
 
 async function handleVehicleAvailability(request, env) {
@@ -1293,24 +1403,36 @@ async function handleMonthAvailability(request, env) {
 }
 
 
-  async function handleBookingsVersion() {
+  async function handleBookingsVersion(env) {
+
+  const version = await env.BOOKINGS_KV.get("bookings:version");
 
   return json({
-    version: Date.now()
+    version: version || "0"
   });
 
 }
 
 async function handleClearBookings(env) {
 
-  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
+  const bookingsList = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
   await Promise.all(
-    list.keys.map(key => env.BOOKINGS_KV.delete(key.name))
+    bookingsList.keys.map(key => env.BOOKINGS_KV.delete(key.name))
   );
-  
-  return json({ success: true });
 
+  const bookingIndexList = await env.BOOKINGS_KV.list({ prefix: "booking:" });
+  await Promise.all(
+    bookingIndexList.keys.map(key => env.BOOKINGS_KV.delete(key.name))
+  );
+
+  const reservationsList = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
+  await Promise.all(
+    reservationsList.keys.map(key => env.BOOKINGS_KV.delete(key.name))
+  );
+
+  await env.BOOKINGS_KV.delete("bookings:version");
+
+  return json({ success: true });
 }
 
 async function findCustomerByEmailOrMobile(env, email, mobile) {
