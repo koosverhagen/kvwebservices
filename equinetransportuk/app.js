@@ -610,18 +610,54 @@ function getRemainingHalfDaySlots(dateObj, bookings){
 }
 
 function updateEarlyPickupAvailability() {
-  const duration = Number(durationDaysInput?.value || 1);
-  const pickupTime = pickupTimeInput?.value;
 
-  const isHalfDayAfternoon = duration === 0.5 && pickupTime === "13:00";
+  // 👇 detect which step we are in (safe fallback chain)
+  const duration = Number(
+    selectedDurationInput?.value ||
+    durationDaysInput?.value ||
+    1
+  );
+
+  const bookingTime = document.getElementById("booking-pickup-time")?.value;
+
+  const pickupTime =
+    bookingTime ||
+    pickupTimeInput?.value ||
+    selectedAvailability?.pickupTime ||
+    "07:00"; // safe fallback
+
+  /* ===============================
+     DEBUG LOG (VERY USEFUL)
+  =============================== */
+
+  console.log("EarlyPickupCheck:", {
+    duration,
+    pickupTime
+  });
+
+  const isHalfDayAfternoon =
+    duration === 0.5 && pickupTime === "13:00";
 
   if (!earlyPickupCheckbox) return;
+
+  const label = earlyPickupCheckbox.closest("label");
+  const textSpan = label?.querySelector("span");
 
   if (isHalfDayAfternoon) {
     earlyPickupCheckbox.checked = false;
     earlyPickupCheckbox.disabled = true;
+
+    if (textSpan) {
+      textSpan.textContent =
+        "Early pickup not available for afternoon half-day";
+    }
+
   } else {
     earlyPickupCheckbox.disabled = false;
+
+    if (textSpan) {
+      textSpan.textContent = "Early pickup (+£20)";
+    }
   }
 }
 
@@ -1627,7 +1663,11 @@ availabilityResults.addEventListener("click", async (e)=>{
 
 });
 
+const bookingTimeInput = document.getElementById("booking-pickup-time");
 
+bookingTimeInput?.addEventListener("change", () => {
+  updateEarlyPickupAvailability(); // ✅ REQUIRED
+});
 
 const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
@@ -2352,9 +2392,11 @@ async function selectAvailability(vehicleId) {
 
   const bookingTimeInput = document.getElementById("booking-pickup-time");
 
-  if (bookingTimeInput && durationDays === 0.5) {
-    bookingTimeInput.value = pickupTime;
-  }
+if (bookingTimeInput && durationDays === 0.5) {
+  bookingTimeInput.value = pickupTime;
+
+  updateEarlyPickupAvailability(); // ✅ ADD THIS
+}
 
   /* update base price */
 
@@ -2411,25 +2453,52 @@ async function checkBookingFormAvailability() {
     return;
   }
 
+  /* ===============================
+     🔥 FIXED PICKUP TIME PRIORITY
+  =============================== */
+
+  const bookingTime = document.getElementById("booking-pickup-time")?.value;
+
   const bookingPickupTime =
-  document.getElementById("booking-pickup-time")?.value ||
-  selectedAvailability.pickupTime ||
-  DEFAULT_PICKUP_TIME;
+    bookingTime ||
+    selectedAvailability.pickupTime ||
+    DEFAULT_PICKUP_TIME;
 
-const pickupTime =
-  is35T(vehicle) && durationDays === 0.5
-    ? bookingPickupTime
-    : DEFAULT_PICKUP_TIME;
+  const pickupTime =
+    is35T(vehicle) && durationDays === 0.5
+      ? bookingPickupTime
+      : DEFAULT_PICKUP_TIME;
 
-  const available = await isVehicleAvailable(vehicle.id, pickupDate, durationDays, pickupTime);
+  /* ===============================
+     AVAILABILITY CHECK
+  =============================== */
+
+  const available = await isVehicleAvailable(
+    vehicle.id,
+    pickupDate,
+    durationDays,
+    pickupTime
+  );
 
   if (available) {
-    // ✅ Keep discount when rebuilding availability
+
+    /* ===============================
+       REBUILD AVAILABILITY (KEEP DISCOUNT)
+    =============================== */
+
     const code = getCurrentDiscountCode();
 
-    selectedAvailability = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, code);
+    selectedAvailability = await buildAvailability(
+      vehicle,
+      pickupDate,
+      durationDays,
+      pickupTime,
+      code
+    );
 
-    if (selectedBaseInput) selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+    if (selectedBaseInput) {
+      selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
+    }
 
     if (statusEl) {
       statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
@@ -2438,14 +2507,28 @@ const pickupTime =
     }
 
     if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
+
     updateCheckoutSummary();
+
+    /* ===============================
+       🔥 CRITICAL FIX
+       Sync early pickup AFTER recalculation
+    =============================== */
+
+    updateEarlyPickupAvailability();
+
   } else {
+
     if (statusEl) {
       statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
+
     if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+
+    /* also keep UI consistent */
+    updateEarlyPickupAvailability();
   }
 }
 
@@ -3205,7 +3288,14 @@ function syncExtrasUI() {
   if (!dartfordEnabledInput.checked) {
     dartfordCountInput.value = "1";
   }
+
+  // 🔥 ALWAYS sync early pickup as well
+  updateEarlyPickupAvailability();
 }
+
+/* ===============================
+   EXTRAS EVENTS (CLEAN - NO DUPES)
+=============================== */
 
 dartfordEnabledInput?.addEventListener("change", () => {
   syncExtrasUI();
@@ -3213,28 +3303,33 @@ dartfordEnabledInput?.addEventListener("change", () => {
 });
 
 dartfordCountInput?.addEventListener("input", refreshPricingWithExtras);
-earlyPickupEnabledInput?.addEventListener("change", refreshPricingWithExtras);
-hiredWithin3MonthsInput?.addEventListener("change", updateCheckoutSummary);
 
-syncExtrasUI();
-
-// Extras
-dartfordEnabledInput?.addEventListener("change", () => {
-  if (dartfordCountInput) {
-    dartfordCountInput.disabled = !dartfordEnabledInput.checked;
-  }
-
-  refreshPricingWithExtras(); // ✅ THIS FIXES EVERYTHING
+earlyPickupEnabledInput?.addEventListener("change", () => {
+  refreshPricingWithExtras();
+  updateEarlyPickupAvailability(); // ✅ ensure UI stays correct
 });
 
-dartfordCountInput?.addEventListener("input", refreshPricingWithExtras);
-earlyPickupEnabledInput?.addEventListener("change", refreshPricingWithExtras);
 hiredWithin3MonthsInput?.addEventListener("change", updateCheckoutSummary);
 
-// booking selection changes
-selectedPickupInput?.addEventListener("change", checkBookingFormAvailability);
-selectedDurationInput?.addEventListener("change", checkBookingFormAvailability);
+/* ===============================
+   BOOKING SELECTION EVENTS
+=============================== */
 
+selectedPickupInput?.addEventListener("change", async () => {
+  await checkBookingFormAvailability();
+  updateEarlyPickupAvailability(); // ✅ ADD
+});
+
+selectedDurationInput?.addEventListener("change", async () => {
+  await checkBookingFormAvailability();
+  updateEarlyPickupAvailability(); // ✅ KEEP
+});
+
+/* ===============================
+   INIT
+=============================== */
+
+syncExtrasUI();
 
 /* ======================================================
    BOOKING SUBMIT
