@@ -1025,9 +1025,6 @@ function calculateEarlyPickupCharge(enabled) {
   return enabled ? EARLY_PICKUP_PRICE : 0;
 }
 
-function calculateHireTotal(baseCost, crossingsCount, earlyPickupEnabled) {
-  return baseCost + calculateCrossingCharge(crossingsCount) + calculateEarlyPickupCharge(earlyPickupEnabled);
-}
 
 function getReminderAt(pickupAtIso) {
   const reminderDate = new Date(pickupAtIso);
@@ -1056,55 +1053,99 @@ function getAvailabilityCacheKey(vehicleId, pickupDate, durationDays, pickupTime
 async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime, discountCode = "") {
 
   // 🔒 Local development safeguard (prevents 405 spam on Live Server)
-  if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
-    console.log("Skipping pricing API (localhost dev)");
+if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
+  console.log("Skipping pricing API (localhost dev)");
 
-    const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
+  const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
 
-    return {
-      baseCost: fallbackBase,
-      discountAmount: 0,
-      discountedTotal: fallbackBase
-    };
+  const extras = {
+    dartford: dartfordEnabledInput?.checked
+      ? Number(dartfordCountInput?.value || 0)
+      : 0,
+    earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
+  };
+
+  const extrasTotal =
+    (extras.dartford || 0) * 4.2 +
+    (extras.earlyPickup ? 20 : 0);
+
+  const total = fallbackBase + extrasTotal;
+
+  return {
+    baseCost: fallbackBase,
+    discountAmount: 0,
+    extrasTotal,
+    total
+  };
+}
+
+try {
+
+  /* ===============================
+     EXTRAS (🔥 NEW)
+  =============================== */
+
+  const extras = {
+    dartford: dartfordEnabledInput?.checked
+      ? Number(dartfordCountInput?.value || 0)
+      : 0,
+    earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
+  };
+
+  const res = await fetch(apiUrl("/api/pricing/quote"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      vehicleId: vehicle.id,
+      durationDays,
+      pickupDate,
+      pickupTime,
+      discountCode,
+      extras // 🔥 SEND TO BACKEND
+    })
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    const message = errorData?.error || "Pricing API error";
+    throw new Error(message);
   }
 
-  try {
-    const res = await fetch(apiUrl("/api/pricing/quote"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        vehicleId: vehicle.id,
-        durationDays,
-        pickupDate,
-        pickupTime,
-        discountCode
-      })
-    });
+  const pricing = await res.json();
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
-      const message = errorData?.error || "Pricing API error";
-      throw new Error(message);
-    }
+  return {
+  baseCost: Number(pricing.baseCost ?? 0),
+  discountAmount: Number(pricing.discountAmount ?? 0),
+  extrasTotal: Number(pricing.extrasTotal ?? 0),
+  total: Number(pricing.total ?? 0)
+};
 
-    const pricing = await res.json();
+} catch (err) {
 
-    return {
-      baseCost: Number(pricing.baseCost ?? 0),
-      discountAmount: Number(pricing.discountAmount ?? 0),
-      discountedTotal: Number(pricing.discountedTotal ?? pricing.baseCost ?? 0)
-    };
-  } catch (err) {
-    console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
+  console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
 
-    const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
+  const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
 
-    return {
-      baseCost: fallbackBase,
-      discountAmount: 0,
-      discountedTotal: fallbackBase
-    };
-  }
+  const extras = {
+    dartford: dartfordEnabledInput?.checked
+      ? Number(dartfordCountInput?.value || 0)
+      : 0,
+    earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
+  };
+
+  const extrasTotal =
+    (extras.dartford || 0) * 4.2 +
+    (extras.earlyPickup ? 20 : 0);
+
+  const total = fallbackBase + extrasTotal;
+
+  return {
+    baseCost: fallbackBase,
+    discountAmount: 0,
+    extrasTotal,
+    total
+  };
+}
 }
 
 async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode = "") {
@@ -1184,7 +1225,8 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, 
 
     baseCost: pricing.baseCost,
     discountAmount: pricing.discountAmount,
-    discountedTotal: pricing.discountedTotal
+    extrasTotal: pricing.extrasTotal,
+    total: pricing.total
 
   };
 
@@ -1326,7 +1368,7 @@ async function renderAvailabilityResults(items) {
 
     if (items.length === 1) {
 
-      const price = Number(items[0].discountedTotal ?? items[0].baseCost ?? 0);
+      const price = Number(items[0].total ?? items[0].baseCost ?? 0);
 
       pricePreview.innerHTML = `
         <div class="price-main">Only one lorry available</div>
@@ -1425,7 +1467,7 @@ async function renderAvailabilityResults(items) {
 
     const vehicle = item.vehicle;
     const confirmationFee = getConfirmationFee(vehicle);
-    const displayPrice = Number(item.discountedTotal ?? item.baseCost ?? 0);
+    const displayPrice = Number(item.total ?? item.baseCost ?? 0);
 
     const durationLabel = formatDurationLabel(item.durationDays);
 
@@ -1610,18 +1652,10 @@ if (vehicleId && vehicleId.startsWith("v75")) {
      PRICE CALCULATIONS
   =============================== */
 
-  const dartfordEnabled = dartfordEnabledInput?.checked || false;
-  const crossingsCount = dartfordEnabled ? Math.max(1, Number(dartfordCountInput?.value || 1)) : 0;
-  const earlyPickupEnabled = earlyPickupEnabledInput?.checked || false;
-
-  const crossingCharge = calculateCrossingCharge(crossingsCount);
-  const earlyPickupCharge = calculateEarlyPickupCharge(earlyPickupEnabled);
-
-  const baseCost = Number(selectedAvailability.baseCost || 0);
-  const discountAmount = Number(selectedAvailability.discountAmount || 0);
-  const discountedBase = Math.max(0, baseCost - discountAmount);
-
-  const hireTotal = calculateHireTotal(discountedBase, crossingsCount, earlyPickupEnabled);
+const baseCost = Number(selectedAvailability.baseCost || 0);
+const discountAmount = Number(selectedAvailability.discountAmount || 0);
+const extrasTotal = Number(selectedAvailability.extrasTotal || 0);
+const hireTotal = Number(selectedAvailability.total || 0);
 
   if (bookingSubmitBtn) {
     bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
@@ -1640,8 +1674,6 @@ if (confirmBtn) {
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
   const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
 
-  const crossingLabel =
-    crossingsCount === 1 ? "Dartford crossing" : "Dartford crossings";
 
   checkoutSummary.innerHTML = `
 <div class="summary-card">
@@ -1710,24 +1742,14 @@ if (confirmBtn) {
     </div>
     ` : ""
   }
-
-  ${
-    crossingsCount > 0 ? `
-    <div class="summary-row">
-      <span>Dartford crossings (${crossingsCount})</span>
-      <strong>£${crossingCharge.toFixed(2)}</strong>
-    </div>
-    ` : ""
-  }
-
-  ${
-    earlyPickupEnabled ? `
-    <div class="summary-row">
-      <span>Early pickup</span>
-      <strong>£${earlyPickupCharge.toFixed(2)}</strong>
-    </div>
-    ` : ""
-  }
+${
+  extrasTotal > 0 ? `
+  <div class="summary-row">
+    <span>Extras</span>
+    <strong>£${extrasTotal.toFixed(2)}</strong>
+  </div>
+  ` : ""
+}
 
   <hr>
 
@@ -1897,7 +1919,7 @@ durationDaysInput?.addEventListener("change", async () => {
     if (previewBox) {
       previewBox.innerHTML = `
         <div class="quote">
-          Estimated hire price: <strong>£${preview.discountedTotal.toFixed(2)}</strong>
+          Estimated hire price: <strong>£${preview.total.toFixed(2)}</strong>
         </div>
       `;
     }
@@ -2534,8 +2556,8 @@ async function renderAdminBookings() {
           <td>${escapeHtml(booking.customerMobile)}</td>
           <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
           <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
-          <td>${booking.earlyPickup ? "Yes" : "No"}</td>
-          <td>${Number(booking.dartfordCrossings || 0)}</td>
+          <td>${booking.extras?.earlyPickup ? "Yes" : "No"}</td>
+          <td>${Number(booking.extras?.dartford || 0)}</td>
           <td>£${Number(booking.confirmationFee).toFixed(2)}</td>
           <td>£${Number(booking.outstandingAmount).toFixed(2)}</td>
           <td>${booking.requiredFormType === "short" ? "Short" : "Long"}</td>
@@ -2724,6 +2746,29 @@ async function createStripeCheckoutSession(booking) {
 
   try {
 
+    /* ===============================
+       EXTRAS (🔥 NEW)
+    =============================== */
+
+    const dartfordCount = Number(
+      document.getElementById("dartford-count")?.value || 0
+    );
+
+    const dartfordEnabled =
+      document.getElementById("dartford-enabled")?.checked;
+
+    const earlyPickupEnabled =
+      document.getElementById("early-pickup-enabled")?.checked;
+
+    const extras = {
+      dartford: dartfordEnabled ? dartfordCount : 0,
+      earlyPickup: earlyPickupEnabled ? 1 : 0
+    };
+
+    /* ===============================
+       REQUEST
+    =============================== */
+
     const response = await fetch(
       apiUrl("/api/bookings/create-checkout-session"),
       {
@@ -2731,19 +2776,27 @@ async function createStripeCheckoutSession(booking) {
         headers: { "Content-Type": "application/json" },
 
         body: JSON.stringify({
-  vehicleId: booking.vehicleId,
-  vehicleName: booking.vehicleSnapshot?.name,
 
-  pickupDate: booking.pickupAt,
-  pickupTime: booking.pickupTime,
+          /* core booking */
+          vehicleId: booking.vehicleId,
+          vehicleName: booking.vehicleSnapshot?.name,
 
-  durationDays: booking.durationDays,
+          pickupDate: booking.pickupAt,
+          pickupTime: booking.pickupTime,
 
-  customerEmail: booking.customerEmail,
-  bookingId: booking.id,
+          durationDays: booking.durationDays,
 
-  confirmationFee: booking.confirmationFee
-})
+          /* customer */
+          customerEmail: booking.customerEmail,
+          bookingId: booking.id,
+
+          /* pricing (display only, backend recalculates anyway) */
+          confirmationFee: booking.confirmationFee,
+
+          /* 🔥 NEW — extras */
+          extras
+
+        })
       }
     );
 
@@ -3114,20 +3167,16 @@ if (bookingForm) {
     =============================== */
 
     const dartfordCrossings = dartfordEnabledInput?.checked
-      ? Math.max(1, Number(dartfordCountInput?.value || 1))
-      : 0;
+  ? Number(dartfordCountInput?.value || 0)
+  : 0;
 
     const earlyPickup = earlyPickupEnabledInput?.checked || false;
 
     const baseCost = Number(selectedAvailability.baseCost || 0);
     const discountAmount = Number(selectedAvailability.discountAmount || 0);
-    const discountedBase = Math.max(0, baseCost - discountAmount);
+   
 
-    const hireTotal = calculateHireTotal(
-      discountedBase,
-      dartfordCrossings,
-      earlyPickup
-    );
+   const hireTotal = Number(selectedAvailability.total || 0);
 
     /* ===============================
        CONFIRMATION FEE (🔥 FIXED)
@@ -3183,62 +3232,64 @@ if (vehicleId && vehicleId.startsWith("v75")) {
     }
 
     /* ===============================
-       BOOKING OBJECT
-    =============================== */
+   BOOKING OBJECT
+=============================== */
 
-    const booking = {
-      id: bookingId,
+const booking = {
+  id: bookingId,
 
-      vehicleId: vehicleId, // ✅ FIXED
+  vehicleId: vehicleId,
 
-      vehicleSnapshot: {
-        id: vehicleId, // ✅ FIXED
-        name: selectedAvailability.vehicle?.name || "",
-        type: selectedAvailability.vehicle?.type || ""
-      },
+  vehicleSnapshot: {
+    id: vehicleId,
+    name: selectedAvailability.vehicle?.name || "",
+    type: selectedAvailability.vehicle?.type || ""
+  },
 
-      pickupAt: pickupAt.toISOString(),
-      dropoffAt: dropoffAt.toISOString(),
+  pickupAt: pickupAt.toISOString(),
+  dropoffAt: dropoffAt.toISOString(),
 
-      durationDays: selectedAvailability.durationDays,
-      durationHours: selectedAvailability.durationHours,
-      pickupTime: bookingPickupTime,
+  durationDays: selectedAvailability.durationDays,
+  durationHours: selectedAvailability.durationHours,
+  pickupTime: bookingPickupTime,
 
-      customerName: customerNameInput?.value || "",
-      customerEmail: customerEmailInput?.value || "",
-      customerMobile: customerMobileInput?.value || "",
-      customerAddress: customerAddressInput?.value || "",
-      customerDob: customerDobInput?.value || "",
+  customerName: customerNameInput?.value || "",
+  customerEmail: customerEmailInput?.value || "",
+  customerMobile: customerMobileInput?.value || "",
+  customerAddress: customerAddressInput?.value || "",
+  customerDob: customerDobInput?.value || "",
 
-      dartfordCrossings,
-      crossingCharge: calculateCrossingCharge(dartfordCrossings),
+  /* 🔥 CLEAN EXTRAS (single source of truth) */
+  extras: {
+    dartford: dartfordCrossings,
+    earlyPickup: earlyPickup ? 1 : 0
+  },
 
-      earlyPickup,
-      earlyPickupCharge: calculateEarlyPickupCharge(earlyPickup),
+  /* 🔥 SERVER-DRIVEN TOTALS */
+  baseCost,
+  discountAmount,
+  extrasTotal: Number(selectedAvailability.extrasTotal || 0),
+  hireTotal,
+  confirmationFee,
+  outstandingAmount,
 
-      baseCost,
-      discountAmount,
-      hireTotal,
-      confirmationFee, // ✅ FIXED
-      outstandingAmount,
+  depositAmount: SECURITY_DEPOSIT_AMOUNT,
 
-      depositAmount: SECURITY_DEPOSIT_AMOUNT,
+  status: "pending_confirmation_payment",
 
-      status: "pending_confirmation_payment",
+  reminderAt: getReminderAt(pickupAt.toISOString()),
 
-      reminderAt: getReminderAt(pickupAt.toISOString()),
+  outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
+  depositLink: DEPOSIT_PAYMENT_LINK,
 
-      outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
-      depositLink: DEPOSIT_PAYMENT_LINK,
+  formLinkA: shortFormLink,
+  formLinkB: longFormLink,
+  requiredFormType,
+  requiredFormLink,
+  hiredWithinLast3Months,
 
-      formLinkA: shortFormLink,
-      formLinkB: longFormLink,
-      requiredFormType,
-      requiredFormLink,
-      hiredWithinLast3Months,
-
-      createdAt: new Date().toISOString()
-    };
+  createdAt: new Date().toISOString()
+};
 
     /* ===============================
        STORE + REFRESH
