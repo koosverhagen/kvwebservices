@@ -2538,8 +2538,25 @@ async function renderAdminBookings() {
           <td>${escapeHtml(booking.customerMobile)}</td>
           <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
           <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
-          <td>${booking.extras?.earlyPickup ? "Yes" : "No"}</td>
-          <td>${Number(booking.extras?.dartford || 0)}</td>
+         <td>
+  ${
+    booking.extras?.earlyPickup
+      ? `£${EARLY_PICKUP_PRICE.toFixed(2)}`
+      : "—"
+  }
+</td>
+
+<td>
+  ${
+    booking.extras?.dartford
+      ? `${booking.extras.dartford} (£${(booking.extras.dartford * DARTFORD_CROSSING_PRICE).toFixed(2)})`
+      : "—"
+  }
+</td>
+
+<td>
+  £${Number(booking.extrasTotal || 0).toFixed(2)}
+</td>
           <td>£${Number(booking.confirmationFee).toFixed(2)}</td>
           <td>£${Number(booking.outstandingAmount).toFixed(2)}</td>
           <td>${booking.requiredFormType === "short" ? "Short" : "Long"}</td>
@@ -2565,8 +2582,9 @@ async function renderAdminBookings() {
           <th>Mobile</th>
           <th>Pickup</th>
           <th>Duration</th>
-          <th>Early</th>
-          <th>Crossings</th>
+          <th>Early Pickup</th>
+          <th>Dartford</th>
+          <th>Extras Total</th>
           <th>Paid Now</th>
           <th>Outstanding</th>
           <th>Required Form</th>
@@ -2647,26 +2665,61 @@ async function exportAdminPdf() {
   const bookings = (await getBookings()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const stamp = new Date().toISOString().slice(0, 10);
 
-  const rows = bookings.length
-    ? bookings
-        .map((booking) => {
-          const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
-          return `
-            <tr>
-              <td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td>
-              <td>${escapeHtml(booking.customerName)}</td>
-              <td>${escapeHtml(booking.customerEmail)}</td>
-              <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
-              <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
-              <td>${escapeHtml(booking.earlyPickup ? "Yes" : "No")}</td>
-              <td>${escapeHtml(`£${Number(booking.confirmationFee).toFixed(2)}`)}</td>
-              <td>${escapeHtml(`£${Number(booking.outstandingAmount).toFixed(2)}`)}</td>
-              <td>${escapeHtml(booking.status)}</td>
-            </tr>
-          `;
-        })
-        .join("")
-    : "<tr><td colspan='9'>No bookings saved.</td></tr>";
+  const rows = bookings
+  .map((booking) => {
+    const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
+
+    const earlyPickup = booking.extras?.earlyPickup;
+    const dartford = Number(booking.extras?.dartford || 0);
+
+    return `
+      <tr>
+        <td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td>
+        <td>${escapeHtml(booking.customerName)}</td>
+        <td>${escapeHtml(booking.customerEmail)}</td>
+        <td>${escapeHtml(booking.customerMobile)}</td>
+        <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
+        <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
+
+        <!-- Early Pickup -->
+        <td>
+          ${earlyPickup ? `£${EARLY_PICKUP_PRICE.toFixed(2)}` : "—"}
+        </td>
+
+        <!-- Dartford -->
+        <td>
+          ${
+            dartford > 0
+              ? `${dartford} (£${(dartford * DARTFORD_CROSSING_PRICE).toFixed(2)})`
+              : "—"
+          }
+        </td>
+
+        <!-- Extras Total -->
+        <td>
+          £${Number(booking.extrasTotal || 0).toFixed(2)}
+        </td>
+
+        <td>£${Number(booking.confirmationFee).toFixed(2)}</td>
+        <td>£${Number(booking.outstandingAmount).toFixed(2)}</td>
+
+        <td>${booking.requiredFormType === "short" ? "Short" : "Long"}</td>
+
+        <td>
+          ${
+            booking.requiredFormLink
+              ? `<a href="${escapeHtml(booking.requiredFormLink)}" target="_blank" rel="noopener">Open</a>`
+              : "—"
+          }
+        </td>
+
+        <td>${escapeHtml(booking.status)}</td>
+        <td>${escapeHtml(formatDateTime(booking.reminderAt))}</td>
+      </tr>
+    `;
+  })
+  .join("");
+    "<tr><td colspan='9'>No bookings saved.</td></tr>";
 
   const reportHtml = `
     <!doctype html>

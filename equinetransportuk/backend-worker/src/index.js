@@ -1233,10 +1233,35 @@ while (current <= to) {
 
   }
 
-  return json({
-    bookings,
-    reservations
-  });
+  const transformedBookings = bookings.map(booking => {
+
+  let extras = null;
+
+  try {
+    extras = booking.extrasJson
+      ? typeof booking.extrasJson === "string"
+        ? JSON.parse(booking.extrasJson)
+        : booking.extrasJson
+      : null;
+  } catch {
+    extras = null;
+  }
+
+  return {
+    ...booking,
+
+    // always safe number
+    extrasTotal: Number(booking.extrasTotal || 0),
+
+    // parsed object for frontend
+    extras
+  };
+});
+
+return json({
+  bookings: transformedBookings,
+  reservations
+});
 
 }
 
