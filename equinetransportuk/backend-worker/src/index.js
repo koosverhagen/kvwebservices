@@ -897,25 +897,40 @@ async function handleStripeWebhook(request, env) {
       return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
 
+    /* ===============================
+       SAFE NUMBER PARSING
+    =============================== */
+
     const totalHire = Number(session.metadata?.totalHire || 0);
     const confirmationFee = Number(session.metadata?.confirmationFee || 0);
     const outstandingAmount = Number(session.metadata?.outstandingAmount || 0);
     const baseCost = Number(session.metadata?.baseCost || totalHire || 0);
     const discountAmount = Number(session.metadata?.discountAmount || 0);
+
     const dartfordTotal = Number(session.metadata?.dartfordTotal || 0);
     const earlyPickupTotal = Number(session.metadata?.earlyPickupTotal || 0);
     const extrasTotal = Number(session.metadata?.extrasTotal || 0);
 
+    /* ===============================
+       🔥 RECONSTRUCT EXTRAS (FIXED)
+    =============================== */
+
+    const extras = {
+      dartford: Math.round(dartfordTotal / 4.2), // safe reverse calc
+      earlyPickup: earlyPickupTotal > 0 ? 1 : 0
+    };
+
     console.log("💰 WEBHOOK PRICING:", {
-  baseCost,
-  discountAmount,
-  dartfordTotal,
-  earlyPickupTotal,
-  extrasTotal,
-  totalHire,
-  confirmationFee,
-  outstandingAmount
-});
+      baseCost,
+      discountAmount,
+      dartfordTotal,
+      earlyPickupTotal,
+      extrasTotal,
+      totalHire,
+      confirmationFee,
+      outstandingAmount,
+      extras
+    });
 
     /* ===============================
        DATES
@@ -966,17 +981,13 @@ async function handleStripeWebhook(request, env) {
       discountAmount,
 
       dartfordTotal,
-earlyPickupTotal,
-extrasTotal,
+      earlyPickupTotal,
+      extrasTotal,
 
-// ✅ ADD THIS
-extras: {
-  dartford: Math.round(dartfordTotal / 4.2),
-  earlyPickup: earlyPickupTotal > 0 ? 1 : 0
-},
+      // ✅ CRITICAL FIX (NOW STORED PROPERLY)
+      extras,
 
       hireTotal: totalHire,
-
       confirmationFee,
       outstandingAmount,
 
@@ -1024,7 +1035,7 @@ extras: {
     }
 
     /* ===============================
-       SAVE BOOKING
+       SAVE BOOKING (DB)
     =============================== */
 
     await env.DB.prepare(`
@@ -1059,7 +1070,7 @@ extras: {
     .run();
 
     /* ===============================
-       SAVE BOOKING TO KV (CALENDAR FIX)
+       SAVE BOOKING TO KV
     =============================== */
 
     const bookingMonth = booking.pickupAt.slice(0, 7);
@@ -1077,8 +1088,7 @@ extras: {
           existingMonthBookings = [];
         }
       }
-    } catch (err) {
-      console.log("⚠️ Failed to parse month bookings KV:", err);
+    } catch {
       existingMonthBookings = [];
     }
 
@@ -1094,7 +1104,7 @@ extras: {
     }
 
     /* ===============================
-       SAVE FAST INDEX (VEHICLE AVAILABILITY FIX)
+       INDEX + CLEANUP
     =============================== */
 
     const bookedDates = getDatesBetween(
@@ -1109,10 +1119,6 @@ extras: {
       );
     }
 
-    /* ===============================
-       CLEAR TEMP RESERVATIONS
-    =============================== */
-
     const confirmedSlot =
       Number(booking.durationDays) === 0.5
         ? (booking.pickupTime === "13:00" ? "pm" : "am")
@@ -1124,7 +1130,6 @@ extras: {
       );
     }
 
-    /* If full-day booking, clear partial locks too */
     if (confirmedSlot === "full") {
       for (const date of bookedDates) {
         await env.BOOKINGS_KV.delete(`reservation:${booking.vehicleId}:${date}:am`);
@@ -1132,19 +1137,11 @@ extras: {
       }
     }
 
-    /* ===============================
-       🔄 BUMP VERSION (FRONTEND REFRESH)
-    =============================== */
-
     await env.BOOKINGS_KV.put(
       "bookings:version",
       String(Date.now())
     );
   }
-
-  /* ===============================
-     ALWAYS MARK + RETURN
-  =============================== */
 
   await env.BOOKINGS_KV.put(eventId, "processed");
 
