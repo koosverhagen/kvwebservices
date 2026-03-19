@@ -967,14 +967,44 @@ function saveBookings(bookings) {
 function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString();
+
+  return date.toLocaleString("en-GB", {
+    timeZone: "Europe/London", // 🔥 FIX
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
 }
+
+function formatTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleTimeString("en-GB", {
+    timeZone: "Europe/London",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+}
+
+
 
 function formatDateOnly(value) {
   if (!value) return "—";
+
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString();
+
+  return date.toLocaleDateString("en-GB", {
+    timeZone: "Europe/London", // 🔥 CRITICAL FIX
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
 }
 
 function overlaps(aStart, aEnd, bStart, bEnd) {
@@ -2668,7 +2698,7 @@ async function renderBookings() {
     return `
       <article class="booking-item">
         <strong>${escapeHtml(vehicle?.name || booking.vehicleId)}</strong><br>
-        ${escapeHtml(formatDateTime(booking.pickupAt))} → ${escapeHtml(formatDateTime(booking.dropoffAt))}<br>
+        ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))} · ${escapeHtml(formatTime(booking.pickupAt))} → ${escapeHtml(formatTime(booking.dropoffAt))}<br>
 
         <span class="muted">
           Duration: ${escapeHtml(formatDurationLabel(booking.durationDays))}
@@ -2712,7 +2742,10 @@ async function renderAdminBookings() {
           <td>${escapeHtml(booking.customerName)}</td>
           <td>${escapeHtml(booking.customerEmail)}</td>
           <td>${escapeHtml(booking.customerMobile)}</td>
-          <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
+          <td>
+  ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))}<br>
+  <span class="muted">${escapeHtml(formatTime(booking.pickupAt))} → ${escapeHtml(formatTime(booking.dropoffAt))}</span>
+</td>
           <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
          <td>
   ${
@@ -2793,7 +2826,10 @@ function downloadFile(content, filename, mimeType) {
 }
 
 async function exportAdminCsv() {
-  const bookings = (await getBookings()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const bookings = (await getBookings()).sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+  );
+
   const lines = [
     "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Created"
   ];
@@ -2802,7 +2838,10 @@ async function exportAdminCsv() {
     lines.push("No bookings saved,,,,,,,,,,,,,,,,,,,");
   } else {
     bookings.forEach((booking) => {
-      const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
+      const vehicle = vehicles.find(
+        (item) => item.id === booking.vehicleId
+      );
+
       lines.push(
         [
           booking.id,
@@ -2812,18 +2851,25 @@ async function exportAdminCsv() {
           booking.customerMobile,
           booking.customerAddress,
           booking.customerDob,
-          formatDateTime(booking.pickupAt),
-          formatDateTime(booking.dropoffAt),
+
+          // 🔥 FIXED DATE + TIME FORMAT
+         `${formatDateOnly(booking.pickupAt.slice(0, 10))} (${formatTime(booking.pickupAt)} → ${formatTime(booking.dropoffAt)})`,
+
           booking.durationDays,
-          booking.earlyPickup ? "Yes" : "No",
-          booking.dartfordCrossings,
+
+          // 🔥 FIXED EXTRAS SOURCE
+          booking.extras?.earlyPickup ? "Yes" : "No",
+          booking.extras?.dartford || 0,
+
           `£${Number(booking.hireTotal).toFixed(2)}`,
           `£${Number(booking.confirmationFee).toFixed(2)}`,
           `£${Number(booking.outstandingAmount).toFixed(2)}`,
           `£${Number(booking.depositAmount).toFixed(2)}`,
+
           booking.requiredFormType === "short" ? "Short" : "Long",
           booking.requiredFormLink,
           booking.status,
+
           formatDateTime(booking.reminderAt),
           formatDateTime(booking.createdAt)
         ]
@@ -2834,7 +2880,12 @@ async function exportAdminCsv() {
   }
 
   const stamp = new Date().toISOString().slice(0, 10);
-  downloadFile(lines.join("\n"), `equine-bookings-${stamp}.csv`, "text/csv;charset=utf-8");
+
+  downloadFile(
+    lines.join("\n"),
+    `equine-bookings-${stamp}.csv`,
+    "text/csv;charset=utf-8"
+  );
 }
 
 async function exportAdminPdf() {
@@ -2854,7 +2905,10 @@ async function exportAdminPdf() {
         <td>${escapeHtml(booking.customerName)}</td>
         <td>${escapeHtml(booking.customerEmail)}</td>
         <td>${escapeHtml(booking.customerMobile)}</td>
-        <td>${escapeHtml(formatDateTime(booking.pickupAt))}</td>
+        <td>
+  ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))}<br>
+  ${escapeHtml(formatTime(booking.pickupAt))} → ${escapeHtml(formatTime(booking.dropoffAt))}
+</td>
         <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
 
         <!-- Early Pickup -->
