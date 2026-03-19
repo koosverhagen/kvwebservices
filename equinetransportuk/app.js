@@ -1346,7 +1346,11 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, 
   } else {
 
     const dropoffDate = addDays(pickupAt, Math.max(0, Number(durationDays) - 1));
-    dropoffAt = asDate(dropoffDate.toISOString().slice(0, 10), dropoffTime);
+    const year = dropoffDate.getFullYear();
+const month = String(dropoffDate.getMonth() + 1).padStart(2, "0");
+const day = String(dropoffDate.getDate()).padStart(2, "0");
+
+dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
 
   }
 
