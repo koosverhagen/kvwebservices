@@ -1024,49 +1024,49 @@ async function handleStripeWebhook(request, env) {
     console.log("✅ BOOKING BUILT");
 
     /* ===============================
-       SAVE CUSTOMER
-    =============================== */
+   SAVE CUSTOMER (SAFE)
+=============================== */
 
-    console.log("👤 FIND CUSTOMER");
+let customer = null;
 
-    let customer = await findCustomerByEmailOrMobile(
-      env,
+try {
+
+  customer = await findCustomerByEmailOrMobile(
+    env,
+    booking.customerEmail,
+    ""
+  );
+
+  if (!customer) {
+
+    const customerId = "cus_" + crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    await env.DB.prepare(`
+      INSERT INTO customers (
+        id, full_name, email, mobile, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `)
+    .bind(
+      customerId,
+      booking.customerName,
       booking.customerEmail,
-      ""
-    );
+      session.metadata.customerMobile || "",
+      now,
+      now
+    )
+    .run();
 
-    if (!customer) {
+    customer = { id: customerId };
 
-      console.log("👤 CREATE CUSTOMER");
+  }
 
-      const customerId = "cus_" + crypto.randomUUID();
-      const now = new Date().toISOString();
+} catch (err) {
+  console.log("⚠️ CUSTOMER ERROR:", err);
 
-      await env.DB.prepare(`
-        INSERT INTO customers (
-          id, full_name, email, mobile, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `)
-      .bind(
-        customerId,
-        booking.customerName,
-        booking.customerEmail,
-        session.metadata.customerMobile || "",
-        now,
-        now
-      )
-      .run();
-
-      customer = await env.DB.prepare(
-        "SELECT * FROM customers WHERE id = ?"
-      ).bind(customerId).first();
-    }
-
-    if (!customer?.id) {
-      throw new Error("Customer creation failed");
-    }
-
-    console.log("👤 CUSTOMER OK");
+  // fallback → still allow booking
+  customer = { id: null };
+}
 
     /* ===============================
        SAVE BOOKING (DB)
@@ -1074,38 +1074,44 @@ async function handleStripeWebhook(request, env) {
 
     console.log("💾 SAVE BOOKING DB");
 
-    await env.DB.prepare(`
-      INSERT INTO bookings (
-        id,
-        customer_id,
-        vehicle_id,
-        pickup_at,
-        dropoff_at,
-        duration_days,
-        price_total,
-        paid_now,
-        status,
-        created_at,
-        updated_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-    .bind(
-      booking.id,
-      customer.id,
-      booking.vehicleId,
-      booking.pickupAt,
-      booking.dropoffAt,
-      booking.durationDays,
-      booking.hireTotal,
-      booking.confirmationFee,
-      booking.status,
-      booking.createdAt,
-      booking.createdAt
-    )
-    .run();
+    try {
 
-    console.log("✅ DB SAVED");
+  await env.DB.prepare(`
+    INSERT INTO bookings (
+      id,
+      customer_id,
+      vehicle_id,
+      pickup_at,
+      dropoff_at,
+      duration_days,
+      price_total,
+      paid_now,
+      status,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  .bind(
+    booking.id,
+    customer?.id || null,
+    booking.vehicleId,
+    booking.pickupAt,
+    booking.dropoffAt,
+    booking.durationDays,
+    booking.hireTotal,
+    booking.confirmationFee,
+    booking.status,
+    booking.createdAt,
+    booking.createdAt
+  )
+  .run();
+
+  console.log("✅ DB SAVED");
+
+} catch (err) {
+  console.log("💥 DB ERROR:", err);
+}
 
     /* ===============================
        SAVE TO KV
