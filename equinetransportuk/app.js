@@ -641,24 +641,26 @@ function updateEarlyPickupAvailability() {
   if (!earlyPickupCheckbox) return;
 
   const label = earlyPickupCheckbox.closest("label");
-  const textSpan = label?.querySelector("span");
 
-  if (isHalfDayAfternoon) {
-    earlyPickupCheckbox.checked = false;
-    earlyPickupCheckbox.disabled = true;
+// 🔥 FORCE correct span (more reliable)
+const textSpan = label?.querySelector("span:last-child");
 
-    if (textSpan) {
-      textSpan.textContent =
-        "Early pickup not available for afternoon half-day";
-    }
+if (isHalfDayAfternoon) {
+  earlyPickupCheckbox.checked = false;
+  earlyPickupCheckbox.disabled = true;
 
-  } else {
-    earlyPickupCheckbox.disabled = false;
-
-    if (textSpan) {
-      textSpan.textContent = "Early pickup (+£20)";
-    }
+  if (textSpan) {
+    textSpan.innerText =
+      "Early pickup unavailable for afternoon bookings. Select a morning slot to enable.";
   }
+
+} else {
+  earlyPickupCheckbox.disabled = false;
+
+  if (textSpan) {
+    textSpan.innerText = "Early pickup (+£20)";
+  }
+}
 }
 
 /* =================================
