@@ -331,8 +331,9 @@ const earlyPickupEnabledInput = document.getElementById("early-pickup-enabled");
   });
 
 async function refreshPricingWithExtras() {
-
   if (!selectedAvailability) return;
+
+  AVAILABILITY_CACHE.clear();
 
   const vehicle = selectedAvailability.vehicle;
 
@@ -345,7 +346,6 @@ async function refreshPricingWithExtras() {
   );
 
   selectedAvailability = updated;
-
   updateCheckoutSummary();
 }
 
@@ -1620,9 +1620,6 @@ const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
 
 async function updateCheckoutSummary() {
-
-  console.log("🔥 NEW summary function running");
-
   if (!checkoutSummary) return;
 
   if (!selectedAvailability) {
@@ -1633,179 +1630,132 @@ async function updateCheckoutSummary() {
 
   if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
 
-  /* ===============================
-     SAFE VEHICLE ID (🔥 FIX)
-  =============================== */
+  const vehicleId =
+    selectedAvailability.vehicle?.id ||
+    selectedAvailability.vehicleId ||
+    vehicles.find(v => v.name === selectedAvailability.vehicle?.name)?.id ||
+    "";
 
- const vehicleId =
-  selectedAvailability.vehicle?.id ||
-  selectedAvailability.vehicleId ||
-  vehicles.find(v =>
-    v.name === selectedAvailability.vehicle?.name
-  )?.id;
+  const confirmationFee = vehicleId.startsWith("v75") ? 100 : 75;
 
-  console.log("FINAL vehicleId:", vehicleId);
+  const baseCost = Number(selectedAvailability.baseCost || 0);
+  const discountAmount = Number(selectedAvailability.discountAmount || 0);
+  const extrasTotal = Number(selectedAvailability.extrasTotal || 0);
+  const hireTotal = Number(selectedAvailability.total || 0);
+  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
- let confirmationFee = 75;
+  const dartfordEnabled = Boolean(dartfordEnabledInput?.checked);
+  const dartfordCount = dartfordEnabled
+    ? Number(dartfordCountInput?.value || 0)
+    : 0;
 
-if (vehicleId && vehicleId.startsWith("v75")) {
-  confirmationFee = 100;
+  const earlyPickupEnabled = Boolean(earlyPickupEnabledInput?.checked);
 
-  console.log("💰 SUBMIT confirmationFee:", confirmationFee);
-}
+  const dartfordCharge = dartfordCount * 4.2;
+  const earlyPickupCharge = earlyPickupEnabled ? 20 : 0;
 
-  /* ===============================
-     CHECK HOW MANY VEHICLES LEFT
-  =============================== */
-
-  let urgencyHTML = "";
-
-  try {
-
-    const availableVehicles = await getAvailableLorries(
-      selectedAvailability.pickupDate,
-      selectedAvailability.durationDays,
-      selectedAvailability.pickupTime
-    );
-
-    if (availableVehicles.length === 1) {
-      urgencyHTML = `
-      <div class="urgency-banner">
-        ⚠ Only one lorry available for this date
-      </div>
-      `;
-    }
-
-  } catch(e){
-    console.warn("Availability check failed");
-  }
-
-  /* ===============================
-     PRICE CALCULATIONS
-  =============================== */
-
-const baseCost = Number(selectedAvailability.baseCost || 0);
-const discountAmount = Number(selectedAvailability.discountAmount || 0);
-const extrasTotal = Number(selectedAvailability.extrasTotal || 0);
-const hireTotal = Number(selectedAvailability.total || 0);
+  const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
 
   if (bookingSubmitBtn) {
     bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
-    
-    console.log("💰 BUTTON confirmationFee:", confirmationFee);
   }
 
-  /* 🔥 ADD THIS BLOCK */
-const confirmBtn = document.getElementById("booking-confirm-btn");
-
-if (confirmBtn) {
-  confirmBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
-  console.log("💰 CONFIRM BTN updated:", confirmationFee);
-}
-
-  const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
-  const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
-
+  const confirmBtn = document.getElementById("booking-confirm-btn");
+  if (confirmBtn) {
+    confirmBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
+  }
 
   checkoutSummary.innerHTML = `
-<div class="summary-card">
+    <div class="summary-card">
+      <div class="summary-vehicle">
+        <img
+          src="${getVehicleMainImage(selectedAvailability.vehicle)}"
+          alt="${escapeHtml(selectedAvailability.vehicle?.name || "Selected lorry")}"
+          class="summary-vehicle-image"
+        >
+        <div>
+          <div class="summary-vehicle-name">
+            ${escapeHtml(selectedAvailability.vehicle?.name || "Selected lorry")}
+          </div>
+          <div class="summary-note">
+            ${escapeHtml(formatDateOnly(selectedAvailability.pickupDate))} ·
+            ${escapeHtml(formatDurationLabel(selectedAvailability.durationDays))}
+            ${Number(selectedAvailability.durationDays) === 0.5
+              ? ` · ${escapeHtml(formatPickupTimeLabel(selectedAvailability.pickupTime))}`
+              : ""}
+          </div>
+        </div>
+      </div>
 
-  ${urgencyHTML}
+      <div class="summary-row">
+        <span>Base hire</span>
+        <span>£${baseCost.toFixed(2)}</span>
+      </div>
 
-  <div class="summary-vehicle">
-    <img 
-      src="${getVehicleMainImage(selectedAvailability.vehicle)}"
-      alt="${escapeHtml(selectedAvailability.vehicle?.name || "")}"
-      class="summary-vehicle-image"
-    >
-    <h4>${escapeHtml(selectedAvailability.vehicle?.name || "")}</h4>
-  </div>
+      ${
+        discountAmount > 0
+          ? `
+      <div class="summary-row">
+        <span>Discount</span>
+        <span>-£${discountAmount.toFixed(2)}</span>
+      </div>
+      `
+          : ""
+      }
 
-  ${
-    selectedAvailability.pickupAt ? `
-    <div class="summary-row muted">
-      <span>Hire period</span>
-      <strong>
-        ${new Date(selectedAvailability.pickupAt).toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false
-        })}
-        →
-        ${new Date(selectedAvailability.dropoffAt).toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false
-        })}
-      </strong>
+      ${
+        earlyPickupCharge > 0
+          ? `
+      <div class="summary-row">
+        <span>Early pickup</span>
+        <span>£${earlyPickupCharge.toFixed(2)}</span>
+      </div>
+      `
+          : ""
+      }
+
+      ${
+        dartfordCharge > 0
+          ? `
+      <div class="summary-row">
+        <span>Dartford crossings (${dartfordCount})</span>
+        <span>£${dartfordCharge.toFixed(2)}</span>
+      </div>
+      `
+          : ""
+      }
+
+      ${
+        extrasTotal > 0
+          ? `
+      <div class="summary-row">
+        <span>Extras total</span>
+        <span>£${extrasTotal.toFixed(2)}</span>
+      </div>
+      `
+          : ""
+      }
+
+      <div class="summary-row total">
+        <span>Total hire</span>
+        <span>£${hireTotal.toFixed(2)}</span>
+      </div>
+
+      <div class="summary-row pay-now">
+        <span>Pay now</span>
+        <span>£${confirmationFee.toFixed(2)}</span>
+      </div>
+
+      <div class="summary-row outstanding">
+        <span>Outstanding later</span>
+        <span>£${outstandingAmount.toFixed(2)}</span>
+      </div>
+
+      <div class="summary-note">
+        Required form: ${escapeHtml(requiredFormType)}
+      </div>
     </div>
-    ` : ""
-  }
-
-  ${
-    selectedAvailability.durationDays ? `
-    <div class="summary-row muted">
-      <span>Duration</span>
-      <strong>
-        ${Number(selectedAvailability.durationDays) === 0.5
-          ? "½ day"
-          : Number(selectedAvailability.durationDays) === 1
-          ? "1 day"
-          : selectedAvailability.durationDays + " days"}
-      </strong>
-    </div>
-    ` : ""
-  }
-
-  <div class="summary-row">
-    <span>Base hire</span>
-    <strong>£${baseCost.toFixed(2)}</strong>
-  </div>
-
-  ${
-    discountAmount > 0 ? `
-    <div class="summary-row discount">
-      <span>Discount</span>
-      <strong>-£${discountAmount.toFixed(2)}</strong>
-    </div>
-    ` : ""
-  }
-${
-  extrasTotal > 0 ? `
-  <div class="summary-row">
-    <span>Extras</span>
-    <strong>£${extrasTotal.toFixed(2)}</strong>
-  </div>
-  ` : ""
-}
-
-  <hr>
-
-  <div class="summary-row total">
-    <span>Total hire</span>
-    <strong>£${hireTotal.toFixed(2)}</strong>
-  </div>
-
-  <div class="summary-row pay-now">
-    <span>Pay now (confirmation)</span>
-    <strong>£${confirmationFee.toFixed(2)}</strong>
-  </div>
-
-  <div class="summary-row outstanding">
-    <span>Remaining balance</span>
-    <strong>£${outstandingAmount.toFixed(2)}</strong>
-  </div>
-
-  <div class="summary-note">
-    Security deposit £${SECURITY_DEPOSIT_AMOUNT.toFixed(2)}
-  </div>
-
-</div>
-`;
+  `;
 }
 
 function updateHalfDayPickup() {
@@ -3135,7 +3085,26 @@ for (const vehicle of vehicles) {
   });
 }
 
+function syncExtrasUI() {
+  if (!dartfordCountInput || !dartfordEnabledInput) return;
 
+  dartfordCountInput.disabled = !dartfordEnabledInput.checked;
+
+  if (!dartfordEnabledInput.checked) {
+    dartfordCountInput.value = "1";
+  }
+}
+
+dartfordEnabledInput?.addEventListener("change", () => {
+  syncExtrasUI();
+  refreshPricingWithExtras();
+});
+
+dartfordCountInput?.addEventListener("input", refreshPricingWithExtras);
+earlyPickupEnabledInput?.addEventListener("change", refreshPricingWithExtras);
+hiredWithin3MonthsInput?.addEventListener("change", updateCheckoutSummary);
+
+syncExtrasUI();
 
 // Extras
 dartfordEnabledInput?.addEventListener("change", () => {
