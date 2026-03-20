@@ -1674,8 +1674,12 @@ async function renderAvailabilityResults(items) {
     availabilityResults.innerHTML = `
       <div class="availability-empty-state">
         <p class="empty-note">
-          No lorries available for this date and duration.
-        </p>
+  ${
+    LOCKED_VEHICLE
+      ? "This lorry is not available on this date."
+      : "No lorries available for this date and duration."
+  }
+</p>
         ${suggestionHTML}
       </div>
     `;
@@ -1695,9 +1699,7 @@ async function renderAvailabilityResults(items) {
      ONLY ONE VEHICLE → SKIP
   =============================== */
 
-  if (items.length === 1 || LOCKED_VEHICLE) {
-
-  if (items.length === 0) return;
+  if (items.length === 1 && LOCKED_VEHICLE) {
 
   await selectAvailability(items[0].vehicle.id);
   goToStep(3);
@@ -4447,12 +4449,17 @@ calGrid.dataset.rendering = "false";
 
 }
 
-
-  /* ======================================================
+/* ======================================================
    Select date
 ====================================================== */
 
 async function selectDate(dayDate) {
+
+  const warningBox = document.getElementById("preselected-warning");
+if (warningBox) {
+  warningBox.innerHTML = "";
+  warningBox.style.display = "none";
+}
 
   BLOCK_AUTO_SCROLL = false;
 
@@ -4494,27 +4501,36 @@ if (PRESELECTED_VEHICLE) {
 
   });
 
-  const warningBox = document.getElementById("preselected-warning");
-
   if (isBlocked && warningBox) {
 
-    
-
-  // ✅ block ALL other auto-scrolls
   BLOCK_AUTO_SCROLL = true;
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+
 
   warningBox.innerHTML = `
     <div class="availability-warning">
       Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
       is not available on this date.
+
+      <div class="warning-actions">
+        <button class="btn ghost change-date-btn">
+          Pick another date
+        </button>
+
+        <button class="btn primary change-lorry-btn">
+          Pick another lorry
+        </button>
+      </div>
     </div>
   `;
 
   warningBox.style.display = "block";
 
-  // ✅ scroll AFTER render
+    // 🔥 RESET LOCK
+  LOCKED_VEHICLE = false;
+  PRESELECTED_VEHICLE = null;
+
   setTimeout(() => {
     warningBox.scrollIntoView({
       behavior: "smooth",
@@ -4522,13 +4538,24 @@ if (PRESELECTED_VEHICLE) {
     });
   }, 60);
 
-  // 🚨 CRITICAL: stop further execution
-  return;
+  // ✅ BUTTONS
+  warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
+    BLOCK_AUTO_SCROLL = false;
 
-}
-if (warningBox) {
-  warningBox.innerHTML = "";
-  warningBox.style.display = "none";
+    document.getElementById("availability-calendar")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+
+  warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
+    BLOCK_AUTO_SCROLL = false;
+
+    availabilityForm?.requestSubmit();
+    goToStep(2);
+  });
+
+  return;
 }
 
 }
