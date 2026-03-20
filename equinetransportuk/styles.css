@@ -2614,3 +2614,62 @@ BOOKING SUMMARY CARD
   color: #fff;
   border-color: var(--accent);
 }
+
+/* ===============================
+   Availability Warning — Polished
+=============================== */
+
+.availability-warning {
+  padding: 24px 28px;
+  border-radius: 16px;
+  line-height: 1.5;
+}
+
+/* spacing between text + buttons */
+.availability-warning .warning-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* buttons */
+.warning-actions .btn {
+  padding: 12px 18px;
+  font-size: 15px;
+  border-radius: 12px;
+}
+
+/* make primary feel stronger */
+.warning-actions .btn.primary {
+  min-width: 180px;
+}
+
+/* ghost button balance */
+.warning-actions .btn.ghost {
+  min-width: 160px;
+}
+
+/* ===============================
+   MOBILE IMPROVEMENT
+=============================== */
+
+@media (max-width: 640px) {
+
+  .availability-warning {
+    padding: 20px;
+  }
+
+  .warning-actions {
+    flex-direction: column;
+  }
+
+  .warning-actions .btn {
+    width: 100%;
+  }
+
+}
+
+.availability-warning strong {
+  font-weight: 600;
+}
