@@ -785,23 +785,39 @@ async function findNextAvailableDate(startDate, durationDays, pickupTime) {
     const testDate = new Date(startDate);
     testDate.setDate(testDate.getDate() + i);
 
-    const dateString = testDate.toISOString().slice(0,10);
+    // ✅ SAFE LOCAL DATE (no timezone bugs)
+    const year = testDate.getFullYear();
+    const month = String(testDate.getMonth() + 1).padStart(2, "0");
+    const day = String(testDate.getDate()).padStart(2, "0");
 
-    const available = await getAvailableLorries(
-      dateString,
-      durationDays,
-      pickupTime
+    const dateString = `${year}-${month}-${day}`;
+
+    const vehiclesToCheck = LOCKED_VEHICLE && PRESELECTED_VEHICLE
+      ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
+      : vehicles;
+
+    // 🚀 PARALLEL CHECK (faster)
+    const checks = vehiclesToCheck.map(vehicle =>
+      isVehicleAvailable(
+        vehicle.id,
+        dateString,
+        durationDays,
+        pickupTime
+      )
     );
 
-    if (available.length > 0) {
+    const results = await Promise.all(checks);
+
+    if (results.some(r => r)) {
       return testDate;
     }
 
   }
 
   return null;
-
 }
+
+
 
 function getMaxAvailableDuration(startDate, bookings) {
 
@@ -1638,61 +1654,80 @@ async function renderAvailabilityResults(items) {
 
   if (!items.length) {
 
-    const pickupDate = pickupDateInput.value;
-    const duration = Number(durationDaysInput.value);
-    const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+  const pickupDate = pickupDateInput.value;
+  const duration = Number(durationDaysInput.value);
+  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
 
-    const nextDate = await findNextAvailableDate(
-      new Date(pickupDate),
-      duration,
-      pickupTime
-    );
+  const nextDate = await findNextAvailableDate(
+    new Date(pickupDate),
+    duration,
+    pickupTime
+  );
 
-    let suggestionHTML = "";
+  let suggestionHTML = "";
 
-    if (nextDate) {
+  if (nextDate) {
 
-      const formatted = nextDate.toLocaleDateString(undefined,{
-        day:"numeric",
-        month:"long"
-      });
+    const formatted = nextDate.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "long"
+    });
 
-      const nextValue = nextDate.toISOString().slice(0,10);
+    const nextValue = nextDate.toISOString().slice(0, 10);
 
-      suggestionHTML = `
-        <div class="next-available">
-          Next available: <strong>${formatted}</strong><br>
-          <button class="btn ghost next-date-btn"
-            data-date="${nextValue}">
-            Check ${formatted}
-          </button>
-        </div>
-      `;
+    suggestionHTML = `
+      <div class="next-available">
+        Next available ${LOCKED_VEHICLE ? "for this lorry" : ""}: 
+        <strong>${formatted}</strong><br>
 
-    }
-
-    availabilityResults.innerHTML = `
-      <div class="availability-empty-state">
-        <p class="empty-note">
-  ${
-    LOCKED_VEHICLE
-      ? "This lorry is not available on this date."
-      : "No lorries available for this date and duration."
-  }
-</p>
-        ${suggestionHTML}
+        <button class="btn ghost next-date-btn"
+          data-date="${nextValue}">
+          Check ${formatted}
+        </button>
       </div>
     `;
-
-    setTimeout(() => {
-      availabilityResults?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }, 150);
-
-    return;
   }
+
+  availabilityResults.innerHTML = `
+    <div class="availability-empty-state">
+      <p class="empty-note">
+        ${
+          LOCKED_VEHICLE
+            ? "This lorry is not available on this date."
+            : "No lorries available for this date and duration."
+        }
+      </p>
+      ${suggestionHTML}
+    </div>
+  `;
+
+  // ✅ attach click handler (IMPORTANT)
+  availabilityResults.querySelector(".next-date-btn")?.addEventListener("click", async (e) => {
+
+    const date = e.currentTarget.dataset.date;
+
+    if (!date) return;
+
+    // set input
+    pickupDateInput.value = date;
+
+    // update calendar selection
+    await selectDate(new Date(date));
+
+    // re-run availability
+    availabilityForm?.requestSubmit();
+
+  });
+
+  setTimeout(() => {
+    availabilityResults?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 150);
+
+  return;
+}
   
 
   /* ===============================
