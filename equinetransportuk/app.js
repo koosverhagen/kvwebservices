@@ -4498,62 +4498,94 @@ if (PRESELECTED_VEHICLE) {
 
   if (isBlocked && warningBox) {
 
-  BLOCK_AUTO_SCROLL = true;
+    /* ===============================
+       STOP AUTO BEHAVIOUR
+    =============================== */
+    BLOCK_AUTO_SCROLL = true;
 
-  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
-  LOCKED_VEHICLE = false;
-  selectedAvailability = null;
+    /* ===============================
+       🔓 UNLOCK + RESET
+    =============================== */
+    LOCKED_VEHICLE = false;
+    PRESELECTED_VEHICLE = null; // 🔥 important reset
 
-  if (selectedLorryInput) selectedLorryInput.value = "";
-  if (availabilityResults) availabilityResults.innerHTML = "";
+    selectedAvailability = null;
 
-  warningBox.innerHTML = `
-  <div class="availability-warning">
-    Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
-    <span class="muted">Please choose another lorry or date.</span><br><br>
+    if (selectedLorryInput) selectedLorryInput.value = "";
+    if (availabilityResults) availabilityResults.innerHTML = "";
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    /* ===============================
+       UI MESSAGE
+    =============================== */
+    warningBox.innerHTML = `
+      <div class="availability-warning">
+        Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
+        <span class="muted">Please choose another lorry or date.</span><br><br>
 
-  <button type="button" class="btn primary change-lorry-btn">
-    Pick another lorry
-  </button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
 
-  <button type="button" class="btn ghost change-date-btn">
-    Pick another date
-  </button>
+          <button type="button" class="btn primary change-lorry-btn">
+            Pick another lorry
+          </button>
 
-</div>
+          <button type="button" class="btn ghost change-date-btn">
+            Pick another date
+          </button>
 
-  </div>
-`;
+        </div>
 
-  warningBox.style.display = "block";
+      </div>
+    `;
 
-  warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
-    document.getElementById("availability-calendar")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
+    warningBox.style.display = "block";
+
+    /* ===============================
+       BUTTON: PICK DATE
+    =============================== */
+    warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
+      document.getElementById("availability-calendar")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
     });
-  });
 
-  warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
+    /* ===============================
+       BUTTON: PICK LORRY
+    =============================== */
+    warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
 
-  // 🔓 ensure unlock (safety)
-  LOCKED_VEHICLE = false;
+      LOCKED_VEHICLE = false;
 
-  // go to vehicle selection step
-  goToStep(2);
+      // ✅ NOW fetch availability (this was missing before)
+      availabilityForm?.requestSubmit();
 
-  // smooth scroll to results
-  setTimeout(() => {
-    document.getElementById("availability-results")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
+      goToStep(2);
+
+      setTimeout(() => {
+        document.getElementById("availability-results")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 120);
+
     });
-  }, 100);
 
-});
+    /* ===============================
+       SCROLL WARNING INTO VIEW
+    =============================== */
+    setTimeout(() => {
+      warningBox.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }, 60);
+
+    return;
+  }
+
+}
 
   setTimeout(() => {
     availabilityForm?.requestSubmit();
