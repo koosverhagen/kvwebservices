@@ -10,6 +10,8 @@ let PRESELECTED_VEHICLE = null;
 
 let BLOCK_AUTO_SCROLL = false;
 
+let LOCKED_VEHICLE = false;
+
 
 
 /* ===============================
@@ -70,48 +72,39 @@ if (step > 1) {
 function startBooking(vehicleId) {
 
   PRESELECTED_VEHICLE = vehicleId;
+  LOCKED_VEHICLE = true; // ✅ NEW
 
   const vehicle = vehicles.find(v => v.id === vehicleId);
+
+  // 🔥 Force duration rules immediately
   updateDurationOptionsForVehicle(vehicle);
+
+  // 🔥 Remove half-day for 7.5T instantly
+  enforceVehicleDurationRules(vehicle);
 
   updateCalendarVehicleLabel();
 
   selectedAvailability = null;
 
-  if (selectedLorryInput) selectedLorryInput.value = "";
+  if (selectedLorryInput) selectedLorryInput.value = vehicle?.name || "";
   if (selectedBaseInput) selectedBaseInput.value = "";
 
   const bookingSection = document.getElementById("booking");
 
-  if (bookingSection) {
-    bookingSection.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }
+  bookingSection?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
   goToStep(1);
 
-/* refresh calendar immediately */
-
-// renderCalendar();   // disabled
-
-  /* auto trigger availability search if date already selected */
-
+  // 🔥 Auto re-check availability if already filled
   const pickupDate = pickupDateInput?.value;
   const durationDays = Number(durationDaysInput?.value || 1);
-  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
 
   if (pickupDate && durationDays > 0) {
-
-    setTimeout(() => {
-
-      availabilityForm?.requestSubmit();
-
-    }, 300);
-
+    setTimeout(() => availabilityForm?.requestSubmit(), 300);
   }
-
 }
 
 /* ======================================================
@@ -1072,6 +1065,36 @@ function is35T(vehicle) {
   );
 }
 
+function enforceVehicleDurationRules(vehicle) {
+
+  if (!durationDaysInput) return;
+
+  const halfDayOption = durationDaysInput.querySelector('option[value="0.5"]');
+  if (!halfDayOption) return;
+
+  if (!is35T(vehicle)) {
+    halfDayOption.disabled = true;
+    halfDayOption.hidden = true;
+
+    if (durationDaysInput.value === "0.5") {
+      durationDaysInput.value = "1";
+    }
+  } else {
+    halfDayOption.disabled = false;
+    halfDayOption.hidden = false;
+  }
+
+}
+
+function filterVehiclesForDisplay(vehiclesList) {
+
+  if (!LOCKED_VEHICLE || !PRESELECTED_VEHICLE) {
+    return vehiclesList;
+  }
+
+  return vehiclesList.filter(v => v.vehicle.id === PRESELECTED_VEHICLE);
+}
+
 function getConfirmationFee(vehicle) {
   const id = String(vehicle?.id || "");
 
@@ -1519,7 +1542,11 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
   const results = [];
 
-  for (const vehicle of vehicles) {
+  const vehiclesToCheck = LOCKED_VEHICLE && PRESELECTED_VEHICLE
+  ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
+  : vehicles;
+
+for (const vehicle of vehiclesToCheck) {
 
     const available = await isVehicleAvailable(
       vehicle.id,
@@ -1565,6 +1592,8 @@ async function renderAvailabilityResults(items) {
 
 
   console.log("render items:", items.map(v => v.vehicle.name));
+
+  items = filterVehiclesForDisplay(items);
 
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     availabilityResults.innerHTML = "";
@@ -1666,13 +1695,14 @@ async function renderAvailabilityResults(items) {
      ONLY ONE VEHICLE → SKIP
   =============================== */
 
-  if (items.length === 1) {
+  if (items.length === 1 || LOCKED_VEHICLE) {
 
-    await selectAvailability(items[0].vehicle.id);
-    goToStep(3);
+  if (items.length === 0) return;
 
-    return;
-  }
+  await selectAvailability(items[0].vehicle.id);
+  goToStep(3);
+  return;
+}
 
   /* ===============================
      MULTIPLE VEHICLES → STEP 2
@@ -3389,7 +3419,11 @@ if (availabilityForm) {
 
 const availableLorries = [];
 
-for (const vehicle of vehicles) {
+const vehiclesToCheck = LOCKED_VEHICLE && PRESELECTED_VEHICLE
+  ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
+  : vehicles;
+
+for (const vehicle of vehiclesToCheck) {
 
   const available = await isVehicleAvailable(
     vehicle.id,
@@ -4464,21 +4498,39 @@ if (PRESELECTED_VEHICLE) {
 
   if (isBlocked && warningBox) {
 
-  // ✅ block ALL other auto-scrolls
   BLOCK_AUTO_SCROLL = true;
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
+  LOCKED_VEHICLE = false;
+  selectedAvailability = null;
+
+  if (selectedLorryInput) selectedLorryInput.value = "";
+  if (availabilityResults) availabilityResults.innerHTML = "";
+
   warningBox.innerHTML = `
     <div class="availability-warning">
-      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
-      is not available on this date.
+      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
+      <span class="muted">Please choose another lorry or date.</span><br><br>
+      <button type="button" class="btn ghost change-date-btn">
+        Pick another date
+      </button>
     </div>
   `;
 
   warningBox.style.display = "block";
 
-  // ✅ scroll AFTER render
+  warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
+    document.getElementById("availability-calendar")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+
+  setTimeout(() => {
+    availabilityForm?.requestSubmit();
+  }, 200);
+
   setTimeout(() => {
     warningBox.scrollIntoView({
       behavior: "smooth",
@@ -4486,9 +4538,7 @@ if (PRESELECTED_VEHICLE) {
     });
   }, 60);
 
-  // 🚨 CRITICAL: stop further execution
   return;
-
 }
 if (warningBox) {
   warningBox.innerHTML = "";
@@ -4499,6 +4549,13 @@ if (warningBox) {
 
 await updateDurationOptions(dayDate);
 await syncPickupTimeOptions(dayDate);
+
+if (LOCKED_VEHICLE && PRESELECTED_VEHICLE) {
+  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+
+  updateDurationOptionsForVehicle(vehicle);
+  enforceVehicleDurationRules(vehicle);
+}
 
   /* reset duration */
 
@@ -4514,7 +4571,10 @@ await syncPickupTimeOptions(dayDate);
 
   selectedAvailability = null;
 
+/* 🔒 KEEP LOCKED VEHICLE IN UI */
+if (!LOCKED_VEHICLE) {
   if (selectedLorryInput) selectedLorryInput.value = "";
+}
   if (selectedBaseInput) selectedBaseInput.value = "";
 
   /* disable booking button again */
