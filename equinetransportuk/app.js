@@ -4454,8 +4454,7 @@ dayEl.addEventListener("touchend", async (e) => {
    CLICK SELECTION
 =============================== */
 
-if (validStart) {
-
+if (validStart || PRESELECTED_VEHICLE) {
   dayEl.addEventListener("click", async (e) => {
 
     if (isMobile()) {
