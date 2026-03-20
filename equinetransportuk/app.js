@@ -4498,38 +4498,60 @@ if (PRESELECTED_VEHICLE) {
 
   if (isBlocked && warningBox) {
 
+  // ✅ stop scroll behaviour
   BLOCK_AUTO_SCROLL = true;
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
+  /* ===============================
+     🔓 UNLOCK VEHICLE (CRITICAL)
+  =============================== */
   LOCKED_VEHICLE = false;
+
+  /* ===============================
+     🧠 RESET ONLY WHAT'S NEEDED
+  =============================== */
+
   selectedAvailability = null;
 
   if (selectedLorryInput) selectedLorryInput.value = "";
+
   if (availabilityResults) availabilityResults.innerHTML = "";
 
-  warningBox.innerHTML = `
-    <div class="availability-warning">
-      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
-      <span class="muted">Please choose another lorry or date.</span><br><br>
-      <button type="button" class="btn ghost change-date-btn">
-        Pick another date
-      </button>
-    </div>
-  `;
+  /* ===============================
+     🎯 MESSAGE (IMPROVED UX)
+  =============================== */
+
+ warningBox.innerHTML = `
+  <div class="availability-warning">
+    Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
+    <span class="muted">Please choose another lorry or date.</span><br><br>
+    <button type="button" class="btn ghost change-date-btn">
+      Pick another date
+    </button>
+  </div>
+`;
 
   warningBox.style.display = "block";
 
   warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
-    document.getElementById("availability-calendar")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+  document.getElementById("availability-calendar")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
   });
+});
+
+  /* ===============================
+     🎯 OPTIONAL: AUTO-SHOW OPTIONS
+  =============================== */
 
   setTimeout(() => {
-    availabilityForm?.requestSubmit();
+    availabilityForm?.requestSubmit(); // 🔥 show other lorries instantly
   }, 200);
+
+  /* ===============================
+     SCROLL INTO VIEW
+  =============================== */
 
   setTimeout(() => {
     warningBox.scrollIntoView({
