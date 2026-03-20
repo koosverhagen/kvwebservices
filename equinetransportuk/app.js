@@ -4522,24 +4522,14 @@ if (PRESELECTED_VEHICLE) {
      🎯 MESSAGE (IMPROVED UX)
   =============================== */
 
- warningBox.innerHTML = `
-  <div class="availability-warning">
-    Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
-    <span class="muted">Please choose another lorry or date.</span><br><br>
-    <button type="button" class="btn ghost change-date-btn">
-      Pick another date
-    </button>
-  </div>
-`;
+  warningBox.innerHTML = `
+    <div class="availability-warning">
+      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
+      <span class="muted">Please choose another lorry or date.</span>
+    </div>
+  `;
 
   warningBox.style.display = "block";
-
-  warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
-  document.getElementById("availability-calendar")?.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-});
 
   /* ===============================
      🎯 OPTIONAL: AUTO-SHOW OPTIONS
