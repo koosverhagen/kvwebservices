@@ -925,16 +925,38 @@ async function handleStripeWebhook(request, env) {
 
     console.log("💰 PRICING OK");
 
-    /* ===============================
-   DATES (FIXED SAFE)
+/* ===============================
+   DATES (FIXED FINAL)
 =============================== */
 
 const durationDays = Number(session.metadata.durationDays || 1);
 const pickupTime = session.metadata.pickupTime || "07:00";
 
+/* ===============================
+   🔥 FIX: CLEAN pickupDate
+=============================== */
+
+let rawPickupDate = session.metadata.pickupDate || "";
+
+// If it's already full ISO → extract date only
+if (rawPickupDate.includes("T")) {
+  rawPickupDate = rawPickupDate.split("T")[0];
+}
+
+console.log("📅 RAW DATE:", session.metadata.pickupDate);
+console.log("📅 CLEAN DATE:", rawPickupDate);
+
+/* ===============================
+   PICKUP
+=============================== */
+
 const pickupAt = new Date(
-  `${session.metadata.pickupDate}T${pickupTime}:00`
+  `${rawPickupDate}T${pickupTime}:00`
 );
+
+/* ===============================
+   DROPOFF
+=============================== */
 
 let dropoffAt;
 
@@ -943,13 +965,13 @@ if (durationDays === 0.5) {
   const dropTime = pickupTime === "07:00" ? "13:00" : "19:00";
 
   dropoffAt = new Date(
-    `${session.metadata.pickupDate}T${dropTime}:00`
+    `${rawPickupDate}T${dropTime}:00`
   );
 
 } else {
 
   const dropDate = new Date(
-    `${session.metadata.pickupDate}T${pickupTime}:00`
+    `${rawPickupDate}T${pickupTime}:00`
   );
 
   dropDate.setDate(
@@ -964,6 +986,23 @@ if (durationDays === 0.5) {
     `${year}-${month}-${day}T19:00:00`
   );
 
+}
+
+/* ===============================
+   SAFETY CHECK (NEW)
+=============================== */
+
+if (isNaN(pickupAt.getTime()) || isNaN(dropoffAt.getTime())) {
+  console.error("❌ INVALID DATE DETECTED", {
+    rawPickupDate,
+    pickupTime,
+    durationDays
+  });
+
+  return new Response(
+    JSON.stringify({ error: "Invalid time value" }),
+    { status: 500 }
+  );
 }
 
 console.log("📅 WEBHOOK TIMES:", {
