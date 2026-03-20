@@ -4513,35 +4513,11 @@ if (warningBox) {
   PRESELECTED LORRY CHECK (EARLY)
 ********************************/
 
-if (PRESELECTED_VEHICLE) {
-
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
-
-  const vehicleBookings = bookings.filter(
-    b => b.vehicleId === PRESELECTED_VEHICLE && b.status !== "cancelled"
-  );
-
-  const dayStart = new Date(dayDate);
-  dayStart.setHours(0,0,0,0);
-
-  const dayEnd = new Date(dayDate);
-  dayEnd.setHours(23,59,59,999);
-
-  const isBlocked = vehicleBookings.some(b => {
-
-    const start = new Date(b.pickupAt);
-    const end = new Date(b.dropoffAt);
-
-    return start <= dayEnd && end >= dayStart;
-
-  });
-
-  if (isBlocked && warningBox) {
+if (isBlocked && warningBox) {
 
   BLOCK_AUTO_SCROLL = true;
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
-
 
   warningBox.innerHTML = `
     <div class="availability-warning">
@@ -4562,10 +4538,6 @@ if (PRESELECTED_VEHICLE) {
 
   warningBox.style.display = "block";
 
-    // 🔥 RESET LOCK
-  LOCKED_VEHICLE = false;
-  PRESELECTED_VEHICLE = null;
-
   setTimeout(() => {
     warningBox.scrollIntoView({
       behavior: "smooth",
@@ -4573,26 +4545,35 @@ if (PRESELECTED_VEHICLE) {
     });
   }, 60);
 
-  // ✅ BUTTONS
+  // ✅ Pick another date → KEEP LOCK
   warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
+
     BLOCK_AUTO_SCROLL = false;
+
+    // 🔒 KEEP vehicle locked
+    LOCKED_VEHICLE = true;
 
     document.getElementById("availability-calendar")?.scrollIntoView({
       behavior: "smooth",
       block: "start"
     });
+
   });
 
+  // ✅ Pick another lorry → RESET HERE ONLY
   warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
+
     BLOCK_AUTO_SCROLL = false;
+
+    LOCKED_VEHICLE = false;
+    PRESELECTED_VEHICLE = null;
 
     availabilityForm?.requestSubmit();
     goToStep(2);
+
   });
 
   return;
-}
-
 }
 
 await updateDurationOptions(dayDate);
