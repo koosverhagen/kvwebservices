@@ -4498,51 +4498,23 @@ if (PRESELECTED_VEHICLE) {
 
   if (isBlocked && warningBox) {
 
-  // ✅ stop scroll behaviour
+    
+
+  // ✅ block ALL other auto-scrolls
   BLOCK_AUTO_SCROLL = true;
 
   const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
-  /* ===============================
-     🔓 UNLOCK VEHICLE (CRITICAL)
-  =============================== */
-  LOCKED_VEHICLE = false;
-
-  /* ===============================
-     🧠 RESET ONLY WHAT'S NEEDED
-  =============================== */
-
-  selectedAvailability = null;
-
-  if (selectedLorryInput) selectedLorryInput.value = "";
-
-  if (availabilityResults) availabilityResults.innerHTML = "";
-
-  /* ===============================
-     🎯 MESSAGE (IMPROVED UX)
-  =============================== */
-
   warningBox.innerHTML = `
     <div class="availability-warning">
-      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
-      <span class="muted">Please choose another lorry or date.</span>
+      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
+      is not available on this date.
     </div>
   `;
 
   warningBox.style.display = "block";
 
-  /* ===============================
-     🎯 OPTIONAL: AUTO-SHOW OPTIONS
-  =============================== */
-
-  setTimeout(() => {
-    availabilityForm?.requestSubmit(); // 🔥 show other lorries instantly
-  }, 200);
-
-  /* ===============================
-     SCROLL INTO VIEW
-  =============================== */
-
+  // ✅ scroll AFTER render
   setTimeout(() => {
     warningBox.scrollIntoView({
       behavior: "smooth",
@@ -4550,7 +4522,9 @@ if (PRESELECTED_VEHICLE) {
     });
   }, 60);
 
+  // 🚨 CRITICAL: stop further execution
   return;
+
 }
 if (warningBox) {
   warningBox.innerHTML = "";
