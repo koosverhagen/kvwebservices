@@ -4589,21 +4589,7 @@ if (PRESELECTED_VEHICLE) {
 
   setTimeout(() => {
     availabilityForm?.requestSubmit();
-  }, 200);
-
-  setTimeout(() => {
-    warningBox.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
-  }, 60);
-
-  return;
-}
-if (warningBox) {
-  warningBox.innerHTML = "";
-  warningBox.style.display = "none";
-}
+  }, 200)
 
 }
 
