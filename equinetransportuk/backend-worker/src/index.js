@@ -926,56 +926,50 @@ async function handleStripeWebhook(request, env) {
     console.log("💰 PRICING OK");
 
     /* ===============================
-       DATES
-    =============================== */
+   DATES (FIXED SAFE)
+=============================== */
 
-    console.log("📅 BEFORE DATE BUILD");
+const durationDays = Number(session.metadata.durationDays || 1);
+const pickupTime = session.metadata.pickupTime || "07:00";
 
-    const durationDays = Number(session.metadata.durationDays || 1);
-    const pickupTime = session.metadata.pickupTime || "07:00";
+const pickupAt = new Date(
+  `${session.metadata.pickupDate}T${pickupTime}:00`
+);
 
-    const pickupAt = new Date(
-      `${session.metadata.pickupDate}T${pickupTime}:00`
-    );
+let dropoffAt;
 
-    let dropoffAt;
+if (durationDays === 0.5) {
 
-    if (durationDays === 0.5) {
+  const dropTime = pickupTime === "07:00" ? "13:00" : "19:00";
 
-      const dropTime = pickupTime === "07:00" ? "13:00" : "19:00";
+  dropoffAt = new Date(
+    `${session.metadata.pickupDate}T${dropTime}:00`
+  );
 
-      dropoffAt = new Date(
-        `${session.metadata.pickupDate}T${dropTime}:00`
-      );
+} else {
 
-    } else {
+  const dropDate = new Date(
+    `${session.metadata.pickupDate}T${pickupTime}:00`
+  );
 
-      const dropDate = new Date(
-        `${session.metadata.pickupDate}T${pickupTime}:00`
-      );
+  dropDate.setDate(
+    dropDate.getDate() + Math.max(1, durationDays) - 1
+  );
 
-      dropDate.setDate(
-        dropDate.getDate() + Math.max(1, durationDays) - 1
-      );
+  const year = dropDate.getFullYear();
+  const month = String(dropDate.getMonth() + 1).padStart(2, "0");
+  const day = String(dropDate.getDate()).padStart(2, "0");
 
-      const year = dropDate.getFullYear();
-      const month = String(dropDate.getMonth() + 1).padStart(2, "0");
-      const day = String(dropDate.getDate()).padStart(2, "0");
+  dropoffAt = new Date(
+    `${year}-${month}-${day}T19:00:00`
+  );
 
-      dropoffAt = new Date(
-        `${year}-${month}-${day}T19:00:00`
-      );
+}
 
-    }
-
-    if (isNaN(pickupAt) || isNaN(dropoffAt)) {
-      throw new Error("Invalid pickup/dropoff date");
-    }
-
-    console.log("📅 DATES OK", {
-      pickupAt: pickupAt.toISOString(),
-      dropoffAt: dropoffAt.toISOString()
-    });
+console.log("📅 WEBHOOK TIMES:", {
+  pickupAt: pickupAt.toISOString(),
+  dropoffAt: dropoffAt.toISOString()
+});
 
     /* ===============================
        BOOKING OBJECT
