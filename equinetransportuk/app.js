@@ -571,13 +571,16 @@ function getLondonHour(date) {
    HALF DAY SLOT AVAILABILITY
 ================================ */
 
-function getRemainingHalfDaySlots(dateObj, bookings){
+function getRemainingHalfDaySlots(dateObj, bookings) {
 
   let morningAvailable = false;
   let afternoonAvailable = false;
 
   vehicles
-    .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
+    .filter(vehicle => {
+      if (PRESELECTED_VEHICLE && vehicle.id !== PRESELECTED_VEHICLE) return false;
+      return is35T(vehicle); // ✅ only 3.5T can offer half-day
+    })
     .forEach(vehicle => {
 
       const vehicleBookings = bookings.filter(
@@ -585,38 +588,32 @@ function getRemainingHalfDaySlots(dateObj, bookings){
       );
 
       const dayStart = new Date(dateObj);
-      dayStart.setHours(0,0,0,0);
+      dayStart.setHours(0, 0, 0, 0);
 
       const dayEnd = new Date(dateObj);
-      dayEnd.setHours(23,59,59,999);
+      dayEnd.setHours(23, 59, 59, 999);
 
       let morningBooked = false;
       let afternoonBooked = false;
 
       vehicleBookings.forEach(b => {
-
         const start = new Date(b.pickupAt);
         const end = new Date(b.dropoffAt);
 
-        if(start <= dayEnd && end >= dayStart){
+        if (start <= dayEnd && end >= dayStart) {
+          const startHour = start.getHours();
+          const endHour = end.getHours();
 
-          const startHour = getLondonHour(start);
-          const endHour = getLondonHour(end);
-
-          if(startHour <= 12) morningBooked = true;
-          if(endHour >= 13) afternoonBooked = true;
-
+          if (startHour <= 12) morningBooked = true;
+          if (endHour >= 13) afternoonBooked = true;
         }
-
       });
 
-      if(!morningBooked) morningAvailable = true;
-      if(!afternoonBooked) afternoonAvailable = true;
-
+      if (!morningBooked) morningAvailable = true;
+      if (!afternoonBooked) afternoonAvailable = true;
     });
 
   return { morningAvailable, afternoonAvailable };
-
 }
 
 function updateEarlyPickupAvailability() {
@@ -719,26 +716,73 @@ async function syncPickupTimeOptions(startDate) {
   return;
 }
 
-  if (!startDate) return;
+ if (!startDate) return;
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
+const bookings = BOOKINGS_CACHE || await getBookings(false);
 
-  const { morningAvailable, afternoonAvailable } =
-    getRemainingHalfDaySlots(startDate, bookings);
+/* ===============================
+   🔥 HALF-DAY AVAILABILITY (3.5T ONLY)
+=============================== */
 
-  const morningOption = pickupTimeInput.querySelector('option[value="07:00"]');
-  const afternoonOption = pickupTimeInput.querySelector('option[value="13:00"]');
+const { morningAvailable, afternoonAvailable } =
+  getRemainingHalfDaySlots(startDate, bookings);
 
-  if (morningOption) morningOption.disabled = !morningAvailable;
-  if (afternoonOption) afternoonOption.disabled = !afternoonAvailable;
+const morningOption = pickupTimeInput.querySelector('option[value="07:00"]');
+const afternoonOption = pickupTimeInput.querySelector('option[value="13:00"]');
 
-  if (pickupTimeInput.value === "07:00" && !morningAvailable && afternoonAvailable) {
+/* ===============================
+   APPLY DISABLED STATES
+=============================== */
+
+if (morningOption) {
+  morningOption.disabled = !morningAvailable;
+  morningOption.style.color = morningAvailable ? "" : "#999";
+}
+
+if (afternoonOption) {
+  afternoonOption.disabled = !afternoonAvailable;
+  afternoonOption.style.color = afternoonAvailable ? "" : "#999";
+}
+
+/* ===============================
+   AUTO-FIX SELECTED VALUE
+=============================== */
+
+const current = pickupTimeInput.value;
+
+if (current === "07:00" && !morningAvailable) {
+  if (afternoonAvailable) {
     pickupTimeInput.value = "13:00";
-  } else if (pickupTimeInput.value === "13:00" && !afternoonAvailable && morningAvailable) {
-    pickupTimeInput.value = "07:00";
-  } else if (!morningAvailable && !afternoonAvailable) {
+  } else {
     pickupTimeInput.value = "";
   }
+}
+
+else if (current === "13:00" && !afternoonAvailable) {
+  if (morningAvailable) {
+    pickupTimeInput.value = "07:00";
+  } else {
+    pickupTimeInput.value = "";
+  }
+}
+
+/* ===============================
+   NOTHING AVAILABLE
+=============================== */
+
+if (!morningAvailable && !afternoonAvailable) {
+  pickupTimeInput.value = "";
+}
+
+/* ===============================
+   DEBUG (optional but useful)
+=============================== */
+
+console.log("🕐 Half-day availability:", {
+  date: startDate,
+  morningAvailable,
+  afternoonAvailable
+});
 }
 
 async function findNextAvailableDate(startDate, durationDays, pickupTime) {
@@ -1022,7 +1066,10 @@ function overlaps(aStart, aEnd, bStart, bEnd) {
 }
 
 function is35T(vehicle) {
-  return String(vehicle?.type || "").toLowerCase().includes("3.5");
+  return (
+    String(vehicle?.id || "").startsWith("v35") ||
+    String(vehicle?.type || "").toLowerCase().includes("3.5")
+  );
 }
 
 function getConfirmationFee(vehicle) {
