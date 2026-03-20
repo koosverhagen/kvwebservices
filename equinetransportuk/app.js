@@ -4509,14 +4509,24 @@ if (PRESELECTED_VEHICLE) {
   if (availabilityResults) availabilityResults.innerHTML = "";
 
   warningBox.innerHTML = `
-    <div class="availability-warning">
-      Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
-      <span class="muted">Please choose another lorry or date.</span><br><br>
-      <button type="button" class="btn ghost change-date-btn">
-        Pick another date
-      </button>
-    </div>
-  `;
+  <div class="availability-warning">
+    Sorry, <strong>${escapeHtml(vehicle?.name)}</strong> is not available on this date.<br>
+    <span class="muted">Please choose another lorry or date.</span><br><br>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+  <button type="button" class="btn primary change-lorry-btn">
+    Pick another lorry
+  </button>
+
+  <button type="button" class="btn ghost change-date-btn">
+    Pick another date
+  </button>
+
+</div>
+
+  </div>
+`;
 
   warningBox.style.display = "block";
 
@@ -4526,6 +4536,24 @@ if (PRESELECTED_VEHICLE) {
       block: "start"
     });
   });
+
+  warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
+
+  // 🔓 ensure unlock (safety)
+  LOCKED_VEHICLE = false;
+
+  // go to vehicle selection step
+  goToStep(2);
+
+  // smooth scroll to results
+  setTimeout(() => {
+    document.getElementById("availability-results")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 100);
+
+});
 
   setTimeout(() => {
     availabilityForm?.requestSubmit();
