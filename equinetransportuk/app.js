@@ -4939,25 +4939,7 @@ async function watchBookingUpdates() {
 
 }
 
-function renderBookingConfirmation(booking) {
 
-  const el = document.getElementById("booking-confirmation-content");
-  if (!el) return;
-
-  el.innerHTML = `
-    <div class="confirmation-panel">
-
-      <div><strong>Booking ID:</strong> ${booking.id}</div>
-      <div><strong>Lorry:</strong> ${booking.vehicleId}</div>
-      <div><strong>Pickup:</strong> ${formatDateTime(booking.pickupAt)}</div>
-      <div><strong>Drop-off:</strong> ${formatDateTime(booking.dropoffAt)}</div>
-
-      <div><strong>Paid now:</strong> £${booking.confirmationFee}</div>
-      <div><strong>Outstanding:</strong> £${booking.outstandingAmount}</div>
-
-    </div>
-  `;
-}
 
 function renderAvailabilityDots(dayEl, bookings, dayDate) {
 
@@ -5038,6 +5020,10 @@ function renderBookingConfirmation(booking) {
 
   console.log("🎉 Rendering confirmation", booking);
 
+  if (!booking.vehicleSnapshot) {
+    console.warn("⚠️ Missing vehicleSnapshot on booking", booking);
+  }
+
   const container = document.getElementById("booking-confirmation");
 
   if (!container) {
@@ -5048,12 +5034,21 @@ function renderBookingConfirmation(booking) {
   const pickup = new Date(booking.pickupAt);
   const dropoff = new Date(booking.dropoffAt);
 
+  const vehicleName =
+    booking.vehicleSnapshot?.name ||
+    booking.vehicleId ||
+    "Horsebox";
+
+  const total = Number(booking.hireTotal).toFixed(2);
+  const paid = Number(booking.confirmationFee).toFixed(2);
+  const remaining = Number(booking.outstandingAmount).toFixed(2);
+
   container.innerHTML = `
     <div class="confirmation-card">
       
       <h2>✅ Booking Confirmed</h2>
 
-      <p><strong>${booking.vehicleSnapshot?.name || "Horsebox"}</strong></p>
+      <p><strong>${vehicleName}</strong></p>
 
       <div class="confirmation-dates">
         <div>
@@ -5067,9 +5062,9 @@ function renderBookingConfirmation(booking) {
       </div>
 
       <div class="confirmation-summary">
-        <div><span>Total hire</span><strong>£${booking.hireTotal}</strong></div>
-        <div><span>Paid today</span><strong>£${booking.confirmationFee}</strong></div>
-        <div><span>Remaining</span><strong>£${booking.outstandingAmount}</strong></div>
+        <div><span>Total hire</span><strong>£${total}</strong></div>
+        <div><span>Paid today</span><strong>£${paid}</strong></div>
+        <div><span>Remaining</span><strong>£${remaining}</strong></div>
       </div>
 
       <p class="confirmation-email">
