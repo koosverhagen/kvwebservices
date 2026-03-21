@@ -815,11 +815,25 @@ function renderBookingConfirmation(booking) {
       <div class="confirmation-dates">
         <div>
           <label>Pickup</label>
-          <p>${pickup.toLocaleString("en-GB")}</p>
+          <p>${pickup.toLocaleString("en-GB", {
+  timeZone: "Europe/London",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit"
+})}</p>
         </div>
         <div>
           <label>Return</label>
-          <p>${dropoff.toLocaleString("en-GB")}</p>
+          <p>${dropoff.toLocaleString("en-GB", {
+  timeZone: "Europe/London",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit"
+})}</p>
         </div>
       </div>
 
@@ -834,9 +848,9 @@ function renderBookingConfirmation(booking) {
         <strong>${booking.customerEmail}</strong>
       </p>
 
-      <button onclick="location.href='index.html'" class="btn">
-        Book another
-      </button>
+     <button onclick="resetBookingFlow()" class="btn">
+  Book another
+</button>
 
     </div>
   `;
@@ -1025,12 +1039,12 @@ function goBackToDates() {
 
 function resetBookingFlow() {
 
-  /* clear availability + booking selection */
+  console.log("🔄 Reset booking flow");
 
+  /* clear availability + booking selection */
   selectedAvailability = null;
 
   /* clear form fields */
-
   if (selectedLorryInput) selectedLorryInput.value = "";
   if (selectedPickupInput) selectedPickupInput.value = "";
   if (selectedDurationInput) selectedDurationInput.value = "1";
@@ -1040,7 +1054,6 @@ function resetBookingFlow() {
   if (pickupTimeInput) pickupTimeInput.value = "";
 
   /* hide pickup time rows */
-
   const row = document.getElementById("pickup-time-row");
   if (row) row.style.display = "none";
 
@@ -1048,32 +1061,35 @@ function resetBookingFlow() {
   if (group) group.style.display = "none";
 
   /* clear availability results */
-
   if (availabilityResults) availabilityResults.innerHTML = "";
 
-  /* clear caches */
+  /* clear confirmation UI */
+  const confirmation = document.getElementById("booking-confirmation");
+  if (confirmation) confirmation.innerHTML = "";
 
+  /* clear caches */
   AVAILABILITY_CACHE.clear();
   BOOKINGS_CACHE = null;
 
   /* disable booking button */
-
   if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
 
   /* update summary */
-
   updateCheckoutSummary();
 
   /* go back to step 1 */
-
   goToStep(1);
 
   /* scroll to top */
-
   window.scrollTo({
     top: 0,
     behavior: "smooth"
   });
+
+  /* refresh calendar */
+  if (typeof renderCalendar === "function") {
+    renderCalendar();
+  }
 
 }
 
