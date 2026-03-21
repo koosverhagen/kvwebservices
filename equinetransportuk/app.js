@@ -889,12 +889,27 @@ async function handleStripeReturn() {
 
   try {
 
-  const booking = await fetchBookingWithRetry(sessionId);
-    
+  // 🔥 show instant success UI (no waiting)
+renderBookingConfirmation({
+  vehicleSnapshot: { name: "Your booking" },
+  pickupAtLocal: null,
+  dropoffAtLocal: null,
+  hireTotal: null,
+  confirmationFee: null,
+  outstandingAmount: null,
+  customerEmail: "Sending confirmation..."
+});
 
-    if (!booking) throw new Error("Booking not ready");
-
-    renderBookingConfirmation(booking);
+// 🔄 fetch real booking in background
+fetchBookingWithRetry(sessionId)
+  .then(booking => {
+    if (booking) {
+      renderBookingConfirmation(booking);
+    }
+  })
+  .catch(err => {
+    console.warn("Background fetch failed:", err);
+  });
 
   } catch (err) {
 
@@ -2535,30 +2550,22 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
-async function fetchBookingWithRetry(sessionId, retries = 8) {
+async function fetchBookingWithRetry(sessionId) {
 
-  for (let i = 0; i < retries; i++) {
+  for (let i = 0; i < 6; i++) {
 
-    try {
+    const res = await fetch(
+      `/api/bookings/by-session?session_id=${sessionId}`
+    );
 
-      const res = await fetch(
-        `${apiUrl("/api/bookings/by-session")}?session_id=${sessionId}`
-      );
+    const data = await res.json();
 
-      const data = await res.json();
+    console.log("Retry attempt", i + 1, data);
 
-      console.log("Retry attempt", i + 1, data);
+    if (data?.found) return data.booking;
 
-      if (data?.found && data.booking) {
-        return data.booking;
-      }
-
-    } catch (err) {
-      console.warn("Retry error:", err);
-    }
-
-    // ✅ 1.5s delay (better for webhook timing)
-    await new Promise(r => setTimeout(r, 1500));
+    // ⚡ faster retry
+    await new Promise(r => setTimeout(r, 500));
   }
 
   return null;
