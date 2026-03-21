@@ -780,6 +780,8 @@ console.log("🕐 Half-day availability:", {
 
 async function handleStripeReturn() {
 
+   console.log("🚀 handleStripeReturn running");
+
   const params = new URLSearchParams(window.location.search);
 
   const state = params.get("checkout");
