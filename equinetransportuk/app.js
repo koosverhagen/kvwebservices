@@ -800,28 +800,50 @@ async function handleStripeReturn() {
   goToStep(5);
 
   const container = document.getElementById("booking-confirmation-content");
+
   if (container) {
-    container.innerHTML = `<p class="muted">Loading confirmation...</p>`;
+    container.innerHTML = `
+      <p><strong>Payment received</strong></p>
+      <p class="muted">Finalising your booking...</p>
+    `;
   }
 
   try {
 
-    const res = await fetch(
-      `${apiUrl("/api/bookings/by-session")}?session_id=${sessionId}`
-    );
+    // 🔁 retry logic (KEY FIX)
+    let booking = null;
 
-    const data = await res.json();
+    for (let i = 0; i < 6; i++) {
 
-    if (!data?.found) throw new Error();
+      const res = await fetch(
+        `${apiUrl("/api/bookings/by-session")}?session_id=${sessionId}`
+      );
 
-    renderBookingConfirmation(data.booking);
+      const data = await res.json();
 
-  } catch {
+      console.log("Retry", i + 1, data);
+
+      if (data?.found && data.booking) {
+        booking = data.booking;
+        break;
+      }
+
+      // wait 1 second before retry
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    if (!booking) throw new Error("Booking not ready");
+
+    renderBookingConfirmation(booking);
+
+  } catch (err) {
+
+    console.warn("Final fallback:", err);
 
     if (container) {
       container.innerHTML = `
         <p><strong>Payment received</strong></p>
-        <p class="muted">Booking is being finalised. Please refresh.</p>
+        <p class="muted">Your booking is confirmed. Please refresh if details do not appear.</p>
       `;
     }
   }
@@ -2438,6 +2460,35 @@ function renderFleet() {
 /* ======================================================
    Booking helpers (select from fleet / results)
 ====================================================== */
+
+async function fetchBookingWithRetry(sessionId, retries = 6) {
+
+  for (let i = 0; i < retries; i++) {
+
+    try {
+
+      const res = await fetch(
+        `${apiUrl("/api/bookings/by-session")}?session_id=${sessionId}`
+      );
+
+      const data = await res.json();
+
+      console.log("Retry attempt", i + 1, data);
+
+      if (data?.found && data.booking) {
+        return data.booking;
+      }
+
+    } catch (err) {
+      console.warn("Retry error:", err);
+    }
+
+    await new Promise(r => setTimeout(r, 1000));
+  }
+
+  return null;
+}
+
 function getVehicleMainImage(vehicle){
 
   if(!vehicle) return "";
