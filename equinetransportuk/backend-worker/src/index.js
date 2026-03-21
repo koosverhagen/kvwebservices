@@ -1038,7 +1038,7 @@ console.log("📅 WEBHOOK TIMES:", {
 console.log("📦 BUILD BOOKING");
 
 const booking = {
-  id: session.id,
+  id: session.metadata.bookingId || session.id,
 
   vehicleId: session.metadata.vehicleId,
 
@@ -1344,13 +1344,24 @@ async function handleBookingBySession(request, env) {
     return json({ error: "Stripe lookup failed" }, 500);
   }
 
-  const bookingId = session?.metadata?.bookingId;
+  /* ===============================
+     🔥 FIX: SAFE BOOKING ID
+  ================================ */
+
+  const bookingId =
+    session?.metadata?.bookingId ||
+    session?.id;
 
   if (!bookingId) {
     return json({ found: false });
   }
 
-  // 🔎 search KV (month buckets)
+  console.log("🔎 Looking for bookingId:", bookingId);
+
+  /* ===============================
+     SEARCH KV (MONTH BUCKETS)
+  ================================ */
+
   const months = [];
 
   const from = new Date();
@@ -1368,19 +1379,30 @@ async function handleBookingBySession(request, env) {
   }
 
   for (const month of months) {
+
     const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
     if (!data) continue;
 
     try {
+
       const bookings = JSON.parse(data);
-      const booking = bookings.find(b => String(b.id) === String(bookingId));
+
+      const booking = bookings.find(
+        b => String(b.id) === String(bookingId)
+      );
 
       if (booking) {
+        console.log("✅ Booking found in KV:", bookingId);
         return json({ found: true, booking });
       }
 
-    } catch {}
+    } catch (err) {
+      console.log("⚠️ KV parse error:", err);
+    }
+
   }
+
+  console.log("❌ Booking NOT found:", bookingId);
 
   return json({ found: false });
 }
