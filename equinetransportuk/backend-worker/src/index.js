@@ -107,6 +107,10 @@ export default {
       return withCors(response, corsHeaders);
     }
 
+    if (request.method === "GET" && url.pathname === "/api/bookings/by-session") {
+    return withCors(await handleBookingBySession(request, env), corsHeaders);
+    }
+
     /* ===============================
        AVAILABILITY API
     ================================ */
@@ -756,6 +760,10 @@ if (existingMonth) {
     return json({ error: "Stripe not configured" }, 500);
   }
 
+const siteBase =
+  env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+  "https://equinetransportuk.com";
+
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20"
   });
@@ -764,10 +772,12 @@ if (existingMonth) {
 
   try {
 
-    session = await stripe.checkout.sessions.create({
-
-      payment_method_types: ["card"],
+    session = await stripe.checkout.sessions.create({      payment_method_types: ["card"],
       mode: "payment",
+
+      // ✅ dynamic return URLs (REQUIRED for confirmation step)
+      success_url: `${siteBase}/index.html?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteBase}/index.html?checkout=cancelled`,
 
       line_items: [
         {
@@ -783,6 +793,9 @@ if (existingMonth) {
       ],
 
       metadata: {
+
+        // 🔥 REQUIRED for confirmation lookup
+        bookingId: booking.id,
 
         vehicleId: booking.vehicleId,
         vehicleName: vehicleName,
@@ -808,10 +821,7 @@ if (existingMonth) {
         confirmationFee: String(confirmationFee),
         outstandingAmount: String(outstandingAmount)
 
-      },
-
-      success_url: "https://equinetransportuk.com/booking-success",
-      cancel_url: "https://equinetransportuk.com/#booking"
+      }
 
     });
 
@@ -1300,6 +1310,68 @@ return json({
   reservations
 });
 
+}
+
+async function handleBookingBySession(request, env) {
+
+  const url = new URL(request.url);
+  const sessionId = url.searchParams.get("session_id");
+
+  if (!sessionId) {
+    return json({ error: "Missing session_id" }, 400);
+  }
+
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    apiVersion: "2024-06-20"
+  });
+
+  let session;
+
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId);
+  } catch (err) {
+    return json({ error: "Stripe lookup failed" }, 500);
+  }
+
+  const bookingId = session?.metadata?.bookingId;
+
+  if (!bookingId) {
+    return json({ found: false });
+  }
+
+  // 🔎 search KV (month buckets)
+  const months = [];
+
+  const from = new Date();
+  from.setMonth(from.getMonth() - 2);
+
+  const to = new Date();
+  to.setMonth(to.getMonth() + 3);
+
+  const current = new Date(from);
+  current.setDate(1);
+
+  while (current <= to) {
+    months.push(current.toISOString().slice(0, 7));
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  for (const month of months) {
+    const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+    if (!data) continue;
+
+    try {
+      const bookings = JSON.parse(data);
+      const booking = bookings.find(b => String(b.id) === String(bookingId));
+
+      if (booking) {
+        return json({ found: true, booking });
+      }
+
+    } catch {}
+  }
+
+  return json({ found: false });
 }
 
 async function handleAvailability(request, env) {
