@@ -878,7 +878,7 @@ async function handleStripeReturn() {
 
   goToStep(5);
 
-  const container = document.getElementById("booking-confirmation-content");
+  const container = document.getElementById("booking-confirmation");
 
   if (container) {
     container.innerHTML = `
@@ -889,27 +889,8 @@ async function handleStripeReturn() {
 
   try {
 
-    // 🔁 retry logic (KEY FIX)
-    let booking = null;
-
-    for (let i = 0; i < 6; i++) {
-
-      const res = await fetch(
-        `${apiUrl("/api/bookings/by-session")}?session_id=${sessionId}`
-      );
-
-      const data = await res.json();
-
-      console.log("Retry", i + 1, data);
-
-      if (data?.found && data.booking) {
-        booking = data.booking;
-        break;
-      }
-
-      // wait 1 second before retry
-      await new Promise(r => setTimeout(r, 1000));
-    }
+  const booking = await fetchBookingWithRetry(sessionId);
+    
 
     if (!booking) throw new Error("Booking not ready");
 
@@ -917,15 +898,27 @@ async function handleStripeReturn() {
 
   } catch (err) {
 
-    console.warn("Final fallback:", err);
+  console.warn("Final fallback:", err);
 
-    if (container) {
-      container.innerHTML = `
-        <p><strong>Payment received</strong></p>
-        <p class="muted">Your booking is confirmed. Please refresh if details do not appear.</p>
-      `;
-    }
+  if (container) {
+    container.innerHTML = `
+      <div class="confirmation-card">
+        <h2>⏳ Payment received</h2>
+        <p>Your booking is being finalised.</p>
+
+        <p class="muted">
+          This can take a few seconds.<br>
+          Please refresh this page or check your email for confirmation.
+        </p>
+
+        <button onclick="location.reload()" class="btn">
+          Refresh
+        </button>
+      </div>
+    `;
   }
+
+}
 
   // 🧹 cleanup URL
   window.history.replaceState({}, "", "#booking");
@@ -2542,7 +2535,7 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
-async function fetchBookingWithRetry(sessionId, retries = 6) {
+async function fetchBookingWithRetry(sessionId, retries = 8) {
 
   for (let i = 0; i < retries; i++) {
 
@@ -2564,7 +2557,8 @@ async function fetchBookingWithRetry(sessionId, retries = 6) {
       console.warn("Retry error:", err);
     }
 
-    await new Promise(r => setTimeout(r, 1000));
+    // ✅ 1.5s delay (better for webhook timing)
+    await new Promise(r => setTimeout(r, 1500));
   }
 
   return null;
