@@ -778,6 +778,71 @@ console.log("🕐 Half-day availability:", {
 });
 }
 
+function renderBookingConfirmation(booking) {
+
+  console.log("🎉 Rendering confirmation", booking);
+
+  if (!booking.vehicleSnapshot) {
+    console.warn("⚠️ Missing vehicleSnapshot on booking", booking);
+  }
+
+  const container = document.getElementById("booking-confirmation");
+
+  if (!container) {
+    console.warn("⚠️ No confirmation container found");
+    return;
+  }
+
+  const pickup = new Date(booking.pickupAt);
+  const dropoff = new Date(booking.dropoffAt);
+
+  const vehicleName =
+    booking.vehicleSnapshot?.name ||
+    booking.vehicleId ||
+    "Horsebox";
+
+  const total = Number(booking.hireTotal).toFixed(2);
+  const paid = Number(booking.confirmationFee).toFixed(2);
+  const remaining = Number(booking.outstandingAmount).toFixed(2);
+
+  container.innerHTML = `
+    <div class="confirmation-card">
+      
+      <h2>✅ Booking Confirmed</h2>
+
+      <p><strong>${vehicleName}</strong></p>
+
+      <div class="confirmation-dates">
+        <div>
+          <label>Pickup</label>
+          <p>${pickup.toLocaleString("en-GB")}</p>
+        </div>
+        <div>
+          <label>Return</label>
+          <p>${dropoff.toLocaleString("en-GB")}</p>
+        </div>
+      </div>
+
+      <div class="confirmation-summary">
+        <div><span>Total hire</span><strong>£${total}</strong></div>
+        <div><span>Paid today</span><strong>£${paid}</strong></div>
+        <div><span>Remaining</span><strong>£${remaining}</strong></div>
+      </div>
+
+      <p class="confirmation-email">
+        Confirmation sent to:<br>
+        <strong>${booking.customerEmail}</strong>
+      </p>
+
+      <button onclick="location.href='index.html'" class="btn">
+        Book another
+      </button>
+
+    </div>
+  `;
+}
+
+
 async function handleStripeReturn() {
 
   console.log("🚀 handleStripeReturn running");
@@ -5016,69 +5081,7 @@ else if (hasFullDay) {
 
 }
 
-function renderBookingConfirmation(booking) {
 
-  console.log("🎉 Rendering confirmation", booking);
-
-  if (!booking.vehicleSnapshot) {
-    console.warn("⚠️ Missing vehicleSnapshot on booking", booking);
-  }
-
-  const container = document.getElementById("booking-confirmation");
-
-  if (!container) {
-    console.warn("⚠️ No confirmation container found");
-    return;
-  }
-
-  const pickup = new Date(booking.pickupAt);
-  const dropoff = new Date(booking.dropoffAt);
-
-  const vehicleName =
-    booking.vehicleSnapshot?.name ||
-    booking.vehicleId ||
-    "Horsebox";
-
-  const total = Number(booking.hireTotal).toFixed(2);
-  const paid = Number(booking.confirmationFee).toFixed(2);
-  const remaining = Number(booking.outstandingAmount).toFixed(2);
-
-  container.innerHTML = `
-    <div class="confirmation-card">
-      
-      <h2>✅ Booking Confirmed</h2>
-
-      <p><strong>${vehicleName}</strong></p>
-
-      <div class="confirmation-dates">
-        <div>
-          <label>Pickup</label>
-          <p>${pickup.toLocaleString("en-GB")}</p>
-        </div>
-        <div>
-          <label>Return</label>
-          <p>${dropoff.toLocaleString("en-GB")}</p>
-        </div>
-      </div>
-
-      <div class="confirmation-summary">
-        <div><span>Total hire</span><strong>£${total}</strong></div>
-        <div><span>Paid today</span><strong>£${paid}</strong></div>
-        <div><span>Remaining</span><strong>£${remaining}</strong></div>
-      </div>
-
-      <p class="confirmation-email">
-        Confirmation sent to:<br>
-        <strong>${booking.customerEmail}</strong>
-      </p>
-
-      <button onclick="location.href='index.html'" class="btn">
-        Book another
-      </button>
-
-    </div>
-  `;
-}
 
 /* ======================================================
    Initial render
