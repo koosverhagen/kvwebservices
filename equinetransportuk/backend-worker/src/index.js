@@ -1052,6 +1052,11 @@ const booking = {
 
   pickupAt: pickupAt.toISOString(),
   dropoffAt: dropoffAt.toISOString(),
+
+  /* ✅ NEW — THIS IS THE FIX */
+  pickupAtLocal: toLondonLocalISOString(pickupAt),
+  dropoffAtLocal: toLondonLocalISOString(dropoffAt),
+
   durationDays,
   pickupTime,
 
@@ -1702,6 +1707,8 @@ async function findCustomerByEmailOrMobile(env, email, mobile) {
    HELPERS
 ================================ */
 
+
+
 function json(payload, status = 200) {
 
   return new Response(JSON.stringify(payload), {
@@ -1710,6 +1717,24 @@ function json(payload, status = 200) {
   });
 
 }
+
+function toLondonLocalISOString(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+
+  const get = (type) => parts.find(p => p.type === type)?.value || "";
+
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}`;
+}
+
 
 function buildCorsHeaders() {
 

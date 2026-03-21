@@ -793,20 +793,8 @@ function renderBookingConfirmation(booking) {
     return;
   }
 
- function parseLondonDate(dateString) {
-  if (!dateString) return new Date();
-
-  // 🔥 If backend already sends ISO with Z → trust it
-  if (dateString.includes("Z")) {
-    return new Date(dateString);
-  }
-
-  // 🔥 Otherwise treat as LOCAL London time (no shift)
-  return new Date(dateString + "Z");
-}
-
-const pickup = parseLondonDate(booking.pickupAt);
-const dropoff = parseLondonDate(booking.dropoffAt);
+  const pickup = new Date(booking.pickupAtLocal || booking.pickupAt);
+  const dropoff = new Date(booking.dropoffAtLocal || booking.dropoffAt);
 
   const vehicleName =
     booking.vehicleSnapshot?.name ||
