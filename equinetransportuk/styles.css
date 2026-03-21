@@ -2682,6 +2682,7 @@ BOOKING SUMMARY CARD
   margin: 40px auto;
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   text-align: center;
+  animation: fadeIn 0.4s ease;
 }
 
 .confirmation-dates {
@@ -2694,4 +2695,9 @@ BOOKING SUMMARY CARD
   display: flex;
   justify-content: space-between;
   margin: 6px 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
