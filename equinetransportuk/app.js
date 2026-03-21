@@ -2555,8 +2555,8 @@ async function fetchBookingWithRetry(sessionId) {
   for (let i = 0; i < 6; i++) {
 
     const res = await fetch(
-      `/api/bookings/by-session?session_id=${sessionId}`
-    );
+  apiUrl(`/api/bookings/by-session?session_id=${sessionId}`)
+);
 
     const data = await res.json();
 

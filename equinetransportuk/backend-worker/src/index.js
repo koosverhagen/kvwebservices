@@ -794,34 +794,36 @@ const siteBase =
 
       metadata: {
 
-        // 🔥 REQUIRED for confirmation lookup
-        bookingId: booking.id,
+  bookingId: booking.id,
 
-        vehicleId: booking.vehicleId,
-        vehicleName: vehicleName,
+  vehicleId: booking.vehicleId,
+  vehicleName: vehicleName,
 
-        pickupDate: booking.pickupDate,
-        pickupTime,
-        durationDays: String(durationDays),
+  pickupDate: booking.pickupDate,
+  pickupTime,
+  durationDays: String(durationDays),
 
-        customerName: (booking.customerName || "").slice(0, 100),
-        customerEmail: (booking.customerEmail || "").slice(0, 100),
-        customerMobile: (booking.customerMobile || "").slice(0, 30),
+  customerName: (booking.customerName || "").slice(0, 100),
+  customerEmail: (booking.customerEmail || "").slice(0, 100),
+  customerMobile: (booking.customerMobile || "").slice(0, 30),
 
-        discountCode: booking.discountCode || "",
+  discountCode: booking.discountCode || "",
 
-        baseCost: String(baseCost),
-        discountAmount: String(discountAmount),
+  baseCost: String(baseCost),
+  discountAmount: String(discountAmount),
 
-        dartfordTotal: String(dartfordTotal),
-        earlyPickupTotal: String(earlyPickupTotal),
-        extrasTotal: String(extrasTotal),
+  dartfordTotal: String(dartfordTotal),
+  earlyPickupTotal: String(earlyPickupTotal),
+  extrasTotal: String(extrasTotal),
 
-        totalHire: String(totalHire),
-        confirmationFee: String(confirmationFee),
-        outstandingAmount: String(outstandingAmount)
+  // 🔥 ADD THIS LINE
+  extrasJson: JSON.stringify(extras || {}),
 
-      }
+  totalHire: String(totalHire),
+  confirmationFee: String(confirmationFee),
+  outstandingAmount: String(outstandingAmount)
+
+}
 
     });
 
@@ -928,10 +930,13 @@ async function handleStripeWebhook(request, env) {
     const earlyPickupTotal = Number(session.metadata?.earlyPickupTotal || 0);
     const extrasTotal = Number(session.metadata?.extrasTotal || 0);
 
-    const extras = {
-      dartford: Math.round(dartfordTotal / 4.2),
-      earlyPickup: earlyPickupTotal > 0 ? 1 : 0
-    };
+    let extras = {};
+
+try {
+  extras = JSON.parse(session.metadata?.extrasJson || "{}");
+} catch {
+  extras = {};
+}
 
     console.log("💰 PRICING OK");
 
