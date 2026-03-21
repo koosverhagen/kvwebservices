@@ -780,12 +780,15 @@ console.log("🕐 Half-day availability:", {
 
 async function handleStripeReturn() {
 
-   console.log("🚀 handleStripeReturn running");
+  console.log("🚀 handleStripeReturn running");
 
-  const params = new URLSearchParams(window.location.search);
+  const url = new URL(window.location.href);
 
-  const state = params.get("checkout");
-  const sessionId = params.get("session_id");
+  const state = url.searchParams.get("checkout");
+  const sessionId = url.searchParams.get("session_id");
+
+  console.log("state:", state);
+  console.log("sessionId:", sessionId);
 
   if (state === "cancelled") {
     alert("Payment cancelled");
