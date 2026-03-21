@@ -778,6 +778,54 @@ console.log("🕐 Half-day availability:", {
 });
 }
 
+async function handleStripeReturn() {
+
+  const params = new URLSearchParams(window.location.search);
+
+  const state = params.get("checkout");
+  const sessionId = params.get("session_id");
+
+  if (state === "cancelled") {
+    alert("Payment cancelled");
+    return;
+  }
+
+  if (state !== "success" || !sessionId) return;
+
+  goToStep(5);
+
+  const container = document.getElementById("booking-confirmation-content");
+  if (container) {
+    container.innerHTML = `<p class="muted">Loading confirmation...</p>`;
+  }
+
+  try {
+
+    const res = await fetch(
+      `${apiUrl("/api/bookings/by-session")}?session_id=${sessionId}`
+    );
+
+    const data = await res.json();
+
+    if (!data?.found) throw new Error();
+
+    renderBookingConfirmation(data.booking);
+
+  } catch {
+
+    if (container) {
+      container.innerHTML = `
+        <p><strong>Payment received</strong></p>
+        <p class="muted">Booking is being finalised. Please refresh.</p>
+      `;
+    }
+  }
+
+  // 🧹 cleanup URL
+  window.history.replaceState({}, "", "#booking");
+}
+
+
 async function findNextAvailableDate(startDate, durationDays, pickupTime) {
 
   for (let i = 1; i <= 14; i++) {
@@ -3238,6 +3286,8 @@ function resetBookingCustomerFields() {
   updateCheckoutSummary();
 }
 
+
+
 /* ======================================================
    Events
 ====================================================== */
@@ -4690,52 +4740,7 @@ if (!LOCKED_VEHICLE) {
 
 }
 
-async function handleStripeReturn() {
 
-  const params = new URLSearchParams(window.location.search);
-
-  const state = params.get("checkout");
-  const sessionId = params.get("session_id");
-
-  if (state === "cancelled") {
-    alert("Payment cancelled");
-    return;
-  }
-
-  if (state !== "success" || !sessionId) return;
-
-  goToStep(5);
-
-  const container = document.getElementById("booking-confirmation-content");
-  if (container) {
-    container.innerHTML = `<p class="muted">Loading confirmation...</p>`;
-  }
-
-  try {
-
-    const res = await fetch(
-      `${apiUrl("/api/bookings/by-session")}?session_id=${sessionId}`
-    );
-
-    const data = await res.json();
-
-    if (!data?.found) throw new Error();
-
-    renderBookingConfirmation(data.booking);
-
-  } catch {
-
-    if (container) {
-      container.innerHTML = `
-        <p><strong>Payment received</strong></p>
-        <p class="muted">Booking is being finalised. Please refresh.</p>
-      `;
-    }
-  }
-
-  // 🧹 cleanup URL
-  window.history.replaceState({}, "", "#booking");
-}
 
 async function updateDurationOptions(startDate) {
 
