@@ -2673,3 +2673,25 @@ BOOKING SUMMARY CARD
 .availability-warning strong {
   font-weight: 600;
 }
+
+.confirmation-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  margin: 40px auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.confirmation-dates {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+}
+
+.confirmation-summary div {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+}

@@ -5034,6 +5034,57 @@ else if (hasFullDay) {
 
 }
 
+function renderBookingConfirmation(booking) {
+
+  console.log("🎉 Rendering confirmation", booking);
+
+  const container = document.getElementById("booking-confirmation");
+
+  if (!container) {
+    console.warn("⚠️ No confirmation container found");
+    return;
+  }
+
+  const pickup = new Date(booking.pickupAt);
+  const dropoff = new Date(booking.dropoffAt);
+
+  container.innerHTML = `
+    <div class="confirmation-card">
+      
+      <h2>✅ Booking Confirmed</h2>
+
+      <p><strong>${booking.vehicleSnapshot?.name || "Horsebox"}</strong></p>
+
+      <div class="confirmation-dates">
+        <div>
+          <label>Pickup</label>
+          <p>${pickup.toLocaleString("en-GB")}</p>
+        </div>
+        <div>
+          <label>Return</label>
+          <p>${dropoff.toLocaleString("en-GB")}</p>
+        </div>
+      </div>
+
+      <div class="confirmation-summary">
+        <div><span>Total hire</span><strong>£${booking.hireTotal}</strong></div>
+        <div><span>Paid today</span><strong>£${booking.confirmationFee}</strong></div>
+        <div><span>Remaining</span><strong>£${booking.outstandingAmount}</strong></div>
+      </div>
+
+      <p class="confirmation-email">
+        Confirmation sent to:<br>
+        <strong>${booking.customerEmail}</strong>
+      </p>
+
+      <button onclick="location.href='index.html'" class="btn">
+        Book another
+      </button>
+
+    </div>
+  `;
+}
+
 /* ======================================================
    Initial render
 ====================================================== */
