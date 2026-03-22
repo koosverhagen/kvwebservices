@@ -862,7 +862,15 @@ function renderBookingConfirmation(booking) {
   const total = Number(booking.hireTotal).toFixed(2);
   const paid = Number(booking.confirmationFee).toFixed(2);
   const remaining = Number(booking.outstandingAmount).toFixed(2);
+  const extras = booking.extras || {};
 
+  const earlyPickup = extras.earlyPickup ? true : false;
+  const dartfordCount = Number(extras.dartford || 0);
+
+  const earlyPickupCharge = earlyPickup ? 20 : 0;
+  const dartfordCharge = dartfordCount * 4.2;
+
+  const hasExtras = earlyPickup || dartfordCount > 0;
   container.innerHTML = `
     <div class="confirmation-card">
       
@@ -3067,25 +3075,29 @@ async function renderBookings() {
   .map((booking) => {
     const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
 
-    /* ===============================
-       🔥 EXTRAS (NEW)
-    =============================== */
+    const extras = booking.extras || {};
 
-    const extrasParts = [];
+    const earlyPickup = !!extras.earlyPickup;
+    const dartfordCount = Number(extras.dartford || 0);
 
-    if (booking.extras?.earlyPickup) {
-      extrasParts.push("Early pickup (£20)");
+    let extrasLine = "";
+
+    if (earlyPickup || dartfordCount > 0) {
+
+      const parts = [];
+
+      if (earlyPickup) {
+        parts.push("Early pickup (£20)");
+      }
+
+      if (dartfordCount > 0) {
+        parts.push(`Dartford x${dartfordCount} (£${(dartfordCount * 4.2).toFixed(2)})`);
+      }
+
+      extrasLine = `
+        <span class="muted">Extras: ${parts.join(" · ")}</span><br>
+      `;
     }
-
-    if (booking.extras?.dartford) {
-      extrasParts.push(
-        `Dartford x${booking.extras.dartford} (£${(booking.extras.dartford * 4.2).toFixed(2)})`
-      );
-    }
-
-    const extrasLine = extrasParts.length
-      ? `<span class="muted">Extras: ${extrasParts.join(" · ")}</span><br>`
-      : "";
 
     /* ===============================
        CARD
@@ -3104,7 +3116,7 @@ async function renderBookings() {
 
         <span class="muted">Status: ${escapeHtml(booking.status)}</span><br>
 
-        ${extrasLine} <!-- ✅ NEW LINE -->
+        ${extrasLine}
 
         <span class="muted">
           Paid now: £${Number(booking.confirmationFee).toFixed(2)} · 
