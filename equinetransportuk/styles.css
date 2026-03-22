@@ -2766,7 +2766,7 @@ BOOKING SUMMARY CARD
   text-align: center;
   margin-bottom: 16px;
 }
-}
+
 
 .confirmation-card.pro {
   max-width: 520px;
@@ -2828,4 +2828,35 @@ BOOKING SUMMARY CARD
   margin: 16px 0;
   font-weight: 600;
   color: #16a34a;
+}
+ .confirmation-card.pro {
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* 🔥 LOGO BACKGROUND */
+.confirmation-card.pro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image: url("equinetransportuk/images/logo.webp");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 260px;
+
+  opacity: 0.04; /* 👈 key: very subtle */
+  pointer-events: none;
+}
+
+.confirmation-card.pro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  pointer-events: none;
 }
