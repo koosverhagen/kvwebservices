@@ -940,6 +940,8 @@ try {
 
     console.log("💰 PRICING OK");
 
+    console.log("📦 SAVING BOOKING WITH EXTRAS:", extras);
+
 /* ===============================
    DATES (FIXED FINAL)
 =============================== */
@@ -1403,7 +1405,13 @@ async function handleBookingBySession(request, env) {
 
       if (booking) {
         console.log("✅ Booking found in KV:", bookingId);
-        return json({ found: true, booking });
+        return json({
+  found: true,
+  booking: {
+    ...booking,
+    extras: booking.extras || {}
+  }
+});
       }
 
     } catch (err) {
