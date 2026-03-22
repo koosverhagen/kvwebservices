@@ -4345,8 +4345,19 @@ async function showVehiclePreview(date, event) {
 
     vehicleBookings.forEach(b => {
 
-      const startHour = new Date(b.pickupAt).getUTCHours();
-      const endHour = new Date(b.dropoffAt).getUTCHours();
+      function getLondonParts(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+
+  return {
+    hour: Number(parts.find(p => p.type === "hour")?.value || 0),
+    minute: Number(parts.find(p => p.type === "minute")?.value || 0)
+  };
+}
 
       if (startHour <= 7 && endHour >= 13) morningBooked = true;
       if (startHour <= 13 && endHour >= 19) afternoonBooked = true;
