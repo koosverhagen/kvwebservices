@@ -689,10 +689,9 @@ function updateEarlyPickupAvailability() {
 
   console.log("EarlyPickupCheck:", { duration, pickupTime });
 
-  const isHalfDay = duration === 0.5;
   const isMorning = pickupTime === "07:00";
 
-  const canUseEarlyPickup = isHalfDay && isMorning;
+  const canUseEarlyPickup = isMorning;
 
   if (!earlyPickupCheckbox) return;
 
@@ -706,7 +705,7 @@ function updateEarlyPickupAvailability() {
 
     if (textSpan) {
       textSpan.innerText =
-        "Early pickup only available for morning half-day bookings.";
+        "Early pickup only available for morning bookings.";
     }
 
   } else {
@@ -717,7 +716,6 @@ function updateEarlyPickupAvailability() {
       textSpan.innerText = "Early pickup (+£20)";
     }
 
-    // ✅ DO NOT RESET CHECKED STATE HERE
   }
 }
 
