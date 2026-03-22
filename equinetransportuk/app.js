@@ -673,7 +673,6 @@ function getRemainingHalfDaySlots(dateObj, bookings) {
 
 function updateEarlyPickupAvailability() {
 
-  // 👇 detect which step we are in (safe fallback chain)
   const duration = Number(
     selectedDurationInput?.value ||
     durationDaysInput?.value ||
@@ -686,58 +685,40 @@ function updateEarlyPickupAvailability() {
     bookingTime ||
     pickupTimeInput?.value ||
     selectedAvailability?.pickupTime ||
-    "07:00"; // safe fallback
+    "07:00";
 
-  /* ===============================
-     DEBUG LOG (VERY USEFUL)
-  =============================== */
+  console.log("EarlyPickupCheck:", { duration, pickupTime });
 
-  console.log("EarlyPickupCheck:", {
-    duration,
-    pickupTime
-  });
+  const isHalfDay = duration === 0.5;
+  const isMorning = pickupTime === "07:00";
 
-  const isHalfDayAfternoon =
-    duration === 0.5 && pickupTime === "13:00";
+  const canUseEarlyPickup = isHalfDay && isMorning;
 
   if (!earlyPickupCheckbox) return;
 
   const label = earlyPickupCheckbox.closest("label");
+  const textSpan = label?.querySelector("span:last-child");
 
-// 🔥 FORCE correct span (more reliable)
-const textSpan = label?.querySelector("span:last-child");
+  if (!canUseEarlyPickup) {
 
-if (isHalfDayAfternoon) {
+    earlyPickupCheckbox.checked = false;
+    earlyPickupCheckbox.disabled = true;
 
-  // UI state
-  earlyPickupCheckbox.checked = false;
-  earlyPickupCheckbox.disabled = true;
+    if (textSpan) {
+      textSpan.innerText =
+        "Early pickup only available for morning half-day bookings.";
+    }
 
+  } else {
 
-  // 🔥 also ensure checkbox is not read anywhere else
-  if (earlyPickupEnabledInput) {
-    earlyPickupEnabledInput.checked = false;
+    earlyPickupCheckbox.disabled = false;
+
+    if (textSpan) {
+      textSpan.innerText = "Early pickup (+£20)";
+    }
+
+    // ✅ DO NOT RESET CHECKED STATE HERE
   }
-
-  // Update label text
-  if (textSpan) {
-    textSpan.innerText =
-      "Early pickup unavailable for afternoon bookings. Select a morning slot to enable.";
-  }
-
-  // 🔥 refresh pricing + summary
-  refreshPricingWithExtras?.();
-  updateCheckoutSummary?.();
-
-} else {
-
-  earlyPickupCheckbox.disabled = false;
-
-  // Update label text back
-  if (textSpan) {
-    textSpan.innerText = "Early pickup (+£20)";
-  }
-}
 }
 
 /* =================================
@@ -3478,26 +3459,25 @@ async function createStripeCheckoutSession(booking) {
 
   try {
 
-   /* ===============================
-   EXTRAS (🔥 FIXED CLEAN)
-=============================== */
+    /* ===============================
+       EXTRAS (🔥 FIXED + BULLETPROOF)
+    =============================== */
 
-const dartfordCount = Number(
-  document.getElementById("dartford-count")?.value || 0
-);
+    const dartfordCountInput = document.getElementById("dartford-count");
+    const dartfordEnabledInput = document.getElementById("dartford-enabled");
+    const earlyPickupEnabledInput = document.getElementById("early-pickup-enabled");
 
-const dartfordEnabled =
-  document.getElementById("dartford-enabled")?.checked;
+    const dartfordCount = Number(dartfordCountInput?.value || 0);
+    const dartfordEnabled = dartfordEnabledInput?.checked === true;
 
-const earlyPickupEnabledInput =
-  document.getElementById("early-pickup-enabled");
+    const earlyPickupChecked = earlyPickupEnabledInput?.checked === true;
 
-const extras = {
-  dartford: dartfordEnabled ? dartfordCount : 0,
-  earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
-};
+    const extras = {
+      dartford: dartfordEnabled ? dartfordCount : 0,
+      earlyPickup: earlyPickupChecked ? 1 : 0
+    };
 
-console.log("🚀 SENDING EXTRAS (FINAL):", extras);
+    console.log("🚀 SENDING EXTRAS (FINAL):", extras);
 
     /* ===============================
        REQUEST
@@ -3558,7 +3538,6 @@ console.log("🚀 SENDING EXTRAS (FINAL):", extras);
   }
 
   return null;
-
 }
 
 function resetBookingCustomerFields() {
