@@ -3429,19 +3429,24 @@ async function createStripeCheckoutSession(booking) {
     =============================== */
 
     const dartfordCount = Number(
-      document.getElementById("dartford-count")?.value || 0
-    );
+  document.getElementById("dartford-count")?.value || 0
+);
 
-    const dartfordEnabled =
-      document.getElementById("dartford-enabled")?.checked;
+const dartfordEnabled =
+  document.getElementById("dartford-enabled")?.checked;
 
-    const earlyPickupEnabled =
-      document.getElementById("early-pickup-enabled")?.checked;
+/* 🔥 FIXED LOGIC */
+const isHalfDay = Number(booking.durationDays) === 0.5;
+const isMorning = booking.pickupTime === "07:00";
 
-    const extras = {
-      dartford: dartfordEnabled ? dartfordCount : 0,
-      earlyPickup: earlyPickupEnabled ? 1 : 0
-    };
+const earlyPickupEnabled = isHalfDay && isMorning;
+
+const extras = {
+  dartford: dartfordEnabled ? dartfordCount : 0,
+  earlyPickup: earlyPickupEnabled ? 1 : 0
+};
+
+console.log("🚀 SENDING EXTRAS:", extras);
 
     /* ===============================
        REQUEST
