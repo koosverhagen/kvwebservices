@@ -862,15 +862,38 @@ function renderBookingConfirmation(booking) {
   const total = Number(booking.hireTotal).toFixed(2);
   const paid = Number(booking.confirmationFee).toFixed(2);
   const remaining = Number(booking.outstandingAmount).toFixed(2);
+
   const extras = booking.extras || {};
 
-  const earlyPickup = extras.earlyPickup ? true : false;
+  const earlyPickup = !!extras.earlyPickup;
   const dartfordCount = Number(extras.dartford || 0);
 
   const earlyPickupCharge = earlyPickup ? 20 : 0;
   const dartfordCharge = dartfordCount * 4.2;
 
   const hasExtras = earlyPickup || dartfordCount > 0;
+
+  let extrasLine = "";
+
+  if (hasExtras) {
+    const parts = [];
+
+    if (earlyPickup) {
+      parts.push(`Early pickup (£${earlyPickupCharge.toFixed(2)})`);
+    }
+
+    if (dartfordCount > 0) {
+      parts.push(`Dartford x${dartfordCount} (£${dartfordCharge.toFixed(2)})`);
+    }
+
+    extrasLine = `
+      <div class="confirmation-extras">
+        <label>Extras</label>
+        <p>${parts.join(" · ")}</p>
+      </div>
+    `;
+  }
+
   container.innerHTML = `
     <div class="confirmation-card">
       
@@ -882,24 +905,24 @@ function renderBookingConfirmation(booking) {
         <div>
           <label>Pickup</label>
           <p>${pickup.toLocaleString("en-GB", {
-  timeZone: "Europe/London",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit"
-})}</p>
+            timeZone: "Europe/London",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          })}</p>
         </div>
         <div>
           <label>Return</label>
           <p>${dropoff.toLocaleString("en-GB", {
-  timeZone: "Europe/London",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit"
-})}</p>
+            timeZone: "Europe/London",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          })}</p>
         </div>
       </div>
 
@@ -909,14 +932,16 @@ function renderBookingConfirmation(booking) {
         <div><span>Remaining</span><strong>£${remaining}</strong></div>
       </div>
 
+      ${extrasLine}
+
       <p class="confirmation-email">
         Confirmation sent to:<br>
         <strong>${booking.customerEmail}</strong>
       </p>
 
-     <button onclick="resetBookingFlow()" class="btn">
-  Book another
-</button>
+      <button onclick="resetBookingFlow()" class="btn">
+        Book another
+      </button>
 
     </div>
   `;
@@ -3453,29 +3478,26 @@ async function createStripeCheckoutSession(booking) {
 
   try {
 
-    /* ===============================
-       EXTRAS (🔥 NEW)
-    =============================== */
+   /* ===============================
+   EXTRAS (🔥 FIXED CLEAN)
+=============================== */
 
-    const dartfordCount = Number(
+const dartfordCount = Number(
   document.getElementById("dartford-count")?.value || 0
 );
 
 const dartfordEnabled =
   document.getElementById("dartford-enabled")?.checked;
 
-/* 🔥 FIXED LOGIC */
-const isHalfDay = Number(booking.durationDays) === 0.5;
-const isMorning = booking.pickupTime === "07:00";
-
-const earlyPickupEnabled = isHalfDay && isMorning;
+const earlyPickupEnabledInput =
+  document.getElementById("early-pickup-enabled");
 
 const extras = {
   dartford: dartfordEnabled ? dartfordCount : 0,
-  earlyPickup: earlyPickupEnabled ? 1 : 0
+  earlyPickup: earlyPickupEnabledInput?.checked ? 1 : 0
 };
 
-console.log("🚀 SENDING EXTRAS:", extras);
+console.log("🚀 SENDING EXTRAS (FINAL):", extras);
 
     /* ===============================
        REQUEST
