@@ -987,13 +987,10 @@ async function handleStripeReturn() {
     }
 
     try {
-
       const booking = await fetchBookingWithRetry(sessionId);
       console.log("CONFIRM BOOKING:", booking);
 
-      /* 🔥 SAFETY CHECK (NO CRASH) */
       if (!booking || !booking.pickupAt) {
-
         console.warn("⚠️ Booking not ready after retries");
 
         if (container) {
@@ -1014,23 +1011,19 @@ async function handleStripeReturn() {
         return;
       }
 
-      /* ✅ NOW SAFE TO USE */
       console.log("🧪 BOOKING EXTRAS:", booking.extras);
 
       renderBookingConfirmation(booking);
 
-      // ✅ clean URL AFTER success
       window.history.replaceState({}, "", window.location.pathname + "#booking");
 
       console.log("✅ Stripe return handled successfully");
 
-      // refresh cached bookings once after successful return
       BOOKINGS_CACHE = null;
       BOOKINGS_CACHE_AT = 0;
       await getBookings(true);
 
     } catch (err) {
-
       console.warn("Final fallback:", err);
 
       if (container) {
@@ -1048,9 +1041,7 @@ async function handleStripeReturn() {
           </div>
         `;
       }
-
     }
-
   })();
 
   return stripeReturnPromise;
