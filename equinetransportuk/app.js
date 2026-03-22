@@ -36,6 +36,18 @@ let currentStep = 1;
 
 let checkoutLock = false;
 
+/* ===============================
+   Global performance locks
+================================ */
+
+let stripeReturnHandled = false;
+let stripeReturnPromise = null;
+
+let bookingsRequestPromise = null;
+let calendarRenderPromise = null;
+
+const BOOKING_BY_SESSION_PROMISES = new Map();
+
 
 
 
@@ -136,7 +148,6 @@ const AVAILABILITY_CACHE_TTL = 60 * 1000; // 60 seconds
    Calendar cache
 ================================ */
 
-const CALENDAR_CACHE = new Map();
 
 // Duration price tables
 const RATE_35T_TOTALS = {
@@ -367,36 +378,58 @@ let selectedAvailability = null;
    Next available date button
 ================================ */
 
-availabilityResults?.addEventListener("click",(e)=>{
+availabilityResults?.addEventListener("click", async (e) => {
+
+  /* ===============================
+     NEXT AVAILABLE DATE
+  =============================== */
 
   const nextBtn = e.target.closest(".next-date-btn");
   if (nextBtn) {
+
     const date = nextBtn.dataset.date;
-    pickupDateInput.value = date;
+    if (!date) return;
 
-    const selectedDate = new Date(`${date}T00:00:00`);
-    if (!Number.isNaN(selectedDate.getTime())) {
-      document.querySelectorAll(".cal-selected")
-        .forEach(el => el.classList.remove("cal-selected"));
+    // 🔒 prevent double clicks
+    if (nextBtn.dataset.loading === "true") return;
+    nextBtn.dataset.loading = "true";
 
-      document.querySelectorAll("#cal-grid .cal-day").forEach(el => {
-        if (Number(el.textContent) === selectedDate.getDate()) {
-          el.classList.add("cal-selected");
-        }
-      });
+    try {
+      const selectedDate = new Date(`${date}T00:00:00`);
+      if (Number.isNaN(selectedDate.getTime())) return;
+
+      // ✅ SINGLE SOURCE OF TRUTH
+      await selectDate(selectedDate);
+
+      // ✅ trigger availability AFTER state is correct
+      availabilityForm?.requestSubmit();
+
+    } finally {
+      nextBtn.dataset.loading = "false";
     }
 
-    availabilityForm?.requestSubmit();
     return;
   }
 
+  /* ===============================
+     SELECT LORRY
+  =============================== */
+
   const chooseBtn = e.target.closest(".choose-lorry");
   if (chooseBtn) {
+
     const vehicleId = chooseBtn.dataset.vehicleId;
-    if (vehicleId) {
-      selectAvailability(vehicleId).then(() => {
-        goToStep(3);
-      });
+    if (!vehicleId) return;
+
+    // 🔒 prevent double clicks
+    if (chooseBtn.dataset.loading === "true") return;
+    chooseBtn.dataset.loading = "true";
+
+    try {
+      await selectAvailability(vehicleId);
+      goToStep(3);
+    } finally {
+      chooseBtn.dataset.loading = "false";
     }
   }
 
@@ -858,16 +891,10 @@ function renderBookingConfirmation(booking) {
 
 
 async function handleStripeReturn() {
-
-  console.log("🚀 handleStripeReturn running");
-
   const url = new URL(window.location.href);
 
   const state = url.searchParams.get("checkout");
   const sessionId = url.searchParams.get("session_id");
-
-  console.log("state:", state);
-  console.log("sessionId:", sessionId);
 
   if (state === "cancelled") {
     alert("Payment cancelled");
@@ -876,66 +903,67 @@ async function handleStripeReturn() {
 
   if (state !== "success" || !sessionId) return;
 
-  goToStep(5);
-
-  const container = document.getElementById("booking-confirmation");
-
-  if (container) {
-    container.innerHTML = `
-      <p><strong>Payment received</strong></p>
-      <p class="muted">Finalising your booking...</p>
-    `;
+  if (stripeReturnHandled) {
+    return stripeReturnPromise;
   }
 
- try {
+  stripeReturnHandled = true;
 
-  // ✅ Show proper loading UI (NOT fake booking)
-  if (container) {
-    container.innerHTML = `
-      <div class="confirmation-card">
-        <h2>✅ Payment received</h2>
-        <p>Finalising your booking...</p>
-        <p class="muted">This usually takes a few seconds</p>
-      </div>
-    `;
-  }
+  stripeReturnPromise = (async () => {
+    console.log("🚀 handleStripeReturn running", { sessionId });
 
-  // 🔄 fetch real booking (with retry)
-  const booking = await fetchBookingWithRetry(sessionId);
+    goToStep(5);
 
-  if (!booking || !booking.pickupAt) {
-    throw new Error("Booking not ready after retries");
-  }
+    const container = document.getElementById("booking-confirmation");
 
-  // ✅ ONLY render when data is real
-  renderBookingConfirmation(booking);
+    if (container) {
+      container.innerHTML = `
+        <div class="confirmation-card">
+          <h2>✅ Payment received</h2>
+          <p>Finalising your booking...</p>
+          <p class="muted">This usually takes a few seconds</p>
+        </div>
+      `;
+    }
 
-} catch (err) {
+    try {
+      const booking = await fetchBookingWithRetry(sessionId);
 
-  console.warn("Final fallback:", err);
+      if (!booking || !booking.pickupAt) {
+        throw new Error("Booking not ready after retries");
+      }
 
-  if (container) {
-    container.innerHTML = `
-      <div class="confirmation-card">
-        <h2>⏳ Payment received</h2>
-        <p>Your booking is being finalised.</p>
+      renderBookingConfirmation(booking);
 
-        <p class="muted">
-          This can take a few seconds.<br>
-          Please refresh this page or check your email for confirmation.
-        </p>
+      // refresh cached bookings once after successful return
+      BOOKINGS_CACHE = null;
+      BOOKINGS_CACHE_AT = 0;
+      await getBookings(true);
 
-        <button onclick="location.reload()" class="btn">
-          Refresh
-        </button>
-      </div>
-    `;
-  }
+    } catch (err) {
+      console.warn("Final fallback:", err);
 
-}
+      if (container) {
+        container.innerHTML = `
+          <div class="confirmation-card">
+            <h2>⏳ Payment received</h2>
+            <p>Your booking is being finalised.</p>
+            <p class="muted">
+              This can take a few seconds.<br>
+              Please refresh this page or check your email for confirmation.
+            </p>
+            <button onclick="location.reload()" class="btn">
+              Refresh
+            </button>
+          </div>
+        `;
+      }
+    } finally {
+      window.history.replaceState({}, "", "#booking");
+    }
+  })();
 
-  // 🧹 cleanup URL
-  window.history.replaceState({}, "", "#booking");
+  return stripeReturnPromise;
 }
 
 
@@ -1048,7 +1076,10 @@ function resetBookingFlow() {
 
   console.log("🔄 Reset booking flow");
 
-  /* clear availability + booking selection */
+  /* ===============================
+     CLEAR STATE
+  =============================== */
+
   selectedAvailability = null;
 
   /* clear form fields */
@@ -1060,41 +1091,56 @@ function resetBookingFlow() {
   if (pickupDateInput) pickupDateInput.value = "";
   if (pickupTimeInput) pickupTimeInput.value = "";
 
-  /* hide pickup time rows */
+  /* ===============================
+     UI RESET
+  =============================== */
+
   const row = document.getElementById("pickup-time-row");
   if (row) row.style.display = "none";
 
   const group = document.getElementById("pickup-time-group");
   if (group) group.style.display = "none";
 
-  /* clear availability results */
   if (availabilityResults) availabilityResults.innerHTML = "";
 
-  /* clear confirmation UI */
   const confirmation = document.getElementById("booking-confirmation");
   if (confirmation) confirmation.innerHTML = "";
 
-  /* clear caches */
-  AVAILABILITY_CACHE.clear();
-  BOOKINGS_CACHE = null;
+  /* ===============================
+     CACHE STRATEGY (IMPORTANT)
+  =============================== */
 
-  /* disable booking button */
+  // ✅ keep bookings cache (BIG performance win)
+  // BOOKINGS_CACHE = null; ❌ REMOVE THIS
+
+  // ✅ only clear availability (this is user-specific)
+  AVAILABILITY_CACHE.clear();
+
+  /* ===============================
+     BUTTON + SUMMARY
+  =============================== */
+
   if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
 
-  /* update summary */
   updateCheckoutSummary();
 
-  /* go back to step 1 */
+  /* ===============================
+     NAVIGATION
+  =============================== */
+
   goToStep(1);
 
-  /* scroll to top */
   window.scrollTo({
     top: 0,
     behavior: "smooth"
   });
 
-  /* refresh calendar */
+  /* ===============================
+     CALENDAR RENDER (SAFE)
+  =============================== */
+
   if (typeof renderCalendar === "function") {
+    // no force refresh → uses cached bookings + render lock
     renderCalendar();
   }
 
@@ -1134,57 +1180,66 @@ function asDate(dateString, timeString) {
 }
 
 async function getBookings(forceRefresh = false) {
-
   const now = Date.now();
 
   if (!forceRefresh && BOOKINGS_CACHE && (now - BOOKINGS_CACHE_AT) < BOOKINGS_CACHE_TTL) {
     return BOOKINGS_CACHE;
   }
 
-  try {
-
-const firstDay = new Date();
-firstDay.setMonth(firstDay.getMonth() - 2);
-firstDay.setDate(1);
-firstDay.setHours(0,0,0,0);
-
-const lastDay = new Date();
-lastDay.setMonth(lastDay.getMonth() + 3);
-lastDay.setDate(0);
-lastDay.setHours(23,59,59,999);
-
-    const res = await fetch(
-      `${apiUrl("/api/bookings/list")}?from=${encodeURIComponent(firstDay)}&to=${encodeURIComponent(lastDay)}`
-    );
-
-    if (!res.ok) {
-  console.warn("Booking API returned", res.status);
-  throw new Error("Booking API unavailable");
-}
-    const data = await res.json();
-
-    BOOKINGS_CACHE = data.bookings || [];
-    BOOKINGS_CACHE_AT = now;
-
-    return BOOKINGS_CACHE;
-
-  } catch (err) {
-
-    console.warn("⚠️ Booking API unavailable, fallback to local storage");
-
-    try {
-      BOOKINGS_CACHE = JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
-      BOOKINGS_CACHE_AT = now;
-      return BOOKINGS_CACHE;
-    } catch {
-      return [];
-    }
-
+  if (bookingsRequestPromise) {
+    return bookingsRequestPromise;
   }
+
+  bookingsRequestPromise = (async () => {
+    try {
+      const firstDay = new Date();
+      firstDay.setMonth(firstDay.getMonth() - 2);
+      firstDay.setDate(1);
+      firstDay.setHours(0, 0, 0, 0);
+
+      const lastDay = new Date();
+      lastDay.setMonth(lastDay.getMonth() + 3);
+      lastDay.setDate(0);
+      lastDay.setHours(23, 59, 59, 999);
+
+      const res = await fetch(
+        `${apiUrl("/api/bookings/list")}?from=${encodeURIComponent(firstDay.toISOString())}&to=${encodeURIComponent(lastDay.toISOString())}`
+      );
+
+      if (!res.ok) {
+        console.warn("Booking API returned", res.status);
+        throw new Error("Booking API unavailable");
+      }
+
+      const data = await res.json();
+
+      BOOKINGS_CACHE = Array.isArray(data.bookings) ? data.bookings : [];
+      BOOKINGS_CACHE_AT = Date.now();
+
+      return BOOKINGS_CACHE;
+
+    } catch (err) {
+      console.warn("⚠️ Booking API unavailable, fallback to local storage", err);
+
+      try {
+        BOOKINGS_CACHE = JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
+        BOOKINGS_CACHE_AT = Date.now();
+        return BOOKINGS_CACHE;
+      } catch {
+        BOOKINGS_CACHE = [];
+        BOOKINGS_CACHE_AT = Date.now();
+        return BOOKINGS_CACHE;
+      }
+    } finally {
+      bookingsRequestPromise = null;
+    }
+  })();
+
+  return bookingsRequestPromise;
 }
 
-function getCalendarBookings() {
-  return getBookings(true);
+function getCalendarBookings(forceRefresh = false) {
+  return getBookings(forceRefresh);
 }
 function saveBookings(bookings) {
   localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(bookings));
@@ -1718,40 +1773,34 @@ async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTim
 }
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
+  const vehiclesToCheck =
+    LOCKED_VEHICLE && PRESELECTED_VEHICLE
+      ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
+      : vehicles;
 
-  const results = [];
-
-  const vehiclesToCheck = LOCKED_VEHICLE && PRESELECTED_VEHICLE
-  ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
-  : vehicles;
-
-for (const vehicle of vehiclesToCheck) {
-
-    const available = await isVehicleAvailable(
-      vehicle.id,
-      pickupDate,
-      durationDays,
-      pickupTime
-    );
-
-    if (available) {
-
-      const availability = await buildAvailability(
-        vehicle,
+  const results = await Promise.all(
+    vehiclesToCheck.map(async (vehicle) => {
+      const available = await isVehicleAvailable(
+        vehicle.id,
         pickupDate,
         durationDays,
         pickupTime
       );
 
-      results.push(availability);
+      if (!available) return null;
 
-    }
+      return buildAvailability(
+        vehicle,
+        pickupDate,
+        durationDays,
+        pickupTime
+      );
+    })
+  );
 
-  }
-
-  return results;
-
+  return results.filter(Boolean);
 }
+
 function renderAvailabilityLoading() {
   if (!availabilityResults) return;
   availabilityResults.innerHTML = `
@@ -1864,23 +1913,7 @@ async function renderAvailabilityResults(items) {
     </div>
   `;
 
-  // ✅ attach click handler (IMPORTANT)
-  availabilityResults.querySelector(".next-date-btn")?.addEventListener("click", async (e) => {
-
-    const date = e.currentTarget.dataset.date;
-
-    if (!date) return;
-
-    // set input
-    pickupDateInput.value = date;
-
-    // update calendar selection
-    await selectDate(new Date(date));
-
-    // re-run availability
-    availabilityForm?.requestSubmit();
-
-  });
+;
 
   setTimeout(() => {
     availabilityResults?.scrollIntoView({
@@ -2006,19 +2039,6 @@ async function renderAvailabilityResults(items) {
 
 }
 
-
-availabilityResults.addEventListener("click", async (e)=>{
-
-  const btn = e.target.closest(".choose-lorry");
-  if(!btn) return;
-
-  const vehicleId = btn.dataset.vehicleId;
-
-  await selectAvailability(vehicleId);
-
-  goToStep(3);
-
-});
 
 const bookingTimeInput = document.getElementById("booking-pickup-time");
 
@@ -2550,25 +2570,49 @@ function renderFleet() {
 ====================================================== */
 
 async function fetchBookingWithRetry(sessionId, attempts = 5) {
+  if (!sessionId) return null;
 
-  for (let i = 0; i < attempts; i++) {
-
-    const res = await fetch(
-      apiUrl(`/api/bookings/by-session?session_id=${sessionId}`)
-    );
-
-    const data = await res.json();
-
-    console.log(`🔁 Retry attempt ${i + 1}`, data);
-
-    if (data?.found && data.booking?.pickupAt) {
-      return data.booking;
-    }
-
-    await new Promise(r => setTimeout(r, 800));
+  if (BOOKING_BY_SESSION_PROMISES.has(sessionId)) {
+    return BOOKING_BY_SESSION_PROMISES.get(sessionId);
   }
 
-  return null;
+  const requestPromise = (async () => {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await fetch(
+          apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
+        );
+
+        if (!res.ok) {
+          console.warn(`Booking by session failed (${res.status})`);
+        } else {
+          const data = await res.json();
+
+          console.log(`🔁 Retry attempt ${i + 1}`, data);
+
+          if (data?.found && data.booking?.pickupAt) {
+            return data.booking;
+          }
+        }
+      } catch (err) {
+        console.warn(`Retry attempt ${i + 1} failed`, err);
+      }
+
+      if (i < attempts - 1) {
+        await new Promise(r => setTimeout(r, 800));
+      }
+    }
+
+    return null;
+  })();
+
+  BOOKING_BY_SESSION_PROMISES.set(sessionId, requestPromise);
+
+  try {
+    return await requestPromise;
+  } finally {
+    BOOKING_BY_SESSION_PROMISES.delete(sessionId);
+  }
 }
 
 function getVehicleMainImage(vehicle){
@@ -3565,129 +3609,156 @@ function initSmartSummaryUpdates(){
 
 });
 
+/* ===============================
+   Availability submit (OPTIMISED)
+=============================== */
+
+let availabilitySubmitTimeout = null;
+let availabilityRequestId = 0;
+
 if (availabilityForm) {
-  availabilityForm.addEventListener("submit", async (event) => {
+  availabilityForm.addEventListener("submit", (event) => {
     event.preventDefault();
 
-    /* prevent impossible duration selections */
-    if (!validateDurationSelection()) return;
+    // 🔁 debounce (prevents spam)
+    clearTimeout(availabilitySubmitTimeout);
 
-    const pickupDate = pickupDateInput?.value;
-    const durationDays = Number(durationDaysInput?.value);
-    const pickupTime = pickupTimeInput?.value;
+    availabilitySubmitTimeout = setTimeout(async () => {
 
-    if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
-      if (availabilityResults) {
+      const requestId = ++availabilityRequestId;
+
+      /* ===============================
+         VALIDATION
+      =============================== */
+
+      if (!validateDurationSelection()) return;
+
+      const pickupDate = pickupDateInput?.value;
+      const durationDays = Number(durationDaysInput?.value);
+      const pickupTime = pickupTimeInput?.value;
+
+      if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
         availabilityResults.innerHTML =
           '<p class="empty-note">Enter a valid pickup date and duration.</p>';
-      }
-      return;
-    }
-
-    /* IMPORTANT: half day must select time first */
-
-    if (durationDays === 0.5 && !pickupTime) {
-
-      const group = document.getElementById("pickup-time-group");
-
-      group?.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-
-      group?.classList.add("duration-highlight");
-
-      setTimeout(() => {
-        group?.classList.remove("duration-highlight");
-      }, 2000);
-
-      pickupTimeInput?.focus();
-
-      /* show small message */
-
-      let note = group.querySelector(".field-error");
-
-      if (!note) {
-
-        note = document.createElement("div");
-        note.className = "field-error";
-        note.textContent = "Please choose a pickup time for half-day hire.";
-
-        group.appendChild(note);
-
-        setTimeout(() => note.remove(), 3000);
-
+        return;
       }
 
-      return;
-    }
+      /* ===============================
+         HALF DAY VALIDATION
+      =============================== */
 
-    let finalPickupTime = DEFAULT_PICKUP_TIME;
+      if (durationDays === 0.5 && !pickupTime) {
 
-    if (durationDays === 0.5) {
+        const group = document.getElementById("pickup-time-group");
 
-      if (!pickupTime) return;   // prevent search
+        group?.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
 
-      finalPickupTime = pickupTime;
+        group?.classList.add("duration-highlight");
 
-    }
+        setTimeout(() => {
+          group?.classList.remove("duration-highlight");
+        }, 2000);
 
-    const submitBtn = availabilityForm.querySelector(
-      'button[type="submit"], input[type="submit"]'
-    );
+        pickupTimeInput?.focus();
 
-    if (submitBtn) submitBtn.disabled = true;
+        let note = group.querySelector(".field-error");
 
-    renderAvailabilityLoading();
+        if (!note) {
+          note = document.createElement("div");
+          note.className = "field-error";
+          note.textContent = "Please choose a pickup time for half-day hire.";
 
-    try {
+          group.appendChild(note);
+          setTimeout(() => note.remove(), 3000);
+        }
 
-     /* get full fleet availability */
+        return;
+      }
 
-const availableLorries = [];
+      const finalPickupTime =
+        durationDays === 0.5
+          ? pickupTime
+          : DEFAULT_PICKUP_TIME;
 
-const vehiclesToCheck = LOCKED_VEHICLE && PRESELECTED_VEHICLE
-  ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
-  : vehicles;
-
-for (const vehicle of vehiclesToCheck) {
-
-  const available = await isVehicleAvailable(
-    vehicle.id,
-    pickupDate,
-    durationDays,
-    finalPickupTime
-  );
-
-  if (available) {
-
-    const availability = await buildAvailability(
-      vehicle,
-      pickupDate,
-      durationDays,
-      finalPickupTime
-    );
-
-    availableLorries.push(availability);
-
-  }
-
-}
-
-      renderAvailabilityResults(availableLorries);
-
-    } catch (err) {
-
-      console.warn("Availability search failed:", err);
-      renderAvailabilityError(
-        "Couldn’t check availability right now. Please try again."
+      const submitBtn = availabilityForm.querySelector(
+        'button[type="submit"], input[type="submit"]'
       );
 
-    } finally {
+      if (submitBtn) submitBtn.disabled = true;
 
-      if (submitBtn) submitBtn.disabled = false;
+      renderAvailabilityLoading();
 
-    }
+      try {
+
+        /* ===============================
+           VEHICLES TO CHECK
+        =============================== */
+
+        const vehiclesToCheck =
+          LOCKED_VEHICLE && PRESELECTED_VEHICLE
+            ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
+            : vehicles;
+
+        /* ===============================
+           🚀 PARALLEL AVAILABILITY
+        =============================== */
+
+        const results = await Promise.all(
+          vehiclesToCheck.map(async (vehicle) => {
+
+            const available = await isVehicleAvailable(
+              vehicle.id,
+              pickupDate,
+              durationDays,
+              finalPickupTime
+            );
+
+            if (!available) return null;
+
+            return buildAvailability(
+              vehicle,
+              pickupDate,
+              durationDays,
+              finalPickupTime
+            );
+          })
+        );
+
+        /* ===============================
+           CANCEL OUTDATED RESPONSE
+        =============================== */
+
+        if (requestId !== availabilityRequestId) {
+          console.log("⚠️ Discarding outdated availability response");
+          return;
+        }
+
+        const availableLorries = results.filter(Boolean);
+
+        renderAvailabilityResults(availableLorries);
+
+      } catch (err) {
+
+        if (requestId !== availabilityRequestId) return;
+
+        console.warn("Availability search failed:", err);
+
+        renderAvailabilityError(
+          "Couldn’t check availability right now. Please try again."
+        );
+
+      } finally {
+
+        if (requestId === availabilityRequestId && submitBtn) {
+          submitBtn.disabled = false;
+        }
+
+      }
+
+    }, 120); // 👈 debounce delay (perfect UX balance)
 
   });
 }
@@ -4470,12 +4541,20 @@ const endHour = end.getUTCHours();
 
 }
 
- async function renderCalendar() {
+ async function renderCalendarInternal() {
 
-/* load bookings (use cache if already available) */
+/* ===============================
+   LOAD BOOKINGS (DEDUPED + CACHED)
+=============================== */
+
+// ✅ this now benefits from in-flight dedupe in getBookings()
 const bookings = BOOKINGS_CACHE || await getBookings(false);
 
- console.log("Calendar bookings:", bookings);
+console.log("Calendar bookings:", bookings);
+
+/* ===============================
+   CALENDAR HEADER
+=============================== */
 
 const year = currentDate.getFullYear();
 const month = currentDate.getMonth();
@@ -4489,7 +4568,9 @@ calTitle.textContent = `${monthNames[month]} ${year}`;
 
 calGrid.innerHTML = "";
 
-/* selected date (for restoring highlight) */
+/* ===============================
+   SELECTED DATE RESTORE
+=============================== */
 
 const selectedDateValue = pickupDateInput?.value;
 let selectedTimestamp = null;
@@ -4499,6 +4580,10 @@ if (selectedDateValue) {
   selectedDate.setHours(0,0,0,0);
   selectedTimestamp = selectedDate.getTime();
 }
+
+/* ===============================
+   MONTH SETUP
+=============================== */
 
 const firstDay = new Date(year, month, 1);
 const lastDay = new Date(year, month + 1, 0);
@@ -4513,161 +4598,156 @@ for (let i = 0; i < startOffset; i++) {
 const today = new Date();
 today.setHours(0,0,0,0);
 
+/* ===============================
+   DAY LOOP
+=============================== */
+
 for (let day = 1; day <= lastDay.getDate(); day++) {
 
-const dayDate = new Date(year, month, day);
-dayDate.setHours(0,0,0,0);
+  const dayDate = new Date(year, month, day);
+  dayDate.setHours(0,0,0,0);
 
-const dayEl = document.createElement("div");
-dayEl.className = "cal-day";
-dayEl.textContent = day;
+  const dayEl = document.createElement("div");
+  dayEl.className = "cal-day";
+  dayEl.textContent = day;
 
-/* ===============================
-   RESTORE SELECTED DATE
-=============================== */
+  /* ===============================
+     RESTORE SELECTED DATE
+  =============================== */
 
-if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
-  dayEl.classList.add("cal-selected");
-}
-
-/* today marker */
-
-if (dayDate.getTime() === today.getTime()) {
-  dayEl.classList.add("cal-today");
-}
-
-/* weekend shading */
-
-const weekday = dayDate.getDay();
-if (weekday === 0 || weekday === 6) {
-  dayEl.classList.add("cal-weekend");
-}
-
-/* ===============================
-   PAST DATES
-=============================== */
-
-if (dayDate < today) {
-
-  dayEl.classList.add("cal-unavailable","cal-past");
-  calGrid.appendChild(dayEl);
-  continue;
-
-}
-
-/* ===============================
-   AVAILABILITY CHECK
-=============================== */
-
-const status = checkDayLocalAvailability(dayDate, bookings);
-const validStart = canStartRental(dayDate, bookings);
-
-renderAvailabilityDots(dayEl, bookings, dayDate);
-
-/* ===============================
-   LAST VEHICLE LABEL
-=============================== */
-
-const remainingSlots = getRemainingSlots(dayDate, bookings);
-
-if (remainingSlots === 1){
-
-  dayEl.classList.add("cal-last");
-
-  const label = document.createElement("div");
-  label.className = "cal-last-label";
-
-  if (window.innerWidth < 768) {
-    label.innerHTML = "1<br>Left!";
-  } else {
-    label.textContent = "1 Slot Left!";
+  if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
+    dayEl.classList.add("cal-selected");
   }
 
-  dayEl.appendChild(label);
+  /* today marker */
 
-}
+  if (dayDate.getTime() === today.getTime()) {
+    dayEl.classList.add("cal-today");
+  }
 
-/* ===============================
-   STATUS COLOURING
-=============================== */
+  /* weekend shading */
 
-if (status === "available") {
-  dayEl.classList.add("cal-available");
-}
-else if (status === "limited") {
-  dayEl.classList.add("cal-limited");
-}
-else {
-  dayEl.classList.add("cal-unavailable");
-}
+  const weekday = dayDate.getDay();
+  if (weekday === 0 || weekday === 6) {
+    dayEl.classList.add("cal-weekend");
+  }
 
-if (!validStart) {
+  /* ===============================
+     PAST DATES
+  =============================== */
 
-  dayEl.classList.remove("cal-available","cal-limited");
-  dayEl.classList.add("cal-unavailable","cal-no-start");
+  if (dayDate < today) {
+    dayEl.classList.add("cal-unavailable","cal-past");
+    calGrid.appendChild(dayEl);
+    continue;
+  }
 
-}
+  /* ===============================
+     AVAILABILITY CHECK
+  =============================== */
 
-/* ===============================
-   PREVIEW EVENTS
-=============================== */
+  const status = checkDayLocalAvailability(dayDate, bookings);
+  const validStart = canStartRental(dayDate, bookings);
 
-dayEl.addEventListener("mouseenter", (e) => {
+  renderAvailabilityDots(dayEl, bookings, dayDate);
 
-  clearPreview();
-  previewRental(dayDate);
-  showVehiclePreview(dayDate, e);
+  /* ===============================
+     LAST VEHICLE LABEL
+  =============================== */
 
-});
+  const remainingSlots = getRemainingSlots(dayDate, bookings);
 
-if (!isMobile()) {
-  dayEl.addEventListener("mousemove", movePreview);
-}
+  if (remainingSlots === 1){
 
-dayEl.addEventListener("mouseleave", clearPreview);
+    dayEl.classList.add("cal-last");
 
-dayEl.addEventListener("touchend", async (e) => {
+    const label = document.createElement("div");
+    label.className = "cal-last-label";
 
-  e.preventDefault();
-  e.stopPropagation();
-
-  await selectDate(dayDate);
-
-  clearPreview();
-  previewRental(dayDate);
-
-  await showVehiclePreview(dayDate, e);
-
-});
-
-/* ===============================
-   CLICK SELECTION
-=============================== */
-
-if (validStart || PRESELECTED_VEHICLE) {
-  dayEl.addEventListener("click", async (e) => {
-
-    if (isMobile()) {
-
-      clearPreview();
-      previewRental(dayDate);
-      await showVehiclePreview(dayDate, e);
-      return;
-
+    if (window.innerWidth < 768) {
+      label.innerHTML = "1<br>Left!";
+    } else {
+      label.textContent = "1 Slot Left!";
     }
 
-    clearPreview();
-    await selectDate(dayDate);
+    dayEl.appendChild(label);
+  }
 
+  /* ===============================
+     STATUS COLOURING
+  =============================== */
+
+  if (status === "available") {
+    dayEl.classList.add("cal-available");
+  }
+  else if (status === "limited") {
+    dayEl.classList.add("cal-limited");
+  }
+  else {
+    dayEl.classList.add("cal-unavailable");
+  }
+
+  if (!validStart) {
+    dayEl.classList.remove("cal-available","cal-limited");
+    dayEl.classList.add("cal-unavailable","cal-no-start");
+  }
+
+  /* ===============================
+     PREVIEW EVENTS
+  =============================== */
+
+  dayEl.addEventListener("mouseenter", (e) => {
+    clearPreview();
+    previewRental(dayDate);
+    showVehiclePreview(dayDate, e);
   });
 
+  if (!isMobile()) {
+    dayEl.addEventListener("mousemove", movePreview);
+  }
+
+  dayEl.addEventListener("mouseleave", clearPreview);
+
+  dayEl.addEventListener("touchend", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    await selectDate(dayDate);
+
+    clearPreview();
+    previewRental(dayDate);
+
+    await showVehiclePreview(dayDate, e);
+  });
+
+  /* ===============================
+     CLICK SELECTION
+  =============================== */
+
+  if (validStart || PRESELECTED_VEHICLE) {
+
+    dayEl.addEventListener("click", async (e) => {
+
+      if (isMobile()) {
+        clearPreview();
+        previewRental(dayDate);
+        await showVehiclePreview(dayDate, e);
+        return;
+      }
+
+      clearPreview();
+      await selectDate(dayDate);
+
+    });
+
+  }
+
+  calGrid.appendChild(dayEl);
 }
 
-calGrid.appendChild(dayEl);
-
-}
-
-/* unlock rendering */
+/* ===============================
+   UNLOCK (legacy flag kept)
+=============================== */
 
 calGrid.dataset.rendering = "false";
 
