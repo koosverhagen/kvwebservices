@@ -1252,6 +1252,8 @@ textarea { min-height: 100px; }
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
 }
 
 .summary-row {
@@ -1277,6 +1279,10 @@ textarea { min-height: 100px; }
   font-size:13px;
   color:#666;
   margin-top:8px;
+}
+
+.summary-row.loading {
+  opacity: 0.5;
 }
 
 /* =================================
@@ -2700,4 +2706,36 @@ BOOKING SUMMARY CARD
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===============================
+   Summary Loading State
+=============================== */
+
+#checkout-summary.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Optional shimmer (premium feel) */
+
+#checkout-summary.loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.4),
+    transparent
+  );
+  animation: shimmer 1.2s infinite;
+  pointer-events: none;
+  border-radius: 16px;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
