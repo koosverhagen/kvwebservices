@@ -1619,6 +1619,10 @@ try {
      EXTRAS (🔥 NEW)
   =============================== */
 
+console.log("EARLY PICKUP ELEMENT:", earlyPickupEnabledInput);
+console.log("EARLY PICKUP CHECKED:", earlyPickupEnabledInput?.checked);
+console.log("EARLY PICKUP DISABLED:", earlyPickupEnabledInput?.disabled);
+
   const extras = {
   dartford: dartfordEnabledInput?.checked
     ? Number(dartfordCountInput?.value || 0)
