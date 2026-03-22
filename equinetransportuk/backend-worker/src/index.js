@@ -1043,7 +1043,6 @@ const booking = {
   pickupAt: pickupAt.toISOString(),
   dropoffAt: dropoffAt.toISOString(),
 
-  /* ✅ NEW — THIS IS THE FIX */
   pickupAtLocal: toLondonLocalISOString(pickupAt),
   dropoffAtLocal: toLondonLocalISOString(dropoffAt),
 
@@ -1052,6 +1051,20 @@ const booking = {
 
   customerName: session.customer_details?.name || session.metadata.customerName || "",
   customerEmail: session.customer_details?.email || session.metadata.customerEmail || "",
+
+  /* ===============================
+     🔥 PRICE STRUCTURE (FIX)
+  =============================== */
+
+  priceBase: baseCost,
+  priceExtras: extrasTotal,
+  priceTotal: totalHire,
+  paidNow: confirmationFee,
+  outstanding: outstandingAmount,
+
+  /* ===============================
+     KEEP OLD (for compatibility)
+  =============================== */
 
   baseCost,
   discountAmount,
@@ -1064,6 +1077,8 @@ const booking = {
   hireTotal: totalHire,
   confirmationFee,
   outstandingAmount,
+
+  /* =============================== */
 
   depositAmount: 200,
   status: "confirmed",

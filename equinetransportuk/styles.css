@@ -2745,13 +2745,13 @@ BOOKING SUMMARY CARD
 }
 
 .confirmation-ref {
-  font-size: 14px;
-  color: #6b7280;
-  margin-bottom: 12px;
+ margin-bottom: 12px;
+ font-size: 13px;
+ color: #6b7280;
 }
 
 .confirmation-section {
-  margin: 10px 0;
+  margin: 14px 0;
 }
 
 .confirmation-section.highlight {
@@ -2763,4 +2763,69 @@ BOOKING SUMMARY CARD
 .confirmation-footer {
   margin-top: 16px;
   font-size: 14px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+}
+
+.confirmation-card.pro {
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.confirmation-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.confirmation-section.grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.value {
+  font-size: 16px;
+}
+
+.value.strong {
+  font-weight: 600;
+}
+
+.price-box {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+}
+
+.price-row.total {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.price-row.paid {
+  color: #16a34a;
+}
+
+.price-row.outstanding {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.confirmation-status {
+  text-align: center;
+  margin: 16px 0;
+  font-weight: 600;
+  color: #16a34a;
 }
