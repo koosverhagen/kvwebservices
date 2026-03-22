@@ -622,6 +622,28 @@ function getLondonHour(date) {
   return Number(parts.find(p => p.type === "hour")?.value || 0);
 }
 
+function getLondonParts(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+
+  const get = (type) => parts.find(p => p.type === type)?.value || "";
+
+  return {
+    year: Number(get("year")),
+    month: Number(get("month")),
+    day: Number(get("day")),
+    hour: Number(get("hour")),
+    minute: Number(get("minute"))
+  };
+}
+
 /* =================================
    HALF DAY SLOT AVAILABILITY
 ================================ */
@@ -656,8 +678,8 @@ function getRemainingHalfDaySlots(dateObj, bookings) {
         const end = new Date(b.dropoffAt);
 
         if (start <= dayEnd && end >= dayStart) {
-          const startHour = start.getHours();
-          const endHour = end.getHours();
+          const startHour = getLondonParts(start).hour;
+          const endHour = getLondonParts(end).hour;
 
           if (startHour <= 12) morningBooked = true;
           if (endHour >= 13) afternoonBooked = true;
@@ -1244,20 +1266,10 @@ function addDays(date, days) {
 }
 
 function asDate(dateString, timeString) {
-
-  // Build as UK time explicitly (no timezone guessing)
   const [year, month, day] = dateString.split("-").map(Number);
   const [hour, minute] = timeString.split(":").map(Number);
 
-  // Create UTC date that represents UK local time
-  const utc = new Date(Date.UTC(year, month - 1, day, hour, minute));
-
-  // Then shift to UK timezone correctly
-  const ukString = utc.toLocaleString("en-US", {
-    timeZone: "Europe/London"
-  });
-
-  return new Date(ukString);
+  return new Date(Date.UTC(year, month - 1, day, hour, minute));
 }
 
 async function getBookings(forceRefresh = false) {
@@ -4345,19 +4357,8 @@ async function showVehiclePreview(date, event) {
 
     vehicleBookings.forEach(b => {
 
-      function getLondonParts(date) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).formatToParts(date);
-
-  return {
-    hour: Number(parts.find(p => p.type === "hour")?.value || 0),
-    minute: Number(parts.find(p => p.type === "minute")?.value || 0)
-  };
-}
+      const startHour = getLondonParts(new Date(b.pickupAt)).hour;
+      const endHour = getLondonParts(new Date(b.dropoffAt)).hour;
 
       if (startHour <= 7 && endHour >= 13) morningBooked = true;
       if (startHour <= 13 && endHour >= 19) afternoonBooked = true;
@@ -4637,8 +4638,8 @@ function renderBookingBars(year, month, bookings) {
     if (!cell) return;
     cell.classList.add("cal-booked");
 
-    const startHour = start.getUTCHours();
-const endHour = end.getUTCHours();
+const startHour = getLondonParts(start).hour;
+const endHour = getLondonParts(end).hour;
 
     cell.classList.remove(
       "cal-booking-morning",
@@ -5282,8 +5283,8 @@ function renderAvailabilityDots(dayEl, bookings, dayDate) {
         end.getMonth() === dayDate.getMonth() &&
         end.getDate() === dayDate.getDate();
 
-      const startHour = start.getUTCHours();
-const endHour = end.getUTCHours();
+      const startHour = getLondonParts(start).hour;
+      const endHour = getLondonParts(end).hour;
 
       if (sameDay && startHour === 7 && endHour === 13) {
         hasMorning = true;
