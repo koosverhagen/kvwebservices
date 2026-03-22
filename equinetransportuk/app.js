@@ -969,7 +969,7 @@ function renderBookingConfirmation(booking) {
         <p class="muted">Please bring your driving licence on collection.</p>
       </div>
 
-      <button class="btn primary" onclick="window.location.href='/'">
+      onclick="window.location.href='https://kvwebservices.co.uk/equinetransportuk/index.html'"
         Back to homepage
       </button>
 
