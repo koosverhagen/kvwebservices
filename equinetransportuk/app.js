@@ -860,58 +860,116 @@ function renderBookingConfirmation(booking) {
 
   const extras = booking.extras || {};
 
-  const extrasList = Object.entries(extras)
-    .map(([key, value]) => {
-      if (!value) return null;
+  // 🔥 PRICE DATA (fallback safe)
+  const priceBase = booking.priceBase || 0;
+  const priceExtras = booking.priceExtras || 0;
+  const priceTotal = booking.priceTotal || 0;
+  const paidNow = booking.paidNow || 0;
+  const outstanding = Math.max(priceTotal - paidNow, 0);
 
+  // 🔥 Extras display
+  const extrasRows = Object.entries(extras)
+    .filter(([_, v]) => v)
+    .map(([key]) => {
       if (key === "earlyPickup") return "Early pickup";
       if (key === "dartford") return "Dartford crossing";
-
       return key;
-    })
-    .filter(Boolean)
-    .join(", ");
+    });
+
+  const shortRef = booking.id?.slice(-10); // nicer ref
 
   container.innerHTML = `
-    <div class="confirmation-card success">
+    <div class="confirmation-card pro">
 
-      <h2>🎉 Booking Confirmed</h2>
-
-      <div class="confirmation-ref">
-        Ref: ${booking.id}
+      <div class="confirmation-header">
+        <h2>🎉 Booking Confirmed</h2>
+        <div class="confirmation-ref">Ref: ${shortRef}</div>
       </div>
 
+      <!-- VEHICLE -->
       <div class="confirmation-section">
-        <strong>${vehicleName}</strong>
+        <div class="label">Vehicle</div>
+        <div class="value strong">${vehicleName}</div>
       </div>
 
-      <div class="confirmation-section">
-        <div><strong>Pickup:</strong> ${formatDate(booking.pickupAt)}</div>
-        <div><strong>Return:</strong> ${formatDate(booking.dropoffAt)}</div>
+      <!-- TIMES -->
+      <div class="confirmation-section grid">
+        <div>
+          <div class="label">Pickup</div>
+          <div class="value">${formatDate(booking.pickupAt)}</div>
+        </div>
+        <div>
+          <div class="label">Return</div>
+          <div class="value">${formatDate(booking.dropoffAt)}</div>
+        </div>
       </div>
 
+      <!-- EXTRAS -->
       ${
-        extrasList
-          ? `<div class="confirmation-section">
-               <strong>Extras:</strong> ${extrasList}
-             </div>`
+        extrasRows.length
+          ? `
+        <div class="confirmation-section">
+          <div class="label">Extras</div>
+          <div class="value">${extrasRows.join(", ")}</div>
+        </div>
+      `
           : ""
       }
 
-      <div class="confirmation-section highlight">
-        <strong>Payment received</strong>
+      <!-- PRICE BREAKDOWN -->
+      <div class="confirmation-section price-box">
+
+        <div class="price-row">
+          <span>Hire</span>
+          <span>£${priceBase.toFixed(2)}</span>
+        </div>
+
+        ${
+          priceExtras > 0
+            ? `
+          <div class="price-row">
+            <span>Extras</span>
+            <span>£${priceExtras.toFixed(2)}</span>
+          </div>
+        `
+            : ""
+        }
+
+        <div class="price-row total">
+          <span>Total</span>
+          <span>£${priceTotal.toFixed(2)}</span>
+        </div>
+
+        <div class="price-row paid">
+          <span>Paid now</span>
+          <span>£${paidNow.toFixed(2)}</span>
+        </div>
+
+        ${
+          outstanding > 0
+            ? `
+          <div class="price-row outstanding">
+            <span>Outstanding</span>
+            <span>£${outstanding.toFixed(2)}</span>
+          </div>
+        `
+            : ""
+        }
+
       </div>
 
+      <!-- STATUS -->
+      <div class="confirmation-status">
+        ✅ Payment received
+      </div>
+
+      <!-- INFO -->
       <div class="confirmation-footer">
-        <p>
-          A confirmation email has been sent.
-        </p>
-        <p class="muted">
-          Please bring your driving licence on collection.
-        </p>
+        <p>A confirmation email has been sent.</p>
+        <p class="muted">Please bring your driving licence on collection.</p>
       </div>
 
-      <button class="btn" onclick="window.location.href='/'">
+      <button class="btn primary" onclick="window.location.href='/'">
         Back to homepage
       </button>
 
