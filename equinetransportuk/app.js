@@ -4368,54 +4368,74 @@ async function showVehiclePreview(date, event) {
 
     /* make preview vehicles selectable */
 
-    panel.querySelectorAll(".preview-select").forEach(el => {
+panel.querySelectorAll(".preview-select").forEach(el => {
 
   el.addEventListener("click", async () => {
 
-  const vehicleId = el.dataset.vehicleId;
-  const slot = (el.dataset.slot || "").toLowerCase();
+    const vehicleId = el.dataset.vehicleId;
+    const slot = (el.dataset.slot || "").toLowerCase();
 
-  /* set selected date */
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (!vehicle) return;
 
-  if (pickupDateInput) {
-    pickupDateInput.value = dateStart.toISOString().slice(0,10);
-  }
+    /* lock selected vehicle */
+    PRESELECTED_VEHICLE = vehicleId;
+    LOCKED_VEHICLE = true;
 
-  let duration = "1";
-  let pickupTime = "07:00";
+    updateCalendarVehicleLabel();
 
-  if (slot.includes("morning")) {
-    duration = "0.5";
-    pickupTime = "07:00";
-  }
-  else if (slot.includes("afternoon")) {
-    duration = "0.5";
-    pickupTime = "13:00";
-  }
+    /* set selected date */
+    if (pickupDateInput) {
+      const year = dateStart.getFullYear();
+      const month = String(dateStart.getMonth() + 1).padStart(2, "0");
+      const day = String(dateStart.getDate()).padStart(2, "0");
+      pickupDateInput.value = `${year}-${month}-${day}`;
+    }
 
-  /* update inputs */
+    /* keep vehicle visible in UI */
+    if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
+    if (selectedBaseInput) selectedBaseInput.value = "";
 
-  durationDaysInput.value = duration;
-  pickupTimeInput.value = pickupTime;
+    /* clear previously selected availability */
+    selectedAvailability = null;
 
-  /* IMPORTANT: sync UI behaviour */
+    /* enforce vehicle duration rules */
+    updateDurationOptionsForVehicle(vehicle);
+    enforceVehicleDurationRules(vehicle);
 
-  syncPickupTimeOptions();
-  updatePickupTimeVisibility();
+    /* IMPORTANT:
+       go back to duration step instead of jumping to details
+    */
+    if (durationDaysInput) {
+      if (slot.includes("morning") || slot.includes("afternoon")) {
+        durationDaysInput.value = "0.5";
+        pickupTimeInput.value = slot.includes("afternoon") ? "13:00" : "07:00";
+      } else {
+        durationDaysInput.value = "";
+        pickupTimeInput.value = "07:00";
+      }
+    }
 
-  /* ensure pickup time sticks */
+    await syncPickupTimeOptions(dateStart);
+    updatePickupTimeVisibility();
+    updateCheckoutSummary();
 
-  pickupTimeInput.value = pickupTime;
+    panel.classList.add("hidden");
 
-  /* now select vehicle */
+    goToStep(1);
 
-  await selectAvailability(vehicleId);
+    setTimeout(() => {
+      durationDaysInput?.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+      durationDaysInput?.classList.add("duration-highlight");
+      setTimeout(() => {
+        durationDaysInput?.classList.remove("duration-highlight");
+      }, 1800);
+    }, 150);
 
-  panel.classList.add("hidden");
-
-  goToStep(3);
-
-});
+  });
 
 });
 
