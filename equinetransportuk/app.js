@@ -959,42 +959,46 @@ async function handleStripeReturn() {
       `;
     }
 
-    try {
-      const booking = await fetchBookingWithRetry(sessionId);
-      console.log("CONFIRM BOOKING:", booking);
+   try {
+  const booking = await fetchBookingWithRetry(sessionId);
+  console.log("CONFIRM BOOKING:", booking);
 
-      if (!booking || !booking.pickupAt) {
-        throw new Error("Booking not ready after retries");
-      }
+  if (!booking || !booking.pickupAt) {
+    throw new Error("Booking not ready after retries");
+  }
 
-      renderBookingConfirmation(booking);
+  renderBookingConfirmation(booking);
 
-      // refresh cached bookings once after successful return
-      BOOKINGS_CACHE = null;
-      BOOKINGS_CACHE_AT = 0;
-      await getBookings(true);
+  // ✅ ADD IT HERE (only after success)
+  window.history.replaceState({}, "", window.location.pathname + "#booking");
 
-    } catch (err) {
-      console.warn("Final fallback:", err);
+  // ✅ ADD LOG HERE
+console.log("✅ Stripe return handled successfully");
 
-      if (container) {
-        container.innerHTML = `
-          <div class="confirmation-card">
-            <h2>⏳ Payment received</h2>
-            <p>Your booking is being finalised.</p>
-            <p class="muted">
-              This can take a few seconds.<br>
-              Please refresh this page or check your email for confirmation.
-            </p>
-            <button onclick="location.reload()" class="btn">
-              Refresh
-            </button>
-          </div>
-        `;
-      }
-    } finally {
-      window.history.replaceState({}, "", "#booking");
-    }
+  // refresh cached bookings once after successful return
+  BOOKINGS_CACHE = null;
+  BOOKINGS_CACHE_AT = 0;
+  await getBookings(true);
+
+} catch (err) {
+  console.warn("Final fallback:", err);
+
+  if (container) {
+    container.innerHTML = `
+      <div class="confirmation-card">
+        <h2>⏳ Payment received</h2>
+        <p>Your booking is being finalised.</p>
+        <p class="muted">
+          This can take a few seconds.<br>
+          Please refresh this page or check your email for confirmation.
+        </p>
+        <button onclick="location.reload()" class="btn">
+          Refresh
+        </button>
+      </div>
+    `;
+  }
+}
   })();
 
   return stripeReturnPromise;
