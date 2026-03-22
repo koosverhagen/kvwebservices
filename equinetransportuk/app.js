@@ -4563,6 +4563,26 @@ const endHour = end.getUTCHours();
 
 }
 
+async function renderCalendar() {
+
+  // prevent duplicate renders (you already planned this)
+  if (calendarRenderPromise) {
+    return calendarRenderPromise;
+  }
+
+  calendarRenderPromise = (async () => {
+    try {
+      await renderCalendarInternal();
+    } catch (err) {
+      console.error("Calendar render failed:", err);
+    } finally {
+      calendarRenderPromise = null;
+    }
+  })();
+
+  return calendarRenderPromise;
+}
+
  async function renderCalendarInternal() {
 
 /* ===============================
