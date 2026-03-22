@@ -861,11 +861,11 @@ function renderBookingConfirmation(booking) {
   const extras = booking.extras || {};
 
   // 🔥 PRICE DATA (fallback safe)
-  const priceBase = booking.priceBase || 0;
-  const priceExtras = booking.priceExtras || 0;
-  const priceTotal = booking.priceTotal || 0;
-  const paidNow = booking.paidNow || 0;
-  const outstanding = Math.max(priceTotal - paidNow, 0);
+const priceBase = booking.baseCost || 0;
+const priceExtras = booking.extrasTotal || 0;
+const priceTotal = booking.hireTotal || 0;
+const paidNow = booking.confirmationFee || 0;
+const outstanding = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
 
   // 🔥 Extras display
   const extrasRows = Object.entries(extras)
@@ -969,9 +969,11 @@ function renderBookingConfirmation(booking) {
         <p class="muted">Please bring your driving licence on collection.</p>
       </div>
 
-      onclick="window.location.href='https://kvwebservices.co.uk/equinetransportuk/index.html'"
-        Back to homepage
-      </button>
+      <button 
+       class="btn primary"
+       onclick="window.location.href='https://kvwebservices.co.uk/equinetransportuk/index.html'">
+       Back to homepage
+     </button>
 
     </div>
   `;
