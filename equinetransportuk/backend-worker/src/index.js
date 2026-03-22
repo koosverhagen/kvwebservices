@@ -949,13 +949,8 @@ try {
 const durationDays = Number(session.metadata.durationDays || 1);
 const pickupTime = session.metadata.pickupTime || "07:00";
 
-/* ===============================
-   🔥 FIX: CLEAN pickupDate
-=============================== */
-
 let rawPickupDate = session.metadata.pickupDate || "";
 
-// If it's already full ISO → extract date only
 if (rawPickupDate.includes("T")) {
   rawPickupDate = rawPickupDate.split("T")[0];
 }
@@ -967,9 +962,7 @@ console.log("📅 CLEAN DATE:", rawPickupDate);
    PICKUP
 =============================== */
 
-let pickupAt = new Date(
-  `${rawPickupDate}T${pickupTime}:00`
-);
+let pickupAt = londonDateTimeToUtc(rawPickupDate, pickupTime);
 
 /* ===============================
    DROPOFF
@@ -980,28 +973,18 @@ let dropoffAt;
 if (durationDays === 0.5) {
 
   const dropTime = pickupTime === "07:00" ? "13:00" : "19:00";
-
-  dropoffAt = new Date(
-    `${rawPickupDate}T${dropTime}:00`
-  );
+  dropoffAt = londonDateTimeToUtc(rawPickupDate, dropTime);
 
 } else {
 
-  const dropDate = new Date(
-    `${rawPickupDate}T${pickupTime}:00`
-  );
-
-  dropDate.setDate(
-    dropDate.getDate() + Math.max(1, durationDays) - 1
-  );
+  const dropDate = new Date(`${rawPickupDate}T00:00:00`);
+  dropDate.setDate(dropDate.getDate() + Math.max(1, durationDays) - 1);
 
   const year = dropDate.getFullYear();
   const month = String(dropDate.getMonth() + 1).padStart(2, "0");
   const day = String(dropDate.getDate()).padStart(2, "0");
 
-  dropoffAt = new Date(
-    `${year}-${month}-${day}T19:00:00`
-  );
+  dropoffAt = londonDateTimeToUtc(`${year}-${month}-${day}`, "19:00");
 
 }
 
@@ -1729,6 +1712,45 @@ function json(payload, status = 200) {
     headers: JSON_HEADERS
   });
 
+}
+
+function londonDateTimeToUtc(dateString, timeString) {
+  const [year, month, day] = String(dateString).split("-").map(Number);
+  const [hour, minute] = String(timeString).split(":").map(Number);
+
+  const guessUtc = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+
+  const londonParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(guessUtc);
+
+  const get = (type) => londonParts.find(p => p.type === type)?.value || "";
+
+  const londonYear = Number(get("year"));
+  const londonMonth = Number(get("month"));
+  const londonDay = Number(get("day"));
+  const londonHour = Number(get("hour"));
+  const londonMinute = Number(get("minute"));
+
+  const wantedUtcMs = Date.UTC(year, month - 1, day, hour, minute, 0);
+  const shownAsLondonMs = Date.UTC(
+    londonYear,
+    londonMonth - 1,
+    londonDay,
+    londonHour,
+    londonMinute,
+    0
+  );
+
+  const offsetMs = shownAsLondonMs - guessUtc.getTime();
+
+  return new Date(wantedUtcMs - offsetMs);
 }
 
 function toLondonLocalISOString(date) {
