@@ -2829,34 +2829,32 @@ BOOKING SUMMARY CARD
   font-weight: 600;
   color: #16a34a;
 }
- .confirmation-card.pro {
+.confirmation-card.pro {
   max-width: 520px;
   margin: 0 auto;
   text-align: left;
   position: relative;
   overflow: hidden;
-  z-index: 1;
 }
 
-/* 🔥 LOGO BACKGROUND */
+/* LOGO BACKGROUND */
 .confirmation-card.pro::before {
   content: "";
   position: absolute;
   inset: 0;
 
-  background-image: url("images/logo.webp");
+  background-image: url("/images/logo.webp");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 260px;
 
-  opacity: 0.04; /* 👈 key: very subtle */
+  opacity: 0.03; /* 👈 softer */
   pointer-events: none;
+  z-index: 0;
 }
 
-.confirmation-card.pro::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,0.85);
-  pointer-events: none;
+/* CONTENT ABOVE BACKGROUND */
+.confirmation-card.pro > * {
+  position: relative;
+  z-index: 1;
 }
