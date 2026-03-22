@@ -962,6 +962,7 @@ async function handleStripeReturn() {
    try {
   const booking = await fetchBookingWithRetry(sessionId);
   console.log("CONFIRM BOOKING:", booking);
+console.log("🧪 BOOKING EXTRAS:", booking.extras);
 
   if (!booking || !booking.pickupAt) {
     throw new Error("Booking not ready after retries");
