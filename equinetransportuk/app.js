@@ -830,8 +830,9 @@ function renderBookingConfirmation(booking) {
     return;
   }
 
-  const pickup = new Date(booking.pickupAtLocal || booking.pickupAt);
-  const dropoff = new Date(booking.dropoffAtLocal || booking.dropoffAt);
+  /* ✅ USE UTC ISO SOURCE OF TRUTH */
+  const pickup = new Date(booking.pickupAt);
+  const dropoff = new Date(booking.dropoffAt);
 
   const vehicleName =
     booking.vehicleSnapshot?.name ||
