@@ -49,6 +49,9 @@ let calendarRenderPromise = null;
 const BOOKING_BY_SESSION_PROMISES = new Map();
 
 
+let extrasRequestId = 0;
+
+
 
 
 function goToStep(step) {
@@ -339,22 +342,48 @@ const earlyPickupCheckbox = document.getElementById("early-pickup-enabled");
   });
 
 async function refreshPricingWithExtras() {
+
   if (!selectedAvailability) return;
+
+  const summary = document.getElementById("checkout-summary");
+
+  // ✨ START loading state
+  summary?.classList.add("loading");
+
+  const requestId = ++extrasRequestId;
 
   AVAILABILITY_CACHE.clear();
 
   const vehicle = selectedAvailability.vehicle;
 
-  const updated = await buildAvailability(
-    vehicle,
-    selectedAvailability.pickupDate,
-    selectedAvailability.durationDays,
-    selectedAvailability.pickupTime,
-    getCurrentDiscountCode()
-  );
+  try {
 
-  selectedAvailability = updated;
-  updateCheckoutSummary();
+    const updated = await buildAvailability(
+      vehicle,
+      selectedAvailability.pickupDate,
+      selectedAvailability.durationDays,
+      selectedAvailability.pickupTime,
+      getCurrentDiscountCode()
+    );
+
+    if (requestId !== extrasRequestId) return;
+
+    selectedAvailability = updated;
+
+    updateCheckoutSummary();
+
+  } catch (err) {
+
+    if (requestId === extrasRequestId) {
+      console.warn("Pricing update failed:", err);
+    }
+
+  } finally {
+
+    // ✨ END loading state
+    summary?.classList.remove("loading");
+
+  }
 }
 
 const checkoutSummary = document.getElementById("checkout-summary");
@@ -684,10 +713,6 @@ if (isHalfDayAfternoon) {
   earlyPickupCheckbox.checked = false;
   earlyPickupCheckbox.disabled = true;
 
-  // 🔥 CRITICAL: force extras state OFF
-  if (typeof selectedExtras !== "undefined") {
-    selectedExtras.earlyPickup = 0;
-  }
 
   // 🔥 also ensure checkbox is not read anywhere else
   if (earlyPickupEnabledInput) {
@@ -3583,15 +3608,15 @@ if (badge) {
 function initSmartSummaryUpdates(){
 
   const triggers = [
-    pickupDateInput,
-    durationDaysInput,
-    pickupTimeInput,
-    selectedLorryInput,
-    dartfordCrossingInput,
-    earlyPickupInput,
-    voucherInput
-  ];
-
+  pickupDateInput,
+  durationDaysInput,
+  pickupTimeInput,
+  selectedLorryInput,
+  dartfordEnabledInput,
+  dartfordCountInput,
+  earlyPickupEnabledInput,
+  document.getElementById("discount-code")
+];
   triggers.forEach(el=>{
     if(!el) return;
 
@@ -4397,9 +4422,6 @@ async function showVehiclePreview(date, event) {
 
 }
 
-function isMobile() {
-  return window.innerWidth < 768;
-}
 /* ======================================================
    Phase 4 — Calendar Module (Render Only)
 ====================================================== */
