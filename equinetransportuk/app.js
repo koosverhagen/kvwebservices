@@ -1201,7 +1201,20 @@ function addDays(date, days) {
 }
 
 function asDate(dateString, timeString) {
-  return new Date(`${dateString}T${timeString}:00`);
+
+  // Build as UK time explicitly (no timezone guessing)
+  const [year, month, day] = dateString.split("-").map(Number);
+  const [hour, minute] = timeString.split(":").map(Number);
+
+  // Create UTC date that represents UK local time
+  const utc = new Date(Date.UTC(year, month - 1, day, hour, minute));
+
+  // Then shift to UK timezone correctly
+  const ukString = utc.toLocaleString("en-US", {
+    timeZone: "Europe/London"
+  });
+
+  return new Date(ukString);
 }
 
 async function getBookings(forceRefresh = false) {
