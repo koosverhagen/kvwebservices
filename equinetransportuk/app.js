@@ -959,47 +959,71 @@ async function handleStripeReturn() {
       `;
     }
 
-   try {
-  const booking = await fetchBookingWithRetry(sessionId);
-  console.log("CONFIRM BOOKING:", booking);
-console.log("🧪 BOOKING EXTRAS:", booking.extras);
+    try {
 
-  if (!booking || !booking.pickupAt) {
-    throw new Error("Booking not ready after retries");
-  }
+      const booking = await fetchBookingWithRetry(sessionId);
+      console.log("CONFIRM BOOKING:", booking);
 
-  renderBookingConfirmation(booking);
+      /* 🔥 SAFETY CHECK (NO CRASH) */
+      if (!booking || !booking.pickupAt) {
 
-  // ✅ ADD IT HERE (only after success)
-  window.history.replaceState({}, "", window.location.pathname + "#booking");
+        console.warn("⚠️ Booking not ready after retries");
 
-  // ✅ ADD LOG HERE
-console.log("✅ Stripe return handled successfully");
+        if (container) {
+          container.innerHTML = `
+            <div class="confirmation-card">
+              <h2>⏳ Payment received</h2>
+              <p>Your booking is still being finalised.</p>
+              <p class="muted">
+                Please refresh in a few seconds or check your email.
+              </p>
+              <button onclick="location.reload()" class="btn">
+                Refresh
+              </button>
+            </div>
+          `;
+        }
 
-  // refresh cached bookings once after successful return
-  BOOKINGS_CACHE = null;
-  BOOKINGS_CACHE_AT = 0;
-  await getBookings(true);
+        return;
+      }
 
-} catch (err) {
-  console.warn("Final fallback:", err);
+      /* ✅ NOW SAFE TO USE */
+      console.log("🧪 BOOKING EXTRAS:", booking.extras);
 
-  if (container) {
-    container.innerHTML = `
-      <div class="confirmation-card">
-        <h2>⏳ Payment received</h2>
-        <p>Your booking is being finalised.</p>
-        <p class="muted">
-          This can take a few seconds.<br>
-          Please refresh this page or check your email for confirmation.
-        </p>
-        <button onclick="location.reload()" class="btn">
-          Refresh
-        </button>
-      </div>
-    `;
-  }
-}
+      renderBookingConfirmation(booking);
+
+      // ✅ clean URL AFTER success
+      window.history.replaceState({}, "", window.location.pathname + "#booking");
+
+      console.log("✅ Stripe return handled successfully");
+
+      // refresh cached bookings once after successful return
+      BOOKINGS_CACHE = null;
+      BOOKINGS_CACHE_AT = 0;
+      await getBookings(true);
+
+    } catch (err) {
+
+      console.warn("Final fallback:", err);
+
+      if (container) {
+        container.innerHTML = `
+          <div class="confirmation-card">
+            <h2>⏳ Payment received</h2>
+            <p>Your booking is being finalised.</p>
+            <p class="muted">
+              This can take a few seconds.<br>
+              Please refresh this page or check your email for confirmation.
+            </p>
+            <button onclick="location.reload()" class="btn">
+              Refresh
+            </button>
+          </div>
+        `;
+      }
+
+    }
+
   })();
 
   return stripeReturnPromise;
@@ -2621,7 +2645,7 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
-async function fetchBookingWithRetry(sessionId, attempts = 5) {
+async function fetchBookingWithRetry(sessionId, attempts = 12) {
   if (!sessionId) return null;
 
   if (BOOKING_BY_SESSION_PROMISES.has(sessionId)) {
@@ -2651,7 +2675,7 @@ async function fetchBookingWithRetry(sessionId, attempts = 5) {
       }
 
       if (i < attempts - 1) {
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 1200)); // 🔥 increased delay
       }
     }
 
