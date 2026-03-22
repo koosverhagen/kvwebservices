@@ -2739,3 +2739,28 @@ BOOKING SUMMARY CARD
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+.confirmation-card.success {
+  text-align: center;
+}
+
+.confirmation-ref {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.confirmation-section {
+  margin: 10px 0;
+}
+
+.confirmation-section.highlight {
+  margin-top: 16px;
+  font-size: 18px;
+  color: #16a34a;
+}
+
+.confirmation-footer {
+  margin-top: 16px;
+  font-size: 14px;
+}

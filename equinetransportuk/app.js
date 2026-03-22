@@ -839,110 +839,80 @@ console.log("🕐 Half-day availability:", {
 
 function renderBookingConfirmation(booking) {
 
-  console.log("🎉 Rendering confirmation", booking);
-
-  if (!booking.vehicleSnapshot) {
-    console.warn("⚠️ Missing vehicleSnapshot on booking", booking);
-  }
-
   const container = document.getElementById("booking-confirmation");
+  if (!container) return;
 
-  if (!container) {
-    console.warn("⚠️ No confirmation container found");
-    return;
-  }
-
-  /* ✅ USE UTC ISO SOURCE OF TRUTH */
-  const pickup = new Date(booking.pickupAt);
-  const dropoff = new Date(booking.dropoffAt);
+  const formatDate = (iso) => {
+    const d = new Date(iso);
+    return d.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
 
   const vehicleName =
     booking.vehicleSnapshot?.name ||
     booking.vehicleId ||
-    "Horsebox";
-
-  const total = Number(booking.hireTotal).toFixed(2);
-  const paid = Number(booking.confirmationFee).toFixed(2);
-  const remaining = Number(booking.outstandingAmount).toFixed(2);
+    "Vehicle";
 
   const extras = booking.extras || {};
 
-  const earlyPickup = !!extras.earlyPickup;
-  const dartfordCount = Number(extras.dartford || 0);
+  const extrasList = Object.entries(extras)
+    .map(([key, value]) => {
+      if (!value) return null;
 
-  const earlyPickupCharge = earlyPickup ? 20 : 0;
-  const dartfordCharge = dartfordCount * 4.2;
+      if (key === "earlyPickup") return "Early pickup";
+      if (key === "dartford") return "Dartford crossing";
 
-  const hasExtras = earlyPickup || dartfordCount > 0;
-
-  let extrasLine = "";
-
-  if (hasExtras) {
-    const parts = [];
-
-    if (earlyPickup) {
-      parts.push(`Early pickup (£${earlyPickupCharge.toFixed(2)})`);
-    }
-
-    if (dartfordCount > 0) {
-      parts.push(`Dartford x${dartfordCount} (£${dartfordCharge.toFixed(2)})`);
-    }
-
-    extrasLine = `
-      <div class="confirmation-extras">
-        <label>Extras</label>
-        <p>${parts.join(" · ")}</p>
-      </div>
-    `;
-  }
+      return key;
+    })
+    .filter(Boolean)
+    .join(", ");
 
   container.innerHTML = `
-    <div class="confirmation-card">
-      
-      <h2>✅ Booking Confirmed</h2>
+    <div class="confirmation-card success">
 
-      <p><strong>${vehicleName}</strong></p>
+      <h2>🎉 Booking Confirmed</h2>
 
-      <div class="confirmation-dates">
-        <div>
-          <label>Pickup</label>
-          <p>${pickup.toLocaleString("en-GB", {
-            timeZone: "Europe/London",
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-          })}</p>
-        </div>
-        <div>
-          <label>Return</label>
-          <p>${dropoff.toLocaleString("en-GB", {
-            timeZone: "Europe/London",
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-          })}</p>
-        </div>
+      <div class="confirmation-ref">
+        Ref: ${booking.id}
       </div>
 
-      <div class="confirmation-summary">
-        <div><span>Total hire</span><strong>£${total}</strong></div>
-        <div><span>Paid today</span><strong>£${paid}</strong></div>
-        <div><span>Remaining</span><strong>£${remaining}</strong></div>
+      <div class="confirmation-section">
+        <strong>${vehicleName}</strong>
       </div>
 
-      ${extrasLine}
+      <div class="confirmation-section">
+        <div><strong>Pickup:</strong> ${formatDate(booking.pickupAt)}</div>
+        <div><strong>Return:</strong> ${formatDate(booking.dropoffAt)}</div>
+      </div>
 
-      <p class="confirmation-email">
-        Confirmation sent to:<br>
-        <strong>${booking.customerEmail}</strong>
-      </p>
+      ${
+        extrasList
+          ? `<div class="confirmation-section">
+               <strong>Extras:</strong> ${extrasList}
+             </div>`
+          : ""
+      }
 
-      <button onclick="resetBookingFlow()" class="btn">
-        Book another
+      <div class="confirmation-section highlight">
+        <strong>Payment received</strong>
+      </div>
+
+      <div class="confirmation-footer">
+        <p>
+          A confirmation email has been sent.
+        </p>
+        <p class="muted">
+          Please bring your driving licence on collection.
+        </p>
+      </div>
+
+      <button class="btn" onclick="window.location.href='/'">
+        Back to homepage
       </button>
 
     </div>
