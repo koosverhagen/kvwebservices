@@ -582,44 +582,37 @@ async function updateDurationOptions(dateObj) {
     let available = false;
 
 /* ===============================
-   🔥 SPECIAL FIX FOR HALF DAY
+   🔥 SPECIAL FIX FOR HALF DAY (CORRECT)
 =============================== */
 
 if (duration === 0.5) {
 
-  const times = ["07:00", "13:00"]; // AM + PM
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   if (vehicleId) {
 
-    const checks = await Promise.all(
-      times.map(t =>
-        isVehicleAvailable(
-          vehicleId,
-          dateStr,
-          duration,
-          t
-        )
-      )
-    );
+    const { morningAvailable, afternoonAvailable } =
+      getRemainingHalfDaySlots(dateObj, bookings);
 
-    available = checks.some(Boolean);
+    available = morningAvailable || afternoonAvailable;
 
   } else {
 
-    const checks = await Promise.all(
-      vehicles.flatMap(v =>
-        times.map(t =>
-          isVehicleAvailable(
-            v.id,
-            dateStr,
-            duration,
-            t
-          )
-        )
-      )
-    );
+    let anyAvailable = false;
 
-    available = checks.some(Boolean);
+    for (const vehicle of vehicles) {
+
+      const { morningAvailable, afternoonAvailable } =
+        getRemainingHalfDaySlots(dateObj, bookings);
+
+      if (morningAvailable || afternoonAvailable) {
+        anyAvailable = true;
+        break;
+      }
+
+    }
+
+    available = anyAvailable;
   }
 
 } else {
@@ -866,7 +859,7 @@ function getRemainingHalfDaySlots(dateObj, bookings) {
   vehicles
     .filter(vehicle => {
       if (PRESELECTED_VEHICLE && vehicle.id !== PRESELECTED_VEHICLE) return false;
-      return is35T(vehicle); // ✅ only 3.5T can offer half-day
+      return is35T(vehicle);
     })
     .forEach(vehicle => {
 
@@ -874,30 +867,52 @@ function getRemainingHalfDaySlots(dateObj, bookings) {
         b => b.vehicleId === vehicle.id && b.status !== "cancelled"
       );
 
-      const dayStart = new Date(dateObj);
-      dayStart.setHours(0, 0, 0, 0);
-
-      const dayEnd = new Date(dateObj);
-      dayEnd.setHours(23, 59, 59, 999);
-
       let morningBooked = false;
       let afternoonBooked = false;
 
       vehicleBookings.forEach(b => {
+
         const start = new Date(b.pickupAt);
         const end = new Date(b.dropoffAt);
 
-        if (start <= dayEnd && end >= dayStart) {
-          const startHour = getLondonParts(start).hour;
-          const endHour = getLondonParts(end).hour;
+        const startParts = getLondonParts(start);
+        const endParts = getLondonParts(end);
 
-          if (startHour <= 12) morningBooked = true;
-          if (endHour >= 13) afternoonBooked = true;
+        const sameDay =
+          startParts.year === dateObj.getFullYear() &&
+          startParts.month === dateObj.getMonth() + 1 &&
+          startParts.day === dateObj.getDate();
+
+        if (!sameDay) return;
+
+        /* ===============================
+           🔥 CORRECT SLOT LOGIC
+        =============================== */
+
+        // AM booking → starts in morning
+        if (startParts.hour < 12) {
+          morningBooked = true;
         }
+
+        // PM booking → starts in afternoon
+        if (startParts.hour >= 12) {
+          afternoonBooked = true;
+        }
+
+        // Full-day booking → blocks both
+        if (
+          startParts.hour <= 7 &&
+          endParts.hour >= 19
+        ) {
+          morningBooked = true;
+          afternoonBooked = true;
+        }
+
       });
 
       if (!morningBooked) morningAvailable = true;
       if (!afternoonBooked) afternoonAvailable = true;
+
     });
 
   return { morningAvailable, afternoonAvailable };
@@ -4006,6 +4021,24 @@ if (pickupTimeInput) {
     await updateDurationOptions(dateObj);
 
     /* ===============================
+       🔥 AUTO PICKUP TIME (HALF DAY FIX)
+    =============================== */
+
+    if (Number(durationDaysInput?.value) === 0.5) {
+
+      const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+      const { morningAvailable, afternoonAvailable } =
+        getRemainingHalfDaySlots(dateObj, bookings);
+
+      if (morningAvailable && !afternoonAvailable) {
+        pickupTimeInput.value = "07:00";
+      } else if (!morningAvailable && afternoonAvailable) {
+        pickupTimeInput.value = "13:00";
+      }
+    }
+
+    /* ===============================
        keep existing logic
     =============================== */
 
@@ -5365,7 +5398,27 @@ async function selectDate(dayDate) {
   }
 
   await updateDurationOptions(dayDate);
-  await syncPickupTimeOptions(dayDate);
+await syncPickupTimeOptions(dayDate);
+
+/* ===============================
+   🔥 AUTO PICKUP TIME (HALF DAY FIX)
+=============================== */
+
+if (Number(durationInput.value) === 0.5) {
+
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+  const { morningAvailable, afternoonAvailable } =
+    getRemainingHalfDaySlots(dayDate, bookings);
+
+  if (morningAvailable && !afternoonAvailable) {
+    pickupTimeInput.value = "07:00";
+  } else if (!morningAvailable && afternoonAvailable) {
+    pickupTimeInput.value = "13:00";
+  }
+
+}
+
 
   /* ===============================
      🔥 HALF-DAY FIX (THIS IS THE KEY)
