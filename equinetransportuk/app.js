@@ -2093,7 +2093,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
     durationDays,
-    pickupTime
+    durationDays === 0.5 ? null : pickupTime
   );
 
   const results = await Promise.all(
@@ -2114,12 +2114,14 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
       let resolvedPickupTime = pickupTime;
 
       if (Number(durationDays) === 0.5) {
+
         const hasAM = apiVehicle.availableSlots?.includes("am");
         const hasPM = apiVehicle.availableSlots?.includes("pm");
 
         if (!hasAM && hasPM) {
           resolvedPickupTime = "13:00";
-        } else if (hasAM && !hasPM) {
+        } 
+        else if (hasAM && !hasPM) {
           resolvedPickupTime = "07:00";
         }
       }
