@@ -1010,14 +1010,21 @@ async function handleStripeReturn() {
       container.innerHTML = `
         <div class="confirmation-card">
           <h2>✅ Payment received</h2>
-          <p>Finalising your booking...</p>
-          <p class="muted">This usually takes a few seconds</p>
-        </div>
+          </div>
+        <div class="confirmation-note">
+         Your booking is secured. Full details have been emailed.
+       </div>
+
       `;
     }
 
     try {
-      const booking = await fetchBookingWithRetry(sessionId);
+      let booking = await fetchStripeSession(sessionId);
+
+// 🔥 fallback to retry ONLY if needed
+if (!booking) {
+  booking = await fetchBookingWithRetry(sessionId);
+}
       console.log("CONFIRM BOOKING:", booking);
 
       if (!booking || !booking.pickupAt) {
