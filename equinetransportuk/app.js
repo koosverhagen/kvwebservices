@@ -2085,16 +2085,38 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
-  const vehiclesToCheck =
+  let vehiclesToCheck =
     LOCKED_VEHICLE && PRESELECTED_VEHICLE
       ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
       : vehicles;
+
+  // 🔥 SAFETY FALLBACK (prevents empty filter bug)
+  if (!vehiclesToCheck.length) {
+    console.warn("⚠️ No vehicles matched — fallback to all vehicles");
+    vehiclesToCheck = vehicles;
+  }
+
+  /* ===============================
+     🔥 CORRECT API CALL
+     (NO pickupTime for half-day)
+  =============================== */
 
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
     durationDays,
     durationDays === 0.5 ? null : pickupTime
   );
+
+  console.log("🚀 vehiclesAvailability:", vehiclesAvailability);
+
+  if (!Array.isArray(vehiclesAvailability) || !vehiclesAvailability.length) {
+    console.warn("⚠️ Empty API response");
+    return [];
+  }
+
+  /* ===============================
+     BUILD RESULTS
+  =============================== */
 
   const results = await Promise.all(
     vehiclesToCheck.map(async (vehicle) => {
@@ -2106,23 +2128,35 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
       if (!apiVehicle) return null;
 
       const available = Number(durationDays) === 0.5
-        ? Array.isArray(apiVehicle.availableSlots) && apiVehicle.availableSlots.length > 0
+        ? Array.isArray(apiVehicle.availableSlots) &&
+          apiVehicle.availableSlots.length > 0
         : Boolean(apiVehicle.available);
 
       if (!available) return null;
+
+      /* ===============================
+         🔥 RESOLVE PICKUP TIME
+      =============================== */
 
       let resolvedPickupTime = pickupTime;
 
       if (Number(durationDays) === 0.5) {
 
-        const hasAM = apiVehicle.availableSlots?.includes("am");
-        const hasPM = apiVehicle.availableSlots?.includes("pm");
+        const slots = apiVehicle.availableSlots || [];
 
+        const hasAM = slots.includes("am");
+        const hasPM = slots.includes("pm");
+
+        // 🔥 AUTO PICK BEST SLOT
         if (!hasAM && hasPM) {
           resolvedPickupTime = "13:00";
         } 
         else if (hasAM && !hasPM) {
           resolvedPickupTime = "07:00";
+        }
+        else if (hasAM && hasPM) {
+          // 🔥 DEFAULT (important fallback)
+          resolvedPickupTime = pickupTime || "07:00";
         }
       }
 
@@ -2135,7 +2169,11 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
     })
   );
 
-  return results.filter(Boolean);
+  const filtered = results.filter(Boolean);
+
+  console.log("✅ availableLorries:", filtered);
+
+  return filtered;
 }
 
 function renderAvailabilityLoading() {
