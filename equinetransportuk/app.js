@@ -544,14 +544,18 @@ async function updateDurationOptions(dateObj) {
 
 if (duration === 0.5) {
 
+  let morningAvailable = false;
+  let afternoonAvailable = false;
+
   if (vehicleId) {
 
-    const checks = await Promise.all([
-      isVehicleAvailable(vehicleId, dateStr, 0.5, "07:00"), // AM
-      isVehicleAvailable(vehicleId, dateStr, 0.5, "13:00")  // PM
+    const [am, pm] = await Promise.all([
+      isVehicleAvailable(vehicleId, dateStr, 0.5, "07:00"),
+      isVehicleAvailable(vehicleId, dateStr, 0.5, "13:00")
     ]);
 
-    available = checks.some(Boolean);
+    morningAvailable = am;
+    afternoonAvailable = pm;
 
   } else {
 
@@ -562,7 +566,27 @@ if (duration === 0.5) {
       ])
     );
 
-    available = checks.some(Boolean);
+    // split AM / PM results
+    for (let i = 0; i < checks.length; i += 2) {
+      if (checks[i]) morningAvailable = true;
+      if (checks[i + 1]) afternoonAvailable = true;
+    }
+
+  }
+
+  available = morningAvailable || afternoonAvailable;
+
+  /* 🔥 CRITICAL FIX */
+  if (available && pickupTimeInput) {
+
+    if (!morningAvailable && afternoonAvailable) {
+      pickupTimeInput.value = "13:00";
+    }
+
+    else if (morningAvailable && !afternoonAvailable) {
+      pickupTimeInput.value = "07:00";
+    }
+
   }
 
 } else {
