@@ -3644,6 +3644,7 @@ function resetBookingCustomerFields() {
 }
 
 async function fetchStripeSession(sessionId) {
+
   try {
     const res = await fetch(
       apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
@@ -3653,44 +3654,46 @@ async function fetchStripeSession(sessionId) {
 
     const data = await res.json();
 
-    // If booking already exists → use it
-    if (data?.found) return data.booking;
+    /* ✅ NEW: handle BOTH cases */
+    if (data?.found && data.booking) {
+      return data.booking;
+    }
 
-    // 🔥 FALLBACK: use session metadata directly
-    if (data?.session) {
-      const m = data.session.metadata || {};
+    /* 🔥 FALLBACK: build booking from Stripe metadata */
+    if (data?.session?.metadata) {
 
-      let extras = {};
-      try {
-        extras = JSON.parse(m.extrasJson || "{}");
-      } catch {}
+      const m = data.session.metadata;
 
       return {
-        id: data.session.id,
+        id: m.bookingId || sessionId,
 
+        vehicleId: m.vehicleId,
         vehicleSnapshot: {
-          name: m.vehicleName || "Horsebox"
+          name: m.vehicleName
         },
 
-        pickupAtLocal: `${m.pickupDate}T${m.pickupTime}:00`,
-        dropoffAtLocal: "", // optional for now
+        pickupAt: m.pickupDate + "T" + (m.pickupTime || "07:00"),
+        dropoffAt: m.pickupDate + "T19:00", // fallback
+
+        durationDays: Number(m.durationDays || 1),
 
         baseCost: Number(m.baseCost || 0),
         extrasTotal: Number(m.extrasTotal || 0),
-
         hireTotal: Number(m.totalHire || 0),
+
         confirmationFee: Number(m.confirmationFee || 0),
         outstandingAmount: Number(m.outstandingAmount || 0),
 
-        extras
+        extras: JSON.parse(m.extrasJson || "{}")
       };
     }
 
-  } catch (err) {
-    console.warn("Stripe session fallback failed", err);
-  }
+    return null;
 
-  return null;
+  } catch (err) {
+    console.warn("fetchStripeSession failed:", err);
+    return null;
+  }
 }
 
 /* ======================================================

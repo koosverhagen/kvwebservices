@@ -1351,23 +1351,17 @@ async function handleBookingBySession(request, env) {
   try {
     session = await stripe.checkout.sessions.retrieve(sessionId);
   } catch (err) {
+    console.log("❌ Stripe lookup failed:", err);
     return json({ error: "Stripe lookup failed" }, 500);
   }
 
   /* ===============================
-     🔥 FIX: SAFE BOOKING ID
+     SAFE BOOKING ID
   ================================ */
 
   const bookingId =
     session?.metadata?.bookingId ||
     session?.id;
-
-  if (!bookingId) {
-  return json({
-    found: false,
-    session
-  });
-}
 
   console.log("🔎 Looking for bookingId:", bookingId);
 
@@ -1405,14 +1399,16 @@ async function handleBookingBySession(request, env) {
       );
 
       if (booking) {
+
         console.log("✅ Booking found in KV:", bookingId);
+
         return json({
-  found: true,
-  booking: {
-    ...booking,
-    extras: booking.extras || {}
-  }
-});
+          found: true,
+          booking: {
+            ...booking,
+            extras: booking.extras || {}
+          }
+        });
       }
 
     } catch (err) {
@@ -1421,12 +1417,21 @@ async function handleBookingBySession(request, env) {
 
   }
 
-  console.log("❌ Booking NOT found:", bookingId);
+  /* ===============================
+     NOT FOUND → RETURN STRIPE SESSION
+     🔥 THIS ENABLES INSTANT CONFIRMATION
+  ================================ */
+
+  console.log("⚠️ Booking not yet in KV, returning Stripe session");
 
   return json({
-  found: false,
-  session
-});
+    found: false,
+    session: {
+      id: session.id,
+      metadata: session.metadata || {},
+      customer_details: session.customer_details || null
+    }
+  });
 }
 
 async function handleAvailability(request, env) {
