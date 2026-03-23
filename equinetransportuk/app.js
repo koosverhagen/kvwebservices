@@ -1042,14 +1042,12 @@ function renderBookingConfirmation(booking) {
 
   const extras = booking.extras || {};
 
-  // 🔥 PRICE DATA (fallback safe)
-const priceBase = booking.baseCost || 0;
-const priceExtras = booking.extrasTotal || 0;
-const priceTotal = booking.hireTotal || 0;
-const paidNow = booking.confirmationFee || 0;
-const outstanding = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
+  const priceBase = booking.baseCost || 0;
+  const priceExtras = booking.extrasTotal || 0;
+  const priceTotal = booking.hireTotal || 0;
+  const paidNow = booking.confirmationFee || 0;
+  const remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
 
-  // 🔥 Extras display
   const extrasRows = Object.entries(extras)
     .filter(([_, v]) => v)
     .map(([key]) => {
@@ -1058,24 +1056,24 @@ const outstanding = booking.outstandingAmount || Math.max(priceTotal - paidNow, 
       return key;
     });
 
-  const shortRef = booking.id?.slice(-10); // nicer ref
+  const shortRef = booking.id?.slice(-8);
 
   container.innerHTML = `
-    <div class="confirmation-card pro">
+    <div class="confirmation-card apple">
 
       <div class="confirmation-header">
-        <h2>🎉 Booking Confirmed</h2>
-        <div class="confirmation-ref">Ref: ${shortRef}</div>
+        <h2>Booking confirmed</h2>
+        <div class="confirmation-ref">Ref ${shortRef}</div>
       </div>
 
       <!-- VEHICLE -->
-      <div class="confirmation-section">
+      <div class="confirmation-block">
         <div class="label">Vehicle</div>
         <div class="value strong">${vehicleName}</div>
       </div>
 
       <!-- TIMES -->
-      <div class="confirmation-section grid">
+      <div class="confirmation-block grid">
         <div>
           <div class="label">Pickup</div>
           <div class="value">${formatDate(booking.pickupAt)}</div>
@@ -1090,7 +1088,7 @@ const outstanding = booking.outstandingAmount || Math.max(priceTotal - paidNow, 
       ${
         extrasRows.length
           ? `
-        <div class="confirmation-section">
+        <div class="confirmation-block">
           <div class="label">Extras</div>
           <div class="value">${extrasRows.join(", ")}</div>
         </div>
@@ -1098,41 +1096,25 @@ const outstanding = booking.outstandingAmount || Math.max(priceTotal - paidNow, 
           : ""
       }
 
-      <!-- PRICE BREAKDOWN -->
-      <div class="confirmation-section price-box">
+      <!-- PAYMENT CARD -->
+      <div class="payment-card">
 
-        <div class="price-row">
-          <span>Hire</span>
-          <span>£${priceBase.toFixed(2)}</span>
-        </div>
-
-        ${
-          priceExtras > 0
-            ? `
-          <div class="price-row">
-            <span>Extras</span>
-            <span>£${priceExtras.toFixed(2)}</span>
-          </div>
-        `
-            : ""
-        }
-
-        <div class="price-row total">
-          <span>Total</span>
+        <div class="payment-row total">
+          <span>Total hire</span>
           <span>£${priceTotal.toFixed(2)}</span>
         </div>
 
-        <div class="price-row paid">
+        <div class="payment-row paid">
           <span>Paid now</span>
           <span>£${paidNow.toFixed(2)}</span>
         </div>
 
         ${
-          outstanding > 0
+          remaining > 0
             ? `
-          <div class="price-row outstanding">
-            <span>Outstanding</span>
-            <span>£${outstanding.toFixed(2)}</span>
+          <div class="payment-row remaining">
+            <span>Pay on collection</span>
+            <span>£${remaining.toFixed(2)}</span>
           </div>
         `
             : ""
@@ -1140,22 +1122,19 @@ const outstanding = booking.outstandingAmount || Math.max(priceTotal - paidNow, 
 
       </div>
 
-      <!-- STATUS -->
-      <div class="confirmation-status">
-        ✅ Payment received
+      <!-- TRUST SECTION -->
+      <div class="confirmation-trust">
+
+        <div class="trust-item">✔ Booking secured</div>
+        <div class="trust-item">✔ No hidden fees</div>
+        <div class="trust-item">✔ Email confirmation sent</div>
+
       </div>
 
-      <!-- INFO -->
-      <div class="confirmation-footer">
-        <p>A confirmation email has been sent.</p>
-        <p class="muted">Please bring your driving licence on collection.</p>
+      <!-- ACTION -->
+      <div class="confirmation-actions">
+        <a href="/" class="btn">Back to homepage</a>
       </div>
-
-      <button 
-       class="btn primary"
-       onclick="window.location.href='https://kvwebservices.co.uk/equinetransportuk/index.html'">
-       Back to homepage
-     </button>
 
     </div>
   `;
