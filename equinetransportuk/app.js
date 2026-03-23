@@ -559,6 +559,123 @@ function isDurationAvailable(startDate, durationDays, vehicleId, bookings, picku
   return true;
 }
 
+async function updateDurationOptions(dateObj) {
+
+  if (!durationDaysInput) return;
+
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+  const vehicleId = PRESELECTED_VEHICLE;
+
+  const pickupTime = pickupTimeInput?.value || "07:00";
+
+  const options = Array.from(durationDaysInput.options);
+
+  const dateStr = dateObj.toISOString().slice(0, 10);
+
+  for (const opt of options) {
+
+    const duration = Number(opt.value);
+
+    if (!duration) continue;
+
+    let available = false;
+
+/* ===============================
+   🔥 SPECIAL FIX FOR HALF DAY
+=============================== */
+
+if (duration === 0.5) {
+
+  const times = ["07:00", "13:00"]; // AM + PM
+
+  if (vehicleId) {
+
+    const checks = await Promise.all(
+      times.map(t =>
+        isVehicleAvailable(
+          vehicleId,
+          dateStr,
+          duration,
+          t
+        )
+      )
+    );
+
+    available = checks.some(Boolean);
+
+  } else {
+
+    const checks = await Promise.all(
+      vehicles.flatMap(v =>
+        times.map(t =>
+          isVehicleAvailable(
+            v.id,
+            dateStr,
+            duration,
+            t
+          )
+        )
+      )
+    );
+
+    available = checks.some(Boolean);
+  }
+
+} else {
+
+  /* ===============================
+     NORMAL DURATIONS (UNCHANGED)
+  =============================== */
+
+  if (vehicleId) {
+
+    available = await isVehicleAvailable(
+      vehicleId,
+      dateStr,
+      duration,
+      pickupTime
+    );
+
+  } else {
+
+    const checks = await Promise.all(
+      vehicles.map(v =>
+        isVehicleAvailable(
+          v.id,
+          dateStr,
+          duration,
+          pickupTime
+        )
+      )
+    );
+
+    available = checks.some(Boolean);
+  }
+
+}
+
+    opt.disabled = !available;
+    opt.style.color = available ? "" : "#999";
+  }
+
+  /* ===============================
+     AUTO FIX INVALID SELECTION
+  =============================== */
+
+  const selected = Number(durationDaysInput.value);
+
+  if (selected) {
+
+    const selectedOption = options.find(
+      o => Number(o.value) === selected
+    );
+
+    if (selectedOption?.disabled) {
+      durationDaysInput.value = "";
+    }
+  }
+}
 
 async function syncBookingPickupTimeOptions(dateObj, vehicleId) {
 
@@ -2550,61 +2667,61 @@ pickupDateInput?.addEventListener("change", () => {
 
 durationDaysInput?.addEventListener("change", async () => {
 
-  /* ===============================
-     🔥 FIX: recalc valid durations
-  =============================== */
-
   const pickupDate = pickupDateInput?.value;
-
-  if (pickupDate) {
-    await updateDurationOptions(
-      new Date(`${pickupDate}T00:00:00`)
-    );
-  }
-
-  /* ===============================
-     Existing logic
-  =============================== */
-
-  updatePickupTimeVisibility();
-
   const selectedDate = pickupDate
     ? new Date(`${pickupDate}T00:00:00`)
     : null;
 
-  await syncPickupTimeOptions(selectedDate);
+  /* ===============================
+     1) Recalculate valid durations FIRST
+  =============================== */
+
+  if (selectedDate) {
+    await updateDurationOptions(selectedDate);
+  }
 
   /* ===============================
-     Instant price preview
+     2) Then update step-1 UI rules
+  =============================== */
+
+  updatePickupTimeVisibility();
+  await syncPickupTimeOptions(selectedDate);
+  updateEarlyPickupAvailability();
+
+  /* ===============================
+     3) Instant price preview
   =============================== */
 
   const duration = Number(durationDaysInput?.value || 0);
 
   if (pickupDate && duration) {
 
-    const vehicle = vehicles[0];
+    const vehicle = PRESELECTED_VEHICLE
+      ? vehicles.find(v => v.id === PRESELECTED_VEHICLE)
+      : vehicles[0];
 
-    const preview = await buildAvailability(
-      vehicle,
-      pickupDate,
-      duration,
-      pickupTimeInput?.value || "07:00"
-    );
+    if (vehicle) {
+      const preview = await buildAvailability(
+        vehicle,
+        pickupDate,
+        duration,
+        pickupTimeInput?.value || "07:00"
+      );
 
-    const previewBox = document.getElementById("price-preview");
+      const previewBox = document.getElementById("price-preview");
 
-    if (previewBox) {
-      previewBox.innerHTML = `
-        <div class="quote">
-          Estimated hire price: <strong>£${preview.total.toFixed(2)}</strong>
-        </div>
-      `;
+      if (previewBox) {
+        previewBox.innerHTML = `
+          <div class="quote">
+            Estimated hire price: <strong>£${preview.total.toFixed(2)}</strong>
+          </div>
+        `;
+      }
     }
-
   }
 
   /* ===============================
-     Auto check availability
+     4) Only then auto-check availability
   =============================== */
 
   autoCheckAvailability();
@@ -3874,14 +3991,34 @@ if (badge) {
 
   updateEarlyPickupAvailability();
 
-  /* 🔥 ADD THIS BLOCK HERE */
 if (pickupTimeInput) {
-  pickupTimeInput.addEventListener("change", () => {
-    const date = pickupDateInput?.value;
+  pickupTimeInput.addEventListener("change", async () => {
 
-    if (date) {
-      selectDate(new Date(date)); // 🔥 re-run availability logic
-    }
+    const date = pickupDateInput?.value;
+    if (!date) return;
+
+    const dateObj = new Date(`${date}T00:00:00`);
+
+    /* ===============================
+       🔥 FIX: update durations properly
+    =============================== */
+
+    await updateDurationOptions(dateObj);
+
+    /* ===============================
+       keep existing logic
+    =============================== */
+
+    await syncPickupTimeOptions(dateObj);
+
+    updateEarlyPickupAvailability();
+
+    /* ===============================
+       refresh availability
+    =============================== */
+
+    autoCheckAvailability();
+
   });
 }
 
