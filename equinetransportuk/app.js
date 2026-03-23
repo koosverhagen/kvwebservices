@@ -981,6 +981,7 @@ const outstanding = booking.outstandingAmount || Math.max(priceTotal - paidNow, 
 
 
 async function handleStripeReturn() {
+
   const url = new URL(window.location.href);
 
   const state = url.searchParams.get("checkout");
@@ -1000,45 +1001,66 @@ async function handleStripeReturn() {
   stripeReturnHandled = true;
 
   stripeReturnPromise = (async () => {
-    console.log("🚀 handleStripeReturn running", { sessionId });
+
+    console.log("🚀 handleStripeReturn", { sessionId });
 
     goToStep(5);
 
     const container = document.getElementById("booking-confirmation");
 
+    /* ===============================
+       🟢 INSTANT CONFIRMATION UI
+    ================================ */
+
     if (container) {
       container.innerHTML = `
-        <div class="confirmation-card">
+        <div class="confirmation-card pro">
           <h2>✅ Payment received</h2>
+          <div class="confirmation-note">
+            Finalising your booking…
           </div>
-        <div class="confirmation-note">
-         Your booking is secured. Full details have been emailed.
-       </div>
-
+        </div>
       `;
     }
 
     try {
+
+      /* ===============================
+         🟢 STEP 1 — FAST (Stripe metadata)
+      ================================ */
+
       let booking = await fetchStripeSession(sessionId);
 
-// 🔥 fallback to retry ONLY if needed
-if (!booking) {
-  booking = await fetchBookingWithRetry(sessionId);
-}
-      console.log("CONFIRM BOOKING:", booking);
+      console.log("⚡ Stripe session result:", booking);
+
+      /* ===============================
+         🟡 STEP 2 — FALLBACK (KV retry)
+      ================================ */
 
       if (!booking || !booking.pickupAt) {
-        console.warn("⚠️ Booking not ready after retries");
+
+        console.log("🔁 Falling back to retry…");
+
+        booking = await fetchBookingWithRetry(sessionId);
+      }
+
+      /* ===============================
+         🔴 STILL NOT READY (rare)
+      ================================ */
+
+      if (!booking || !booking.pickupAt) {
+
+        console.warn("⚠️ Booking still not ready");
 
         if (container) {
           container.innerHTML = `
-            <div class="confirmation-card">
+            <div class="confirmation-card pro">
               <h2>⏳ Payment received</h2>
-              <p>Your booking is still being finalised.</p>
-              <p class="muted">
-                Please refresh in a few seconds or check your email.
-              </p>
-              <button onclick="location.reload()" class="btn">
+              <div class="confirmation-note">
+                Your booking is being finalised.<br>
+                This can take a few seconds.
+              </div>
+              <button onclick="location.reload()" class="btn primary">
                 Refresh
               </button>
             </div>
@@ -1048,37 +1070,55 @@ if (!booking) {
         return;
       }
 
-      console.log("🧪 BOOKING EXTRAS:", booking.extras);
+      /* ===============================
+         🟢 SUCCESS — RENDER FINAL
+      ================================ */
+
+      console.log("✅ FINAL BOOKING:", booking);
 
       renderBookingConfirmation(booking);
 
-      window.history.replaceState({}, "", window.location.pathname + "#booking");
+      /* ===============================
+         🟢 CLEAN URL
+      ================================ */
 
-      console.log("✅ Stripe return handled successfully");
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + "#booking"
+      );
+
+      /* ===============================
+         🟢 REFRESH CACHE
+      ================================ */
 
       BOOKINGS_CACHE = null;
       BOOKINGS_CACHE_AT = 0;
+
       await getBookings(true);
 
+      console.log("🎉 Stripe return complete");
+
     } catch (err) {
-      console.warn("Final fallback:", err);
+
+      console.error("💥 Stripe return error:", err);
 
       if (container) {
         container.innerHTML = `
-          <div class="confirmation-card">
+          <div class="confirmation-card pro">
             <h2>⏳ Payment received</h2>
-            <p>Your booking is being finalised.</p>
-            <p class="muted">
-              This can take a few seconds.<br>
-              Please refresh this page or check your email for confirmation.
-            </p>
-            <button onclick="location.reload()" class="btn">
+            <div class="confirmation-note">
+              Your booking is being finalised.<br>
+              Please refresh or check your email.
+            </div>
+            <button onclick="location.reload()" class="btn primary">
               Refresh
             </button>
           </div>
         `;
       }
     }
+
   })();
 
   return stripeReturnPromise;
