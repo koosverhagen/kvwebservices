@@ -2122,17 +2122,14 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
      BUILD RESULTS
   =============================== */
 
-  const results = vehiclesToCheck.map((vehicle) => {
+  const results = await Promise.all(
+  vehiclesToCheck.map(async (vehicle) => {
 
     const apiVehicle = vehiclesAvailability.find(
       v => v.vehicleId === vehicle.id
     );
 
     if (!apiVehicle) return null;
-
-    /* ===============================
-       AVAILABILITY CHECK
-    =============================== */
 
     const isHalfDay = Number(durationDays) === 0.5;
 
@@ -2143,10 +2140,6 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
     if (!available) return null;
 
-    /* ===============================
-       🔥 RESOLVE PICKUP TIME (FIXED)
-    =============================== */
-
     let resolvedPickupTime = pickupTime;
 
     if (isHalfDay) {
@@ -2156,40 +2149,27 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
       const hasAM = slots.includes("am");
       const hasPM = slots.includes("pm");
 
-      if (!hasAM && hasPM) {
-        resolvedPickupTime = "13:00";
-      } 
-      else if (hasAM && !hasPM) {
-        resolvedPickupTime = "07:00";
-      } 
-      else if (hasAM && hasPM) {
-        // 🔥 always fallback safely
-        resolvedPickupTime = pickupTime || "07:00";
-      }
-      else {
-        // 🔥 ultra safety (should never happen)
-        resolvedPickupTime = "07:00";
-      }
+      if (!hasAM && hasPM) resolvedPickupTime = "13:00";
+      else if (hasAM && !hasPM) resolvedPickupTime = "07:00";
+      else resolvedPickupTime = pickupTime || "07:00";
     }
 
-    /* ===============================
-       BUILD OBJECT
-    =============================== */
-
-    return buildAvailability(
+    // 🔥 IMPORTANT: await here
+    return await buildAvailability(
       vehicle,
       pickupDate,
       durationDays,
       resolvedPickupTime
     );
 
-  });
+  })
+);
 
-  const filtered = results.filter(Boolean);
+const filtered = results.filter(Boolean);
 
-  console.log("✅ availableLorries:", filtered);
+console.log("✅ availableLorries:", filtered);
 
-  return filtered;
+return filtered;
 }
 
 function renderAvailabilityLoading() {
