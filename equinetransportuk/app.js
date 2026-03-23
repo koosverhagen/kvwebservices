@@ -4385,22 +4385,30 @@ if (vehicleId && vehicleId.startsWith("v75")) {
        PICKUP / DROPOFF TIMES
     =============================== */
 
-    let pickupAt = new Date(selectedAvailability.pickupAt);
-    let dropoffAt = new Date(selectedAvailability.dropoffAt);
+   let pickupAt = new Date(selectedAvailability.pickupDate);
+let dropoffAt = new Date(selectedAvailability.pickupDate);
 
-    if (selectedAvailability.durationDays === 0.5) {
+if (selectedAvailability.durationDays === 0.5) {
 
-      const [h, m] = bookingPickupTime.split(":");
+  const [h, m] = (bookingPickupTime || "07:00").split(":");
 
-      pickupAt.setHours(Number(h), Number(m), 0, 0);
-      dropoffAt = new Date(pickupAt);
+  pickupAt.setHours(Number(h), Number(m), 0, 0);
 
-      if (bookingPickupTime === "07:00") {
-        dropoffAt.setHours(13, 0, 0, 0);
-      } else {
-        dropoffAt.setHours(19, 0, 0, 0);
-      }
-    }
+  if (bookingPickupTime === "13:00") {
+    dropoffAt.setHours(19, 0, 0, 0);
+  } else {
+    dropoffAt.setHours(13, 0, 0, 0);
+  }
+
+} else {
+
+  // full day(s)
+  pickupAt.setHours(7, 0, 0, 0);
+
+  dropoffAt = new Date(pickupAt);
+  dropoffAt.setDate(dropoffAt.getDate() + Number(selectedAvailability.durationDays));
+  dropoffAt.setHours(7, 0, 0, 0);
+}
 
     /* ===============================
    BOOKING OBJECT
