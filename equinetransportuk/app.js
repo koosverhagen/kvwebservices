@@ -1024,16 +1024,47 @@ function renderBookingConfirmation(booking) {
   const container = document.getElementById("booking-confirmation");
   if (!container) return;
 
-  const formatDate = (iso) => {
-    const d = new Date(iso);
-    return d.toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  };
+ const formatDate = (value) => {
+
+  if (!value) return "—";
+
+  let d;
+
+  // 🔥 Handle timestamp (number)
+  if (typeof value === "number") {
+    d = new Date(value);
+  }
+
+  // 🔥 Handle ISO or string
+  else if (typeof value === "string") {
+
+    // Fix missing timezone (VERY COMMON BUG)
+    if (value.includes(" ") && !value.includes("T")) {
+      value = value.replace(" ", "T");
+    }
+
+    d = new Date(value);
+  }
+
+  // 🔥 Handle Date object
+  else if (value instanceof Date) {
+    d = value;
+  }
+
+  if (!d || isNaN(d.getTime())) {
+    console.warn("Invalid date value:", value);
+    return "—";
+  }
+
+  return d.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+};
 
   const vehicleName =
     booking.vehicleSnapshot?.name ||
