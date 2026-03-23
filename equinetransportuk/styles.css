@@ -2768,12 +2768,6 @@ BOOKING SUMMARY CARD
 }
 
 
-.confirmation-card.pro {
-  max-width: 520px;
-  margin: 0 auto;
-  text-align: left;
-}
-
 .confirmation-header {
   text-align: center;
   margin-bottom: 16px;
@@ -2843,12 +2837,12 @@ BOOKING SUMMARY CARD
   position: absolute;
   inset: 0;
 
-  background-image: url("images/logo.webp");
+  background-image: url("/equinetransportuk/images/logo.webp");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 260px;
 
-  opacity: 0.03; /* 👈 softer */
+  opacity: 0.035;
   pointer-events: none;
   z-index: 0;
 }
