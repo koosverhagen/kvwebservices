@@ -4201,9 +4201,9 @@ const results = vehiclesToCheck.map(vehicle => {
           return;
         }
 
-        const availableLorries = results.filter(Boolean);
+        const availableLorries = results.filter(r => r && r.vehicle);
 
-        renderAvailabilityResults(availableLorries);
+renderAvailabilityResults(availableLorries);
 
       } catch (err) {
 
