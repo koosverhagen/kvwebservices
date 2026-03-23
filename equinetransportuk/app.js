@@ -1171,6 +1171,25 @@ function renderBookingConfirmation(booking) {
   `;
 }
 
+function normaliseBookingDates(booking) {
+
+  function fix(val) {
+    if (!val || typeof val !== "string") return val;
+
+    // 🔥 Fix broken "Z + Ttime" case
+    if (val.includes("Z") && val.includes("T", val.indexOf("Z"))) {
+      return val.split("Z")[0] + "Z";
+    }
+
+    return val;
+  }
+
+  return {
+    ...booking,
+    pickupAt: fix(booking.pickupAt),
+    dropoffAt: fix(booking.dropoffAt)
+  };
+}
 
 async function handleStripeReturn() {
 
@@ -1265,10 +1284,12 @@ async function handleStripeReturn() {
       /* ===============================
          🟢 SUCCESS — RENDER FINAL
       ================================ */
+console.log("✅ FINAL BOOKING:", booking);
 
-      console.log("✅ FINAL BOOKING:", booking);
+// 🔥 FIX DATES HERE
+booking = normaliseBookingDates(booking);
 
-      renderBookingConfirmation(booking);
+renderBookingConfirmation(booking);
 
       /* ===============================
          🟢 CLEAN URL
