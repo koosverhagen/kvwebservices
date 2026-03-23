@@ -1420,10 +1420,7 @@ async function handleBookingBySession(request, env) {
 
   console.log("❌ Booking NOT found:", bookingId);
 
-  return json({
-  found: false,
-  session
-});
+  return json({ found: false });
 }
 
 async function handleAvailability(request, env) {
