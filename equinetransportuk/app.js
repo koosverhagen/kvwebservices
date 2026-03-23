@@ -520,7 +520,9 @@ async function isDurationAvailable(startDate, durationDays, vehicleId, bookings,
 
     const vehicle = data.vehicles.find(v => v.vehicleId === vehicleId);
 
-    return vehicle?.available || false;
+    if (Number(durationDays) === 0.5) {
+  return vehicle?.availableSlots?.length > 0;
+}
 
   } catch (err) {
 
@@ -2081,30 +2083,73 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
 
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
+
   const vehiclesToCheck =
     LOCKED_VEHICLE && PRESELECTED_VEHICLE
       ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
       : vehicles;
 
-  const results = await Promise.all(
-    vehiclesToCheck.map(async (vehicle) => {
-      const available = await isVehicleAvailable(
-        vehicle.id,
-        pickupDate,
-        durationDays,
-        pickupTime
-      );
+  /* ===============================
+     🔥 SINGLE API CALL
+  =============================== */
 
-      if (!available) return null;
-
-      return buildAvailability(
-        vehicle,
-        pickupDate,
-        durationDays,
-        pickupTime
-      );
-    })
+  const vehiclesAvailability = await getVehicleAvailability(
+    pickupDate,
+    durationDays,
+    pickupTime
   );
+
+  const results = vehiclesToCheck.map(vehicle => {
+
+    const v = vehiclesAvailability.find(x => x.vehicleId === vehicle.id);
+
+    if (!v) return null;
+
+    let available = false;
+
+    /* ===============================
+       HALF DAY → SLOT BASED
+    =============================== */
+
+    if (Number(durationDays) === 0.5) {
+
+      if (!v.availableSlots || v.availableSlots.length === 0) {
+        return null;
+      }
+
+      available = true;
+
+      /* 🔥 AUTO FIX PICKUP TIME */
+      if (pickupTimeInput) {
+
+        if (v.availableSlots.includes("pm") && !v.availableSlots.includes("am")) {
+          pickupTimeInput.value = "13:00";
+        }
+
+        else if (v.availableSlots.includes("am") && !v.availableSlots.includes("pm")) {
+          pickupTimeInput.value = "07:00";
+        }
+
+      }
+
+    } else {
+
+      /* ===============================
+         FULL DAY
+      =============================== */
+
+      if (!v.available) return null;
+      available = true;
+    }
+
+    return buildAvailability(
+      vehicle,
+      pickupDate,
+      durationDays,
+      pickupTime
+    );
+
+  });
 
   return results.filter(Boolean);
 }
