@@ -2687,7 +2687,7 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
-async function fetchBookingWithRetry(sessionId, attempts = 12) {
+async function fetchBookingWithRetry(sessionId, attempts = 20) {
   if (!sessionId) return null;
 
   if (BOOKING_BY_SESSION_PROMISES.has(sessionId)) {
@@ -2706,8 +2706,8 @@ async function fetchBookingWithRetry(sessionId, attempts = 12) {
         } else {
           const data = await res.json();
 
-          console.log(`🔁 Retry attempt ${i + 1}`, data);
-
+          console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
+          
           if (data?.found && data.booking?.pickupAt) {
             return data.booking;
           }
@@ -2717,8 +2717,14 @@ async function fetchBookingWithRetry(sessionId, attempts = 12) {
       }
 
       if (i < attempts - 1) {
-        await new Promise(r => setTimeout(r, 1200)); // 🔥 increased delay
-      }
+
+  // 🔥 progressive delay (fast → slower)
+  const delay = 400 + (i * 200);
+
+  console.log(`⏳ waiting ${delay}ms before retry`);
+
+  await new Promise(r => setTimeout(r, delay));
+}
     }
 
     return null;
