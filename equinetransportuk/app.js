@@ -4163,10 +4163,10 @@ if (availabilityForm) {
         =============================== */
 
        const vehiclesAvailability = await getVehicleAvailability(
-  pickupDate,
-  durationDays,
-  finalPickupTime
-);
+        pickupDate,
+        durationDays,
+        durationDays === 0.5 ? null : finalPickupTime
+      );
 
 const results = vehiclesToCheck.map(vehicle => {
 
