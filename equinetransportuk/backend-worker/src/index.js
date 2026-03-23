@@ -1363,11 +1363,8 @@ async function handleBookingBySession(request, env) {
     session?.id;
 
   if (!bookingId) {
-  return json({
-    found: false,
-    session
-  });
-}
+    return json({ found: false });
+  }
 
   console.log("🔎 Looking for bookingId:", bookingId);
 
