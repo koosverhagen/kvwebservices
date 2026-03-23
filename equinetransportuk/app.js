@@ -2085,20 +2085,24 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
+  /* ===============================
+     VEHICLES TO CHECK
+  =============================== */
+
   let vehiclesToCheck =
     LOCKED_VEHICLE && PRESELECTED_VEHICLE
       ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
       : vehicles;
 
-  // 🔥 SAFETY FALLBACK (prevents empty filter bug)
+  // 🔥 SAFETY FALLBACK
   if (!vehiclesToCheck.length) {
     console.warn("⚠️ No vehicles matched — fallback to all vehicles");
     vehiclesToCheck = vehicles;
   }
 
   /* ===============================
-     🔥 CORRECT API CALL
-     (NO pickupTime for half-day)
+     🔥 API CALL
+     (IMPORTANT: no pickupTime for half-day)
   =============================== */
 
   const vehiclesAvailability = await getVehicleAvailability(
@@ -2109,7 +2113,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
   console.log("🚀 vehiclesAvailability:", vehiclesAvailability);
 
-  if (!Array.isArray(vehiclesAvailability) || !vehiclesAvailability.length) {
+  if (!Array.isArray(vehiclesAvailability) || vehiclesAvailability.length === 0) {
     console.warn("⚠️ Empty API response");
     return [];
   }
@@ -2118,56 +2122,68 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
      BUILD RESULTS
   =============================== */
 
-  const results = await Promise.all(
-    vehiclesToCheck.map(async (vehicle) => {
+  const results = vehiclesToCheck.map((vehicle) => {
 
-      const apiVehicle = vehiclesAvailability.find(
-        v => v.vehicleId === vehicle.id
-      );
+    const apiVehicle = vehiclesAvailability.find(
+      v => v.vehicleId === vehicle.id
+    );
 
-      if (!apiVehicle) return null;
+    if (!apiVehicle) return null;
 
-      const available = Number(durationDays) === 0.5
-        ? Array.isArray(apiVehicle.availableSlots) &&
-          apiVehicle.availableSlots.length > 0
-        : Boolean(apiVehicle.available);
+    /* ===============================
+       AVAILABILITY CHECK
+    =============================== */
 
-      if (!available) return null;
+    const isHalfDay = Number(durationDays) === 0.5;
 
-      /* ===============================
-         🔥 RESOLVE PICKUP TIME
-      =============================== */
+    const available = isHalfDay
+      ? Array.isArray(apiVehicle.availableSlots) &&
+        apiVehicle.availableSlots.length > 0
+      : Boolean(apiVehicle.available);
 
-      let resolvedPickupTime = pickupTime;
+    if (!available) return null;
 
-      if (Number(durationDays) === 0.5) {
+    /* ===============================
+       🔥 RESOLVE PICKUP TIME (FIXED)
+    =============================== */
 
-        const slots = apiVehicle.availableSlots || [];
+    let resolvedPickupTime = pickupTime;
 
-        const hasAM = slots.includes("am");
-        const hasPM = slots.includes("pm");
+    if (isHalfDay) {
 
-        // 🔥 AUTO PICK BEST SLOT
-        if (!hasAM && hasPM) {
-          resolvedPickupTime = "13:00";
-        } 
-        else if (hasAM && !hasPM) {
-          resolvedPickupTime = "07:00";
-        }
-        else if (hasAM && hasPM) {
-          // 🔥 DEFAULT (important fallback)
-          resolvedPickupTime = pickupTime || "07:00";
-        }
+      const slots = apiVehicle.availableSlots || [];
+
+      const hasAM = slots.includes("am");
+      const hasPM = slots.includes("pm");
+
+      if (!hasAM && hasPM) {
+        resolvedPickupTime = "13:00";
+      } 
+      else if (hasAM && !hasPM) {
+        resolvedPickupTime = "07:00";
+      } 
+      else if (hasAM && hasPM) {
+        // 🔥 always fallback safely
+        resolvedPickupTime = pickupTime || "07:00";
       }
+      else {
+        // 🔥 ultra safety (should never happen)
+        resolvedPickupTime = "07:00";
+      }
+    }
 
-      return buildAvailability(
-        vehicle,
-        pickupDate,
-        durationDays,
-        resolvedPickupTime
-      );
-    })
-  );
+    /* ===============================
+       BUILD OBJECT
+    =============================== */
+
+    return buildAvailability(
+      vehicle,
+      pickupDate,
+      durationDays,
+      resolvedPickupTime
+    );
+
+  });
 
   const filtered = results.filter(Boolean);
 
@@ -4190,59 +4206,16 @@ if (availabilityForm) {
       try {
 
         /* ===============================
-           VEHICLES TO CHECK
+           🔥 SINGLE SOURCE OF TRUTH
         =============================== */
 
-        const vehiclesToCheck =
-          LOCKED_VEHICLE && PRESELECTED_VEHICLE
-            ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
-            : vehicles;
+        const availableLorries = await getAvailableLorries(
+          pickupDate,
+          durationDays,
+          finalPickupTime
+        );
 
-        /* ===============================
-           🚀 PARALLEL AVAILABILITY
-        =============================== */
-
-       const vehiclesAvailability = await getVehicleAvailability(
-        pickupDate,
-        durationDays,
-        durationDays === 0.5 ? null : finalPickupTime
-      );
-
-const results = vehiclesToCheck.map(vehicle => {
-
-  const v = vehiclesAvailability.find(x => x.vehicleId === vehicle.id);
-  if (!v) return null;
-
-  /* ===============================
-     HALF DAY LOGIC (FIXED)
-  =============================== */
-
-  if (durationDays === 0.5) {
-
-    if (is35T(vehicle)) {
-      if (!v.availableSlots || v.availableSlots.length === 0) return null;
-    } else {
-      if (!v.available) return null;
-    }
-
-  }
-
-  /* ===============================
-     FULL DAY
-  =============================== */
-
-  else {
-    if (!v.available) return null;
-  }
-
-  return buildAvailability(
-    vehicle,
-    pickupDate,
-    durationDays,
-    finalPickupTime
-  );
-
-});
+        console.log("🎯 FINAL UI DATA:", availableLorries);
 
         /* ===============================
            CANCEL OUTDATED RESPONSE
@@ -4253,9 +4226,7 @@ const results = vehiclesToCheck.map(vehicle => {
           return;
         }
 
-        const availableLorries = results.filter(r => r && r.vehicle);
-
-renderAvailabilityResults(availableLorries);
+        renderAvailabilityResults(availableLorries);
 
       } catch (err) {
 
@@ -4275,7 +4246,7 @@ renderAvailabilityResults(availableLorries);
 
       }
 
-    }, 120); // 👈 debounce delay (perfect UX balance)
+    }, 120);
 
   });
 }
