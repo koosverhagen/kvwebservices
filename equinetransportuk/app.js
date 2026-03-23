@@ -2133,7 +2133,6 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
   /* ===============================
      🔥 API CALL
-     (IMPORTANT: no pickupTime for half-day)
   =============================== */
 
   const vehiclesAvailability = await getVehicleAvailability(
@@ -2149,58 +2148,94 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
     return [];
   }
 
+  const isHalfDay = Number(durationDays) === 0.5;
+
   /* ===============================
      BUILD RESULTS
   =============================== */
 
   const results = await Promise.all(
-  vehiclesToCheck.map(async (vehicle) => {
+    vehiclesToCheck.map(async (vehicle) => {
 
-    const apiVehicle = vehiclesAvailability.find(
-      v => v.vehicleId === vehicle.id
-    );
+      const apiVehicle = vehiclesAvailability.find(
+        v => v.vehicleId === vehicle.id
+      );
 
-    if (!apiVehicle) return null;
+      if (!apiVehicle) return null;
 
-    const isHalfDay = Number(durationDays) === 0.5;
+      /* ===============================
+         HALF DAY LOGIC (FIXED)
+      =============================== */
 
-    const available = isHalfDay
-      ? Array.isArray(apiVehicle.availableSlots) &&
-        apiVehicle.availableSlots.length > 0
-      : Boolean(apiVehicle.available);
+      let resolvedPickupTime = pickupTime;
 
-    if (!available) return null;
+      if (isHalfDay) {
 
-    let resolvedPickupTime = pickupTime;
+        const slots = apiVehicle.availableSlots || [];
+        const hasAM = slots.includes("am");
+        const hasPM = slots.includes("pm");
 
-    if (isHalfDay) {
+        // 🧠 CASE 1 — user has NOT selected time yet
+        if (!pickupTime) {
 
-      const slots = apiVehicle.availableSlots || [];
+          if (hasAM) {
+            resolvedPickupTime = "07:00";
+          } else if (hasPM) {
+            resolvedPickupTime = "13:00";
+          } else {
+            return null;
+          }
 
-      const hasAM = slots.includes("am");
-      const hasPM = slots.includes("pm");
+        }
 
-      if (!hasAM && hasPM) resolvedPickupTime = "13:00";
-      else if (hasAM && !hasPM) resolvedPickupTime = "07:00";
-      else resolvedPickupTime = pickupTime || "07:00";
-    }
+        // 🧠 CASE 2 — user DID select time → respect it
+        else {
 
-    // 🔥 IMPORTANT: await here
-    return await buildAvailability(
-      vehicle,
-      pickupDate,
-      durationDays,
-      resolvedPickupTime
-    );
+          if (pickupTime === "07:00" && hasAM) {
+            resolvedPickupTime = "07:00";
+          }
 
-  })
-);
+          else if (pickupTime === "13:00" && hasPM) {
+            resolvedPickupTime = "13:00";
+          }
 
-const filtered = results.filter(Boolean);
+          else {
+            return null; // ❌ slot not available → hide vehicle
+          }
 
-console.log("✅ availableLorries:", filtered);
+        }
 
-return filtered;
+      }
+
+      /* ===============================
+         FULL DAY LOGIC
+      =============================== */
+
+      else {
+
+        if (!apiVehicle.available) return null;
+
+      }
+
+      /* ===============================
+         BUILD AVAILABILITY OBJECT
+      =============================== */
+
+      return await buildAvailability(
+        vehicle,
+        pickupDate,
+        durationDays,
+        resolvedPickupTime || "07:00"
+      );
+
+    })
+  );
+
+  const filtered = results.filter(Boolean);
+
+  console.log("✅ availableLorries:", filtered);
+
+  return filtered;
 }
 
 function renderAvailabilityLoading() {
