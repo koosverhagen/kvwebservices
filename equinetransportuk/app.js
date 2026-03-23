@@ -467,6 +467,99 @@ availabilityResults?.addEventListener("click", async (e) => {
    Helpers
 ====================================================== */
  
+function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
+
+  const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
+
+  for (const booking of bookings) {
+
+    if (booking.vehicleId !== vehicleId) continue;
+
+    const bookingDates = getDatesBetween(
+      new Date(booking.pickupAt),
+      new Date(booking.dropoffAt)
+    );
+
+    if (!bookingDates.includes(dateStr)) continue;
+
+    const bookedSlot =
+      Number(booking.durationDays) === 0.5
+        ? (booking.pickupTime === "13:00" ? "pm" : "am")
+        : "full";
+
+    if (bookedSlot === "full" || bookedSlot === requestedSlot) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isDurationAvailable(startDate, durationDays, vehicleId, bookings, pickupTime) {
+
+  const start = new Date(startDate);
+
+  /* ===============================
+     HALF DAY (AM / PM FIX)
+  =============================== */
+
+  if (Number(durationDays) === 0.5) {
+
+    const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
+
+    for (const booking of bookings) {
+
+      if (booking.vehicleId !== vehicleId) continue;
+
+      const bookingDates = getDatesBetween(
+        new Date(booking.pickupAt),
+        new Date(booking.dropoffAt)
+      );
+
+      if (!bookingDates.includes(startDate)) continue;
+
+      const bookedSlot =
+        Number(booking.durationDays) === 0.5
+          ? (booking.pickupTime === "13:00" ? "pm" : "am")
+          : "full";
+
+      if (bookedSlot === "full" || bookedSlot === requestedSlot) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /* ===============================
+     FULL DAY
+  =============================== */
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + durationDays - 1);
+
+  const dates = getDatesBetween(start, end);
+
+  for (const booking of bookings) {
+
+    if (booking.vehicleId !== vehicleId) continue;
+
+    const bookedDates = getDatesBetween(
+      new Date(booking.pickupAt),
+      new Date(booking.dropoffAt)
+    );
+
+    for (const d of dates) {
+      if (bookedDates.includes(d)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+
 async function syncBookingPickupTimeOptions(dateObj, vehicleId) {
 
   const select = document.getElementById("booking-pickup-time");
@@ -3781,6 +3874,17 @@ if (badge) {
 
   updateEarlyPickupAvailability();
 
+  /* 🔥 ADD THIS BLOCK HERE */
+if (pickupTimeInput) {
+  pickupTimeInput.addEventListener("change", () => {
+    const date = pickupDateInput?.value;
+
+    if (date) {
+      selectDate(new Date(date)); // 🔥 re-run availability logic
+    }
+  });
+}
+
   /* Step 3 logic (use existing global selectedDurationInput) */
 
   if (selectedDurationInput) {
@@ -5023,15 +5127,16 @@ calGrid.dataset.rendering = "false";
 async function selectDate(dayDate) {
 
   const warningBox = document.getElementById("preselected-warning");
-if (warningBox) {
-  warningBox.innerHTML = "";
-  warningBox.style.display = "none";
-}
+  if (warningBox) {
+    warningBox.innerHTML = "";
+    warningBox.style.display = "none";
+  }
 
   BLOCK_AUTO_SCROLL = false;
 
   const pickupInput = document.getElementById("pickup-date");
   const durationInput = document.getElementById("duration-days");
+  const pickupTimeInput = document.getElementById("pickup-time");
 
   if (!pickupInput || !durationInput) return;
 
@@ -5041,140 +5146,170 @@ if (warningBox) {
 
   pickupInput.value = `${year}-${month}-${day}`;
 
-/*******************************
-  PRESELECTED LORRY CHECK (EARLY)
-********************************/
+  /* ===============================
+     PRESELECTED LORRY CHECK
+  =============================== */
 
-/*******************************
-  PRESELECTED LORRY CHECK (EARLY)
-********************************/
+  if (PRESELECTED_VEHICLE) {
 
-if (PRESELECTED_VEHICLE) {
+    const bookings = BOOKINGS_CACHE || await getBookings(false);
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
+    const vehicleBookings = bookings.filter(
+      b => b.vehicleId === PRESELECTED_VEHICLE && b.status !== "cancelled"
+    );
 
-  const vehicleBookings = bookings.filter(
-    b => b.vehicleId === PRESELECTED_VEHICLE && b.status !== "cancelled"
-  );
+    const dayStart = new Date(dayDate);
+    dayStart.setHours(0,0,0,0);
 
-  const dayStart = new Date(dayDate);
-  dayStart.setHours(0,0,0,0);
+    const dayEnd = new Date(dayDate);
+    dayEnd.setHours(23,59,59,999);
 
-  const dayEnd = new Date(dayDate);
-  dayEnd.setHours(23,59,59,999);
+    const isBlocked = vehicleBookings.some(b => {
+      const start = new Date(b.pickupAt);
+      const end = new Date(b.dropoffAt);
+      return start <= dayEnd && end >= dayStart;
+    });
 
-  const isBlocked = vehicleBookings.some(b => {
-    const start = new Date(b.pickupAt);
-    const end = new Date(b.dropoffAt);
-    return start <= dayEnd && end >= dayStart;
-  });
+    if (isBlocked && warningBox) {
 
-  if (isBlocked && warningBox) {
+      BLOCK_AUTO_SCROLL = true;
 
-    BLOCK_AUTO_SCROLL = true;
+      const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
+      warningBox.innerHTML = `
+        <div class="availability-warning">
+          Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
+          is not available on this date.
+
+          <div class="warning-actions">
+            <button class="btn ghost change-date-btn">
+              Pick another date
+            </button>
+
+            <button class="btn primary change-lorry-btn">
+              Pick another lorry
+            </button>
+          </div>
+        </div>
+      `;
+
+      warningBox.style.display = "block";
+
+      goToStep(1);
+
+      setTimeout(() => {
+        warningBox.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+      }, 60);
+
+      warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
+        BLOCK_AUTO_SCROLL = false;
+        LOCKED_VEHICLE = true;
+
+        document.getElementById("availability-calendar")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      });
+
+      warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
+        BLOCK_AUTO_SCROLL = false;
+        LOCKED_VEHICLE = false;
+        PRESELECTED_VEHICLE = null;
+
+        availabilityForm?.requestSubmit();
+        goToStep(2);
+      });
+
+      return;
+    }
+  }
+
+  await updateDurationOptions(dayDate);
+  await syncPickupTimeOptions(dayDate);
+
+  /* ===============================
+     🔥 HALF-DAY FIX (THIS IS THE KEY)
+  =============================== */
+
+  if (PRESELECTED_VEHICLE && durationInput) {
+
+    const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+    const pickupTime = pickupTimeInput?.value || "07:00";
+    const dateStr = pickupInput.value;
+
+    const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
+
+    let halfDayAvailable = true;
+
+    for (const booking of bookings) {
+
+      if (booking.vehicleId !== PRESELECTED_VEHICLE) continue;
+
+      const bookingDates = getDatesBetween(
+        new Date(booking.pickupAt),
+        new Date(booking.dropoffAt)
+      );
+
+      if (!bookingDates.includes(dateStr)) continue;
+
+      const bookedSlot =
+        Number(booking.durationDays) === 0.5
+          ? (booking.pickupTime === "13:00" ? "pm" : "am")
+          : "full";
+
+      if (bookedSlot === "full" || bookedSlot === requestedSlot) {
+        halfDayAvailable = false;
+        break;
+      }
+    }
+
+    const halfDayOption = durationInput.querySelector('option[value="0.5"]');
+
+    if (halfDayOption) {
+      halfDayOption.disabled = !halfDayAvailable;
+    }
+  }
+
+  /* ===============================
+     VEHICLE LOCK RULES
+  =============================== */
+
+  if (LOCKED_VEHICLE && PRESELECTED_VEHICLE) {
     const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
 
-    warningBox.innerHTML = `
-      <div class="availability-warning">
-        Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
-        is not available on this date.
-
-        <div class="warning-actions">
-          <button class="btn ghost change-date-btn">
-            Pick another date
-          </button>
-
-          <button class="btn primary change-lorry-btn">
-            Pick another lorry
-          </button>
-        </div>
-      </div>
-    `;
-
-    warningBox.style.display = "block";
-
-    // 👇 stay on calendar
-    goToStep(1);
-
-    setTimeout(() => {
-      warningBox.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    }, 60);
-
-    // ✅ Pick another date → KEEP LOCK
-    warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
-
-      BLOCK_AUTO_SCROLL = false;
-      LOCKED_VEHICLE = true;
-
-      document.getElementById("availability-calendar")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-
-    });
-
-    // ✅ Pick another lorry → RESET HERE ONLY
-    warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
-
-      BLOCK_AUTO_SCROLL = false;
-
-      LOCKED_VEHICLE = false;
-      PRESELECTED_VEHICLE = null;
-
-      availabilityForm?.requestSubmit();
-      goToStep(2);
-
-    });
-
-    return; // 🚨 HARD STOP
+    updateDurationOptionsForVehicle(vehicle);
+    enforceVehicleDurationRules(vehicle);
   }
-}
 
-await updateDurationOptions(dayDate);
-await syncPickupTimeOptions(dayDate);
-
-if (LOCKED_VEHICLE && PRESELECTED_VEHICLE) {
-  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
-
-  updateDurationOptionsForVehicle(vehicle);
-  enforceVehicleDurationRules(vehicle);
-}
-
-  /* reset duration */
+  /* ===============================
+     RESET STATE
+  =============================== */
 
   durationInput.value = "";
-
-  /* clear vehicle availability results */
 
   if (availabilityResults) {
     availabilityResults.innerHTML = "";
   }
 
-  /* reset selected vehicle */
-
   selectedAvailability = null;
 
-/* 🔒 KEEP LOCKED VEHICLE IN UI */
-if (!LOCKED_VEHICLE) {
-  if (selectedLorryInput) selectedLorryInput.value = "";
-}
-  if (selectedBaseInput) selectedBaseInput.value = "";
+  if (!LOCKED_VEHICLE) {
+    if (selectedLorryInput) selectedLorryInput.value = "";
+  }
 
-  /* disable booking button again */
+  if (selectedBaseInput) selectedBaseInput.value = "";
 
   if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
 
-  /* refresh checkout summary */
-
   updateCheckoutSummary();
 
-  /* =====================================
-     Highlight selected calendar day
-  ===================================== */
+  /* ===============================
+     CALENDAR HIGHLIGHT
+  =============================== */
 
   document.querySelectorAll(".cal-selected")
     .forEach(el => el.classList.remove("cal-selected"));
@@ -5187,38 +5322,34 @@ if (!LOCKED_VEHICLE) {
     }
   });
 
-  /* =====================================
-     Scroll to duration selector
-  ===================================== */
+  /* ===============================
+     SCROLL
+  =============================== */
 
- setTimeout(() => {
+  setTimeout(() => {
 
-  if (BLOCK_AUTO_SCROLL) return; // 👈 ADD THIS LINE
+    if (BLOCK_AUTO_SCROLL) return;
 
-  if (!isMobile()) {
+    if (!isMobile()) {
 
-    const y =
-      durationInput.getBoundingClientRect().top +
-      window.pageYOffset -
-      120;
+      const y =
+        durationInput.getBoundingClientRect().top +
+        window.pageYOffset -
+        120;
 
-    window.scrollTo({
-      top: y,
-      behavior: "smooth"
-    });
+      window.scrollTo({
+        top: y,
+        behavior: "smooth"
+      });
+    }
 
-  }
+    durationInput.classList.add("duration-highlight");
 
-  /* highlight duration */
+    durationInput.addEventListener("change", () => {
+      durationInput.classList.remove("duration-highlight");
+    }, { once: true });
 
-  durationInput.classList.add("duration-highlight");
-
-  durationInput.addEventListener("change", () => {
-    durationInput.classList.remove("duration-highlight");
-  }, { once: true });
-
-}, 200);
-
+  }, 200);
 }
 
 
