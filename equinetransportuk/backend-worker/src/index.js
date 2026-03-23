@@ -1469,13 +1469,16 @@ async function handleAvailability(request, env) {
           new Date(booking.dropoffAt)
         );
 
-        for (const d of dates) {
-          availability.push({
-            vehicleId: booking.vehicleId,
-            date: d,
-            status: "booked"
-          });
-        }
+     const slot = getSlotFromBooking(booking);
+
+for (const d of dates) {
+  availability.push({
+    vehicleId: booking.vehicleId,
+    date: d,
+    slot,
+    status: "booked"
+  });
+}
       }
     } catch {}
   }
@@ -1505,10 +1508,17 @@ async function handleVehicleAvailability(request, env) {
 
   const url = new URL(request.url);
   const date = url.searchParams.get("date");
+  const duration = Number(url.searchParams.get("duration") || 1);
+  const pickupTime = url.searchParams.get("pickupTime") || "07:00";
 
   if (!date) {
     return json({ error: "Missing date parameter" }, 400);
   }
+
+  const requestedSlot =
+    duration === 0.5
+      ? (pickupTime === "13:00" ? "pm" : "am")
+      : "full";
 
   const vehicles = [
     "v35-1",
@@ -1518,68 +1528,72 @@ async function handleVehicleAvailability(request, env) {
     "v75-2"
   ];
 
-  const booked = new Set();
-  const reserved = new Set();
-
-
+  const result = [];
 
   /* ===============================
-   CHECK CONFIRMED BOOKINGS (FAST INDEX)
-================================ */
-
-const checks = vehicles.map(vehicle =>
-  env.BOOKINGS_KV.get(`booking:${vehicle}:${date}`)
-);
-
-let results = [];
-
-try {
-
-  results = await Promise.all(checks);
-
-} catch (err) {
-
-  console.log("⚠️ Booking index lookup batch failed:", err);
-
-}
-
-results.forEach((exists, i) => {
-
-  if (exists) {
-    booked.add(vehicles[i]);
-  }
-
-});
-
-  /* ===============================
-     CHECK TEMP RESERVATIONS
+     LOAD BOOKINGS FOR MONTH
   ================================ */
 
-  const list = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
+  const month = date.slice(0, 7);
+  const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
 
-  for (const key of list.keys) {
+  let bookings = [];
 
-  const parts = key.name.split(":");
+  try {
+    bookings = data ? JSON.parse(data) : [];
+  } catch {}
 
-  if (parts.length < 3) continue;
+  for (const vehicleId of vehicles) {
 
-  if (parts[2] === date) {
-    reserved.add(parts[1]);
+    let blocked = false;
+
+    const vehicleBookings = bookings.filter(
+      b => b.vehicleId === vehicleId
+    );
+
+    for (const b of vehicleBookings) {
+
+      const dates = getDatesBetween(
+        new Date(b.pickupAt),
+        new Date(b.dropoffAt)
+      );
+
+      if (!dates.includes(date)) continue;
+
+      const bookingSlot = getSlotFromBooking(b);
+
+      if (slotsConflict(requestedSlot, bookingSlot)) {
+        blocked = true;
+        break;
+      }
+    }
+
+    /* ===============================
+       CHECK TEMP RESERVATIONS
+    ================================ */
+
+    const list = await env.BOOKINGS_KV.list({
+      prefix: `reservation:${vehicleId}:${date}`
+    });
+
+    for (const key of list.keys) {
+
+      const parts = key.name.split(":");
+      const reservationSlot = parts[3] || "full";
+
+      if (slotsConflict(requestedSlot, reservationSlot)) {
+        blocked = true;
+        break;
+      }
+    }
+
+    result.push({
+      vehicleId,
+      available: !blocked
+    });
   }
-
-}
-
-  /* ===============================
-     BUILD RESPONSE
-  ================================ */
-
-  const result = vehicles.map(v => ({
-    vehicleId: v,
-    available: !(booked.has(v) || reserved.has(v))
-  }));
 
   return json({ vehicles: result });
-
 }
 
 /* ===============================
@@ -1729,7 +1743,15 @@ async function findCustomerByEmailOrMobile(env, email, mobile) {
    HELPERS
 ================================ */
 
+function getSlotFromBooking(booking) {
+  if (Number(booking.durationDays) !== 0.5) return "full";
+  return booking.pickupTime === "13:00" ? "pm" : "am";
+}
 
+function slotsConflict(a, b) {
+  if (a === "full" || b === "full") return true;
+  return a === b;
+}
 
 function json(payload, status = 200) {
 
