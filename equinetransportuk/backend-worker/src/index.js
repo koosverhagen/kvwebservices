@@ -1629,10 +1629,9 @@ async function handleVehicleAvailability(request, env) {
       available = !pmBlocked && !fullBlocked;
     }
 
-    if (requestedSlot === "any") {
-      available = !(amBlocked && pmBlocked && fullBlocked);
-    }
-
+if (requestedSlot === "any") {
+  available = (!amBlocked || !pmBlocked) && !fullBlocked;
+}
     /* ===============================
        RETURN SLOT DETAIL (NEW)
     =============================== */
