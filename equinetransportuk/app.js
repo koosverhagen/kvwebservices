@@ -481,6 +481,25 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
   return data.vehicles || [];
 }
 
+async function isVehicleAvailable(vehicleId, date, duration, pickupTime) {
+
+  const vehiclesAvailability = await getVehicleAvailability(
+    date,
+    duration,
+    pickupTime
+  );
+
+  const v = vehiclesAvailability.find(x => x.vehicleId === vehicleId);
+
+  if (!v) return false;
+
+  if (Number(duration) === 0.5) {
+    return Array.isArray(v.availableSlots) && v.availableSlots.length > 0;
+  }
+
+  return Boolean(v.available);
+}
+
 function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
 
   const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
@@ -2089,67 +2108,48 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
       ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
       : vehicles;
 
-  /* ===============================
-     🔥 SINGLE API CALL
-  =============================== */
-
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
     durationDays,
     pickupTime
   );
 
-  const results = vehiclesToCheck.map(vehicle => {
+  const results = await Promise.all(
+    vehiclesToCheck.map(async (vehicle) => {
 
-    const v = vehiclesAvailability.find(x => x.vehicleId === vehicle.id);
+      const apiVehicle = vehiclesAvailability.find(
+        v => v.vehicleId === vehicle.id
+      );
 
-    if (!v) return null;
+      if (!apiVehicle) return null;
 
-    let available = false;
+      const available = Number(durationDays) === 0.5
+        ? Array.isArray(apiVehicle.availableSlots) && apiVehicle.availableSlots.length > 0
+        : Boolean(apiVehicle.available);
 
-    /* ===============================
-       HALF DAY → SLOT BASED
-    =============================== */
+      if (!available) return null;
 
-    if (Number(durationDays) === 0.5) {
+      let resolvedPickupTime = pickupTime;
 
-      if (!v.availableSlots || v.availableSlots.length === 0) {
-        return null;
+      if (Number(durationDays) === 0.5) {
+        const hasAM = apiVehicle.availableSlots?.includes("am");
+        const hasPM = apiVehicle.availableSlots?.includes("pm");
+
+        if (!hasAM && hasPM) {
+          resolvedPickupTime = "13:00";
+        } else if (hasAM && !hasPM) {
+          resolvedPickupTime = "07:00";
+        }
       }
 
-      available = true;
-
-      /* 🔥 AUTO FIX PICKUP TIME */
-      if (pickupTimeInput) {
-
-        if (v.availableSlots.includes("pm") && !v.availableSlots.includes("am")) {
-          pickupTimeInput.value = "13:00";
-        }
-
-        else if (v.availableSlots.includes("am") && !v.availableSlots.includes("pm")) {
-          pickupTimeInput.value = "07:00";
-        }
-
-      }
-
-    } else {
-
-      /* ===============================
-         FULL DAY
-      =============================== */
-
-      if (!v.available) return null;
-      available = true;
-    }
-
-    return buildAvailability(
-      vehicle,
-      pickupDate,
-      durationDays,
-      pickupTime
-    );
-
-  });
+      return buildAvailability(
+        vehicle,
+        pickupDate,
+        durationDays,
+        resolvedPickupTime
+      );
+    })
+  );
 
   return results.filter(Boolean);
 }
