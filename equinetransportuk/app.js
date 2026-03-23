@@ -495,68 +495,25 @@ function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
   return true;
 }
 
-function isDurationAvailable(startDate, durationDays, vehicleId, bookings, pickupTime) {
+async function isDurationAvailable(startDate, durationDays, vehicleId, bookings, pickupTime) {
 
-  const start = new Date(startDate);
+  try {
 
-  /* ===============================
-     HALF DAY (AM / PM FIX)
-  =============================== */
+    const url = `/api/vehicles/available?date=${startDate}&duration=${durationDays}&pickupTime=${pickupTime || "07:00"}`;
 
-  if (Number(durationDays) === 0.5) {
+    const res = await fetch(apiUrl(url));
+    const data = await res.json();
 
-    const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
+    const vehicle = data.vehicles.find(v => v.vehicleId === vehicleId);
 
-    for (const booking of bookings) {
+    return vehicle?.available || false;
 
-      if (booking.vehicleId !== vehicleId) continue;
+  } catch (err) {
 
-      const bookingDates = getDatesBetween(
-        new Date(booking.pickupAt),
-        new Date(booking.dropoffAt)
-      );
+    console.warn("Duration availability check failed:", err);
+    return false;
 
-      if (!bookingDates.includes(startDate)) continue;
-
-      const bookedSlot =
-        Number(booking.durationDays) === 0.5
-          ? (booking.pickupTime === "13:00" ? "pm" : "am")
-          : "full";
-
-      if (bookedSlot === "full" || bookedSlot === requestedSlot) {
-        return false;
-      }
-    }
-
-    return true;
   }
-
-  /* ===============================
-     FULL DAY
-  =============================== */
-
-  const end = new Date(start);
-  end.setDate(end.getDate() + durationDays - 1);
-
-  const dates = getDatesBetween(start, end);
-
-  for (const booking of bookings) {
-
-    if (booking.vehicleId !== vehicleId) continue;
-
-    const bookedDates = getDatesBetween(
-      new Date(booking.pickupAt),
-      new Date(booking.dropoffAt)
-    );
-
-    for (const d of dates) {
-      if (bookedDates.includes(d)) {
-        return false;
-      }
-    }
-  }
-
-  return true;
 }
 
 async function updateDurationOptions(dateObj) {
