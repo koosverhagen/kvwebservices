@@ -3596,7 +3596,55 @@ function resetBookingCustomerFields() {
   updateCheckoutSummary();
 }
 
+async function fetchStripeSession(sessionId) {
+  try {
+    const res = await fetch(
+      apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
+    );
 
+    if (!res.ok) return null;
+
+    const data = await res.json();
+
+    // If booking already exists → use it
+    if (data?.found) return data.booking;
+
+    // 🔥 FALLBACK: use session metadata directly
+    if (data?.session) {
+      const m = data.session.metadata || {};
+
+      let extras = {};
+      try {
+        extras = JSON.parse(m.extrasJson || "{}");
+      } catch {}
+
+      return {
+        id: data.session.id,
+
+        vehicleSnapshot: {
+          name: m.vehicleName || "Horsebox"
+        },
+
+        pickupAtLocal: `${m.pickupDate}T${m.pickupTime}:00`,
+        dropoffAtLocal: "", // optional for now
+
+        baseCost: Number(m.baseCost || 0),
+        extrasTotal: Number(m.extrasTotal || 0),
+
+        hireTotal: Number(m.totalHire || 0),
+        confirmationFee: Number(m.confirmationFee || 0),
+        outstandingAmount: Number(m.outstandingAmount || 0),
+
+        extras
+      };
+    }
+
+  } catch (err) {
+    console.warn("Stripe session fallback failed", err);
+  }
+
+  return null;
+}
 
 /* ======================================================
    Events
