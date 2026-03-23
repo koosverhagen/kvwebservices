@@ -1322,17 +1322,31 @@ async function findNextAvailableDate(startDate, durationDays, pickupTime) {
       ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
       : vehicles;
 
-    // 🚀 PARALLEL CHECK (faster)
-    const checks = vehiclesToCheck.map(vehicle =>
-      isVehicleAvailable(
-        vehicle.id,
-        dateString,
-        durationDays,
-        pickupTime
-      )
+    /* ===============================
+       🔥 NEW: USE BACKEND AVAILABILITY
+    =============================== */
+
+    const vehiclesAvailability = await getVehicleAvailability(
+      dateString,
+      durationDays,
+      pickupTime
     );
 
-    const results = await Promise.all(checks);
+    const results = vehiclesToCheck.map(vehicle => {
+
+      const v = vehiclesAvailability.find(x => x.vehicleId === vehicle.id);
+
+      if (!v) return false;
+
+      // 🔥 HALF DAY → check slots
+      if (Number(durationDays) === 0.5) {
+        return v.availableSlots && v.availableSlots.length > 0;
+      }
+
+      // 🔥 FULL DAY
+      return v.available;
+
+    });
 
     if (results.some(r => r)) {
       return testDate;
@@ -2065,56 +2079,6 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
    Availability checks + rendering
 ====================================================== */
 
-async function isVehicleAvailable(vehicleId, pickupDate, durationDays, pickupTime = DEFAULT_PICKUP_TIME) {
-  const vehicle = vehicles.find((item) => item.id === vehicleId);
-  if (!vehicle) return false;
-  if (!supportsDuration(vehicle, durationDays)) return false;
-
-  const candidate = await buildAvailability(vehicle, pickupDate, durationDays, pickupTime, "");
-
-  const vehicleBookings = (await getBookings()).filter(
-    (booking) => booking.vehicleId === vehicleId && booking.status !== "cancelled"
-  );
-
-  return !vehicleBookings.some((booking) => {
-
-    const existingStart = new Date(booking.pickupAt);
-    const existingEnd = new Date(booking.dropoffAt);
-
-    /* ======================================
-       HALF-DAY BUSINESS RULES
-       morning and afternoon on same day
-       should be allowed together
-    ====================================== */
-    if (Number(durationDays) === 0.5) {
-
-      const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
-      const existingDuration = Number(booking.durationDays || 1);
-      const existingDate = booking.pickupAt?.slice(0, 10);
-      const sameDate = existingDate === pickupDate;
-
-      /* another half-day booking on same date */
-      if (existingDuration === 0.5 && sameDate) {
-
-        const existingSlot =
-          (booking.pickupTime === "13:00") ? "pm" : "am";
-
-        /* same slot = blocked, opposite slot = allowed */
-        return existingSlot === requestedSlot;
-
-      }
-
-      /* full-day or multi-day bookings still block normally */
-      return overlaps(candidate.pickupAt, candidate.dropoffAt, existingStart, existingEnd);
-    }
-
-    /* ======================================
-       NORMAL FULL-DAY / MULTI-DAY OVERLAP
-    ====================================== */
-    return overlaps(candidate.pickupAt, candidate.dropoffAt, existingStart, existingEnd);
-
-  });
-}
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   const vehiclesToCheck =
