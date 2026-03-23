@@ -587,32 +587,25 @@ async function updateDurationOptions(dateObj) {
 
 if (duration === 0.5) {
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
-
   if (vehicleId) {
 
-    const { morningAvailable, afternoonAvailable } =
-      getRemainingHalfDaySlots(dateObj, bookings);
+    const checks = await Promise.all([
+      isVehicleAvailable(vehicleId, dateStr, 0.5, "07:00"), // AM
+      isVehicleAvailable(vehicleId, dateStr, 0.5, "13:00")  // PM
+    ]);
 
-    available = morningAvailable || afternoonAvailable;
+    available = checks.some(Boolean);
 
   } else {
 
-    let anyAvailable = false;
+    const checks = await Promise.all(
+      vehicles.flatMap(v => [
+        isVehicleAvailable(v.id, dateStr, 0.5, "07:00"),
+        isVehicleAvailable(v.id, dateStr, 0.5, "13:00")
+      ])
+    );
 
-    for (const vehicle of vehicles) {
-
-      const { morningAvailable, afternoonAvailable } =
-        getRemainingHalfDaySlots(dateObj, bookings);
-
-      if (morningAvailable || afternoonAvailable) {
-        anyAvailable = true;
-        break;
-      }
-
-    }
-
-    available = anyAvailable;
+    available = checks.some(Boolean);
   }
 
 } else {
