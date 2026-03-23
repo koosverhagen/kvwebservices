@@ -467,6 +467,20 @@ availabilityResults?.addEventListener("click", async (e) => {
    Helpers
 ====================================================== */
  
+async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
+
+  let url = apiUrl(`/api/vehicles/available?date=${dateStr}&duration=${duration}`);
+
+  if (pickupTime) {
+    url += `&pickupTime=${pickupTime}`;
+  }
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  return data.vehicles || [];
+}
+
 function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
 
   const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
@@ -520,11 +534,7 @@ async function updateDurationOptions(dateObj) {
 
   if (!durationDaysInput) return;
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
-
   const vehicleId = PRESELECTED_VEHICLE;
-
-  const pickupTime = pickupTimeInput?.value || "07:00";
 
   const options = Array.from(durationDaysInput.options);
 
@@ -533,94 +543,64 @@ async function updateDurationOptions(dateObj) {
   for (const opt of options) {
 
     const duration = Number(opt.value);
-
     if (!duration) continue;
 
     let available = false;
 
-/* ===============================
-   🔥 SPECIAL FIX FOR HALF DAY (CORRECT)
-=============================== */
+    /* ===============================
+       🔥 NEW API-BASED AVAILABILITY
+    =============================== */
 
-if (duration === 0.5) {
-
-  let morningAvailable = false;
-  let afternoonAvailable = false;
-
-  if (vehicleId) {
-
-    const [am, pm] = await Promise.all([
-      isVehicleAvailable(vehicleId, dateStr, 0.5, "07:00"),
-      isVehicleAvailable(vehicleId, dateStr, 0.5, "13:00")
-    ]);
-
-    morningAvailable = am;
-    afternoonAvailable = pm;
-
-  } else {
-
-    const checks = await Promise.all(
-      vehicles.flatMap(v => [
-        isVehicleAvailable(v.id, dateStr, 0.5, "07:00"),
-        isVehicleAvailable(v.id, dateStr, 0.5, "13:00")
-      ])
-    );
-
-    // split AM / PM results
-    for (let i = 0; i < checks.length; i += 2) {
-      if (checks[i]) morningAvailable = true;
-      if (checks[i + 1]) afternoonAvailable = true;
-    }
-
-  }
-
-  available = morningAvailable || afternoonAvailable;
-
-  /* 🔥 CRITICAL FIX */
-  if (available && pickupTimeInput) {
-
-    if (!morningAvailable && afternoonAvailable) {
-      pickupTimeInput.value = "13:00";
-    }
-
-    else if (morningAvailable && !afternoonAvailable) {
-      pickupTimeInput.value = "07:00";
-    }
-
-  }
-
-} else {
-
-  /* ===============================
-     NORMAL DURATIONS (UNCHANGED)
-  =============================== */
-
-  if (vehicleId) {
-
-    available = await isVehicleAvailable(
-      vehicleId,
+    const vehiclesAvailability = await getVehicleAvailability(
       dateStr,
-      duration,
-      pickupTime
+      duration
     );
 
-  } else {
+    /* ===============================
+       FILTER VEHICLE IF LOCKED
+    =============================== */
 
-    const checks = await Promise.all(
-      vehicles.map(v =>
-        isVehicleAvailable(
-          v.id,
-          dateStr,
-          duration,
-          pickupTime
-        )
-      )
-    );
+    const filtered = vehicleId
+      ? vehiclesAvailability.filter(v => v.vehicleId === vehicleId)
+      : vehiclesAvailability;
 
-    available = checks.some(Boolean);
-  }
+    if (duration === 0.5) {
 
-}
+      // ✅ HALF DAY → check ANY available slot
+      available = filtered.some(v =>
+        v.availableSlots && v.availableSlots.length > 0
+      );
+
+      /* ===============================
+         🔥 AUTO PICK CORRECT TIME
+      =============================== */
+
+      if (available && pickupTimeInput) {
+
+        const hasAM = filtered.some(v =>
+          v.availableSlots?.includes("am")
+        );
+
+        const hasPM = filtered.some(v =>
+          v.availableSlots?.includes("pm")
+        );
+
+        if (!hasAM && hasPM) {
+          pickupTimeInput.value = "13:00"; // PM only
+        }
+
+        else if (hasAM && !hasPM) {
+          pickupTimeInput.value = "07:00"; // AM only
+        }
+
+      }
+
+    } else {
+
+      // ✅ FULL DAY → normal availability
+      available = filtered.some(v => v.available);
+
+    }
 
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
