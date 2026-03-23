@@ -4173,12 +4173,24 @@ const results = vehiclesToCheck.map(vehicle => {
   const v = vehiclesAvailability.find(x => x.vehicleId === vehicle.id);
   if (!v) return null;
 
-  /* HALF DAY */
+  /* ===============================
+     HALF DAY LOGIC (FIXED)
+  =============================== */
+
   if (durationDays === 0.5) {
-    if (!v.availableSlots || v.availableSlots.length === 0) return null;
+
+    if (is35T(vehicle)) {
+      if (!v.availableSlots || v.availableSlots.length === 0) return null;
+    } else {
+      if (!v.available) return null;
+    }
+
   }
 
-  /* FULL DAY */
+  /* ===============================
+     FULL DAY
+  =============================== */
+
   else {
     if (!v.available) return null;
   }
