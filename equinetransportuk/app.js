@@ -580,16 +580,24 @@ async function updateDurationOptions(dateObj) {
       // 🔥 CHECK BOTH AM + PM IN PARALLEL
     const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-      const filteredAM = vehicleId
-        ? amData.filter(v => v.vehicleId === vehicleId)
-        : amData;
+     const filteredAM = (vehicleId
+  ? amData.filter(v => v.vehicleId === vehicleId)
+  : amData
+).filter(v => {
+  const vehicle = vehicles.find(x => x.id === v.vehicleId);
+  return is35T(vehicle);
+});
 
-      const filteredPM = vehicleId
-        ? pmData.filter(v => v.vehicleId === vehicleId)
-        : pmData;
+const filteredPM = (vehicleId
+  ? pmData.filter(v => v.vehicleId === vehicleId)
+  : pmData
+).filter(v => {
+  const vehicle = vehicles.find(x => x.id === v.vehicleId);
+  return is35T(vehicle);
+});
 
-      const hasAM = filteredAM.some(v => v.available);
-      const hasPM = filteredPM.some(v => v.available);
+const hasAM = filteredAM.some(v => v.available);
+const hasPM = filteredPM.some(v => v.available);
 
       available = hasAM || hasPM;
 
@@ -853,16 +861,24 @@ async function getRemainingHalfDaySlots(dateObj) {
 
     const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-    const filteredAM = PRESELECTED_VEHICLE
-      ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-      : amData;
+    const filteredAM = (PRESELECTED_VEHICLE
+  ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+  : amData
+).filter(v => {
+  const vehicle = vehicles.find(x => x.id === v.vehicleId);
+  return is35T(vehicle);
+});
 
-    const filteredPM = PRESELECTED_VEHICLE
-      ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-      : pmData;
+const filteredPM = (PRESELECTED_VEHICLE
+  ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+  : pmData
+).filter(v => {
+  const vehicle = vehicles.find(x => x.id === v.vehicleId);
+  return is35T(vehicle);
+});
 
-    const morningAvailable = filteredAM.some(v => v.available);
-    const afternoonAvailable = filteredPM.some(v => v.available);
+const morningAvailable = filteredAM.some(v => v.available);
+const afternoonAvailable = filteredPM.some(v => v.available);
 
     return { morningAvailable, afternoonAvailable };
 
@@ -980,13 +996,21 @@ async function syncPickupTimeOptions(startDate) {
 
  const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-const filteredAM = PRESELECTED_VEHICLE
+const filteredAM = (PRESELECTED_VEHICLE
   ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-  : amData;
+  : amData
+).filter(v => {
+  const vehicle = vehicles.find(x => x.id === v.vehicleId);
+  return is35T(vehicle);
+});
 
-const filteredPM = PRESELECTED_VEHICLE
+const filteredPM = (PRESELECTED_VEHICLE
   ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-  : pmData;
+  : pmData
+).filter(v => {
+  const vehicle = vehicles.find(x => x.id === v.vehicleId);
+  return is35T(vehicle);
+});
 
 const morningAvailable = filteredAM.some(v => v.available);
 const afternoonAvailable = filteredPM.some(v => v.available);
