@@ -4771,39 +4771,48 @@ async function showVehiclePreview(date, event) {
 
   }
 
-  /* ======================================================
-     AVAILABLE VEHICLES (½ day aware)
+   /* ======================================================
+     AVAILABLE VEHICLES (SYNCED WITH API)
   ====================================================== */
+
+  const vehiclesAvailability = await getVehicleAvailability(
+    dateStart.toISOString().slice(0, 10),
+    0.5,
+    null
+  );
 
   const availability = vehicles.map(vehicle => {
 
-    const vehicleBookings = booked.filter(
-      b => b.vehicleId === vehicle.id
+    const apiVehicle = vehiclesAvailability.find(
+      v => v.vehicleId === vehicle.id
     );
 
-    let morningBooked = false;
-    let afternoonBooked = false;
+    if (!apiVehicle) {
+      return {
+        vehicle,
+        morningAvailable: false,
+        afternoonAvailable: false,
+        fullDayAvailable: false
+      };
+    }
 
-    vehicleBookings.forEach(b => {
+    const isHalfDayVehicle = is35T(vehicle);
+    const slots = apiVehicle.availableSlots || [];
 
-      const startHour = getLondonParts(new Date(b.pickupAt)).hour;
-      const endHour = getLondonParts(new Date(b.dropoffAt)).hour;
-
-      if (startHour <= 7 && endHour >= 13) morningBooked = true;
-      if (startHour <= 13 && endHour >= 19) afternoonBooked = true;
-
-    });
+    const morningAvailable = isHalfDayVehicle && slots.includes("am");
+    const afternoonAvailable = isHalfDayVehicle && slots.includes("pm");
 
     return {
       vehicle,
-      morningAvailable: !morningBooked,
-      afternoonAvailable: !afternoonBooked
+      morningAvailable,
+      afternoonAvailable,
+      fullDayAvailable: Boolean(apiVehicle.available)
     };
 
   });
 
   const availableVehicles = availability.filter(
-    a => a.morningAvailable || a.afternoonAvailable
+    a => a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable
   );
 
   if (!availableVehicles.length) {
@@ -4821,18 +4830,24 @@ async function showVehiclePreview(date, event) {
 
       let slotText = "";
 
-      if (a.morningAvailable && a.afternoonAvailable) {
+      if (!is35T(vehicle)) {
+        slotText = a.fullDayAvailable ? "Full day available" : "";
+      } else if (a.morningAvailable && a.afternoonAvailable) {
         slotText = "Full day available";
       } else if (a.morningAvailable) {
         slotText = "Morning available";
       } else if (a.afternoonAvailable) {
         slotText = "Afternoon available";
+      } else if (a.fullDayAvailable) {
+        slotText = "Full day available";
       }
+
+      if (!slotText) return;
 
       html += `
         <div class="preview-item preview-select"
-     data-vehicle-id="${vehicle.id}"
-     data-slot="${slotText}">
+          data-vehicle-id="${vehicle.id}"
+          data-slot="${slotText}">
 
           ${img ? `<img src="${img}" class="preview-img">` : ""}
 
@@ -4843,7 +4858,6 @@ async function showVehiclePreview(date, event) {
 
         </div>
       `;
-
     });
 
   }
@@ -4899,14 +4913,14 @@ panel.querySelectorAll(".preview-select").forEach(el => {
        go back to duration step instead of jumping to details
     */
     if (durationDaysInput) {
-      if (slot.includes("morning") || slot.includes("afternoon")) {
-        durationDaysInput.value = "0.5";
-        pickupTimeInput.value = slot.includes("afternoon") ? "13:00" : "07:00";
-      } else {
-        durationDaysInput.value = "";
-        pickupTimeInput.value = "07:00";
-      }
-    }
+  if (slot.includes("morning") || slot.includes("afternoon")) {
+    durationDaysInput.value = "0.5";
+    pickupTimeInput.value = slot.includes("afternoon") ? "13:00" : "07:00";
+  } else {
+    durationDaysInput.value = "1";
+    pickupTimeInput.value = "07:00";
+  }
+}
 
     await syncPickupTimeOptions(dateStart);
     updatePickupTimeVisibility();
