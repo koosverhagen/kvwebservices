@@ -295,11 +295,6 @@ durationDaysInput?.addEventListener("change", async () => {
 
   await updatePickupTimeVisibility();
 
-  const pickupDate = pickupDateInput?.value;
-  if (pickupDate) {
-    await syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
-  }
-
   updateEarlyPickupAvailability();
 });
 
@@ -2778,68 +2773,7 @@ pickupDateInput?.addEventListener("change", () => {
 
 /* trigger when duration changes */
 
-durationDaysInput?.addEventListener("change", async () => {
 
-  const pickupDate = pickupDateInput?.value;
-  const selectedDate = pickupDate
-    ? new Date(`${pickupDate}T00:00:00`)
-    : null;
-
-  /* ===============================
-     1) Recalculate valid durations FIRST
-  =============================== */
-
-  if (selectedDate) {
-    await updateDurationOptions(selectedDate);
-  }
-
-  /* ===============================
-     2) Then update step-1 UI rules
-  =============================== */
-
-  updatePickupTimeVisibility();
-  await syncPickupTimeOptions(selectedDate);
-  updateEarlyPickupAvailability();
-
-  /* ===============================
-     3) Instant price preview
-  =============================== */
-
-  const duration = Number(durationDaysInput?.value || 0);
-
-  if (pickupDate && duration) {
-
-    const vehicle = PRESELECTED_VEHICLE
-      ? vehicles.find(v => v.id === PRESELECTED_VEHICLE)
-      : vehicles[0];
-
-    if (vehicle) {
-      const preview = await buildAvailability(
-        vehicle,
-        pickupDate,
-        duration,
-        pickupTimeInput?.value || "07:00"
-      );
-
-      const previewBox = document.getElementById("price-preview");
-
-      if (previewBox) {
-        previewBox.innerHTML = `
-          <div class="quote">
-            Estimated hire price: <strong>£${preview.total.toFixed(2)}</strong>
-          </div>
-        `;
-      }
-    }
-  }
-
-  /* ===============================
-     4) Only then auto-check availability
-  =============================== */
-
-  autoCheckAvailability();
-
-});
 
 /* ======================================================
    PREVENT IMPOSSIBLE DURATIONS
