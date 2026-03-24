@@ -554,10 +554,11 @@ async function updateDurationOptions(dateObj) {
        🔥 NEW API-BASED AVAILABILITY
     =============================== */
 
-    const vehiclesAvailability = await getVehicleAvailability(
-      dateStr,
-      duration
-    );
+   const vehiclesAvailability = await getVehicleAvailability(
+  dateStr,
+  duration,
+  duration === 0.5 ? "07:00" : null
+);
 
     /* ===============================
        FILTER VEHICLE IF LOCKED
@@ -570,10 +571,10 @@ async function updateDurationOptions(dateObj) {
     if (duration === 0.5) {
 
       // ✅ HALF DAY → check ANY available slot
-      available = filtered.some(v =>
-        v.availableSlots && v.availableSlots.length > 0
-      );
-
+    available = filtered.some(v => {
+  const slots = v.availableSlots || [];
+  return slots.includes("am") || slots.includes("pm");
+});
       /* ===============================
          🔥 AUTO PICK CORRECT TIME
       =============================== */
