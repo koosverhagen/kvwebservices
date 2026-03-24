@@ -485,6 +485,19 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
   return data.vehicles || [];
 }
 
+async function getHalfDayAvailability(dateStr) {
+
+  const [amData, pmData] = await Promise.all([
+    getVehicleAvailability(dateStr, 0.5, "07:00"),
+    getVehicleAvailability(dateStr, 0.5, "13:00")
+  ]);
+
+  return {
+    amData,
+    pmData
+  };
+}
+
 
 function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
 
@@ -559,10 +572,7 @@ async function updateDurationOptions(dateObj) {
     if (duration === 0.5) {
 
       // 🔥 CHECK BOTH AM + PM IN PARALLEL
-      const [amData, pmData] = await Promise.all([
-        getVehicleAvailability(dateStr, 0.5, "07:00"),
-        getVehicleAvailability(dateStr, 0.5, "13:00")
-      ]);
+    const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
       const filteredAM = vehicleId
         ? amData.filter(v => v.vehicleId === vehicleId)
@@ -967,11 +977,7 @@ async function syncPickupTimeOptions(startDate) {
 
   try {
 
-    const [amData, pmData] = await Promise.all([
-      getVehicleAvailability(dateStr, 0.5, "07:00"),
-      getVehicleAvailability(dateStr, 0.5, "13:00")
-    ]);
-
+  const { amData, pmData } = await getHalfDayAvailability(dateStr);
     const filteredAM = PRESELECTED_VEHICLE
       ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
       : amData;
