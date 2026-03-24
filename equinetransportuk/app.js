@@ -1095,47 +1095,39 @@ function renderBookingConfirmation(booking) {
   const container = document.getElementById("booking-confirmation");
   if (!container) return;
 
- const formatDate = (value) => {
+  const formatDate = (value) => {
 
-  if (!value) return "—";
+    if (!value) return "—";
 
-  let d;
+    let d;
 
-  // 🔥 Handle timestamp (number)
-  if (typeof value === "number") {
-    d = new Date(value);
-  }
+    if (typeof value === "number") {
+      d = new Date(value);
+    } else if (typeof value === "string") {
 
-  // 🔥 Handle ISO or string
-  else if (typeof value === "string") {
+      if (value.includes(" ") && !value.includes("T")) {
+        value = value.replace(" ", "T");
+      }
 
-    // Fix missing timezone (VERY COMMON BUG)
-    if (value.includes(" ") && !value.includes("T")) {
-      value = value.replace(" ", "T");
+      d = new Date(value);
+    } else if (value instanceof Date) {
+      d = value;
     }
 
-    d = new Date(value);
-  }
+    if (!d || isNaN(d.getTime())) {
+      console.warn("Invalid date value:", value);
+      return "—";
+    }
 
-  // 🔥 Handle Date object
-  else if (value instanceof Date) {
-    d = value;
-  }
+    return d.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
 
-  if (!d || isNaN(d.getTime())) {
-    console.warn("Invalid date value:", value);
-    return "—";
-  }
-
-  return d.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-
-};
+  };
 
   const vehicleName =
     booking.vehicleSnapshot?.name ||
@@ -1144,23 +1136,37 @@ function renderBookingConfirmation(booking) {
 
   const extras = booking.extras || {};
 
-  const priceBase = booking.baseCost || 0;
-  const priceExtras = booking.extrasTotal || 0;
   const priceTotal = booking.hireTotal || 0;
   const paidNow = booking.confirmationFee || 0;
   const remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
 
-  const extrasRows = [];
+  // ✅ NEW: structured extras HTML
+  let extrasHtml = "";
 
-if (extras.earlyPickup) {
-  extrasRows.push(`Early pickup (£20.00)`);
-}
+  if (extras) {
 
-if (extras.dartford) {
-  const count = Number(extras.dartford || 0);
-  const total = (count * 4.2).toFixed(2);
-  extrasRows.push(`Dartford crossings (${count}) (£${total})`);
-}
+    if (extras.earlyPickup) {
+      extrasHtml += `
+        <div class="payment-row">
+          <span>Early pickup</span>
+          <span>£20.00</span>
+        </div>
+      `;
+    }
+
+    if (extras.dartford) {
+      const count = Number(extras.dartford || 0);
+      const total = (count * 4.2).toFixed(2);
+
+      extrasHtml += `
+        <div class="payment-row">
+          <span>Dartford crossings (${count})</span>
+          <span>£${total}</span>
+        </div>
+      `;
+    }
+
+  }
 
   const shortRef = booking.id?.slice(-8);
 
@@ -1190,20 +1196,16 @@ if (extras.dartford) {
         </div>
       </div>
 
-      <!-- EXTRAS -->
-      ${
-        extrasRows.length
-          ? `
-        <div class="confirmation-block">
-          <div class="label">Extras</div>
-          <div class="value">${extrasRows.join(", ")}</div>
-        </div>
-      `
-          : ""
-      }
-
       <!-- PAYMENT CARD -->
       <div class="payment-card">
+
+        ${extrasHtml ? `
+          <div class="payment-row" style="font-weight:600; margin-bottom:6px;">
+            Extras
+          </div>
+          ${extrasHtml}
+          <div style="height:1px; background:#e5e7eb; margin:10px 0;"></div>
+        ` : ""}
 
         <div class="payment-row total">
           <span>Total hire</span>
@@ -1228,20 +1230,18 @@ if (extras.dartford) {
 
       </div>
 
-      <!-- TRUST SECTION -->
+      <!-- TRUST -->
       <div class="confirmation-trust">
-
         <div class="trust-item">✔ Booking secured</div>
         <div class="trust-item">✔ No hidden fees</div>
         <div class="trust-item">✔ Email confirmation sent</div>
-
       </div>
 
       <!-- ACTION -->
       <div class="confirmation-actions">
         <a href="https://kvwebservices.co.uk/equinetransportuk/index.html" class="btn">
-  Back to homepage
-</a>
+          Back to homepage
+        </a>
       </div>
 
     </div>
