@@ -291,18 +291,17 @@ const durationDaysInput = document.getElementById("duration-days");
    INPUT CHANGE HANDLERS
 =============================== */
 
-/* When duration changes */
 durationDaysInput?.addEventListener("change", () => {
   updatePickupTimeVisibility?.();
-  const pickupDate = pickupDateInput?.value;
 
-if (pickupDate) {
-  syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
-}
-  updateEarlyPickupAvailability();   // ✅ HERE
+  const pickupDate = pickupDateInput?.value;
+  if (pickupDate) {
+    syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+  }
+
+  updateEarlyPickupAvailability();
 });
 
-/* When pickup time changes (IMPORTANT FIX) */
 pickupTimeInput?.addEventListener("change", async () => {
 
   const pickupDate = pickupDateInput?.value;
@@ -312,8 +311,19 @@ pickupTimeInput?.addEventListener("change", async () => {
     new Date(`${pickupDate}T00:00:00`)
   );
 
-  // ✅ ADD THIS
   updateEarlyPickupAvailability();
+});
+
+
+// ✅ ✅ ✅ ADD THIS RIGHT HERE
+pickupTimeInput?.addEventListener("focus", async () => {
+
+  const pickupDate = pickupDateInput?.value;
+  if (!pickupDate) return;
+
+  if (Number(durationDaysInput?.value) === 0.5) {
+    await syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+  }
 
 });
 const availabilityResults = document.getElementById("availability-results");
@@ -2705,11 +2715,20 @@ function updatePickupTimeVisibility() {
 
   if (duration === 0.5) {
 
-    group.style.display = "block";
-    pickupTimeInput.value = "";
+  group.style.display = "block";
 
-    // Scroll to field
-    setTimeout(() => {
+  // 🔥 DO NOT reset blindly
+  if (!pickupTimeInput.value) {
+    pickupTimeInput.value = "";
+  }
+
+  // 🔥 CRITICAL: sync immediately when shown
+  const pickupDate = pickupDateInput?.value;
+  if (pickupDate) {
+    syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+  }
+
+  setTimeout(() => {
 
       if (BLOCK_AUTO_SCROLL) return; // 👈 ADD THIS
 
