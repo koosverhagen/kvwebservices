@@ -2295,6 +2295,13 @@ async function renderAvailabilityResults(items) {
 
   updateAvailabilitySearchSummary(items);
 
+  // 🔥 CRITICAL FIX: sync pickup time AFTER availability is known
+const pickupDate = pickupDateInput?.value;
+
+if (pickupDate && Number(durationDaysInput?.value) === 0.5) {
+  await syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+}
+
   const pricePreview = document.getElementById("price-preview");
 
   /* ===============================
