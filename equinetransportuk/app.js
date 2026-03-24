@@ -939,6 +939,8 @@ async function syncPickupTimeOptions(startDate) {
     startDate = new Date(`${pickupDate}T00:00:00`);
   }
 
+  const dateStr = startDate.toISOString().slice(0, 10);
+
   /* ===============================
      FULL DAY
   =============================== */
@@ -956,18 +958,30 @@ async function syncPickupTimeOptions(startDate) {
     }
 
     pickupTimeInput.value = "07:00";
-
     return;
   }
 
   /* ===============================
-     HALF DAY (🔥 UNIFIED LOGIC)
+     HALF DAY (🔥 SAME AS AVAILABILITY)
   =============================== */
 
   try {
 
-    const { morningAvailable, afternoonAvailable } =
-      await getRemainingHalfDaySlots(startDate);
+    const [amData, pmData] = await Promise.all([
+      getVehicleAvailability(dateStr, 0.5, "07:00"),
+      getVehicleAvailability(dateStr, 0.5, "13:00")
+    ]);
+
+    const filteredAM = PRESELECTED_VEHICLE
+      ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+      : amData;
+
+    const filteredPM = PRESELECTED_VEHICLE
+      ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+      : pmData;
+
+    const morningAvailable = filteredAM.some(v => v.available);
+    const afternoonAvailable = filteredPM.some(v => v.available);
 
     /* ===============================
        APPLY UI STATE
@@ -984,29 +998,34 @@ async function syncPickupTimeOptions(startDate) {
     }
 
     /* ===============================
-       AUTO SELECT (CLEAN)
+       🔥 SMART AUTO SELECT (FIXED)
     =============================== */
 
     const current = pickupTimeInput.value;
 
+    // nothing selected → pick best
     if (!current) {
       if (morningAvailable) pickupTimeInput.value = "07:00";
       else if (afternoonAvailable) pickupTimeInput.value = "13:00";
     }
 
+    // selected AM but not available → switch
     else if (current === "07:00" && !morningAvailable) {
       pickupTimeInput.value = afternoonAvailable ? "13:00" : "";
     }
 
+    // selected PM but not available → switch
     else if (current === "13:00" && !afternoonAvailable) {
       pickupTimeInput.value = morningAvailable ? "07:00" : "";
     }
 
+    // nothing available
     if (!morningAvailable && !afternoonAvailable) {
       pickupTimeInput.value = "";
     }
 
-    console.log("🕐 Half-day availability (UNIFIED):", {
+    console.log("🕐 Half-day sync (MATCHED):", {
+      date: dateStr,
       morningAvailable,
       afternoonAvailable
     });
