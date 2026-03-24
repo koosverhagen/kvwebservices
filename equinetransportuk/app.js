@@ -441,7 +441,7 @@ availabilityResults?.addEventListener("click", async (e) => {
       await selectDate(selectedDate);
 
       // ✅ trigger availability AFTER state is correct
-      availabilityForm?.requestSubmit();
+      maybeAutoSubmitAvailability();
 
     } finally {
       nextBtn.dataset.loading = "false";
@@ -477,6 +477,20 @@ availabilityResults?.addEventListener("click", async (e) => {
    Helpers
 ====================================================== */
  
+function maybeAutoSubmitAvailability() {
+
+  const duration = Number(durationDaysInput?.value || 0);
+
+  // ❌ NEVER auto-submit for half-day
+  if (duration === 0.5) {
+    console.log("⛔ skip auto-submit (half-day)");
+    return;
+  }
+
+  maybeAutoSubmitAvailability();
+
+}
+
 async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
 
   let url = apiUrl(`/api/vehicles/available?date=${dateStr}&duration=${duration}`);
@@ -2736,18 +2750,20 @@ async function updatePickupTimeVisibility() {
 
   if (duration === 0.5) {
 
-  group.style.display = "block";
+    group.style.display = "block";
 
+    // ✅ FORCE manual user choice (prevents auto-submit flow)
+    pickupTimeInput.value = "";
 
-  // 🔥 CRITICAL: sync immediately when shown (AWAIT!)
-const pickupDate = pickupDateInput?.value;
-if (pickupDate) {
-  await syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
-}
+    // 🔥 Sync availability (NO await → prevents auto-chain reactions)
+    const pickupDate = pickupDateInput?.value;
+    if (pickupDate) {
+      syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+    }
 
-  setTimeout(() => {
+    setTimeout(() => {
 
-      if (BLOCK_AUTO_SCROLL) return; // 👈 ADD THIS
+      if (BLOCK_AUTO_SCROLL) return;
 
       group.scrollIntoView({
         behavior: "smooth",
@@ -2769,6 +2785,8 @@ if (pickupDate) {
   } else {
 
     group.style.display = "none";
+
+    // ✅ Full-day default (keeps existing behaviour)
     pickupTimeInput.value = "07:00";
 
   }
@@ -2786,7 +2804,7 @@ function autoCheckAvailability() {
 
   if (!pickupDate || !duration) return;
 
-  availabilityForm?.requestSubmit();
+  maybeAutoSubmitAvailability();
 
 }
 
@@ -5487,7 +5505,7 @@ async function selectDate(dayDate) {
         LOCKED_VEHICLE = false;
         PRESELECTED_VEHICLE = null;
 
-        availabilityForm?.requestSubmit();
+        maybeAutoSubmitAvailability();
         goToStep(2);
       });
 
