@@ -929,7 +929,7 @@ async function syncPickupTimeOptions(startDate) {
   const afternoonOption = pickupTimeInput.querySelector('option[value="13:00"]');
 
   /* ===============================
-     🔥 AUTO RESOLVE DATE
+     🔥 FIX: AUTO RESOLVE DATE
   =============================== */
 
   if (!startDate) {
@@ -963,7 +963,7 @@ async function syncPickupTimeOptions(startDate) {
   }
 
   /* ===============================
-     HALF DAY (API-BASED)
+     HALF DAY (API-BASED — FIXED)
   =============================== */
 
   try {
@@ -985,33 +985,40 @@ async function syncPickupTimeOptions(startDate) {
     const afternoonAvailable = filteredPM.some(v => v.available);
 
     /* ===============================
-       AUTO SELECT (FIRST TIME)
-    =============================== */
+   🔥 AUTO SELECT BEST OPTION
+=============================== */
 
-    if (!pickupTimeInput.value) {
-      if (morningAvailable) {
-        pickupTimeInput.value = "07:00";
-      } else if (afternoonAvailable) {
-        pickupTimeInput.value = "13:00";
-      }
-    }
+if (!pickupTimeInput.value) {
+
+  if (morningAvailable) {
+    pickupTimeInput.value = "07:00";
+  }
+
+  else if (afternoonAvailable) {
+    pickupTimeInput.value = "13:00";
+  }
+
+}
 
     /* ===============================
        APPLY DISABLED STATES
     =============================== */
 
-    if (morningOption) {
-      morningOption.disabled = !morningAvailable;
-      morningOption.style.color = morningAvailable ? "" : "#999";
-    }
+   // 🔥 FORCE UI UPDATE (CRITICAL FIX)
 
-    if (afternoonOption) {
-      afternoonOption.disabled = !afternoonAvailable;
-      afternoonOption.style.color = afternoonAvailable ? "" : "#999";
-    }
+if (morningOption) {
+  morningOption.disabled = !morningAvailable;
+  morningOption.style.color = morningAvailable ? "" : "#999";
+}
+
+if (afternoonOption) {
+  afternoonOption.disabled = !afternoonAvailable;
+  afternoonOption.style.color = afternoonAvailable ? "" : "#999";
+}
+
 
     /* ===============================
-       AUTO-FIX SELECTION
+       AUTO-FIX SELECTED VALUE
     =============================== */
 
     const current = pickupTimeInput.value;
@@ -1033,24 +1040,7 @@ async function syncPickupTimeOptions(startDate) {
       pickupTimeInput.value = "";
     }
 
-    /* ===============================
-       🔥 DESKTOP DROPDOWN FIX
-    =============================== */
-
-    // Force re-render so disabled state updates in open dropdown
-    const active = document.activeElement === pickupTimeInput;
-
-    if (active) {
-      const currentValue = pickupTimeInput.value;
-
-      pickupTimeInput.blur(); // close dropdown
-
-      setTimeout(() => {
-        pickupTimeInput.value = currentValue;
-      }, 0);
-    }
-
-    console.log("🕐 Half-day availability:", {
+    console.log("🕐 Half-day availability (fixed):", {
       date: dateStr,
       morningAvailable,
       afternoonAvailable
