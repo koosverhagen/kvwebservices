@@ -845,23 +845,18 @@ async function getRemainingHalfDaySlots(dateObj) {
 
   try {
 
-    const vehiclesAvailability = await getVehicleAvailability(
-      dateStr,
-      0.5,
-      null
-    );
+    const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-    const filtered = PRESELECTED_VEHICLE
-      ? vehiclesAvailability.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-      : vehiclesAvailability;
+    const filteredAM = PRESELECTED_VEHICLE
+      ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+      : amData;
 
-    const morningAvailable = filtered.some(v =>
-      v.availableSlots?.includes("am")
-    );
+    const filteredPM = PRESELECTED_VEHICLE
+      ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+      : pmData;
 
-    const afternoonAvailable = filtered.some(v =>
-      v.availableSlots?.includes("pm")
-    );
+    const morningAvailable = filteredAM.some(v => v.available);
+    const afternoonAvailable = filteredPM.some(v => v.available);
 
     return { morningAvailable, afternoonAvailable };
 
