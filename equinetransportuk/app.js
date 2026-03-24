@@ -291,12 +291,13 @@ const durationDaysInput = document.getElementById("duration-days");
    INPUT CHANGE HANDLERS
 =============================== */
 
-durationDaysInput?.addEventListener("change", () => {
-  updatePickupTimeVisibility?.();
+durationDaysInput?.addEventListener("change", async () => {
+
+  await updatePickupTimeVisibility();
 
   const pickupDate = pickupDateInput?.value;
   if (pickupDate) {
-    syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+    await syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
   }
 
   updateEarlyPickupAvailability();
@@ -2704,7 +2705,7 @@ function updateHalfDayPickup() {
 
 }
 
-function updatePickupTimeVisibility() {
+async function updatePickupTimeVisibility() {
 
   if (BLOCK_AUTO_SCROLL) return;
 
@@ -2717,16 +2718,12 @@ function updatePickupTimeVisibility() {
 
   group.style.display = "block";
 
-  // 🔥 DO NOT reset blindly
-  if (!pickupTimeInput.value) {
-    pickupTimeInput.value = "";
-  }
 
-  // 🔥 CRITICAL: sync immediately when shown
-  const pickupDate = pickupDateInput?.value;
-  if (pickupDate) {
-    syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
-  }
+  // 🔥 CRITICAL: sync immediately when shown (AWAIT!)
+const pickupDate = pickupDateInput?.value;
+if (pickupDate) {
+  await syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+}
 
   setTimeout(() => {
 
