@@ -981,18 +981,48 @@ async function syncPickupTimeOptions(startDate) {
     const afternoonAvailable = filteredPM.some(v => v.available);
 
     /* ===============================
+   🔥 AUTO SELECT BEST OPTION
+=============================== */
+
+if (!pickupTimeInput.value) {
+
+  if (morningAvailable) {
+    pickupTimeInput.value = "07:00";
+  }
+
+  else if (afternoonAvailable) {
+    pickupTimeInput.value = "13:00";
+  }
+
+}
+
+    /* ===============================
        APPLY DISABLED STATES
     =============================== */
 
-    if (morningOption) {
-      morningOption.disabled = !morningAvailable;
-      morningOption.style.color = morningAvailable ? "" : "#999";
-    }
+   // 🔥 FORCE UI UPDATE (CRITICAL FIX)
 
-    if (afternoonOption) {
-      afternoonOption.disabled = !afternoonAvailable;
-      afternoonOption.style.color = afternoonAvailable ? "" : "#999";
-    }
+if (morningOption) {
+  morningOption.disabled = !morningAvailable;
+  morningOption.style.color = morningAvailable ? "" : "#999";
+}
+
+if (afternoonOption) {
+  afternoonOption.disabled = !afternoonAvailable;
+  afternoonOption.style.color = afternoonAvailable ? "" : "#999";
+}
+
+/* ===============================
+   🔥 HARD REFRESH SELECT UI
+=============================== */
+
+const currentValue = pickupTimeInput.value;
+
+// force DOM refresh (fixes dropdown not greying out)
+pickupTimeInput.innerHTML = pickupTimeInput.innerHTML;
+
+// restore value safely
+pickupTimeInput.value = currentValue;
 
     /* ===============================
        AUTO-FIX SELECTED VALUE
