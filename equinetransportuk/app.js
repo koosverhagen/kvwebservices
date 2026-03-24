@@ -4781,38 +4781,59 @@ async function showVehiclePreview(date, event) {
     null
   );
 
+    /* ======================================================
+     AVAILABLE VEHICLES (SYNCED WITH API)
+  ====================================================== */
+
+  const previewDateStr = dateStart.toISOString().slice(0, 10);
+
+  const halfDayAM = await getVehicleAvailability(
+  previewDateStr,
+  0.5,
+  "07:00"
+);
+
+const halfDayPM = await getVehicleAvailability(
+  previewDateStr,
+  0.5,
+  "13:00"
+);
+
+  const fullDayAvailability = await getVehicleAvailability(
+    previewDateStr,
+    1,
+    "07:00"
+  );
+
   const availability = vehicles.map(vehicle => {
 
-    const apiVehicle = vehiclesAvailability.find(
-      v => v.vehicleId === vehicle.id
-    );
+  const amVehicle = halfDayAM.find(
+    v => v.vehicleId === vehicle.id
+  );
 
-    if (!apiVehicle) {
-      return {
-        vehicle,
-        morningAvailable: false,
-        afternoonAvailable: false,
-        fullDayAvailable: false
-      };
-    }
+  const pmVehicle = halfDayPM.find(
+    v => v.vehicleId === vehicle.id
+  );
 
-    const isHalfDayVehicle = is35T(vehicle);
-    const slots = apiVehicle.availableSlots || [];
+  const fullDayVehicle = fullDayAvailability.find(
+    v => v.vehicleId === vehicle.id
+  );
 
-    const morningAvailable = isHalfDayVehicle && slots.includes("am");
-    const afternoonAvailable = isHalfDayVehicle && slots.includes("pm");
+  const morningAvailable = is35T(vehicle) && Boolean(amVehicle?.available);
+  const afternoonAvailable = is35T(vehicle) && Boolean(pmVehicle?.available);
+  const fullDayAvailable = Boolean(fullDayVehicle?.available);
 
-    return {
-      vehicle,
-      morningAvailable,
-      afternoonAvailable,
-      fullDayAvailable: Boolean(apiVehicle.available)
-    };
+  return {
+    vehicle,
+    morningAvailable,
+    afternoonAvailable,
+    fullDayAvailable
+  };
 
-  });
+});
 
-  const availableVehicles = availability.filter(
-    a => a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable
+  const availableVehicles = availability.filter(a =>
+    a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable
   );
 
   if (!availableVehicles.length) {
@@ -4831,7 +4852,7 @@ async function showVehiclePreview(date, event) {
       let slotText = "";
 
       if (!is35T(vehicle)) {
-        slotText = a.fullDayAvailable ? "Full day available" : "";
+        if (a.fullDayAvailable) slotText = "Full day available";
       } else if (a.morningAvailable && a.afternoonAvailable) {
         slotText = "Full day available";
       } else if (a.morningAvailable) {
