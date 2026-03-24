@@ -929,7 +929,7 @@ async function syncPickupTimeOptions(startDate) {
   const afternoonOption = pickupTimeInput.querySelector('option[value="13:00"]');
 
   /* ===============================
-     🔥 FIX: AUTO RESOLVE DATE
+     AUTO RESOLVE DATE
   =============================== */
 
   if (!startDate) {
@@ -939,10 +939,8 @@ async function syncPickupTimeOptions(startDate) {
     startDate = new Date(`${pickupDate}T00:00:00`);
   }
 
-  const dateStr = startDate.toISOString().slice(0, 10);
-
   /* ===============================
-     FULL DAY (NON HALF-DAY)
+     FULL DAY
   =============================== */
 
   if (duration !== 0.5) {
@@ -963,62 +961,30 @@ async function syncPickupTimeOptions(startDate) {
   }
 
   /* ===============================
-     HALF DAY (API-BASED — FIXED)
+     HALF DAY (🔥 UNIFIED LOGIC)
   =============================== */
 
   try {
 
-    const [amData, pmData] = await Promise.all([
-      getVehicleAvailability(dateStr, 0.5, "07:00"),
-      getVehicleAvailability(dateStr, 0.5, "13:00")
-    ]);
-
-    const filteredAM = PRESELECTED_VEHICLE
-      ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-      : amData;
-
-    const filteredPM = PRESELECTED_VEHICLE
-      ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-      : pmData;
-
-    const morningAvailable = filteredAM.some(v => v.available);
-    const afternoonAvailable = filteredPM.some(v => v.available);
+    const { morningAvailable, afternoonAvailable } =
+      await getRemainingHalfDaySlots(startDate);
 
     /* ===============================
-   🔥 AUTO SELECT BEST OPTION
-=============================== */
-
-if (!pickupTimeInput.value) {
-
-  if (morningAvailable) {
-    pickupTimeInput.value = "07:00";
-  }
-
-  else if (afternoonAvailable) {
-    pickupTimeInput.value = "13:00";
-  }
-
-}
-
-    /* ===============================
-       APPLY DISABLED STATES
+       APPLY UI STATE
     =============================== */
 
-   // 🔥 FORCE UI UPDATE (CRITICAL FIX)
+    if (morningOption) {
+      morningOption.disabled = !morningAvailable;
+      morningOption.style.color = morningAvailable ? "" : "#999";
+    }
 
-if (morningOption) {
-  morningOption.disabled = !morningAvailable;
-  morningOption.style.color = morningAvailable ? "" : "#999";
-}
-
-if (afternoonOption) {
-  afternoonOption.disabled = !afternoonAvailable;
-  afternoonOption.style.color = afternoonAvailable ? "" : "#999";
-}
-
+    if (afternoonOption) {
+      afternoonOption.disabled = !afternoonAvailable;
+      afternoonOption.style.color = afternoonAvailable ? "" : "#999";
+    }
 
     /* ===============================
-       AUTO-FIX SELECTED VALUE
+       AUTO SELECT (CLEAN)
     =============================== */
 
     const current = pickupTimeInput.value;
@@ -1040,8 +1006,7 @@ if (afternoonOption) {
       pickupTimeInput.value = "";
     }
 
-    console.log("🕐 Half-day availability (fixed):", {
-      date: dateStr,
+    console.log("🕐 Half-day availability (UNIFIED):", {
       morningAvailable,
       afternoonAvailable
     });
