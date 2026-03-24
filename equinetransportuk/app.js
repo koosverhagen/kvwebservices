@@ -1150,13 +1150,17 @@ function renderBookingConfirmation(booking) {
   const paidNow = booking.confirmationFee || 0;
   const remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
 
-  const extrasRows = Object.entries(extras)
-    .filter(([_, v]) => v)
-    .map(([key]) => {
-      if (key === "earlyPickup") return "Early pickup";
-      if (key === "dartford") return "Dartford crossing";
-      return key;
-    });
+  const extrasRows = [];
+
+if (extras.earlyPickup) {
+  extrasRows.push(`Early pickup (£20.00)`);
+}
+
+if (extras.dartford) {
+  const count = Number(extras.dartford || 0);
+  const total = (count * 4.2).toFixed(2);
+  extrasRows.push(`Dartford crossings (${count}) (£${total})`);
+}
 
   const shortRef = booking.id?.slice(-8);
 
@@ -1235,7 +1239,9 @@ function renderBookingConfirmation(booking) {
 
       <!-- ACTION -->
       <div class="confirmation-actions">
-        <a href="/" class="btn">Back to homepage</a>
+        <a href="https://kvwebservices.co.uk/equinetransportuk/index.html" class="btn">
+  Back to homepage
+</a>
       </div>
 
     </div>
