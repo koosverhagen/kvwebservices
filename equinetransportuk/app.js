@@ -809,71 +809,42 @@ function getLondonParts(date) {
    HALF DAY SLOT AVAILABILITY
 ================================ */
 
-function getRemainingHalfDaySlots(dateObj, bookings) {
+async function getRemainingHalfDaySlots(dateObj) {
 
-  let morningAvailable = false;
-  let afternoonAvailable = false;
+  const dateStr = dateObj.toISOString().slice(0, 10);
 
-  vehicles
-    .filter(vehicle => {
-      if (PRESELECTED_VEHICLE && vehicle.id !== PRESELECTED_VEHICLE) return false;
-      return is35T(vehicle);
-    })
-    .forEach(vehicle => {
+  try {
 
-      const vehicleBookings = bookings.filter(
-        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-      );
+    const vehiclesAvailability = await getVehicleAvailability(
+      dateStr,
+      0.5,
+      null
+    );
 
-      let morningBooked = false;
-      let afternoonBooked = false;
+    const filtered = PRESELECTED_VEHICLE
+      ? vehiclesAvailability.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+      : vehiclesAvailability;
 
-      vehicleBookings.forEach(b => {
+    const morningAvailable = filtered.some(v =>
+      v.availableSlots?.includes("am")
+    );
 
-        const start = new Date(b.pickupAt);
-        const end = new Date(b.dropoffAt);
+    const afternoonAvailable = filtered.some(v =>
+      v.availableSlots?.includes("pm")
+    );
 
-        const startParts = getLondonParts(start);
-        const endParts = getLondonParts(end);
+    return { morningAvailable, afternoonAvailable };
 
-        const sameDay =
-          startParts.year === dateObj.getFullYear() &&
-          startParts.month === dateObj.getMonth() + 1 &&
-          startParts.day === dateObj.getDate();
+  } catch (err) {
 
-        if (!sameDay) return;
+    console.warn("Half-day slot check failed:", err);
 
-        /* ===============================
-           🔥 CORRECT SLOT LOGIC
-        =============================== */
+    return {
+      morningAvailable: false,
+      afternoonAvailable: false
+    };
 
-        // AM booking → starts in morning
-        if (startParts.hour < 12) {
-          morningBooked = true;
-        }
-
-        // PM booking → starts in afternoon
-        if (startParts.hour >= 12) {
-          afternoonBooked = true;
-        }
-
-        // Full-day booking → blocks both
-        if (
-          startParts.hour <= 7 &&
-          endParts.hour >= 19
-        ) {
-          morningBooked = true;
-          afternoonBooked = true;
-        }
-
-      });
-
-      if (!morningBooked) morningAvailable = true;
-      if (!afternoonBooked) afternoonAvailable = true;
-
-    });
-
-  return { morningAvailable, afternoonAvailable };
+  }
 }
 
 function updateEarlyPickupAvailability() {
@@ -960,7 +931,7 @@ const bookings = BOOKINGS_CACHE || await getBookings(false);
 =============================== */
 
 const { morningAvailable, afternoonAvailable } =
-  getRemainingHalfDaySlots(startDate, bookings);
+  await getRemainingHalfDaySlots(startDate);
 
 const morningOption = pickupTimeInput.querySelector('option[value="07:00"]');
 const afternoonOption = pickupTimeInput.querySelector('option[value="13:00"]');
