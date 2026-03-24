@@ -2869,6 +2869,8 @@ BOOKING SUMMARY CARD
   background: white;
   box-shadow: 0 20px 50px rgba(0,0,0,0.08);
   border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
 }
 
 .confirmation-header h2 {
@@ -2937,3 +2939,11 @@ BOOKING SUMMARY CARD
   margin-top:20px;
 }
 
+.confirmation-card.apple::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("images/logo.png") center center / 180px no-repeat;
+  opacity: 0.04; /* subtle watermark */
+  pointer-events: none;
+}
