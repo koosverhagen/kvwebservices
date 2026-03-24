@@ -538,9 +538,7 @@ async function updateDurationOptions(dateObj) {
   if (!durationDaysInput) return;
 
   const vehicleId = PRESELECTED_VEHICLE;
-
   const options = Array.from(durationDaysInput.options);
-
   const dateStr = dateObj.toISOString().slice(0, 10);
 
   for (const opt of options) {
@@ -551,60 +549,78 @@ async function updateDurationOptions(dateObj) {
     let available = false;
 
     /* ===============================
-       🔥 NEW API-BASED AVAILABILITY
+       HALF DAY (FIXED PROPERLY)
     =============================== */
-
-   const vehiclesAvailability = await getVehicleAvailability(
-  dateStr,
-  duration,
-  duration === 0.5 ? "07:00" : null
-);
-
-    /* ===============================
-       FILTER VEHICLE IF LOCKED
-    =============================== */
-
-    const filtered = vehicleId
-      ? vehiclesAvailability.filter(v => v.vehicleId === vehicleId)
-      : vehiclesAvailability;
 
     if (duration === 0.5) {
 
-      // ✅ HALF DAY → check ANY available slot
-    available = filtered.some(v => {
-  const slots = v.availableSlots || [];
-  return slots.includes("am") || slots.includes("pm");
-});
+      // 🔥 CHECK BOTH AM + PM IN PARALLEL
+      const [amData, pmData] = await Promise.all([
+        getVehicleAvailability(dateStr, 0.5, "07:00"),
+        getVehicleAvailability(dateStr, 0.5, "13:00")
+      ]);
+
+      const filteredAM = vehicleId
+        ? amData.filter(v => v.vehicleId === vehicleId)
+        : amData;
+
+      const filteredPM = vehicleId
+        ? pmData.filter(v => v.vehicleId === vehicleId)
+        : pmData;
+
+      const hasAM = filteredAM.some(v => v.available);
+      const hasPM = filteredPM.some(v => v.available);
+
+      available = hasAM || hasPM;
+
       /* ===============================
-         🔥 AUTO PICK CORRECT TIME
+         AUTO PICK CORRECT TIME
       =============================== */
 
       if (available && pickupTimeInput) {
 
-        const hasAM = filtered.some(v =>
-          v.availableSlots?.includes("am")
-        );
-
-        const hasPM = filtered.some(v =>
-          v.availableSlots?.includes("pm")
-        );
-
-        if (!hasAM && hasPM) {
-          pickupTimeInput.value = "13:00"; // PM only
+        // nothing selected → pick best
+        if (!pickupTimeInput.value) {
+          if (hasAM) pickupTimeInput.value = "07:00";
+          else if (hasPM) pickupTimeInput.value = "13:00";
         }
 
-        else if (hasAM && !hasPM) {
-          pickupTimeInput.value = "07:00"; // AM only
+        // selected AM but unavailable → switch to PM
+        else if (pickupTimeInput.value === "07:00" && !hasAM && hasPM) {
+          pickupTimeInput.value = "13:00";
+        }
+
+        // selected PM but unavailable → switch to AM
+        else if (pickupTimeInput.value === "13:00" && !hasPM && hasAM) {
+          pickupTimeInput.value = "07:00";
         }
 
       }
 
-    } else {
-
-      // ✅ FULL DAY → normal availability
-      available = filtered.some(v => v.available);
-
     }
+
+    /* ===============================
+       FULL DAY
+    =============================== */
+
+    else {
+
+      const vehiclesAvailability = await getVehicleAvailability(
+        dateStr,
+        duration,
+        "07:00"
+      );
+
+      const filtered = vehicleId
+        ? vehiclesAvailability.filter(v => v.vehicleId === vehicleId)
+        : vehiclesAvailability;
+
+      available = filtered.some(v => v.available);
+    }
+
+    /* ===============================
+       APPLY UI STATE
+    =============================== */
 
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
@@ -5608,60 +5624,6 @@ if (Number(durationInput.value) === 0.5) {
 }
 
 
-
-async function updateDurationOptions(startDate) {
-
-  const durationInput = document.getElementById("duration-days");
-  if (!durationInput || !startDate) return;
-
-  const dateString = startDate.toISOString().slice(0, 10);
-
-  const currentPickupTime =
-    pickupTimeInput?.value ||
-    DEFAULT_PICKUP_TIME;
-
-  const remainingSlots = getRemainingSlots(
-    startDate,
-    BOOKINGS_CACHE || await getBookings(false)
-  );
-
-  const options = Array.from(durationInput.options);
-
-  for (const opt of options) {
-    const days = Number(opt.value);
-    if (!days) continue;
-
-    let testPickupTime = DEFAULT_PICKUP_TIME;
-
-    if (days === 0.5) {
-      testPickupTime = currentPickupTime || DEFAULT_PICKUP_TIME;
-    }
-
-    const available = await getAvailableLorries(
-      dateString,
-      days,
-      testPickupTime
-    );
-
-    let disabled = available.length === 0;
-
-    /* extra rule:
-       if calendar says only 1 slot left,
-       only allow 1/2 day and 1 day
-    */
-    if (remainingSlots === 1 && days > 1) {
-      disabled = true;
-    }
-
-    opt.disabled = disabled;
-  }
-
-  /* keep current selection valid */
-  const selectedOption = durationInput.options[durationInput.selectedIndex];
-  if (selectedOption?.disabled) {
-    durationInput.value = "";
-  }
-}
 
 /* 🔥 expose globally */
 window.updateDurationOptions = updateDurationOptions;
