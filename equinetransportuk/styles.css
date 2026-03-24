@@ -561,11 +561,6 @@ textarea { min-height: 100px; }
    STEP 2 — RESULT CARD POLISH
 =============================== */
 
-.availability-item {
-  grid-template-columns: 120px 1fr auto;
-  align-items: center;
-}
-
 .availability-meta {
   display: flex;
   flex-wrap: wrap;
@@ -717,16 +712,23 @@ textarea { min-height: 100px; }
 }
 
 
+.availability-status {
+  margin: 18px 0;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  font-size: 14px;
+}
+
 .availability-status.ok {
-  background: #edfdf2;
-  border: 1px solid #b6efcb;
-  color: #137a3d;
+  border-color: rgba(16,185,129,0.35);
+  background: rgba(16,185,129,0.10);
 }
 
 .availability-status.error {
-  background: #fff3f3;
-  border: 1px solid #f5b0b0;
-  color: #b91c1c;
+  border-color: rgba(239,68,68,0.35);
+  background: rgba(239,68,68,0.10);
 }
 
 .terms-card h3 {
@@ -1040,12 +1042,6 @@ textarea { min-height: 100px; }
    HERO CTA ROW — CLEAN VERSION
 ========================================== */
 
-
-
-.hero-actions {
-  display: flex;
-  gap: 12px;
-}
 
 .hero-reviews {
   display: flex;
@@ -1428,17 +1424,6 @@ textarea { min-height: 100px; }
 .form-field-actions{ display:flex; align-items:end; }
 .form-field-actions .btn{ width:100%; }
 
-.availability-status {
-  margin:14px 0 6px;
-  padding:12px 14px;
-  border-radius:12px;
-  border:1px solid rgba(15,23,42,0.10);
-  background: rgba(15,23,42,0.04);
-  font-size:14px;
-}
-.availability-status.ok{ border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.10); }
-.availability-status.error{ border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.10); }
-
 
 /* ======================================================
    VOUCHERS & EXTRAS
@@ -1597,18 +1582,6 @@ input[type="date"] {
   z-index:1;
 }
 
-
-/* ------------------------------------------------------
-   Selected day
------------------------------------------------------- */
-
-.cal-day.cal-selected{
-  border-color:var(--accent);
-  background:rgba(37,99,235,.08);
-  box-shadow:0 0 0 2px rgba(37,99,235,.25);
-  font-weight:600;
-  color:var(--text);
-}
 
 /* ------------------------------------------------------
    Availability states
@@ -1871,11 +1844,6 @@ html {
 }
 
 
-/* FULL DAY */
-
-.cal-line.booked-full {
-  background: #ef4444;
-}
 
 /* MORNING */
 
@@ -2052,29 +2020,6 @@ input[readonly]{
 
 .form-field input[type="date"]{
   padding-right:40px;
-}
-
-/* availability message */
-
-.availability-status{
-  padding:16px;
-  border-radius:14px;
-  border:1px solid #b6efcb;
-  background:#edfdf2;
-  color:#137a3d;
-}
-
-/* =========================
-   AVAILABILITY MESSAGE
-========================= */
-
-.availability-status{
-  padding:16px;
-  border-radius:14px;
-  border:1px solid #b6efcb;
-  background:#edfdf2;
-  color:#137a3d;
-  margin:18px 0;
 }
 
 
@@ -2383,23 +2328,6 @@ BOOKING SUMMARY CARD
 
 .next-available .btn {
   margin-top:6px;
-}
-
-.price-preview {
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-
-.price-main {
-  font-size:20px;
-  font-weight:700;
-  color:var(--text);
-}
-
-.price-confirm {
-  font-size:13px;
-  color:var(--muted);
 }
 
 /* =================================
@@ -2834,21 +2762,7 @@ BOOKING SUMMARY CARD
   overflow: hidden;
 }
 
-/* LOGO BACKGROUND */
-.confirmation-card.pro::before {
-  content: "";
-  position: absolute;
-  inset: 0;
 
-  background-image: url("/equinetransportuk/images/logo.webp");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 260px;
-
-  opacity: 0.035;
-  pointer-events: none;
-  z-index: 0;
-}
 
 /* CONTENT ABOVE BACKGROUND */
 .confirmation-card.pro > * {
