@@ -2157,6 +2157,11 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   const results = await Promise.all(
     vehiclesToCheck.map(async (vehicle) => {
 
+      // 🔥 BLOCK 7.5T HALF-DAY (CRITICAL FIX)
+if (Number(durationDays) === 0.5 && !is35T(vehicle)) {
+  return null;
+}
+
       const apiVehicle = vehiclesAvailability.find(
         v => v.vehicleId === vehicle.id
       );
