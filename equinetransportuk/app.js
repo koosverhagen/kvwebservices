@@ -978,26 +978,18 @@ async function syncPickupTimeOptions(startDate) {
 
   try {
 
-  const vehiclesAvailability = await getVehicleAvailability(
-  dateStr,
-  0.5
-);
+ const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-let morningAvailable = false;
-let afternoonAvailable = false;
+const filteredAM = PRESELECTED_VEHICLE
+  ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+  : amData;
 
-const vehiclesToCheck = PRESELECTED_VEHICLE
-  ? vehiclesAvailability.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-  : vehiclesAvailability;
+const filteredPM = PRESELECTED_VEHICLE
+  ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+  : pmData;
 
-for (const v of vehiclesToCheck) {
-
-  const slots = v.availableSlots || [];
-
-  if (slots.includes("am")) morningAvailable = true;
-  if (slots.includes("pm")) afternoonAvailable = true;
-
-}
+const morningAvailable = filteredAM.some(v => v.available);
+const afternoonAvailable = filteredPM.some(v => v.available);
 
     /* ===============================
        APPLY UI STATE
