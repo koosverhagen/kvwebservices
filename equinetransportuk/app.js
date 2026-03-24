@@ -294,7 +294,11 @@ const durationDaysInput = document.getElementById("duration-days");
 /* When duration changes */
 durationDaysInput?.addEventListener("change", () => {
   updatePickupTimeVisibility?.();
-  syncPickupTimeOptions?.();
+  const pickupDate = pickupDateInput?.value;
+
+if (pickupDate) {
+  syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+}
   updateEarlyPickupAvailability();   // ✅ HERE
 });
 
@@ -1012,17 +1016,6 @@ if (afternoonOption) {
   afternoonOption.style.color = afternoonAvailable ? "" : "#999";
 }
 
-/* ===============================
-   🔥 HARD REFRESH SELECT UI
-=============================== */
-
-const currentValue = pickupTimeInput.value;
-
-// force DOM refresh (fixes dropdown not greying out)
-pickupTimeInput.innerHTML = pickupTimeInput.innerHTML;
-
-// restore value safely
-pickupTimeInput.value = currentValue;
 
     /* ===============================
        AUTO-FIX SELECTED VALUE
