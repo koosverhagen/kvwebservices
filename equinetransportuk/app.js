@@ -117,9 +117,9 @@ function startBooking(vehicleId) {
   const pickupDate = pickupDateInput?.value;
   const durationDays = Number(durationDaysInput?.value || 1);
 
-  if (pickupDate && durationDays > 0) {
-    setTimeout(() => availabilityForm?.requestSubmit(), 300);
-  }
+ if (pickupDate && durationDays > 0) {
+  setTimeout(() => maybeAutoSubmitAvailability(), 300);
+}
 }
 
 /* ======================================================
@@ -480,14 +480,17 @@ availabilityResults?.addEventListener("click", async (e) => {
 function maybeAutoSubmitAvailability() {
 
   const duration = Number(durationDaysInput?.value || 0);
+  const pickupTime = pickupTimeInput?.value;
 
-  // ❌ NEVER auto-submit for half-day
-  if (duration === 0.5) {
-    console.log("⛔ skip auto-submit (half-day)");
+  // ❌ STOP for half-day until time selected
+  if (duration === 0.5 && !pickupTime) {
     return;
   }
 
-  maybeAutoSubmitAvailability();
+  // ✅ allow submit
+  if (pickupDateInput?.value && duration > 0) {
+    availabilityForm?.requestSubmit();
+  }
 
 }
 
@@ -5838,23 +5841,20 @@ if (durationInput) {
 
   durationInput.addEventListener("change", () => {
 
-  renderCalendar();
+    renderCalendar();
 
-  const pickupInput = document.getElementById("pickup-date");
+    const pickupInput = document.getElementById("pickup-date");
 
-  /* only run search if date already selected */
+    /* only run search if date already selected */
 
-  if (pickupInput?.value) {
+    if (pickupInput?.value) {
 
-    const form = document.getElementById("availability-form");
+      // 🔥 USE SAFE SUBMIT (NOT direct submit)
+      maybeAutoSubmitAvailability();
 
-    if (form) {
-      form.requestSubmit();
     }
 
-  }
-
-});
+  });
 
 }
 
