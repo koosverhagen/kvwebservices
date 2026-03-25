@@ -1415,6 +1415,10 @@ console.log("✅ FINAL BOOKING:", booking);
 // 🔥 FIX DATES HERE
 booking = normaliseBookingDates(booking);
 
+// ✅ clear vehicle availability cache (booking now confirmed)
+VEHICLE_AVAILABILITY_CACHE.clear();
+VEHICLE_AVAILABILITY_PROMISES.clear();
+
 renderBookingConfirmation(booking);
 
       /* ===============================
@@ -1626,6 +1630,8 @@ function resetBookingFlow() {
 
   // ✅ only clear availability (this is user-specific)
   AVAILABILITY_CACHE.clear();
+  VEHICLE_AVAILABILITY_CACHE.clear();
+  VEHICLE_AVAILABILITY_PROMISES.clear();
 
   /* ===============================
      BUTTON + SUMMARY
