@@ -2241,15 +2241,23 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
     discountCode
   );
 
+  const extras = {
+  dartford: dartfordEnabledInput?.checked
+    ? Number(dartfordCountInput?.value || 0)
+    : 0,
+  earlyPickup: Boolean(earlyPickupEnabledInput?.checked)
+};
 
   const availabilityObject = {
+  vehicle,
+  pickupDate,
+  pickupTime: actualPickupTime,
+  durationDays,
+  durationHours,
+  pickupAt,
+  dropoffAt,
+  extras,
 
-    vehicle,
-    pickupDate,
-    pickupTime: actualPickupTime,
-    durationDays,
-    durationHours,
-    pickupAt,
 
     baseCost: pricing.baseCost,
     discountAmount: pricing.discountAmount,
@@ -2680,31 +2688,31 @@ async function updateCheckoutSummary() {
 
   if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
 
+  const extras = selectedAvailability?.extras || {};
+
+  const dartfordCount = Number(extras.dartford || 0);
+  const earlyPickupEnabled = Boolean(extras.earlyPickup);
+
+  const baseCost = Number(selectedAvailability?.baseCost || 0);
+  const discountAmount = Number(selectedAvailability?.discountAmount || 0);
+  const extrasTotal = Number(selectedAvailability?.extrasTotal || 0);
+  const hireTotal = Number(selectedAvailability?.total || 0);
+
   const vehicleId =
-    selectedAvailability.vehicle?.id ||
-    selectedAvailability.vehicleId ||
-    vehicles.find(v => v.name === selectedAvailability.vehicle?.name)?.id ||
+    selectedAvailability?.vehicle?.id ||
+    selectedAvailability?.vehicleId ||
+    vehicles.find(v => v.name === selectedAvailability?.vehicle?.name)?.id ||
     "";
 
-  const confirmationFee = vehicleId.startsWith("v75") ? 100 : 75;
+  const confirmationFee = String(vehicleId).startsWith("v75")
+    ? CONFIRMATION_FEE_75T
+    : CONFIRMATION_FEE_35T;
 
-  const baseCost = Number(selectedAvailability.baseCost || 0);
-  const discountAmount = Number(selectedAvailability.discountAmount || 0);
-  const extrasTotal = Number(selectedAvailability.extrasTotal || 0);
-  const hireTotal = Number(selectedAvailability.total || 0);
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
-  const dartfordEnabled = Boolean(dartfordEnabledInput?.checked);
-  const dartfordCount = dartfordEnabled
-    ? Number(dartfordCountInput?.value || 0)
-    : 0;
-
-  const earlyPickupEnabled = Boolean(earlyPickupEnabledInput?.checked);
-
-  const dartfordCharge = dartfordCount * 4.2;
-  const earlyPickupCharge = earlyPickupEnabled ? 20 : 0;
-
-  const requiredFormType = hiredWithin3MonthsInput?.checked ? "Short Form" : "Long Form";
+  const requiredFormType = hiredWithin3MonthsInput?.checked
+    ? "Short Form"
+    : "Long Form";
 
   if (bookingSubmitBtn) {
     bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
@@ -2754,22 +2762,22 @@ async function updateCheckoutSummary() {
       }
 
       ${
-        earlyPickupCharge > 0
+        earlyPickupEnabled
           ? `
       <div class="summary-row">
         <span>Early pickup</span>
-        <span>£${earlyPickupCharge.toFixed(2)}</span>
+        <span>Included</span>
       </div>
       `
           : ""
       }
 
       ${
-        dartfordCharge > 0
+        dartfordCount > 0
           ? `
       <div class="summary-row">
         <span>Dartford crossings (${dartfordCount})</span>
-        <span>£${dartfordCharge.toFixed(2)}</span>
+        <span>Included</span>
       </div>
       `
           : ""
