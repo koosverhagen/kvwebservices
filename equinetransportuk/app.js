@@ -1203,29 +1203,6 @@ function renderBookingConfirmation(booking) {
      ✅ HALF-DAY DROP-OFF FIX
   =============================== */
 
-  const getCorrectDropoff = (booking) => {
-
-    const duration = Number(booking.durationDays);
-    const pickupTime = booking.pickupTime || "07:00";
-
-    if (duration === 0.5) {
-
-      const dropTime = HALF_DAY_DROPOFF_TIMES_35T[pickupTime];
-
-      if (dropTime) {
-
-        const pickup = new Date(booking.pickupAt);
-        const [h, m] = dropTime.split(":").map(Number);
-
-        pickup.setHours(h, m, 0, 0);
-
-        return pickup;
-      }
-    }
-
-    return booking.dropoffAt;
-  };
-
   const vehicleName =
     booking.vehicleSnapshot?.name ||
     booking.vehicleId ||
@@ -1286,7 +1263,7 @@ function renderBookingConfirmation(booking) {
         </div>
         <div>
           <div class="label">Return</div>
-          <div class="value">${formatDate(getCorrectDropoff(booking))}</div>
+          <div class="value">${formatDate(booking.dropoffAt)}</div>
         </div>
       </div>
 
