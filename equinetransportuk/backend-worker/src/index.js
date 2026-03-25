@@ -1020,7 +1020,7 @@ if (isNaN(pickupAt.getTime()) || isNaN(dropoffAt.getTime())) {
 
   const now = new Date();
 
-  pickupAt = now;
+
 
   const fallbackDrop = new Date(now);
   fallbackDrop.setHours(now.getHours() + 4);
