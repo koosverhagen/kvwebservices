@@ -620,13 +620,19 @@ async function handleCreateCheckoutSession(request, env) {
      (UNCHANGED)
   =============================== */
 
-  let dropoffDate = new Date(pickupDate);
+  let dropoffDate;
 
-  if (durationDays === 0.5) {
-    dropoffDate = new Date(pickupDate);
-  } else {
-    dropoffDate.setDate(dropoffDate.getDate() + Math.max(1, durationDays) - 1);
-  }
+if (durationDays === 0.5) {
+
+  // ✅ keep same day BUT explicit
+  dropoffDate = new Date(pickupDate);
+
+} else {
+
+  dropoffDate = new Date(pickupDate);
+  dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
+
+}
 
   const reservedDates = getDatesBetween(pickupDate, dropoffDate);
 
@@ -1035,6 +1041,13 @@ console.log("📅 WEBHOOK TIMES:", {
   dropoffAt: dropoffAt.toISOString()
 });
 
+
+console.log("🔥 FINAL TIMES CHECK:", {
+  pickupAt: pickupAt.toISOString(),
+  dropoffAt: dropoffAt.toISOString(),
+  durationDays,
+  pickupTime
+});
 
 /* ===============================
    BOOKING OBJECT
