@@ -305,8 +305,10 @@ durationDaysInput?.addEventListener("change", async () => {
   await updatePickupTimeVisibility();
 
   updateEarlyPickupAvailability();
-});
 
+  // ✅ ONLY trigger via controlled function
+  maybeAutoSubmitAvailability();
+});
 pickupTimeInput?.addEventListener("change", async () => {
 
   const pickupDate = pickupDateInput?.value;
@@ -317,6 +319,9 @@ pickupTimeInput?.addEventListener("change", async () => {
   );
 
   updateEarlyPickupAvailability();
+
+  // ✅ NOW allow half-day to proceed
+  maybeAutoSubmitAvailability();
 });
 
 
