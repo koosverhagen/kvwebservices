@@ -649,51 +649,45 @@ async function updateDurationOptions(dateObj) {
     if (duration === 0.5) {
 
       // 🔥 CHECK BOTH AM + PM IN PARALLEL
-    const { amData, pmData } = await getHalfDayAvailability(dateStr);
+      const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-     const filteredAM = (vehicleId
-  ? amData.filter(v => v.vehicleId === vehicleId)
-  : amData
-).filter(v => {
-  const vehicle = vehicles.find(x => x.id === v.vehicleId);
-  return is35T(vehicle);
-});
+      const filteredAM = (vehicleId
+        ? amData.filter(v => v.vehicleId === vehicleId)
+        : amData
+      ).filter(v => {
+        const vehicle = vehicles.find(x => x.id === v.vehicleId);
+        return is35T(vehicle);
+      });
 
-const filteredPM = (vehicleId
-  ? pmData.filter(v => v.vehicleId === vehicleId)
-  : pmData
-).filter(v => {
-  const vehicle = vehicles.find(x => x.id === v.vehicleId);
-  return is35T(vehicle);
-});
+      const filteredPM = (vehicleId
+        ? pmData.filter(v => v.vehicleId === vehicleId)
+        : pmData
+      ).filter(v => {
+        const vehicle = vehicles.find(x => x.id === v.vehicleId);
+        return is35T(vehicle);
+      });
 
-const hasAM = filteredAM.some(v => v.available);
-const hasPM = filteredPM.some(v => v.available);
+      const hasAM = filteredAM.some(v => v.available);
+      const hasPM = filteredPM.some(v => v.available);
 
       available = hasAM || hasPM;
 
       /* ===============================
-         AUTO PICK CORRECT TIME
+         🧠 DO NOT AUTO-SELECT TIME
       =============================== */
 
       if (available && pickupTimeInput) {
 
-        // nothing selected → pick best
-        if (!pickupTimeInput.value) {
-          if (hasAM) pickupTimeInput.value = "07:00";
-          else if (hasPM) pickupTimeInput.value = "13:00";
-        }
-
-        // selected AM but unavailable → switch to PM
-        else if (pickupTimeInput.value === "07:00" && !hasAM && hasPM) {
+        // ✅ Only FIX invalid selections
+        if (pickupTimeInput.value === "07:00" && !hasAM && hasPM) {
           pickupTimeInput.value = "13:00";
         }
 
-        // selected PM but unavailable → switch to AM
         else if (pickupTimeInput.value === "13:00" && !hasPM && hasAM) {
           pickupTimeInput.value = "07:00";
         }
 
+        // ❌ DO NOT set value if empty → user must choose
       }
 
     }
@@ -1106,10 +1100,9 @@ const afternoonAvailable = filteredPM.some(v => v.available);
 
     const current = pickupTimeInput.value;
 
-    // nothing selected → pick best
+    // ❌ do NOT auto-select for half-day
     if (!current) {
-      if (morningAvailable) pickupTimeInput.value = "07:00";
-      else if (afternoonAvailable) pickupTimeInput.value = "13:00";
+      pickupTimeInput.value = "";
     }
 
     // selected AM but not available → switch
