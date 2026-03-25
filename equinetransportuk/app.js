@@ -1440,13 +1440,6 @@ async function handleStripeReturn() {
       // 🔥 FIX DATES HERE
       booking = normaliseBookingDates(booking);
 
-      // ✅ DEBUG — SINGLE SOURCE OF TRUTH
-      console.log("📦 CONFIRMATION DATA:", {
-        pickupAt: booking.pickupAt,
-        dropoffAt: booking.dropoffAt,
-        duration: booking.durationDays,
-        pickupTime: booking.pickupTime
-      });
 
       // ✅ clear vehicle availability cache (booking now confirmed)
       VEHICLE_AVAILABILITY_CACHE.clear();
@@ -2096,9 +2089,6 @@ try {
      EXTRAS (🔥 NEW)
   =============================== */
 
-console.log("EARLY PICKUP ELEMENT:", earlyPickupEnabledInput);
-console.log("EARLY PICKUP CHECKED:", earlyPickupEnabledInput?.checked);
-console.log("EARLY PICKUP DISABLED:", earlyPickupEnabledInput?.disabled);
 
   const extras = {
   dartford: dartfordEnabledInput?.checked
