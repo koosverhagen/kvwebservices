@@ -1430,13 +1430,27 @@ async function handleBookingBySession(request, env) {
 
         console.log("✅ Booking found in KV:", bookingId);
 
-        return json({
-          found: true,
-          booking: {
-            ...booking,
-            extras: booking.extras || {}
-          }
-        });
+        function cleanIso(value) {
+
+  if (!value || typeof value !== "string") return value;
+
+  // 🔥 FIX BROKEN FORMAT: 2026-03-28T07:00:00.000ZT19:00
+  if (value.includes("Z") && value.split("T").length > 2) {
+    return value.split("Z")[0] + "Z";
+  }
+
+  return value;
+}
+
+return json({
+  found: true,
+  booking: {
+    ...booking,
+    pickupAt: cleanIso(booking.pickupAt),
+    dropoffAt: cleanIso(booking.dropoffAt),
+    extras: booking.extras || {}
+  }
+});
       }
 
     } catch (err) {
@@ -1452,14 +1466,18 @@ async function handleBookingBySession(request, env) {
 
   console.log("⚠️ Booking not yet in KV, returning Stripe session");
 
-  return json({
-    found: false,
-    session: {
-      id: session.id,
-      metadata: session.metadata || {},
-      customer_details: session.customer_details || null
-    }
-  });
+ return json({
+  found: false,
+  session: {
+    id: session.id,
+    metadata: session.metadata || {},
+    customer_details: session.customer_details || null,
+
+    // 🔥 ADD CLEAN TIMES HERE
+    pickupAt: cleanIso(session.metadata?.pickupAt),
+    dropoffAt: cleanIso(session.metadata?.dropoffAt)
+  }
+});
 }
 
 async function handleAvailability(request, env) {
