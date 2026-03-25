@@ -1370,6 +1370,16 @@ async function handleBookingBySession(request, env) {
     return json({ error: "Missing session_id" }, 400);
   }
 
+  function cleanIso(value) {
+    if (!value || typeof value !== "string") return value;
+
+    if (value.includes("Z") && value.split("T").length > 2) {
+      return value.split("Z")[0] + "Z";
+    }
+
+    return value;
+  }
+
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20"
   });
@@ -1383,19 +1393,11 @@ async function handleBookingBySession(request, env) {
     return json({ error: "Stripe lookup failed" }, 500);
   }
 
-  /* ===============================
-     SAFE BOOKING ID
-  ================================ */
-
   const bookingId =
     session?.metadata?.bookingId ||
     session?.id;
 
   console.log("🔎 Looking for bookingId:", bookingId);
-
-  /* ===============================
-     SEARCH KV (MONTH BUCKETS)
-  ================================ */
 
   const months = [];
 
@@ -1430,27 +1432,15 @@ async function handleBookingBySession(request, env) {
 
         console.log("✅ Booking found in KV:", bookingId);
 
-        function cleanIso(value) {
-
-  if (!value || typeof value !== "string") return value;
-
-  // 🔥 FIX BROKEN FORMAT: 2026-03-28T07:00:00.000ZT19:00
-  if (value.includes("Z") && value.split("T").length > 2) {
-    return value.split("Z")[0] + "Z";
-  }
-
-  return value;
-}
-
-return json({
-  found: true,
-  booking: {
-    ...booking,
-    pickupAt: cleanIso(booking.pickupAt),
-    dropoffAt: cleanIso(booking.dropoffAt),
-    extras: booking.extras || {}
-  }
-});
+        return json({
+          found: true,
+          booking: {
+            ...booking,
+            pickupAt: cleanIso(booking.pickupAt),
+            dropoffAt: cleanIso(booking.dropoffAt),
+            extras: booking.extras || {}
+          }
+        });
       }
 
     } catch (err) {
@@ -1459,25 +1449,18 @@ return json({
 
   }
 
-  /* ===============================
-     NOT FOUND → RETURN STRIPE SESSION
-     🔥 THIS ENABLES INSTANT CONFIRMATION
-  ================================ */
-
   console.log("⚠️ Booking not yet in KV, returning Stripe session");
 
- return json({
-  found: false,
-  session: {
-    id: session.id,
-    metadata: session.metadata || {},
-    customer_details: session.customer_details || null,
-
-    // 🔥 ADD CLEAN TIMES HERE
-    pickupAt: cleanIso(session.metadata?.pickupAt),
-    dropoffAt: cleanIso(session.metadata?.dropoffAt)
-  }
-});
+  return json({
+    found: false,
+    session: {
+      id: session.id,
+      metadata: session.metadata || {},
+      customer_details: session.customer_details || null,
+      pickupAt: cleanIso(session.metadata?.pickupAt),
+      dropoffAt: cleanIso(session.metadata?.dropoffAt)
+    }
+  });
 }
 
 async function handleAvailability(request, env) {
