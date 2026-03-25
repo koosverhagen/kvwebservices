@@ -1199,6 +1199,33 @@ function renderBookingConfirmation(booking) {
 
   };
 
+  /* ===============================
+     ✅ HALF-DAY DROP-OFF FIX
+  =============================== */
+
+  const getCorrectDropoff = (booking) => {
+
+    const duration = Number(booking.durationDays);
+    const pickupTime = booking.pickupTime || "07:00";
+
+    if (duration === 0.5) {
+
+      const dropTime = HALF_DAY_DROPOFF_TIMES_35T[pickupTime];
+
+      if (dropTime) {
+
+        const pickup = new Date(booking.pickupAt);
+        const [h, m] = dropTime.split(":").map(Number);
+
+        pickup.setHours(h, m, 0, 0);
+
+        return pickup;
+      }
+    }
+
+    return booking.dropoffAt;
+  };
+
   const vehicleName =
     booking.vehicleSnapshot?.name ||
     booking.vehicleId ||
@@ -1210,7 +1237,6 @@ function renderBookingConfirmation(booking) {
   const paidNow = booking.confirmationFee || 0;
   const remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
 
-  // ✅ NEW: structured extras HTML
   let extrasHtml = "";
 
   if (extras) {
@@ -1248,13 +1274,11 @@ function renderBookingConfirmation(booking) {
         <div class="confirmation-ref">Ref ${shortRef}</div>
       </div>
 
-      <!-- VEHICLE -->
       <div class="confirmation-block">
         <div class="label">Vehicle</div>
         <div class="value strong">${vehicleName}</div>
       </div>
 
-      <!-- TIMES -->
       <div class="confirmation-block grid">
         <div>
           <div class="label">Pickup</div>
@@ -1262,11 +1286,10 @@ function renderBookingConfirmation(booking) {
         </div>
         <div>
           <div class="label">Return</div>
-          <div class="value">${formatDate(booking.dropoffAt)}</div>
+          <div class="value">${formatDate(getCorrectDropoff(booking))}</div>
         </div>
       </div>
 
-      <!-- PAYMENT CARD -->
       <div class="payment-card">
 
         ${extrasHtml ? `
@@ -1300,14 +1323,12 @@ function renderBookingConfirmation(booking) {
 
       </div>
 
-      <!-- TRUST -->
       <div class="confirmation-trust">
         <div class="trust-item">✔ Booking secured</div>
         <div class="trust-item">✔ No hidden fees</div>
         <div class="trust-item">✔ Email confirmation sent</div>
       </div>
 
-      <!-- ACTION -->
       <div class="confirmation-actions">
         <a href="https://kvwebservices.co.uk/equinetransportuk/index.html" class="btn">
           Back to homepage
