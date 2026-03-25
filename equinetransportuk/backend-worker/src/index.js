@@ -976,16 +976,23 @@ console.log("📅 RAW DATE:", session.metadata.pickupDate);
 console.log("📅 CLEAN DATE:", rawPickupDate);
 
 /* ===============================
-   PICKUP
+   PICKUP (FIXED — MATCHES DROPOFF)
 =============================== */
 
-const pickupAt = buildUtcDate(rawPickupDate, pickupTime).toISOString();
+let pickupAt;
+let pickupAtDate;
 
+// ✅ use London-safe conversion
+pickupAtDate = londonDateTimeToUtc(rawPickupDate, pickupTime);
+
+// ✅ convert to ISO ONCE
+pickupAt = pickupAtDate.toISOString();
 /* ===============================
-   DROPOFF
+   DROPOFF (FIXED — CLEAN + SAFE)
 =============================== */
 
 let dropoffAt;
+let dropoffAtDate;
 
 if (durationDays === 0.5) {
 
@@ -994,7 +1001,8 @@ if (durationDays === 0.5) {
     session.metadata.vehicleId
   );
 
-  dropoffAt = buildUtcDate(rawPickupDate, dropoffTime).toISOString();
+  // ✅ use London-safe conversion
+  dropoffAtDate = londonDateTimeToUtc(rawPickupDate, dropoffTime);
 
 } else {
 
@@ -1003,14 +1011,21 @@ if (durationDays === 0.5) {
 
   const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
 
-  dropoffAt = buildUtcDate(dropoffDateStr, "19:00").toISOString();
+  // ✅ use London-safe conversion
+  dropoffAtDate = londonDateTimeToUtc(dropoffDateStr, "19:00");
+
 }
 
+// ✅ convert to ISO ONCE (final step only)
+dropoffAt = dropoffAtDate.toISOString();
 /* ===============================
-   SAFETY CHECK (FIXED — NEVER FAIL WEBHOOK)
+   SAFETY CHECK (FIXED — CONSISTENT)
 =============================== */
 
-if (isNaN(pickupAt.getTime()) || isNaN(dropoffAt.getTime())) {
+if (
+  isNaN(pickupAtDate.getTime()) ||
+  isNaN(dropoffAtDate.getTime())
+) {
 
   console.warn("⚠️ Invalid date detected — applying fallback", {
     rawPickupDate,
@@ -1020,13 +1035,16 @@ if (isNaN(pickupAt.getTime()) || isNaN(dropoffAt.getTime())) {
 
   const now = new Date();
 
+  // fallback pickup = now
+  pickupAtDate = now;
 
+  // fallback dropoff = +4 hours
+  dropoffAtDate = new Date(now);
+  dropoffAtDate.setHours(now.getHours() + 4);
 
-  const fallbackDrop = new Date(now);
-  fallbackDrop.setHours(now.getHours() + 4);
-
-  dropoffAt = fallbackDrop;
-
+  // ✅ ALWAYS convert to ISO strings (consistent)
+  pickupAt = pickupAtDate.toISOString();
+  dropoffAt = dropoffAtDate.toISOString();
 }
 
 /* ===============================
@@ -1034,18 +1052,17 @@ if (isNaN(pickupAt.getTime()) || isNaN(dropoffAt.getTime())) {
 =============================== */
 
 console.log("📅 WEBHOOK TIMES:", {
-  pickupAt: pickupAt.toISOString(),
-  dropoffAt: dropoffAt.toISOString()
+  pickupAt,
+  dropoffAt
 });
 
 
 console.log("🔥 FINAL TIMES CHECK:", {
-  pickupAt: pickupAt.toISOString(),
-  dropoffAt: dropoffAt.toISOString(),
+  pickupAt,
+  dropoffAt,
   durationDays,
   pickupTime
 });
-
 /* ===============================
    BOOKING OBJECT
 =============================== */
@@ -1065,11 +1082,11 @@ const booking = {
       : "7.5 tonne"
   },
 
-  pickupAt: pickupAt.toISOString(),
-  dropoffAt: dropoffAt.toISOString(),
+pickupAt: pickupAt,
+dropoffAt: dropoffAt,
 
-  pickupAtLocal: toLondonLocalISOString(pickupAt),
-  dropoffAtLocal: toLondonLocalISOString(dropoffAt),
+ pickupAtLocal: toLondonLocalISOString(new Date(pickupAt)),
+dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
 
   durationDays,
   pickupTime,
