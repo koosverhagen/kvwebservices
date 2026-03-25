@@ -600,16 +600,19 @@ async function isDurationAvailable(startDate, durationDays, vehicleId, bookings,
 
   try {
 
-    const url = `/api/vehicles/available?date=${startDate}&duration=${durationDays}&pickupTime=${pickupTime || "07:00"}`;
+    const vehicles = await getVehicleAvailability(
+      startDate,
+      durationDays,
+      pickupTime || "07:00"
+    );
 
-    const res = await fetch(apiUrl(url));
-    const data = await res.json();
-
-    const vehicle = data.vehicles.find(v => v.vehicleId === vehicleId);
+    const vehicle = vehicles.find(v => v.vehicleId === vehicleId);
 
     if (Number(durationDays) === 0.5) {
-  return vehicle?.availableSlots?.length > 0;
-}
+      return vehicle?.availableSlots?.length > 0;
+    }
+
+    return !!vehicle?.available;
 
   } catch (err) {
 
