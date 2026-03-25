@@ -979,7 +979,7 @@ console.log("📅 CLEAN DATE:", rawPickupDate);
    PICKUP
 =============================== */
 
-let pickupAt = londonDateTimeToUtc(rawPickupDate, pickupTime);
+const pickupAt = buildUtcDate(rawPickupDate, pickupTime).toISOString();
 
 /* ===============================
    DROPOFF
@@ -989,24 +989,21 @@ let dropoffAt;
 
 if (durationDays === 0.5) {
 
-  const dropTime = getHalfDayDropoffTime(
+  const dropoffTime = getHalfDayDropoffTime(
     pickupTime,
     session.metadata.vehicleId
-  ) || "13:00"; // 🔒 safety fallback
+  );
 
-  dropoffAt = londonDateTimeToUtc(rawPickupDate, dropTime);
+  dropoffAt = buildUtcDate(rawPickupDate, dropoffTime).toISOString();
 
 } else {
 
-  const dropDate = new Date(`${rawPickupDate}T00:00:00`);
-  dropDate.setDate(dropDate.getDate() + Math.max(1, durationDays) - 1);
+  const dropoffDate = new Date(rawPickupDate);
+  dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
 
-  const year = dropDate.getFullYear();
-  const month = String(dropDate.getMonth() + 1).padStart(2, "0");
-  const day = String(dropDate.getDate()).padStart(2, "0");
+  const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
 
-  dropoffAt = londonDateTimeToUtc(`${year}-${month}-${day}`, "19:00");
-
+  dropoffAt = buildUtcDate(dropoffDateStr, "19:00").toISOString();
 }
 
 /* ===============================
@@ -1826,6 +1823,13 @@ async function findCustomerByEmailOrMobile(env, email, mobile) {
 /* ===============================
    HELPERS
 ================================ */
+
+function buildUtcDate(dateStr, timeStr) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hour, minute] = timeStr.split(":").map(Number);
+
+  return new Date(Date.UTC(year, month - 1, day, hour, minute));
+}
 
 function getSlotFromBooking(booking) {
   if (Number(booking.durationDays) !== 0.5) return "full";
