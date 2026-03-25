@@ -1316,23 +1316,29 @@ function renderBookingConfirmation(booking) {
   `;
 }
 
+
+function cleanIsoString(value) {
+
+  if (!value || typeof value !== "string") return value;
+
+  // 🔥 FIX DOUBLE TIME (your exact bug)
+  if (value.includes("Z") && value.split("T").length > 2) {
+
+    const firstPart = value.split("Z")[0]; // keep valid ISO
+    return firstPart + "Z";
+  }
+
+  return value;
+}
+
 function normaliseBookingDates(booking) {
 
-  function fix(val) {
-    if (!val || typeof val !== "string") return val;
-
-    // 🔥 Fix broken "Z + Ttime" case
-    if (val.includes("Z") && val.includes("T", val.indexOf("Z"))) {
-      return val.split("Z")[0] + "Z";
-    }
-
-    return val;
-  }
+  if (!booking) return booking;
 
   return {
     ...booking,
-    pickupAt: fix(booking.pickupAt),
-    dropoffAt: fix(booking.dropoffAt)
+    pickupAt: cleanIsoString(booking.pickupAt),
+    dropoffAt: cleanIsoString(booking.dropoffAt)
   };
 }
 
