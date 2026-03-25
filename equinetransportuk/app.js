@@ -1200,9 +1200,8 @@ function renderBookingConfirmation(booking) {
   };
 
   /* ===============================
-     ✅ HALF-DAY DROP-OFF FIX
-  =============================== */
-
+   DISPLAY ONLY (backend is source of truth)
+=============================== */
   const vehicleName =
     booking.vehicleSnapshot?.name ||
     booking.vehicleId ||
@@ -1435,16 +1434,25 @@ async function handleStripeReturn() {
       /* ===============================
          🟢 SUCCESS — RENDER FINAL
       ================================ */
-console.log("✅ FINAL BOOKING:", booking);
 
-// 🔥 FIX DATES HERE
-booking = normaliseBookingDates(booking);
+      console.log("✅ FINAL BOOKING:", booking);
 
-// ✅ clear vehicle availability cache (booking now confirmed)
-VEHICLE_AVAILABILITY_CACHE.clear();
-VEHICLE_AVAILABILITY_PROMISES.clear();
+      // 🔥 FIX DATES HERE
+      booking = normaliseBookingDates(booking);
 
-renderBookingConfirmation(booking);
+      // ✅ DEBUG — SINGLE SOURCE OF TRUTH
+      console.log("📦 CONFIRMATION DATA:", {
+        pickupAt: booking.pickupAt,
+        dropoffAt: booking.dropoffAt,
+        duration: booking.durationDays,
+        pickupTime: booking.pickupTime
+      });
+
+      // ✅ clear vehicle availability cache (booking now confirmed)
+      VEHICLE_AVAILABILITY_CACHE.clear();
+      VEHICLE_AVAILABILITY_PROMISES.clear();
+
+      renderBookingConfirmation(booking);
 
       /* ===============================
          🟢 CLEAN URL
@@ -2242,7 +2250,6 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
     durationDays,
     durationHours,
     pickupAt,
-    dropoffAt,
 
     baseCost: pricing.baseCost,
     discountAmount: pricing.discountAmount,
