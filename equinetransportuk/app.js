@@ -19,6 +19,7 @@ let LOCKED_VEHICLE = false;
 ================================ */
 
 let BOOKINGS_CACHE = null;
+
 let BOOKINGS_CACHE_AT = 0;
 const BOOKINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -146,6 +147,14 @@ const FULL_DAY_DROPOFF_TIME = "19:00";
 // Availability cache (quote results)
 const AVAILABILITY_CACHE = new Map();
 const AVAILABILITY_CACHE_TTL = 60 * 1000; // 60 seconds
+
+/* ===============================
+   Vehicle availability cache
+================================ */
+
+const VEHICLE_AVAILABILITY_CACHE = new Map();
+const VEHICLE_AVAILABILITY_CACHE_TTL = 60 * 1000; // 60 seconds
+const VEHICLE_AVAILABILITY_PROMISES = new Map();
 
 /* ===============================
    Calendar cache
@@ -496,16 +505,53 @@ function maybeAutoSubmitAvailability() {
 
 async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
 
-  let url = apiUrl(`/api/vehicles/available?date=${dateStr}&duration=${duration}`);
+  const key = `${dateStr}|${duration}|${pickupTime || "any"}`;
+  const now = Date.now();
 
-  if (pickupTime) {
-    url += `&pickupTime=${pickupTime}`;
+  // ✅ Return cached result if fresh
+  if (
+    VEHICLE_AVAILABILITY_CACHE.has(key) &&
+    (now - (VEHICLE_AVAILABILITY_CACHE.get(key)?.ts || 0)) < VEHICLE_AVAILABILITY_CACHE_TTL
+  ) {
+    return VEHICLE_AVAILABILITY_CACHE.get(key).data.vehicles || [];
   }
 
-  const res = await fetch(url);
-  const data = await res.json();
+  // ✅ Deduplicate in-flight requests
+  if (VEHICLE_AVAILABILITY_PROMISES.has(key)) {
+    const data = await VEHICLE_AVAILABILITY_PROMISES.get(key);
+    return data.vehicles || [];
+  }
 
-  return data.vehicles || [];
+  // 🔄 Create request
+  const promise = (async () => {
+
+    let url = `/api/vehicles/available?date=${dateStr}&duration=${duration}`;
+
+    if (pickupTime) {
+      url += `&pickupTime=${pickupTime}`;
+    }
+
+    const res = await fetch(apiUrl(url));
+    const data = await res.json();
+
+    // ✅ Store in cache
+    VEHICLE_AVAILABILITY_CACHE.set(key, {
+      data,
+      ts: Date.now()
+    });
+
+    return data;
+
+  })();
+
+  VEHICLE_AVAILABILITY_PROMISES.set(key, promise);
+
+  try {
+    const data = await promise;
+    return data.vehicles || [];
+  } finally {
+    VEHICLE_AVAILABILITY_PROMISES.delete(key);
+  }
 }
 
 async function getHalfDayAvailability(dateStr) {
