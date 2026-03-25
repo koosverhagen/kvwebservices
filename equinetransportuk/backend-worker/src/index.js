@@ -943,6 +943,17 @@ try {
     console.log("📦 SAVING BOOKING WITH EXTRAS:", extras);
 
 /* ===============================
+   HALF DAY DROP-OFF HELPER
+=============================== */
+
+function getHalfDayDropoffTime(pickupTime, vehicleId) {
+
+  // future-proof: only 3.5T supports half-day
+  if (!String(vehicleId || "").startsWith("v35")) return null;
+
+  return pickupTime === "13:00" ? "19:00" : "13:00";
+}
+/* ===============================
    DATES (FIXED FINAL)
 =============================== */
 
@@ -972,7 +983,11 @@ let dropoffAt;
 
 if (durationDays === 0.5) {
 
-  const dropTime = pickupTime === "07:00" ? "13:00" : "19:00";
+  const dropTime = getHalfDayDropoffTime(
+    pickupTime,
+    session.metadata.vehicleId
+  ) || "13:00"; // 🔒 safety fallback
+
   dropoffAt = londonDateTimeToUtc(rawPickupDate, dropTime);
 
 } else {
