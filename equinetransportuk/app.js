@@ -1390,20 +1390,9 @@ async function handleStripeReturn() {
          🟢 STEP 1 — FAST (Stripe metadata)
       ================================ */
 
-      let booking = await fetchStripeSession(sessionId);
+      let booking = await fetchBookingWithRetry(sessionId);
 
       console.log("⚡ Stripe session result:", booking);
-
-      /* ===============================
-         🟡 STEP 2 — FALLBACK (KV retry)
-      ================================ */
-
-      if (!booking || !booking.pickupAt) {
-
-        console.log("🔁 Falling back to retry…");
-
-        booking = await fetchBookingWithRetry(sessionId);
-      }
 
       /* ===============================
          🔴 STILL NOT READY (rare)
