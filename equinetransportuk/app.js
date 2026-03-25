@@ -73,15 +73,38 @@ function goToStep(step) {
   const indicator = document.querySelector(`.booking-steps .step[data-step="${step}"]`);
   if(indicator) indicator.classList.add("active");
 
-// Only auto scroll for steps AFTER step 1
-if (step > 1) {
-  setTimeout(()=>{
-    stepEl?.scrollIntoView({
-      behavior:"smooth",
-      block:"start"
-    });
-  },100);
-}
+  /* ===============================
+     🔥 MOVE SUMMARY BETWEEN STEPS
+  =============================== */
+
+  const summary = document.getElementById("checkout-summary");
+
+  if (summary) {
+
+    let target = null;
+
+    if (step === 3) {
+      target = document.querySelector("#step-3 .summary-sticky-wrap");
+    }
+
+    if (step === 4) {
+      target = document.querySelector("#step-4 #checkout-summary-container");
+    }
+
+    if (target && !target.contains(summary)) {
+      target.appendChild(summary);
+    }
+  }
+
+  // Only auto scroll for steps AFTER step 1
+  if (step > 1) {
+    setTimeout(()=>{
+      stepEl?.scrollIntoView({
+        behavior:"smooth",
+        block:"start"
+      });
+    },100);
+  }
 
 }
 

@@ -2861,3 +2861,45 @@ BOOKING SUMMARY CARD
   opacity: 0.04; /* subtle watermark */
   pointer-events: none;
 }
+
+/* ===============================
+   BOOKING 2 COLUMN LAYOUT
+=============================== */
+
+.booking-two-col {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  align-items: start;
+}
+
+.booking-main {
+  min-width: 0;
+}
+
+.booking-summary {
+  position: relative;
+}
+
+/* ===============================
+   STICKY SUMMARY
+=============================== */
+
+.summary-sticky-wrap {
+  position: sticky;
+  top: 100px; /* below header */
+}
+
+/* ===============================
+   MOBILE FIX
+=============================== */
+
+@media (max-width: 900px) {
+  .booking-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-sticky-wrap {
+    position: static;
+  }
+}
