@@ -1466,15 +1466,13 @@ async function handleBookingBySession(request, env) {
   console.log("⚠️ Booking not yet in KV, returning Stripe session");
 
   return json({
-    found: false,
-    session: {
-      id: session.id,
-      metadata: session.metadata || {},
-      customer_details: session.customer_details || null,
-      pickupAt: cleanIso(session.metadata?.pickupAt),
-      dropoffAt: cleanIso(session.metadata?.dropoffAt)
-    }
-  });
+  found: false,
+  session: {
+    id: session.id,
+    metadata: session.metadata || {},
+    customer_details: session.customer_details || null
+  }
+});
 }
 
 async function handleAvailability(request, env) {
