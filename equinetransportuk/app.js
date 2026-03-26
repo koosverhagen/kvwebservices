@@ -5379,19 +5379,21 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
   }
 
   /* ===============================
-     AVAILABILITY CHECK
-  =============================== */
+   AVAILABILITY CHECK
+=============================== */
 
-  const status = checkDayLocalAvailability(dayDate, bookings);
-  const validStart = canStartRental(dayDate, bookings);
+const dayKey = formatDayKey(dayDate);
 
-  renderAvailabilityDots(dayEl, bookings, dayDate);
+const status = checkDayLocalAvailability(dayDate, bookings);
+const validStart = canStartRental(dayDate, bookings);
 
-  /* ===============================
-     LAST VEHICLE LABEL
-  =============================== */
+renderAvailabilityDots(dayEl, bookings, dayDate);
 
- const remainingSlots = getRemainingSlots(formatDayKey(dayDate), bookings);
+/* ===============================
+   LAST VEHICLE LABEL
+=============================== */
+
+const remainingSlots = getRemainingSlots(dayKey, bookings);
 
 if (remainingSlots === 1){
 
