@@ -3138,17 +3138,16 @@ async function fetchBookingWithRetry(sessionId, attempts = 20) {
           apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
         );
 
-        if (!res.ok) {
-          console.warn(`Booking by session failed (${res.status})`);
-        } else {
-          const data = await res.json();
+       if (res.ok) {
+  const data = await res.json();
 
-          console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
-          
-          if (data?.found && data.booking?.pickupAt) {
-            return data.booking;
-          }
-        }
+  console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
+
+  // ✅ FIXED CONDITION
+  if (data?.booking?.pickupAt) {
+    return data.booking;
+  }
+}
       } catch (err) {
         console.warn(`Retry attempt ${i + 1} failed`, err);
       }
