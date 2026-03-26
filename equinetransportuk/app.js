@@ -752,10 +752,10 @@ async function updateDurationOptions(dateStr) {
   }
 }
 
-async function syncBookingPickupTimeOptions(dateObj, vehicleId) {
+async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
 
   const select = document.getElementById("booking-pickup-time");
-  if (!select || !dateObj || !vehicleId) return;
+  if (!select || !dateStr || !vehicleId) return;
 
   const bookings = BOOKINGS_CACHE || await getBookings(false);
 
@@ -766,11 +766,8 @@ async function syncBookingPickupTimeOptions(dateObj, vehicleId) {
     b => b.vehicleId === vehicleId && b.status !== "cancelled"
   );
 
-  const dayStart = new Date(dateObj);
-  dayStart.setHours(0,0,0,0);
-
-  const dayEnd = new Date(dateObj);
-  dayEnd.setHours(23,59,59,999);
+  const dayStart = new Date(`${dateStr}T00:00:00`);
+  const dayEnd = new Date(`${dateStr}T23:59:59`);
 
   let morningBooked = false;
   let afternoonBooked = false;
@@ -1182,14 +1179,15 @@ function renderBookingConfirmation(booking) {
       return "—";
     }
 
-    return d.toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-
+return d.toLocaleString("en-GB", {
+  timeZone: "Europe/London",
+  day: "2-digit",
+  month: "2-digit",
+  year: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false
+});
   };
 
   /* ===============================
@@ -4205,7 +4203,7 @@ if (pickupTimeInput) {
        keep existing logic
     =============================== */
 
-    await syncPickupTimeOptions(dateObj);
+   await syncPickupTimeOptions(date);
 
     updateEarlyPickupAvailability();
 
@@ -4220,22 +4218,22 @@ if (pickupTimeInput) {
 
   /* Step 3 logic (use existing global selectedDurationInput) */
 
-  if (selectedDurationInput) {
+if (selectedDurationInput) {
 
-    selectedDurationInput.addEventListener("change", async () => {
+  selectedDurationInput.addEventListener("change", async () => {
 
-  updateHalfDayPickup();
+    updateHalfDayPickup();
 
-  const vehicle = selectedAvailability?.vehicle;
-  const date = selectedPickupInput?.value;
+    const vehicle = selectedAvailability?.vehicle;
+    const date = selectedPickupInput?.value;
 
-  if (vehicle && date) {
-    await syncBookingPickupTimeOptions(new Date(date), vehicle.id);
-  }
+    if (vehicle && date) {
+      await syncBookingPickupTimeOptions(date, vehicle.id);
+    }
 
-});
+  });
 
-  }
+}
 
   updateHalfDayPickup();
 
@@ -5039,13 +5037,10 @@ panel.querySelectorAll(".preview-select").forEach(el => {
 
     updateCalendarVehicleLabel();
 
-    /* set selected date */
-    if (pickupDateInput) {
-      const year = dateStart.getFullYear();
-      const month = String(dateStart.getMonth() + 1).padStart(2, "0");
-      const day = String(dateStart.getDate()).padStart(2, "0");
-      pickupDateInput.value = `${year}-${month}-${day}`;
-    }
+/* set selected date */
+if (pickupDateInput) {
+  pickupDateInput.value = formatDayKey(dateStart);
+}
 
     /* keep vehicle visible in UI */
     if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
@@ -5071,7 +5066,7 @@ panel.querySelectorAll(".preview-select").forEach(el => {
   }
 }
 
-    await syncPickupTimeOptions(dateStart);
+   await syncPickupTimeOptions(formatDayKey(dateStart));
     updatePickupTimeVisibility();
     updateCheckoutSummary();
 
