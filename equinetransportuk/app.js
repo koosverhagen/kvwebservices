@@ -123,6 +123,15 @@ if (durationDaysInput) {
   durationDaysInput.value = "";
 }
 
+// 🔥 NEW — clear pickup time as well
+if (pickupTimeInput) {
+  pickupTimeInput.value = "";
+}
+
+// 🔥 NEW — clear results (prevents false "not available")
+if (availabilityResults) {
+  availabilityResults.innerHTML = "";
+}
   // 🔥 Remove half-day for 7.5T instantly
   enforceVehicleDurationRules(vehicle);
 
@@ -542,16 +551,29 @@ function maybeAutoSubmitAvailability() {
   const duration = Number(durationDaysInput?.value || 0);
   const pickupTime = pickupTimeInput?.value;
 
-  // ❌ STOP completely if no duration
+  // 🔥 HARD STOP: prevent silent fallback
+if (durationDays === 0.5 && !pickupTime) {
+  console.warn("⛔ blocked submit: missing pickup time");
+  return;
+}
+
+  // ❌ no duration → stop
   if (!duration) return;
 
-  // ❌ HALF DAY → REQUIRE TIME
+  // 🔥 CRITICAL: LOCKED VEHICLE FLOW
+  // NEVER auto-submit — user must click button
+  if (LOCKED_VEHICLE) {
+    console.log("⛔ locked vehicle → manual submit only");
+    return;
+  }
+
+  // ❌ half day without time → stop
   if (duration === 0.5 && !pickupTime) {
     console.log("⛔ waiting for pickup time");
     return;
   }
 
-  // ✅ ONLY now allow submit
+  // ✅ safe to submit
   if (pickupDateInput?.value) {
     availabilityForm?.requestSubmit();
   }
@@ -4387,9 +4409,9 @@ if (availabilityForm) {
       }
 
       const finalPickupTime =
-        durationDays === 0.5
-          ? pickupTime
-          : DEFAULT_PICKUP_TIME;
+  durationDays === 0.5
+    ? pickupTime // MUST exist already
+    : "07:00";   // 🔥 force explicit, no fallback confusion
 
       const submitBtn = availabilityForm.querySelector(
         'button[type="submit"], input[type="submit"]'
