@@ -912,7 +912,7 @@ const dayEnd = endOfDayFromDateStr(dateStr);
 
 function getRemainingSlots(dateStr, bookings){
 
-  let remainingSlots = 0;
+  let remainingVehicles = 0;
 
   const dayStart = startOfDayFromDateStr(dateStr);
   const dayEnd = endOfDayFromDateStr(dateStr);
@@ -929,28 +929,30 @@ function getRemainingSlots(dateStr, bookings){
       let afternoonBooked = false;
 
       vehicleBookings.forEach(b => {
-
         const start = new Date(b.pickupAt);
         const end = new Date(b.dropoffAt);
 
-        if(start <= dayEnd && end >= dayStart){
-
+        if (start <= dayEnd && end >= dayStart) {
           const startHour = getLondonHour(start);
           const endHour = getLondonHour(end);
 
-          if (startHour < 13) morningBooked = true;
-          if (endHour > 13) afternoonBooked = true;
-
+          if (Number(b.durationDays) === 0.5) {
+            if (b.pickupTime === "07:00") morningBooked = true;
+            if (b.pickupTime === "13:00") afternoonBooked = true;
+          } else {
+            if (startHour < 13) morningBooked = true;
+            if (endHour > 13) afternoonBooked = true;
+          }
         }
-
       });
 
-      if(!morningBooked) remainingSlots++;
-      if(!afternoonBooked) remainingSlots++;
+      if (!morningBooked || !afternoonBooked) {
+        remainingVehicles++;
+      }
 
     });
 
-  return remainingSlots;
+  return remainingVehicles;
 }
 
 function getAvailableVehicleCount(dateStr, bookings){
@@ -5573,13 +5575,30 @@ async function selectDate(dateStr) {
     const dayEnd = new Date(dayDate);
     dayEnd.setHours(23,59,59,999);
 
-    const isBlocked = vehicleBookings.some(b => {
-      const start = new Date(b.pickupAt);
-      const end = new Date(b.dropoffAt);
-      return start <= dayEnd && end >= dayStart;
-    });
+    let morningBlocked = false;
+let afternoonBlocked = false;
 
-    if (isBlocked && warningBox) {
+vehicleBookings.forEach(b => {
+  const start = new Date(b.pickupAt);
+  const end = new Date(b.dropoffAt);
+
+  if (start <= dayEnd && end >= dayStart) {
+    const startHour = getLondonHour(start);
+    const endHour = getLondonHour(end);
+
+    if (Number(b.durationDays) === 0.5) {
+      if (b.pickupTime === "07:00") morningBlocked = true;
+      if (b.pickupTime === "13:00") afternoonBlocked = true;
+    } else {
+      if (startHour < 13) morningBlocked = true;
+      if (endHour > 13) afternoonBlocked = true;
+    }
+  }
+});
+
+const isBlocked = morningBlocked && afternoonBlocked;
+
+if (isBlocked && warningBox) {
 
       BLOCK_AUTO_SCROLL = true;
 
@@ -5663,43 +5682,57 @@ if (Number(durationInput.value) === 0.5) {
 
   if (PRESELECTED_VEHICLE && durationInput) {
 
-    const bookings = BOOKINGS_CACHE || await getBookings(false);
+const bookings = BOOKINGS_CACHE || await getBookings(false);
+const dateStr = pickupInput.value;
 
-    const pickupTime = pickupTimeInput?.value || "07:00";
-    const dateStr = pickupInput.value;
+let morningBlocked = false;
+let afternoonBlocked = false;
 
-    const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
+for (const booking of bookings) {
 
-    let halfDayAvailable = true;
 
-    for (const booking of bookings) {
+if (booking.vehicleId !== PRESELECTED_VEHICLE) continue;
 
-      if (booking.vehicleId !== PRESELECTED_VEHICLE) continue;
+const bookingDates = getDatesBetween(
+  new Date(booking.pickupAt),
+  new Date(booking.dropoffAt)
+);
 
-      const bookingDates = getDatesBetween(
-        new Date(booking.pickupAt),
-        new Date(booking.dropoffAt)
-      );
+if (!bookingDates.includes(dateStr)) continue;
 
-      if (!bookingDates.includes(dateStr)) continue;
+const bookedSlot =
+  Number(booking.durationDays) === 0.5
+    ? (booking.pickupTime === "13:00" ? "pm" : "am")
+    : "full";
 
-      const bookedSlot =
-        Number(booking.durationDays) === 0.5
-          ? (booking.pickupTime === "13:00" ? "pm" : "am")
-          : "full";
+// FULL day blocks both
+if (bookedSlot === "full") {
+  morningBlocked = true;
+  afternoonBlocked = true;
+}
 
-      if (bookedSlot === "full" || bookedSlot === requestedSlot) {
-        halfDayAvailable = false;
-        break;
-      }
-    }
+// HALF DAY blocks specific slot
+if (bookedSlot === "am") {
+  morningBlocked = true;
+}
 
-    const halfDayOption = durationInput.querySelector('option[value="0.5"]');
+if (bookedSlot === "pm") {
+  afternoonBlocked = true;
+}
 
-    if (halfDayOption) {
-      halfDayOption.disabled = !halfDayAvailable;
-    }
-  }
+}
+
+// ✅ KEY FIX:
+// Half-day is available if ANY slot is free
+const halfDayAvailable = !(morningBlocked && afternoonBlocked);
+
+const halfDayOption = durationInput.querySelector('option[value="0.5"]');
+
+if (halfDayOption) {
+halfDayOption.disabled = !halfDayAvailable;
+}
+}
+
 
   /* ===============================
      VEHICLE LOCK RULES
