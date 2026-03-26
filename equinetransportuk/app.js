@@ -1808,7 +1808,7 @@ function resetBookingFlow() {
 
       // 🔥 RELEASE LOCK AFTER RENDER
       setTimeout(() => {
-        IS_RESETTING = false;ffunction resetBookingFlow() {
+        IS_RESETTING = false;function resetBookingFlow() {
 
   console.log("🔄 HARD reset booking flow");
 
