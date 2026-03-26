@@ -423,6 +423,18 @@ pickupTimeInput?.addEventListener("focus", async () => {
   }
 
 });
+
+pickupTimeInput?.addEventListener("mousedown", async () => {
+
+  const pickupDate = pickupDateInput?.value;
+  if (!pickupDate) return;
+
+  if (Number(durationDaysInput?.value) === 0.5) {
+    await syncPickupTimeOptions(pickupDate);
+  }
+
+});
+
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
