@@ -1717,6 +1717,19 @@ function resetBookingFlow() {
   BLOCK_AUTO_SCROLL = false;
 
   /* ===============================
+     🔥 CLEAR DATE STATE (CRITICAL)
+  =============================== */
+
+  if (pickupDateInput) {
+    pickupDateInput.value = "";
+    // 🔥 force any listeners to reset logic
+    pickupDateInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  // 🔥 extra safety (if used anywhere)
+  window.SELECTED_DATE = null;
+
+  /* ===============================
      CLEAR FORM FIELDS
   =============================== */
 
@@ -1725,12 +1738,11 @@ function resetBookingFlow() {
   if (selectedDurationInput) selectedDurationInput.value = "";
   if (selectedBaseInput) selectedBaseInput.value = "";
 
-  if (pickupDateInput) pickupDateInput.value = "";
   if (pickupTimeInput) pickupTimeInput.value = "";
   if (durationDaysInput) durationDaysInput.value = "";
 
   /* ===============================
-     🔥 CLEAR CALENDAR UI (CRITICAL)
+     🔥 CLEAR CALENDAR UI
   =============================== */
 
   document.querySelectorAll(".cal-day.selected, .cal-day.active")
@@ -1782,7 +1794,7 @@ function resetBookingFlow() {
   goToStep(1);
 
   /* ===============================
-     🔥 SCROLL TO TOP (ROBUST)
+     🔥 SCROLL TO TOP
   =============================== */
 
   requestAnimationFrame(() => {
@@ -1793,11 +1805,13 @@ function resetBookingFlow() {
   });
 
   /* ===============================
-     CALENDAR REFRESH
+     🔥 CALENDAR HARD REFRESH
   =============================== */
 
   if (typeof renderCalendar === "function") {
-    renderCalendar();
+    setTimeout(() => {
+      renderCalendar();
+    }, 0);
   }
 
   /* ===============================
@@ -1813,6 +1827,7 @@ function resetBookingFlow() {
   }, 150);
 
 }
+
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
   return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
