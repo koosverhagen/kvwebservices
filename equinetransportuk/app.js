@@ -2367,27 +2367,39 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
         const pmVehicle = pmData.find(v => v.vehicleId === vehicle.id);
 
         // 🔥 ONLY USE SLOTS
-        const hasAM = (amVehicle?.availableSlots || []).includes("am");
-        const hasPM = (pmVehicle?.availableSlots || []).includes("pm");
+       const hasAM =
+  amVehicle?.available ||
+  (amVehicle?.availableSlots || []).includes("am");
+
+const hasPM =
+  pmVehicle?.available ||
+  (pmVehicle?.availableSlots || []).includes("pm");
 
         let resolvedPickupTime = pickupTime;
 
-        // AUTO PICK SLOT
-        if (!pickupTime) {
+       // AUTO PICK SLOT (FIXED)
+if (!pickupTime) {
 
-          if (hasAM && !hasPM) {
-            resolvedPickupTime = "07:00";
-          }
-          else if (!hasAM && hasPM) {
-            resolvedPickupTime = "13:00";
-          }
-          else if (hasAM && hasPM) {
-            resolvedPickupTime = "07:00";
-          }
-          else {
-            return null;
-          }
-        }
+  // only AM available
+  if (hasAM && !hasPM) {
+    resolvedPickupTime = "07:00";
+  }
+
+  // only PM available
+  else if (!hasAM && hasPM) {
+    resolvedPickupTime = "13:00";
+  }
+
+  // 🔥 BOTH AVAILABLE → DO NOT AUTO PICK
+  else if (hasAM && hasPM) {
+    return null; // force user to choose
+  }
+
+  // nothing available
+  else {
+    return null;
+  }
+}
 
         // VALIDATE USER SELECTION
         else {
