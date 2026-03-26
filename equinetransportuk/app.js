@@ -561,10 +561,21 @@ function maybeAutoSubmitAvailability() {
   }
 
   // 🔥 LOCKED VEHICLE → NEVER auto submit
-  if (LOCKED_VEHICLE) {
-    console.log("⛔ locked vehicle → manual submit only");
+ // 🔥 LOCKED VEHICLE → allow fetch AFTER time selected
+if (LOCKED_VEHICLE) {
+
+  if (duration === 0.5 && !pickupTime) {
+    console.log("⛔ locked + waiting for time");
     return;
   }
+
+  // ✅ allow submit once valid
+  if (pickupDateInput?.value) {
+    availabilityForm?.requestSubmit();
+  }
+
+  return;
+}
 
   // ✅ safe to submit
   if (pickupDateInput?.value) {
@@ -2341,11 +2352,11 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
      🔥 API CALL
   =============================== */
 
-  const vehiclesAvailability = await getVehicleAvailability(
-    pickupDate,
-    durationDays,
-    durationDays === 0.5 ? null : pickupTime
-  );
+ const vehiclesAvailability = await getVehicleAvailability(
+  pickupDate,
+  durationDays,
+  pickupTime || null
+);
 
   console.log("🚀 vehiclesAvailability:", vehiclesAvailability);
 
@@ -2471,13 +2482,7 @@ async function renderAvailabilityResults(items) {
   items = filterVehiclesForDisplay(items);
 
   // 🔥 CRITICAL FIX — STOP EARLY FOR HALF DAY WITHOUT TIME
-  if (
-    Number(durationDaysInput?.value) === 0.5 &&
-    !pickupTimeInput?.value
-  ) {
-    availabilityResults.innerHTML = "";
-    return;
-  }
+ 
 
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     availabilityResults.innerHTML = "";
