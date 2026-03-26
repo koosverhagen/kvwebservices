@@ -2376,11 +2376,7 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, 
      🔥 FORCE UI SYNC (CRITICAL FIX)
   =============================== */
 
-  if (isHalfDay && pickupDateInput?.value) {
-    setTimeout(() => {
-      syncPickupTimeOptions(pickupDateInput.value);
-    }, 0);
-  }
+
 
   /* ===============================
      CACHE STORE
@@ -2469,12 +2465,19 @@ if (!pickupTime) {
           if (pickupTime === "13:00" && !hasPM) return null;
         }
 
-        return await buildAvailability(
-          vehicle,
-          pickupDate,
-          0.5,
-          resolvedPickupTime
-        );
+      const result = await buildAvailability(
+  vehicle,
+  pickupDate,
+  0.5,
+  resolvedPickupTime
+);
+
+// 🔥 FORCE UI SYNC FOR PRESELECTED VEHICLE
+if (PRESELECTED_VEHICLE && pickupDate) {
+  await syncPickupTimeOptions(pickupDate);
+}
+
+return result;
 
       })
     );
