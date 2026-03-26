@@ -332,14 +332,13 @@ durationDaysInput?.addEventListener("change", async () => {
   // ✅ ONLY trigger via controlled function
   maybeAutoSubmitAvailability();
 });
+
 pickupTimeInput?.addEventListener("change", async () => {
 
   const pickupDate = pickupDateInput?.value;
   if (!pickupDate) return;
 
-  await updateDurationOptions(
-    new Date(`${pickupDate}T00:00:00`)
-  );
+  await updateDurationOptions(pickupDate);
 
   updateEarlyPickupAvailability();
 
@@ -348,14 +347,13 @@ pickupTimeInput?.addEventListener("change", async () => {
 });
 
 
-// ✅ ✅ ✅ ADD THIS RIGHT HERE
 pickupTimeInput?.addEventListener("focus", async () => {
 
   const pickupDate = pickupDateInput?.value;
   if (!pickupDate) return;
 
   if (Number(durationDaysInput?.value) === 0.5) {
-    await syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+    await syncPickupTimeOptions(pickupDate);
   }
 
 });
@@ -470,19 +468,15 @@ availabilityResults?.addEventListener("click", async (e) => {
     if (nextBtn.dataset.loading === "true") return;
     nextBtn.dataset.loading = "true";
 
-    try {
-      const selectedDate = new Date(`${date}T00:00:00`);
-      if (Number.isNaN(selectedDate.getTime())) return;
+   try {
+  await selectDate(date);
 
-      // ✅ SINGLE SOURCE OF TRUTH
-      await selectDate(selectedDate);
+  // ✅ trigger availability AFTER state is correct
+  maybeAutoSubmitAvailability();
 
-      // ✅ trigger availability AFTER state is correct
-      maybeAutoSubmitAvailability();
-
-    } finally {
-      nextBtn.dataset.loading = "false";
-    }
+} finally {
+  nextBtn.dataset.loading = "false";
+}
 
     return;
   }
@@ -650,14 +644,12 @@ async function isDurationAvailable(startDate, durationDays, vehicleId, bookings,
   }
 }
 
-async function updateDurationOptions(dateObj) {
+async function updateDurationOptions(dateStr) {
 
-  if (!durationDaysInput) return;
+  if (!durationDaysInput || !dateStr) return;
 
   const vehicleId = PRESELECTED_VEHICLE;
   const options = Array.from(durationDaysInput.options);
-  const dateStr = dateObj.toISOString().slice(0, 10);
-
   for (const opt of options) {
 
     const duration = Number(opt.value);
@@ -941,9 +933,14 @@ function getLondonParts(date) {
    HALF DAY SLOT AVAILABILITY
 ================================ */
 
-async function getRemainingHalfDaySlots(dateObj) {
+async function getRemainingHalfDaySlots(dateStr) {
 
-  const dateStr = dateObj.toISOString().slice(0, 10);
+  if (!dateStr) {
+    return {
+      morningAvailable: false,
+      afternoonAvailable: false
+    };
+  }
 
   try {
 
@@ -1034,7 +1031,7 @@ function updateEarlyPickupAvailability() {
    DISABLE AM / PM OPTIONS
 ================================ */
 
-async function syncPickupTimeOptions(startDate) {
+async function syncPickupTimeOptions(dateStr) {
 
   if (!pickupTimeInput || !durationDaysInput) return;
 
@@ -1047,14 +1044,10 @@ async function syncPickupTimeOptions(startDate) {
      AUTO RESOLVE DATE
   =============================== */
 
-  if (!startDate) {
-    const pickupDate = pickupDateInput?.value;
-    if (!pickupDate) return;
-
-    startDate = new Date(`${pickupDate}T00:00:00`);
+  if (!dateStr) {
+    dateStr = pickupDateInput?.value;
+    if (!dateStr) return;
   }
-
-  const dateStr = startDate.toISOString().slice(0, 10);
 
   /* ===============================
      FULL DAY
@@ -1707,6 +1700,13 @@ function addDays(date, days) {
   return output;
 }
 
+function formatDayKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function asDate(dateString, timeString) {
   const [year, month, day] = dateString.split("-").map(Number);
   const [hour, minute] = timeString.split(":").map(Number);
@@ -1812,15 +1812,10 @@ function formatTime(value) {
 function formatDateOnly(value) {
   if (!value) return "—";
 
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return String(value);
+  const [year, month, day] = String(value).split("-");
+  if (!year || !month || !day) return String(value);
 
-  return date.toLocaleDateString("en-GB", {
-    timeZone: "Europe/London", // 🔥 CRITICAL FIX
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  });
+  return `${day}/${month}/${year}`;
 }
 
 function overlaps(aStart, aEnd, bStart, bEnd) {
@@ -1887,8 +1882,11 @@ function formatDurationLabel(durationDays) {
 
 function formatStepSearchDate(value) {
   if (!value) return "—";
-  const d = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return value;
+
+  const [year, month, day] = String(value).split("-").map(Number);
+  if (!year || !month || !day) return value;
+
+  const d = new Date(year, month - 1, day, 12, 0, 0);
 
   return d.toLocaleDateString("en-GB", {
     weekday: "short",
@@ -4181,13 +4179,11 @@ if (pickupTimeInput) {
     const date = pickupDateInput?.value;
     if (!date) return;
 
-    const dateObj = new Date(`${date}T00:00:00`);
-
     /* ===============================
        🔥 FIX: update durations properly
     =============================== */
 
-    await updateDurationOptions(dateObj);
+    await updateDurationOptions(date);
 
     /* ===============================
        🔥 AUTO PICKUP TIME (HALF DAY FIX)
@@ -4195,10 +4191,8 @@ if (pickupTimeInput) {
 
     if (Number(durationDaysInput?.value) === 0.5) {
 
-      const bookings = BOOKINGS_CACHE || await getBookings(false);
-
       const { morningAvailable, afternoonAvailable } =
-        getRemainingHalfDaySlots(dateObj, bookings);
+        await getRemainingHalfDaySlots(date);
 
       if (morningAvailable && !afternoonAvailable) {
         pickupTimeInput.value = "07:00";
@@ -5448,7 +5442,7 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
     e.preventDefault();
     e.stopPropagation();
 
-    await selectDate(dayDate);
+    await selectDate(formatDayKey(dayDate));
 
     clearPreview();
     previewRental(dayDate);
@@ -5472,7 +5466,7 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
       }
 
       clearPreview();
-      await selectDate(dayDate);
+      await selectDate(formatDayKey(dayDate));
 
     });
 
@@ -5493,7 +5487,7 @@ calGrid.dataset.rendering = "false";
    Select date
 ====================================================== */
 
-async function selectDate(dayDate) {
+async function selectDate(dateStr) {
 
   const warningBox = document.getElementById("preselected-warning");
   if (warningBox) {
@@ -5507,13 +5501,11 @@ async function selectDate(dayDate) {
   const durationInput = document.getElementById("duration-days");
   const pickupTimeInput = document.getElementById("pickup-time");
 
-  if (!pickupInput || !durationInput) return;
+  if (!pickupInput || !durationInput || !dateStr) return;
 
-  const year = dayDate.getFullYear();
-  const month = String(dayDate.getMonth() + 1).padStart(2, "0");
-  const day = String(dayDate.getDate()).padStart(2, "0");
+  pickupInput.value = dateStr;
 
-  pickupInput.value = `${year}-${month}-${day}`;
+  const dayDate = new Date(`${dateStr}T12:00:00`);
 
   /* ===============================
      PRESELECTED LORRY CHECK
@@ -5596,8 +5588,8 @@ async function selectDate(dayDate) {
     }
   }
 
-  await updateDurationOptions(dayDate);
-await syncPickupTimeOptions(dayDate);
+  await updateDurationOptions(dateStr);
+await syncPickupTimeOptions(dateStr);
 
 /* ===============================
    🔥 AUTO PICKUP TIME (HALF DAY FIX)
@@ -5605,10 +5597,8 @@ await syncPickupTimeOptions(dayDate);
 
 if (Number(durationInput.value) === 0.5) {
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
-
   const { morningAvailable, afternoonAvailable } =
-    getRemainingHalfDaySlots(dayDate, bookings);
+    await getRemainingHalfDaySlots(dateStr);
 
   if (morningAvailable && !afternoonAvailable) {
     pickupTimeInput.value = "07:00";
