@@ -4891,13 +4891,64 @@ async function showVehiclePreview(date, event) {
 
   let html = `<strong>${dateStart.toDateString()}</strong><br>`;
 
-  /* availability status */
+  /* ======================================================
+     AVAILABILITY (BASED ON BOOKINGS — SINGLE SOURCE)
+  ====================================================== */
 
-  if (!booked.length) {
+  const availability = vehicles.map(vehicle => {
+
+    const vehicleBookings = booked.filter(
+      b => b.vehicleId === vehicle.id
+    );
+
+    let morningBooked = false;
+    let afternoonBooked = false;
+
+    vehicleBookings.forEach(b => {
+
+      const start = new Date(b.pickupAt);
+      const end = new Date(b.dropoffAt);
+
+      const startHour = getLondonHour(start);
+      const endHour = getLondonHour(end);
+
+      if (startHour < 13) morningBooked = true;
+      if (endHour > 13) afternoonBooked = true;
+
+    });
+
+    const is35 = is35T(vehicle);
+
+    const morningAvailable = is35 && !morningBooked;
+    const afternoonAvailable = is35 && !afternoonBooked;
+
+    // 7.5T = full-day only, 3.5T = both slots must be free
+    const fullDayAvailable = !morningBooked && !afternoonBooked;
+
+    return {
+      vehicle,
+      morningAvailable,
+      afternoonAvailable,
+      fullDayAvailable
+    };
+
+  });
+
+  const availableVehicles = availability.filter(a =>
+    a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable
+  );
+
+  /* ======================================================
+     STATUS LABEL (FIXED)
+  ====================================================== */
+
+  const totalAvailable = availableVehicles.length;
+
+  if (totalAvailable === vehicles.length) {
 
     html += `<div class="preview-status preview-status-good">Available</div>`;
 
-  } else if (booked.length < vehicles.length) {
+  } else if (totalAvailable > 0) {
 
     html += `<div class="preview-status preview-status-low">Limited availability</div>`;
 
@@ -4907,51 +4958,9 @@ async function showVehiclePreview(date, event) {
 
   }
 
-   /* ======================================================
-     AVAILABLE VEHICLES (SYNCED WITH API)
+  /* ======================================================
+     VEHICLE LIST
   ====================================================== */
-
-  const availability = vehicles.map(vehicle => {
-
-  const vehicleBookings = booked.filter(
-    b => b.vehicleId === vehicle.id
-  );
-
-  let morningBooked = false;
-  let afternoonBooked = false;
-
-  vehicleBookings.forEach(b => {
-
-    const start = new Date(b.pickupAt);
-    const end = new Date(b.dropoffAt);
-
-    const startHour = getLondonHour(start);
-    const endHour = getLondonHour(end);
-
-    if (startHour < 13) morningBooked = true;
-    if (endHour > 13) afternoonBooked = true;
-
-  });
-
-  const morningAvailable = is35T(vehicle) && !morningBooked;
-  const afternoonAvailable = is35T(vehicle) && !afternoonBooked;
-
-  // 🔥 IMPORTANT FIX
-  const fullDayAvailable =
-    !morningBooked && !afternoonBooked;
-
-  return {
-    vehicle,
-    morningAvailable,
-    afternoonAvailable,
-    fullDayAvailable
-  };
-
-});
-
-  const availableVehicles = availability.filter(a =>
-    a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable
-  );
 
   if (!availableVehicles.length) {
 
@@ -5000,7 +5009,9 @@ async function showVehiclePreview(date, event) {
 
   }
 
-  /* MOBILE VERSION */
+  /* ======================================================
+     MOBILE VERSION
+  ====================================================== */
 
   if (window.innerWidth < 768) {
 
@@ -5010,81 +5021,73 @@ async function showVehiclePreview(date, event) {
     panel.innerHTML = html;
     panel.classList.remove("hidden");
 
-    /* make preview vehicles selectable */
+    panel.querySelectorAll(".preview-select").forEach(el => {
 
-panel.querySelectorAll(".preview-select").forEach(el => {
+      el.addEventListener("click", async () => {
 
-  el.addEventListener("click", async () => {
+        const vehicleId = el.dataset.vehicleId;
+        const slot = (el.dataset.slot || "").toLowerCase();
 
-    const vehicleId = el.dataset.vehicleId;
-    const slot = (el.dataset.slot || "").toLowerCase();
+        const vehicle = vehicles.find(v => v.id === vehicleId);
+        if (!vehicle) return;
 
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (!vehicle) return;
+        PRESELECTED_VEHICLE = vehicleId;
+        LOCKED_VEHICLE = true;
 
-    /* lock selected vehicle */
-    PRESELECTED_VEHICLE = vehicleId;
-    LOCKED_VEHICLE = true;
+        updateCalendarVehicleLabel();
 
-    updateCalendarVehicleLabel();
+        if (pickupDateInput) {
+          pickupDateInput.value = formatDayKey(dateStart);
+        }
 
-/* set selected date */
-if (pickupDateInput) {
-  pickupDateInput.value = formatDayKey(dateStart);
-}
+        if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
+        if (selectedBaseInput) selectedBaseInput.value = "";
 
-    /* keep vehicle visible in UI */
-    if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
-    if (selectedBaseInput) selectedBaseInput.value = "";
+        selectedAvailability = null;
 
-    /* clear previously selected availability */
-    selectedAvailability = null;
+        updateDurationOptionsForVehicle(vehicle);
+        enforceVehicleDurationRules(vehicle);
 
-    /* enforce vehicle duration rules */
-    updateDurationOptionsForVehicle(vehicle);
-    enforceVehicleDurationRules(vehicle);
+        if (durationDaysInput) {
+          if (slot.includes("morning") || slot.includes("afternoon")) {
+            durationDaysInput.value = "0.5";
+            pickupTimeInput.value = slot.includes("afternoon") ? "13:00" : "07:00";
+          } else {
+            durationDaysInput.value = "1";
+            pickupTimeInput.value = "07:00";
+          }
+        }
 
-    /* IMPORTANT:
-       go back to duration step instead of jumping to details
-    */
-    if (durationDaysInput) {
-  if (slot.includes("morning") || slot.includes("afternoon")) {
-    durationDaysInput.value = "0.5";
-    pickupTimeInput.value = slot.includes("afternoon") ? "13:00" : "07:00";
-  } else {
-    durationDaysInput.value = "1";
-    pickupTimeInput.value = "07:00";
-  }
-}
+        await syncPickupTimeOptions(formatDayKey(dateStart));
+        updatePickupTimeVisibility();
+        updateCheckoutSummary();
 
-   await syncPickupTimeOptions(formatDayKey(dateStart));
-    updatePickupTimeVisibility();
-    updateCheckoutSummary();
+        panel.classList.add("hidden");
 
-    panel.classList.add("hidden");
+        goToStep(1);
 
-    goToStep(1);
+        setTimeout(() => {
+          durationDaysInput?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+          });
+          durationDaysInput?.classList.add("duration-highlight");
+          setTimeout(() => {
+            durationDaysInput?.classList.remove("duration-highlight");
+          }, 1800);
+        }, 150);
 
-    setTimeout(() => {
-      durationDaysInput?.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
       });
-      durationDaysInput?.classList.add("duration-highlight");
-      setTimeout(() => {
-        durationDaysInput?.classList.remove("duration-highlight");
-      }, 1800);
-    }, 150);
 
-  });
-
-});
+    });
 
     return;
 
   }
 
-  /* DESKTOP VERSION */
+  /* ======================================================
+     DESKTOP VERSION
+  ====================================================== */
 
   const vehiclePreview = document.getElementById("vehicle-preview");
   if (!vehiclePreview) return;
