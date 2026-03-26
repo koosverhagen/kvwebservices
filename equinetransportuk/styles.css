@@ -2906,27 +2906,31 @@ BOOKING SUMMARY CARD
 
 #app-toast {
   position: fixed;
-  bottom: 24px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%) translateY(20px);
+  transform: translate(-50%, -50%) scale(0.95);
 
-  background: rgba(0,0,0,0.85);
+  background: rgba(0, 0, 0, 0.85);
   color: #fff;
 
-  padding: 10px 16px;
+  padding: 14px 22px;
   border-radius: 12px;
 
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
+
+  z-index: 9999;
 
   opacity: 0;
   pointer-events: none;
 
-  transition: all 0.3s ease;
-  z-index: 9999;
+  transition: 
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
+/* visible state */
 #app-toast.visible {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translate(-50%, -50%) scale(1);
 }
