@@ -549,70 +549,30 @@ availabilityResults?.addEventListener("click", async (e) => {
 function maybeAutoSubmitAvailability() {
 
   const duration = Number(durationDaysInput?.value || 0);
-  let pickupTime = pickupTimeInput?.value;
+  const pickupTime = pickupTimeInput?.value;
+  const pickupDate = pickupDateInput?.value;
 
-  if (!duration) return;
+  if (!duration || !pickupDate) return;
 
-  /* ===============================
-     🔥 LOCKED VEHICLE FIX (CRITICAL)
-  =============================== */
+  // 🔴 CRITICAL FIX:
+  // If vehicle is locked → NEVER auto-submit until user chooses correctly
 
-  if (LOCKED_VEHICLE && duration !== 0.5) {
+  if (LOCKED_VEHICLE) {
 
-    const morningOption = pickupTimeInput?.querySelector('option[value="07:00"]');
-    const afternoonOption = pickupTimeInput?.querySelector('option[value="13:00"]');
-
-    const morningAvailable = morningOption && !morningOption.disabled;
-    const afternoonAvailable = afternoonOption && !afternoonOption.disabled;
-
-    // 🚨 If NOT full day but slot exists → FORCE half day
-    if (!morningAvailable || !afternoonAvailable) {
-
-      console.log("🔥 Forcing half-day mode");
-
-      durationDaysInput.value = "0.5";
-
-      // trigger UI sync
-      syncPickupTimeOptions(pickupDateInput?.value);
-
-      return; // wait for next cycle
-    }
-  }
-
-  /* ===============================
-     HALF DAY HANDLING
-  =============================== */
-
-  if (duration === 0.5 && !pickupTime) {
-
-    const morningOption = pickupTimeInput?.querySelector('option[value="07:00"]');
-    const afternoonOption = pickupTimeInput?.querySelector('option[value="13:00"]');
-
-    const morningAvailable = morningOption && !morningOption.disabled;
-    const afternoonAvailable = afternoonOption && !afternoonOption.disabled;
-
-    if (morningAvailable && !afternoonAvailable) {
-      pickupTimeInput.value = "07:00";
-      pickupTime = "07:00";
+    // half-day → must choose time first
+    if (duration === 0.5 && !pickupTime) {
+      console.log("⛔ locked + waiting for pickup time");
+      return;
     }
 
-    else if (!morningAvailable && afternoonAvailable) {
-      pickupTimeInput.value = "13:00";
-      pickupTime = "13:00";
-    }
-
-    else {
+    // 🔥 ALSO BLOCK full-day auto submit on preselected
+    if (duration !== 0.5 && !pickupTime) {
+      console.log("⛔ locked + waiting for proper selection");
       return;
     }
   }
 
-  /* ===============================
-     FINAL SUBMIT
-  =============================== */
-
-  if (pickupDateInput?.value) {
-    availabilityForm?.requestSubmit();
-  }
+  availabilityForm?.requestSubmit();
 }
 
 async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
@@ -2391,6 +2351,9 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
   const isHalfDay = Number(durationDays) === 0.5;
 
+  // ===============================
+  // HALF DAY — SLOT BASED (FIXED)
+  // ===============================
   if (isHalfDay) {
 
     const { amData, pmData } = await getHalfDayAvailability(pickupDate);
@@ -2403,21 +2366,32 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
         const amVehicle = amData.find(v => v.vehicleId === vehicle.id);
         const pmVehicle = pmData.find(v => v.vehicleId === vehicle.id);
 
-        const hasAM =
-          amVehicle?.available ||
-          (amVehicle?.availableSlots || []).includes("am");
-
-        const hasPM =
-          pmVehicle?.available ||
-          (pmVehicle?.availableSlots || []).includes("pm");
+        // 🔥 ONLY USE SLOTS
+        const hasAM = (amVehicle?.availableSlots || []).includes("am");
+        const hasPM = (pmVehicle?.availableSlots || []).includes("pm");
 
         let resolvedPickupTime = pickupTime;
 
+        // AUTO PICK SLOT
         if (!pickupTime) {
-          if (hasAM) resolvedPickupTime = "07:00";
-          else if (hasPM) resolvedPickupTime = "13:00";
-          else return null;
-        } else {
+
+          if (hasAM && !hasPM) {
+            resolvedPickupTime = "07:00";
+          }
+          else if (!hasAM && hasPM) {
+            resolvedPickupTime = "13:00";
+          }
+          else if (hasAM && hasPM) {
+            resolvedPickupTime = "07:00";
+          }
+          else {
+            return null;
+          }
+        }
+
+        // VALIDATE USER SELECTION
+        else {
+
           if (pickupTime === "07:00" && !hasAM) return null;
           if (pickupTime === "13:00" && !hasPM) return null;
         }
@@ -2435,6 +2409,9 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
     return results.filter(Boolean);
   }
 
+  // ===============================
+  // FULL DAY
+  // ===============================
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
     durationDays,
