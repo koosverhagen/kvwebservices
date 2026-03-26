@@ -1726,12 +1726,10 @@ function resetBookingFlow() {
 
   if (pickupDateInput) {
     pickupDateInput.value = "";
-
-    // 🔥 FORCE FULL RESET (CRITICAL)
     pickupDateInput.setAttribute("value", "");
-    pickupDateInput.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  // 🔥 ALSO CLEAR ANY INTERNAL DATE STATE
   window.SELECTED_DATE = null;
 
   /* ===============================
@@ -1739,7 +1737,9 @@ function resetBookingFlow() {
   =============================== */
 
   document.querySelectorAll(".cal-day")
-    .forEach(el => el.classList.remove("selected", "active"));
+    .forEach(el => {
+      el.classList.remove("selected", "active");
+    });
 
   /* ===============================
      CLEAR FORM FIELDS
@@ -1808,18 +1808,24 @@ function resetBookingFlow() {
 
   if (typeof renderCalendar === "function") {
     setTimeout(() => {
-
       renderCalendar();
 
-      // 🔥 RELEASE LOCK (CORRECT TIMING)
-      requestAnimationFrame(() => {
-        IS_RESETTING = false;
-      });
+      // 🔥 CRITICAL: unlock immediately after render
+      IS_RESETTING = false;
 
     }, 0);
   } else {
     IS_RESETTING = false;
   }
+
+  /* ===============================
+     🛟 FAILSAFE (VERY IMPORTANT)
+  =============================== */
+
+  // 🔥 GUARANTEE unlock no matter what
+  setTimeout(() => {
+    IS_RESETTING = false;
+  }, 100);
 
   /* ===============================
      TOAST
