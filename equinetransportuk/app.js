@@ -549,35 +549,64 @@ availabilityResults?.addEventListener("click", async (e) => {
 function maybeAutoSubmitAvailability() {
 
   const duration = Number(durationDaysInput?.value || 0);
-  const pickupTime = pickupTimeInput?.value;
+  let pickupTime = pickupTimeInput?.value;
 
   // ❌ no duration → stop
   if (!duration) return;
 
-  // 🔥 FIX: use correct variable
+  /* ===============================
+     HALF DAY → HANDLE TIME PROPERLY
+  =============================== */
+
   if (duration === 0.5 && !pickupTime) {
-    console.log("⛔ waiting for pickup time");
+
+    const morningOption = pickupTimeInput?.querySelector('option[value="07:00"]');
+    const afternoonOption = pickupTimeInput?.querySelector('option[value="13:00"]');
+
+    const morningAvailable = morningOption && !morningOption.disabled;
+    const afternoonAvailable = afternoonOption && !afternoonOption.disabled;
+
+    // ✅ AUTO-SELECT if only ONE option exists
+    if (morningAvailable && !afternoonAvailable) {
+      pickupTimeInput.value = "07:00";
+      pickupTime = "07:00";
+      console.log("⚡ Auto-selected AM");
+    }
+
+    else if (!morningAvailable && afternoonAvailable) {
+      pickupTimeInput.value = "13:00";
+      pickupTime = "13:00";
+      console.log("⚡ Auto-selected PM");
+    }
+
+    else {
+      console.log("⛔ waiting for pickup time");
+      return; // both available → user must choose
+    }
+  }
+
+  /* ===============================
+     LOCKED VEHICLE LOGIC
+  =============================== */
+
+  if (LOCKED_VEHICLE) {
+
+    if (duration === 0.5 && !pickupTime) {
+      console.log("⛔ locked + waiting for time");
+      return;
+    }
+
+    if (pickupDateInput?.value) {
+      availabilityForm?.requestSubmit();
+    }
+
     return;
   }
 
-  // 🔥 LOCKED VEHICLE → NEVER auto submit
- // 🔥 LOCKED VEHICLE → allow fetch AFTER time selected
-if (LOCKED_VEHICLE) {
+  /* ===============================
+     NORMAL FLOW
+  =============================== */
 
-  if (duration === 0.5 && !pickupTime) {
-    console.log("⛔ locked + waiting for time");
-    return;
-  }
-
-  // ✅ allow submit once valid
-  if (pickupDateInput?.value) {
-    availabilityForm?.requestSubmit();
-  }
-
-  return;
-}
-
-  // ✅ safe to submit
   if (pickupDateInput?.value) {
     availabilityForm?.requestSubmit();
   }
