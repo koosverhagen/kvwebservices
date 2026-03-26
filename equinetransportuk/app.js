@@ -59,19 +59,19 @@ function goToStep(step) {
 
   currentStep = step;
 
-  document.querySelectorAll(".booking-step").forEach(el=>{
+  document.querySelectorAll(".booking-step").forEach(el => {
     el.classList.remove("active");
   });
 
   const stepEl = document.getElementById(`step-${step}`);
-  if(stepEl) stepEl.classList.add("active");
+  if (stepEl) stepEl.classList.add("active");
 
-  document.querySelectorAll(".booking-steps .step").forEach(el=>{
+  document.querySelectorAll(".booking-steps .step").forEach(el => {
     el.classList.remove("active");
   });
 
   const indicator = document.querySelector(`.booking-steps .step[data-step="${step}"]`);
-  if(indicator) indicator.classList.add("active");
+  if (indicator) indicator.classList.add("active");
 
   /* ===============================
      🔥 MOVE SUMMARY BETWEEN STEPS
@@ -96,14 +96,42 @@ function goToStep(step) {
     }
   }
 
-  // Only auto scroll for steps AFTER step 1
+  /* ===============================
+     🔥 STEP 3 SYNC (CRITICAL FIX)
+  =============================== */
+
+  if (step === 3) {
+
+    const pickupDate = pickupDateInput?.value;
+    const vehicleId = selectedAvailability?.vehicle?.id;
+    const duration = Number(durationDaysInput?.value || 0);
+
+    if (pickupDate && vehicleId && duration === 0.5) {
+
+      // small delay ensures DOM is ready
+      setTimeout(() => {
+        syncBookingPickupTimeOptions(pickupDate, vehicleId);
+      }, 0);
+
+    }
+
+    // also ensure early pickup state is correct
+    setTimeout(() => {
+      updateEarlyPickupAvailability();
+    }, 0);
+  }
+
+  /* ===============================
+     AUTO SCROLL
+  =============================== */
+
   if (step > 1) {
-    setTimeout(()=>{
+    setTimeout(() => {
       stepEl?.scrollIntoView({
-        behavior:"smooth",
-        block:"start"
+        behavior: "smooth",
+        block: "start"
       });
-    },100);
+    }, 100);
   }
 
 }
@@ -3438,19 +3466,28 @@ async function bookFromVehicle(vehicleId) {
 async function selectAvailability(vehicleId) {
 
   const pickupDate = pickupDateInput?.value;
-  let pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+  let pickupTime = pickupTimeInput?.value || null; // 🔥 DO NOT default to 07:00
   const durationDays = Number(durationDaysInput?.value);
 
   const vehicle = vehicles.find((item) => item.id === vehicleId);
 
   if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) return;
 
-  /* enforce correct pickup time rules */
+  /* ===============================
+     PICKUP TIME RULES (FIXED)
+  =============================== */
 
   if (is35T(vehicle) && durationDays === 0.5) {
 
+    // ❌ DO NOT FORCE DEFAULT
     if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
-      pickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
+      pickupTime = null; // force proper selection
+    }
+
+    // 🔥 if still no time → STOP
+    if (!pickupTime) {
+      console.log("⛔ waiting for valid pickup time");
+      return;
     }
 
   } else {
@@ -3458,6 +3495,10 @@ async function selectAvailability(vehicleId) {
     pickupTime = DEFAULT_PICKUP_TIME;
 
   }
+
+  /* ===============================
+     BUILD AVAILABILITY
+  =============================== */
 
   const code = getCurrentDiscountCode();
 
@@ -3469,7 +3510,11 @@ async function selectAvailability(vehicleId) {
     code
   );
 
-  /* populate Step 3 form */
+  if (!selectedAvailability) return;
+
+  /* ===============================
+     POPULATE STEP 3
+  =============================== */
 
   if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
 
@@ -3481,43 +3526,55 @@ async function selectAvailability(vehicleId) {
     selectedDurationInput.value = String(durationDays);
   }
 
-  /* show pickup time selector if ½ day */
+  /* ===============================
+     HALF DAY UI
+  =============================== */
 
   updateHalfDayPickup();
 
-  /* sync pickup time into Step 3 selector */
-
   const bookingTimeInput = document.getElementById("booking-pickup-time");
 
-if (bookingTimeInput && durationDays === 0.5) {
-  bookingTimeInput.value = pickupTime;
+  if (bookingTimeInput && durationDays === 0.5) {
+    bookingTimeInput.value = pickupTime;
+  }
 
-  updateEarlyPickupAvailability(); // ✅ ADD THIS
-}
+  /* ===============================
+     🔥 CRITICAL: SYNC STEP 3 DROPDOWN
+  =============================== */
 
-  /* update base price */
+  if (durationDays === 0.5) {
+    await syncBookingPickupTimeOptions(pickupDate, vehicle.id);
+  }
+
+  /* ===============================
+     EARLY PICKUP RULES
+  =============================== */
+
+  updateEarlyPickupAvailability();
+
+  /* ===============================
+     PRICE
+  =============================== */
 
   if (selectedBaseInput) {
     selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
   }
 
-  const statusEl = document.getElementById("booking-availability-status");
+  /* ===============================
+     UI CLEANUP
+  =============================== */
 
+  const statusEl = document.getElementById("booking-availability-status");
   if (statusEl) statusEl.hidden = true;
 
   if (bookingSuccess) bookingSuccess.hidden = true;
 
   updateCheckoutSummary();
 
-  await syncBookingPickupTimeOptions(
-  new Date(pickupDate),
-  vehicle.id
-);
-
   checkoutSummary?.scrollIntoView({
-  behavior: "smooth",
-  block: "nearest"
-});
+    behavior: "smooth",
+    block: "nearest"
+  });
 
 }
 
