@@ -341,12 +341,25 @@ const durationDaysInput = document.getElementById("duration-days");
 
 durationDaysInput?.addEventListener("change", async () => {
 
+  const pickupDate = pickupDateInput?.value;
+  if (!pickupDate) return;
+
+  // ✅ update duration rules first
+  await updateDurationOptions(pickupDate);
+
+  // ✅ SHOW pickup time when needed
   await updatePickupTimeVisibility();
+
+  // 🔥 CRITICAL: sync AM/PM availability
+  if (Number(durationDaysInput.value) === 0.5) {
+    await syncPickupTimeOptions(pickupDate);
+  }
 
   updateEarlyPickupAvailability();
 
-  // ✅ ONLY trigger via controlled function
+  // ✅ ONLY submit if valid
   maybeAutoSubmitAvailability();
+
 });
 
 pickupTimeInput?.addEventListener("change", async () => {
@@ -529,13 +542,17 @@ function maybeAutoSubmitAvailability() {
   const duration = Number(durationDaysInput?.value || 0);
   const pickupTime = pickupTimeInput?.value;
 
-  // ❌ STOP for half-day until time selected
+  // ❌ STOP completely if no duration
+  if (!duration) return;
+
+  // ❌ HALF DAY → REQUIRE TIME
   if (duration === 0.5 && !pickupTime) {
+    console.log("⛔ waiting for pickup time");
     return;
   }
 
-  // ✅ allow submit
-  if (pickupDateInput?.value && duration > 0) {
+  // ✅ ONLY now allow submit
+  if (pickupDateInput?.value) {
     availabilityForm?.requestSubmit();
   }
 
@@ -2434,10 +2451,18 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
 
 async function renderAvailabilityResults(items) {
 
-
   console.log("render items:", items.map(v => v.vehicle.name));
 
   items = filterVehiclesForDisplay(items);
+
+  // 🔥 CRITICAL FIX — STOP EARLY FOR HALF DAY WITHOUT TIME
+  if (
+    Number(durationDaysInput?.value) === 0.5 &&
+    !pickupTimeInput?.value
+  ) {
+    availabilityResults.innerHTML = "";
+    return;
+  }
 
   if (!pickupDateInput?.value || !durationDaysInput?.value) {
     availabilityResults.innerHTML = "";
@@ -2446,12 +2471,12 @@ async function renderAvailabilityResults(items) {
 
   updateAvailabilitySearchSummary(items);
 
-  // 🔥 CRITICAL FIX: sync pickup time AFTER availability is known
-const pickupDate = pickupDateInput?.value;
+  // 🔥 Sync pickup time AFTER availability known
+  const pickupDate = pickupDateInput?.value;
 
-if (pickupDate && Number(durationDaysInput?.value) === 0.5) {
-  await syncPickupTimeOptions(pickupDate);
-}
+  if (pickupDate && Number(durationDaysInput?.value) === 0.5) {
+    await syncPickupTimeOptions(pickupDate);
+  }
 
   const pricePreview = document.getElementById("price-preview");
 
@@ -2489,76 +2514,72 @@ if (pickupDate && Number(durationDaysInput?.value) === 0.5) {
 
   if (!items.length) {
 
-  const pickupDate = pickupDateInput.value;
-  const duration = Number(durationDaysInput.value);
-  const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
+    const pickupDate = pickupDateInput.value;
+    const duration = Number(durationDaysInput.value);
+    const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
 
-  const nextDate = await findNextAvailableDate(
-    new Date(pickupDate),
-    duration,
-    pickupTime
-  );
+    const nextDate = await findNextAvailableDate(
+      new Date(pickupDate),
+      duration,
+      pickupTime
+    );
 
-  let suggestionHTML = "";
+    let suggestionHTML = "";
 
-  if (nextDate) {
+    if (nextDate) {
 
-    const formatted = nextDate.toLocaleDateString(undefined, {
-      day: "numeric",
-      month: "long"
-    });
+      const formatted = nextDate.toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "long"
+      });
 
-    const nextValue = nextDate.toISOString().slice(0, 10);
+      const nextValue = nextDate.toISOString().slice(0, 10);
 
-    suggestionHTML = `
-      <div class="next-available">
-        Next available ${LOCKED_VEHICLE ? "for this lorry" : ""}: 
-        <strong>${formatted}</strong><br>
+      suggestionHTML = `
+        <div class="next-available">
+          Next available ${LOCKED_VEHICLE ? "for this lorry" : ""}: 
+          <strong>${formatted}</strong><br>
 
-        <button class="btn ghost next-date-btn"
-          data-date="${nextValue}">
-          Check ${formatted}
-        </button>
+          <button class="btn ghost next-date-btn"
+            data-date="${nextValue}">
+            Check ${formatted}
+          </button>
+        </div>
+      `;
+    }
+
+    availabilityResults.innerHTML = `
+      <div class="availability-empty-state">
+        <p class="empty-note">
+          ${
+            LOCKED_VEHICLE
+              ? "This lorry is not available on this date."
+              : "No lorries available for this date and duration."
+          }
+        </p>
+        ${suggestionHTML}
       </div>
     `;
+
+    setTimeout(() => {
+      availabilityResults?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 150);
+
+    return;
   }
-
-  availabilityResults.innerHTML = `
-    <div class="availability-empty-state">
-      <p class="empty-note">
-        ${
-          LOCKED_VEHICLE
-            ? "This lorry is not available on this date."
-            : "No lorries available for this date and duration."
-        }
-      </p>
-      ${suggestionHTML}
-    </div>
-  `;
-
-;
-
-  setTimeout(() => {
-    availabilityResults?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }, 150);
-
-  return;
-}
-  
 
   /* ===============================
      ONLY ONE VEHICLE → SKIP
   =============================== */
 
   if (items.length === 1 && LOCKED_VEHICLE) {
-
-  await selectAvailability(items[0].vehicle.id);
-  goToStep(3);
-  return;
-}
+    await selectAvailability(items[0].vehicle.id);
+    goToStep(3);
+    return;
+  }
 
   /* ===============================
      MULTIPLE VEHICLES → STEP 2
@@ -2633,7 +2654,7 @@ if (pickupDate && Number(durationDaysInput?.value) === 0.5) {
   availabilityResults.innerHTML = html;
 
   /* ===============================
-     AVAILABILITY NOTE / URGENCY
+     AVAILABILITY NOTE
   =============================== */
 
   let availabilityNote = `
