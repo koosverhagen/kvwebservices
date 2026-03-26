@@ -1708,7 +1708,7 @@ function resetBookingFlow() {
 
   console.log("🔄 HARD reset booking flow");
 
-  IS_RESETTING = true; // 🔥 BLOCK CALENDAR SIDE EFFECTS
+  IS_RESETTING = true; // 🔥 BLOCK SIDE EFFECTS
 
   /* ===============================
      CLEAR GLOBAL STATE
@@ -1721,11 +1721,15 @@ function resetBookingFlow() {
   BLOCK_AUTO_SCROLL = false;
 
   /* ===============================
-     CLEAR DATE STATE
+     CLEAR DATE STATE (FULL RESET)
   =============================== */
 
   if (pickupDateInput) {
     pickupDateInput.value = "";
+
+    // 🔥 FORCE FULL RESET (CRITICAL)
+    pickupDateInput.setAttribute("value", "");
+    pickupDateInput.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
   window.SELECTED_DATE = null;
@@ -1804,135 +1808,17 @@ function resetBookingFlow() {
 
   if (typeof renderCalendar === "function") {
     setTimeout(() => {
+
       renderCalendar();
 
-      // 🔥 RELEASE LOCK AFTER RENDER
-      setTimeout(() => {
-        IS_RESETTING = false;function resetBookingFlow() {
-
-  console.log("🔄 HARD reset booking flow");
-
-  IS_RESETTING = true; // 🔥 BLOCK CALENDAR SIDE EFFECTS
-
-  /* ===============================
-     CLEAR GLOBAL STATE
-  =============================== */
-
-  selectedAvailability = null;
-
-  PRESELECTED_VEHICLE = null;
-  LOCKED_VEHICLE = false;
-  BLOCK_AUTO_SCROLL = false;
-
-  /* ===============================
-     CLEAR DATE STATE
-  =============================== */
-
-  if (pickupDateInput) {
-    pickupDateInput.value = "";
-  }
-
-  window.SELECTED_DATE = null;
-
-  /* ===============================
-     CLEAR CALENDAR UI
-  =============================== */
-
-  document.querySelectorAll(".cal-day")
-    .forEach(el => el.classList.remove("selected", "active"));
-
-  /* ===============================
-     CLEAR FORM FIELDS
-  =============================== */
-
-  if (selectedLorryInput) selectedLorryInput.value = "";
-  if (selectedPickupInput) selectedPickupInput.value = "";
-  if (selectedDurationInput) selectedDurationInput.value = "";
-  if (selectedBaseInput) selectedBaseInput.value = "";
-
-  if (pickupTimeInput) pickupTimeInput.value = "";
-  if (durationDaysInput) durationDaysInput.value = "";
-
-  /* ===============================
-     UI RESET
-  =============================== */
-
-  const row = document.getElementById("pickup-time-row");
-  if (row) row.style.display = "none";
-
-  const group = document.getElementById("pickup-time-group");
-  if (group) group.style.display = "none";
-
-  const warningBox = document.getElementById("preselected-warning");
-  if (warningBox) {
-    warningBox.innerHTML = "";
-    warningBox.style.display = "none";
-  }
-
-  updateCalendarVehicleLabel();
-
-  if (availabilityResults) availabilityResults.innerHTML = "";
-
-  const confirmation = document.getElementById("booking-confirmation");
-  if (confirmation) confirmation.innerHTML = "";
-
-  /* ===============================
-     CACHE
-  =============================== */
-
-  AVAILABILITY_CACHE.clear();
-  VEHICLE_AVAILABILITY_CACHE.clear();
-  VEHICLE_AVAILABILITY_PROMISES.clear();
-
-  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
-
-  updateCheckoutSummary();
-
-  /* ===============================
-     NAVIGATION
-  =============================== */
-
-  goToStep(1);
-
-  /* ===============================
-     SCROLL TOP
-  =============================== */
-
-  requestAnimationFrame(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  });
-
-  /* ===============================
-     🔥 SAFE CALENDAR REFRESH
-  =============================== */
-
-  if (typeof renderCalendar === "function") {
-    setTimeout(() => {
-      renderCalendar();
-
-      // 🔥 RELEASE LOCK AFTER RENDER
-      setTimeout(() => {
+      // 🔥 RELEASE LOCK (CORRECT TIMING)
+      requestAnimationFrame(() => {
         IS_RESETTING = false;
-      }, 50);
+      });
 
     }, 0);
-  }
-
-  /* ===============================
-     TOAST
-  =============================== */
-
-  console.log("🔄 Booking reset complete");
-
-  setTimeout(() => {
-    if (typeof showToast === "function") {
-      showToast("Booking reset complete");
-    }
-  }, 150);
-}
-      }, 50);
-
-    }, 0);
+  } else {
+    IS_RESETTING = false;
   }
 
   /* ===============================
@@ -5848,10 +5734,10 @@ async function selectDate(dateStr) {
      🔥 BLOCK DURING RESET (CRITICAL)
   =============================== */
 
-  if (typeof IS_RESETTING !== "undefined" && IS_RESETTING) {
-    console.log("⛔ selectDate blocked during reset");
-    return;
-  }
+  if (IS_RESETTING) {
+  console.log("⛔ blocked during reset");
+  return;
+}
 
   const warningBox = document.getElementById("preselected-warning");
   if (warningBox) {
