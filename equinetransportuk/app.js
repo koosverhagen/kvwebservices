@@ -770,8 +770,13 @@ async function updateDurationOptions(dateStr) {
         return is35T(vehicle);
       });
 
-      const hasAM = filteredAM.some(v => v.available);
-      const hasPM = filteredPM.some(v => v.available);
+   const hasAM = filteredAM.some(v =>
+  v.available || (v.availableSlots && v.availableSlots.includes("am"))
+);
+
+const hasPM = filteredPM.some(v =>
+  v.available || (v.availableSlots && v.availableSlots.includes("pm"))
+);
 
       available = hasAM || hasPM;
 
@@ -1058,9 +1063,13 @@ const filteredPM = (PRESELECTED_VEHICLE
   return is35T(vehicle);
 });
 
-const morningAvailable = filteredAM.some(v => v.available);
-const afternoonAvailable = filteredPM.some(v => v.available);
+const morningAvailable = filteredAM.some(v =>
+  v.available || (v.availableSlots && v.availableSlots.includes("am"))
+);
 
+const afternoonAvailable = filteredPM.some(v =>
+  v.available || (v.availableSlots && v.availableSlots.includes("pm"))
+);
     return { morningAvailable, afternoonAvailable };
 
   } catch (err) {
@@ -1189,8 +1198,13 @@ const filteredPM = (PRESELECTED_VEHICLE
   return is35T(vehicle);
 });
 
-const morningAvailable = filteredAM.some(v => v.available);
-const afternoonAvailable = filteredPM.some(v => v.available);
+const morningAvailable = filteredAM.some(v =>
+  v.available || (v.availableSlots && v.availableSlots.includes("am"))
+);
+
+const afternoonAvailable = filteredPM.some(v =>
+  v.available || (v.availableSlots && v.availableSlots.includes("pm"))
+);
 
     /* ===============================
        APPLY UI STATE
