@@ -766,8 +766,8 @@ async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
     b => b.vehicleId === vehicleId && b.status !== "cancelled"
   );
 
-  const dayStart = new Date(`${dateStr}T00:00:00`);
-  const dayEnd = new Date(`${dateStr}T23:59:59`);
+const dayStart = startOfDayFromDateStr(dateStr);
+const dayEnd = endOfDayFromDateStr(dateStr);
 
   let morningBooked = false;
   let afternoonBooked = false;
@@ -815,9 +815,12 @@ async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
 }
 
 
-function getRemainingSlots(dateObj, bookings){
+function getRemainingSlots(dateStr, bookings){
 
   let remainingSlots = 0;
+
+  const dayStart = startOfDayFromDateStr(dateStr);
+  const dayEnd = endOfDayFromDateStr(dateStr);
 
   vehicles
     .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
@@ -826,12 +829,6 @@ function getRemainingSlots(dateObj, bookings){
       const vehicleBookings = bookings.filter(
         b => b.vehicleId === vehicle.id && b.status !== "cancelled"
       );
-
-      const dayStart = new Date(dateObj);
-      dayStart.setHours(0,0,0,0);
-
-      const dayEnd = new Date(dateObj);
-      dayEnd.setHours(23,59,59,999);
 
       let morningBooked = false;
       let afternoonBooked = false;
@@ -861,9 +858,12 @@ function getRemainingSlots(dateObj, bookings){
   return remainingSlots;
 }
 
-function getAvailableVehicleCount(dayDate, bookings){
+function getAvailableVehicleCount(dateStr, bookings){
 
   let count = 0;
+
+  const dayStart = startOfDayFromDateStr(dateStr);
+  const dayEnd = endOfDayFromDateStr(dateStr);
 
   for(const vehicle of vehicles){
 
@@ -873,25 +873,18 @@ function getAvailableVehicleCount(dayDate, bookings){
 
     const hasOverlap = vehicleBookings.some(b => {
 
-  const start = new Date(b.pickupAt);
-  const end = new Date(b.dropoffAt);
+      const start = new Date(b.pickupAt);
+      const end = new Date(b.dropoffAt);
 
-  const dayStart = new Date(dayDate);
-  dayStart.setHours(0,0,0,0);
+      return start <= dayEnd && end >= dayStart;
 
-  const dayEnd = new Date(dayDate);
-  dayEnd.setHours(23,59,59,999);
-
-  return start <= dayEnd && end >= dayStart;
-
-});
+    });
 
     if(!hasOverlap) count++;
 
   }
 
   return count;
-
 }
 
 function getLondonHour(date) {
@@ -924,6 +917,24 @@ function getLondonParts(date) {
     hour: Number(get("hour")),
     minute: Number(get("minute"))
   };
+}
+
+function datePartsFromDateStr(dateStr) {
+  const [year, month, day] = String(dateStr).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return { year, month, day };
+}
+
+function startOfDayFromDateStr(dateStr) {
+  const p = datePartsFromDateStr(dateStr);
+  if (!p) return new Date(NaN);
+  return new Date(p.year, p.month - 1, p.day, 0, 0, 0, 0);
+}
+
+function endOfDayFromDateStr(dateStr) {
+  const p = datePartsFromDateStr(dateStr);
+  if (!p) return new Date(NaN);
+  return new Date(p.year, p.month - 1, p.day, 23, 59, 59, 999);
 }
 
 /* =================================
@@ -2423,7 +2434,7 @@ async function renderAvailabilityResults(items) {
 const pickupDate = pickupDateInput?.value;
 
 if (pickupDate && Number(durationDaysInput?.value) === 0.5) {
-  await syncPickupTimeOptions(new Date(`${pickupDate}T00:00:00`));
+  await syncPickupTimeOptions(pickupDate);
 }
 
   const pricePreview = document.getElementById("price-preview");
@@ -5380,7 +5391,7 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
      LAST VEHICLE LABEL
   =============================== */
 
-  const remainingSlots = getRemainingSlots(dayDate, bookings);
+  getRemainingSlots(formatDayKey(dayDate), bookings)
 
   if (remainingSlots === 1){
 
