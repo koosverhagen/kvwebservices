@@ -312,7 +312,7 @@ const vehicles = [
   {
     id: "v35-2",
     name: "3.5T Stallion Lorry",
-    code: "MM68",
+    code: "DL22",
     type: "3.5 tonne",
     horses: 2,
     seats: 3,
@@ -321,7 +321,7 @@ const vehicles = [
     pricingModel: "35_duration_rules",
     summary:
       "Back-facing 2-horse stallion layout with high partitions, no breast bar, horse/reverse cameras, roof vent and windows.",
-    image: "images/lorry-mm68.webp"
+    image: "images/lorry-DL22.webp"
   },
   {
     id: "v35-3",
@@ -3164,7 +3164,7 @@ function getVehicleImagePrefix(vehicle){
 
   const name = vehicle.name.toLowerCase();
 
-  if(name.includes("stallion")) return "3.5 T Stallion (MM68)";
+  if(name.includes("stallion")) return "3.5 T Stallion (DL22)";
   if(name.includes("safety")) return "3.5T With Safety Bar (LS23)";
   if(name.includes("breast")) return "3.5 T With Breast Bar (CA21)";
   if(name.includes("3 horse")) return "7.5 T 3 Horses with Living";
@@ -3398,7 +3398,7 @@ function getVehicleMainImage(vehicle){
 
   const map = {
     "v35-1": "images/3.5T With Safety Bar (LS23)1.webp",
-    "v35-2": "images/3.5 T Stallion (MM68)1.webp",
+    "v35-2": "images/3.5 T Stallion (DL22)1.webp",
     "v35-3": "images/3.5 T With Breast Bar (CA21)1.webp",
     "v75-1": "images/7.5 T 3 Horses with Living1.webp",
     "v75-2": "images/7.5 T 4 Horses No Living1.webp"
@@ -5003,11 +5003,11 @@ clearAdminBtn?.addEventListener("click", async () => {
 });
 // Expose images for slideshow matching your filenames
 window.fleetImages = window.fleetImages || [
-  "3.5 T Stallion (MM68)1.webp",
-  "3.5 T Stallion (MM68)2.webp",
-  "3.5 T Stallion (MM68)3.webp",
-  "3.5 T Stallion (MM68)4.webp",
-  "3.5 T Stallion (MM68)5.webp",
+  "3.5 T Stallion (DL22)1.webp",
+  "3.5 T Stallion (DL22)2.webp",
+  "3.5 T Stallion (DL22)3.webp",
+  "3.5 T Stallion (DL22)4.webp",
+  "3.5 T Stallion (DL22)5.webp",
   "3.5 T With Breast Bar (CA21)1.webp",
   "3.5 T With Breast Bar (CA21)2.webp",
   "3.5 T With Breast Bar (CA21)3.webp",
