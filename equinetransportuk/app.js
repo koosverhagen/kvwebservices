@@ -2227,15 +2227,26 @@ try {
 
 async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode = "") {
 
-  // time rules
+  /* ===============================
+     TIME RULES (FIXED)
+  =============================== */
+
   let actualPickupTime = pickupTime;
   let dropoffTime = FULL_DAY_DROPOFF_TIME;
   let durationHours = getDurationHours(vehicle, durationDays);
 
-  if (is35T(vehicle) && Number(durationDays) === 0.5) {
+  const isHalfDay = is35T(vehicle) && Number(durationDays) === 0.5;
 
-    if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
-      actualPickupTime = HALF_DAY_PICKUP_TIMES_35T[0];
+  if (isHalfDay) {
+
+    // 🔥 DO NOT FORCE DEFAULT — respect user or resolved selection
+    if (!HALF_DAY_PICKUP_TIMES_35T.includes(actualPickupTime)) {
+      actualPickupTime = pickupTime || null;
+    }
+
+    // ❌ If still no valid time → STOP (forces user selection)
+    if (!actualPickupTime) {
+      return null;
     }
 
     dropoffTime = HALF_DAY_DROPOFF_TIMES_35T[actualPickupTime];
@@ -2243,32 +2254,40 @@ async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, 
 
   } else {
 
+    // full day always morning
     actualPickupTime = DEFAULT_PICKUP_TIME;
     dropoffTime = FULL_DAY_DROPOFF_TIME;
 
   }
 
+  /* ===============================
+     BUILD DATES
+  =============================== */
+
   const pickupAt = asDate(pickupDate, actualPickupTime);
 
   let dropoffAt;
 
-  if (is35T(vehicle) && Number(durationDays) === 0.5) {
+  if (isHalfDay) {
 
     dropoffAt = asDate(pickupDate, dropoffTime);
 
   } else {
 
     const dropoffDate = addDays(pickupAt, Math.max(0, Number(durationDays) - 1));
-    const year = dropoffDate.getFullYear();
-const month = String(dropoffDate.getMonth() + 1).padStart(2, "0");
-const day = String(dropoffDate.getDate()).padStart(2, "0");
 
-dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
+    const year = dropoffDate.getFullYear();
+    const month = String(dropoffDate.getMonth() + 1).padStart(2, "0");
+    const day = String(dropoffDate.getDate()).padStart(2, "0");
+
+    dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
 
   }
 
+  /* ===============================
+     CACHE KEY
+  =============================== */
 
-  // quote cache (includes discount code)
   const cacheKey = getAvailabilityCacheKey(
     vehicle.id,
     pickupDate,
@@ -2283,8 +2302,10 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
     return cached.data;
   }
 
+  /* ===============================
+     FETCH PRICING
+  =============================== */
 
-  // fetch pricing from server
   const pricing = await fetchServerQuote(
     vehicle,
     durationDays,
@@ -2293,42 +2314,60 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
     discountCode
   );
 
+  /* ===============================
+     EXTRAS
+  =============================== */
+
   const extras = {
-  dartford: dartfordEnabledInput?.checked
-    ? Number(dartfordCountInput?.value || 0)
-    : 0,
-  earlyPickup: Boolean(earlyPickupEnabledInput?.checked)
-};
+    dartford: dartfordEnabledInput?.checked
+      ? Number(dartfordCountInput?.value || 0)
+      : 0,
+
+    earlyPickup:
+      earlyPickupEnabledInput?.checked &&
+      !earlyPickupEnabledInput?.disabled
+        ? 1
+        : 0
+  };
+
+  /* ===============================
+     BUILD OBJECT
+  =============================== */
 
   const availabilityObject = {
-  vehicle,
-  pickupDate,
-  pickupTime: actualPickupTime,
-  durationDays,
-  durationHours,
-  pickupAt,
-  dropoffAt,
-  extras,
-
+    vehicle,
+    pickupDate,
+    pickupTime: actualPickupTime,
+    durationDays,
+    durationHours,
+    pickupAt,
+    dropoffAt,
+    extras,
 
     baseCost: pricing.baseCost,
     discountAmount: pricing.discountAmount,
     extrasTotal: pricing.extrasTotal,
     total: pricing.total
-
   };
 
+  /* ===============================
+     🔥 FORCE UI SYNC (CRITICAL FIX)
+  =============================== */
 
-  /* =====================================================
-     UPDATE CHECKOUT SUMMARY UI
-     ===================================================== */
+  if (isHalfDay && pickupDateInput?.value) {
+    setTimeout(() => {
+      syncPickupTimeOptions(pickupDateInput.value);
+    }, 0);
+  }
 
+  /* ===============================
+     CACHE STORE
+  =============================== */
 
   AVAILABILITY_CACHE.set(cacheKey, {
     timestamp: Date.now(),
     data: availabilityObject
   });
-
 
   return availabilityObject;
 }
@@ -2377,7 +2416,7 @@ const hasPM =
 
         let resolvedPickupTime = pickupTime;
 
-       // AUTO PICK SLOT (FIXED)
+// AUTO PICK SLOT (STRICT — NO GUESSING)
 if (!pickupTime) {
 
   // only AM available
@@ -2390,9 +2429,9 @@ if (!pickupTime) {
     resolvedPickupTime = "13:00";
   }
 
-  // 🔥 BOTH AVAILABLE → DO NOT AUTO PICK
+  // 🔥 BOTH AVAILABLE → force user choice
   else if (hasAM && hasPM) {
-    return null; // force user to choose
+    return null;
   }
 
   // nothing available
