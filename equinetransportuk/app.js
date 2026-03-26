@@ -1775,6 +1775,28 @@ function addDays(date, days) {
   return output;
 }
 
+function getDatesBetween(startDate, endDate) {
+  const dates = [];
+
+  const current = new Date(startDate);
+  current.setHours(0, 0, 0, 0);
+
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+
+  while (current <= end) {
+    const year = current.getFullYear();
+    const month = String(current.getMonth() + 1).padStart(2, "0");
+    const day = String(current.getDate()).padStart(2, "0");
+
+    dates.push(`${year}-${month}-${day}`);
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
+}
+
 function formatDayKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
