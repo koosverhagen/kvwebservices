@@ -840,61 +840,53 @@ async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
   const select = document.getElementById("booking-pickup-time");
   if (!select || !dateStr || !vehicleId) return;
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
+  try {
 
-  let morningAvailable = false;
-  let afternoonAvailable = false;
+    const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-  const vehicleBookings = bookings.filter(
-    b => b.vehicleId === vehicleId && b.status !== "cancelled"
-  );
+    const amVehicle = amData.find(v => v.vehicleId === vehicleId);
+    const pmVehicle = pmData.find(v => v.vehicleId === vehicleId);
 
-const dayStart = startOfDayFromDateStr(dateStr);
-const dayEnd = endOfDayFromDateStr(dateStr);
+    const hasAM =
+      amVehicle?.available ||
+      (amVehicle?.availableSlots || []).includes("am");
 
-  let morningBooked = false;
-  let afternoonBooked = false;
+    const hasPM =
+      pmVehicle?.available ||
+      (pmVehicle?.availableSlots || []).includes("pm");
 
-  vehicleBookings.forEach(b => {
+    const morningAvailable = !!hasAM;
+    const afternoonAvailable = !!hasPM;
 
-    const start = new Date(b.pickupAt);
-    const end = new Date(b.dropoffAt);
+    const morningOption = select.querySelector('option[value="07:00"]');
+    const afternoonOption = select.querySelector('option[value="13:00"]');
 
-    if (start <= dayEnd && end >= dayStart) {
-
-      const startHour = getLondonHour(start);
-      const endHour = getLondonHour(end);
-
-      if (startHour < 13) morningBooked = true;
-      if (endHour > 13) afternoonBooked = true;
-
+    if (morningOption) {
+      morningOption.disabled = !morningAvailable;
+      morningOption.style.color = morningAvailable ? "" : "#999";
     }
 
-  });
+    if (afternoonOption) {
+      afternoonOption.disabled = !afternoonAvailable;
+      afternoonOption.style.color = afternoonAvailable ? "" : "#999";
+    }
 
-  morningAvailable = !morningBooked;
-  afternoonAvailable = !afternoonBooked;
+    // auto-fix selection
+    if (select.value === "07:00" && !morningAvailable && afternoonAvailable) {
+      select.value = "13:00";
+    }
 
-  const morningOption = select.querySelector('option[value="07:00"]');
-  const afternoonOption = select.querySelector('option[value="13:00"]');
+    if (select.value === "13:00" && !afternoonAvailable && morningAvailable) {
+      select.value = "07:00";
+    }
 
-  if (morningOption) morningOption.disabled = !morningAvailable;
-  if (afternoonOption) afternoonOption.disabled = !afternoonAvailable;
+    if (!morningAvailable && !afternoonAvailable) {
+      select.value = "";
+    }
 
-  /* auto-fix selection */
-
-  if (select.value === "07:00" && !morningAvailable && afternoonAvailable) {
-    select.value = "13:00";
+  } catch (err) {
+    console.warn("Booking pickup sync failed:", err);
   }
-
-  if (select.value === "13:00" && !afternoonAvailable && morningAvailable) {
-    select.value = "07:00";
-  }
-
-  if (!morningAvailable && !afternoonAvailable) {
-    select.value = "";
-  }
-
 }
 
 
