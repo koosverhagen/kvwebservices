@@ -1704,22 +1704,30 @@ function goBackToDates() {
 
 function resetBookingFlow() {
 
-  console.log("🔄 Reset booking flow");
+  console.log("🔄 HARD reset booking flow");
 
   /* ===============================
-     CLEAR STATE
+     🔥 CLEAR GLOBAL STATE
   =============================== */
 
   selectedAvailability = null;
 
-  /* clear form fields */
+  PRESELECTED_VEHICLE = null;
+  LOCKED_VEHICLE = false;
+  BLOCK_AUTO_SCROLL = false;
+
+  /* ===============================
+     CLEAR FORM FIELDS
+  =============================== */
+
   if (selectedLorryInput) selectedLorryInput.value = "";
   if (selectedPickupInput) selectedPickupInput.value = "";
-  if (selectedDurationInput) selectedDurationInput.value = "1";
+  if (selectedDurationInput) selectedDurationInput.value = "";
   if (selectedBaseInput) selectedBaseInput.value = "";
 
   if (pickupDateInput) pickupDateInput.value = "";
   if (pickupTimeInput) pickupTimeInput.value = "";
+  if (durationDaysInput) durationDaysInput.value = "";
 
   /* ===============================
      UI RESET
@@ -1731,19 +1739,23 @@ function resetBookingFlow() {
   const group = document.getElementById("pickup-time-group");
   if (group) group.style.display = "none";
 
+  const warningBox = document.getElementById("preselected-warning");
+  if (warningBox) {
+    warningBox.innerHTML = "";
+    warningBox.style.display = "none";
+  }
+
+  updateCalendarVehicleLabel();
+
   if (availabilityResults) availabilityResults.innerHTML = "";
 
   const confirmation = document.getElementById("booking-confirmation");
   if (confirmation) confirmation.innerHTML = "";
 
   /* ===============================
-     CACHE STRATEGY (IMPORTANT)
+     CACHE STRATEGY
   =============================== */
 
-  // ✅ keep bookings cache (BIG performance win)
-  // BOOKINGS_CACHE = null; ❌ REMOVE THIS
-
-  // ✅ only clear availability (this is user-specific)
   AVAILABILITY_CACHE.clear();
   VEHICLE_AVAILABILITY_CACHE.clear();
   VEHICLE_AVAILABILITY_PROMISES.clear();
@@ -1762,22 +1774,36 @@ function resetBookingFlow() {
 
   goToStep(1);
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
+  /* ===============================
+     🔥 SCROLL TO TOP (ROBUST)
+  =============================== */
+
+  requestAnimationFrame(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
   });
 
   /* ===============================
-     CALENDAR RENDER (SAFE)
+     CALENDAR REFRESH
   =============================== */
 
   if (typeof renderCalendar === "function") {
-    // no force refresh → uses cached bookings + render lock
     renderCalendar();
   }
 
-}
+  /* ===============================
+     🔥 TOASTS
+  =============================== */
 
+  console.log("🔄 Booking reset complete");
+
+  if (typeof showToast === "function") {
+    showToast("Booking cleared");
+  }
+
+}
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
   return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
@@ -1827,6 +1853,27 @@ function getDatesBetween(startDate, endDate) {
   }
 
   return dates;
+}
+
+function showToast(message = "") {
+
+  let toast = document.getElementById("app-toast");
+
+  // create if not exists
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "app-toast";
+    document.body.appendChild(toast);
+  }
+
+  toast.innerText = message;
+
+  toast.classList.add("visible");
+
+  // auto hide
+  setTimeout(() => {
+    toast.classList.remove("visible");
+  }, 2500);
 }
 
 function formatDayKey(date) {
