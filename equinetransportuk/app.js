@@ -1730,6 +1730,13 @@ function resetBookingFlow() {
   if (durationDaysInput) durationDaysInput.value = "";
 
   /* ===============================
+     🔥 CLEAR CALENDAR UI (CRITICAL)
+  =============================== */
+
+  document.querySelectorAll(".cal-day.selected, .cal-day.active")
+    .forEach(el => el.classList.remove("selected", "active"));
+
+  /* ===============================
      UI RESET
   =============================== */
 
@@ -1794,14 +1801,16 @@ function resetBookingFlow() {
   }
 
   /* ===============================
-     🔥 TOASTS
+     🔥 TOAST (RELIABLE)
   =============================== */
 
   console.log("🔄 Booking reset complete");
 
-  if (typeof showToast === "function") {
-    showToast("Booking cleared");
-  }
+  setTimeout(() => {
+    if (typeof showToast === "function") {
+      showToast("Booking reset complete");
+    }
+  }, 150);
 
 }
 function apiUrl(path) {
