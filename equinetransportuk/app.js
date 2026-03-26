@@ -118,6 +118,11 @@ function startBooking(vehicleId) {
   // 🔥 Force duration rules immediately
   updateDurationOptionsForVehicle(vehicle);
 
+  // 🔥 force re-selection (prevents wrong auto check)
+if (durationDaysInput) {
+  durationDaysInput.value = "";
+}
+
   // 🔥 Remove half-day for 7.5T instantly
   enforceVehicleDurationRules(vehicle);
 
@@ -137,13 +142,24 @@ function startBooking(vehicleId) {
 
   goToStep(1);
 
+  setTimeout(() => {
+  durationDaysInput?.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+  durationDaysInput?.classList.add("duration-highlight");
+
+  setTimeout(() => {
+    durationDaysInput?.classList.remove("duration-highlight");
+  }, 1500);
+}, 200);
+
   // 🔥 Auto re-check availability if already filled
   const pickupDate = pickupDateInput?.value;
   const durationDays = Number(durationDaysInput?.value || 1);
 
- if (pickupDate && durationDays > 0) {
-  setTimeout(() => maybeAutoSubmitAvailability(), 300);
-}
+// ❌ DO NOT auto-submit when vehicle is preselected
+// user must choose duration first
 }
 
 /* ======================================================
