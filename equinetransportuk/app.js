@@ -4911,53 +4911,34 @@ async function showVehiclePreview(date, event) {
      AVAILABLE VEHICLES (SYNCED WITH API)
   ====================================================== */
 
-  const vehiclesAvailability = await getVehicleAvailability(
-    dateStart.toISOString().slice(0, 10),
-    0.5,
-    null
-  );
-
-    /* ======================================================
-     AVAILABLE VEHICLES (SYNCED WITH API)
-  ====================================================== */
-
-  const previewDateStr = dateStart.toISOString().slice(0, 10);
-
-  const halfDayAM = await getVehicleAvailability(
-  previewDateStr,
-  0.5,
-  "07:00"
-);
-
-const halfDayPM = await getVehicleAvailability(
-  previewDateStr,
-  0.5,
-  "13:00"
-);
-
-  const fullDayAvailability = await getVehicleAvailability(
-    previewDateStr,
-    1,
-    "07:00"
-  );
-
   const availability = vehicles.map(vehicle => {
 
-  const amVehicle = halfDayAM.find(
-    v => v.vehicleId === vehicle.id
+  const vehicleBookings = booked.filter(
+    b => b.vehicleId === vehicle.id
   );
 
-  const pmVehicle = halfDayPM.find(
-    v => v.vehicleId === vehicle.id
-  );
+  let morningBooked = false;
+  let afternoonBooked = false;
 
-  const fullDayVehicle = fullDayAvailability.find(
-    v => v.vehicleId === vehicle.id
-  );
+  vehicleBookings.forEach(b => {
 
-  const morningAvailable = is35T(vehicle) && Boolean(amVehicle?.available);
-  const afternoonAvailable = is35T(vehicle) && Boolean(pmVehicle?.available);
-  const fullDayAvailable = Boolean(fullDayVehicle?.available);
+    const start = new Date(b.pickupAt);
+    const end = new Date(b.dropoffAt);
+
+    const startHour = getLondonHour(start);
+    const endHour = getLondonHour(end);
+
+    if (startHour < 13) morningBooked = true;
+    if (endHour > 13) afternoonBooked = true;
+
+  });
+
+  const morningAvailable = is35T(vehicle) && !morningBooked;
+  const afternoonAvailable = is35T(vehicle) && !afternoonBooked;
+
+  // 🔥 IMPORTANT FIX
+  const fullDayAvailable =
+    !morningBooked && !afternoonBooked;
 
   return {
     vehicle,
