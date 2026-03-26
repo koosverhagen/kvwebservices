@@ -2378,136 +2378,87 @@ dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
-  /* ===============================
-     VEHICLES TO CHECK
-  =============================== */
-
   let vehiclesToCheck =
     LOCKED_VEHICLE && PRESELECTED_VEHICLE
       ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
       : vehicles;
 
-  // 🔥 SAFETY FALLBACK
   if (!vehiclesToCheck.length) {
-    console.warn("⚠️ No vehicles matched — fallback to all vehicles");
     vehiclesToCheck = vehicles;
-  }
-
-  /* ===============================
-     🔥 API CALL
-  =============================== */
-
-const effectivePickupTime =
-  durationDays === 0.5
-    ? (pickupTime || "07:00") // default to AM for API
-    : "07:00";
-
-const vehiclesAvailability = await getVehicleAvailability(
-  pickupDate,
-  durationDays,
-  effectivePickupTime
-);
-
-  console.log("🚀 vehiclesAvailability:", vehiclesAvailability);
-
-  if (!Array.isArray(vehiclesAvailability) || vehiclesAvailability.length === 0) {
-    console.warn("⚠️ Empty API response");
-    return [];
   }
 
   const isHalfDay = Number(durationDays) === 0.5;
 
-  /* ===============================
-     BUILD RESULTS
-  =============================== */
+  if (isHalfDay) {
+
+    const { amData, pmData } = await getHalfDayAvailability(pickupDate);
+
+    const results = await Promise.all(
+      vehiclesToCheck.map(async (vehicle) => {
+
+        if (!is35T(vehicle)) return null;
+
+        const amVehicle = amData.find(v => v.vehicleId === vehicle.id);
+        const pmVehicle = pmData.find(v => v.vehicleId === vehicle.id);
+
+        const hasAM =
+          amVehicle?.available ||
+          (amVehicle?.availableSlots || []).includes("am");
+
+        const hasPM =
+          pmVehicle?.available ||
+          (pmVehicle?.availableSlots || []).includes("pm");
+
+        let resolvedPickupTime = pickupTime;
+
+        if (!pickupTime) {
+          if (hasAM) resolvedPickupTime = "07:00";
+          else if (hasPM) resolvedPickupTime = "13:00";
+          else return null;
+        } else {
+          if (pickupTime === "07:00" && !hasAM) return null;
+          if (pickupTime === "13:00" && !hasPM) return null;
+        }
+
+        return await buildAvailability(
+          vehicle,
+          pickupDate,
+          0.5,
+          resolvedPickupTime
+        );
+
+      })
+    );
+
+    return results.filter(Boolean);
+  }
+
+  const vehiclesAvailability = await getVehicleAvailability(
+    pickupDate,
+    durationDays,
+    "07:00"
+  );
 
   const results = await Promise.all(
     vehiclesToCheck.map(async (vehicle) => {
-
-      // 🔥 BLOCK 7.5T HALF-DAY (CRITICAL FIX)
-if (Number(durationDays) === 0.5 && !is35T(vehicle)) {
-  return null;
-}
 
       const apiVehicle = vehiclesAvailability.find(
         v => v.vehicleId === vehicle.id
       );
 
-      if (!apiVehicle) return null;
-
-      /* ===============================
-         HALF DAY LOGIC (FIXED)
-      =============================== */
-
-      let resolvedPickupTime = pickupTime;
-
-      if (isHalfDay) {
-
-        const slots = apiVehicle.availableSlots || [];
-        const hasAM = slots.includes("am");
-        const hasPM = slots.includes("pm");
-
-        // 🧠 CASE 1 — user has NOT selected time yet
-        if (!pickupTime) {
-
-          if (hasAM) {
-            resolvedPickupTime = "07:00";
-          } else if (hasPM) {
-            resolvedPickupTime = "13:00";
-          } else {
-            return null;
-          }
-
-        }
-
-        // 🧠 CASE 2 — user DID select time → respect it
-        else {
-
-          if (pickupTime === "07:00" && hasAM) {
-            resolvedPickupTime = "07:00";
-          }
-
-          else if (pickupTime === "13:00" && hasPM) {
-            resolvedPickupTime = "13:00";
-          }
-
-          else {
-            return null; // ❌ slot not available → hide vehicle
-          }
-
-        }
-
-      }
-
-      /* ===============================
-         FULL DAY LOGIC
-      =============================== */
-
-      else {
-
-        if (!apiVehicle.available) return null;
-
-      }
-
-      /* ===============================
-         BUILD AVAILABILITY OBJECT
-      =============================== */
+      if (!apiVehicle || !apiVehicle.available) return null;
 
       return await buildAvailability(
         vehicle,
         pickupDate,
         durationDays,
-        resolvedPickupTime || "07:00"
+        "07:00"
       );
 
     })
   );
 
-  const filtered = results.filter(Boolean);
-
-  console.log("✅ availableLorries:", filtered);
-
-  return filtered;
+  return results.filter(Boolean);
 }
 
 function renderAvailabilityLoading() {
