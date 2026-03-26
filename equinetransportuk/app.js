@@ -551,25 +551,18 @@ function maybeAutoSubmitAvailability() {
   const duration = Number(durationDaysInput?.value || 0);
   const pickupTime = pickupTimeInput?.value;
 
-  // 🔥 HARD STOP: prevent silent fallback
-if (durationDays === 0.5 && !pickupTime) {
-  console.warn("⛔ blocked submit: missing pickup time");
-  return;
-}
-
   // ❌ no duration → stop
   if (!duration) return;
 
-  // 🔥 CRITICAL: LOCKED VEHICLE FLOW
-  // NEVER auto-submit — user must click button
-  if (LOCKED_VEHICLE) {
-    console.log("⛔ locked vehicle → manual submit only");
+  // 🔥 FIX: use correct variable
+  if (duration === 0.5 && !pickupTime) {
+    console.log("⛔ waiting for pickup time");
     return;
   }
 
-  // ❌ half day without time → stop
-  if (duration === 0.5 && !pickupTime) {
-    console.log("⛔ waiting for pickup time");
+  // 🔥 LOCKED VEHICLE → NEVER auto submit
+  if (LOCKED_VEHICLE) {
+    console.log("⛔ locked vehicle → manual submit only");
     return;
   }
 
