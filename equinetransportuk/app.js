@@ -1708,7 +1708,7 @@ function resetBookingFlow() {
 
   console.log("🔄 HARD reset booking flow");
 
-  IS_RESETTING = true; // 🔥 BLOCK SIDE EFFECTS
+  IS_RESETTING = true;
 
   /* ===============================
      CLEAR GLOBAL STATE
@@ -1726,10 +1726,12 @@ function resetBookingFlow() {
 
   if (pickupDateInput) {
     pickupDateInput.value = "";
-    pickupDateInput.setAttribute("value", "");
   }
 
-  // 🔥 ALSO CLEAR ANY INTERNAL DATE STATE
+  if (selectedPickupInput) {
+    selectedPickupInput.value = "";
+  }
+
   window.SELECTED_DATE = null;
 
   /* ===============================
@@ -1738,7 +1740,7 @@ function resetBookingFlow() {
 
   document.querySelectorAll(".cal-day")
     .forEach(el => {
-      el.classList.remove("selected", "active");
+      el.classList.remove("selected", "active", "cal-selected");
     });
 
   /* ===============================
@@ -1746,7 +1748,6 @@ function resetBookingFlow() {
   =============================== */
 
   if (selectedLorryInput) selectedLorryInput.value = "";
-  if (selectedPickupInput) selectedPickupInput.value = "";
   if (selectedDurationInput) selectedDurationInput.value = "";
   if (selectedBaseInput) selectedBaseInput.value = "";
 
@@ -1803,29 +1804,17 @@ function resetBookingFlow() {
   });
 
   /* ===============================
-     🔥 SAFE CALENDAR REFRESH
+     SAFE CALENDAR REFRESH
   =============================== */
 
   if (typeof renderCalendar === "function") {
     setTimeout(() => {
       renderCalendar();
-
-      // 🔥 CRITICAL: unlock immediately after render
       IS_RESETTING = false;
-
     }, 0);
   } else {
     IS_RESETTING = false;
   }
-
-  /* ===============================
-     🛟 FAILSAFE (VERY IMPORTANT)
-  =============================== */
-
-  // 🔥 GUARANTEE unlock no matter what
-  setTimeout(() => {
-    IS_RESETTING = false;
-  }, 100);
 
   /* ===============================
      TOAST
