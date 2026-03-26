@@ -2381,10 +2381,15 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
      🔥 API CALL
   =============================== */
 
- const vehiclesAvailability = await getVehicleAvailability(
+const effectivePickupTime =
+  durationDays === 0.5
+    ? (pickupTime || "07:00") // default to AM for API
+    : "07:00";
+
+const vehiclesAvailability = await getVehicleAvailability(
   pickupDate,
   durationDays,
-  pickupTime || null
+  effectivePickupTime
 );
 
   console.log("🚀 vehiclesAvailability:", vehiclesAvailability);
