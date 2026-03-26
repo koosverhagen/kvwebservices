@@ -5391,24 +5391,23 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
      LAST VEHICLE LABEL
   =============================== */
 
-  getRemainingSlots(formatDayKey(dayDate), bookings)
+ const remainingSlots = getRemainingSlots(formatDayKey(dayDate), bookings);
 
-  if (remainingSlots === 1){
+if (remainingSlots === 1){
 
-    dayEl.classList.add("cal-last");
+  dayEl.classList.add("cal-last");
 
-    const label = document.createElement("div");
-    label.className = "cal-last-label";
+  const label = document.createElement("div");
+  label.className = "cal-last-label";
 
-    if (window.innerWidth < 768) {
-      label.innerHTML = "1<br>Left!";
-    } else {
-      label.textContent = "1 Slot Left!";
-    }
-
-    dayEl.appendChild(label);
+  if (window.innerWidth < 768) {
+    label.innerHTML = "1<br>Left!";
+  } else {
+    label.textContent = "1 Slot Left!";
   }
 
+  dayEl.appendChild(label);
+}
   /* ===============================
      STATUS COLOURING
   =============================== */
