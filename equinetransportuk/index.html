@@ -619,16 +619,16 @@ document.addEventListener("DOMContentLoaded", function(){
   // Swipe down to close (mobile)
   let startY = 0;
 
-  overlay.addEventListener("touchstart", function(e){
-    startY = e.touches[0].clientY;
-  });
+ overlay.addEventListener("touchstart", function(e){
+  startY = e.touches[0].clientY;
+}, { passive: true });
 
-  overlay.addEventListener("touchmove", function(e){
-    const currentY = e.touches[0].clientY;
-    if(currentY - startY > 80){
-      closeOverlay();
-    }
-  });
+overlay.addEventListener("touchmove", function(e){
+  const currentY = e.touches[0].clientY;
+  if(currentY - startY > 80){
+    closeOverlay();
+  }
+}, { passive: true });
 
 });
 </script>
@@ -658,7 +658,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
 <script src="https://elfsightcdn.com/platform.js" async></script>
 
- <script src="app.js?v=41"></script>
+ <script src="app.js?v=42"></script>
   <div id="calendar-tooltip" class="cal-tooltip"></div>
 </body>
 </html>
