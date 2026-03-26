@@ -551,11 +551,36 @@ function maybeAutoSubmitAvailability() {
   const duration = Number(durationDaysInput?.value || 0);
   let pickupTime = pickupTimeInput?.value;
 
-  // ❌ no duration → stop
   if (!duration) return;
 
   /* ===============================
-     HALF DAY → HANDLE TIME PROPERLY
+     🔥 LOCKED VEHICLE FIX (CRITICAL)
+  =============================== */
+
+  if (LOCKED_VEHICLE && duration !== 0.5) {
+
+    const morningOption = pickupTimeInput?.querySelector('option[value="07:00"]');
+    const afternoonOption = pickupTimeInput?.querySelector('option[value="13:00"]');
+
+    const morningAvailable = morningOption && !morningOption.disabled;
+    const afternoonAvailable = afternoonOption && !afternoonOption.disabled;
+
+    // 🚨 If NOT full day but slot exists → FORCE half day
+    if (!morningAvailable || !afternoonAvailable) {
+
+      console.log("🔥 Forcing half-day mode");
+
+      durationDaysInput.value = "0.5";
+
+      // trigger UI sync
+      syncPickupTimeOptions(pickupDateInput?.value);
+
+      return; // wait for next cycle
+    }
+  }
+
+  /* ===============================
+     HALF DAY HANDLING
   =============================== */
 
   if (duration === 0.5 && !pickupTime) {
@@ -566,51 +591,28 @@ function maybeAutoSubmitAvailability() {
     const morningAvailable = morningOption && !morningOption.disabled;
     const afternoonAvailable = afternoonOption && !afternoonOption.disabled;
 
-    // ✅ AUTO-SELECT if only ONE option exists
     if (morningAvailable && !afternoonAvailable) {
       pickupTimeInput.value = "07:00";
       pickupTime = "07:00";
-      console.log("⚡ Auto-selected AM");
     }
 
     else if (!morningAvailable && afternoonAvailable) {
       pickupTimeInput.value = "13:00";
       pickupTime = "13:00";
-      console.log("⚡ Auto-selected PM");
     }
 
     else {
-      console.log("⛔ waiting for pickup time");
-      return; // both available → user must choose
-    }
-  }
-
-  /* ===============================
-     LOCKED VEHICLE LOGIC
-  =============================== */
-
-  if (LOCKED_VEHICLE) {
-
-    if (duration === 0.5 && !pickupTime) {
-      console.log("⛔ locked + waiting for time");
       return;
     }
-
-    if (pickupDateInput?.value) {
-      availabilityForm?.requestSubmit();
-    }
-
-    return;
   }
 
   /* ===============================
-     NORMAL FLOW
+     FINAL SUBMIT
   =============================== */
 
   if (pickupDateInput?.value) {
     availabilityForm?.requestSubmit();
   }
-
 }
 
 async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
