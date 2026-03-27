@@ -1191,12 +1191,16 @@ async function syncPickupTimeOptions(dateStr) {
       afternoonOption.style.color = "#999";
     }
 
-    pickupTimeInput.value = "07:00";
+    // 🔥 ONLY update if needed
+    if (pickupTimeInput.value !== "07:00") {
+      pickupTimeInput.value = "07:00";
+    }
+
     return;
   }
 
   /* ===============================
-     HALF DAY (🔥 SAME AS AVAILABILITY)
+     HALF DAY (MATCH AVAILABILITY)
   =============================== */
 
   const requestId = Date.now();
@@ -1208,29 +1212,29 @@ async function syncPickupTimeOptions(dateStr) {
 
     if (syncPickupTimeOptions._lastRequest !== requestId) return;
 
-const filteredAM = (PRESELECTED_VEHICLE
-  ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-  : amData
-).filter(v => {
-  const vehicle = vehicles.find(x => x.id === v.vehicleId);
-  return is35T(vehicle);
-});
+    const filteredAM = (PRESELECTED_VEHICLE
+      ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+      : amData
+    ).filter(v => {
+      const vehicle = vehicles.find(x => x.id === v.vehicleId);
+      return is35T(vehicle);
+    });
 
-const filteredPM = (PRESELECTED_VEHICLE
-  ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-  : pmData
-).filter(v => {
-  const vehicle = vehicles.find(x => x.id === v.vehicleId);
-  return is35T(vehicle);
-});
+    const filteredPM = (PRESELECTED_VEHICLE
+      ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
+      : pmData
+    ).filter(v => {
+      const vehicle = vehicles.find(x => x.id === v.vehicleId);
+      return is35T(vehicle);
+    });
 
-const morningAvailable = filteredAM.some(v =>
-  v.available || (v.availableSlots && v.availableSlots.includes("am"))
-);
+    const morningAvailable = filteredAM.some(v =>
+      v.available || (v.availableSlots && v.availableSlots.includes("am"))
+    );
 
-const afternoonAvailable = filteredPM.some(v =>
-  v.available || (v.availableSlots && v.availableSlots.includes("pm"))
-);
+    const afternoonAvailable = filteredPM.some(v =>
+      v.available || (v.availableSlots && v.availableSlots.includes("pm"))
+    );
 
     /* ===============================
        APPLY UI STATE
@@ -1247,36 +1251,51 @@ const afternoonAvailable = filteredPM.some(v =>
     }
 
     /* ===============================
-       🔥 SMART AUTO SELECT (FIXED)
+       🔥 SMART AUTO SELECT (OPTIMISED)
     =============================== */
 
     const current = pickupTimeInput.value;
+    let nextValue = current;
 
-    // ❌ do NOT auto-select for half-day
+    // ❌ do NOT auto-select if empty
     if (!current) {
-      pickupTimeInput.value = "";
+      nextValue = "";
     }
 
     // selected AM but not available → switch
     else if (current === "07:00" && !morningAvailable) {
-      pickupTimeInput.value = afternoonAvailable ? "13:00" : "";
+      nextValue = afternoonAvailable ? "13:00" : "";
     }
 
     // selected PM but not available → switch
     else if (current === "13:00" && !afternoonAvailable) {
-      pickupTimeInput.value = morningAvailable ? "07:00" : "";
+      nextValue = morningAvailable ? "07:00" : "";
     }
 
     // nothing available
     if (!morningAvailable && !afternoonAvailable) {
-      pickupTimeInput.value = "";
+      nextValue = "";
     }
 
-    console.log("🕐 Half-day sync (MATCHED):", {
-      date: dateStr,
-      morningAvailable,
-      afternoonAvailable
-    });
+    /* ===============================
+       🔥 ONLY UPDATE IF CHANGED
+    =============================== */
+
+    if (pickupTimeInput.value !== nextValue) {
+      pickupTimeInput.value = nextValue;
+    }
+
+    /* ===============================
+       🔇 DEBUG LOG (OPTIONAL)
+    =============================== */
+
+    if (window.DEBUG_HALF_DAY) {
+      console.log("🕐 Half-day sync:", {
+        date: dateStr,
+        morningAvailable,
+        afternoonAvailable
+      });
+    }
 
   } catch (err) {
 
@@ -1285,7 +1304,9 @@ const afternoonAvailable = filteredPM.some(v =>
     if (morningOption) morningOption.disabled = true;
     if (afternoonOption) afternoonOption.disabled = true;
 
-    pickupTimeInput.value = "";
+    if (pickupTimeInput.value !== "") {
+      pickupTimeInput.value = "";
+    }
   }
 }
 
