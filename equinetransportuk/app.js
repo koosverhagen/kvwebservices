@@ -3324,7 +3324,7 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
-async function fetchBookingWithRetry(sessionId, attempts = 20) {
+async function fetchBookingWithRetry(sessionId, attempts = 8) {
   if (!sessionId) return null;
 
   if (BOOKING_BY_SESSION_PROMISES.has(sessionId)) {
@@ -3332,35 +3332,46 @@ async function fetchBookingWithRetry(sessionId, attempts = 20) {
   }
 
   const requestPromise = (async () => {
+
+    /* ===============================
+       🔥 GIVE WEBHOOK HEAD START
+    =============================== */
+    await new Promise(r => setTimeout(r, 500));
+
     for (let i = 0; i < attempts; i++) {
       try {
+
         const res = await fetch(
           apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
         );
 
-       if (res.ok) {
-  const data = await res.json();
+        if (res.ok) {
+          const data = await res.json();
 
-  console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
+          console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
 
-  // ✅ FIXED CONDITION
-  if (data?.booking?.pickupAt) {
-    return data.booking;
-  }
-}
+          // ✅ booking exists
+          if (data?.booking?.pickupAt) {
+            return data.booking;
+          }
+        }
+
       } catch (err) {
         console.warn(`Retry attempt ${i + 1} failed`, err);
       }
 
       if (i < attempts - 1) {
 
-  // 🔥 progressive delay (fast → slower)
-  const delay = 400 + (i * 200);
+        /* ===============================
+           🔥 OPTIMISED DELAY (CAPPED)
+        =============================== */
 
-  console.log(`⏳ waiting ${delay}ms before retry`);
+        const delay = Math.min(300 * (i + 1), 1500);
 
-  await new Promise(r => setTimeout(r, delay));
-}
+        console.log(`⏳ waiting ${delay}ms before retry`);
+
+        await new Promise(r => setTimeout(r, delay));
+      }
     }
 
     return null;
