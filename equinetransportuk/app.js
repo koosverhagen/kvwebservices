@@ -6,6 +6,8 @@
 
 let IS_STRIPE_RETURN = false;
 
+let STRIPE_FLOW_COMPLETED = false;
+
 
 let activeSlideshow = null;
 
@@ -679,8 +681,6 @@ function maybeAutoSubmitAvailability() {
   if (key === lastAvailabilityAutoSubmitKey) {
     return;
   }
-
-  lastAvailabilityAutoSubmitKey = key;
 
   scheduleAvailabilityAutoSubmit(250);
 }
@@ -4788,8 +4788,8 @@ if (availabilityForm) {
    🔥 BLOCK DURING STRIPE RETURN
 =============================== */
 
-if (IS_STRIPE_RETURN) {
-  console.log("⛔ Skipping availability (Stripe return)");
+if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
+  console.log("⛔ Skipping availability (Stripe flow)");
   return;
 }
 
@@ -4799,9 +4799,16 @@ const availableLorries = await getAvailableLorries(
   finalPickupTime
 );
 
-if (!IS_STRIPE_RETURN) {
-  console.log("🎯 FINAL UI DATA:", availableLorries);
+/* ===============================
+   🔥 POST-AWAIT GUARD (CRITICAL)
+=============================== */
+
+if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
+  console.log("⛔ Ignoring result (Stripe flow changed)");
+  return;
 }
+
+console.log("🎯 FINAL UI DATA:", availableLorries);
 
         /* ===============================
            CANCEL OUTDATED RESPONSE
