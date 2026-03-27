@@ -1281,10 +1281,17 @@ async function syncPickupTimeOptions(dateStr) {
        🔥 ONLY UPDATE IF CHANGED
     =============================== */
 
-    if (pickupTimeInput.value !== nextValue) {
-      pickupTimeInput.value = nextValue;
-    }
+   if (pickupTimeInput.value !== nextValue) {
 
+  // 🔥 prevent side-effects
+  pickupTimeInput._silentUpdate = true;
+
+  pickupTimeInput.value = nextValue;
+
+  setTimeout(() => {
+    pickupTimeInput._silentUpdate = false;
+  }, 0);
+}
     /* ===============================
        🔇 DEBUG LOG (OPTIONAL)
     =============================== */
@@ -4492,17 +4499,22 @@ if (badge) {
 if (pickupTimeInput) {
   pickupTimeInput.addEventListener("change", async () => {
 
+    /* ===============================
+       🔥 PREVENT INTERNAL LOOP
+    =============================== */
+    if (pickupTimeInput._silentUpdate) return;
+
     const date = pickupDateInput?.value;
     if (!date) return;
 
     /* ===============================
-       🔥 FIX: update durations properly
+       🔥 UPDATE DURATIONS
     =============================== */
 
     await updateDurationOptions(date);
 
     /* ===============================
-       🔥 AUTO PICKUP TIME (HALF DAY FIX)
+       🔥 AUTO PICKUP TIME (SAFE)
     =============================== */
 
     if (Number(durationDaysInput?.value) === 0.5) {
@@ -4510,23 +4522,35 @@ if (pickupTimeInput) {
       const { morningAvailable, afternoonAvailable } =
         await getRemainingHalfDaySlots(date);
 
+      let nextValue = pickupTimeInput.value;
+
       if (morningAvailable && !afternoonAvailable) {
-        pickupTimeInput.value = "07:00";
+        nextValue = "07:00";
       } else if (!morningAvailable && afternoonAvailable) {
-        pickupTimeInput.value = "13:00";
+        nextValue = "13:00";
+      }
+
+      // 🔥 silent update (prevents loop)
+      if (pickupTimeInput.value !== nextValue) {
+        pickupTimeInput._silentUpdate = true;
+        pickupTimeInput.value = nextValue;
+
+        setTimeout(() => {
+          pickupTimeInput._silentUpdate = false;
+        }, 0);
       }
     }
 
     /* ===============================
-       keep existing logic
+       SYNC UI (NO SIDE EFFECTS)
     =============================== */
 
-   await syncPickupTimeOptions(date);
+    await syncPickupTimeOptions(date);
 
     updateEarlyPickupAvailability();
 
-      /* ===============================
-       refresh availability
+    /* ===============================
+       🔥 SINGLE CONTROLLED TRIGGER
     =============================== */
 
     maybeAutoSubmitAvailability();
