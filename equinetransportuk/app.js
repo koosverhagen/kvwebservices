@@ -1177,6 +1177,17 @@ async function syncPickupTimeOptions(dateStr) {
 
   if (!pickupTimeInput || !durationDaysInput) return;
 
+  /* ===============================
+     🔥 NORMALISE DATE (CRITICAL FIX)
+  =============================== */
+
+  if (dateStr instanceof Date) {
+    const year = dateStr.getFullYear();
+    const month = String(dateStr.getMonth() + 1).padStart(2, "0");
+    const day = String(dateStr.getDate()).padStart(2, "0");
+    dateStr = `${year}-${month}-${day}`;
+  }
+
   const duration = Number(durationDaysInput.value || 0);
 
   const morningOption = pickupTimeInput.querySelector('option[value="07:00"]');
@@ -1215,9 +1226,14 @@ async function syncPickupTimeOptions(dateStr) {
      HALF DAY (🔥 SAME AS AVAILABILITY)
   =============================== */
 
+  const requestId = Date.now();
+  syncPickupTimeOptions._lastRequest = requestId;
+
   try {
 
- const { amData, pmData } = await getHalfDayAvailability(dateStr);
+    const { amData, pmData } = await getHalfDayAvailability(dateStr);
+
+    if (syncPickupTimeOptions._lastRequest !== requestId) return;
 
 const filteredAM = (PRESELECTED_VEHICLE
   ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
