@@ -879,6 +879,13 @@ const hasPM = filteredPM.some(v =>
       durationDaysInput.value = "";
     }
   }
+  /* ===============================
+   🔥 FINAL PICKUP TIME SYNC (CRITICAL FIX)
+=============================== */
+
+if (Number(durationDaysInput?.value) === 0.5 && dateStr) {
+  await syncPickupTimeOptions(dateStr);
+}
 }
 
 async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
