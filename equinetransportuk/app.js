@@ -4,6 +4,9 @@
    Phase 3: Discount Engine (voucher codes)
    ====================================================== */
 
+let IS_STRIPE_RETURN = false;
+
+
 let activeSlideshow = null;
 
 let PRESELECTED_VEHICLE = null;
@@ -383,16 +386,10 @@ durationDaysInput?.addEventListener("change", async () => {
   const pickupDate = pickupDateInput?.value;
   if (!pickupDate) return;
 
-  // ✅ update duration rules first
-  await updateDurationOptions(pickupDate);
+ await updateDurationOptions(pickupDate);
+await updatePickupTimeVisibility();
 
-  // ✅ SHOW pickup time when needed
-  await updatePickupTimeVisibility();
-
-  // 🔥 CRITICAL: sync AM/PM availability
-  if (Number(durationDaysInput.value) === 0.5) {
-    await syncPickupTimeOptions(pickupDate);
-  }
+// ❌ REMOVE syncPickupTimeOptions here
 
   updateEarlyPickupAvailability();
 
@@ -566,6 +563,36 @@ availabilityResults?.addEventListener("click", async (e) => {
    Helpers
 ====================================================== */
  
+function safeRenderAvailability(html) {
+
+  if (!availabilityResults) return;
+
+  /* ===============================
+     🔥 BLOCK DURING STRIPE RETURN
+  =============================== */
+
+  if (IS_STRIPE_RETURN) {
+    if (window.DEBUG_RENDER) {
+      console.log("⛔ UI render blocked (Stripe return)");
+    }
+    return;
+  }
+
+  /* ===============================
+     🔥 PREVENT UNNECESSARY RE-RENDER
+  =============================== */
+
+  if (availabilityResults.innerHTML === html) {
+    return; // no change → no DOM update
+  }
+
+  /* ===============================
+     APPLY RENDER
+  =============================== */
+
+  safeRenderAvailability(html);
+}
+
 /* ===============================
    AVAILABILITY AUTO-SUBMIT SCHEDULER
    prevents duplicate requestSubmit() spam
@@ -586,6 +613,9 @@ function buildAvailabilitySubmitKey() {
 }
 
 function scheduleAvailabilityAutoSubmit(delay = 120) {
+
+  if (IS_STRIPE_RETURN) return;
+
   if (!availabilityForm) return;
 
   const nextKey = buildAvailabilitySubmitKey();
@@ -615,6 +645,8 @@ function resetAvailabilityAutoSubmitState() {
 }
 
 function maybeAutoSubmitAvailability() {
+
+  if (IS_STRIPE_RETURN) return;
 
   /* ===============================
      🔥 PREVENT DURING RESET
@@ -1501,6 +1533,8 @@ function normaliseBookingDates(booking) {
 
 async function handleStripeReturn() {
 
+  IS_STRIPE_RETURN = true;
+
   const url = new URL(window.location.href);
 
   const state = url.searchParams.get("checkout");
@@ -1828,12 +1862,24 @@ function resetBookingFlow() {
     warningBox.style.display = "none";
   }
 
-  updateCalendarVehicleLabel();
+ updateCalendarVehicleLabel();
 
-  if (availabilityResults) availabilityResults.innerHTML = "";
+/* ===============================
+   🔥 DO NOT CLEAR DURING STRIPE RETURN
+=============================== */
+
+if (!IS_STRIPE_RETURN) {
+
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "";
+  }
 
   const confirmation = document.getElementById("booking-confirmation");
-  if (confirmation) confirmation.innerHTML = "";
+  if (confirmation) {
+    confirmation.innerHTML = "";
+  }
+
+}
 
   /* ===============================
      CACHE
@@ -2412,6 +2458,12 @@ try {
 async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode = "") {
 
   /* ===============================
+   🔥 BLOCK DURING STRIPE RETURN
+=============================== */
+
+const isStripeMode = IS_STRIPE_RETURN;
+
+  /* ===============================
      TIME RULES (FIXED)
   =============================== */
 
@@ -2634,10 +2686,6 @@ if (!pickupTime) {
   resolvedPickupTime
 );
 
-// 🔥 FORCE UI SYNC FOR PRESELECTED VEHICLE
-if (PRESELECTED_VEHICLE && pickupDate) {
-  await syncPickupTimeOptions(pickupDate);
-}
 
 return result;
 
@@ -2679,7 +2727,25 @@ return result;
 }
 
 function renderAvailabilityLoading() {
+
   if (!availabilityResults) return;
+
+  /* ===============================
+     🔥 BLOCK DURING STRIPE RETURN
+  =============================== */
+
+  if (IS_STRIPE_RETURN) return;
+
+  /* ===============================
+     🔥 PREVENT DUPLICATE LOADING (FAST)
+  =============================== */
+
+  if (availabilityResults.querySelector(".loading-note")) return;
+
+  /* ===============================
+     RENDER
+  =============================== */
+
   availabilityResults.innerHTML = `
     <div class="loading-note">
       <span class="spinner" aria-hidden="true"></span>
@@ -2689,8 +2755,30 @@ function renderAvailabilityLoading() {
 }
 
 function renderAvailabilityError(message = "Something went wrong. Please try again.") {
+
   if (!availabilityResults) return;
-  availabilityResults.innerHTML = `<p class="empty-note">${escapeHtml(message)}</p>`;
+
+  /* ===============================
+     🔥 BLOCK DURING STRIPE RETURN
+  =============================== */
+
+  if (IS_STRIPE_RETURN) return;
+
+  /* ===============================
+     🔥 PREVENT DUPLICATE RENDER (FAST)
+  =============================== */
+
+  const existing = availabilityResults.querySelector(".empty-note");
+
+  if (existing && existing.textContent === message) return;
+
+  /* ===============================
+     RENDER
+  =============================== */
+
+  safeRenderAvailability(
+    `<p class="empty-note">${escapeHtml(message)}</p>`
+  );
 }
 
 async function renderAvailabilityResults(items) {
@@ -2712,9 +2800,6 @@ async function renderAvailabilityResults(items) {
   // 🔥 Sync pickup time AFTER availability known
   const pickupDate = pickupDateInput?.value;
 
-  if (pickupDate && Number(durationDaysInput?.value) === 0.5) {
-    await syncPickupTimeOptions(pickupDate);
-  }
 
   const pricePreview = document.getElementById("price-preview");
 
@@ -2889,7 +2974,7 @@ async function renderAvailabilityResults(items) {
 
   }).join("");
 
-  availabilityResults.innerHTML = html;
+  safeRenderAvailability(html);
 
   /* ===============================
      AVAILABILITY NOTE
@@ -4641,8 +4726,9 @@ if (availabilityForm) {
       const pickupTime = pickupTimeInput?.value;
 
       if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
-        availabilityResults.innerHTML =
-          '<p class="empty-note">Enter a valid pickup date and duration.</p>';
+        safeRenderAvailability(
+  '<p class="empty-note">Enter a valid pickup date and duration.</p>'
+);
         return;
       }
 
@@ -4696,17 +4782,24 @@ if (availabilityForm) {
 
       try {
 
-        /* ===============================
-           🔥 SINGLE SOURCE OF TRUTH
-        =============================== */
+       /* ===============================
+   🔥 BLOCK DURING STRIPE RETURN
+=============================== */
 
-        const availableLorries = await getAvailableLorries(
-          pickupDate,
-          durationDays,
-          finalPickupTime
-        );
+if (IS_STRIPE_RETURN) {
+  console.log("⛔ Skipping availability (Stripe return)");
+  return;
+}
 
-        console.log("🎯 FINAL UI DATA:", availableLorries);
+const availableLorries = await getAvailableLorries(
+  pickupDate,
+  durationDays,
+  finalPickupTime
+);
+
+if (!IS_STRIPE_RETURN) {
+  console.log("🎯 FINAL UI DATA:", availableLorries);
+}
 
         /* ===============================
            CANCEL OUTDATED RESPONSE
