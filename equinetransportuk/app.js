@@ -616,6 +616,11 @@ function resetAvailabilityAutoSubmitState() {
 
 function maybeAutoSubmitAvailability() {
 
+  /* ===============================
+     🔥 PREVENT DURING RESET
+  =============================== */
+  if (IS_RESETTING) return;
+
   const duration = Number(durationDaysInput?.value || 0);
   const pickupTime = pickupTimeInput?.value;
   const pickupDate = pickupDateInput?.value;
@@ -633,7 +638,6 @@ function maybeAutoSubmitAvailability() {
       return;
     }
 
-    // keep your current protection exactly as-is
     if (duration !== 0.5 && !pickupTime) {
       console.log("⛔ locked + waiting for proper selection");
       return;
@@ -646,7 +650,17 @@ function maybeAutoSubmitAvailability() {
 
   if (duration === 0.5 && !pickupTime) return;
 
-  scheduleAvailabilityAutoSubmit(120);
+  /* ===============================
+     🔥 FINAL GUARD (ANTI-SPAM)
+  =============================== */
+
+  const key = buildAvailabilitySubmitKey();
+
+  if (key === lastAvailabilityAutoSubmitKey) {
+    return; // 🔥 prevents duplicate triggers
+  }
+
+  scheduleAvailabilityAutoSubmit(250);
 }
 
 async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
@@ -654,21 +668,28 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
   const key = `${dateStr}|${duration}|${pickupTime || "any"}`;
   const now = Date.now();
 
-  // ✅ Return cached result if fresh
-  if (
-    VEHICLE_AVAILABILITY_CACHE.has(key) &&
-    (now - (VEHICLE_AVAILABILITY_CACHE.get(key)?.ts || 0)) < VEHICLE_AVAILABILITY_CACHE_TTL
-  ) {
-    return VEHICLE_AVAILABILITY_CACHE.get(key).data.vehicles || [];
+  /* ===============================
+     ✅ CACHE HIT
+  =============================== */
+
+  const cached = VEHICLE_AVAILABILITY_CACHE.get(key);
+
+  if (cached && (now - cached.ts) < VEHICLE_AVAILABILITY_CACHE_TTL) {
+    return cached.data.vehicles || [];
   }
 
-  // ✅ Deduplicate in-flight requests
+  /* ===============================
+     🔥 DEDUPE IN-FLIGHT (STRONG)
+  =============================== */
+
   if (VEHICLE_AVAILABILITY_PROMISES.has(key)) {
-    const data = await VEHICLE_AVAILABILITY_PROMISES.get(key);
-    return data.vehicles || [];
+    return VEHICLE_AVAILABILITY_PROMISES.get(key);
   }
 
-  // 🔄 Create request
+  /* ===============================
+     🔄 FETCH
+  =============================== */
+
   const promise = (async () => {
 
     let url = `/api/vehicles/available?date=${dateStr}&duration=${duration}`;
@@ -677,40 +698,66 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
       url += `&pickupTime=${pickupTime}`;
     }
 
+    console.log("📡 FETCH AVAILABILITY:", key);
+
     const res = await fetch(apiUrl(url));
     const data = await res.json();
 
-    // ✅ Store in cache
     VEHICLE_AVAILABILITY_CACHE.set(key, {
       data,
       ts: Date.now()
     });
 
-    return data;
+    return data.vehicles || [];
 
   })();
 
   VEHICLE_AVAILABILITY_PROMISES.set(key, promise);
 
   try {
-    const data = await promise;
-    return data.vehicles || [];
+    return await promise;
   } finally {
     VEHICLE_AVAILABILITY_PROMISES.delete(key);
   }
 }
 
+const HALF_DAY_CACHE = new Map();
+const HALF_DAY_CACHE_TTL = 60 * 1000; // 60s
+
 async function getHalfDayAvailability(dateStr) {
+
+  if (!dateStr) {
+    return { amData: [], pmData: [] };
+  }
+
+  const now = Date.now();
+  const cached = HALF_DAY_CACHE.get(dateStr);
+
+  /* ===============================
+     ✅ RETURN CACHE
+  =============================== */
+
+  if (cached && (now - cached.ts) < HALF_DAY_CACHE_TTL) {
+    return cached.data;
+  }
+
+  /* ===============================
+     🔄 FETCH ONCE (DEDUPED BELOW)
+  =============================== */
 
   const [amData, pmData] = await Promise.all([
     getVehicleAvailability(dateStr, 0.5, "07:00"),
     getVehicleAvailability(dateStr, 0.5, "13:00")
   ]);
 
-  return {
-    amData,
-    pmData
-  };
+  const result = { amData, pmData };
+
+  HALF_DAY_CACHE.set(dateStr, {
+    data: result,
+    ts: now
+  });
+
+  return result;
 }
 
 
@@ -5817,14 +5864,16 @@ async function selectDate(dateStr) {
         });
       });
 
-      warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
-        BLOCK_AUTO_SCROLL = false;
-        LOCKED_VEHICLE = false;
-        PRESELECTED_VEHICLE = null;
+     warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
+  BLOCK_AUTO_SCROLL = false;
+  LOCKED_VEHICLE = false;
+  PRESELECTED_VEHICLE = null;
 
-        maybeAutoSubmitAvailability();
-        goToStep(2);
-      });
+  // 🔥 DO NOT auto-submit here
+  // user will trigger via duration selection
+
+  goToStep(2);
+});
 
       return;
     }
