@@ -415,28 +415,6 @@ pickupTimeInput?.addEventListener("change", async () => {
 });
 
 
-pickupTimeInput?.addEventListener("focus", async () => {
-
-  const pickupDate = pickupDateInput?.value;
-  if (!pickupDate) return;
-
-  if (Number(durationDaysInput?.value) === 0.5) {
-    await syncPickupTimeOptions(pickupDate);
-  }
-
-});
-
-pickupTimeInput?.addEventListener("mousedown", async () => {
-
-  const pickupDate = pickupDateInput?.value;
-  if (!pickupDate) return;
-
-  if (Number(durationDaysInput?.value) === 0.5) {
-    await syncPickupTimeOptions(pickupDate);
-  }
-
-});
-
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
@@ -588,6 +566,54 @@ availabilityResults?.addEventListener("click", async (e) => {
    Helpers
 ====================================================== */
  
+/* ===============================
+   AVAILABILITY AUTO-SUBMIT SCHEDULER
+   prevents duplicate requestSubmit() spam
+=============================== */
+
+let availabilityAutoSubmitTimer = null;
+let lastAvailabilityAutoSubmitKey = "";
+
+function buildAvailabilitySubmitKey() {
+  const pickupDate = pickupDateInput?.value || "";
+  const duration = String(durationDaysInput?.value || "");
+  const pickupTime =
+    Number(durationDaysInput?.value || 0) === 0.5
+      ? (pickupTimeInput?.value || "")
+      : "07:00";
+
+  return [pickupDate, duration, pickupTime, PRESELECTED_VEHICLE || ""].join("|");
+}
+
+function scheduleAvailabilityAutoSubmit(delay = 120) {
+  if (!availabilityForm) return;
+
+  const nextKey = buildAvailabilitySubmitKey();
+
+  // nothing meaningful changed
+  if (nextKey === lastAvailabilityAutoSubmitKey) {
+    return;
+  }
+
+  clearTimeout(availabilityAutoSubmitTimer);
+
+  availabilityAutoSubmitTimer = setTimeout(() => {
+    const currentKey = buildAvailabilitySubmitKey();
+
+    // state changed again while waiting
+    if (currentKey !== nextKey) return;
+
+    lastAvailabilityAutoSubmitKey = currentKey;
+    availabilityForm.requestSubmit();
+  }, delay);
+}
+
+function resetAvailabilityAutoSubmitState() {
+  clearTimeout(availabilityAutoSubmitTimer);
+  availabilityAutoSubmitTimer = null;
+  lastAvailabilityAutoSubmitKey = "";
+}
+
 function maybeAutoSubmitAvailability() {
 
   const duration = Number(durationDaysInput?.value || 0);
@@ -596,25 +622,31 @@ function maybeAutoSubmitAvailability() {
 
   if (!duration || !pickupDate) return;
 
-  // 🔴 CRITICAL FIX:
-  // If vehicle is locked → NEVER auto-submit until user chooses correctly
+  /* ===============================
+     PRESELECTED / LOCKED VEHICLE
+  =============================== */
 
   if (LOCKED_VEHICLE) {
 
-    // half-day → must choose time first
     if (duration === 0.5 && !pickupTime) {
       console.log("⛔ locked + waiting for pickup time");
       return;
     }
 
-    // 🔥 ALSO BLOCK full-day auto submit on preselected
+    // keep your current protection exactly as-is
     if (duration !== 0.5 && !pickupTime) {
       console.log("⛔ locked + waiting for proper selection");
       return;
     }
   }
 
-  availabilityForm?.requestSubmit();
+  /* ===============================
+     HALF DAY REQUIRES PICKUP TIME
+  =============================== */
+
+  if (duration === 0.5 && !pickupTime) return;
+
+  scheduleAvailabilityAutoSubmit(120);
 }
 
 async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
@@ -1707,6 +1739,8 @@ function goBackToDates() {
 function resetBookingFlow() {
 
   console.log("🔄 HARD reset booking flow");
+
+  resetAvailabilityAutoSubmitState();
 
   IS_RESETTING = true;
 
@@ -4463,11 +4497,11 @@ if (pickupTimeInput) {
 
     updateEarlyPickupAvailability();
 
-    /* ===============================
+      /* ===============================
        refresh availability
     =============================== */
 
-    autoCheckAvailability();
+    maybeAutoSubmitAvailability();
 
   });
 }
