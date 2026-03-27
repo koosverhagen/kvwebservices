@@ -3488,7 +3488,7 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
-async function fetchBookingWithRetry(sessionId, attempts = 15) {
+async function fetchBookingWithRetry(sessionId, attempts = 5) {
 
   if (!sessionId) return null;
 
