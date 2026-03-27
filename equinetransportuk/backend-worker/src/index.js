@@ -1249,6 +1249,20 @@ try {
 
     console.log("✅ KV SAVED");
 
+    /* ===============================
+   🔥 NEW: DIRECT SESSION LOOKUP
+================================ */
+
+const sessionKey = `session:${session.id}`;
+
+await env.BOOKINGS_KV.put(
+  sessionKey,
+  JSON.stringify(booking),
+  { expirationTtl: 86400 } // 24h is enough
+);
+
+console.log("⚡ Session mapping saved:", sessionKey);
+
   } catch (err) {
 
     console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
@@ -1384,6 +1398,33 @@ async function handleBookingBySession(request, env) {
     return json({ error: "Missing session_id" }, 400);
   }
 
+  /* ===============================
+     ⚡ FAST PATH (NEW)
+  =============================== */
+
+  const sessionKey = `session:${sessionId}`;
+
+  const cached = await env.BOOKINGS_KV.get(sessionKey);
+
+  if (cached) {
+    console.log("⚡ FAST session hit");
+
+    try {
+      const booking = JSON.parse(cached);
+
+      return json({
+        found: true,
+        booking
+      });
+    } catch (err) {
+      console.log("⚠️ Session cache parse error:", err);
+    }
+  }
+
+  /* ===============================
+     HELPERS
+  =============================== */
+
   function cleanIso(value) {
     if (!value || typeof value !== "string") return value;
 
@@ -1393,6 +1434,10 @@ async function handleBookingBySession(request, env) {
 
     return value;
   }
+
+  /* ===============================
+     STRIPE LOOKUP (fallback)
+  =============================== */
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20"
@@ -1412,6 +1457,10 @@ async function handleBookingBySession(request, env) {
     session?.id;
 
   console.log("🔎 Looking for bookingId:", bookingId);
+
+  /* ===============================
+     KV MONTH SCAN (fallback)
+  =============================== */
 
   const months = [];
 
@@ -1463,16 +1512,20 @@ async function handleBookingBySession(request, env) {
 
   }
 
+  /* ===============================
+     FINAL FALLBACK
+  =============================== */
+
   console.log("⚠️ Booking not yet in KV, returning Stripe session");
 
   return json({
-  found: false,
-  session: {
-    id: session.id,
-    metadata: session.metadata || {},
-    customer_details: session.customer_details || null
-  }
-});
+    found: false,
+    session: {
+      id: session.id,
+      metadata: session.metadata || {},
+      customer_details: session.customer_details || null
+    }
+  });
 }
 
 async function handleAvailability(request, env) {
