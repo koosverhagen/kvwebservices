@@ -5167,25 +5167,21 @@ async function showVehiclePreview(date, event) {
     a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable
   );
 
-  /* ======================================================
-     STATUS LABEL (FIXED)
-  ====================================================== */
+ /* ======================================================
+   STATUS LABEL (SIMPLIFIED)
+====================================================== */
 
-  const totalAvailable = availableVehicles.length;
+const totalAvailable = availableVehicles.length;
 
-  if (totalAvailable === vehicles.length) {
+if (totalAvailable > 0) {
 
-    html += `<div class="preview-status preview-status-good">Available</div>`;
+  html += `<div class="preview-status preview-status-good">Available</div>`;
 
-  } else if (totalAvailable > 0) {
+} else {
 
-    html += `<div class="preview-status preview-status-low">Limited availability</div>`;
+  html += `<div class="preview-status preview-status-none">Not available</div>`;
 
-  } else {
-
-    html += `<div class="preview-status preview-status-none">Not available</div>`;
-
-  }
+}
 
   /* ======================================================
      VEHICLE LIST
@@ -5383,8 +5379,14 @@ async function showVehiclePreview(date, event) {
 
     const totalVehicles = PRESELECTED_VEHICLE ? 1 : vehicles.length;
 
-if (availableVehicles === 0) return "unavailable";
-if (availableVehicles < totalVehicles) return "limited";
+/* ===============================
+   SIMPLIFIED AVAILABILITY (FINAL)
+=============================== */
+
+if (availableVehicles === 0) {
+  return "unavailable";
+}
+
 return "available";
   }
 
@@ -5622,24 +5624,20 @@ if (remainingSlots === 1){
 
   dayEl.appendChild(label);
 }
-  /* ===============================
-     STATUS COLOURING
-  =============================== */
+/* ===============================
+   STATUS COLOURING (SIMPLIFIED)
+=============================== */
 
-  if (status === "available") {
-    dayEl.classList.add("cal-available");
-  }
-  else if (status === "limited") {
-    dayEl.classList.add("cal-limited");
-  }
-  else {
-    dayEl.classList.add("cal-unavailable");
-  }
+if (status === "available") {
+  dayEl.classList.add("cal-available");
+} else {
+  dayEl.classList.add("cal-unavailable");
+}
 
-  if (!validStart) {
-    dayEl.classList.remove("cal-available","cal-limited");
-    dayEl.classList.add("cal-unavailable","cal-no-start");
-  }
+if (!validStart) {
+  dayEl.classList.remove("cal-available");
+  dayEl.classList.add("cal-unavailable","cal-no-start");
+}
 
   /* ===============================
      PREVIEW EVENTS
