@@ -583,14 +583,14 @@ function safeRenderAvailability(html) {
   =============================== */
 
   if (availabilityResults.innerHTML === html) {
-    return; // no change → no DOM update
+    return;
   }
 
   /* ===============================
-     APPLY RENDER
+     ✅ ACTUAL RENDER (FIXED)
   =============================== */
 
-  safeRenderAvailability(html);
+  availabilityResults.innerHTML = html;
 }
 
 /* ===============================
@@ -1542,10 +1542,14 @@ async function handleStripeReturn() {
 
   if (state === "cancelled") {
     alert("Payment cancelled");
+    IS_STRIPE_RETURN = false; // ✅ release lock
     return;
   }
 
-  if (state !== "success" || !sessionId) return;
+  if (state !== "success" || !sessionId) {
+    IS_STRIPE_RETURN = false; // ✅ release lock
+    return;
+  }
 
   if (stripeReturnHandled) {
     return stripeReturnPromise;
@@ -1563,7 +1567,7 @@ async function handleStripeReturn() {
 
     /* ===============================
        🟢 INSTANT CONFIRMATION UI
-    ================================ */
+    =============================== */
 
     if (container) {
       container.innerHTML = `
@@ -1580,7 +1584,7 @@ async function handleStripeReturn() {
 
       /* ===============================
          🟢 STEP 1 — FAST (Stripe metadata)
-      ================================ */
+      =============================== */
 
       let booking = await fetchBookingWithRetry(sessionId);
 
@@ -1588,7 +1592,7 @@ async function handleStripeReturn() {
 
       /* ===============================
          🔴 STILL NOT READY (rare)
-      ================================ */
+      =============================== */
 
       if (!booking || !booking.pickupAt) {
 
@@ -1614,15 +1618,13 @@ async function handleStripeReturn() {
 
       /* ===============================
          🟢 SUCCESS — RENDER FINAL
-      ================================ */
+      =============================== */
 
       console.log("✅ FINAL BOOKING:", booking);
 
-      // 🔥 FIX DATES HERE
       booking = normaliseBookingDates(booking);
 
-
-      // ✅ clear vehicle availability cache (booking now confirmed)
+      // ✅ clear availability cache
       VEHICLE_AVAILABILITY_CACHE.clear();
       VEHICLE_AVAILABILITY_PROMISES.clear();
 
@@ -1630,7 +1632,7 @@ async function handleStripeReturn() {
 
       /* ===============================
          🟢 CLEAN URL
-      ================================ */
+      =============================== */
 
       window.history.replaceState(
         {},
@@ -1640,7 +1642,7 @@ async function handleStripeReturn() {
 
       /* ===============================
          🟢 REFRESH CACHE
-      ================================ */
+      =============================== */
 
       BOOKINGS_CACHE = null;
       BOOKINGS_CACHE_AT = 0;
@@ -1667,6 +1669,15 @@ async function handleStripeReturn() {
           </div>
         `;
       }
+
+    } finally {
+
+      /* ===============================
+         🔥 CRITICAL FIX — RELEASE LOCK
+      =============================== */
+
+      IS_STRIPE_RETURN = false;
+
     }
 
   })();
