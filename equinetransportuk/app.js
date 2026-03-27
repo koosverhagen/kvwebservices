@@ -1606,9 +1606,10 @@ async function handleStripeReturn() {
                 Your booking is being finalised.<br>
                 This can take a few seconds.
               </div>
-              <button onclick="location.reload()" class="btn primary">
-                Refresh
-              </button>
+             <div class="confirmation-note">
+  Finalising your booking…<br>
+  Please wait a few seconds.
+</div>
             </div>
           `;
         }
@@ -3495,7 +3496,8 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
-async function fetchBookingWithRetry(sessionId, attempts = 8) {
+async function fetchBookingWithRetry(sessionId, attempts = 15) {
+
   if (!sessionId) return null;
 
   if (BOOKING_BY_SESSION_PROMISES.has(sessionId)) {
@@ -3504,12 +3506,8 @@ async function fetchBookingWithRetry(sessionId, attempts = 8) {
 
   const requestPromise = (async () => {
 
-    /* ===============================
-       🔥 GIVE WEBHOOK HEAD START
-    =============================== */
-    await new Promise(r => setTimeout(r, 500));
-
     for (let i = 0; i < attempts; i++) {
+
       try {
 
         const res = await fetch(
@@ -3517,11 +3515,11 @@ async function fetchBookingWithRetry(sessionId, attempts = 8) {
         );
 
         if (res.ok) {
+
           const data = await res.json();
 
           console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
 
-          // ✅ booking exists
           if (data?.booking?.pickupAt) {
             return data.booking;
           }
@@ -3531,13 +3529,13 @@ async function fetchBookingWithRetry(sessionId, attempts = 8) {
         console.warn(`Retry attempt ${i + 1} failed`, err);
       }
 
+      /* ===============================
+         🔥 IMPROVED BACKOFF
+      =============================== */
+
       if (i < attempts - 1) {
 
-        /* ===============================
-           🔥 OPTIMISED DELAY (CAPPED)
-        =============================== */
-
-        const delay = Math.min(300 * (i + 1), 1500);
+        const delay = Math.min(300 + (i * 400), 2500);
 
         console.log(`⏳ waiting ${delay}ms before retry`);
 
@@ -3546,6 +3544,7 @@ async function fetchBookingWithRetry(sessionId, attempts = 8) {
     }
 
     return null;
+
   })();
 
   BOOKING_BY_SESSION_PROMISES.set(sessionId, requestPromise);
