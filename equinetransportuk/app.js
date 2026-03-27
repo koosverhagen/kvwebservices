@@ -646,11 +646,11 @@ function resetAvailabilityAutoSubmitState() {
 
 function maybeAutoSubmitAvailability() {
 
-  if (IS_STRIPE_RETURN) return;
+  if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
+    console.log("⛔ Auto-submit blocked (Stripe flow)");
+    return;
+  }
 
-  /* ===============================
-     🔥 PREVENT DURING RESET
-  =============================== */
   if (IS_RESETTING) return;
 
   const duration = Number(durationDaysInput?.value || 0);
@@ -658,10 +658,6 @@ function maybeAutoSubmitAvailability() {
   const pickupDate = pickupDateInput?.value;
 
   if (!duration || !pickupDate) return;
-
-  /* ===============================
-     PRESELECTED / LOCKED VEHICLE
-  =============================== */
 
   if (LOCKED_VEHICLE) {
 
@@ -676,21 +672,15 @@ function maybeAutoSubmitAvailability() {
     }
   }
 
-  /* ===============================
-     HALF DAY REQUIRES PICKUP TIME
-  =============================== */
-
   if (duration === 0.5 && !pickupTime) return;
-
-  /* ===============================
-     🔥 FINAL GUARD (ANTI-SPAM)
-  =============================== */
 
   const key = buildAvailabilitySubmitKey();
 
   if (key === lastAvailabilityAutoSubmitKey) {
-    return; // 🔥 prevents duplicate triggers
+    return;
   }
+
+  lastAvailabilityAutoSubmitKey = key;
 
   scheduleAvailabilityAutoSubmit(250);
 }
@@ -1536,18 +1526,21 @@ async function handleStripeReturn() {
   IS_STRIPE_RETURN = true;
 
   const url = new URL(window.location.href);
-
   const state = url.searchParams.get("checkout");
   const sessionId = url.searchParams.get("session_id");
 
+  /* ===============================
+     EXIT CONDITIONS
+  =============================== */
+
   if (state === "cancelled") {
     alert("Payment cancelled");
-    IS_STRIPE_RETURN = false; // ✅ release lock
+    IS_STRIPE_RETURN = false;
     return;
   }
 
   if (state !== "success" || !sessionId) {
-    IS_STRIPE_RETURN = false; // ✅ release lock
+    IS_STRIPE_RETURN = false;
     return;
   }
 
@@ -1556,6 +1549,10 @@ async function handleStripeReturn() {
   }
 
   stripeReturnHandled = true;
+
+  /* ===============================
+     MAIN FLOW
+  =============================== */
 
   stripeReturnPromise = (async () => {
 
@@ -1566,7 +1563,7 @@ async function handleStripeReturn() {
     const container = document.getElementById("booking-confirmation");
 
     /* ===============================
-       🟢 INSTANT CONFIRMATION UI
+       🟢 INSTANT UI
     =============================== */
 
     if (container) {
@@ -1583,7 +1580,7 @@ async function handleStripeReturn() {
     try {
 
       /* ===============================
-         🟢 STEP 1 — FAST (Stripe metadata)
+         FETCH BOOKING (RETRY SAFE)
       =============================== */
 
       let booking = await fetchBookingWithRetry(sessionId);
@@ -1591,7 +1588,7 @@ async function handleStripeReturn() {
       console.log("⚡ Stripe session result:", booking);
 
       /* ===============================
-         🔴 STILL NOT READY (rare)
+         STILL PROCESSING
       =============================== */
 
       if (!booking || !booking.pickupAt) {
@@ -1603,13 +1600,9 @@ async function handleStripeReturn() {
             <div class="confirmation-card pro">
               <h2>⏳ Payment received</h2>
               <div class="confirmation-note">
-                Your booking is being finalised.<br>
-                This can take a few seconds.
+                Finalising your booking…<br>
+                Please wait a few seconds.
               </div>
-             <div class="confirmation-note">
-  Finalising your booking…<br>
-  Please wait a few seconds.
-</div>
             </div>
           `;
         }
@@ -1618,39 +1611,36 @@ async function handleStripeReturn() {
       }
 
       /* ===============================
-         🟢 SUCCESS — RENDER FINAL
+         SUCCESS
       =============================== */
 
       console.log("✅ FINAL BOOKING:", booking);
 
       booking = normaliseBookingDates(booking);
 
-      // ✅ clear availability cache
+      // clear availability cache (booking now confirmed)
       VEHICLE_AVAILABILITY_CACHE.clear();
       VEHICLE_AVAILABILITY_PROMISES.clear();
 
       renderBookingConfirmation(booking);
 
-      /* ===============================
-         🟢 CLEAN URL
-      =============================== */
-
+      // clean URL
       window.history.replaceState(
         {},
         "",
         window.location.pathname + "#booking"
       );
 
-      /* ===============================
-         🟢 REFRESH CACHE
-      =============================== */
-
+      // refresh bookings cache
       BOOKINGS_CACHE = null;
       BOOKINGS_CACHE_AT = 0;
 
       await getBookings(true);
 
       console.log("🎉 Stripe return complete");
+
+      // ✅ mark Stripe flow complete (prevents UI re-trigger)
+      STRIPE_FLOW_COMPLETED = true;
 
     } catch (err) {
 
@@ -1674,11 +1664,13 @@ async function handleStripeReturn() {
     } finally {
 
       /* ===============================
-         🔥 CRITICAL FIX — RELEASE LOCK
+         DELAY UNLOCK (CRITICAL)
       =============================== */
 
-      IS_STRIPE_RETURN = false;
-
+      setTimeout(() => {
+        IS_STRIPE_RETURN = false;
+        console.log("🔓 Stripe lock released");
+      }, 1500);
     }
 
   })();
