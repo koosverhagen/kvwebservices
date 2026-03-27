@@ -687,6 +687,14 @@ function maybeAutoSubmitAvailability() {
 
 async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
 
+  /* ===============================
+     🔥 HARD BLOCK (CRITICAL FIX)
+  =============================== */
+
+  if (IS_STRIPE_RETURN) {
+    return [];
+  }
+
   const key = `${dateStr}|${duration}|${pickupTime || "any"}`;
   const now = Date.now();
 
@@ -701,7 +709,7 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
   }
 
   /* ===============================
-     🔥 DEDUPE IN-FLIGHT (STRONG)
+     🔥 DEDUPE IN-FLIGHT
   =============================== */
 
   if (VEHICLE_AVAILABILITY_PROMISES.has(key)) {
@@ -714,6 +722,12 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
 
   const promise = (async () => {
 
+    /* ===============================
+       🔥 DOUBLE-CHECK BEFORE FETCH
+    =============================== */
+
+    if (IS_STRIPE_RETURN) return [];
+
     let url = `/api/vehicles/available?date=${dateStr}&duration=${duration}`;
 
     if (pickupTime) {
@@ -722,15 +736,36 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
 
     console.log("📡 FETCH AVAILABILITY:", key);
 
-    const res = await fetch(apiUrl(url));
-    const data = await res.json();
+    try {
 
-    VEHICLE_AVAILABILITY_CACHE.set(key, {
-      data,
-      ts: Date.now()
-    });
+      const res = await fetch(apiUrl(url));
 
-    return data.vehicles || [];
+      if (!res.ok) {
+        console.warn("Availability fetch failed:", res.status);
+        return [];
+      }
+
+      const data = await res.json();
+
+      /* ===============================
+         🔥 DO NOT CACHE DURING STRIPE
+      =============================== */
+
+      if (!IS_STRIPE_RETURN) {
+        VEHICLE_AVAILABILITY_CACHE.set(key, {
+          data,
+          ts: Date.now()
+        });
+      }
+
+      return data.vehicles || [];
+
+    } catch (err) {
+
+      console.warn("Availability request error:", err);
+      return [];
+
+    }
 
   })();
 
@@ -748,38 +783,68 @@ const HALF_DAY_CACHE_TTL = 60 * 1000; // 60s
 
 async function getHalfDayAvailability(dateStr) {
 
+  /* ===============================
+     🔥 HARD BLOCK (CRITICAL FIX)
+  =============================== */
+
+  if (IS_STRIPE_RETURN) {
+    return { amData: [], pmData: [] };
+  }
+
   if (!dateStr) {
     return { amData: [], pmData: [] };
   }
 
   const now = Date.now();
-  const cached = HALF_DAY_CACHE.get(dateStr);
 
   /* ===============================
-     ✅ RETURN CACHE
+     ✅ CACHE HIT
   =============================== */
+
+  const cached = HALF_DAY_CACHE.get(dateStr);
 
   if (cached && (now - cached.ts) < HALF_DAY_CACHE_TTL) {
     return cached.data;
   }
 
   /* ===============================
-     🔄 FETCH ONCE (DEDUPED BELOW)
+     🔄 FETCH (PARALLEL)
   =============================== */
 
-  const [amData, pmData] = await Promise.all([
-    getVehicleAvailability(dateStr, 0.5, "07:00"),
-    getVehicleAvailability(dateStr, 0.5, "13:00")
-  ]);
+  try {
 
-  const result = { amData, pmData };
+    const [amData, pmData] = await Promise.all([
+      getVehicleAvailability(dateStr, 0.5, "07:00"),
+      getVehicleAvailability(dateStr, 0.5, "13:00")
+    ]);
 
-  HALF_DAY_CACHE.set(dateStr, {
-    data: result,
-    ts: now
-  });
+    /* ===============================
+       🔥 STOP IF STRIPE STARTED MID-FETCH
+    =============================== */
 
-  return result;
+    if (IS_STRIPE_RETURN) {
+      return { amData: [], pmData: [] };
+    }
+
+    const result = { amData, pmData };
+
+    /* ===============================
+       🔥 DO NOT CACHE DURING STRIPE
+    =============================== */
+
+    HALF_DAY_CACHE.set(dateStr, {
+      data: result,
+      ts: now
+    });
+
+    return result;
+
+  } catch (err) {
+
+    console.warn("Half-day availability failed:", err);
+
+    return { amData: [], pmData: [] };
+  }
 }
 
 
@@ -1593,22 +1658,34 @@ async function handleStripeReturn() {
 
       if (!booking || !booking.pickupAt) {
 
-        console.warn("⚠️ Booking still not ready");
+  console.warn("⚠️ Booking not ready — retrying once");
 
-        if (container) {
-          container.innerHTML = `
-            <div class="confirmation-card pro">
-              <h2>⏳ Payment received</h2>
-              <div class="confirmation-note">
-                Finalising your booking…<br>
-                Please wait a few seconds.
-              </div>
-            </div>
-          `;
-        }
+  // small delay (lets webhook finish)
+  await new Promise(r => setTimeout(r, 500));
 
-        return;
-      }
+  // retry once (fast path should now hit KV)
+  booking = await fetchBookingWithRetry(sessionId, 2);
+
+  // still not ready → show fallback UI
+  if (!booking || !booking.pickupAt) {
+
+    console.warn("⚠️ Booking still not ready after retry");
+
+    if (container) {
+      container.innerHTML = `
+        <div class="confirmation-card pro">
+          <h2>⏳ Payment received</h2>
+          <div class="confirmation-note">
+            Finalising your booking…<br>
+            Please wait a few seconds.
+          </div>
+        </div>
+      `;
+    }
+
+    return;
+  }
+}
 
       /* ===============================
          SUCCESS
@@ -3585,6 +3662,7 @@ function changeLorry() {
 }
 
 function updateDurationOptionsForVehicle(vehicle) {
+  
 
   const durationSelect = document.getElementById("duration-days");
   if (!durationSelect) return;
