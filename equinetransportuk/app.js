@@ -3778,7 +3778,9 @@ async function selectAvailability(vehicleId) {
 
   const vehicle = vehicles.find((item) => item.id === vehicleId);
 
-  if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) return;
+  if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) {
+    return;
+  }
 
   /* ===============================
      PICKUP TIME RULES (FIXED)
@@ -3786,12 +3788,10 @@ async function selectAvailability(vehicleId) {
 
   if (is35T(vehicle) && durationDays === 0.5) {
 
-    // ❌ DO NOT FORCE DEFAULT
     if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
-      pickupTime = null; // force proper selection
+      pickupTime = null;
     }
 
-    // 🔥 if still no time → STOP
     if (!pickupTime) {
       console.log("⛔ waiting for valid pickup time");
       return;
@@ -3801,6 +3801,41 @@ async function selectAvailability(vehicleId) {
 
     pickupTime = DEFAULT_PICKUP_TIME;
 
+  }
+
+  /* ===============================
+     🔥 FINAL SAFETY CHECK (CRITICAL)
+  =============================== */
+
+  const check = await getVehicleAvailability(
+    pickupDate,
+    durationDays,
+    pickupTime || "07:00"
+  );
+
+  const valid = check.some(v =>
+    v.vehicleId === vehicleId &&
+    v.available
+  );
+
+  if (!valid) {
+
+    console.warn("❌ Invalid duration (selectAvailability)");
+
+    safeRenderAvailability(`
+      <div class="empty-note">
+        ❌ This lorry is not available for that duration.<br>
+        Please select a shorter hire period.
+      </div>
+    `);
+
+    if (durationDaysInput) {
+      durationDaysInput.value = "";
+    }
+
+    selectedAvailability = null;
+
+    return; // 🚫 STOP
   }
 
   /* ===============================
@@ -3846,7 +3881,7 @@ async function selectAvailability(vehicleId) {
   }
 
   /* ===============================
-     🔥 CRITICAL: SYNC STEP 3 DROPDOWN
+     🔥 SYNC STEP 3 PICKUP OPTIONS
   =============================== */
 
   if (durationDays === 0.5) {
