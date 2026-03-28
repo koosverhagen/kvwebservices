@@ -3914,6 +3914,13 @@ async function selectAvailability(vehicleId) {
 }
 
 async function checkBookingFormAvailability() {
+
+const duration = Number(
+  selectedDurationInput?.value ||
+  durationDaysInput?.value ||
+  0
+);
+
   if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput) return;
 
   const statusEl = document.getElementById("booking-availability-status");
