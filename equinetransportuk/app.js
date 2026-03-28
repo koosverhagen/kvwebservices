@@ -886,19 +886,59 @@ async function isDurationAvailable(startDate, durationDays, vehicleId, bookings,
 
   try {
 
-    const vehicles = await getVehicleAvailability(
-      startDate,
-      durationDays,
-      pickupTime || "07:00"
-    );
+    if (!startDate || !durationDays || !vehicleId) return false;
 
-    const vehicle = vehicles.find(v => v.vehicleId === vehicleId);
+    const start = new Date(startDate);
+
+    /* ===============================
+       HALF DAY (KEEP API)
+    =============================== */
 
     if (Number(durationDays) === 0.5) {
-      return vehicle?.availableSlots?.length > 0;
+
+      const vehicles = await getVehicleAvailability(
+        startDate,
+        0.5,
+        pickupTime || "07:00"
+      );
+
+      const vehicle = vehicles.find(v => v.vehicleId === vehicleId);
+
+      return Array.isArray(vehicle?.availableSlots) &&
+             vehicle.availableSlots.length > 0;
     }
 
-    return !!vehicle?.available;
+    /* ===============================
+       FULL DAY (🔥 REAL FIX)
+    =============================== */
+
+    const days = Math.ceil(durationDays);
+
+    for (let i = 0; i < days; i++) {
+
+      const checkDate = new Date(start);
+      checkDate.setDate(start.getDate() + i);
+
+      const checkStr = checkDate.toISOString().slice(0, 10);
+
+      const conflict = bookings.some(b => {
+
+        if (b.vehicleId !== vehicleId) return false;
+
+        const bookingStart = new Date(b.pickupAt);
+        const bookingEnd = new Date(b.dropoffAt);
+
+        const current = new Date(checkStr);
+
+        return current >= bookingStart && current < bookingEnd;
+      });
+
+      if (conflict) {
+        return false; // 🔥 immediately fail
+      }
+    }
+
+    return true;
 
   } catch (err) {
 
@@ -913,7 +953,7 @@ async function updateDurationOptions(dateStr) {
   if (!durationDaysInput || !dateStr) return;
 
   /* ===============================
-     🔥 FIX: RESOLVE VEHICLE PROPERLY
+     🔥 RESOLVE VEHICLE
   =============================== */
 
   let vehicleId =
@@ -921,12 +961,17 @@ async function updateDurationOptions(dateStr) {
     selectedAvailability?.vehicle?.id ||
     null;
 
-  // ✅ fallback: if only 1 vehicle in results → use it
   if (!vehicleId && LAST_AVAILABLE_VEHICLES.length === 1) {
     vehicleId = LAST_AVAILABLE_VEHICLES[0].vehicleId;
   }
 
   const options = Array.from(durationDaysInput.options);
+
+  /* ===============================
+     🔥 FETCH BOOKINGS ONCE (IMPORTANT)
+  =============================== */
+
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   for (const opt of options) {
 
@@ -962,29 +1007,28 @@ async function updateDurationOptions(dateStr) {
       );
 
       available = hasAM || hasPM;
+
     }
 
     /* ===============================
-       FULL DAY (🔥 FIXED)
+       FULL DAY (FIXED)
     =============================== */
 
     else {
 
-      if (!vehicleId) {
-        available = true; // allow until vehicle selected
-      } else {
+      available = await isDurationAvailable(
+        dateStr,
+        duration,
+        vehicleId,
+        bookings,
+        "07:00"
+      );
 
-        const bookings = BOOKINGS_CACHE || await getBookings(false);
-
-        available = await isDurationAvailable(
-          dateStr,
-          duration,
-          vehicleId,
-          bookings,
-          "07:00"
-        );
-      }
     }
+
+    /* ===============================
+       🔥 APPLY UI STATE (YOU MISSED THIS)
+    =============================== */
 
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
@@ -1005,6 +1049,10 @@ async function updateDurationOptions(dateStr) {
       durationDaysInput.value = "";
     }
   }
+
+  /* ===============================
+     HALF DAY SYNC
+  =============================== */
 
   if (Number(durationDaysInput?.value) === 0.5) {
     await syncPickupTimeOptions(dateStr);
@@ -2705,7 +2753,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   const isHalfDay = Number(durationDays) === 0.5;
 
   /* ===============================
-     HALF DAY — SLOT BASED (FIXED)
+     HALF DAY
   =============================== */
 
   if (isHalfDay) {
@@ -2730,30 +2778,17 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
         let resolvedPickupTime = pickupTime;
 
-        /* ===============================
-           AUTO PICK SLOT (STRICT)
-        =============================== */
-
         if (!pickupTime) {
 
-          if (hasAM && !hasPM) {
-            resolvedPickupTime = "07:00";
-          }
-          else if (!hasAM && hasPM) {
-            resolvedPickupTime = "13:00";
-          }
-          else {
-            return null; // force user choice OR none available
-          }
-        }
+          if (hasAM && !hasPM) resolvedPickupTime = "07:00";
+          else if (!hasAM && hasPM) resolvedPickupTime = "13:00";
+          else return null;
 
-        /* ===============================
-           VALIDATE USER SELECTION
-        =============================== */
+        } else {
 
-        else {
           if (pickupTime === "07:00" && !hasAM) return null;
           if (pickupTime === "13:00" && !hasPM) return null;
+
         }
 
         return await buildAvailability(
@@ -2766,30 +2801,33 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
       })
     );
 
-    return results.filter(Boolean);
+    const filtered = results.filter(Boolean);
+
+    LAST_AVAILABLE_VEHICLES = filtered.map(r => ({
+      vehicleId: r.vehicleId || r.vehicle?.id
+    }));
+
+    return filtered;
   }
 
   /* ===============================
-     FULL DAY (🔥 HARD VALIDATION)
+     FULL DAY
   =============================== */
 
-  const vehiclesAvailability = await getVehicleAvailability(
-    pickupDate,
-    durationDays,
-    "07:00"
-  );
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   const results = await Promise.all(
     vehiclesToCheck.map(async (vehicle) => {
 
-      const vehicleCheck = vehiclesAvailability.find(
-        v => v.vehicleId === vehicle.id
+      const ok = await isDurationAvailable(
+        pickupDate,
+        durationDays,
+        vehicle.id || vehicle.vehicleId,
+        bookings,
+        "07:00"
       );
 
-      // 🔥 SAME LOGIC AS FINAL BOOKING CHECK
-      if (!vehicleCheck || !vehicleCheck.available) {
-        return null;
-      }
+      if (!ok) return null;
 
       return await buildAvailability(
         vehicle,
@@ -2801,7 +2839,13 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
     })
   );
 
-  return results.filter(Boolean);
+  const filtered = results.filter(Boolean);
+
+  LAST_AVAILABLE_VEHICLES = filtered.map(r => ({
+    vehicleId: r.vehicleId || r.vehicle?.id
+  }));
+
+  return filtered;
 }
 
 function renderAvailabilityLoading() {
@@ -2815,21 +2859,29 @@ function renderAvailabilityLoading() {
   if (IS_STRIPE_RETURN) return;
 
   /* ===============================
-     🔥 PREVENT DUPLICATE LOADING (FAST)
+     🔥 PREVENT DUPLICATE LOADING
   =============================== */
 
   if (availabilityResults.querySelector(".loading-note")) return;
 
-  /* ===============================
-     RENDER
-  =============================== */
-
-  availabilityResults.innerHTML = `
+  const html = `
     <div class="loading-note">
       <span class="spinner" aria-hidden="true"></span>
       Checking availability…
     </div>
   `;
+
+  /* ===============================
+     🔥 PREVENT SAME HTML RE-RENDER
+  =============================== */
+
+  if (availabilityResults.innerHTML === html) return;
+
+  /* ===============================
+     RENDER (SAFE)
+  =============================== */
+
+  safeRenderAvailability(html);
 }
 
 function renderAvailabilityError(message = "Something went wrong. Please try again.") {
@@ -2842,47 +2894,64 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
 
   if (IS_STRIPE_RETURN) return;
 
-  /* ===============================
-     🔥 PREVENT DUPLICATE RENDER (FAST)
-  =============================== */
-
-  const existing = availabilityResults.querySelector(".empty-note");
-
-  if (existing && existing.textContent === message) return;
+  const html = `<p class="empty-note">${escapeHtml(message)}</p>`;
 
   /* ===============================
-     RENDER
+     🔥 PREVENT DUPLICATE RENDER
   =============================== */
 
-  safeRenderAvailability(
-    `<p class="empty-note">${escapeHtml(message)}</p>`
-  );
+  if (availabilityResults.innerHTML === html) return;
+
+  /* ===============================
+     RENDER (SAFE)
+  =============================== */
+
+  safeRenderAvailability(html);
 }
 
 async function renderAvailabilityResults(items) {
+
+  /* ===============================
+     🔥 BLOCK DURING STRIPE RETURN
+  =============================== */
+
+  if (IS_STRIPE_RETURN) {
+    console.log("⛔ render blocked (Stripe return)");
+    return;
+  }
 
   console.log("render items:", items.map(v => v.vehicle.name));
 
   items = filterVehiclesForDisplay(items);
 
-  // 🔥 CRITICAL FIX — STOP EARLY FOR HALF DAY WITHOUT TIME
- 
+  /* ===============================
+     INPUT GUARD
+  =============================== */
 
-  if (!pickupDateInput?.value || !durationDaysInput?.value) {
-    availabilityResults.innerHTML = "";
+  const pickupDate = pickupDateInput?.value;
+  const duration = Number(durationDaysInput?.value);
+  const pickupTime = pickupTimeInput?.value;
+
+  if (!pickupDate || !duration) {
+    safeRenderAvailability("");
+    return;
+  }
+
+  /* ===============================
+     🔥 HALF DAY GUARD (CRITICAL)
+  =============================== */
+
+  if (duration === 0.5 && !pickupTime) {
+    safeRenderAvailability("");
     return;
   }
 
   updateAvailabilitySearchSummary(items);
 
-  // 🔥 Sync pickup time AFTER availability known
-  const pickupDate = pickupDateInput?.value;
-
-
   const pricePreview = document.getElementById("price-preview");
 
   /* ===============================
-     PRICE PREVIEW (HEADER)
+     PRICE PREVIEW
   =============================== */
 
   if (pricePreview) {
@@ -2906,7 +2975,6 @@ async function renderAvailabilityResults(items) {
       pricePreview.style.display = "none";
 
     }
-
   }
 
   /* ===============================
@@ -2915,14 +2983,10 @@ async function renderAvailabilityResults(items) {
 
   if (!items.length) {
 
-    const pickupDate = pickupDateInput.value;
-    const duration = Number(durationDaysInput.value);
-    const pickupTime = pickupTimeInput?.value || DEFAULT_PICKUP_TIME;
-
     const nextDate = await findNextAvailableDate(
       new Date(pickupDate),
       duration,
-      pickupTime
+      pickupTime || DEFAULT_PICKUP_TIME
     );
 
     let suggestionHTML = "";
@@ -2949,7 +3013,7 @@ async function renderAvailabilityResults(items) {
       `;
     }
 
-    availabilityResults.innerHTML = `
+    safeRenderAvailability(`
       <div class="availability-empty-state">
         <p class="empty-note">
           ${
@@ -2960,7 +3024,7 @@ async function renderAvailabilityResults(items) {
         </p>
         ${suggestionHTML}
       </div>
-    `;
+    `);
 
     setTimeout(() => {
       availabilityResults?.scrollIntoView({
@@ -2973,17 +3037,17 @@ async function renderAvailabilityResults(items) {
   }
 
   /* ===============================
-     ONLY ONE VEHICLE → SKIP
+     AUTO SELECT (SAFE)
   =============================== */
 
-  if (items.length === 1 && LOCKED_VEHICLE) {
+  if (items.length === 1 && LOCKED_VEHICLE && !selectedAvailability) {
     await selectAvailability(items[0].vehicle.id);
     goToStep(3);
     return;
   }
 
   /* ===============================
-     MULTIPLE VEHICLES → STEP 2
+     MULTIPLE VEHICLES
   =============================== */
 
   const html = items.map((item) => {
@@ -3058,19 +3122,15 @@ async function renderAvailabilityResults(items) {
      AVAILABILITY NOTE
   =============================== */
 
-  let availabilityNote = `
-    <p class="muted">
-      ${items.length} lorr${items.length > 1 ? "ies" : "y"} available
-    </p>
-  `;
-
   availabilityResults.insertAdjacentHTML(
     "afterbegin",
-    availabilityNote
+    `<p class="muted">
+      ${items.length} lorr${items.length > 1 ? "ies" : "y"} available
+    </p>`
   );
 
   /* ===============================
-     STEP CONTROL + SCROLL
+     STEP + SCROLL
   =============================== */
 
   goToStep(2);
@@ -3081,9 +3141,7 @@ async function renderAvailabilityResults(items) {
       block: "start"
     });
   }, 120);
-
 }
-
 
 const bookingTimeInput = document.getElementById("booking-pickup-time");
 
