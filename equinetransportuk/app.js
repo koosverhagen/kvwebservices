@@ -2125,46 +2125,44 @@ function asDate(dateString, timeString) {
 
 async function getBookings(force = false) {
 
-  /* ===============================
-     🔥 DEDUPE IN-FLIGHT REQUESTS
-  =============================== */
-
   if (!force && bookingsRequestPromise) {
     return bookingsRequestPromise;
   }
 
   const now = Date.now();
 
-  /* ===============================
-     ✅ CACHE HIT
-  =============================== */
-
   if (!force && BOOKINGS_CACHE && (now - BOOKINGS_CACHE_AT) < BOOKINGS_CACHE_TTL) {
     return BOOKINGS_CACHE;
   }
-
-  /* ===============================
-     🔄 FETCH (DEDUPED)
-  =============================== */
 
   bookingsRequestPromise = (async () => {
 
     try {
 
-      console.log("📡 FETCH BOOKINGS");
+      const from = new Date();
+      from.setMonth(from.getMonth() - 2);
 
-      const res = await fetch(apiUrl(`/api/bookings/list?from=...&to=...`)); // keep your existing URL
+      const to = new Date();
+      to.setMonth(to.getMonth() + 3);
+
+      const res = await fetch(
+        apiUrl(`/api/bookings/list?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
+      );
+
       const data = await res.json();
 
-      BOOKINGS_CACHE = data;
+      const bookings = Array.isArray(data)
+        ? data
+        : (data.bookings || []);
+
+      BOOKINGS_CACHE = bookings;
       BOOKINGS_CACHE_AT = Date.now();
 
-      return data;
+      return bookings;
 
     } catch (err) {
 
       console.warn("getBookings failed:", err);
-
       return BOOKINGS_CACHE || [];
 
     } finally {
