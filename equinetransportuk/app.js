@@ -882,96 +882,17 @@ function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
   return true;
 }
 
-async function isDurationAvailable(startDate, durationDays, vehicleId, bookings, pickupTime) {
-
-  try {
-
-    if (!startDate || !durationDays || !vehicleId) return false;
-
-    const start = new Date(startDate);
-
-    /* ===============================
-       HALF DAY (KEEP API)
-    =============================== */
-
-    if (Number(durationDays) === 0.5) {
-
-      const vehicles = await getVehicleAvailability(
-        startDate,
-        0.5,
-        pickupTime || "07:00"
-      );
-
-      const vehicle = vehicles.find(v => v.vehicleId === vehicleId);
-
-      return Array.isArray(vehicle?.availableSlots) &&
-             vehicle.availableSlots.length > 0;
-    }
-
-    /* ===============================
-       FULL DAY (🔥 REAL FIX)
-    =============================== */
-
-    const days = Math.ceil(durationDays);
-
-    for (let i = 0; i < days; i++) {
-
-      const checkDate = new Date(start);
-      checkDate.setDate(start.getDate() + i);
-
-      const checkStr = checkDate.toISOString().slice(0, 10);
-
-      const conflict = bookings.some(b => {
-
-        if (b.vehicleId !== vehicleId) return false;
-
-        const bookingStart = new Date(b.pickupAt);
-        const bookingEnd = new Date(b.dropoffAt);
-
-        const current = new Date(checkStr);
-
-        return current >= bookingStart && current < bookingEnd;
-      });
-
-      if (conflict) {
-        return false; // 🔥 immediately fail
-      }
-    }
-
-    return true;
-
-  } catch (err) {
-
-    console.warn("Duration availability check failed:", err);
-    return false;
-
-  }
-}
 
 async function updateDurationOptions(dateStr) {
 
   if (!durationDaysInput || !dateStr) return;
 
-  /* ===============================
-     🔥 RESOLVE VEHICLE
-  =============================== */
-
-  let vehicleId =
+  const vehicleId =
     PRESELECTED_VEHICLE ||
     selectedAvailability?.vehicle?.id ||
     null;
 
-  if (!vehicleId && LAST_AVAILABLE_VEHICLES.length === 1) {
-    vehicleId = LAST_AVAILABLE_VEHICLES[0].vehicleId;
-  }
-
   const options = Array.from(durationDaysInput.options);
-
-  /* ===============================
-     🔥 FETCH BOOKINGS ONCE (IMPORTANT)
-  =============================== */
-
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   for (const opt of options) {
 
@@ -1011,23 +932,29 @@ async function updateDurationOptions(dateStr) {
     }
 
     /* ===============================
-       FULL DAY (FIXED)
+       FULL DAY (🔥 FIXED — API ONLY)
     =============================== */
 
     else {
 
-      available = await isDurationAvailable(
+      const vehiclesAvailability = await getVehicleAvailability(
         dateStr,
         duration,
-        vehicleId,
-        bookings,
         "07:00"
       );
 
+      // 🔥 CRITICAL: update global here
+      LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
+
+      const vehicleCheck = vehicleId
+        ? vehiclesAvailability.find(v => v.vehicleId === vehicleId)
+        : vehiclesAvailability[0];
+
+      available = !!vehicleCheck?.available;
     }
 
     /* ===============================
-       🔥 APPLY UI STATE (YOU MISSED THIS)
+       APPLY UI
     =============================== */
 
     opt.disabled = !available;
@@ -1035,24 +962,17 @@ async function updateDurationOptions(dateStr) {
   }
 
   /* ===============================
-     AUTO FIX INVALID SELECTION
+     AUTO FIX INVALID
   =============================== */
 
   const selected = Number(durationDaysInput.value);
 
   if (selected) {
-    const selectedOption = options.find(
-      o => Number(o.value) === selected
-    );
-
+    const selectedOption = options.find(o => Number(o.value) === selected);
     if (selectedOption?.disabled) {
       durationDaysInput.value = "";
     }
   }
-
-  /* ===============================
-     HALF DAY SYNC
-  =============================== */
 
   if (Number(durationDaysInput?.value) === 0.5) {
     await syncPickupTimeOptions(dateStr);
@@ -2753,7 +2673,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   const isHalfDay = Number(durationDays) === 0.5;
 
   /* ===============================
-     HALF DAY
+     HALF DAY (UNCHANGED — CORRECT)
   =============================== */
 
   if (isHalfDay) {
@@ -2803,31 +2723,35 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
     const filtered = results.filter(Boolean);
 
+    // 🔥 keep structure SAME as API
     LAST_AVAILABLE_VEHICLES = filtered.map(r => ({
-      vehicleId: r.vehicleId || r.vehicle?.id
+      vehicleId: r.vehicle.id
     }));
 
     return filtered;
   }
 
   /* ===============================
-     FULL DAY
+     FULL DAY (🔥 FIXED — API ONLY)
   =============================== */
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
+  const vehiclesAvailability = await getVehicleAvailability(
+    pickupDate,
+    durationDays,
+    "07:00"
+  );
+
+  // 🔥 CRITICAL — store RAW API result (not filtered!)
+  LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
 
   const results = await Promise.all(
     vehiclesToCheck.map(async (vehicle) => {
 
-      const ok = await isDurationAvailable(
-        pickupDate,
-        durationDays,
-        vehicle.id || vehicle.vehicleId,
-        bookings,
-        "07:00"
+      const apiVehicle = vehiclesAvailability.find(
+        v => v.vehicleId === vehicle.id
       );
 
-      if (!ok) return null;
+      if (!apiVehicle?.available) return null;
 
       return await buildAvailability(
         vehicle,
@@ -2839,13 +2763,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
     })
   );
 
-  const filtered = results.filter(Boolean);
-
-  LAST_AVAILABLE_VEHICLES = filtered.map(r => ({
-    vehicleId: r.vehicleId || r.vehicle?.id
-  }));
-
-  return filtered;
+  return results.filter(Boolean);
 }
 
 function renderAvailabilityLoading() {
