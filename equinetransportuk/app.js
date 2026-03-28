@@ -937,23 +937,26 @@ async function updateDurationOptions(dateStr) {
 
 else {
 
-  const vehiclesAvailability = await getVehicleAvailability(
-    dateStr,
-    duration,
-    null
-  );
-
   if (vehicleId) {
 
-    const vehicleCheck = vehiclesAvailability.find(
-      v => v.vehicleId === vehicleId
+    // specific vehicle selected
+    available = await isContinuousRangeAvailable(
+      dateStr,
+      duration,
+      vehicleId,
+      null
     );
-
-    available = !!vehicleCheck?.available;
 
   } else {
 
-    available = vehiclesAvailability.some(v => v.available);
+    // 🔥 NEW — check ANY vehicle
+    const vehiclesAvailable = await getVehicleAvailability(
+      dateStr,
+      duration,
+      null
+    );
+
+    available = vehiclesAvailable.some(v => v.available);
 
   }
 
@@ -3067,7 +3070,32 @@ bookingTimeInput?.addEventListener("change", () => {
 
 const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
+async function isContinuousRangeAvailable(startDate, durationDays, vehicleId, pickupTime) {
 
+  const start = new Date(startDate);
+
+  for (let i = 0; i < durationDays; i++) {
+
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+
+    const dateStr = d.toISOString().slice(0, 10);
+
+    const vehicles = await getVehicleAvailability(
+      dateStr,
+      1, // 🔥 ALWAYS 1 DAY CHECK
+      null
+    );
+
+    const v = vehicles.find(x => x.vehicleId === vehicleId);
+
+    if (!v?.available) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /* ======================================================
    Checkout summary (discount-safe)
@@ -3633,31 +3661,28 @@ function changeLorry() {
 }
 
 function updateDurationOptionsForVehicle(vehicle) {
-  
 
   const durationSelect = document.getElementById("duration-days");
   if (!durationSelect) return;
 
   const halfDayOption = durationSelect.querySelector('option[value="0.5"]');
-
   if (!halfDayOption) return;
 
   if (is35T(vehicle)) {
 
-    // allow half day
-    halfDayOption.style.display = "block";
+    // ✅ allow half day
+    halfDayOption.hidden = false;
 
   } else {
 
-    // remove half day for 7.5T
-    halfDayOption.style.display = "none";
+    // ✅ hide for 7.5T (better than display none)
+    halfDayOption.hidden = true;
 
     if (durationSelect.value === "0.5") {
-      durationSelect.value = "1";
+      durationSelect.value = "";
     }
 
   }
-
 }
 
 function updateCalendarVehicleLabel() {
@@ -4010,6 +4035,8 @@ if (durationDays === 0.5) {
     updateEarlyPickupAvailability();
   }
 }
+
+
 
 /* ======================================================
    Voucher apply button
@@ -5329,62 +5356,58 @@ const booking = {
 const confirmBtn = document.getElementById("booking-confirm-btn");
 
 if (confirmBtn) {
-
   confirmBtn.addEventListener("click", async () => {
 
-    /* ===============================
-       🔒 PREVENT DOUBLE CLICK
-    =============================== */
+    const booking = window.pendingBooking;
 
-    if (confirmBtn.dataset.loading === "true") return;
-    confirmBtn.dataset.loading = "true";
-    confirmBtn.disabled = true;
-
-    try {
-
-      const booking = window.pendingBooking;
-
-      if (!booking) {
-        alert("Booking information missing.");
-        return;
-      }
-
-      /* ===============================
-         STRIPE
-      =============================== */
-
-      const checkoutUrl = await createStripeCheckoutSession(booking);
-
-      // 🔥 already handled inside function
-      if (!checkoutUrl) return;
-
-      /* ===============================
-         CLEANUP
-      =============================== */
-
-      resetBookingCustomerFields();
-
-      /* ===============================
-         REDIRECT
-      =============================== */
-
-      window.location.href = checkoutUrl;
-
-    } finally {
-
-      /* ===============================
-         🔓 RELEASE BUTTON (if not redirected)
-      =============================== */
-
-      setTimeout(() => {
-        confirmBtn.dataset.loading = "false";
-        confirmBtn.disabled = false;
-      }, 1500);
-
+    if (!booking) {
+      alert("Booking information missing.");
+      return;
     }
 
-  });
+    /* ===============================
+       🔥 FORCE REVALIDATION (FINAL FIX)
+    =============================== */
 
+    const vehicleId = booking.vehicleId;
+    const pickupDate = booking.pickupAt.slice(0, 10);
+    const duration = Number(booking.durationDays);
+
+    const stillValid = await isContinuousRangeAvailable(
+      pickupDate,
+      duration,
+      vehicleId,
+      null
+    );
+
+    if (!stillValid) {
+
+      alert("This lorry is no longer available for that duration.");
+
+      selectedAvailability = null;
+      window.pendingBooking = null;
+
+      if (durationDaysInput) durationDaysInput.value = "";
+      if (selectedDurationInput) selectedDurationInput.value = "";
+
+      updateCheckoutSummary();
+      goToStep(2);
+
+      await updateDurationOptions(pickupDate);
+      maybeAutoSubmitAvailability();
+
+      return;
+    }
+
+    const checkoutUrl = await createStripeCheckoutSession(booking);
+
+    if (!checkoutUrl) return;
+
+    resetBookingCustomerFields();
+
+    window.location.href = checkoutUrl;
+
+  });
 }
 
 /* ======================================================
