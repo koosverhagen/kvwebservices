@@ -909,8 +909,17 @@ async function updateDurationOptions(dateStr) {
 
   if (!durationDaysInput || !dateStr) return;
 
-  const vehicleId = PRESELECTED_VEHICLE;
+  /* ===============================
+     🔥 FIX: ALWAYS USE ACTIVE VEHICLE
+  =============================== */
+
+  const vehicleId =
+    PRESELECTED_VEHICLE ||
+    selectedAvailability?.vehicle?.id ||
+    null;
+
   const options = Array.from(durationDaysInput.options);
+
   for (const opt of options) {
 
     const duration = Number(opt.value);
@@ -919,12 +928,11 @@ async function updateDurationOptions(dateStr) {
     let available = false;
 
     /* ===============================
-       HALF DAY (FIXED PROPERLY)
+       HALF DAY
     =============================== */
 
     if (duration === 0.5) {
 
-      // 🔥 CHECK BOTH AM + PM IN PARALLEL
       const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
       const filteredAM = (vehicleId
@@ -943,47 +951,29 @@ async function updateDurationOptions(dateStr) {
         return is35T(vehicle);
       });
 
-   const hasAM = filteredAM.some(v =>
-  v.available || (v.availableSlots && v.availableSlots.includes("am"))
-);
+      const hasAM = filteredAM.some(v =>
+        v.available || v.availableSlots?.includes("am")
+      );
 
-const hasPM = filteredPM.some(v =>
-  v.available || (v.availableSlots && v.availableSlots.includes("pm"))
-);
+      const hasPM = filteredPM.some(v =>
+        v.available || v.availableSlots?.includes("pm")
+      );
 
       available = hasAM || hasPM;
-
-      /* ===============================
-         🧠 DO NOT AUTO-SELECT TIME
-      =============================== */
-
-      if (available && pickupTimeInput) {
-
-        // ✅ Only FIX invalid selections
-        if (pickupTimeInput.value === "07:00" && !hasAM && hasPM) {
-          pickupTimeInput.value = "13:00";
-        }
-
-        else if (pickupTimeInput.value === "13:00" && !hasPM && hasAM) {
-          pickupTimeInput.value = "07:00";
-        }
-
-        // ❌ DO NOT set value if empty → user must choose
-      }
 
     }
 
     /* ===============================
-       FULL DAY
+       FULL DAY (🔥 FIXED)
     =============================== */
 
     else {
 
-   const vehiclesAvailability = await getVehicleAvailability(
-  dateStr,
-  duration,
-  "07:00"
-);
+      const vehiclesAvailability = await getVehicleAvailability(
+        dateStr,
+        duration,
+        "07:00"
+      );
 
       const filtered = vehicleId
         ? vehiclesAvailability.filter(v => v.vehicleId === vehicleId)
@@ -1007,7 +997,6 @@ const hasPM = filteredPM.some(v =>
   const selected = Number(durationDaysInput.value);
 
   if (selected) {
-
     const selectedOption = options.find(
       o => Number(o.value) === selected
     );
@@ -1016,13 +1005,14 @@ const hasPM = filteredPM.some(v =>
       durationDaysInput.value = "";
     }
   }
-  /* ===============================
-   🔥 FINAL PICKUP TIME SYNC (CRITICAL FIX)
-=============================== */
 
-if (Number(durationDaysInput?.value) === 0.5 && dateStr) {
-  await syncPickupTimeOptions(dateStr);
-}
+  /* ===============================
+     HALF DAY SYNC
+  =============================== */
+
+  if (Number(durationDaysInput?.value) === 0.5) {
+    await syncPickupTimeOptions(dateStr);
+  }
 }
 
 async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
