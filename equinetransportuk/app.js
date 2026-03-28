@@ -940,7 +940,7 @@ async function updateDurationOptions(dateStr) {
       const vehiclesAvailability = await getVehicleAvailability(
         dateStr,
         duration,
-        "07:00"
+        null
       );
 
       // 🔥 CRITICAL: update global here
@@ -2673,7 +2673,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   const isHalfDay = Number(durationDays) === 0.5;
 
   /* ===============================
-     HALF DAY (UNCHANGED — CORRECT)
+     HALF DAY (UNCHANGED)
   =============================== */
 
   if (isHalfDay) {
@@ -2699,16 +2699,12 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
         let resolvedPickupTime = pickupTime;
 
         if (!pickupTime) {
-
           if (hasAM && !hasPM) resolvedPickupTime = "07:00";
           else if (!hasAM && hasPM) resolvedPickupTime = "13:00";
           else return null;
-
         } else {
-
           if (pickupTime === "07:00" && !hasAM) return null;
           if (pickupTime === "13:00" && !hasPM) return null;
-
         }
 
         return await buildAvailability(
@@ -2723,7 +2719,6 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
     const filtered = results.filter(Boolean);
 
-    // 🔥 keep structure SAME as API
     LAST_AVAILABLE_VEHICLES = filtered.map(r => ({
       vehicleId: r.vehicle.id
     }));
@@ -2732,16 +2727,15 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   }
 
   /* ===============================
-     FULL DAY (🔥 FIXED — API ONLY)
+     FULL DAY (🔥 FIXED)
   =============================== */
 
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
     durationDays,
-    "07:00"
+    null // 🔥 KEY FIX
   );
 
-  // 🔥 CRITICAL — store RAW API result (not filtered!)
   LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
 
   const results = await Promise.all(
@@ -2757,7 +2751,7 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
         vehicle,
         pickupDate,
         durationDays,
-        "07:00"
+        DEFAULT_PICKUP_TIME
       );
 
     })
@@ -2765,7 +2759,6 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
   return results.filter(Boolean);
 }
-
 function renderAvailabilityLoading() {
 
   if (!availabilityResults) return;
