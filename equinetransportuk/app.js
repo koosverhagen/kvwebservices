@@ -2120,14 +2120,32 @@ async function getBookings(force = false) {
         apiUrl(`/api/bookings/list?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
       );
 
+      if (!res.ok) {
+        console.warn("⚠️ bookings API error:", res.status);
+        return BOOKINGS_CACHE || [];
+      }
+
       const data = await res.json();
 
-      const bookings = Array.isArray(data)
-        ? data
-        : (data.bookings || []);
+      /* ===============================
+         🔥 HARD NORMALISATION
+      =============================== */
+
+      let bookings = [];
+
+      if (Array.isArray(data)) {
+        bookings = data;
+      } else if (Array.isArray(data?.bookings)) {
+        bookings = data.bookings;
+      } else {
+        console.warn("⚠️ Invalid bookings response:", data);
+        bookings = [];
+      }
 
       BOOKINGS_CACHE = bookings;
       BOOKINGS_CACHE_AT = Date.now();
+
+      console.log("📦 bookings loaded:", bookings.length);
 
       return bookings;
 
