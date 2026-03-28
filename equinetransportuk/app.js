@@ -2123,60 +2123,53 @@ function asDate(dateString, timeString) {
   return new Date(Date.UTC(year, month - 1, day, hour, minute));
 }
 
-async function getBookings(forceRefresh = false) {
-  const now = Date.now();
+async function getBookings(force = false) {
 
-  if (!forceRefresh && BOOKINGS_CACHE && (now - BOOKINGS_CACHE_AT) < BOOKINGS_CACHE_TTL) {
-    return BOOKINGS_CACHE;
-  }
+  /* ===============================
+     🔥 DEDUPE IN-FLIGHT REQUESTS
+  =============================== */
 
-  if (bookingsRequestPromise) {
+  if (!force && bookingsRequestPromise) {
     return bookingsRequestPromise;
   }
 
+  const now = Date.now();
+
+  /* ===============================
+     ✅ CACHE HIT
+  =============================== */
+
+  if (!force && BOOKINGS_CACHE && (now - BOOKINGS_CACHE_AT) < BOOKINGS_CACHE_TTL) {
+    return BOOKINGS_CACHE;
+  }
+
+  /* ===============================
+     🔄 FETCH (DEDUPED)
+  =============================== */
+
   bookingsRequestPromise = (async () => {
+
     try {
-      const firstDay = new Date();
-      firstDay.setMonth(firstDay.getMonth() - 2);
-      firstDay.setDate(1);
-      firstDay.setHours(0, 0, 0, 0);
 
-      const lastDay = new Date();
-      lastDay.setMonth(lastDay.getMonth() + 3);
-      lastDay.setDate(0);
-      lastDay.setHours(23, 59, 59, 999);
-
-      const res = await fetch(
-        `${apiUrl("/api/bookings/list")}?from=${encodeURIComponent(firstDay.toISOString())}&to=${encodeURIComponent(lastDay.toISOString())}`
-      );
-
-      if (!res.ok) {
-        console.warn("Booking API returned", res.status);
-        throw new Error("Booking API unavailable");
-      }
-
+      const res = await fetch(apiUrl(`/api/bookings/list?...`)); // your existing URL
       const data = await res.json();
 
-      BOOKINGS_CACHE = Array.isArray(data.bookings) ? data.bookings : [];
+      BOOKINGS_CACHE = data;
       BOOKINGS_CACHE_AT = Date.now();
 
-      return BOOKINGS_CACHE;
+      return data;
 
     } catch (err) {
-      console.warn("⚠️ Booking API unavailable, fallback to local storage", err);
 
-      try {
-        BOOKINGS_CACHE = JSON.parse(localStorage.getItem(STORAGE_BOOKINGS) || "[]");
-        BOOKINGS_CACHE_AT = Date.now();
-        return BOOKINGS_CACHE;
-      } catch {
-        BOOKINGS_CACHE = [];
-        BOOKINGS_CACHE_AT = Date.now();
-        return BOOKINGS_CACHE;
-      }
+      console.warn("getBookings failed:", err);
+      return BOOKINGS_CACHE || [];
+
     } finally {
+
       bookingsRequestPromise = null;
+
     }
+
   })();
 
   return bookingsRequestPromise;
