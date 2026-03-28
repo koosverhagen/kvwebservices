@@ -566,28 +566,6 @@ availabilityResults?.addEventListener("click", async (e) => {
    Helpers
 ====================================================== */
  
-async function getDailyAvailability(dateStr) {
-
-  const now = Date.now();
-
-  const cached = DAILY_AVAILABILITY_CACHE.get(dateStr);
-
-  if (cached && (now - cached.ts) < DAILY_AVAILABILITY_TTL) {
-    return cached.data;
-  }
-
-  console.log("📡 FETCH DAILY AVAILABILITY:", dateStr);
-
-  const res = await fetch(apiUrl(`/api/availability?date=${dateStr}`));
-  const data = await res.json();
-
-  DAILY_AVAILABILITY_CACHE.set(dateStr, {
-    data,
-    ts: now
-  });
-
-  return data;
-}
 
 
 function safeRenderAvailability(html) {
@@ -1001,9 +979,11 @@ const hasPM = filteredPM.some(v =>
 
     else {
 
-    const daily = await getDailyAvailability(dateStr);
-
-const vehiclesAvailability = daily?.vehicles || [];
+   const vehiclesAvailability = await getVehicleAvailability(
+  dateStr,
+  duration,
+  "07:00"
+);
 
       const filtered = vehicleId
         ? vehiclesAvailability.filter(v => v.vehicleId === vehicleId)
