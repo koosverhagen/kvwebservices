@@ -913,13 +913,18 @@ async function updateDurationOptions(dateStr) {
   if (!durationDaysInput || !dateStr) return;
 
   /* ===============================
-     🔥 FIX: ALWAYS USE ACTIVE VEHICLE
+     🔥 FIX: RESOLVE VEHICLE PROPERLY
   =============================== */
 
-  const vehicleId =
+  let vehicleId =
     PRESELECTED_VEHICLE ||
     selectedAvailability?.vehicle?.id ||
     null;
+
+  // ✅ fallback: if only 1 vehicle in results → use it
+  if (!vehicleId && LAST_AVAILABLE_VEHICLES.length === 1) {
+    vehicleId = LAST_AVAILABLE_VEHICLES[0].vehicleId;
+  }
 
   const options = Array.from(durationDaysInput.options);
 
@@ -941,18 +946,12 @@ async function updateDurationOptions(dateStr) {
       const filteredAM = (vehicleId
         ? amData.filter(v => v.vehicleId === vehicleId)
         : amData
-      ).filter(v => {
-        const vehicle = vehicles.find(x => x.id === v.vehicleId);
-        return is35T(vehicle);
-      });
+      ).filter(v => is35T(vehicles.find(x => x.id === v.vehicleId)));
 
       const filteredPM = (vehicleId
         ? pmData.filter(v => v.vehicleId === vehicleId)
         : pmData
-      ).filter(v => {
-        const vehicle = vehicles.find(x => x.id === v.vehicleId);
-        return is35T(vehicle);
-      });
+      ).filter(v => is35T(vehicles.find(x => x.id === v.vehicleId)));
 
       const hasAM = filteredAM.some(v =>
         v.available || v.availableSlots?.includes("am")
@@ -963,7 +962,6 @@ async function updateDurationOptions(dateStr) {
       );
 
       available = hasAM || hasPM;
-
     }
 
     /* ===============================
@@ -972,20 +970,21 @@ async function updateDurationOptions(dateStr) {
 
     else {
 
- const bookings = BOOKINGS_CACHE || await getBookings(false);
+      if (!vehicleId) {
+        available = true; // allow until vehicle selected
+      } else {
 
-available = await isDurationAvailable(
-  dateStr,
-  duration,
-  vehicleId,
-  bookings,
-  "07:00"
-);
+        const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+        available = await isDurationAvailable(
+          dateStr,
+          duration,
+          vehicleId,
+          bookings,
+          "07:00"
+        );
+      }
     }
- 
-    /* ===============================
-       APPLY UI STATE
-    =============================== */
 
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
@@ -1006,10 +1005,6 @@ available = await isDurationAvailable(
       durationDaysInput.value = "";
     }
   }
-
-  /* ===============================
-     HALF DAY SYNC
-  =============================== */
 
   if (Number(durationDaysInput?.value) === 0.5) {
     await syncPickupTimeOptions(dateStr);
@@ -3927,12 +3922,6 @@ async function selectAvailability(vehicleId) {
 
 async function checkBookingFormAvailability() {
 
-const duration = Number(
-  selectedDurationInput?.value ||
-  durationDaysInput?.value ||
-  0
-);
-
   if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput) return;
 
   const statusEl = document.getElementById("booking-availability-status");
@@ -3942,73 +3931,64 @@ const duration = Number(
   const durationDays = Number(selectedDurationInput.value);
 
   if (!pickupDate || !durationDays || durationDays <= 0) {
+
     if (statusEl) {
       statusEl.textContent = "Please select a valid date and duration.";
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
-    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+
+    bookingSubmitBtn.disabled = true;
     return;
   }
 
   if (!supportsDuration(vehicle, durationDays)) {
+
     if (statusEl) {
       statusEl.textContent = `${vehicle.name} does not support this duration.`;
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
-    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+
+    bookingSubmitBtn.disabled = true;
     return;
   }
 
-  /* ===============================
-     🔥 FIXED PICKUP TIME PRIORITY
-  =============================== */
-
   const bookingTime = document.getElementById("booking-pickup-time")?.value;
-
-  const bookingPickupTime =
-    bookingTime ||
-    selectedAvailability.pickupTime ||
-    DEFAULT_PICKUP_TIME;
 
   const pickupTime =
     is35T(vehicle) && durationDays === 0.5
-      ? bookingPickupTime
+      ? (bookingTime || null)
       : DEFAULT_PICKUP_TIME;
+
+  if (durationDays === 0.5 && !pickupTime) {
+    bookingSubmitBtn.disabled = true;
+    return;
+  }
 
   /* ===============================
      AVAILABILITY CHECK
   =============================== */
 
-const vehiclesAvailability = await getVehicleAvailability(
-  pickupDate,
-  duration,
-  pickupTime
-);
+  const vehiclesAvailability = await getVehicleAvailability(
+    pickupDate,
+    durationDays,
+    pickupTime
+  );
 
-// 🔥 ADD THIS HERE ONLY
-LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
+  const v = vehiclesAvailability.find(
+    x => x.vehicleId === vehicle.id
+  );
 
+  let available = false;
 
-
-const v = vehiclesAvailability.find(
-  x => x.vehicleId === vehicle.id
-);
-
-let available = false;
-
-if (durationDays === 0.5) {
-  available = Array.isArray(v?.availableSlots) && v.availableSlots.length > 0;
-} else {
-  available = !!v?.available;
-}
+  if (durationDays === 0.5) {
+    available = Array.isArray(v?.availableSlots) && v.availableSlots.length > 0;
+  } else {
+    available = !!v?.available;
+  }
 
   if (available) {
-
-    /* ===============================
-       REBUILD AVAILABILITY (KEEP DISCOUNT)
-    =============================== */
 
     const code = getCurrentDiscountCode();
 
@@ -4024,34 +4004,23 @@ if (durationDays === 0.5) {
       selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
     }
 
-    if (statusEl) {
-      statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
-      statusEl.className = "availability-status ok full";
-      statusEl.hidden = false;
-    }
+    statusEl.textContent = `${vehicle.name} is available.`;
+    statusEl.className = "availability-status ok full";
+    statusEl.hidden = false;
 
-    if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
+    bookingSubmitBtn.disabled = false;
 
     updateCheckoutSummary();
-
-    /* ===============================
-       🔥 CRITICAL FIX
-       Sync early pickup AFTER recalculation
-    =============================== */
-
     updateEarlyPickupAvailability();
 
   } else {
 
-    if (statusEl) {
-      statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
-      statusEl.className = "availability-status error full";
-      statusEl.hidden = false;
-    }
+    statusEl.textContent = `${vehicle.name} is not available.`;
+    statusEl.className = "availability-status error full";
+    statusEl.hidden = false;
 
-    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+    bookingSubmitBtn.disabled = true;
 
-    /* also keep UI consistent */
     updateEarlyPickupAvailability();
   }
 }
