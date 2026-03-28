@@ -3922,6 +3922,12 @@ async function selectAvailability(vehicleId) {
 
 async function checkBookingFormAvailability() {
 
+const duration = Number(
+  selectedDurationInput?.value ||
+  durationDaysInput?.value ||
+  0
+);
+
   if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput) return;
 
   const statusEl = document.getElementById("booking-availability-status");
@@ -3931,64 +3937,73 @@ async function checkBookingFormAvailability() {
   const durationDays = Number(selectedDurationInput.value);
 
   if (!pickupDate || !durationDays || durationDays <= 0) {
-
     if (statusEl) {
       statusEl.textContent = "Please select a valid date and duration.";
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
-
-    bookingSubmitBtn.disabled = true;
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
     return;
   }
 
   if (!supportsDuration(vehicle, durationDays)) {
-
     if (statusEl) {
       statusEl.textContent = `${vehicle.name} does not support this duration.`;
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
-
-    bookingSubmitBtn.disabled = true;
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
     return;
   }
+
+  /* ===============================
+     🔥 FIXED PICKUP TIME PRIORITY
+  =============================== */
 
   const bookingTime = document.getElementById("booking-pickup-time")?.value;
 
+  const bookingPickupTime =
+    bookingTime ||
+    selectedAvailability.pickupTime ||
+    DEFAULT_PICKUP_TIME;
+
   const pickupTime =
     is35T(vehicle) && durationDays === 0.5
-      ? (bookingTime || null)
+      ? bookingPickupTime
       : DEFAULT_PICKUP_TIME;
-
-  if (durationDays === 0.5 && !pickupTime) {
-    bookingSubmitBtn.disabled = true;
-    return;
-  }
 
   /* ===============================
      AVAILABILITY CHECK
   =============================== */
 
-  const vehiclesAvailability = await getVehicleAvailability(
-    pickupDate,
-    durationDays,
-    pickupTime
-  );
+const vehiclesAvailability = await getVehicleAvailability(
+  pickupDate,
+  duration,
+  pickupTime
+);
 
-  const v = vehiclesAvailability.find(
-    x => x.vehicleId === vehicle.id
-  );
+// 🔥 ADD THIS HERE ONLY
+LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
 
-  let available = false;
 
-  if (durationDays === 0.5) {
-    available = Array.isArray(v?.availableSlots) && v.availableSlots.length > 0;
-  } else {
-    available = !!v?.available;
-  }
+
+const v = vehiclesAvailability.find(
+  x => x.vehicleId === vehicle.id
+);
+
+let available = false;
+
+if (durationDays === 0.5) {
+  available = Array.isArray(v?.availableSlots) && v.availableSlots.length > 0;
+} else {
+  available = !!v?.available;
+}
 
   if (available) {
+
+    /* ===============================
+       REBUILD AVAILABILITY (KEEP DISCOUNT)
+    =============================== */
 
     const code = getCurrentDiscountCode();
 
@@ -4004,23 +4019,34 @@ async function checkBookingFormAvailability() {
       selectedBaseInput.value = `£${Number(selectedAvailability.baseCost ?? 0).toFixed(2)}`;
     }
 
-    statusEl.textContent = `${vehicle.name} is available.`;
-    statusEl.className = "availability-status ok full";
-    statusEl.hidden = false;
+    if (statusEl) {
+      statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
+      statusEl.className = "availability-status ok full";
+      statusEl.hidden = false;
+    }
 
-    bookingSubmitBtn.disabled = false;
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
 
     updateCheckoutSummary();
+
+    /* ===============================
+       🔥 CRITICAL FIX
+       Sync early pickup AFTER recalculation
+    =============================== */
+
     updateEarlyPickupAvailability();
 
   } else {
 
-    statusEl.textContent = `${vehicle.name} is not available.`;
-    statusEl.className = "availability-status error full";
-    statusEl.hidden = false;
+    if (statusEl) {
+      statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
+      statusEl.className = "availability-status error full";
+      statusEl.hidden = false;
+    }
 
-    bookingSubmitBtn.disabled = true;
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
 
+    /* also keep UI consistent */
     updateEarlyPickupAvailability();
   }
 }
@@ -4436,10 +4462,74 @@ async function exportAdminPdf() {
 
 async function createStripeCheckoutSession(booking) {
 
+  /* ===============================
+     🔒 LOCK
+  =============================== */
+
   if (checkoutLock) return null;
   checkoutLock = true;
 
   try {
+
+    /* ===============================
+       🔥 HARD VALIDATION (CRITICAL FIX)
+    =============================== */
+
+    if (!selectedAvailability) {
+      alert("Please select a valid date and duration before continuing.");
+      return null;
+    }
+
+    const vehicle = selectedAvailability.vehicle;
+    const pickupDate = selectedAvailability.pickupDate;
+    const durationDays = Number(selectedAvailability.durationDays);
+
+    let pickupTime = selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME;
+
+    if (!vehicle || !pickupDate || !durationDays) {
+      alert("Booking data is incomplete. Please re-check availability.");
+      return null;
+    }
+
+    /* ===============================
+       🔥 LIVE AVAILABILITY CHECK (PREVENT 409)
+    =============================== */
+
+    const vehiclesAvailability = await getVehicleAvailability(
+      pickupDate,
+      durationDays,
+      pickupTime
+    );
+
+    const v = vehiclesAvailability.find(
+      x => x.vehicleId === vehicle.id
+    );
+
+    const stillAvailable =
+      durationDays === 0.5
+        ? (Array.isArray(v?.availableSlots) && v.availableSlots.length > 0)
+        : !!v?.available;
+
+    if (!stillAvailable) {
+
+      alert("This lorry is no longer available for the selected duration.");
+
+      selectedAvailability = null;
+
+      goToStep(2);
+
+      if (pickupDate) {
+        LAST_AVAILABLE_VEHICLES = [];
+        await updateDurationOptions(pickupDate);
+        maybeAutoSubmitAvailability();
+      }
+
+      return null;
+    }
+
+    /* ===============================
+       EXTRAS
+    =============================== */
 
     const dartfordCountInput = document.getElementById("dartford-count");
     const dartfordEnabledInput = document.getElementById("dartford-enabled");
@@ -4456,20 +4546,29 @@ async function createStripeCheckoutSession(booking) {
 
     console.log("🚀 SENDING EXTRAS (FINAL):", extras);
 
+    /* ===============================
+       REQUEST
+    =============================== */
+
     const response = await fetch(
       apiUrl("/api/bookings/create-checkout-session"),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          vehicleId: booking.vehicleId,
-          vehicleName: booking.vehicleSnapshot?.name,
-          pickupDate: booking.pickupAt,
-          pickupTime: booking.pickupTime,
-          durationDays: booking.durationDays,
+
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.name,
+
+          pickupDate,
+          pickupTime,
+          durationDays,
+
           customerEmail: booking.customerEmail,
           bookingId: booking.id,
-          confirmationFee: booking.confirmationFee,
+
+          confirmationFee: selectedAvailability.confirmationFee,
+
           extras
         })
       }
@@ -4477,23 +4576,21 @@ async function createStripeCheckoutSession(booking) {
 
     const data = await response.json().catch(() => ({}));
 
+    /* ===============================
+       ERROR HANDLING
+    =============================== */
+
     if (!response.ok) {
 
       if (response.status === 409) {
+
         alert(data?.error || "This lorry is no longer available for those dates.");
 
-        // bring user back to availability / review flow
         goToStep(2);
 
-        // refresh availability UI using the current selected date
-        const selectedDate =
-          pickupDateInput?.value ||
-          selectedAvailability?.pickupDate ||
-          booking.pickupAt?.slice?.(0, 10);
-
-        if (selectedDate) {
+        if (pickupDate) {
           LAST_AVAILABLE_VEHICLES = [];
-          await updateDurationOptions(selectedDate);
+          await updateDurationOptions(pickupDate);
           maybeAutoSubmitAvailability();
         }
 
@@ -4507,6 +4604,10 @@ async function createStripeCheckoutSession(booking) {
 
       throw new Error(data?.error || "Stripe session creation failed");
     }
+
+    /* ===============================
+       SUCCESS
+    =============================== */
 
     if (data?.url) {
       return data.url;
@@ -5284,27 +5385,62 @@ const booking = {
 const confirmBtn = document.getElementById("booking-confirm-btn");
 
 if (confirmBtn) {
+
   confirmBtn.addEventListener("click", async () => {
 
-    const booking = window.pendingBooking;
+    /* ===============================
+       🔒 PREVENT DOUBLE CLICK
+    =============================== */
 
-    if (!booking) {
-      alert("Booking information missing.");
-      return;
+    if (confirmBtn.dataset.loading === "true") return;
+    confirmBtn.dataset.loading = "true";
+    confirmBtn.disabled = true;
+
+    try {
+
+      const booking = window.pendingBooking;
+
+      if (!booking) {
+        alert("Booking information missing.");
+        return;
+      }
+
+      /* ===============================
+         STRIPE
+      =============================== */
+
+      const checkoutUrl = await createStripeCheckoutSession(booking);
+
+      // 🔥 already handled inside function
+      if (!checkoutUrl) return;
+
+      /* ===============================
+         CLEANUP
+      =============================== */
+
+      resetBookingCustomerFields();
+
+      /* ===============================
+         REDIRECT
+      =============================== */
+
+      window.location.href = checkoutUrl;
+
+    } finally {
+
+      /* ===============================
+         🔓 RELEASE BUTTON (if not redirected)
+      =============================== */
+
+      setTimeout(() => {
+        confirmBtn.dataset.loading = "false";
+        confirmBtn.disabled = false;
+      }, 1500);
+
     }
-
-    const checkoutUrl = await createStripeCheckoutSession(booking);
-
-    // 🔥 FIX: DO NOT SHOW SECOND ALERT
-    if (!checkoutUrl) {
-      return;
-    }
-
-    resetBookingCustomerFields();
-
-    window.location.href = checkoutUrl;
 
   });
+
 }
 
 /* ======================================================
