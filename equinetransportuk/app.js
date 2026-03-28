@@ -5310,8 +5310,8 @@ if (confirmBtn) {
 
     const checkoutUrl = await createStripeCheckoutSession(booking);
 
+    // 🔥 FIX: DO NOT SHOW SECOND ALERT
     if (!checkoutUrl) {
-      alert("Stripe checkout link is not configured yet.");
       return;
     }
 
@@ -5321,7 +5321,6 @@ if (confirmBtn) {
 
   });
 }
-
 
 /* ======================================================
    HELPER (ADD ONCE!)
