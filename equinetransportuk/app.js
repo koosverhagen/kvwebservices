@@ -972,19 +972,17 @@ async function updateDurationOptions(dateStr) {
 
     else {
 
-      const vehiclesAvailability = await getVehicleAvailability(
-        dateStr,
-        duration,
-        "07:00"
-      );
+ const bookings = BOOKINGS_CACHE || await getBookings(false);
 
-      const filtered = vehicleId
-        ? vehiclesAvailability.filter(v => v.vehicleId === vehicleId)
-        : vehiclesAvailability;
-
-      available = filtered.some(v => v.available);
+available = await isDurationAvailable(
+  dateStr,
+  duration,
+  vehicleId,
+  bookings,
+  "07:00"
+);
     }
-
+ 
     /* ===============================
        APPLY UI STATE
     =============================== */
