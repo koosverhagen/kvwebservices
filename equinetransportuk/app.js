@@ -2693,9 +2693,10 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
 
   const isHalfDay = Number(durationDays) === 0.5;
 
-  // ===============================
-  // HALF DAY — SLOT BASED (FIXED)
-  // ===============================
+  /* ===============================
+     HALF DAY — SLOT BASED (FIXED)
+  =============================== */
+
   if (isHalfDay) {
 
     const { amData, pmData } = await getHalfDayAvailability(pickupDate);
@@ -2708,57 +2709,48 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
         const amVehicle = amData.find(v => v.vehicleId === vehicle.id);
         const pmVehicle = pmData.find(v => v.vehicleId === vehicle.id);
 
-        // 🔥 ONLY USE SLOTS
-       const hasAM =
-  amVehicle?.available ||
-  (amVehicle?.availableSlots || []).includes("am");
+        const hasAM =
+          amVehicle?.available ||
+          (amVehicle?.availableSlots || []).includes("am");
 
-const hasPM =
-  pmVehicle?.available ||
-  (pmVehicle?.availableSlots || []).includes("pm");
+        const hasPM =
+          pmVehicle?.available ||
+          (pmVehicle?.availableSlots || []).includes("pm");
 
         let resolvedPickupTime = pickupTime;
 
-// AUTO PICK SLOT (STRICT — NO GUESSING)
-if (!pickupTime) {
+        /* ===============================
+           AUTO PICK SLOT (STRICT)
+        =============================== */
 
-  // only AM available
-  if (hasAM && !hasPM) {
-    resolvedPickupTime = "07:00";
-  }
+        if (!pickupTime) {
 
-  // only PM available
-  else if (!hasAM && hasPM) {
-    resolvedPickupTime = "13:00";
-  }
+          if (hasAM && !hasPM) {
+            resolvedPickupTime = "07:00";
+          }
+          else if (!hasAM && hasPM) {
+            resolvedPickupTime = "13:00";
+          }
+          else {
+            return null; // force user choice OR none available
+          }
+        }
 
-  // 🔥 BOTH AVAILABLE → force user choice
-  else if (hasAM && hasPM) {
-    return null;
-  }
+        /* ===============================
+           VALIDATE USER SELECTION
+        =============================== */
 
-  // nothing available
-  else {
-    return null;
-  }
-}
-
-        // VALIDATE USER SELECTION
         else {
-
           if (pickupTime === "07:00" && !hasAM) return null;
           if (pickupTime === "13:00" && !hasPM) return null;
         }
 
-      const result = await buildAvailability(
-  vehicle,
-  pickupDate,
-  0.5,
-  resolvedPickupTime
-);
-
-
-return result;
+        return await buildAvailability(
+          vehicle,
+          pickupDate,
+          0.5,
+          resolvedPickupTime
+        );
 
       })
     );
@@ -2766,9 +2758,10 @@ return result;
     return results.filter(Boolean);
   }
 
-  // ===============================
-  // FULL DAY
-  // ===============================
+  /* ===============================
+     FULL DAY (🔥 HARD VALIDATION)
+  =============================== */
+
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
     durationDays,
@@ -2778,11 +2771,14 @@ return result;
   const results = await Promise.all(
     vehiclesToCheck.map(async (vehicle) => {
 
-      const apiVehicle = vehiclesAvailability.find(
+      const vehicleCheck = vehiclesAvailability.find(
         v => v.vehicleId === vehicle.id
       );
 
-      if (!apiVehicle || !apiVehicle.available) return null;
+      // 🔥 SAME LOGIC AS FINAL BOOKING CHECK
+      if (!vehicleCheck || !vehicleCheck.available) {
+        return null;
+      }
 
       return await buildAvailability(
         vehicle,
@@ -4455,45 +4451,10 @@ async function exportAdminPdf() {
 
 async function createStripeCheckoutSession(booking) {
 
-  /* prevent double Stripe session creation */
   if (checkoutLock) return null;
   checkoutLock = true;
 
   try {
-
-    /* ===============================
-       🔥 FINAL AVAILABILITY CHECK (NEW)
-    =============================== */
-
-    const check = await getVehicleAvailability(
-      booking.pickupDate,
-      booking.durationDays,
-      booking.pickupTime
-    );
-
-    const stillAvailable = check.some(v =>
-      v.vehicleId === booking.vehicleId &&
-      v.available
-    );
-
-    if (!stillAvailable) {
-
-      console.warn("❌ Booking no longer available (pre-check)");
-
-      safeRenderAvailability(`
-        <div class="empty-note">
-          ❌ This lorry has just been booked.<br>
-          Please choose another option.
-        </div>
-      `);
-
-      goToStep(1);
-      return null;
-    }
-
-    /* ===============================
-       EXTRAS
-    =============================== */
 
     const dartfordCountInput = document.getElementById("dartford-count");
     const dartfordEnabledInput = document.getElementById("dartford-enabled");
@@ -4501,7 +4462,6 @@ async function createStripeCheckoutSession(booking) {
 
     const dartfordCount = Number(dartfordCountInput?.value || 0);
     const dartfordEnabled = dartfordEnabledInput?.checked === true;
-
     const earlyPickupChecked = earlyPickupEnabledInput?.checked === true;
 
     const extras = {
@@ -4510,10 +4470,6 @@ async function createStripeCheckoutSession(booking) {
     };
 
     console.log("🚀 SENDING EXTRAS (FINAL):", extras);
-
-    /* ===============================
-       REQUEST
-    =============================== */
 
     const response = await fetch(
       apiUrl("/api/bookings/create-checkout-session"),
@@ -4534,38 +4490,50 @@ async function createStripeCheckoutSession(booking) {
       }
     );
 
-    /* ===============================
-       🔥 HANDLE CONFLICT (CRITICAL FIX)
-    =============================== */
-
-    if (response.status === 409) {
-
-      console.warn("❌ Booking conflict (backend)");
-
-      safeRenderAvailability(`
-        <div class="empty-note">
-          ❌ This lorry is no longer available.<br>
-          Please re-check availability.
-        </div>
-      `);
-
-      goToStep(1);
-      return null;
-    }
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error("Stripe session creation failed");
+
+      if (response.status === 409) {
+        alert(data?.error || "This lorry is no longer available for those dates.");
+
+        // bring user back to availability / review flow
+        goToStep(2);
+
+        // refresh availability UI using the current selected date
+        const selectedDate =
+          pickupDateInput?.value ||
+          selectedAvailability?.pickupDate ||
+          booking.pickupAt?.slice?.(0, 10);
+
+        if (selectedDate) {
+          LAST_AVAILABLE_VEHICLES = [];
+          await updateDurationOptions(selectedDate);
+          maybeAutoSubmitAvailability();
+        }
+
+        return null;
+      }
+
+      if (response.status === 500 && data?.error === "Stripe not configured") {
+        alert("Stripe checkout is not configured yet.");
+        return null;
+      }
+
+      throw new Error(data?.error || "Stripe session creation failed");
     }
 
-    const data = await response.json();
-
-    if (data.url) {
+    if (data?.url) {
       return data.url;
     }
+
+    throw new Error("Stripe session URL missing");
 
   } catch (error) {
 
     console.warn("Stripe session error:", error);
+    alert(error?.message || "Could not start checkout. Please try again.");
+    return null;
 
   } finally {
 
@@ -4574,8 +4542,6 @@ async function createStripeCheckoutSession(booking) {
     }, 2000);
 
   }
-
-  return null;
 }
 
 function resetBookingCustomerFields() {
