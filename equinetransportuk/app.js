@@ -612,10 +612,10 @@ let lastAvailabilityAutoSubmitKey = "";
 function buildAvailabilitySubmitKey() {
   const pickupDate = pickupDateInput?.value || "";
   const duration = String(durationDaysInput?.value || "");
-  const pickupTime =
-    Number(durationDaysInput?.value || 0) === 0.5
-      ? (pickupTimeInput?.value || "")
-      : "07:00";
+ const pickupTime =
+  Number(durationDaysInput?.value || 0) === 0.5
+    ? (pickupTimeInput?.value || "")
+    : "";
 
   return [pickupDate, duration, pickupTime, PRESELECTED_VEHICLE || ""].join("|");
 }
@@ -3776,11 +3776,11 @@ async function selectAvailability(vehicleId) {
      🔥 FINAL SAFETY CHECK (CRITICAL)
   =============================== */
 
-  const check = await getVehicleAvailability(
-    pickupDate,
-    durationDays,
-    pickupTime || "07:00"
-  );
+ const check = await getVehicleAvailability(
+  pickupDate,
+  durationDays,
+  durationDays === 0.5 ? pickupTime : null
+);
 
   const valid = check.some(v =>
     v.vehicleId === vehicleId &&
@@ -5008,10 +5008,10 @@ if (availabilityForm) {
         return;
       }
 
-      const finalPickupTime =
+     const finalPickupTime =
   durationDays === 0.5
-    ? pickupTime // MUST exist already
-    : "07:00";   // 🔥 force explicit, no fallback confusion
+    ? pickupTime
+    : null;
 
       const submitBtn = availabilityForm.querySelector(
         'button[type="submit"], input[type="submit"]'
