@@ -19,6 +19,9 @@ let LOCKED_VEHICLE = false;
 
 
 
+let LAST_AVAILABLE_VEHICLES = [];
+
+
 /* ===============================
    Booking cache
 ================================ */
@@ -3959,11 +3962,16 @@ async function checkBookingFormAvailability() {
      AVAILABILITY CHECK
   =============================== */
 
- const vehiclesAvailability = await getVehicleAvailability(
+const vehiclesAvailability = await getVehicleAvailability(
   pickupDate,
-  durationDays,
+  duration,
   pickupTime
 );
+
+// 🔥 ADD THIS HERE ONLY
+LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
+
+
 
 const v = vehiclesAvailability.find(
   x => x.vehicleId === vehicle.id
