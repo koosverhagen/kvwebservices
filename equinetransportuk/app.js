@@ -937,22 +937,30 @@ async function updateDurationOptions(dateStr) {
 
     else {
 
-      const vehiclesAvailability = await getVehicleAvailability(
-        dateStr,
-        duration,
-        null
-      );
+  const vehiclesAvailability = await getVehicleAvailability(
+    dateStr,
+    duration,
+    null
+  );
 
-      // 🔥 CRITICAL: update global here
-      LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
+  let available = false;
 
-      const vehicleCheck = vehicleId
-        ? vehiclesAvailability.find(v => v.vehicleId === vehicleId)
-        : vehiclesAvailability[0];
+  if (vehicleId) {
 
-      available = !!vehicleCheck?.available;
-    }
+    const vehicleCheck = vehiclesAvailability.find(
+      v => v.vehicleId === vehicleId
+    );
 
+    available = !!vehicleCheck?.available;
+
+  } else {
+
+    // 🔥 FIX: check ANY vehicle
+    available = vehiclesAvailability.some(v => v.available);
+
+  }
+
+}
     /* ===============================
        APPLY UI
     =============================== */
