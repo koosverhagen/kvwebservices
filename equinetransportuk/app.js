@@ -4422,7 +4422,37 @@ async function createStripeCheckoutSession(booking) {
   try {
 
     /* ===============================
-       EXTRAS (🔥 FIXED + BULLETPROOF)
+       🔥 FINAL AVAILABILITY CHECK (NEW)
+    =============================== */
+
+    const check = await getVehicleAvailability(
+      booking.pickupDate,
+      booking.durationDays,
+      booking.pickupTime
+    );
+
+    const stillAvailable = check.some(v =>
+      v.vehicleId === booking.vehicleId &&
+      v.available
+    );
+
+    if (!stillAvailable) {
+
+      console.warn("❌ Booking no longer available (pre-check)");
+
+      safeRenderAvailability(`
+        <div class="empty-note">
+          ❌ This lorry has just been booked.<br>
+          Please choose another option.
+        </div>
+      `);
+
+      goToStep(1);
+      return null;
+    }
+
+    /* ===============================
+       EXTRAS
     =============================== */
 
     const dartfordCountInput = document.getElementById("dartford-count");
@@ -4450,31 +4480,38 @@ async function createStripeCheckoutSession(booking) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-
         body: JSON.stringify({
-
-          /* core booking */
           vehicleId: booking.vehicleId,
           vehicleName: booking.vehicleSnapshot?.name,
-
           pickupDate: booking.pickupAt,
           pickupTime: booking.pickupTime,
-
           durationDays: booking.durationDays,
-
-          /* customer */
           customerEmail: booking.customerEmail,
           bookingId: booking.id,
-
-          /* pricing (display only, backend recalculates anyway) */
           confirmationFee: booking.confirmationFee,
-
-          /* 🔥 NEW — extras */
           extras
-
         })
       }
     );
+
+    /* ===============================
+       🔥 HANDLE CONFLICT (CRITICAL FIX)
+    =============================== */
+
+    if (response.status === 409) {
+
+      console.warn("❌ Booking conflict (backend)");
+
+      safeRenderAvailability(`
+        <div class="empty-note">
+          ❌ This lorry is no longer available.<br>
+          Please re-check availability.
+        </div>
+      `);
+
+      goToStep(1);
+      return null;
+    }
 
     if (!response.ok) {
       throw new Error("Stripe session creation failed");
@@ -4488,11 +4525,10 @@ async function createStripeCheckoutSession(booking) {
 
   } catch (error) {
 
-    console.warn("Stripe session endpoint unavailable.", error);
+    console.warn("Stripe session error:", error);
 
   } finally {
 
-    /* release checkout lock after short delay */
     setTimeout(() => {
       checkoutLock = false;
     }, 2000);
@@ -4503,19 +4539,53 @@ async function createStripeCheckoutSession(booking) {
 }
 
 function resetBookingCustomerFields() {
+
+  /* ===============================
+     CLEAR CUSTOMER FIELDS
+  =============================== */
+
   if (customerNameInput) customerNameInput.value = "";
   if (customerEmailInput) customerEmailInput.value = "";
   if (customerMobileInput) customerMobileInput.value = "";
   if (customerAddressInput) customerAddressInput.value = "";
   if (customerDobInput) customerDobInput.value = "";
 
+  /* ===============================
+     RESET EXTRAS
+  =============================== */
+
   if (hiredWithin3MonthsInput) hiredWithin3MonthsInput.checked = false;
+
   if (dartfordEnabledInput) dartfordEnabledInput.checked = false;
+
   if (dartfordCountInput) {
     dartfordCountInput.value = "1";
     dartfordCountInput.disabled = true;
   }
+
   if (earlyPickupEnabledInput) earlyPickupEnabledInput.checked = false;
+
+  /* ===============================
+     🔥 RESET AVAILABILITY STATE (CRITICAL)
+  =============================== */
+
+  selectedAvailability = null;
+
+  /* ===============================
+     🔥 RESET AUTO-SUBMIT STATE
+  =============================== */
+
+  resetAvailabilityAutoSubmitState();
+
+  /* ===============================
+     🔥 RE-SYNC UI LOGIC
+  =============================== */
+
+  updateEarlyPickupAvailability();
+
+  /* ===============================
+     UPDATE SUMMARY
+  =============================== */
 
   updateCheckoutSummary();
 }
@@ -4523,6 +4593,7 @@ function resetBookingCustomerFields() {
 async function fetchStripeSession(sessionId) {
 
   try {
+
     const res = await fetch(
       apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
     );
@@ -4531,26 +4602,56 @@ async function fetchStripeSession(sessionId) {
 
     const data = await res.json();
 
-    /* ✅ NEW: handle BOTH cases */
+    /* ===============================
+       ✅ CASE 1 — REAL BOOKING (KV)
+    =============================== */
+
     if (data?.found && data.booking) {
       return data.booking;
     }
 
-    /* 🔥 FALLBACK: build booking from Stripe metadata */
+    /* ===============================
+       ⚡ CASE 2 — FALLBACK (Stripe metadata)
+    =============================== */
+
     if (data?.session?.metadata) {
 
+      console.log("⚡ Using Stripe metadata fallback");
+
       const m = data.session.metadata;
+
+      /* 🔥 SAFE PARSE EXTRAS */
+      let extras = {};
+      try {
+        extras = JSON.parse(m.extrasJson || "{}");
+      } catch {
+        console.warn("⚠️ extrasJson parse failed");
+        extras = {};
+      }
+
+      /* 🔥 SAFE DATE BUILD */
+      const pickupDate = m.pickupDate || "";
+      const pickupTime = m.pickupTime || "07:00";
+
+      const pickupAt = pickupDate
+        ? `${pickupDate}T${pickupTime}:00`
+        : null;
+
+      const dropoffAt = pickupDate
+        ? `${pickupDate}T19:00:00`
+        : null;
 
       return {
         id: m.bookingId || sessionId,
 
         vehicleId: m.vehicleId,
+
         vehicleSnapshot: {
           name: m.vehicleName
         },
 
-        pickupAt: m.pickupDate + "T" + (m.pickupTime || "07:00"),
-        dropoffAt: m.pickupDate + "T19:00", // fallback
+        pickupAt,
+        dropoffAt,
 
         durationDays: Number(m.durationDays || 1),
 
@@ -4561,15 +4662,17 @@ async function fetchStripeSession(sessionId) {
         confirmationFee: Number(m.confirmationFee || 0),
         outstandingAmount: Number(m.outstandingAmount || 0),
 
-        extras: JSON.parse(m.extrasJson || "{}")
+        extras
       };
     }
 
     return null;
 
   } catch (err) {
+
     console.warn("fetchStripeSession failed:", err);
     return null;
+
   }
 }
 
