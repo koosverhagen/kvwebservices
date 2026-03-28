@@ -935,15 +935,13 @@ async function updateDurationOptions(dateStr) {
        FULL DAY (🔥 FIXED — API ONLY)
     =============================== */
 
-    else {
+else {
 
   const vehiclesAvailability = await getVehicleAvailability(
     dateStr,
     duration,
     null
   );
-
-  let available = false;
 
   if (vehicleId) {
 
@@ -955,7 +953,6 @@ async function updateDurationOptions(dateStr) {
 
   } else {
 
-    // 🔥 FIX: check ANY vehicle
     available = vehiclesAvailability.some(v => v.available);
 
   }
