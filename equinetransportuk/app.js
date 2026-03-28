@@ -2151,7 +2151,9 @@ async function getBookings(force = false) {
 
     try {
 
-      const res = await fetch(apiUrl(`/api/bookings/list?...`)); // your existing URL
+      console.log("📡 FETCH BOOKINGS");
+
+      const res = await fetch(apiUrl(`/api/bookings/list?from=...&to=...`)); // keep your existing URL
       const data = await res.json();
 
       BOOKINGS_CACHE = data;
@@ -2162,6 +2164,7 @@ async function getBookings(force = false) {
     } catch (err) {
 
       console.warn("getBookings failed:", err);
+
       return BOOKINGS_CACHE || [];
 
     } finally {
