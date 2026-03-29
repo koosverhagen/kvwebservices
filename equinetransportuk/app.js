@@ -2168,14 +2168,16 @@ function resetBookingFlow() {
 
   window.SELECTED_DATE = null;
 
-  /* ===============================
-     CLEAR CALENDAR UI
-  =============================== */
+/* ===============================
+   RESET CALENDAR (FULL FIX)
+=============================== */
 
-  document.querySelectorAll(".cal-day")
-    .forEach(el => {
-      el.classList.remove("selected", "active", "cal-selected");
-    });
+// clear selection styles
+document.querySelectorAll(".cal-day")
+  .forEach(el => el.classList.remove("cal-selected", "active"));
+
+// 🔥 reset to current month
+resetCalendarToToday();
 
   /* ===============================
      CLEAR FORM FIELDS
@@ -2278,6 +2280,21 @@ function resetBookingFlow() {
     }
   }, 150);
 }
+
+function resetCalendarToToday() {
+
+  if (typeof currentDate === "undefined") return;
+
+  const today = new Date();
+  today.setDate(1);
+
+  currentDate = today;
+
+  // 🔥 re-render calendar properly
+  renderCalendar();
+}
+
+
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
   return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
