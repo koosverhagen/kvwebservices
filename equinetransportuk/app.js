@@ -4,6 +4,10 @@
    Phase 3: Discount Engine (voucher codes)
    ====================================================== */
 
+
+const DEBUG = false;
+
+
 let IS_STRIPE_RETURN = false;
 
 let STRIPE_FLOW_COMPLETED = false;
@@ -322,24 +326,47 @@ async function prefetchAvailabilityWindow(startDateStr) {
       for (let offset = 0; offset < PREFETCH_WINDOW_DAYS; offset++) {
         const dateStr = addDaysToDateStr(startDateStr, offset);
 
-        // 1..7 day checks
+        /* ===============================
+           MULTI-DAY PREFETCH (FIXED)
+        =============================== */
+
         for (let duration = 1; duration <= 7; duration++) {
           jobs.push(
-            getVehicleAvailability(dateStr, duration, null).then((vehiclesData) => {
-              const hasAny = vehiclesData.some(v => v.available);
-              for (const v of vehiclesData) {
-                setRangeAvailabilityCache(dateStr, duration, v.vehicleId, !!v.available);
-              }
-            })
+            getVehicleAvailability(dateStr, duration, null, { prefetch: true })
+              .then((vehiclesData) => {
+
+                // ✅ ONLY cache per-vehicle truth
+                for (const v of vehiclesData) {
+                  setRangeAvailabilityCache(
+                    dateStr,
+                    duration,
+                    v.vehicleId,
+                    !!v.available
+                  );
+                }
+
+                // ❌ DO NOT cache "any vehicle" result
+                // (this caused impossible durations earlier)
+
+              })
           );
         }
 
-        // half-day AM/PM warm-up
-        jobs.push(getVehicleAvailability(dateStr, 0.5, "07:00"));
-        jobs.push(getVehicleAvailability(dateStr, 0.5, "13:00"));
+        /* ===============================
+           HALF-DAY PREFETCH
+        =============================== */
+
+        jobs.push(
+          getVehicleAvailability(dateStr, 0.5, "07:00", { prefetch: true })
+        );
+
+        jobs.push(
+          getVehicleAvailability(dateStr, 0.5, "13:00", { prefetch: true })
+        );
       }
 
       await Promise.all(jobs);
+
     } catch (err) {
       console.warn("Prefetch window failed:", err);
     }
@@ -856,7 +883,7 @@ function maybeAutoSubmitAvailability() {
   scheduleAvailabilityAutoSubmit(250);
 }
 
-async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
+async function getVehicleAvailability(dateStr, duration, pickupTime = null, options = {}) {
 
   /* ===============================
      🔥 HARD BLOCK (CRITICAL FIX)
@@ -865,6 +892,8 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
   if (IS_STRIPE_RETURN) {
     return [];
   }
+
+  const isPrefetch = options?.prefetch === true;
 
   const key = `${dateStr}|${duration}|${pickupTime || "any"}`;
   const now = Date.now();
@@ -905,7 +934,13 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null) {
       url += `&pickupTime=${pickupTime}`;
     }
 
-    console.log("📡 FETCH AVAILABILITY:", key);
+    /* ===============================
+       🔇 SILENCE PREFETCH LOGS
+    =============================== */
+
+    if (DEBUG && !isPrefetch) {
+      console.log("📡 FETCH AVAILABILITY:", key);
+    }
 
     try {
 
@@ -1359,7 +1394,9 @@ function updateEarlyPickupAvailability() {
     selectedAvailability?.pickupTime ||
     "07:00";
 
+ if (DEBUG) {
   console.log("EarlyPickupCheck:", { duration, pickupTime });
+}
 
   const isMorning = pickupTime === "07:00";
 
@@ -2316,7 +2353,9 @@ async function getBookings(force = false) {
       BOOKINGS_CACHE = bookings;
       BOOKINGS_CACHE_AT = Date.now();
 
-      console.log("📦 bookings loaded:", bookings.length);
+      if (DEBUG) {
+  console.log("📦 bookings loaded:", bookings.length);
+}
 
       return bookings;
 
@@ -5262,7 +5301,9 @@ if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
   return;
 }
 
-console.log("🎯 FINAL UI DATA:", availableLorries);
+if (DEBUG) {
+  console.log("🎯 FINAL UI DATA:", availableLorries);
+}
 
         /* ===============================
            CANCEL OUTDATED RESPONSE
@@ -6210,7 +6251,9 @@ async function renderCalendarInternal() {
 
 const bookings = BOOKINGS_CACHE || await getBookings(false);
 
-console.log("Calendar bookings:", bookings);
+if (DEBUG) {
+  console.log("Calendar bookings:", bookings);
+}
 
 /* ===============================
    CALENDAR HEADER
