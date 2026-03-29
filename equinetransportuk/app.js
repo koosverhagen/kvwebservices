@@ -990,10 +990,15 @@ async function updateDurationOptions(dateStr) {
 
   const options = Array.from(durationDaysInput.options);
 
-  // start prefetch immediately, but do not block UI
-  prefetchAvailabilityWindow(dateStr).catch(err => {
+  /* ===============================
+     🔥 PREFETCH (SAFE, NON-BLOCKING)
+  =============================== */
+
+  try {
+    prefetchAvailabilityWindow(dateStr);
+  } catch (err) {
     console.warn("Background prefetch failed:", err);
-  });
+  }
 
   for (const opt of options) {
 
@@ -1032,25 +1037,49 @@ async function updateDurationOptions(dateStr) {
 
     } else {
 
+      /* ===============================
+         🔥 MULTI-DAY (FIXED)
+      =============================== */
+
       const cached = getRangeAvailabilityFromCache(dateStr, duration, vehicleId || "");
 
       if (cached !== null) {
+
         available = cached;
+
       } else if (vehicleId) {
+
+        // ✅ specific vehicle → direct check
         available = await isContinuousRangeAvailable(
           dateStr,
           duration,
           vehicleId,
           null
         );
-      } else {
-        const vehiclesAvailable = await getVehicleAvailability(
-          dateStr,
-          duration,
-          null
-        );
 
-        available = vehiclesAvailable.some(v => v.available);
+      } else {
+
+        // 🔥 FIX: check continuity per vehicle
+        let hasValidVehicle = false;
+
+        for (const v of vehicles) {
+
+          const ok = await isContinuousRangeAvailable(
+            dateStr,
+            duration,
+            v.id,
+            null
+          );
+
+          if (ok) {
+            hasValidVehicle = true;
+            break;
+          }
+        }
+
+        available = hasValidVehicle;
+
+        // cache result
         setRangeAvailabilityCache(dateStr, duration, "", available);
       }
 
@@ -1060,6 +1089,10 @@ async function updateDurationOptions(dateStr) {
     opt.style.color = available ? "" : "#999";
   }
 
+  /* ===============================
+     VALIDATE SELECTED VALUE
+  =============================== */
+
   const selected = Number(durationDaysInput.value);
 
   if (selected) {
@@ -1068,6 +1101,10 @@ async function updateDurationOptions(dateStr) {
       durationDaysInput.value = "";
     }
   }
+
+  /* ===============================
+     HALF-DAY SYNC
+  =============================== */
 
   if (Number(durationDaysInput?.value) === 0.5) {
     await syncPickupTimeOptions(dateStr);
