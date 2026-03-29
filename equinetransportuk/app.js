@@ -129,30 +129,32 @@ function goToStep(step) {
 
       setTimeout(() => {
 
-        // 1️⃣ normal availability logic
-        updateBookingDurationOptions(pickupDate, vehicleId);
+  // 1️⃣ normal availability logic
+  updateBookingDurationOptions(pickupDate, vehicleId);
 
-        // 2️⃣ 🔥 FORCE 7.5T RULE (AFTER update)
-        const vehicle = vehicles.find(v => v.id === vehicleId);
+  // 2️⃣ 🔥 FORCE 7.5T RULE (FIXED TARGET)
+  const vehicle = vehicles.find(v => v.id === vehicleId);
 
-        if (vehicle && !is35T(vehicle)) {
-          const select = document.getElementById("booking-duration");
+  if (vehicle && !is35T(vehicle)) {
 
-          if (select) {
-            const half = select.querySelector('option[value="0.5"]');
+    const select = document.getElementById("selected-duration"); // ✅ FIXED
 
-            if (half) {
-              half.disabled = true;
-              half.style.display = "none";
-            }
+    if (select) {
 
-            if (select.value === "0.5") {
-              select.value = "1";
-            }
-          }
-        }
+      const half = select.querySelector('option[value="0.5"]');
 
-      }, 0);
+      if (half) {
+        half.disabled = true;
+        half.style.display = "none";
+      }
+
+      if (select.value === "0.5") {
+        select.value = "1";
+      }
+    }
+  }
+
+}, 0);
     }
 
     /* ===============================
@@ -734,6 +736,9 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
   const select = document.getElementById("selected-duration");
   if (!select || !dateStr || !vehicleId) return;
 
+  const vehicle = vehicles.find(v => v.id === vehicleId);
+  const is75T = vehicle && !is35T(vehicle);
+
   const options = Array.from(select.options);
 
   for (const opt of options) {
@@ -743,7 +748,14 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
 
     let available = false;
 
-    if (duration === 0.5) {
+    /* ===============================
+       🔥 HARD BLOCK: 7.5T HALF DAY
+    =============================== */
+
+    if (is75T && duration === 0.5) {
+      available = false;
+
+    } else if (duration === 0.5) {
 
       const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
@@ -767,19 +779,47 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
         vehicleId,
         null
       );
-
     }
 
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
+
+    /* ===============================
+       🔥 FORCE HIDE 7.5T HALF DAY
+    =============================== */
+
+    if (is75T && duration === 0.5) {
+      opt.disabled = true;
+      opt.style.display = "none";
+    }
   }
 
-  // fix invalid selected value
+  /* ===============================
+     FIX INVALID SELECTED VALUE
+  =============================== */
+
   const selected = Number(select.value);
+
   if (selected) {
     const selectedOption = options.find(o => Number(o.value) === selected);
     if (selectedOption?.disabled) {
-      select.value = "";
+      select.value = is75T ? "1" : "";
+    }
+  }
+
+  /* ===============================
+     🔥 FINAL SAFETY LOCK
+  =============================== */
+
+  if (is75T) {
+    const half = select.querySelector('option[value="0.5"]');
+    if (half) {
+      half.disabled = true;
+      half.style.display = "none";
+    }
+
+    if (select.value === "0.5") {
+      select.value = "1";
     }
   }
 }
