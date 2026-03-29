@@ -117,16 +117,33 @@ function goToStep(step) {
     const vehicleId = selectedAvailability?.vehicle?.id;
     const duration = Number(durationDaysInput?.value || 0);
 
+    /* ===============================
+       🔥 NEW: DURATION VALIDATION FIX
+    =============================== */
+
+    if (pickupDate && vehicleId) {
+
+      // ensure dropdown reflects real availability
+      setTimeout(() => {
+        updateBookingDurationOptions(pickupDate, vehicleId);
+      }, 0);
+    }
+
+    /* ===============================
+       HALF-DAY SYNC
+    =============================== */
+
     if (pickupDate && vehicleId && duration === 0.5) {
 
-      // small delay ensures DOM is ready
       setTimeout(() => {
         syncBookingPickupTimeOptions(pickupDate, vehicleId);
       }, 0);
-
     }
 
-    // also ensure early pickup state is correct
+    /* ===============================
+       EARLY PICKUP SYNC
+    =============================== */
+
     setTimeout(() => {
       updateEarlyPickupAvailability();
     }, 0);
@@ -663,6 +680,60 @@ availabilityResults?.addEventListener("click", async (e) => {
    Helpers
 ====================================================== */
  
+async function updateBookingDurationOptions(dateStr, vehicleId) {
+
+  const select = document.getElementById("selected-duration");
+  if (!select || !dateStr || !vehicleId) return;
+
+  const options = Array.from(select.options);
+
+  for (const opt of options) {
+
+    const duration = Number(opt.value);
+    if (!duration) continue;
+
+    let available = false;
+
+    if (duration === 0.5) {
+
+      const { amData, pmData } = await getHalfDayAvailability(dateStr);
+
+      const hasAM = amData.some(v =>
+        v.vehicleId === vehicleId &&
+        (v.available || v.availableSlots?.includes("am"))
+      );
+
+      const hasPM = pmData.some(v =>
+        v.vehicleId === vehicleId &&
+        (v.available || v.availableSlots?.includes("pm"))
+      );
+
+      available = hasAM || hasPM;
+
+    } else {
+
+      available = await isContinuousRangeAvailable(
+        dateStr,
+        duration,
+        vehicleId,
+        null
+      );
+
+    }
+
+    opt.disabled = !available;
+    opt.style.color = available ? "" : "#999";
+  }
+
+  // fix invalid selected value
+  const selected = Number(select.value);
+  if (selected) {
+    const selectedOption = options.find(o => Number(o.value) === selected);
+    if (selectedOption?.disabled) {
+      select.value = "";
+    }
+  }
+}
 
 
 function safeRenderAvailability(html) {
@@ -3704,6 +3775,7 @@ function renderFleet() {
 /* ======================================================
    Booking helpers (select from fleet / results)
 ====================================================== */
+
 
 async function fetchBookingWithRetry(sessionId, attempts = 5) {
 
