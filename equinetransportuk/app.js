@@ -6059,6 +6059,28 @@ async function renderCalendar() {
   calendarRenderPromise = (async () => {
     try {
       await renderCalendarInternal();
+
+      /* ===============================
+         🔥 PREFETCH VISIBLE RANGE
+      =============================== */
+
+      try {
+
+        const today = new Date();
+
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
+
+        const todayStr = `${year}-${month}-${day}`;
+
+        // 🚀 non-blocking warm-up
+        prefetchAvailabilityWindow(todayStr);
+
+      } catch (err) {
+        console.warn("Initial prefetch failed:", err);
+      }
+
     } catch (err) {
       console.error("Calendar render failed:", err);
     } finally {
@@ -6069,13 +6091,12 @@ async function renderCalendar() {
   return calendarRenderPromise;
 }
 
- async function renderCalendarInternal() {
+async function renderCalendarInternal() {
 
 /* ===============================
    LOAD BOOKINGS (DEDUPED + CACHED)
 =============================== */
 
-// ✅ this now benefits from in-flight dedupe in getBookings()
 const bookings = BOOKINGS_CACHE || await getBookings(false);
 
 console.log("Calendar bookings:", bookings);
@@ -6139,6 +6160,9 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
   dayEl.className = "cal-day";
   dayEl.textContent = day;
 
+  // 🔥 REQUIRED for prefetch
+  dayEl.dataset.date = formatDayKey(dayDate);
+
   /* ===============================
      RESTORE SELECTED DATE
   =============================== */
@@ -6171,39 +6195,67 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
   }
 
   /* ===============================
-   AVAILABILITY CHECK
-=============================== */
+     AVAILABILITY CHECK
+  =============================== */
 
-const dayKey = formatDayKey(dayDate);
+  const dayKey = formatDayKey(dayDate);
 
-const status = checkDayLocalAvailability(dayDate, bookings);
-const validStart = canStartRental(dayDate, bookings);
+  const status = checkDayLocalAvailability(dayDate, bookings);
+  const validStart = canStartRental(dayDate, bookings);
 
-renderAvailabilityDots(dayEl, bookings, dayDate);
-
-/* ===============================
-   STATUS COLOURING (SIMPLIFIED)
-=============================== */
-
-if (status === "available") {
-  dayEl.classList.add("cal-available");
-} else {
-  dayEl.classList.add("cal-unavailable");
-}
-
-if (!validStart) {
-  dayEl.classList.remove("cal-available");
-  dayEl.classList.add("cal-unavailable","cal-no-start");
-}
+  renderAvailabilityDots(dayEl, bookings, dayDate);
 
   /* ===============================
-     PREVIEW EVENTS
+     STATUS COLOURING
+  =============================== */
+
+  if (status === "available") {
+    dayEl.classList.add("cal-available");
+  } else {
+    dayEl.classList.add("cal-unavailable");
+  }
+
+  if (!validStart) {
+    dayEl.classList.remove("cal-available");
+    dayEl.classList.add("cal-unavailable","cal-no-start");
+  }
+
+  /* ===============================
+     🔥 TOUCHSTART PREFETCH (NEW)
+  =============================== */
+
+  dayEl.addEventListener("touchstart", () => {
+
+    if (IS_RESETTING) return;
+
+    const dateStr = dayEl.dataset.date;
+    if (!dateStr) return;
+
+    // Prefetch this date + next 2 days
+    prefetchAvailabilityWindow(dateStr);
+    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 2));
+
+  }, { passive: true });
+
+  /* ===============================
+     PREVIEW + HOVER PREFETCH
   =============================== */
 
   dayEl.addEventListener("mouseenter", (e) => {
+
+    if (IS_RESETTING) return;
+
+    const dateStr = dayEl.dataset.date;
+
+    if (dateStr) {
+      prefetchAvailabilityWindow(dateStr);
+    }
+
     clearPreview();
     previewRental(dayDate);
     showVehiclePreview(dayDate, e);
+
   });
 
   if (!isMobile()) {
@@ -6215,6 +6267,13 @@ if (!validStart) {
   dayEl.addEventListener("touchend", async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const dateStr = dayEl.dataset.date;
+
+    if (dateStr) {
+      prefetchAvailabilityWindow(dateStr);
+      prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+    }
 
     await selectDate(formatDayKey(dayDate));
 
@@ -6250,7 +6309,7 @@ if (!validStart) {
 }
 
 /* ===============================
-   UNLOCK (legacy flag kept)
+   UNLOCK
 =============================== */
 
 calGrid.dataset.rendering = "false";
@@ -6268,9 +6327,9 @@ async function selectDate(dateStr) {
   =============================== */
 
   if (IS_RESETTING) {
-  console.log("⛔ blocked during reset");
-  return;
-}
+    console.log("⛔ blocked during reset");
+    return;
+  }
 
   const warningBox = document.getElementById("preselected-warning");
   if (warningBox) {
@@ -6384,16 +6443,13 @@ async function selectDate(dateStr) {
         });
       });
 
-     warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
-  BLOCK_AUTO_SCROLL = false;
-  LOCKED_VEHICLE = false;
-  PRESELECTED_VEHICLE = null;
+      warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
+        BLOCK_AUTO_SCROLL = false;
+        LOCKED_VEHICLE = false;
+        PRESELECTED_VEHICLE = null;
 
-  // 🔥 DO NOT auto-submit here
-  // user will trigger via duration selection
-
-  goToStep(2);
-});
+        goToStep(2);
+      });
 
       return;
     }
@@ -6402,9 +6458,16 @@ async function selectDate(dateStr) {
   await updateDurationOptions(dateStr);
   await syncPickupTimeOptions(dateStr);
 
-  prefetchAvailabilityWindow(dateStr).catch(err => {
-  console.warn("Select-date prefetch failed:", err);
-});
+  /* ===============================
+     🔥 PREFETCH (SAFE, NON-BLOCKING)
+  =============================== */
+
+  try {
+    prefetchAvailabilityWindow(dateStr);
+    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1)); // optional boost
+  } catch (err) {
+    console.warn("Select-date prefetch failed:", err);
+  }
 
   /* ===============================
      AUTO PICKUP TIME
