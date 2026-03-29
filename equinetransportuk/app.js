@@ -2158,26 +2158,20 @@ function resetBookingFlow() {
      CLEAR DATE STATE (FULL RESET)
   =============================== */
 
-  if (pickupDateInput) {
-    pickupDateInput.value = "";
-  }
-
-  if (selectedPickupInput) {
-    selectedPickupInput.value = "";
-  }
+  if (pickupDateInput) pickupDateInput.value = "";
+  if (selectedPickupInput) selectedPickupInput.value = "";
 
   window.SELECTED_DATE = null;
 
-/* ===============================
-   RESET CALENDAR (FULL FIX)
-=============================== */
+  /* ===============================
+     RESET CALENDAR (FINAL FIX)
+  =============================== */
 
-// clear selection styles
-document.querySelectorAll(".cal-day")
-  .forEach(el => el.classList.remove("cal-selected", "active"));
+  document.querySelectorAll(".cal-day")
+    .forEach(el => el.classList.remove("cal-selected", "active"));
 
-// 🔥 reset to current month
-resetCalendarToToday();
+  // 🔥 THIS handles month + render (single source of truth)
+  resetCalendarToToday();
 
   /* ===============================
      CLEAR FORM FIELDS
@@ -2222,18 +2216,16 @@ resetCalendarToToday();
     if (confirmation) {
       confirmation.innerHTML = "";
     }
-
   }
 
   /* ===============================
-     CACHE
+     CACHE RESET
   =============================== */
 
   AVAILABILITY_CACHE.clear();
   VEHICLE_AVAILABILITY_CACHE.clear();
   VEHICLE_AVAILABILITY_PROMISES.clear();
 
-  // 🔥 NEW — instant availability cache reset
   RANGE_AVAILABILITY_CACHE.clear();
   PREFETCH_PROMISES.clear();
 
@@ -2256,17 +2248,10 @@ resetCalendarToToday();
   });
 
   /* ===============================
-     SAFE CALENDAR REFRESH
+     FINAL STATE
   =============================== */
 
-  if (typeof renderCalendar === "function") {
-    setTimeout(() => {
-      renderCalendar();
-      IS_RESETTING = false;
-    }, 0);
-  } else {
-    IS_RESETTING = false;
-  }
+  IS_RESETTING = false;
 
   /* ===============================
      TOAST
@@ -2283,14 +2268,12 @@ resetCalendarToToday();
 
 function resetCalendarToToday() {
 
-  if (typeof currentDate === "undefined") return;
-
   const today = new Date();
-  today.setDate(1);
 
-  currentDate = today;
+  if (window.setCalendarMonth) {
+    window.setCalendarMonth(today);
+  }
 
-  // 🔥 re-render calendar properly
   renderCalendar();
 }
 
@@ -6175,6 +6158,11 @@ if (isMobile()) {
 
   let currentDate = new Date();
   currentDate.setDate(1);
+
+  window.setCalendarMonth = function(date) {
+  currentDate = new Date(date);
+  currentDate.setDate(1);
+};
 
   /* ======================================================
      Check availability for a specific calendar day
