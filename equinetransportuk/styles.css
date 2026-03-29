@@ -81,7 +81,7 @@ body {
 ====================================================== */
 
 html {
-  scroll-padding-top: 100px; /* adjust to your header height */
+  scroll-padding-top: 80px; /* adjust to your header height */
 }
 
 .container {
