@@ -310,8 +310,6 @@ async function prefetchAvailabilityWindow(startDateStr) {
           jobs.push(
             getVehicleAvailability(dateStr, duration, null).then((vehiclesData) => {
               const hasAny = vehiclesData.some(v => v.available);
-              setRangeAvailabilityCache(dateStr, duration, "", hasAny);
-
               for (const v of vehiclesData) {
                 setRangeAvailabilityCache(dateStr, duration, v.vehicleId, !!v.available);
               }
@@ -1038,10 +1036,15 @@ async function updateDurationOptions(dateStr) {
     } else {
 
       /* ===============================
-         🔥 MULTI-DAY (FIXED)
+         🔥 MULTI-DAY (FINAL FIX)
       =============================== */
 
-      const cached = getRangeAvailabilityFromCache(dateStr, duration, vehicleId || "");
+      let cached = null;
+
+      // ✅ ONLY use cache if specific vehicle
+      if (vehicleId) {
+        cached = getRangeAvailabilityFromCache(dateStr, duration, vehicleId);
+      }
 
       if (cached !== null) {
 
@@ -1049,7 +1052,6 @@ async function updateDurationOptions(dateStr) {
 
       } else if (vehicleId) {
 
-        // ✅ specific vehicle → direct check
         available = await isContinuousRangeAvailable(
           dateStr,
           duration,
@@ -1059,7 +1061,8 @@ async function updateDurationOptions(dateStr) {
 
       } else {
 
-        // 🔥 FIX: check continuity per vehicle
+        // 🔥 CRITICAL: ignore "any" cache completely
+
         let hasValidVehicle = false;
 
         for (const v of vehicles) {
@@ -1079,8 +1082,7 @@ async function updateDurationOptions(dateStr) {
 
         available = hasValidVehicle;
 
-        // cache result
-        setRangeAvailabilityCache(dateStr, duration, "", available);
+        // ❌ DO NOT cache "any vehicle" result anymore
       }
 
     }
