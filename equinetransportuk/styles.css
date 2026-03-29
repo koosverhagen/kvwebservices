@@ -80,6 +80,10 @@ body {
    Containers, header, navigation
 ====================================================== */
 
+html {
+  scroll-padding-top: 100px; /* adjust to your header height */
+}
+
 .container {
   width: min(1120px, 92vw);
   margin: 0 auto;
