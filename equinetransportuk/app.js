@@ -122,14 +122,36 @@ function goToStep(step) {
     const duration = Number(durationDaysInput?.value || 0);
 
     /* ===============================
-       🔥 NEW: DURATION VALIDATION FIX
+       🔥 DURATION VALIDATION
     =============================== */
 
     if (pickupDate && vehicleId) {
 
-      // ensure dropdown reflects real availability
       setTimeout(() => {
+
+        // 1️⃣ normal availability logic
         updateBookingDurationOptions(pickupDate, vehicleId);
+
+        // 2️⃣ 🔥 FORCE 7.5T RULE (AFTER update)
+        const vehicle = vehicles.find(v => v.id === vehicleId);
+
+        if (vehicle && !is35T(vehicle)) {
+          const select = document.getElementById("booking-duration");
+
+          if (select) {
+            const half = select.querySelector('option[value="0.5"]');
+
+            if (half) {
+              half.disabled = true;
+              half.style.display = "none";
+            }
+
+            if (select.value === "0.5") {
+              select.value = "1";
+            }
+          }
+        }
+
       }, 0);
     }
 
@@ -5829,6 +5851,13 @@ function movePreview(e){
 
 async function showVehiclePreview(date, event) {
 
+  // 🔥 ALWAYS RESET BOTH PREVIEW TYPES FIRST
+const mobilePanel = document.getElementById("mobile-preview");
+const desktopPanel = document.getElementById("vehicle-preview");
+
+if (mobilePanel) mobilePanel.classList.add("hidden");
+if (desktopPanel) desktopPanel.classList.add("hidden");
+
   const bookings = BOOKINGS_CACHE || await getBookings(false);
 
   const dateStart = new Date(date);
@@ -5964,81 +5993,102 @@ if (totalAvailable > 0) {
 
   }
 
-  /* ======================================================
-     MOBILE VERSION
-  ====================================================== */
+ /* ======================================================
+   MOBILE VERSION
+====================================================== */
 
-  if (window.innerWidth < 768) {
+if (isMobile()) {
 
-    const panel = document.getElementById("mobile-preview");
-    if (!panel) return;
+  const panel = document.getElementById("mobile-preview");
+  if (!panel) return;
 
-    panel.innerHTML = html;
-    panel.classList.remove("hidden");
+  const dateKey = formatDayKey(dateStart);
 
-    panel.querySelectorAll(".preview-select").forEach(el => {
+  // 🔥 prevent duplicate render / flicker
+  if (panel.dataset.date === dateKey) return;
+  panel.dataset.date = dateKey;
 
-      el.addEventListener("click", async () => {
+  panel.innerHTML = html;
+  panel.classList.remove("hidden");
 
-        const vehicleId = el.dataset.vehicleId;
-        const slot = (el.dataset.slot || "").toLowerCase();
+  panel.querySelectorAll(".preview-select").forEach(el => {
 
-        const vehicle = vehicles.find(v => v.id === vehicleId);
-        if (!vehicle) return;
+    el.addEventListener("click", async () => {
 
-        PRESELECTED_VEHICLE = vehicleId;
-        LOCKED_VEHICLE = true;
+      const vehicleId = el.dataset.vehicleId;
+      const slot = (el.dataset.slot || "").toLowerCase();
 
-        updateCalendarVehicleLabel();
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (!vehicle) return;
 
-        if (pickupDateInput) {
-          pickupDateInput.value = formatDayKey(dateStart);
+      PRESELECTED_VEHICLE = vehicleId;
+      LOCKED_VEHICLE = true;
+
+      updateCalendarVehicleLabel();
+
+      if (pickupDateInput) {
+        pickupDateInput.value = dateKey;
+      }
+
+      if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
+      if (selectedBaseInput) selectedBaseInput.value = "";
+
+      selectedAvailability = null;
+
+      updateDurationOptionsForVehicle(vehicle);
+      enforceVehicleDurationRules(vehicle);
+
+      /* ===============================
+         🔥 FIXED DURATION LOGIC
+      =============================== */
+
+      if (durationDaysInput) {
+
+        if (!is35T(vehicle)) {
+          // 🚛 7.5T → FULL DAY ONLY
+          durationDaysInput.value = "1";
+          pickupTimeInput.value = "07:00";
+
+        } else if (slot.includes("morning") || slot.includes("afternoon")) {
+
+          durationDaysInput.value = "0.5";
+          pickupTimeInput.value = slot.includes("afternoon") ? "13:00" : "07:00";
+
+        } else {
+
+          durationDaysInput.value = "1";
+          pickupTimeInput.value = "07:00";
+
         }
+      }
 
-        if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
-        if (selectedBaseInput) selectedBaseInput.value = "";
+      await syncPickupTimeOptions(dateKey);
+      updatePickupTimeVisibility();
+      updateCheckoutSummary();
 
-        selectedAvailability = null;
+      panel.classList.add("hidden");
 
-        updateDurationOptionsForVehicle(vehicle);
-        enforceVehicleDurationRules(vehicle);
+      goToStep(1);
 
-        if (durationDaysInput) {
-          if (slot.includes("morning") || slot.includes("afternoon")) {
-            durationDaysInput.value = "0.5";
-            pickupTimeInput.value = slot.includes("afternoon") ? "13:00" : "07:00";
-          } else {
-            durationDaysInput.value = "1";
-            pickupTimeInput.value = "07:00";
-          }
-        }
-
-        await syncPickupTimeOptions(formatDayKey(dateStart));
-        updatePickupTimeVisibility();
-        updateCheckoutSummary();
-
-        panel.classList.add("hidden");
-
-        goToStep(1);
+      setTimeout(() => {
+        durationDaysInput?.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+        durationDaysInput?.classList.add("duration-highlight");
 
         setTimeout(() => {
-          durationDaysInput?.scrollIntoView({
-            behavior: "smooth",
-            block: "center"
-          });
-          durationDaysInput?.classList.add("duration-highlight");
-          setTimeout(() => {
-            durationDaysInput?.classList.remove("duration-highlight");
-          }, 1800);
-        }, 150);
+          durationDaysInput?.classList.remove("duration-highlight");
+        }, 1800);
 
-      });
+      }, 150);
 
     });
 
-    return;
+  });
 
-  }
+  return;
+}
 
   /* ======================================================
      DESKTOP VERSION
