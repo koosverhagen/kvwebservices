@@ -244,6 +244,102 @@ const VEHICLE_AVAILABILITY_CACHE_TTL = 60 * 1000; // 60 seconds
 const VEHICLE_AVAILABILITY_PROMISES = new Map();
 
 /* ===============================
+   Instant availability prefetch
+================================ */
+
+const RANGE_AVAILABILITY_CACHE = new Map();
+const RANGE_AVAILABILITY_TTL = 60 * 1000;
+
+const PREFETCH_WINDOW_DAYS = 7;
+const PREFETCH_PROMISES = new Map();
+
+function addDaysToDateStr(dateStr, days) {
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+
+  const year = dt.getFullYear();
+  const month = String(dt.getMonth() + 1).padStart(2, "0");
+  const day = String(dt.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function buildRangeAvailabilityKey(dateStr, duration, vehicleId = "") {
+  return `${dateStr}|${Number(duration)}|${vehicleId || "any"}`;
+}
+
+function getRangeAvailabilityFromCache(dateStr, duration, vehicleId = "") {
+  const key = buildRangeAvailabilityKey(dateStr, duration, vehicleId);
+  const cached = RANGE_AVAILABILITY_CACHE.get(key);
+
+  if (!cached) return null;
+  if ((Date.now() - cached.ts) > RANGE_AVAILABILITY_TTL) {
+    RANGE_AVAILABILITY_CACHE.delete(key);
+    return null;
+  }
+
+  return cached.value;
+}
+
+function setRangeAvailabilityCache(dateStr, duration, vehicleId, value) {
+  const key = buildRangeAvailabilityKey(dateStr, duration, vehicleId);
+  RANGE_AVAILABILITY_CACHE.set(key, {
+    value: !!value,
+    ts: Date.now()
+  });
+}
+
+async function prefetchAvailabilityWindow(startDateStr) {
+  if (!startDateStr || IS_STRIPE_RETURN) return;
+
+  const cacheKey = `window:${startDateStr}`;
+  if (PREFETCH_PROMISES.has(cacheKey)) {
+    return PREFETCH_PROMISES.get(cacheKey);
+  }
+
+  const promise = (async () => {
+    try {
+      const jobs = [];
+
+      for (let offset = 0; offset < PREFETCH_WINDOW_DAYS; offset++) {
+        const dateStr = addDaysToDateStr(startDateStr, offset);
+
+        // 1..7 day checks
+        for (let duration = 1; duration <= 7; duration++) {
+          jobs.push(
+            getVehicleAvailability(dateStr, duration, null).then((vehiclesData) => {
+              const hasAny = vehiclesData.some(v => v.available);
+              setRangeAvailabilityCache(dateStr, duration, "", hasAny);
+
+              for (const v of vehiclesData) {
+                setRangeAvailabilityCache(dateStr, duration, v.vehicleId, !!v.available);
+              }
+            })
+          );
+        }
+
+        // half-day AM/PM warm-up
+        jobs.push(getVehicleAvailability(dateStr, 0.5, "07:00"));
+        jobs.push(getVehicleAvailability(dateStr, 0.5, "13:00"));
+      }
+
+      await Promise.all(jobs);
+    } catch (err) {
+      console.warn("Prefetch window failed:", err);
+    }
+  })();
+
+  PREFETCH_PROMISES.set(cacheKey, promise);
+
+  try {
+    await promise;
+  } finally {
+    PREFETCH_PROMISES.delete(cacheKey);
+  }
+}
+
+/* ===============================
    Calendar cache
 ================================ */
 
@@ -894,6 +990,11 @@ async function updateDurationOptions(dateStr) {
 
   const options = Array.from(durationDaysInput.options);
 
+  // start prefetch immediately, but do not block UI
+  prefetchAvailabilityWindow(dateStr).catch(err => {
+    console.warn("Background prefetch failed:", err);
+  });
+
   for (const opt of options) {
 
     const duration = Number(opt.value);
@@ -929,49 +1030,35 @@ async function updateDurationOptions(dateStr) {
 
       available = hasAM || hasPM;
 
+    } else {
+
+      const cached = getRangeAvailabilityFromCache(dateStr, duration, vehicleId || "");
+
+      if (cached !== null) {
+        available = cached;
+      } else if (vehicleId) {
+        available = await isContinuousRangeAvailable(
+          dateStr,
+          duration,
+          vehicleId,
+          null
+        );
+      } else {
+        const vehiclesAvailable = await getVehicleAvailability(
+          dateStr,
+          duration,
+          null
+        );
+
+        available = vehiclesAvailable.some(v => v.available);
+        setRangeAvailabilityCache(dateStr, duration, "", available);
+      }
+
     }
-
-    /* ===============================
-       FULL DAY (🔥 FIXED — API ONLY)
-    =============================== */
-
-else {
-
-  if (vehicleId) {
-
-    // specific vehicle selected
-    available = await isContinuousRangeAvailable(
-      dateStr,
-      duration,
-      vehicleId,
-      null
-    );
-
-  } else {
-
-    // 🔥 NEW — check ANY vehicle
-    const vehiclesAvailable = await getVehicleAvailability(
-      dateStr,
-      duration,
-      null
-    );
-
-    available = vehiclesAvailable.some(v => v.available);
-
-  }
-
-}
-    /* ===============================
-       APPLY UI
-    =============================== */
 
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
   }
-
-  /* ===============================
-     AUTO FIX INVALID
-  =============================== */
 
   const selected = Number(durationDaysInput.value);
 
@@ -1908,24 +1995,24 @@ function resetBookingFlow() {
     warningBox.style.display = "none";
   }
 
- updateCalendarVehicleLabel();
+  updateCalendarVehicleLabel();
 
-/* ===============================
-   🔥 DO NOT CLEAR DURING STRIPE RETURN
-=============================== */
+  /* ===============================
+     🔥 DO NOT CLEAR DURING STRIPE RETURN
+  =============================== */
 
-if (!IS_STRIPE_RETURN) {
+  if (!IS_STRIPE_RETURN) {
 
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "";
+    if (availabilityResults) {
+      availabilityResults.innerHTML = "";
+    }
+
+    const confirmation = document.getElementById("booking-confirmation");
+    if (confirmation) {
+      confirmation.innerHTML = "";
+    }
+
   }
-
-  const confirmation = document.getElementById("booking-confirmation");
-  if (confirmation) {
-    confirmation.innerHTML = "";
-  }
-
-}
 
   /* ===============================
      CACHE
@@ -1934,6 +2021,10 @@ if (!IS_STRIPE_RETURN) {
   AVAILABILITY_CACHE.clear();
   VEHICLE_AVAILABILITY_CACHE.clear();
   VEHICLE_AVAILABILITY_PROMISES.clear();
+
+  // 🔥 NEW — instant availability cache reset
+  RANGE_AVAILABILITY_CACHE.clear();
+  PREFETCH_PROMISES.clear();
 
   if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
 
@@ -1978,7 +2069,6 @@ if (!IS_STRIPE_RETURN) {
     }
   }, 150);
 }
-
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
   return `${BACKEND_API_BASE.replace(/\/$/, "")}${path}`;
@@ -3070,31 +3160,43 @@ bookingTimeInput?.addEventListener("change", () => {
 
 const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
-async function isContinuousRangeAvailable(startDate, durationDays, vehicleId, pickupTime) {
+async function isContinuousRangeAvailable(startDateStr, durationDays, vehicleId, pickupTime = null) {
+  const duration = Number(durationDays);
 
-  const start = new Date(startDate);
+  if (!startDateStr || !duration || !vehicleId) return false;
 
-  for (let i = 0; i < durationDays; i++) {
+  // half-day stays slot-based
+  if (duration === 0.5) {
+    const vehiclesData = await getVehicleAvailability(startDateStr, 0.5, pickupTime);
+    const match = vehiclesData.find(v => v.vehicleId === vehicleId);
 
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
+    if (!match) return false;
 
-    const dateStr = d.toISOString().slice(0, 10);
-
-    const vehicles = await getVehicleAvailability(
-      dateStr,
-      1, // 🔥 ALWAYS 1 DAY CHECK
-      null
-    );
-
-    const v = vehicles.find(x => x.vehicleId === vehicleId);
-
-    if (!v?.available) {
-      return false;
+    if (pickupTime === "07:00") {
+      return !!(match.available || match.availableSlots?.includes("am"));
     }
+
+    if (pickupTime === "13:00") {
+      return !!(match.available || match.availableSlots?.includes("pm"));
+    }
+
+    return !!(match.availableSlots?.length);
   }
 
-  return true;
+  // instant hit from warm cache
+  const cached = getRangeAvailabilityFromCache(startDateStr, duration, vehicleId);
+  if (cached !== null) {
+    return cached;
+  }
+
+  // fallback to backend truth
+  const vehiclesData = await getVehicleAvailability(startDateStr, duration, null);
+  const match = vehiclesData.find(v => v.vehicleId === vehicleId);
+  const result = !!match?.available;
+
+  setRangeAvailabilityCache(startDateStr, duration, vehicleId, result);
+
+  return result;
 }
 
 /* ======================================================
@@ -6299,6 +6401,10 @@ async function selectDate(dateStr) {
 
   await updateDurationOptions(dateStr);
   await syncPickupTimeOptions(dateStr);
+
+  prefetchAvailabilityWindow(dateStr).catch(err => {
+  console.warn("Select-date prefetch failed:", err);
+});
 
   /* ===============================
      AUTO PICKUP TIME
