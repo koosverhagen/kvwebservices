@@ -1604,24 +1604,18 @@ async function handleVehicleAvailability(request, env) {
 
   const date = url.searchParams.get("date");
   const duration = Number(url.searchParams.get("duration") || 1);
-
-  // 🔥 IMPORTANT: no default anymore
   const pickupTime = url.searchParams.get("pickupTime");
 
   if (!date) {
     return json({ error: "Missing date parameter" }, 400);
   }
 
-  /* ===============================
-     SLOT LOGIC (FIXED)
-  =============================== */
-
   let requestedSlot = "full";
 
   if (duration === 0.5) {
     if (pickupTime === "07:00") requestedSlot = "am";
     else if (pickupTime === "13:00") requestedSlot = "pm";
-    else requestedSlot = "any"; // 🔥 NEW (critical)
+    else requestedSlot = "any";
   }
 
   const vehicles = [
@@ -1632,113 +1626,174 @@ async function handleVehicleAvailability(request, env) {
     "v75-2"
   ];
 
-  const result = [];
-
   /* ===============================
-     LOAD BOOKINGS (MONTH)
+     BUILD REQUESTED DATE RANGE
   =============================== */
 
-  const month = date.slice(0, 7);
-  const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+  let requestedDates = [];
 
+  if (duration === 0.5) {
+    requestedDates = [date];
+  } else {
+    const start = new Date(`${date}T00:00:00`);
+    const end = new Date(start);
+    end.setDate(end.getDate() + duration - 1);
+    requestedDates = getDatesBetween(start, end);
+  }
+
+  /* ===============================
+     LOAD RELEVANT MONTHS
+  =============================== */
+
+  const months = [...new Set(requestedDates.map(d => d.slice(0, 7)))];
   let bookings = [];
 
-  try {
-    bookings = data ? JSON.parse(data) : [];
-  } catch {}
+  for (const month of months) {
+    const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+
+    if (!data) continue;
+
+    try {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        bookings.push(...parsed);
+      }
+    } catch {}
+  }
+
+  const result = [];
 
   for (const vehicleId of vehicles) {
 
-    /* ===============================
-       TRACK SLOT AVAILABILITY
-    =============================== */
-
-    let amBlocked = false;
-    let pmBlocked = false;
-    let fullBlocked = false;
-
     const vehicleBookings = bookings.filter(
-      b => b.vehicleId === vehicleId
+      b => b.vehicleId === vehicleId && b.status !== "cancelled"
     );
 
-    for (const b of vehicleBookings) {
-
-      const dates = getDatesBetween(
-        new Date(b.pickupAt),
-        new Date(b.dropoffAt)
-      );
-
-      if (!dates.includes(date)) continue;
-
-      const bookingSlot = getSlotFromBooking(b);
-
-      if (bookingSlot === "full") {
-        fullBlocked = true;
-        amBlocked = true;
-        pmBlocked = true;
-      }
-
-      if (bookingSlot === "am") amBlocked = true;
-      if (bookingSlot === "pm") pmBlocked = true;
-    }
-
-    /* ===============================
-       TEMP RESERVATIONS
-    =============================== */
-
-    const list = await env.BOOKINGS_KV.list({
-      prefix: `reservation:${vehicleId}:${date}`
-    });
-
-    for (const key of list.keys) {
-
-      const parts = key.name.split(":");
-      const reservationSlot = parts[3] || "full";
-
-      if (reservationSlot === "full") {
-        fullBlocked = true;
-        amBlocked = true;
-        pmBlocked = true;
-      }
-
-      if (reservationSlot === "am") amBlocked = true;
-      if (reservationSlot === "pm") pmBlocked = true;
-    }
-
-    /* ===============================
-       DETERMINE AVAILABILITY
-    =============================== */
-
     let available = true;
+    let availableSlots = [];
 
-    if (requestedSlot === "full") {
-      available = !fullBlocked && !amBlocked && !pmBlocked;
-    }
-
-    if (requestedSlot === "am") {
-      available = !amBlocked && !fullBlocked;
-    }
-
-    if (requestedSlot === "pm") {
-      available = !pmBlocked && !fullBlocked;
-    }
-
-if (requestedSlot === "any") {
-  available = (!amBlocked || !pmBlocked) && !fullBlocked;
-}
     /* ===============================
-       RETURN SLOT DETAIL (NEW)
+       HALF DAY
     =============================== */
 
-    const availableSlots = [];
+    if (duration === 0.5) {
 
-    if (!amBlocked && !fullBlocked) availableSlots.push("am");
-    if (!pmBlocked && !fullBlocked) availableSlots.push("pm");
+      let amBlocked = false;
+      let pmBlocked = false;
+      let fullBlocked = false;
+
+      for (const b of vehicleBookings) {
+        const dates = getDatesBetween(
+          new Date(b.pickupAt),
+          new Date(b.dropoffAt)
+        );
+
+        if (!dates.includes(date)) continue;
+
+        const bookingSlot = getSlotFromBooking(b);
+
+        if (bookingSlot === "full") {
+          fullBlocked = true;
+          amBlocked = true;
+          pmBlocked = true;
+        }
+
+        if (bookingSlot === "am") amBlocked = true;
+        if (bookingSlot === "pm") pmBlocked = true;
+      }
+
+      const list = await env.BOOKINGS_KV.list({
+        prefix: `reservation:${vehicleId}:${date}`
+      });
+
+      for (const key of list.keys) {
+        const parts = key.name.split(":");
+        const reservationSlot = parts[3] || "full";
+
+        if (reservationSlot === "full") {
+          fullBlocked = true;
+          amBlocked = true;
+          pmBlocked = true;
+        }
+
+        if (reservationSlot === "am") amBlocked = true;
+        if (reservationSlot === "pm") pmBlocked = true;
+      }
+
+      if (!fullBlocked && !amBlocked) availableSlots.push("am");
+      if (!fullBlocked && !pmBlocked) availableSlots.push("pm");
+
+      if (requestedSlot === "am") {
+        available = availableSlots.includes("am");
+      } else if (requestedSlot === "pm") {
+        available = availableSlots.includes("pm");
+      } else {
+        available = availableSlots.length > 0;
+      }
+
+    } else {
+
+      /* ===============================
+         FULL / MULTI-DAY
+      =============================== */
+
+      for (const requestedDate of requestedDates) {
+
+        let amBlocked = false;
+        let pmBlocked = false;
+        let fullBlocked = false;
+
+        for (const b of vehicleBookings) {
+          const dates = getDatesBetween(
+            new Date(b.pickupAt),
+            new Date(b.dropoffAt)
+          );
+
+          if (!dates.includes(requestedDate)) continue;
+
+          const bookingSlot = getSlotFromBooking(b);
+
+          if (bookingSlot === "full") {
+            fullBlocked = true;
+            amBlocked = true;
+            pmBlocked = true;
+          }
+
+          if (bookingSlot === "am") amBlocked = true;
+          if (bookingSlot === "pm") pmBlocked = true;
+        }
+
+        const list = await env.BOOKINGS_KV.list({
+          prefix: `reservation:${vehicleId}:${requestedDate}`
+        });
+
+        for (const key of list.keys) {
+          const parts = key.name.split(":");
+          const reservationSlot = parts[3] || "full";
+
+          if (reservationSlot === "full") {
+            fullBlocked = true;
+            amBlocked = true;
+            pmBlocked = true;
+          }
+
+          if (reservationSlot === "am") amBlocked = true;
+          if (reservationSlot === "pm") pmBlocked = true;
+        }
+
+        const dayAvailable = !fullBlocked && !amBlocked && !pmBlocked;
+
+        if (!dayAvailable) {
+          available = false;
+          break;
+        }
+      }
+    }
 
     result.push({
       vehicleId,
       available,
-      availableSlots // 🔥 NEW (important)
+      availableSlots
     });
   }
 
