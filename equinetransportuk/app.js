@@ -2268,13 +2268,19 @@ function resetBookingFlow() {
 
 function resetCalendarToToday() {
 
-  const today = new Date();
-
-  if (window.setCalendarMonth) {
-    window.setCalendarMonth(today);
+  if (!window.renderCalendar || !window.__calendarState) {
+    console.warn("⚠️ Calendar not ready");
+    return;
   }
 
-  renderCalendar();
+  const today = new Date();
+  today.setDate(1);
+
+  // 🔥 update shared state
+  window.__calendarState.currentDate = today;
+
+  // 🔥 render with correct month
+  window.renderCalendar();
 }
 
 
@@ -6150,18 +6156,40 @@ if (isMobile()) {
 
 (function () {
 
-  const calGrid = document.getElementById("cal-grid");
-  const calTitle = document.getElementById("cal-title");
-  const calWrap = document.getElementById("availability-calendar");
+ const calGrid = document.getElementById("cal-grid");
+const calTitle = document.getElementById("cal-title");
+const calWrap = document.getElementById("availability-calendar");
 
-  if (!calGrid || !calTitle || !calWrap) return;
+if (!calGrid || !calTitle || !calWrap) return;
 
-  let currentDate = new Date();
-  currentDate.setDate(1);
+let currentDate = new Date();
+currentDate.setDate(1);
 
-  window.setCalendarMonth = function(date) {
+/* ===============================
+   🔥 EXPOSE CALENDAR STATE (NEW)
+=============================== */
+
+window.__calendarState = {
+  get currentDate() {
+    return currentDate;
+  },
+  set currentDate(val) {
+    currentDate = new Date(val);
+    currentDate.setDate(1);
+  }
+};
+
+/* ===============================
+   🔥 EXPOSE MONTH SETTER (UPDATED)
+=============================== */
+
+window.setCalendarMonth = function(date) {
   currentDate = new Date(date);
   currentDate.setDate(1);
+
+  if (typeof renderCalendar === "function") {
+    renderCalendar();
+  }
 };
 
   /* ======================================================
@@ -6297,6 +6325,8 @@ const endHour = getLondonParts(end).hour;
 }
 
 async function renderCalendar() {
+
+  window.renderCalendar = renderCalendar;
 
   // prevent duplicate renders (you already planned this)
   if (calendarRenderPromise) {
