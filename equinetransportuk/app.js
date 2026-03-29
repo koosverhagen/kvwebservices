@@ -6676,16 +6676,14 @@ async function selectDate(dateStr) {
      🔥 CALENDAR HIGHLIGHT (SAFE)
   =============================== */
 
-  document.querySelectorAll(".cal-day")
-    .forEach(el => el.classList.remove("selected", "active"));
+ document.querySelectorAll(".cal-day")
+  .forEach(el => el.classList.remove("cal-selected"));
 
-  const calGrid = document.getElementById("cal-grid");
-
-  Array.from(calGrid.children).forEach(cell => {
-    if (Number(cell.textContent) === dayDate.getDate()) {
-      cell.classList.add("selected");
-    }
-  });
+document.querySelectorAll(".cal-day").forEach(el => {
+  if (el.dataset.date === dateStr) {
+    el.classList.add("cal-selected");
+  }
+});
 
   /* ===============================
      SCROLL
