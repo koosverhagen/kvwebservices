@@ -6375,6 +6375,9 @@ async function renderCalendar() {
 
 async function renderCalendarInternal() {
 
+  calGrid.dataset.rendering = "true";
+  calWrap.dataset.rendering = "true";
+
 /* ===============================
    LOAD BOOKINGS (DEDUPED + CACHED)
 =============================== */
@@ -6548,45 +6551,43 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
 
   dayEl.addEventListener("mouseleave", clearPreview);
 
-  dayEl.addEventListener("touchend", async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const dateStr = dayEl.dataset.date;
-
-    if (dateStr) {
-      prefetchAvailabilityWindow(dateStr);
-      prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
-    }
-
-    await selectDate(formatDayKey(dayDate));
-
-    clearPreview();
-    previewRental(dayDate);
-
-    await showVehiclePreview(dayDate, e);
-  });
-
   /* ===============================
-     CLICK SELECTION
+     SINGLE DAY SELECTION HANDLER
   =============================== */
 
   if (validStart || PRESELECTED_VEHICLE) {
 
-    dayEl.addEventListener("click", async (e) => {
+    let selecting = false;
 
-      if (isMobile()) {
+    const handleDaySelect = async (e) => {
+      if (selecting) return;
+      if (IS_RESETTING) return;
+      if (calGrid.dataset.rendering === "true") return;
+
+      selecting = true;
+
+      try {
+        const dateStr = dayEl.dataset.date;
+        if (!dateStr) return;
+
+        prefetchAvailabilityWindow(dateStr);
+        prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+
         clearPreview();
-        previewRental(dayDate);
-        await showVehiclePreview(dayDate, e);
-        return;
+
+        await selectDate(dateStr);
+
+        if (isMobile()) {
+          previewRental(dayDate);
+          await showVehiclePreview(dayDate, e);
+        }
+
+      } finally {
+        selecting = false;
       }
+    };
 
-      clearPreview();
-      await selectDate(formatDayKey(dayDate));
-
-    });
-
+    dayEl.addEventListener("click", handleDaySelect);
   }
 
   calGrid.appendChild(dayEl);
@@ -6597,7 +6598,7 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
 =============================== */
 
 calGrid.dataset.rendering = "false";
-
+calWrap.dataset.rendering = "false";
 }
 
 /* ======================================================
@@ -6641,6 +6642,32 @@ async function selectDate(dateStr) {
   pickupInput.value = dateStr;
 
   const dayDate = new Date(`${dateStr}T12:00:00`);
+
+    /* ===============================
+     RESET STATE EARLY
+  =============================== */
+
+  selectedAvailability = null;
+
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "";
+  }
+
+  if (!LOCKED_VEHICLE) {
+    if (selectedLorryInput) selectedLorryInput.value = "";
+  }
+
+  if (selectedBaseInput) selectedBaseInput.value = "";
+
+  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+
+  durationInput.value = "";
+
+  if (pickupTimeInput) {
+    pickupTimeInput.value = "";
+  }
+
+  updateCheckoutSummary();
 
   /* ===============================
      PRESELECTED LORRY CHECK
@@ -6780,27 +6807,6 @@ async function selectDate(dateStr) {
     enforceVehicleDurationRules(vehicle);
   }
 
-  /* ===============================
-     RESET STATE
-  =============================== */
-
-  durationInput.value = "";
-
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "";
-  }
-
-  selectedAvailability = null;
-
-  if (!LOCKED_VEHICLE) {
-    if (selectedLorryInput) selectedLorryInput.value = "";
-  }
-
-  if (selectedBaseInput) selectedBaseInput.value = "";
-
-  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
-
-  updateCheckoutSummary();
 
   /* ===============================
      🔥 CALENDAR HIGHLIGHT (SAFE)
@@ -6873,15 +6879,29 @@ function onCalendarDayClick(date){
 
 async function changeMonth(direction) {
 
-  currentDate.setMonth(currentDate.getMonth() + direction);
-  await renderCalendar();
+  if (calendarNavLock) return;
+  calendarNavLock = true;
 
+  try {
+    const nextDate = new Date(currentDate);
+    nextDate.setMonth(nextDate.getMonth() + direction);
+    nextDate.setDate(1);
+
+    currentDate = nextDate;
+    await renderCalendar();
+
+  } finally {
+    calendarNavLock = false;
+  }
 }
 
 calWrap.addEventListener("click", (e) => {
 
   const nav = e.target.closest("[data-cal-nav]");
   if (!nav) return;
+
+  e.preventDefault();
+  e.stopPropagation();
 
   const direction = nav.dataset.calNav === "next" ? 1 : -1;
   changeMonth(direction);
