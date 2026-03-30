@@ -6196,14 +6196,18 @@ if (!calGrid || !calTitle || !calWrap) return;
 
 window.__calendarState = {
   get currentDate() {
-    return new Date(currentDate); // 🔥 return COPY
+    return new Date(currentDate);
   },
   set currentDate(val) {
-    currentDate = new Date(val);
-    currentDate.setDate(1);
+    if (!val) return;
+
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return; // guard invalid dates
+
+    d.setDate(1);
+    currentDate = d;
   }
 };
-
 /* ===============================
    🔥 EXPOSE MONTH SETTER (UPDATED)
 =============================== */
@@ -6510,7 +6514,7 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
      AVAILABILITY CHECK
   =============================== */
 
-  const dayKey = formatDayKey(dayDate);
+  // remove unused dayKey
 
   const status = checkDayLocalAvailability(dayDate, bookings);
   const validStart = canStartRental(dayDate, bookings);
@@ -7077,7 +7081,7 @@ function restoreSelectedDate() {
   );
 
   if (el) {
-    el.classList.add("selected", "active");
+    el.classList.add("cal-selected");
   }
 }
 
