@@ -23,6 +23,8 @@ let LOCKED_VEHICLE = false;
 
 
 
+
+
 let LAST_AVAILABLE_VEHICLES = [];
 
 
@@ -60,6 +62,9 @@ let bookingsRequestPromise = null;
 let calendarRenderPromise = null;
 let pendingCalendarRender = false;
 let calendarNavLock = false;
+
+let currentDate = new Date();
+currentDate.setDate(1);
 
 const BOOKING_BY_SESSION_PROMISES = new Map();
 
@@ -739,12 +744,15 @@ function ensureDateVisible(dateStr) {
 
   const [y, m] = dateStr.split("-");
 
-  const currentY = currentDate.getFullYear();
-  const currentM = currentDate.getMonth() + 1;
+  const current = window.__calendarState.currentDate;
+
+  const currentY = current.getFullYear();
+  const currentM = current.getMonth() + 1;
 
   if (Number(y) !== currentY || Number(m) !== currentM) {
 
-    currentDate = new Date(Number(y), Number(m) - 1, 1);
+    window.__calendarState.currentDate =
+      new Date(Number(y), Number(m) - 1, 1); // ✅ use setter
 
   }
 }
@@ -6180,8 +6188,7 @@ const calWrap = document.getElementById("availability-calendar");
 
 if (!calGrid || !calTitle || !calWrap) return;
 
-let currentDate = new Date();
-currentDate.setDate(1);
+// use global currentDate (do NOT redeclare)
 
 /* ===============================
    🔥 EXPOSE CALENDAR STATE (NEW)
@@ -6189,7 +6196,7 @@ currentDate.setDate(1);
 
 window.__calendarState = {
   get currentDate() {
-    return currentDate;
+    return new Date(currentDate); // 🔥 return COPY
   },
   set currentDate(val) {
     currentDate = new Date(val);
@@ -6202,8 +6209,8 @@ window.__calendarState = {
 =============================== */
 
 window.setCalendarMonth = function(date) {
-  currentDate = new Date(date);
-  currentDate.setDate(1);
+
+  window.__calendarState.currentDate = date; // ✅ USE SETTER
 
   if (typeof renderCalendar === "function") {
     renderCalendar();
@@ -6915,9 +6922,9 @@ async function changeMonth(direction) {
   try {
     const nextDate = new Date(currentDate);
     nextDate.setMonth(nextDate.getMonth() + direction);
-    nextDate.setDate(1);
 
-    currentDate = nextDate;
+    window.__calendarState.currentDate = nextDate; // ✅ USE SETTER
+
     await renderCalendar();
 
   } finally {
