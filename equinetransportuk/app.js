@@ -58,6 +58,8 @@ let stripeReturnPromise = null;
 
 let bookingsRequestPromise = null;
 let calendarRenderPromise = null;
+let pendingCalendarRender = false;
+let calendarNavLock = false;
 
 const BOOKING_BY_SESSION_PROMISES = new Map();
 
@@ -6328,34 +6330,37 @@ async function renderCalendar() {
 
   window.renderCalendar = renderCalendar;
 
-  // prevent duplicate renders (you already planned this)
+  // if a render is already running, queue one more pass
   if (calendarRenderPromise) {
+    pendingCalendarRender = true;
     return calendarRenderPromise;
   }
 
   calendarRenderPromise = (async () => {
     try {
-      await renderCalendarInternal();
+      do {
+        pendingCalendarRender = false;
+        await renderCalendarInternal();
+      } while (pendingCalendarRender);
 
       /* ===============================
-         🔥 PREFETCH VISIBLE RANGE
+         PREFETCH CURRENT VISIBLE MONTH
       =============================== */
 
       try {
+        const visibleMonthStart = new Date(currentDate);
+        visibleMonthStart.setDate(1);
 
-        const today = new Date();
+        const year = visibleMonthStart.getFullYear();
+        const month = String(visibleMonthStart.getMonth() + 1).padStart(2, "0");
+        const day = "01";
 
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-        const day = String(today.getDate()).padStart(2, "0");
+        const monthStartStr = `${year}-${month}-${day}`;
 
-        const todayStr = `${year}-${month}-${day}`;
-
-        // 🚀 non-blocking warm-up
-        prefetchAvailabilityWindow(todayStr);
+        prefetchAvailabilityWindow(monthStartStr);
 
       } catch (err) {
-        console.warn("Initial prefetch failed:", err);
+        console.warn("Calendar month prefetch failed:", err);
       }
 
     } catch (err) {
