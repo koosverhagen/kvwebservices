@@ -733,6 +733,22 @@ availabilityResults?.addEventListener("click", async (e) => {
    Helpers
 ====================================================== */
  
+function ensureDateVisible(dateStr) {
+
+  if (!dateStr) return;
+
+  const [y, m] = dateStr.split("-");
+
+  const currentY = currentDate.getFullYear();
+  const currentM = currentDate.getMonth() + 1;
+
+  if (Number(y) !== currentY || Number(m) !== currentM) {
+
+    currentDate = new Date(Number(y), Number(m) - 1, 1);
+
+  }
+}
+
 async function updateBookingDurationOptions(dateStr, vehicleId) {
 
   const select = document.getElementById("selected-duration");
@@ -6375,6 +6391,8 @@ async function renderCalendar() {
 
 async function renderCalendarInternal() {
 
+  ensureDateVisible(window.SELECTED_DATE);
+
   calGrid.dataset.rendering = "true";
   calWrap.dataset.rendering = "true";
 
@@ -6402,13 +6420,13 @@ const monthNames = [
 
 calTitle.textContent = `${monthNames[month]} ${year}`;
 
-calGrid.innerHTML = "";
+const fragment = document.createDocumentFragment();
 
 /* ===============================
    SELECTED DATE RESTORE
 =============================== */
 
-const selectedDateValue = pickupDateInput?.value;
+const selectedDateValue = window.SELECTED_DATE;
 let selectedTimestamp = null;
 
 if (selectedDateValue) {
@@ -6477,7 +6495,7 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
 
   if (dayDate < today) {
     dayEl.classList.add("cal-unavailable","cal-past");
-    calGrid.appendChild(dayEl);
+    fragment.appendChild(dayEl);
     continue;
   }
 
@@ -6560,42 +6578,50 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
     let selecting = false;
 
     const handleDaySelect = async (e) => {
-      if (selecting) return;
-      if (IS_RESETTING) return;
-      if (calGrid.dataset.rendering === "true") return;
 
-      selecting = true;
+  // 🔥 HARD GUARDS (VERY IMPORTANT)
+  if (selecting) return;
+  if (IS_RESETTING) return;
+  if (calGrid.dataset.rendering === "true") return;
+  if (calWrap.dataset.rendering === "true") return; // 👈 ADD HERE
 
-      try {
-        const dateStr = dayEl.dataset.date;
-        if (!dateStr) return;
+  selecting = true;
 
-        prefetchAvailabilityWindow(dateStr);
-        prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+  try {
+    const dateStr = dayEl.dataset.date;
+    if (!dateStr) return;
 
-        clearPreview();
+    prefetchAvailabilityWindow(dateStr);
+    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
 
-        await selectDate(dateStr);
+    clearPreview();
 
-        if (isMobile()) {
-          previewRental(dayDate);
-          await showVehiclePreview(dayDate, e);
-        }
+    await selectDate(dateStr);
 
-      } finally {
-        selecting = false;
-      }
-    };
+    if (isMobile()) {
+      previewRental(dayDate);
+      await showVehiclePreview(dayDate, e);
+    }
+
+  } finally {
+    selecting = false;
+  }
+};
 
     dayEl.addEventListener("click", handleDaySelect);
   }
 
-  calGrid.appendChild(dayEl);
+  fragment.appendChild(dayEl);
 }
 
 /* ===============================
    UNLOCK
 =============================== */
+
+restoreSelectedDate();
+
+calGrid.innerHTML = "";
+calGrid.appendChild(fragment);
 
 calGrid.dataset.rendering = "false";
 calWrap.dataset.rendering = "false";
@@ -6634,12 +6660,16 @@ async function selectDate(dateStr) {
      🔥 PREVENT GHOST RE-SELECTION
   =============================== */
 
-  if (pickupInput.value === dateStr && !PRESELECTED_VEHICLE) {
-    console.log("⛔ Same date already selected — skip");
-    return;
-  }
-
+if (
+  window.SELECTED_DATE === dateStr &&
+  pickupInput.value === dateStr &&
+  !PRESELECTED_VEHICLE
+) {
+  console.log("⛔ Same date already selected — skip");
+  return;
+}
   pickupInput.value = dateStr;
+window.SELECTED_DATE = dateStr; // ✅ ADD THIS (CRITICAL)
 
   const dayDate = new Date(`${dateStr}T12:00:00`);
 
@@ -6812,7 +6842,7 @@ async function selectDate(dateStr) {
      🔥 CALENDAR HIGHLIGHT (SAFE)
   =============================== */
 
- document.querySelectorAll(".cal-day")
+document.querySelectorAll(".cal-day.cal-selected")
   .forEach(el => el.classList.remove("cal-selected"));
 
 document.querySelectorAll(".cal-day").forEach(el => {
@@ -7031,7 +7061,18 @@ else if (hasFullDay) {
 
 }
 
+function restoreSelectedDate() {
 
+  if (!window.SELECTED_DATE) return;
+
+  const el = document.querySelector(
+    `.cal-day[data-date="${window.SELECTED_DATE}"]`
+  );
+
+  if (el) {
+    el.classList.add("selected", "active");
+  }
+}
 
 /* ======================================================
    Initial render
