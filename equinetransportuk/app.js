@@ -971,104 +971,73 @@ function maybeAutoSubmitAvailability() {
   scheduleAvailabilityAutoSubmit(250);
 }
 
-async function getVehicleAvailability(dateStr, duration, pickupTime = null, options = {}) {
+async function getVehicleAvailability(dateStr, duration, pickupTime = null, opts = {}) {
+
+  const cacheKey = `${dateStr}|${duration}|${pickupTime || ""}`;
 
   /* ===============================
-     🔥 HARD BLOCK (CRITICAL FIX)
+     1. CHECK PROMISE DEDUPE
   =============================== */
 
-  if (IS_STRIPE_RETURN) {
-    return [];
-  }
-
-  const isPrefetch = options?.prefetch === true;
-
-  const key = `${dateStr}|${duration}|${pickupTime || "any"}`;
-  const now = Date.now();
-
-  /* ===============================
-     ✅ CACHE HIT
-  =============================== */
-
-  const cached = VEHICLE_AVAILABILITY_CACHE.get(key);
-
-  if (cached && (now - cached.ts) < VEHICLE_AVAILABILITY_CACHE_TTL) {
-    return cached.data.vehicles || [];
+  if (VEHICLE_AVAILABILITY_PROMISES.has(cacheKey)) {
+    return VEHICLE_AVAILABILITY_PROMISES.get(cacheKey);
   }
 
   /* ===============================
-     🔥 DEDUPE IN-FLIGHT
+     2. CHECK CACHE FIRST
   =============================== */
 
-  if (VEHICLE_AVAILABILITY_PROMISES.has(key)) {
-    return VEHICLE_AVAILABILITY_PROMISES.get(key);
+  const cached = VEHICLE_AVAILABILITY_CACHE.get(cacheKey);
+
+  if (cached && (Date.now() - cached.ts) < VEHICLE_AVAILABILITY_CACHE_TTL) {
+    return cached.value;
   }
 
   /* ===============================
-     🔄 FETCH
+     3. FETCH (ONLY IF NEEDED)
   =============================== */
 
   const promise = (async () => {
 
-    /* ===============================
-       🔥 DOUBLE-CHECK BEFORE FETCH
-    =============================== */
-
-    if (IS_STRIPE_RETURN) return [];
-
-    let url = `/api/vehicles/available?date=${dateStr}&duration=${duration}`;
-
-    if (pickupTime) {
-      url += `&pickupTime=${pickupTime}`;
-    }
-
-    /* ===============================
-       🔇 SILENCE PREFETCH LOGS
-    =============================== */
-
-    if (DEBUG && !isPrefetch) {
-      console.log("📡 FETCH AVAILABILITY:", key);
-    }
-
     try {
 
-      const res = await fetch(apiUrl(url));
+      const url = new URL(`${BACKEND_API_BASE}/api/vehicles/available`);
+      url.searchParams.set("date", dateStr);
+      url.searchParams.set("duration", duration);
 
-      if (!res.ok) {
-        console.warn("Availability fetch failed:", res.status);
-        return [];
+      if (pickupTime) {
+        url.searchParams.set("pickupTime", pickupTime);
       }
 
+      const res = await fetch(url);
       const data = await res.json();
 
+      const vehicles = data.vehicles || [];
+
       /* ===============================
-         🔥 DO NOT CACHE DURING STRIPE
+         SAVE CACHE
       =============================== */
 
-      if (!IS_STRIPE_RETURN) {
-        VEHICLE_AVAILABILITY_CACHE.set(key, {
-          data,
-          ts: Date.now()
-        });
-      }
+      VEHICLE_AVAILABILITY_CACHE.set(cacheKey, {
+        value: vehicles,
+        ts: Date.now()
+      });
 
-      return data.vehicles || [];
+      return vehicles;
 
     } catch (err) {
-
-      console.warn("Availability request error:", err);
+      console.warn("Vehicle availability failed:", err);
       return [];
-
     }
 
   })();
 
-  VEHICLE_AVAILABILITY_PROMISES.set(key, promise);
+  VEHICLE_AVAILABILITY_PROMISES.set(cacheKey, promise);
 
   try {
     return await promise;
   } finally {
-    VEHICLE_AVAILABILITY_PROMISES.delete(key);
+    VEHICLE_AVAILABILITY_PROMISES.delete(cacheKey);
   }
 }
 
@@ -1229,55 +1198,52 @@ async function updateDurationOptions(dateStr) {
 
     } else {
 
-      /* ===============================
-         🔥 MULTI-DAY (FINAL FIX)
-      =============================== */
+/* ===============================
+   🔥 MULTI-DAY (CACHE FIRST)
+=============================== */
 
-      let cached = null;
+const cached = getRangeAvailabilityFromCache(dateStr, duration, vehicleId);
 
-      // ✅ ONLY use cache if specific vehicle
-      if (vehicleId) {
-        cached = getRangeAvailabilityFromCache(dateStr, duration, vehicleId);
-      }
+if (cached !== null) {
 
-      if (cached !== null) {
+  // ✅ Use cached result (vehicle-specific OR general)
+  available = cached;
 
-        available = cached;
+} else if (vehicleId) {
 
-      } else if (vehicleId) {
+  // ✅ Specific vehicle → direct check
+  available = await isContinuousRangeAvailable(
+    dateStr,
+    duration,
+    vehicleId,
+    null
+  );
 
-        available = await isContinuousRangeAvailable(
-          dateStr,
-          duration,
-          vehicleId,
-          null
-        );
+} else {
 
-      } else {
+  // ✅ No vehicle selected → check all vehicles
 
-        // 🔥 CRITICAL: ignore "any" cache completely
+  let hasValidVehicle = false;
 
-        let hasValidVehicle = false;
+  for (const v of vehicles) {
 
-        for (const v of vehicles) {
+    const ok = await isContinuousRangeAvailable(
+      dateStr,
+      duration,
+      v.id,
+      null
+    );
 
-          const ok = await isContinuousRangeAvailable(
-            dateStr,
-            duration,
-            v.id,
-            null
-          );
+    if (ok) {
+      hasValidVehicle = true;
+      break;
+    }
+  }
 
-          if (ok) {
-            hasValidVehicle = true;
-            break;
-          }
-        }
+  available = hasValidVehicle;
 
-        available = hasValidVehicle;
-
-        // ❌ DO NOT cache "any vehicle" result anymore
-      }
+  // ❌ still DO NOT cache "any vehicle" result (correct)
+}
 
     }
 
