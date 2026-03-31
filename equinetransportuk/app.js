@@ -4511,6 +4511,16 @@ async function renderBookings() {
 
     const extras = booking.extras || {};
 
+    let notesLine = "";
+
+if (booking.customerNotes) {
+  notesLine = `
+    <div class="admin-notes">
+      Notes: ${escapeHtml(booking.customerNotes)}
+    </div>
+  `;
+}
+
     const earlyPickup = !!extras.earlyPickup;
     const dartfordCount = Number(extras.dartford || 0);
 
@@ -4538,30 +4548,34 @@ async function renderBookings() {
     =============================== */
 
     return `
-      <article class="booking-item">
-        <strong>${escapeHtml(vehicle?.name || booking.vehicleId)}</strong><br>
-        ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))} · ${escapeHtml(formatTime(booking.pickupAt))} → ${escapeHtml(formatTime(booking.dropoffAt))}<br>
+  <article class="booking-item">
+    <strong>${escapeHtml(vehicle?.name || booking.vehicleId)}</strong><br>
 
-        <span class="muted">
-          Duration: ${escapeHtml(formatDurationLabel(booking.durationDays))}
-        </span><br>
+    ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))} ·
+    ${escapeHtml(formatTime(booking.pickupAt))} → ${escapeHtml(formatTime(booking.dropoffAt))}<br>
 
-        ${escapeHtml(booking.customerName)} · ${escapeHtml(booking.customerEmail)}<br>
+    <span class="muted">
+      Duration: ${escapeHtml(formatDurationLabel(booking.durationDays))}
+    </span><br>
 
-        <span class="muted">Status: ${escapeHtml(booking.status)}</span><br>
+    ${escapeHtml(booking.customerName)} · ${escapeHtml(booking.customerEmail)}<br>
 
-        ${extrasLine}
+    <span class="muted">Status: ${escapeHtml(booking.status)}</span><br>
 
-        <span class="muted">
-          Paid now: £${Number(booking.confirmationFee).toFixed(2)} · 
-          Outstanding: £${Number(booking.outstandingAmount).toFixed(2)}
-        </span><br>
+    ${extrasLine}
 
-        <span class="muted">
-          Total hire: £${Number(booking.hireTotal).toFixed(2)}
-        </span>
-      </article>
-    `;
+    ${notesLine}   <!-- 🔥 THIS IS THE FIX -->
+
+    <span class="muted">
+      Paid now: £${Number(booking.confirmationFee).toFixed(2)} · 
+      Outstanding: £${Number(booking.outstandingAmount).toFixed(2)}
+    </span><br>
+
+    <span class="muted">
+      Total hire: £${Number(booking.hireTotal).toFixed(2)}
+    </span>
+  </article>
+`;
   })
   .join("");
 }

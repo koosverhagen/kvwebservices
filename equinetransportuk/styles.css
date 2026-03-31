@@ -2937,3 +2937,11 @@ textarea {
   font-size: 14px;
   resize: vertical;
 }
+
+.admin-notes {
+  margin-top: 6px;
+  padding: 8px;
+  background: #fff8dc;
+  border-left: 3px solid #facc15;
+  font-size: 13px;
+}
