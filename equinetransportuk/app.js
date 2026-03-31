@@ -4618,7 +4618,10 @@ if (booking.customerNotes) {
 async function renderAdminBookings() {
   if (!adminBookings) return;
 
-  const bookings = (await getBookings()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const bookings = (await getBookings()).sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
   if (!bookings.length) {
     adminBookings.innerHTML = '<p class="empty-note">No bookings saved yet.</p>';
     return;
@@ -4627,44 +4630,76 @@ async function renderAdminBookings() {
   const rows = bookings
     .map((booking) => {
       const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
+
+      const notes = booking.customerNotes || "";
+
+      const isImportant =
+        /urgent|call|late|asap/i.test(notes);
+
       return `
         <tr>
           <td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td>
           <td>${escapeHtml(booking.customerName)}</td>
           <td>${escapeHtml(booking.customerEmail)}</td>
           <td>${escapeHtml(booking.customerMobile)}</td>
+
           <td>
-  ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))}<br>
-  <span class="muted">${escapeHtml(formatTime(booking.pickupAt))} → ${escapeHtml(formatTime(booking.dropoffAt))}</span>
-</td>
+            ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))}<br>
+            <span class="muted">
+              ${escapeHtml(formatTime(booking.pickupAt))} →
+              ${escapeHtml(formatTime(booking.dropoffAt))}
+            </span>
+          </td>
+
           <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
-         <td>
-  ${
-    booking.extras?.earlyPickup
-      ? `£${EARLY_PICKUP_PRICE.toFixed(2)}`
-      : "—"
-  }
-</td>
 
-<td>
-  ${
-    booking.extras?.dartford
-      ? `${booking.extras.dartford} (£${(booking.extras.dartford * DARTFORD_CROSSING_PRICE).toFixed(2)})`
-      : "—"
-  }
-</td>
+          <td>
+            ${
+              booking.extras?.earlyPickup
+                ? `£${EARLY_PICKUP_PRICE.toFixed(2)}`
+                : "—"
+            }
+          </td>
 
-<td>
-  £${Number(booking.extrasTotal || 0).toFixed(2)}
-</td>
+          <td>
+            ${
+              booking.extras?.dartford
+                ? `${booking.extras.dartford} (£${(
+                    booking.extras.dartford * DARTFORD_CROSSING_PRICE
+                  ).toFixed(2)})`
+                : "—"
+            }
+          </td>
+
+          <td>£${Number(booking.extrasTotal || 0).toFixed(2)}</td>
+
+          <!-- ✅ NOTES COLUMN WITH HIGHLIGHT -->
+          <td
+            class="${isImportant ? "notes-important" : ""}"
+            title="${escapeHtml(notes)}"
+          >
+            ${
+              notes
+                ? escapeHtml(notes.slice(0, 40)) + (notes.length > 40 ? "…" : "")
+                : "—"
+            }
+          </td>
+
           <td>£${Number(booking.confirmationFee).toFixed(2)}</td>
           <td>£${Number(booking.outstandingAmount).toFixed(2)}</td>
+
           <td>${booking.requiredFormType === "short" ? "Short" : "Long"}</td>
-          <td>${
-            booking.requiredFormLink
-              ? `<a href="${escapeHtml(booking.requiredFormLink)}" target="_blank" rel="noopener">Open form</a>`
-              : "—"
-          }</td>
+
+          <td>
+            ${
+              booking.requiredFormLink
+                ? `<a href="${escapeHtml(
+                    booking.requiredFormLink
+                  )}" target="_blank" rel="noopener">Open form</a>`
+                : "—"
+            }
+          </td>
+
           <td>${escapeHtml(booking.status)}</td>
           <td>${escapeHtml(formatDateTime(booking.reminderAt))}</td>
         </tr>
@@ -4685,6 +4720,7 @@ async function renderAdminBookings() {
           <th>Early Pickup</th>
           <th>Dartford</th>
           <th>Extras Total</th>
+          <th>Notes</th>
           <th>Paid Now</th>
           <th>Outstanding</th>
           <th>Required Form</th>
@@ -4780,67 +4816,70 @@ async function exportAdminCsv() {
 }
 
 async function exportAdminPdf() {
-  const bookings = (await getBookings()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const bookings = (await getBookings()).sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+  );
+
   const stamp = new Date().toISOString().slice(0, 10);
 
-  const rows = bookings
-  .map((booking) => {
-    const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
+  const rows = bookings.length
+    ? bookings
+        .map((booking) => {
+          const vehicle = vehicles.find(
+            (item) => item.id === booking.vehicleId
+          );
 
-    const earlyPickup = booking.extras?.earlyPickup;
-    const dartford = Number(booking.extras?.dartford || 0);
+          const earlyPickup = booking.extras?.earlyPickup;
+          const dartford = Number(booking.extras?.dartford || 0);
 
-    return `
-      <tr>
-        <td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td>
-        <td>${escapeHtml(booking.customerName)}</td>
-        <td>${escapeHtml(booking.customerEmail)}</td>
-        <td>${escapeHtml(booking.customerMobile)}</td>
-        <td>
-  ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))}<br>
-  ${escapeHtml(formatTime(booking.pickupAt))} → ${escapeHtml(formatTime(booking.dropoffAt))}
-</td>
-        <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
+          return `
+            <tr>
+              <td>${escapeHtml(vehicle?.name || booking.vehicleId)}</td>
+              <td>${escapeHtml(booking.customerName)}</td>
+              <td>${escapeHtml(booking.customerEmail)}</td>
 
-        <!-- Early Pickup -->
-        <td>
-          ${earlyPickup ? `£${EARLY_PICKUP_PRICE.toFixed(2)}` : "—"}
-        </td>
+              <td>
+                ${escapeHtml(formatDateOnly(booking.pickupAt.slice(0, 10)))}<br>
+                ${escapeHtml(formatTime(booking.pickupAt))} →
+                ${escapeHtml(formatTime(booking.dropoffAt))}
+              </td>
 
-        <!-- Dartford -->
-        <td>
-          ${
-            dartford > 0
-              ? `${dartford} (£${(dartford * DARTFORD_CROSSING_PRICE).toFixed(2)})`
-              : "—"
-          }
-        </td>
+              <td>${escapeHtml(formatDurationLabel(booking.durationDays))}</td>
 
-        <!-- Extras Total -->
-        <td>
-          £${Number(booking.extrasTotal || 0).toFixed(2)}
-        </td>
+              <td>
+                ${earlyPickup ? `£${EARLY_PICKUP_PRICE.toFixed(2)}` : "—"}
+              </td>
 
-        <td>£${Number(booking.confirmationFee).toFixed(2)}</td>
-        <td>£${Number(booking.outstandingAmount).toFixed(2)}</td>
+              <td>
+                ${
+                  dartford > 0
+                    ? `${dartford} (£${(
+                        dartford * DARTFORD_CROSSING_PRICE
+                      ).toFixed(2)})`
+                    : "—"
+                }
+              </td>
 
-        <td>${booking.requiredFormType === "short" ? "Short" : "Long"}</td>
+              <td>£${Number(booking.extrasTotal || 0).toFixed(2)}</td>
 
-        <td>
-          ${
-            booking.requiredFormLink
-              ? `<a href="${escapeHtml(booking.requiredFormLink)}" target="_blank" rel="noopener">Open</a>`
-              : "—"
-          }
-        </td>
+              <!-- ✅ NOTES -->
+              <td>
+                ${
+                  booking.customerNotes
+                    ? escapeHtml(booking.customerNotes)
+                    : "—"
+                }
+              </td>
 
-        <td>${escapeHtml(booking.status)}</td>
-        <td>${escapeHtml(formatDateTime(booking.reminderAt))}</td>
-      </tr>
-    `;
-  })
-  .join("");
-    "<tr><td colspan='9'>No bookings saved.</td></tr>";
+              <td>£${Number(booking.confirmationFee).toFixed(2)}</td>
+              <td>£${Number(booking.outstandingAmount).toFixed(2)}</td>
+
+              <td>${escapeHtml(booking.status)}</td>
+            </tr>
+          `;
+        })
+        .join("")
+    : "<tr><td colspan='12'>No bookings saved.</td></tr>";
 
   const reportHtml = `
     <!doctype html>
@@ -4849,17 +4888,38 @@ async function exportAdminPdf() {
         <meta charset="utf-8">
         <title>Equine Booking Export ${stamp}</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 24px; color: #111827; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 24px;
+            color: #111827;
+          }
           h1 { margin: 0 0 8px; }
           .meta { margin-bottom: 16px; color: #4b5563; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th, td { border: 1px solid #d1d5db; padding: 7px; text-align: left; vertical-align: top; }
-          th { background: #f3f4f6; }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+
+          th, td {
+            border: 1px solid #d1d5db;
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+          }
+
+          th {
+            background: #f3f4f6;
+          }
         </style>
       </head>
       <body>
         <h1>Equine Transport UK Booking Export</h1>
-        <div class="meta">Generated: ${escapeHtml(new Date().toLocaleString())}</div>
+        <div class="meta">
+          Generated: ${escapeHtml(new Date().toLocaleString())}
+        </div>
+
         <table>
           <thead>
             <tr>
@@ -4869,7 +4929,10 @@ async function exportAdminPdf() {
               <th>Pickup</th>
               <th>Duration</th>
               <th>Early</th>
-              <th>Paid Now</th>
+              <th>Dartford</th>
+              <th>Extras</th>
+              <th>Notes</th>
+              <th>Paid</th>
               <th>Outstanding</th>
               <th>Status</th>
             </tr>
