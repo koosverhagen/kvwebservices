@@ -1732,30 +1732,45 @@ return d.toLocaleString("en-GB", {
 
   let extrasHtml = "";
 
-  if (extras) {
+ if (extras) {
 
-    if (extras.earlyPickup) {
-      extrasHtml += `
-        <div class="payment-row">
-          <span>Early pickup</span>
-          <span>£20.00</span>
-        </div>
-      `;
-    }
-
-    if (extras.dartford) {
-      const count = Number(extras.dartford || 0);
-      const total = (count * 4.2).toFixed(2);
-
-      extrasHtml += `
-        <div class="payment-row">
-          <span>Dartford crossings (${count})</span>
-          <span>£${total}</span>
-        </div>
-      `;
-    }
-
+  if (extras.earlyPickup) {
+    extrasHtml += `
+      <div class="payment-row">
+        <span>Early pickup</span>
+        <span>£20.00</span>
+      </div>
+    `;
   }
+
+  if (extras.dartford) {
+    const count = Number(extras.dartford || 0);
+    const total = (count * 4.2).toFixed(2);
+
+    extrasHtml += `
+      <div class="payment-row">
+        <span>Dartford crossings (${count})</span>
+        <span>£${total}</span>
+      </div>
+    `;
+  }
+
+  /* ===============================
+     🔥 ADD CUSTOMER NOTES HERE
+  =============================== */
+
+  if (booking.customerNotes) {
+    extrasHtml += `
+      <div class="payment-row" style="align-items:flex-start;">
+        <span>Notes</span>
+        <span style="max-width:200px; text-align:right;">
+          ${escapeHtml(booking.customerNotes)}
+        </span>
+      </div>
+    `;
+  }
+
+}
 
   const shortRef = booking.id?.slice(-8);
 
