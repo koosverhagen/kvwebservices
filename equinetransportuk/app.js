@@ -26,6 +26,8 @@ let LAST_AVAILABLE_VEHICLES = [];
 
 let AVAILABILITY_FLOW_LOCK = false;
 
+let durationOptionsRunId = 0;
+let hoverPreviewTimer = null;
 
 /* ===============================
    Booking cache
@@ -943,28 +945,26 @@ function resetAvailabilityAutoSubmitState() {
   lastAvailabilityAutoSubmitKey = "";
 }
 
-async function maybeAutoSubmitAvailability() {
+function maybeAutoSubmitAvailability() {
 
   if (AVAILABILITY_FLOW_LOCK) return;
+  if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) return;
+  if (!availabilityForm) return;
+
+  const pickupDate = pickupDateInput?.value;
+  const duration = Number(durationDaysInput?.value || 0);
+  const pickupTime = pickupTimeInput?.value || "";
+
+  if (!pickupDate || !duration) return;
+
+  // half-day requires time
+  if (duration === 0.5 && !pickupTime) return;
 
   AVAILABILITY_FLOW_LOCK = true;
 
   try {
-
-    const pickupDate = pickupDateInput?.value;
-    const duration = Number(durationDaysInput?.value);
-    const pickupTime = pickupTimeInput?.value;
-
-    if (!pickupDate || !duration) return;
-
-    // half-day requires time
-    if (duration === 0.5 && !pickupTime) return;
-
-    await submitAvailabilitySearch();
-
+    scheduleAvailabilityAutoSubmit(120);
   } finally {
-
-    // 🔥 allow next run AFTER short delay
     setTimeout(() => {
       AVAILABILITY_FLOW_LOCK = false;
     }, 150);
@@ -1153,6 +1153,8 @@ async function updateDurationOptions(dateStr) {
 
   if (!durationDaysInput || !dateStr) return;
 
+  const thisRunId = ++durationOptionsRunId;
+
   const vehicleId =
     PRESELECTED_VEHICLE ||
     selectedAvailability?.vehicle?.id ||
@@ -1181,7 +1183,9 @@ async function updateDurationOptions(dateStr) {
     console.warn("Background prefetch failed:", err);
   }
 
-  for (const opt of options) {
+    for (const opt of options) {
+
+    if (thisRunId !== durationOptionsRunId) return;
 
     const duration = Number(opt.value);
     if (!duration) continue;
@@ -1276,6 +1280,8 @@ async function updateDurationOptions(dateStr) {
       durationDaysInput.value = "";
     }
   }
+
+  if (thisRunId !== durationOptionsRunId) return;
 
   /* ===============================
      HALF-DAY SYNC
@@ -6562,7 +6568,7 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
      PREVIEW + HOVER PREFETCH
   =============================== */
 
-  dayEl.addEventListener("mouseenter", (e) => {
+   dayEl.addEventListener("mouseenter", (e) => {
 
     if (IS_RESETTING) return;
 
@@ -6572,9 +6578,13 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
       prefetchAvailabilityWindow(dateStr);
     }
 
-    clearPreview();
-    previewRental(dayDate);
-    showVehiclePreview(dayDate, e);
+    clearTimeout(hoverPreviewTimer);
+
+    hoverPreviewTimer = setTimeout(() => {
+      clearPreview();
+      previewRental(dayDate);
+      showVehiclePreview(dayDate, e);
+    }, 60);
 
   });
 
@@ -6582,7 +6592,10 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
     dayEl.addEventListener("mousemove", movePreview);
   }
 
-  dayEl.addEventListener("mouseleave", clearPreview);
+  dayEl.addEventListener("mouseleave", () => {
+    clearTimeout(hoverPreviewTimer);
+    clearPreview();
+  });
 
   /* ===============================
      SINGLE DAY SELECTION HANDLER
@@ -6680,8 +6693,11 @@ if (
   console.log("⛔ Same date already selected — skip");
   return;
 }
-  pickupInput.value = dateStr;
-window.SELECTED_DATE = dateStr; // ✅ ADD THIS (CRITICAL)
+    pickupInput.value = dateStr;
+  window.SELECTED_DATE = dateStr;
+
+  resetAvailabilityAutoSubmitState();
+  window.__lastDurationCheck = "";
 
   const dayDate = new Date(`${dateStr}T12:00:00`);
 
