@@ -6390,8 +6390,15 @@ async function renderCalendar() {
     } catch (err) {
       console.error("Calendar render failed:", err);
     } finally {
-      calendarRenderPromise = null;
-    }
+  calendarRenderPromise = null;
+
+  // ✅ ALWAYS UNLOCK (CRITICAL FIX)
+  const calWrap = document.getElementById("availability-calendar");
+  const calGrid = document.getElementById("cal-grid");
+
+  if (calWrap) calWrap.dataset.rendering = "false";
+  if (calGrid) calGrid.dataset.rendering = "false";
+}
   })();
 
   return calendarRenderPromise;
@@ -6630,9 +6637,6 @@ restoreSelectedDate();
 
 calGrid.innerHTML = "";
 calGrid.appendChild(fragment);
-
-calGrid.dataset.rendering = "false";
-calWrap.dataset.rendering = "false";
 }
 
 /* ======================================================
