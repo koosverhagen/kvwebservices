@@ -4917,8 +4917,12 @@ goToStep(2);
     /* ===============================
        REQUEST
     =============================== */
+const notesInput = document.getElementById("customer-notes");
+const rawNotes = (notesInput?.value || "").trim();
 
-   const { response, data } = await fetchJsonWithTimeout(
+const customerNotes = rawNotes ? rawNotes.slice(0, 500) : null;
+
+const { response, data } = await fetchJsonWithTimeout(
   apiUrl("/api/bookings/create-checkout-session"),
   {
     method: "POST",
@@ -4932,7 +4936,10 @@ goToStep(2);
       customerEmail: booking.customerEmail,
       bookingId: booking.id,
       confirmationFee: booking.confirmationFee,
-      extras
+      extras,
+
+      // ✅ ONLY include if exists
+      ...(customerNotes ? { customerNotes } : {})
     })
   },
   15000

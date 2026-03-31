@@ -528,6 +528,8 @@ async function handleCreateCheckoutSession(request, env) {
 
   const booking = await request.json();
 
+  const customerNotes = String(booking.customerNotes || "").slice(0, 500);
+
   const vehicleName =
     booking.vehicleName ||
     booking.vehicleSnapshot?.name ||
@@ -812,6 +814,7 @@ const siteBase =
   customerName: (booking.customerName || "").slice(0, 100),
   customerEmail: (booking.customerEmail || "").slice(0, 100),
   customerMobile: (booking.customerMobile || "").slice(0, 30),
+  customerNotes,
 
   discountCode: booking.discountCode || "",
 
@@ -943,6 +946,10 @@ try {
 } catch {
   extras = {};
 }
+
+const customerNotes = session.metadata?.customerNotes || "";
+
+
 
     console.log("💰 PRICING OK");
 
@@ -1093,6 +1100,7 @@ dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
 
   customerName: session.customer_details?.name || session.metadata.customerName || "",
   customerEmail: session.customer_details?.email || session.metadata.customerEmail || "",
+  customerNotes,
 
   /* ===============================
      🔥 PRICE STRUCTURE (FIX)
