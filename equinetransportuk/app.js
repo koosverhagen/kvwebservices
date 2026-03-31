@@ -2294,6 +2294,23 @@ function resetCalendarToToday() {
   window.renderCalendar();
 }
 
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    return { response, data };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 function apiUrl(path) {
   if (!BACKEND_API_BASE) return path;
@@ -2365,6 +2382,23 @@ function showToast(message = "") {
   setTimeout(() => {
     toast.classList.remove("visible");
   }, 2500);
+}
+
+function setButtonBusy(button, busy, busyText = "Please wait...") {
+  if (!button) return;
+
+  if (busy) {
+    if (!button.dataset.originalText) {
+      button.dataset.originalText = button.textContent || "";
+    }
+    button.disabled = true;
+    button.textContent = busyText;
+    button.setAttribute("aria-busy", "true");
+  } else {
+    button.disabled = false;
+    button.textContent = button.dataset.originalText || button.textContent;
+    button.removeAttribute("aria-busy");
+  }
 }
 
 function formatDayKey(date) {
@@ -4798,8 +4832,10 @@ async function exportAdminPdf() {
 
 async function createStripeCheckoutSession(booking) {
 
-  if (checkoutLock) return null;
-  checkoutLock = true;
+if (checkoutLock) return null;
+checkoutLock = true;
+
+setButtonBusy(bookingSubmitBtn, true, "Starting secure checkout...");
 
   try {
 
@@ -4850,8 +4886,10 @@ async function createStripeCheckoutSession(booking) {
       if (selectedDurationInput) selectedDurationInput.value = "";
       if (selectedBaseInput) selectedBaseInput.value = "";
 
-      updateCheckoutSummary();
-      goToStep(2);
+     updateCheckoutSummary();
+resetAvailabilityAutoSubmitState();
+window.__lastDurationCheck = "";
+goToStep(2);
 
       if (pickupDate) {
         await updateDurationOptions(pickupDate);
@@ -4880,26 +4918,25 @@ async function createStripeCheckoutSession(booking) {
        REQUEST
     =============================== */
 
-    const response = await fetch(
-      apiUrl("/api/bookings/create-checkout-session"),
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          vehicleId: vehicle.id,
-          vehicleName: vehicle.name,
-          pickupDate: booking.pickupAt,
-          pickupTime: booking.pickupTime,
-          durationDays: booking.durationDays,
-          customerEmail: booking.customerEmail,
-          bookingId: booking.id,
-          confirmationFee: booking.confirmationFee,
-          extras
-        })
-      }
-    );
-
-    const data = await response.json().catch(() => ({}));
+   const { response, data } = await fetchJsonWithTimeout(
+  apiUrl("/api/bookings/create-checkout-session"),
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      vehicleId: vehicle.id,
+      vehicleName: vehicle.name,
+      pickupDate: booking.pickupAt,
+      pickupTime: booking.pickupTime,
+      durationDays: booking.durationDays,
+      customerEmail: booking.customerEmail,
+      bookingId: booking.id,
+      confirmationFee: booking.confirmationFee,
+      extras
+    })
+  },
+  15000
+);
 
     if (!response.ok) {
 
@@ -4944,10 +4981,11 @@ async function createStripeCheckoutSession(booking) {
     alert(error?.message || "Could not start checkout. Please try again.");
     return null;
   } finally {
-    setTimeout(() => {
-      checkoutLock = false;
-    }, 2000);
-  }
+  setTimeout(() => {
+    checkoutLock = false;
+    setButtonBusy(bookingSubmitBtn, false);
+  }, 800);
+}
 }
 
 function resetBookingCustomerFields() {
@@ -4989,6 +5027,8 @@ function resetBookingCustomerFields() {
 
   resetAvailabilityAutoSubmitState();
 
+  window.__lastDurationCheck = "";
+
   /* ===============================
      🔥 RE-SYNC UI LOGIC
   =============================== */
@@ -5006,14 +5046,13 @@ async function fetchStripeSession(sessionId) {
 
   try {
 
-    const res = await fetch(
-      apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
-    );
+   const { response: res, data } = await fetchJsonWithTimeout(
+  apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`),
+  {},
+  12000
+);
 
-    if (!res.ok) return null;
-
-    const data = await res.json();
-
+if (!res.ok) return null;
     /* ===============================
        ✅ CASE 1 — REAL BOOKING (KV)
     =============================== */
@@ -5087,6 +5126,8 @@ async function fetchStripeSession(sessionId) {
 
   }
 }
+
+
 
 /* ======================================================
    Events
@@ -5365,13 +5406,12 @@ if (availabilityForm) {
     : null;
 
       const submitBtn = availabilityForm.querySelector(
-        'button[type="submit"], input[type="submit"]'
-      );
+  'button[type="submit"], input[type="submit"]'
+);
 
-      if (submitBtn) submitBtn.disabled = true;
+setButtonBusy(submitBtn, true, "Checking availability...");
 
-      renderAvailabilityLoading();
-
+renderAvailabilityLoading();
       try {
 
        /* ===============================
@@ -5415,21 +5455,33 @@ if (DEBUG) {
 
       } catch (err) {
 
-        if (requestId !== availabilityRequestId) return;
+  if (requestId !== availabilityRequestId) return;
 
-        console.warn("Availability search failed:", err);
+  console.warn("Availability search failed:", err);
 
-        renderAvailabilityError(
-          "Couldn’t check availability right now. Please try again."
-        );
+  safeRenderAvailability(`
+    <div class="availability-error">
+      Couldn’t check availability right now.
 
-      } finally {
+      <div style="margin-top:10px;">
+        <button type="button" class="btn retry-availability-btn">
+          Try again
+        </button>
+      </div>
+    </div>
+  `);
 
-        if (requestId === availabilityRequestId && submitBtn) {
-          submitBtn.disabled = false;
-        }
+  document.querySelector(".retry-availability-btn")?.addEventListener("click", () => {
+    maybeAutoSubmitAvailability();
+  });
 
-      }
+} finally {
+
+  if (requestId === availabilityRequestId) {
+  setButtonBusy(submitBtn, false);
+}
+
+}
 
     }, 120);
 
