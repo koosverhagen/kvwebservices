@@ -2945,3 +2945,10 @@ textarea {
   border-left: 3px solid #facc15;
   font-size: 13px;
 }
+
+.summary-row.notes {
+  font-size: 13px;
+  color: #444;
+  border-top: 1px dashed #ddd;
+  padding-top: 6px;
+}

@@ -553,6 +553,14 @@ const availabilityForm = document.getElementById("availability-form");
 const pickupDateInput = document.getElementById("pickup-date");
 const pickupTimeInput = document.getElementById("pickup-time");
 const durationDaysInput = document.getElementById("duration-days");
+
+const notesInput = document.getElementById("customer-notes");
+
+notesInput?.addEventListener("input", () => {
+  updateCheckoutSummary();
+});
+
+
 /* ===============================
    INPUT CHANGE HANDLERS
 =============================== */
@@ -3537,6 +3545,27 @@ async function updateCheckoutSummary() {
     ? "Short Form"
     : "Long Form";
 
+  /* ===============================
+     🔥 GET CUSTOMER NOTES
+  =============================== */
+
+  const notesInput = document.getElementById("customer-notes");
+  const rawNotes = (notesInput?.value || "").trim();
+  const customerNotes = rawNotes ? rawNotes.slice(0, 500) : "";
+
+  const notesHtml = customerNotes
+    ? `
+      <div class="summary-row notes">
+        <span>Notes</span>
+        <span>${escapeHtml(customerNotes)}</span>
+      </div>
+    `
+    : "";
+
+  /* ===============================
+     BUTTON TEXT
+  =============================== */
+
   if (bookingSubmitBtn) {
     bookingSubmitBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
   }
@@ -3545,6 +3574,10 @@ async function updateCheckoutSummary() {
   if (confirmBtn) {
     confirmBtn.textContent = `Pay £${confirmationFee.toFixed(2)} to confirm booking`;
   }
+
+  /* ===============================
+     RENDER SUMMARY
+  =============================== */
 
   checkoutSummary.innerHTML = `
     <div class="summary-card">
@@ -3616,6 +3649,8 @@ async function updateCheckoutSummary() {
       `
           : ""
       }
+
+      ${notesHtml}
 
       <div class="summary-row total">
         <span>Total hire</span>
