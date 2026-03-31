@@ -21,11 +21,10 @@ let BLOCK_AUTO_SCROLL = false;
 
 let LOCKED_VEHICLE = false;
 
-
-
-
-
 let LAST_AVAILABLE_VEHICLES = [];
+
+
+let AVAILABILITY_FLOW_LOCK = false;
 
 
 /* ===============================
@@ -562,14 +561,14 @@ durationDaysInput?.addEventListener("change", async () => {
   if (!pickupDate) return;
 
  await updateDurationOptions(pickupDate);
-await updatePickupTimeVisibility();
 
-// ❌ REMOVE syncPickupTimeOptions here
+updatePickupTimeVisibility();
+updateEarlyPickupAvailability();
 
-  updateEarlyPickupAvailability();
-
-  // ✅ ONLY submit if valid
+// 🔥 slight delay prevents double-trigger chain
+setTimeout(() => {
   maybeAutoSubmitAvailability();
+}, 50);
 
 });
 
@@ -578,14 +577,26 @@ pickupTimeInput?.addEventListener("change", async () => {
   const pickupDate = pickupDateInput?.value;
   if (!pickupDate) return;
 
+  /* ===============================
+     SYNC UI (NO SIDE EFFECTS)
+  =============================== */
 
+  // 🔥 only sync if half-day
+if (Number(durationDaysInput?.value) === 0.5) {
+  await syncPickupTimeOptions(pickupDate);
+}
 
   updateEarlyPickupAvailability();
 
-  // ✅ NOW allow half-day to proceed
-  maybeAutoSubmitAvailability();
-});
+  /* ===============================
+     🔥 SINGLE CONTROLLED TRIGGER
+  =============================== */
 
+  setTimeout(() => {
+    maybeAutoSubmitAvailability();
+  }, 50);
+
+});
 
 const availabilityResults = document.getElementById("availability-results");
 
@@ -932,43 +943,32 @@ function resetAvailabilityAutoSubmitState() {
   lastAvailabilityAutoSubmitKey = "";
 }
 
-function maybeAutoSubmitAvailability() {
+async function maybeAutoSubmitAvailability() {
 
-  if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
-    console.log("⛔ Auto-submit blocked (Stripe flow)");
-    return;
+  if (AVAILABILITY_FLOW_LOCK) return;
+
+  AVAILABILITY_FLOW_LOCK = true;
+
+  try {
+
+    const pickupDate = pickupDateInput?.value;
+    const duration = Number(durationDaysInput?.value);
+    const pickupTime = pickupTimeInput?.value;
+
+    if (!pickupDate || !duration) return;
+
+    // half-day requires time
+    if (duration === 0.5 && !pickupTime) return;
+
+    await submitAvailabilitySearch();
+
+  } finally {
+
+    // 🔥 allow next run AFTER short delay
+    setTimeout(() => {
+      AVAILABILITY_FLOW_LOCK = false;
+    }, 150);
   }
-
-  if (IS_RESETTING) return;
-
-  const duration = Number(durationDaysInput?.value || 0);
-  const pickupTime = pickupTimeInput?.value;
-  const pickupDate = pickupDateInput?.value;
-
-  if (!duration || !pickupDate) return;
-
-  if (LOCKED_VEHICLE) {
-
-    if (duration === 0.5 && !pickupTime) {
-      console.log("⛔ locked + waiting for pickup time");
-      return;
-    }
-
-    if (duration !== 0.5 && !pickupTime) {
-      console.log("⛔ locked + waiting for proper selection");
-      return;
-    }
-  }
-
-  if (duration === 0.5 && !pickupTime) return;
-
-  const key = buildAvailabilitySubmitKey();
-
-  if (key === lastAvailabilityAutoSubmitKey) {
-    return;
-  }
-
-  scheduleAvailabilityAutoSubmit(250);
 }
 
 async function getVehicleAvailability(dateStr, duration, pickupTime = null, opts = {}) {
@@ -6805,6 +6805,8 @@ window.SELECTED_DATE = dateStr; // ✅ ADD THIS (CRITICAL)
   }
 
   await updateDurationOptions(dateStr);
+  // 🔥 prevent duplicate chain triggers
+window.__lastDurationCheck = null;
   await syncPickupTimeOptions(dateStr);
 
  // ===============================
