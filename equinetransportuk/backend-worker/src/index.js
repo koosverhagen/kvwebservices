@@ -1272,6 +1272,19 @@ booking.requiredFormLink = formLink;
 console.log("🧪 FORM DEBUG:", booking.requiredFormType, booking.requiredFormLink);
 
 
+// ===============================
+// PAYMENT LINKS
+// ===============================
+
+const depositLink = `https://www.equinetransportuk.com/deposit?bookingId=${encodeURIComponent(bookingId)}`;
+
+const outstandingLink = `https://www.equinetransportuk.com/pay-outstanding?bookingId=${encodeURIComponent(bookingId)}`;
+
+booking.depositLink = depositLink;
+booking.outstandingLink = outstandingLink;
+
+console.log("🧪 PAYMENT LINKS:", depositLink, outstandingLink);
+
     /* ===============================
        SAVE BOOKING (DB)
     =============================== */
