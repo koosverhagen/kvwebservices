@@ -1184,6 +1184,63 @@ try {
   customer = { id: null };
 }
 
+
+// ===============================
+// FORM TYPE LOGIC
+// ===============================
+
+let requiredFormType = "long";
+
+try {
+  const result = await env.DB.prepare(`
+    SELECT pickup_at
+    FROM bookings
+    WHERE customer_id = ?
+    ORDER BY pickup_at DESC
+    LIMIT 2
+  `)
+    .bind(customer?.id || null)
+    .all();
+
+  const previousBooking = result.results?.[1];
+
+  if (previousBooking?.pickup_at) {
+    const lastHireDate = new Date(previousBooking.pickup_at);
+    const now = new Date();
+
+    const diffDays =
+      (now.getTime() - lastHireDate.getTime()) / (1000 * 60 * 60 * 24);
+
+    if (diffDays <= 90) {
+      requiredFormType = "short";
+    }
+  }
+
+} catch (err) {
+  console.warn("Form type check failed:", err);
+}
+
+
+// ===============================
+// FORM LINK BUILD
+// ===============================
+
+const bookingId = booking.id;
+
+const formBase =
+  requiredFormType === "short"
+    ? "https://www.equinetransportuk.com/forms/short-form.html"
+    : "https://www.equinetransportuk.com/forms/long-form.html";
+
+const formLink = `${formBase}?bookingID=${encodeURIComponent(bookingId)}`;
+
+booking.requiredFormType = requiredFormType;
+booking.requiredFormLink = formLink;
+
+// 🧪 DEBUG (keep for now)
+console.log("🧪 FORM DEBUG:", booking.requiredFormType, booking.requiredFormLink);
+
+
     /* ===============================
        SAVE BOOKING (DB)
     =============================== */
