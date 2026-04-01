@@ -911,7 +911,11 @@ async function handleStripeWebhook(request, env) {
 
   if (event.type === "checkout.session.completed") {
 
+    console.log("🔥 CHECKOUT SESSION COMPLETED EVENT");
+
   try {
+
+    console.log("🔥 ENTERING TRY BLOCK");
 
     console.log("🔥 WEBHOOK START");
 
@@ -1073,6 +1077,8 @@ console.log("🔥 FINAL TIMES CHECK:", {
 /* ===============================
    BOOKING OBJECT
 =============================== */
+
+console.log("🔥 BEFORE BUILD BOOKING");   // 👈 ADD THIS LINE
 
 console.log("📦 BUILD BOOKING");
 console.log("🚨 FORM BLOCK SHOULD RUN NEXT");
