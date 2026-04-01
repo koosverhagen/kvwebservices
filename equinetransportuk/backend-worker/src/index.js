@@ -902,6 +902,10 @@ function getDatesBetween(start, end) {
 
 async function handleStripeWebhook(request, env) {
 
+  const SITE_BASE =
+  env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+  "https://kvwebservices.co.uk/equinetransportuk";
+
   const payload = await request.text();
   const sig = request.headers.get("stripe-signature");
 
@@ -1260,8 +1264,8 @@ const bookingId = booking.id;
 
 const formBase =
   requiredFormType === "short"
-    ? "https://www.equinetransportuk.com/forms/short-form.html"
-    : "https://www.equinetransportuk.com/forms/long-form.html";
+    ? `${SITE_BASE}/forms/short-form.html`
+    : `${SITE_BASE}/forms/long-form.html`;
 
 const formLink = `${formBase}?bookingID=${encodeURIComponent(bookingId)}`;
 
@@ -1276,9 +1280,9 @@ console.log("🧪 FORM DEBUG:", booking.requiredFormType, booking.requiredFormLi
 // PAYMENT LINKS
 // ===============================
 
-const depositLink = `https://www.equinetransportuk.com/deposit?bookingId=${encodeURIComponent(bookingId)}`;
+const depositLink = `${SITE_BASE}/deposit?bookingId=${encodeURIComponent(bookingId)}`;
 
-const outstandingLink = `https://www.equinetransportuk.com/pay-outstanding?bookingId=${encodeURIComponent(bookingId)}`;
+const outstandingLink = `${SITE_BASE}/pay-outstanding?bookingId=${encodeURIComponent(bookingId)}`;
 
 booking.depositLink = depositLink;
 booking.outstandingLink = outstandingLink;
