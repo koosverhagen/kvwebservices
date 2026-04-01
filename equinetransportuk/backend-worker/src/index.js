@@ -1075,6 +1075,7 @@ console.log("🔥 FINAL TIMES CHECK:", {
 =============================== */
 
 console.log("📦 BUILD BOOKING");
+console.log("🚨 FORM BLOCK SHOULD RUN NEXT");
 
 const booking = {
   id: session.metadata.bookingId || session.id,
