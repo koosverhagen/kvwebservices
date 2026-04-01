@@ -471,7 +471,7 @@ const FORM_LINK_B = "https://koosverhagen.github.io/kvwebservices/equinetranspor
 
 const BACKEND_API_BASE =
   location.hostname === "127.0.0.1" || location.hostname === "localhost"
-    ? "http://localhost:8788"
+    ? "http://localhost:8787"
     : "https://equine-bookings-api.kverhagen.workers.dev";
 // Fleet data
 const vehicles = [
