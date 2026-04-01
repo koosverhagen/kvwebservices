@@ -57,9 +57,9 @@ export default {
      HTTP REQUEST HANDLER
   ================================ */
 
-  async fetch(request, env, ctx) {
+ async fetch(request, env, ctx) {
 
-    const url = new URL(request.url);
+  const url = new URL(request.url);
 
   /* ===============================
      STRIPE WEBHOOK FIRST
@@ -87,8 +87,6 @@ export default {
       return withCors(response, corsHeaders);
     }
 
-    
-
     /* ===============================
        STRIPE CHECKOUT SESSION
     ================================ */
@@ -107,8 +105,41 @@ export default {
       return withCors(response, corsHeaders);
     }
 
+    /* ===============================
+       🔥 DEBUG — LAST BOOKING (NEW)
+    ================================ */
+
+    if (request.method === "GET" && url.pathname === "/api/debug/last-booking") {
+
+      const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+      let latest = null;
+
+      for (const key of list.keys) {
+
+        const data = await env.BOOKINGS_KV.get(key.name);
+
+        if (!data) continue;
+
+        try {
+          const parsed = JSON.parse(data);
+
+          if (Array.isArray(parsed) && parsed.length) {
+            latest = parsed[parsed.length - 1];
+          }
+
+        } catch {}
+      }
+
+      return withCors(json({ latest }), corsHeaders);
+    }
+
+    /* ===============================
+       BOOKING BY SESSION
+    ================================ */
+
     if (request.method === "GET" && url.pathname === "/api/bookings/by-session") {
-    return withCors(await handleBookingBySession(request, env), corsHeaders);
+      return withCors(await handleBookingBySession(request, env), corsHeaders);
     }
 
     /* ===============================
@@ -116,8 +147,8 @@ export default {
     ================================ */
 
     if (request.method === "GET" && url.pathname === "/api/availability") {
-     const response = await handleAvailability(request, env);
-     return withCors(response, corsHeaders);
+      const response = await handleAvailability(request, env);
+      return withCors(response, corsHeaders);
     }
 
     /* ===============================
@@ -125,8 +156,8 @@ export default {
     ================================ */
 
     if (request.method === "GET" && url.pathname === "/api/vehicles/available") {
-     const response = await handleVehicleAvailability(request, env);
-     return withCors(response, corsHeaders);
+      const response = await handleVehicleAvailability(request, env);
+      return withCors(response, corsHeaders);
     }
 
     /* ===============================
@@ -134,8 +165,8 @@ export default {
     ================================ */
 
     if (request.method === "GET" && url.pathname === "/api/availability/month") {
-     const response = await handleMonthAvailability(request, env);
-     return withCors(response, corsHeaders);
+      const response = await handleMonthAvailability(request, env);
+      return withCors(response, corsHeaders);
     }
 
     /* ===============================
@@ -152,10 +183,8 @@ export default {
     ================================ */
 
     if (request.method === "GET" && url.pathname === "/api/bookings/version") {
-
       const response = await handleBookingsVersion(env);
       return withCors(response, corsHeaders);
-
     }
 
     /* ===============================
@@ -220,7 +249,6 @@ export default {
         }),
         corsHeaders
       );
-
     }
 
     /* ===============================
@@ -256,7 +284,6 @@ export default {
         }),
         corsHeaders
       );
-
     }
 
     /* ===============================
@@ -293,7 +320,6 @@ export default {
         }),
         corsHeaders
       );
-
     }
 
     return withCors(json({ error: "Not found" }, 404), corsHeaders);
@@ -307,10 +333,8 @@ export default {
       ),
       corsHeaders
     );
-
   }
-
-  },
+},
 
   /* ===============================
      CRON JOB — RESERVATION CLEANUP
