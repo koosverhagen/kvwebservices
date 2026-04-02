@@ -1648,7 +1648,7 @@ if (alreadySent) {
 
             📞 +44 7584 578654<br>
             ✉️ info@equinetransportuk.com<br>
-            🌍 ${escapeHtml(env.PUBLIC_SITE_URL || "https://kvwebservices.co.uk/equinetransportuk")}
+            🌍 ${escapeHtml(SITE_BASE)}
           </p>
         </div>
       `;
