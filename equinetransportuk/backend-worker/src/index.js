@@ -240,28 +240,32 @@ if (request.method === "GET" && url.pathname === "/api/deposit-session") {
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
   const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
+  payment_method_types: ["card"],
+  mode: "payment",
+  customer_email: booking.customerEmail,
 
-    mode: "payment",
-
-    customer_email: booking.customerEmail,
-
-    line_items: [
-      {
-        price_data: {
-          currency: "gbp",
-          product_data: {
-            name: `Security Deposit – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
-          },
-          unit_amount: Math.round((booking.depositAmount || 200) * 100),
+  line_items: [
+    {
+      price_data: {
+        currency: "gbp",
+        product_data: {
+          name: `Security Deposit – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
         },
-        quantity: 1,
+        unit_amount: Math.round((booking.depositAmount || 200) * 100),
       },
-    ],
+      quantity: 1,
+    },
+  ],
 
-    success_url: `${env.PUBLIC_SITE_URL}/booking-success?deposit=paid&bookingId=${bookingId}`,
-    cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
-  });
+  // ✅ ADD THIS BLOCK
+  metadata: {
+    bookingId: bookingId,
+    paymentType: "deposit"
+  },
+
+  success_url: `${env.PUBLIC_SITE_URL}/booking-success?deposit=paid&bookingId=${bookingId}`,
+  cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
+});
 
   return withCors(json({ url: session.url }), corsHeaders);
 }
@@ -325,26 +329,32 @@ if (request.method === "GET" && url.pathname === "/api/outstanding-session") {
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
   const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    mode: "payment",
-    customer_email: booking.customerEmail,
+  payment_method_types: ["card"],
+  mode: "payment",
+  customer_email: booking.customerEmail,
 
-    line_items: [
-      {
-        price_data: {
-          currency: "gbp",
-          product_data: {
-            name: `Outstanding Balance – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
-          },
-          unit_amount: Math.round(booking.outstandingAmount * 100),
+  line_items: [
+    {
+      price_data: {
+        currency: "gbp",
+        product_data: {
+          name: `Outstanding Balance – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
         },
-        quantity: 1,
+        unit_amount: Math.round(booking.outstandingAmount * 100),
       },
-    ],
+      quantity: 1,
+    },
+  ],
 
-    success_url: `${env.PUBLIC_SITE_URL}/booking-success?outstanding=paid&bookingId=${bookingId}`,
-    cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
-  });
+  // ✅ ADD THIS BLOCK
+  metadata: {
+    bookingId: bookingId,
+    paymentType: "outstanding"
+  },
+
+  success_url: `${env.PUBLIC_SITE_URL}/booking-success?outstanding=paid&bookingId=${bookingId}`,
+  cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
+});
 
   return withCors(json({ url: session.url }), corsHeaders);
 }
@@ -1111,6 +1121,9 @@ async function handleStripeWebhook(request, env) {
 
     const session = event.data.object;
 
+const paymentType = session.metadata?.paymentType;
+const paymentBookingId = session.metadata?.bookingId;
+
     console.log("👉 session received");
 
     if (!session?.metadata?.vehicleId) {
@@ -1494,6 +1507,57 @@ console.log("🧪 PAYMENT LINKS:", depositLink, outstandingLink);
 
 } catch (err) {
   console.log("💥 DB ERROR:", err);
+}
+
+/* ===============================
+   PAYMENT TRACKING
+=============================== */
+
+if (paymentType && paymentBookingId) {
+
+  console.log("💳 Payment detected:", paymentType, paymentBookingId);
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  for (const key of list.keys) {
+
+    const data = await env.BOOKINGS_KV.get(key.name);
+    if (!data) continue;
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      continue;
+    }
+
+    if (!Array.isArray(parsed)) continue;
+
+    let updated = false;
+
+    for (const b of parsed) {
+
+      if (String(b.id) === String(paymentBookingId)) {
+
+        if (paymentType === "deposit") {
+          b.depositPaid = true;
+        }
+
+        if (paymentType === "outstanding") {
+          b.outstandingPaid = true;
+        }
+
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
+      console.log("✅ Payment status updated");
+      break;
+    }
+  }
 }
 
     /* ===============================
