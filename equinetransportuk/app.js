@@ -40,6 +40,8 @@ const BOOKINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 let BOOKINGS_VERSION = null;
 
+let BOOKING_WATCH_IN_PROGRESS = false;
+
 /* ======================================================
    Booking Step Controller
 ====================================================== */
@@ -7156,41 +7158,78 @@ calWrap.addEventListener("click", (e) => {
    Live Booking Updates
 ====================================================== */
 
+
 async function watchBookingUpdates() {
+
+  // 🚫 prevent overlapping calls
+  if (BOOKING_WATCH_IN_PROGRESS) return;
+
+  BOOKING_WATCH_IN_PROGRESS = true;
 
   try {
 
-    const res = await fetch(`${BACKEND_API_BASE}/api/bookings/version`);
+    const controller = new AbortController();
 
-    const data = await res.json();
+    // ⏱ timeout safety (5s)
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
+    const res = await fetch(`${BACKEND_API_BASE}/api/bookings/version`, {
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      console.warn("Booking watcher HTTP error:", res.status);
+      return;
+    }
+
+    let data;
+
+    try {
+      data = await res.json();
+    } catch {
+      console.warn("Booking watcher JSON parse failed");
+      return;
+    }
+
+    if (!data?.version) return;
+
+    // 🧠 first run → just store
     if (BOOKINGS_VERSION === null) {
       BOOKINGS_VERSION = data.version;
       return;
     }
 
-    if (data.version !== BOOKINGS_VERSION) {
+    // ⚡ no change → do nothing
+    if (data.version === BOOKINGS_VERSION) return;
 
-      console.log("New booking detected — refreshing calendar");
+    console.log("🔄 New booking detected → refreshing UI");
 
-      BOOKINGS_VERSION = data.version;
+    BOOKINGS_VERSION = data.version;
 
-      BOOKINGS_CACHE = null;
+    // 🔥 clear cache
+    BOOKINGS_CACHE = null;
 
-      await getBookings(true);
+    // 🔁 refetch bookings (deduped)
+    await getBookings(true);
 
-      renderBookings();
-      renderAdminBookings();
-
-      if (typeof renderCalendar === "function") {
-        renderCalendar();
-      }
-
-    }
+    // 🎯 render once (clean)
+    renderBookings?.();
+    renderAdminBookings?.();
+    renderCalendar?.();
 
   } catch (err) {
 
-    console.warn("Booking watcher failed", err);
+    if (err.name === "AbortError") {
+      console.warn("Booking watcher timeout");
+    } else {
+      console.warn("Booking watcher failed:", err);
+    }
+
+  } finally {
+
+    BOOKING_WATCH_IN_PROGRESS = false;
 
   }
 
@@ -7314,11 +7353,9 @@ if (durationInput) {
   });
 
 }
-
 //* start live booking watcher */
 
-//watchBookingUpdates();
-//setInterval(watchBookingUpdates, 30000);
-
+watchBookingUpdates(); // run once immediately
+setInterval(watchBookingUpdates, 10000); // every 10 seconds
 })();
 
