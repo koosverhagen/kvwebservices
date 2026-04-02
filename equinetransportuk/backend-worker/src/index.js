@@ -1442,7 +1442,7 @@ console.log("🧪 FORM DEBUG:", booking.requiredFormType, booking.requiredFormLi
 // PAYMENT LINKS
 // ===============================
 
-const depositLink = `${SITE_BASE}/deposit?bookingId=${encodeURIComponent(bookingId)}`;
+const depositLink = `${SITE_BASE}/pay-deposit?bookingId=${encodeURIComponent(bookingId)}`;
 
 const outstandingLink = `${SITE_BASE}/pay-outstanding?bookingId=${encodeURIComponent(bookingId)}`;
 
@@ -1539,6 +1539,146 @@ await env.BOOKINGS_KV.put(
 );
 
 console.log("⚡ Session mapping saved:", sessionKey);
+
+/* ===============================
+   EMAIL DEDUPE CHECK
+=============================== */
+
+const emailKey = `email_sent:${booking.id}`;
+const alreadySent = await env.BOOKINGS_KV.get(emailKey);
+
+if (alreadySent) {
+  console.log("⚠️ Email already sent, skipping");
+} else {
+
+
+
+    /* ===============================
+       SEND BOOKING EMAIL
+    =============================== */
+
+    try {
+
+      const vehicleName = booking.vehicleSnapshot?.name || "Horsebox Hire";
+
+      const emailHtml = `
+        <div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:680px;margin:0 auto;">
+          <h2 style="margin-bottom:8px;">Booking Confirmed</h2>
+
+          <p>Dear ${escapeHtml(booking.customerName)},</p>
+
+          <p>Thank you for your booking with Equine Transport UK.</p>
+
+          <h3 style="margin-top:24px;">Booking Details</h3>
+
+          <p>
+            <strong>Reference:</strong> #${escapeHtml(booking.id)}<br>
+            <strong>Lorry:</strong> ${escapeHtml(vehicleName)}<br>
+            <strong>From:</strong> ${escapeHtml(booking.pickupAtLocal)}<br>
+            <strong>To:</strong> ${escapeHtml(booking.dropoffAtLocal)}<br>
+            <strong>Email:</strong> ${escapeHtml(booking.customerEmail)}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <h3>${escapeHtml(String(booking.requiredFormType || "long").toUpperCase())} Form Required</h3>
+
+          <p>Please complete the required form before your hire.</p>
+
+          <p>
+            <a href="${escapeHtml(booking.requiredFormLink)}"
+               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+              Complete Form
+            </a>
+          </p>
+
+          <p style="font-size:13px;color:#555;">
+            ${escapeHtml(booking.requiredFormLink)}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <h3>Deposit (£200)</h3>
+
+          <p>This is a pre-authorisation hold, not a payment.</p>
+
+          <p>
+            <a href="${escapeHtml(booking.depositLink || "")}"
+               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+              Pay Deposit
+            </a>
+          </p>
+
+          <p style="font-size:13px;color:#555;">
+            ${escapeHtml(booking.depositLink || "")}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <h3>Outstanding Balance</h3>
+
+          <p>Please complete payment before collection.</p>
+
+          <p>
+            <a href="${escapeHtml(booking.outstandingLink || "")}"
+               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+              Pay Outstanding
+            </a>
+          </p>
+
+          <p style="font-size:13px;color:#555;">
+            ${escapeHtml(booking.outstandingLink || "")}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <p>
+            <strong>Price Summary</strong><br>
+            Total Hire: £${Number(booking.hireTotal || 0).toFixed(2)}<br>
+            Paid Now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
+            Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <p>
+            Kind regards,<br>
+            Koos & Avril<br>
+            Equine Transport UK<br><br>
+
+            📞 +44 7584 578654<br>
+            ✉️ info@equinetransportuk.com<br>
+            🌍 ${escapeHtml(env.PUBLIC_SITE_URL || "https://kvwebservices.co.uk/equinetransportuk")}
+          </p>
+        </div>
+      `;
+
+    if (booking.customerEmail) {
+
+  await sendBookingEmail(env, {
+    to: booking.customerEmail,
+    subject: "Your Equine Transport UK booking is confirmed",
+    html: emailHtml
+  });
+
+  console.log("📧 BOOKING EMAIL SENT");
+
+  // ✅ mark as sent (DEDUPLICATION)
+  await env.BOOKINGS_KV.put(emailKey, "1", {
+    expirationTtl: 86400 // 24h
+  });
+
+} else {
+
+  console.log("⚠️ No customer email — skipping email send");
+
+}
+
+  } catch (emailErr) {
+  console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
+}
+
+} // ✅ closes "else" (EMAIL DEDUPE BLOCK)
 
   } catch (err) {
 
@@ -2306,6 +2446,56 @@ function toLondonLocalISOString(date) {
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}`;
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function sendBookingEmail(env, {
+  to,
+  subject,
+  html
+}) {
+
+  if (!env.SENDGRID_API_KEY) {
+    throw new Error("Missing SENDGRID_API_KEY");
+  }
+
+  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${env.SENDGRID_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      personalizations: [
+        {
+          to: [{ email: to }]
+        }
+      ],
+      from: {
+        email: "info@equinetransportuk.com",
+        name: "Equine Transport UK"
+      },
+      subject,
+      content: [
+        {
+          type: "text/html",
+          value: html
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`SendGrid error ${response.status}: ${text}`);
+  }
+}
 
 function buildCorsHeaders() {
 
