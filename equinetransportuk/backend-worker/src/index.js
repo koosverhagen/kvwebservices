@@ -231,6 +231,8 @@ if (request.method === "GET" && url.pathname === "/api/deposit-session") {
     return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
   }
 
+
+  
   // ===============================
   // CREATE STRIPE SESSION
   // ===============================
@@ -258,6 +260,89 @@ if (request.method === "GET" && url.pathname === "/api/deposit-session") {
     ],
 
     success_url: `${env.PUBLIC_SITE_URL}/booking-success?deposit=paid&bookingId=${bookingId}`,
+    cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
+  });
+
+  return withCors(json({ url: session.url }), corsHeaders);
+}
+
+/* ===============================
+   OUTSTANDING STRIPE SESSION
+=============================== */
+
+if (request.method === "GET" && url.pathname === "/api/outstanding-session") {
+
+  const bookingId = url.searchParams.get("bookingId");
+
+  if (!bookingId) {
+    return withCors(json({ error: "Missing bookingId" }, 400), corsHeaders);
+  }
+
+  // ===============================
+  // FIND BOOKING IN KV
+  // ===============================
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  let booking = null;
+
+  for (const key of list.keys) {
+
+    const data = await env.BOOKINGS_KV.get(key.name);
+
+    if (!data) continue;
+
+    try {
+      const parsed = JSON.parse(data);
+
+      if (Array.isArray(parsed)) {
+        const found = parsed.find(b => b.id === bookingId);
+        if (found) {
+          booking = found;
+          break;
+        }
+      }
+
+    } catch {}
+  }
+
+  if (!booking) {
+    return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
+  }
+
+  // ===============================
+  // PREVENT DOUBLE PAYMENT
+  // ===============================
+
+  if (!booking.outstandingAmount || booking.outstandingAmount <= 0) {
+    return withCors(json({ error: "Nothing to pay" }, 400), corsHeaders);
+  }
+
+  // ===============================
+  // CREATE STRIPE SESSION
+  // ===============================
+
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "payment",
+    customer_email: booking.customerEmail,
+
+    line_items: [
+      {
+        price_data: {
+          currency: "gbp",
+          product_data: {
+            name: `Outstanding Balance – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
+          },
+          unit_amount: Math.round(booking.outstandingAmount * 100),
+        },
+        quantity: 1,
+      },
+    ],
+
+    success_url: `${env.PUBLIC_SITE_URL}/booking-success?outstanding=paid&bookingId=${bookingId}`,
     cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
   });
 
