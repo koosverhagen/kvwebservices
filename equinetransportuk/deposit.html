@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Processing deposit...</title>
+</head>
+<body>
+  <h2>Redirecting to secure payment...</h2>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const bookingId = params.get("bookingId");
+
+    if (!bookingId) {
+      document.body.innerHTML = "<h2>Invalid booking link</h2>";
+    } else {
+
+      fetch(`https://equine-bookings-api.kverhagen.workers.dev/api/deposit-session?bookingId=${bookingId}`)
+        .then(res => res.json())
+        .then(data => {
+
+          if (data.url) {
+            window.location.href = data.url;
+          } else {
+            document.body.innerHTML = "<h2>Payment error</h2>";
+          }
+
+        })
+        .catch(() => {
+          document.body.innerHTML = "<h2>Connection error</h2>";
+        });
+
+    }
+  </script>
+
+</body>
+</html>
