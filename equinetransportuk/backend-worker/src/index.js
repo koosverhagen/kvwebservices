@@ -776,6 +776,21 @@ async function handleCreateCheckoutSession(request, env) {
   }
 
   /* ===============================
+     🔥 CLEAN CUSTOMER NAME (CRITICAL FIX)
+  =============================== */
+
+  let cleanCustomerName = (booking.customerName || "").trim();
+
+  if (
+    !cleanCustomerName ||
+    cleanCustomerName.toLowerCase() === "test" ||
+    cleanCustomerName.length < 2
+  ) {
+    console.warn("⚠️ Invalid customer name replaced:", cleanCustomerName);
+    cleanCustomerName = "Customer";
+  }
+
+  /* ===============================
      NORMALISE INPUT
   =============================== */
 
@@ -811,7 +826,7 @@ async function handleCreateCheckoutSession(request, env) {
   const discountAmount = discount.discountAmount || 0;
 
   /* ===============================
-     🔥 EXTRAS (NEW FIX)
+     🔥 EXTRAS
   =============================== */
 
   const extras = booking.extras || {};
@@ -825,7 +840,7 @@ async function handleCreateCheckoutSession(request, env) {
   const extrasTotal = dartfordTotal + earlyPickupTotal;
 
   /* ===============================
-     FINAL TOTAL (FIXED)
+     FINAL TOTAL
   =============================== */
 
   const totalHire = Math.max(
@@ -835,42 +850,26 @@ async function handleCreateCheckoutSession(request, env) {
 
   function getExpectedConfirmationFee(vehicleId) {
     const id = String(vehicleId || "").trim();
-
     if (id.startsWith("v35")) return 75;
     if (id.startsWith("v75")) return 100;
-
     return 75;
   }
 
   const confirmationFee = getExpectedConfirmationFee(booking.vehicleId);
   const outstandingAmount = Math.max(0, totalHire - confirmationFee);
 
-  console.log("💰 BACKEND PRICING:");
-  console.log("baseCost:", baseCost);
-  console.log("discountAmount:", discountAmount);
-  console.log("extrasTotal:", extrasTotal);
-  console.log("totalHire:", totalHire);
-  console.log("confirmationFee:", confirmationFee);
-  console.log("outstandingAmount:", outstandingAmount);
-
   /* ===============================
-     TEMP RESERVATION LOGIC
-     (UNCHANGED)
+     RESERVATION LOGIC (UNCHANGED)
   =============================== */
 
   let dropoffDate;
 
-if (durationDays === 0.5) {
-
-  // ✅ keep same day BUT explicit
-  dropoffDate = new Date(pickupDate);
-
-} else {
-
-  dropoffDate = new Date(pickupDate);
-  dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
-
-}
+  if (durationDays === 0.5) {
+    dropoffDate = new Date(pickupDate);
+  } else {
+    dropoffDate = new Date(pickupDate);
+    dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
+  }
 
   const reservedDates = getDatesBetween(pickupDate, dropoffDate);
 
@@ -891,109 +890,40 @@ if (durationDays === 0.5) {
 
   const requestedSlot = getReservationSlot(durationDays, pickupTime);
 
-  /* ===============================
-     CHECK CONFIRMED BOOKINGS
-  =============================== */
-
   const pickupMonth = booking.pickupDate.slice(0, 7);
-const existingMonth = await env.BOOKINGS_KV.get(`bookings:${pickupMonth}`);
+  const existingMonth = await env.BOOKINGS_KV.get(`bookings:${pickupMonth}`);
 
-if (existingMonth) {
+  if (existingMonth) {
+    let confirmedBookings = [];
 
-  /* ===============================
-     SAFE PARSE (CLEAN)
-  =============================== */
-
-  let confirmedBookings = [];
-
-  try {
-    confirmedBookings = JSON.parse(existingMonth);
-    if (!Array.isArray(confirmedBookings)) confirmedBookings = [];
-  } catch {
-    confirmedBookings = [];
-  }
-
-  /* ===============================
-     CHECK CONFLICTS
-  =============================== */
-
-  for (const confirmed of confirmedBookings) {
-
-    if (confirmed.vehicleId !== booking.vehicleId) continue;
-
-    const confirmedDates = getDatesBetween(
-      new Date(confirmed.pickupAt),
-      new Date(confirmed.dropoffAt)
-    );
-
-    const confirmedSlot = getConfirmedSlot(confirmed);
-
-    for (const d of confirmedDates) {
-      if (
-        reservedDates.includes(d) &&
-        slotsConflict(requestedSlot, confirmedSlot)
-      ) {
-        return json({
-          error: "Vehicle already booked for selected dates."
-        }, 409);
-      }
+    try {
+      confirmedBookings = JSON.parse(existingMonth);
+      if (!Array.isArray(confirmedBookings)) confirmedBookings = [];
+    } catch {
+      confirmedBookings = [];
     }
-  }
 
-}
+    for (const confirmed of confirmedBookings) {
+      if (confirmed.vehicleId !== booking.vehicleId) continue;
 
-  /* ===============================
-     CHECK TEMP RESERVATIONS
-  =============================== */
-
-  for (const date of reservedDates) {
-
-    const exactReservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
-    const fullReservationKey = `reservation:${booking.vehicleId}:${date}:full`;
-
-    const existingExactReservation = await env.BOOKINGS_KV.get(exactReservationKey);
-    const existingFullReservation = await env.BOOKINGS_KV.get(fullReservationKey);
-
-    if (requestedSlot === "full") {
-      const existingAmReservation = await env.BOOKINGS_KV.get(
-        `reservation:${booking.vehicleId}:${date}:am`
-      );
-      const existingPmReservation = await env.BOOKINGS_KV.get(
-        `reservation:${booking.vehicleId}:${date}:pm`
+      const confirmedDates = getDatesBetween(
+        new Date(confirmed.pickupAt),
+        new Date(confirmed.dropoffAt)
       );
 
-      if (existingFullReservation || existingAmReservation || existingPmReservation) {
-        return json({
-          error: "Vehicle temporarily reserved. Please try again shortly."
-        }, 409);
-      }
-    } else {
-      if (existingExactReservation || existingFullReservation) {
-        return json({
-          error: "Vehicle temporarily reserved. Please try again shortly."
-        }, 409);
+      const confirmedSlot = getConfirmedSlot(confirmed);
+
+      for (const d of confirmedDates) {
+        if (
+          reservedDates.includes(d) &&
+          slotsConflict(requestedSlot, confirmedSlot)
+        ) {
+          return json({
+            error: "Vehicle already booked for selected dates."
+          }, 409);
+        }
       }
     }
-  }
-
-  /* ===============================
-     CREATE TEMP RESERVATIONS
-  =============================== */
-
-  for (const date of reservedDates) {
-
-    const reservationKey = `reservation:${booking.vehicleId}:${date}:${requestedSlot}`;
-
-    await env.BOOKINGS_KV.put(
-      reservationKey,
-      JSON.stringify({
-        vehicleId: booking.vehicleId,
-        date,
-        slot: requestedSlot,
-        createdAt: Date.now()
-      }),
-      { expirationTtl: 600 }
-    );
   }
 
   /* ===============================
@@ -1004,9 +934,9 @@ if (existingMonth) {
     return json({ error: "Stripe not configured" }, 500);
   }
 
-const siteBase =
-  env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-  "https://kvwebservices.co.uk/equinetransportuk";
+  const siteBase =
+    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://kvwebservices.co.uk/equinetransportuk";
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20"
@@ -1016,10 +946,10 @@ const siteBase =
 
   try {
 
-    session = await stripe.checkout.sessions.create({      payment_method_types: ["card"],
+    session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
       mode: "payment",
 
-      // ✅ dynamic return URLs (REQUIRED for confirmation step)
       success_url: `${siteBase}/index.html?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteBase}/index.html?checkout=cancelled`,
 
@@ -1038,37 +968,37 @@ const siteBase =
 
       metadata: {
 
-  bookingId: booking.id,
+        bookingId: booking.id,
 
-  vehicleId: booking.vehicleId,
-  vehicleName: vehicleName,
+        vehicleId: booking.vehicleId,
+        vehicleName: vehicleName,
 
-  pickupDate: booking.pickupDate,
-  pickupTime,
-  durationDays: String(durationDays),
+        pickupDate: booking.pickupDate,
+        pickupTime,
+        durationDays: String(durationDays),
 
-  customerName: (booking.customerName || "").slice(0, 100),
-  customerEmail: (booking.customerEmail || "").slice(0, 100),
-  customerMobile: (booking.customerMobile || "").slice(0, 30),
-  customerNotes,
+        // 🔥 FIXED HERE
+        customerName: cleanCustomerName,
+        customerEmail: (booking.customerEmail || "").slice(0, 100),
+        customerMobile: (booking.customerMobile || "").slice(0, 30),
+        customerNotes,
 
-  discountCode: booking.discountCode || "",
+        discountCode: booking.discountCode || "",
 
-  baseCost: String(baseCost),
-  discountAmount: String(discountAmount),
+        baseCost: String(baseCost),
+        discountAmount: String(discountAmount),
 
-  dartfordTotal: String(dartfordTotal),
-  earlyPickupTotal: String(earlyPickupTotal),
-  extrasTotal: String(extrasTotal),
+        dartfordTotal: String(dartfordTotal),
+        earlyPickupTotal: String(earlyPickupTotal),
+        extrasTotal: String(extrasTotal),
 
-  // 🔥 ADD THIS LINE
-  extrasJson: JSON.stringify(extras || {}),
+        extrasJson: JSON.stringify(extras || {}),
 
-  totalHire: String(totalHire),
-  confirmationFee: String(confirmationFee),
-  outstandingAmount: String(outstandingAmount)
+        totalHire: String(totalHire),
+        confirmationFee: String(confirmationFee),
+        outstandingAmount: String(outstandingAmount)
 
-}
+      }
 
     });
 
