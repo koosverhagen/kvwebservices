@@ -1532,63 +1532,48 @@ try {
 
 
 /* ===============================
-   FORM TYPE LOGIC (FIXED CORRECTLY)
+   FORM TYPE LOGIC (FIXED)
 =============================== */
 
 let requiredFormType = "long";
 
 try {
 
-  if (booking.customerId) {
+  const result = await env.DB.prepare(`
+    SELECT pickup_at
+    FROM bookings
+    WHERE customer_id = ?
+    ORDER BY pickup_at DESC
+    LIMIT 1
+  `)
+  .bind(customer?.id || null)
+  .all();
 
-    const result = await env.DB.prepare(`
-      SELECT pickup_at
-      FROM bookings
-      WHERE customer_id = ?
-      ORDER BY pickup_at DESC
-      LIMIT 2
-    `)
-    .bind(booking.customerId)
-    .all();
+  const previousBooking = result.results?.[0];
 
-    const previousBooking = result.results?.[1];
+  if (previousBooking?.pickup_at) {
 
-    if (previousBooking?.pickup_at) {
+    const lastHireDate = new Date(previousBooking.pickup_at);
+    const currentBookingDate = new Date(booking.pickupAt);
 
-      const lastHireDate = new Date(previousBooking.pickup_at);
-      const currentBookingDate = new Date(booking.pickupAt);
+    const diffDays =
+      (currentBookingDate.getTime() - lastHireDate.getTime()) /
+      (1000 * 60 * 60 * 24);
 
-      const diffDays =
-        (currentBookingDate.getTime() - lastHireDate.getTime()) /
-        (1000 * 60 * 60 * 24);
+    console.log("🧪 FORM CHECK:", {
+      lastHireDate,
+      currentBookingDate,
+      diffDays
+    });
 
-      console.log("🧠 Days since last booking:", diffDays);
-
-      if (diffDays <= 90) {
-        requiredFormType = "short";
-        console.log("✅ SHORT FORM selected");
-      } else {
-        console.log("📄 LONG FORM selected (>90 days)");
-      }
-
-    } else {
-
-      console.log("📄 First booking → LONG FORM");
-
+    if (diffDays <= 90) {
+      requiredFormType = "short";
     }
-
-  } else {
-
-    console.log("⚠️ No customerId → LONG FORM fallback");
-
   }
 
 } catch (err) {
-
   console.warn("Form type check failed:", err);
-
 }
-
 
 /* ===============================
    FORM LINK BUILD (FIXED)
