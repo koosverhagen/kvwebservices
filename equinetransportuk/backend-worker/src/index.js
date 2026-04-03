@@ -1355,10 +1355,10 @@ let customer = null;
 try {
 
   customer = await findCustomerByEmailOrMobile(
-    env,
-    booking.customerEmail,
-    ""
-  );
+  env,
+  booking.customerEmail,
+  session.metadata.customerMobile || ""
+);
 
   if (!customer) {
 
