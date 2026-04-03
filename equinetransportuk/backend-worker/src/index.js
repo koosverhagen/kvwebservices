@@ -1391,7 +1391,7 @@ try {
 
 
 /* ===============================
-   FORM TYPE LOGIC (FIXED)
+   FORM TYPE LOGIC (FIXED CORRECTLY)
 =============================== */
 
 let requiredFormType = "long";
@@ -1405,16 +1405,16 @@ try {
       FROM bookings
       WHERE customer_id = ?
       ORDER BY pickup_at DESC
-      LIMIT 2
+      LIMIT 1
     `)
     .bind(booking.customerId)
     .all();
 
-    const previousBooking = result.results?.[1];
+    const lastBooking = result.results?.[0];
 
-    if (previousBooking?.pickup_at) {
+    if (lastBooking?.pickup_at) {
 
-      const lastHireDate = new Date(previousBooking.pickup_at);
+      const lastHireDate = new Date(lastBooking.pickup_at);
       const currentBookingDate = new Date(booking.pickupAt);
 
       const diffDays =
@@ -1424,18 +1424,15 @@ try {
       console.log("🧠 Days since last booking:", diffDays);
 
       if (diffDays <= 90) {
-
         requiredFormType = "short";
         console.log("✅ SHORT FORM selected");
-
       } else {
-
         console.log("📄 LONG FORM selected (>90 days)");
-
       }
+
     } else {
 
-      console.log("📄 No previous booking → LONG FORM");
+      console.log("📄 First booking → LONG FORM");
 
     }
 
