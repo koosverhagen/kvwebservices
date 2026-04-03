@@ -5043,31 +5043,46 @@ goToStep(2);
 
     console.log("🚀 SENDING EXTRAS (FINAL):", extras);
 
-    /* ===============================
-       REQUEST
-    =============================== */
+   /* ===============================
+   REQUEST (FIXED — NAME INCLUDED)
+=============================== */
+
 const notesInput = document.getElementById("customer-notes");
 const rawNotes = (notesInput?.value || "").trim();
 
 const customerNotes = rawNotes ? rawNotes.slice(0, 500) : null;
+
+/* ===============================
+   🔥 DEBUG (REMOVE LATER)
+=============================== */
+console.log("🧪 SENDING NAME:", customerNameInput?.value);
 
 const { response, data } = await fetchJsonWithTimeout(
   apiUrl("/api/bookings/create-checkout-session"),
   {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+
     body: JSON.stringify({
       vehicleId: vehicle.id,
       vehicleName: vehicle.name,
+
       pickupDate: booking.pickupAt,
       pickupTime: booking.pickupTime,
       durationDays: booking.durationDays,
+
+      // 🔥 CRITICAL FIX (THIS WAS MISSING)
+      customerName: (customerNameInput?.value || "").trim(),
+
       customerEmail: booking.customerEmail,
+      customerMobile: booking.customerMobile,
+
       bookingId: booking.id,
       confirmationFee: booking.confirmationFee,
+
       extras,
 
-      // ✅ ONLY include if exists
+      // ✅ only include if exists
       ...(customerNotes ? { customerNotes } : {})
     })
   },
@@ -5884,7 +5899,7 @@ const booking = {
   durationHours: selectedAvailability.durationHours,
   pickupTime: bookingPickupTime,
 
-  customerName: customerNameInput?.value || "",
+  customerName: (customerNameInput?.value || "").trim(),
   customerEmail: customerEmailInput?.value || "",
   customerMobile: customerMobileInput?.value || "",
   customerAddress: customerAddressInput?.value || "",
