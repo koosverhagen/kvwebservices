@@ -5359,20 +5359,36 @@ if (customerEmailInput) {
 
       }
 
-      /* ===============================
-         AUTO-FILL
-      =============================== */
+/* ===============================
+   AUTO-FILL (FIXED)
+=============================== */
 
-      if (customerNameInput && !customerNameInput.value) {
-        customerNameInput.value = data.customer.full_name || "";
-      }
+if (data.found && data.customer) {
 
-      if (customerMobileInput && !customerMobileInput.value) {
-        customerMobileInput.value = data.customer.mobile || "";
-      }
+  console.log("👤 Returning customer detected:", data.customer);
 
-      window.RETURNING_CUSTOMER = true;
+  if (customerNameInput && !customerNameInput.value) {
 
+    const name = (data.customer.full_name || "").trim();
+
+    // 🔥 IGNORE PLACEHOLDER / BAD DATA
+    if (
+      name &&
+      name.toLowerCase() !== "test" &&
+      name.length > 2
+    ) {
+      customerNameInput.value = name;
+    } else {
+      console.warn("⚠️ Ignoring invalid stored name:", name);
+    }
+  }
+
+  if (customerMobileInput && !customerMobileInput.value) {
+    customerMobileInput.value = data.customer.mobile || "";
+  }
+
+  window.RETURNING_CUSTOMER = true;
+}
     } catch (err) {
 
       console.warn("Customer lookup failed:", err);
