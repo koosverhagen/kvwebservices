@@ -65,12 +65,13 @@ fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
   const clientSecret = data.clientSecret;
 
   elements = stripe.elements({
-    style: {
-      base: {
-        fontSize: "16px"
-      }
+  locale: "en-GB", // 🇬🇧 IMPORTANT
+  style: {
+    base: {
+      fontSize: "16px"
     }
-  });
+  }
+});
 
   const card = elements.create("card");
   card.mount("#card-element");
@@ -83,12 +84,15 @@ fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
     const name = document.getElementById("card-name").value;
 
     const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: card,
-        billing_details: {
-          name: name
-        }
-      }
+     payment_method: {
+  card: card,
+  billing_details: {
+    name: name,
+    address: {
+      country: "GB"
+    }
+  }
+}
     });
 
     if (result.error) {
