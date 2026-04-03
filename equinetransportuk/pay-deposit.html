@@ -3,20 +3,47 @@
 <head>
   <title>Secure Deposit</title>
   <script src="https://js.stripe.com/v3/"></script>
+  <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<h2>Secure £200 Deposit</h2>
+<div class="deposit-wrap">
 
-<form id="payment-form">
-  <div id="card-element"></div>
-  <button type="submit">Secure Deposit</button>
-</form>
+  <div class="deposit-card">
 
-<div id="message"></div>
+    <img src="images/logo.png" class="deposit-logo">
+
+    <h2>Deposit Hold (£200.00)</h2>
+
+    <p id="booking-info"></p>
+
+    <form id="payment-form">
+
+      <label>Full Name</label>
+      <input type="text" id="card-name" placeholder="Full Name" required>
+
+      <label>Card Details</label>
+      <div id="card-element" class="stripe-card"></div>
+
+      <button id="submit-btn">
+        Confirm Hold
+      </button>
+
+    </form>
+
+    <div id="message"></div>
+
+    <p class="deposit-note">
+      This is a <strong>card authorisation only</strong>. No money is taken unless required.
+    </p>
+
+  </div>
+
+</div>
 
 <script>
-const stripe = Stripe("pk_test_YOUR_PUBLIC_KEY"); // 🔥 replace
+const stripe = Stripe("pk_test_YOUR_PUBLIC_KEY");
 
 const params = new URLSearchParams(window.location.search);
 const bookingId = params.get("bookingId");
@@ -37,17 +64,30 @@ fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
 
   const clientSecret = data.clientSecret;
 
-  elements = stripe.elements();
+  elements = stripe.elements({
+    style: {
+      base: {
+        fontSize: "16px"
+      }
+    }
+  });
 
   const card = elements.create("card");
   card.mount("#card-element");
 
-  document.getElementById("payment-form").addEventListener("submit", async (e) => {
+  const form = document.getElementById("payment-form");
+
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    const name = document.getElementById("card-name").value;
 
     const result = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
-        card: card
+        card: card,
+        billing_details: {
+          name: name
+        }
       }
     });
 
