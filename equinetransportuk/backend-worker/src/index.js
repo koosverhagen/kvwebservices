@@ -1413,13 +1413,37 @@ let customer = null;
 
 try {
 
-  customer = await findCustomerByEmailOrMobile(
+ customer = await findCustomerByEmailOrMobile(
   env,
   booking.customerEmail,
   session.metadata.customerMobile || ""
 );
 
-  if (!customer) {
+/* ===============================
+   🔥 FIX: UPDATE NAME IF CHANGED
+=============================== */
+
+if (customer && booking.customerName && customer.full_name !== booking.customerName) {
+
+  console.log("✏️ Updating customer name:", customer.full_name, "→", booking.customerName);
+
+  await env.DB.prepare(`
+    UPDATE customers
+    SET full_name = ?, updated_at = ?
+    WHERE id = ?
+  `)
+  .bind(
+    booking.customerName,
+    new Date().toISOString(),
+    customer.id
+  )
+  .run();
+
+  // keep in memory updated
+  customer.full_name = booking.customerName;
+}
+
+if (!customer) {
 
     const customerId = "cus_" + crypto.randomUUID();
     const now = new Date().toISOString();
