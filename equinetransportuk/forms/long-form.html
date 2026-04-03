@@ -385,58 +385,59 @@ textarea:invalid {
 
       <!-- Journey -->
       <section class="section">
-        <h2>Journey Details</h2>
+  <h2>Journey Details</h2>
 
-        <p class="small"><strong>Dates of this hire (not to exceed 90 days).</strong></p>
+  <p class="small"><strong>Dates of this hire (not to exceed 90 days).</strong></p>
 
-        <div class="grid two">
-        
-  <div>
-    <label for="hireFromDate">Hire From</label>
-    <input id="hireFromDate" name="hireFromDate" type="date" required>
+  <div class="grid two">
+    
+    <div>
+      <label for="hireFromDate">Hire From</label>
+      <input id="hireFromDate" name="hireFromDate" type="date" required>
 
-    <select id="hireFromTime" name="hireFromTime" required>
-      <option value="" disabled selected>Select time</option>
-      <option value="07:00">07:00</option>
-      <option value="13:00">13:00</option>
-    </select>
+      <select id="hireFromTime" name="hireFromTime" required>
+        <option value="" disabled selected>Select time</option>
+        <option value="07:00">07:00 (Morning)</option>
+        <option value="13:00">13:00 (Afternoon)</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="hireUntilDate">Hire Until</label>
+      <input id="hireUntilDate" name="hireUntilDate" type="date" required>
+
+      <select id="hireUntilTime" name="hireUntilTime" required>
+        <option value="" disabled selected>Select time</option>
+        <option value="13:00">13:00 (Half Day)</option>
+        <option value="19:00">19:00 (Full Day)</option>
+      </select>
+    </div>
+
   </div>
 
-  <div>
-    <label for="hireUntilDate">Hire Until</label>
-    <input id="hireUntilDate" name="hireUntilDate" type="date" required>
+  <div class="grid two">
+    <div>
+      <label for="journeyReason">Reason for this Journey</label>
+      <input id="journeyReason" name="journeyReason" required placeholder="Add reason for this travel">
+    </div>
+    <div>
+      <label for="destination">Where are you travelling to?</label>
+      <input id="destination" name="destination" required placeholder="Add where you will travel to">
+    </div>
+  </div>
 
-    <select id="hireUntilTime" name="hireUntilTime" required>
-      <option value="" disabled selected>Select time</option>
-      <option value="07:00">07:00</option>
-      <option value="13:00">13:00</option>
+  <div class="divider"></div>
+
+  <div>
+    <label for="overnightParking">Overnight Parking Arrangement (if hiring more than one day)</label>
+    <select id="overnightParking" name="overnightParking" required>
+      <option value="" selected disabled>Select an option</option>
+      <option value="third_party_yard">A third party yard</option>
+      <option value="own_premises">Your own premises</option>
+      <option value="on_road">Parking on the road</option>
     </select>
   </div>
-</div>
-
-        <div class="grid two">
-          <div>
-            <label for="journeyReason">Reason for this Journey</label>
-            <input id="journeyReason" name="journeyReason" required placeholder="Add reason for this travel">
-          </div>
-          <div>
-            <label for="destination">Where are you travelling to?</label>
-            <input id="destination" name="destination" required placeholder="Add where you will travel to">
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div>
-          <label for="overnightParking">Overnight Parking Arrangement (if hiring more than one day)</label>
-          <select id="overnightParking" name="overnightParking" required>
-            <option value="" selected disabled>Select an option</option>
-            <option value="third_party_yard">A third party yard</option>
-            <option value="own_premises">Your own premises</option>
-            <option value="on_road">Parking on the road</option>
-          </select>
-        </div>
-      </section>
+</section>
 
       <!-- Licence -->
       <section class="section">
@@ -735,15 +736,20 @@ textarea:invalid {
     </form>
   </div>
 
-  <script>
+<!-- ONLY SHOWING UPDATED SCRIPT BLOCK (everything else stays the same) -->
 
-    
+<script>
+
 /* ==========================================
    BOOKING ID + DEFAULT DATE
 ========================================== */
 
 const params = new URLSearchParams(location.search);
-const bookingID = params.get("bookingID") || "";
+const bookingID =
+  params.get("bookingID") ||
+  params.get("bookingId") ||
+  "";
+
 document.getElementById("bookingIdPill").textContent = bookingID || "—";
 
 const today = new Date().toISOString().slice(0,10);
@@ -751,8 +757,9 @@ document.getElementById("signedDate").value = today;
 
 
 /* ==========================================
-   SIGNATURE PAD (POINTER EVENTS - ALL DEVICES)
+   SIGNATURE PAD (UNCHANGED - STABLE)
 ========================================== */
+
 const canvas = document.getElementById("signaturePad");
 const ctx = canvas.getContext("2d");
 const clearBtn = document.getElementById("clearSignature");
@@ -764,11 +771,9 @@ function setupCanvas() {
   const ratio = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
 
-  // set backing store to match CSS size * DPR
   canvas.width = Math.round(rect.width * ratio);
   canvas.height = Math.round(rect.height * ratio);
 
-  // draw using CSS pixels
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -784,15 +789,12 @@ function getPoint(e) {
   };
 }
 
-// Run after layout is stable
 requestAnimationFrame(setupCanvas);
 window.addEventListener("resize", () => requestAnimationFrame(setupCanvas));
 
 function pointerDown(e) {
-  // Only block scroll while actually drawing on the canvas
   drawing = true;
   canvas.setPointerCapture(e.pointerId);
-
   const p = getPoint(e);
   ctx.beginPath();
   ctx.moveTo(p.x, p.y);
@@ -808,7 +810,6 @@ function pointerMove(e) {
 function pointerUp(e) {
   if (!drawing) return;
   drawing = false;
-
   try { canvas.releasePointerCapture(e.pointerId); } catch {}
   signatureInput.value = canvas.toDataURL("image/png");
 }
@@ -825,7 +826,7 @@ clearBtn.addEventListener("click", () => {
 
 
 /* ==========================================
-   FORM SUBMIT
+   FORM SUBMIT (UPDATED)
 ========================================== */
 
 const form = document.getElementById("longForm");
@@ -834,25 +835,23 @@ const statusEl = document.getElementById("status");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-if (!form.checkValidity()) {
+  if (!form.checkValidity()) {
 
-  // Find first invalid field
-  const firstInvalid = form.querySelector(":invalid");
+    const firstInvalid = form.querySelector(":invalid");
 
-  if (firstInvalid) {
-    firstInvalid.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
+    if (firstInvalid) {
+      firstInvalid.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
 
-    firstInvalid.focus({ preventScroll: true });
+      firstInvalid.focus({ preventScroll: true });
+    }
+
+    statusEl.className = "status err";
+    statusEl.textContent = "Please complete all required fields.";
+    return;
   }
-
-  statusEl.className = "status err";
-  statusEl.textContent = "Please complete all required fields.";
-
-  return;
-}
 
   if (!form.confirmTrue.checked) {
     statusEl.className = "status err";
@@ -874,7 +873,7 @@ if (!form.checkValidity()) {
 
   if (!bookingID) {
     statusEl.className = "status err";
-    statusEl.textContent = "Missing bookingID in the link.";
+    statusEl.textContent = "Missing booking ID in link.";
     return;
   }
 
@@ -882,18 +881,21 @@ if (!form.checkValidity()) {
   submitBtn.disabled = true;
   submitBtn.textContent = "Submitting...";
 
-const data = Object.fromEntries(new FormData(form).entries());
+  const data = Object.fromEntries(new FormData(form).entries());
 
-// Combine date + time into ISO string
-data.hireFrom = `${data.hireFromDate}T${data.hireFromTime}`;
-data.hireUntil = `${data.hireUntilDate}T${data.hireUntilTime}`;
+  // ✅ Combine dates (important for backend)
+  data.hireFrom = `${data.hireFromDate}T${data.hireFromTime}`;
+  data.hireUntil = `${data.hireUntilDate}T${data.hireUntilTime}`;
 
-// Remove the separate fields (optional, cleaner payload)
-delete data.hireFromDate;
-delete data.hireFromTime;
-delete data.hireUntilDate;
-delete data.hireUntilTime;
+  delete data.hireFromDate;
+  delete data.hireFromTime;
+  delete data.hireUntilDate;
+  delete data.hireUntilTime;
+
+  // ✅ CRITICAL: send both formats (your backend uses both)
   data.bookingID = bookingID;
+  data.bookingId = bookingID;
+
   data.formType = "long";
 
   try {
@@ -909,6 +911,8 @@ delete data.hireUntilTime;
     statusEl.className = "status ok";
     statusEl.textContent = "Thank you — your form has been submitted successfully.";
 
+    submitBtn.textContent = "Submitted";
+
   } catch (err) {
     statusEl.className = "status err";
     statusEl.textContent = err.message || "Submit failed.";
@@ -917,6 +921,7 @@ delete data.hireUntilTime;
     submitBtn.textContent = "Submit Long Form";
   }
 });
+
 </script>
 <script>
   function initAddressAutocomplete() {

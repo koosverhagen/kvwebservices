@@ -1348,7 +1348,11 @@ dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
   durationDays,
   pickupTime,
 
-  customerName: session.customer_details?.name || session.metadata.customerName || "",
+  customerName:
+  session.metadata.customerName ||
+  session.customer_details?.name ||
+  booking.customerName ||
+  "Customer",
   customerEmail: session.metadata.customerEmail || session.customer_details?.email || "",
   customerNotes,
 
