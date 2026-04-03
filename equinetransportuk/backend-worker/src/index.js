@@ -1377,6 +1377,39 @@ try {
 
 }
 
+/* ===============================
+   UPDATE CUSTOMER STATS (MISSING)
+=============================== */
+
+try {
+
+  if (booking.customerId) {
+
+    await env.DB.prepare(`
+      UPDATE customers
+      SET
+        hire_count = COALESCE(hire_count, 0) + 1,
+        last_hire_at = ?,
+        updated_at = ?
+      WHERE id = ?
+    `)
+    .bind(
+      booking.pickupAt,
+      new Date().toISOString(),
+      booking.customerId
+    )
+    .run();
+
+    console.log("📈 Customer stats updated");
+
+  }
+
+} catch (err) {
+
+  console.error("❌ Customer update failed:", err);
+
+}
+
 
 /* ===============================
    SAVE CUSTOMER (SAFE)
