@@ -1426,12 +1426,12 @@ try {
 
 
  /* ===============================
-       SAVE BOOKING (DB)
-    =============================== */
+   SAVE BOOKING (DB)
+=============================== */
 
-    console.log("💾 SAVE BOOKING DB");
+console.log("💾 SAVE BOOKING DB");
 
-    try {
+try {
 
   await env.DB.prepare(`
     INSERT INTO bookings (
@@ -1451,7 +1451,7 @@ try {
   `)
   .bind(
     booking.id,
-    customer?.id || null,
+    booking.customerId,   // ✅ FIXED
     booking.vehicleId,
     booking.pickupAt,
     booking.dropoffAt,
