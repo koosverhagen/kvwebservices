@@ -1338,6 +1338,45 @@ dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
 console.log("✅ BOOKING BUILT");
 
 
+/* ===============================
+   SAVE BOOKING TO D1 (CRITICAL FIX)
+=============================== */
+
+try {
+
+  await env.DB.prepare(`
+    INSERT INTO bookings (
+      id,
+      customer_id,
+      vehicle_id,
+      pickup_at,
+      dropoff_at,
+      duration_days,
+      status,
+      created_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  .bind(
+    booking.id,
+    booking.customerId,
+    booking.vehicleId,
+    booking.pickupAt,
+    booking.dropoffAt,
+    booking.durationDays,
+    booking.status,
+    booking.createdAt
+  )
+  .run();
+
+  console.log("💾 Booking saved to D1 BEFORE form check");
+
+} catch (err) {
+
+  console.error("❌ Failed to save booking before form logic:", err);
+
+}
+
 
 /* ===============================
    SAVE CUSTOMER (SAFE)
