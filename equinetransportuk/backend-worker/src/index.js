@@ -1326,6 +1326,11 @@ console.log("🔥 BEFORE BUILD BOOKING");   // 👈 ADD THIS LINE
 console.log("📦 BUILD BOOKING");
 console.log("🚨 FORM BLOCK SHOULD RUN NEXT");
 
+console.log("🧪 NAME DEBUG:", {
+  metadataName: session.metadata.customerName,
+  stripeName: session.customer_details?.name
+});
+
 const booking = {
   id: session.metadata.bookingId || session.id,
 
@@ -1348,11 +1353,11 @@ dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
   durationDays,
   pickupTime,
 
-  customerName:
+  customerName: (
   session.metadata.customerName ||
   session.customer_details?.name ||
-  booking.customerName ||
-  "Customer",
+  ""
+).trim() || "Customer",
   customerEmail: session.metadata.customerEmail || session.customer_details?.email || "",
   customerNotes,
 
