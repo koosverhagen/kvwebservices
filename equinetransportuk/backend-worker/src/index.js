@@ -350,152 +350,202 @@ if (request.method === "GET" && url.pathname === "/api/outstanding-session") {
 }
 
     /* ===============================
-       CREATE / FIND CUSTOMER
-    ================================ */
+   CREATE / FIND CUSTOMER (FIXED SAFE)
+================================ */
 
-    if (url.pathname === "/api/customers" && request.method === "POST") {
+if (url.pathname === "/api/customers" && request.method === "POST") {
 
-      const body = await request.json();
+  let body;
 
-      const name = body.full_name?.trim();
-      const email = body.email?.trim().toLowerCase();
-      const mobile = body.mobile?.trim();
-
-      if (!name) {
-        return new Response(JSON.stringify({ error: "Name required" }), { status: 400 });
-      }
-
-      if (!email && !mobile) {
-        return new Response(JSON.stringify({ error: "Email or mobile required" }), { status: 400 });
-      }
-
-      const existing = await findCustomerByEmailOrMobile(env, email, mobile);
-
-      if (existing) {
-        return withCors(
-          json({
-            ok: true,
-            mode: "existing",
-            customer: existing
-          }),
-          corsHeaders
-        );
-      }
-
-      const id = "cus_" + crypto.randomUUID();
-      const now = new Date().toISOString();
-
-      await env.DB.prepare(`
-        INSERT INTO customers (
-          id,
-          full_name,
-          email,
-          mobile,
-          created_at,
-          updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
-      `)
-      .bind(id, name, email, mobile, now, now)
-      .run();
-
-      const customer = await env.DB.prepare(
-        "SELECT * FROM customers WHERE id = ?"
-      ).bind(id).first();
-
-      return withCors(
-        json({
-          ok: true,
-          mode: "created",
-          customer
-        }),
-        corsHeaders
-      );
-    }
-
-    /* ===============================
-       CUSTOMER LOOKUP
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
-
-      const email = url.searchParams.get("email")?.trim().toLowerCase();
-      const mobile = url.searchParams.get("mobile")?.trim();
-
-      if (!email && !mobile) {
-        return withCors(json({ found:false }), corsHeaders);
-      }
-
-      const customer = await findCustomerByEmailOrMobile(env, email, mobile);
-
-      if (!customer) {
-        return withCors(json({ found:false }), corsHeaders);
-      }
-
-      return withCors(
-        json({
-          found: true,
-          customer: {
-            id: customer.id,
-            full_name: customer.full_name,
-            email: customer.email,
-            mobile: customer.mobile,
-            hire_count: customer.hire_count || 0,
-            last_hire_at: customer.last_hire_at
-          }
-        }),
-        corsHeaders
-      );
-    }
-
-    /* ===============================
-       CUSTOMER BOOKING HISTORY
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
-
-      const customerId = url.searchParams.get("customer_id");
-
-      if (!customerId) {
-        return withCors(json({ bookings: [] }), corsHeaders);
-      }
-
-      const result = await env.DB.prepare(`
-        SELECT
-          id,
-          vehicle_id,
-          pickup_at,
-          dropoff_at,
-          duration_days,
-          status
-        FROM bookings
-        WHERE customer_id = ?
-        ORDER BY pickup_at DESC
-        LIMIT 5
-      `)
-      .bind(customerId)
-      .all();
-
-      return withCors(
-        json({
-          bookings: result.results || []
-        }),
-        corsHeaders
-      );
-    }
-
-    return withCors(json({ error: "Not found" }, 404), corsHeaders);
-
-  } catch (error) {
-
-    return withCors(
-      json(
-        { error: "Server error", detail: error?.message || "Unknown error" },
-        500
-      ),
-      corsHeaders
-    );
+  try {
+    body = await request.json();
+    console.log("📥 CUSTOMER BODY:", body);
+  } catch (err) {
+    return withCors(json({ error: "Invalid JSON" }, 400), corsHeaders);
   }
+
+  const name = body.full_name?.trim();
+  const email = body.email?.trim().toLowerCase() || null;
+  const mobile = body.mobile?.trim() || null;
+
+  if (!name) {
+    return withCors(json({ error: "Name required" }, 400), corsHeaders);
+  }
+
+  if (!email && !mobile) {
+    return withCors(json({ error: "Email or mobile required" }, 400), corsHeaders);
+  }
+
+  try {
+
+    /* ===============================
+       FIND EXISTING FIRST
+    =============================== */
+
+    const existing = await findCustomerByEmailOrMobile(env, email, mobile);
+
+    if (existing) {
+      console.log("👤 EXISTING CUSTOMER:", existing.id);
+
+      return withCors(json({
+        ok: true,
+        mode: "existing",
+        customer: existing
+      }), corsHeaders);
+    }
+
+    /* ===============================
+       CREATE NEW CUSTOMER
+    =============================== */
+
+    const id = "cus_" + crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    await env.DB.prepare(`
+      INSERT INTO customers (
+        id,
+        full_name,
+        email,
+        mobile,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+    `)
+    .bind(
+      id,
+      name,
+      email,   // ✅ NULL safe
+      mobile,  // ✅ NULL safe
+      now,
+      now
+    )
+    .run();
+
+    console.log("✅ CUSTOMER CREATED:", id);
+
+    const customer = await env.DB.prepare(
+      "SELECT * FROM customers WHERE id = ?"
+    ).bind(id).first();
+
+    return withCors(json({
+      ok: true,
+      mode: "created",
+      customer
+    }), corsHeaders);
+
+  } catch (err) {
+
+    console.error("❌ CUSTOMER CREATE ERROR:", err);
+
+    return withCors(json({
+      error: "Customer creation failed",
+      detail: err.message
+    }, 500), corsHeaders);
+  }
+}
+
+/* ===============================
+   CUSTOMER LOOKUP (SAFE)
+================================ */
+
+if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
+
+  try {
+
+    const email = url.searchParams.get("email")?.trim().toLowerCase();
+    const mobile = url.searchParams.get("mobile")?.trim();
+
+    if (!email && !mobile) {
+      return withCors(json({ found:false }), corsHeaders);
+    }
+
+    const customer = await findCustomerByEmailOrMobile(env, email, mobile);
+
+    if (!customer) {
+      return withCors(json({ found:false }), corsHeaders);
+    }
+
+    return withCors(json({
+      found: true,
+      customer: {
+        id: customer.id,
+        full_name: customer.full_name,
+        email: customer.email,
+        mobile: customer.mobile,
+        hire_count: customer.hire_count || 0,
+        last_hire_at: customer.last_hire_at
+      }
+    }), corsHeaders);
+
+  } catch (err) {
+
+    console.error("❌ CUSTOMER LOOKUP ERROR:", err);
+
+    return withCors(json({ found:false }), corsHeaders);
+  }
+}
+
+/* ===============================
+   CUSTOMER BOOKING HISTORY (SAFE)
+================================ */
+
+if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
+
+  try {
+
+    const customerId = url.searchParams.get("customer_id");
+
+    if (!customerId) {
+      return withCors(json({ bookings: [] }), corsHeaders);
+    }
+
+    const result = await env.DB.prepare(`
+      SELECT
+        id,
+        vehicle_id,
+        pickup_at,
+        dropoff_at,
+        duration_days,
+        status
+      FROM bookings
+      WHERE customer_id = ?
+      ORDER BY pickup_at DESC
+      LIMIT 5
+    `)
+    .bind(customerId)
+    .all();
+
+    return withCors(json({
+      bookings: result.results || []
+    }), corsHeaders);
+
+  } catch (err) {
+
+    console.error("❌ CUSTOMER BOOKINGS ERROR:", err);
+
+    return withCors(json({ bookings: [] }), corsHeaders);
+  }
+}
+
+/* ===============================
+   FALLBACK
+================================ */
+
+return withCors(json({ error: "Not found" }, 404), corsHeaders);
+
+} catch (error) {
+
+  console.error("❌ FETCH ERROR:", error);
+
+  return withCors(
+    json({
+      error: "Server error",
+      detail: error?.message || "Unknown error"
+    }, 500),
+    corsHeaders
+  );
+}
 },
 
   /* ===============================
