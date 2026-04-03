@@ -1299,7 +1299,7 @@ dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
   pickupTime,
 
   customerName: session.customer_details?.name || session.metadata.customerName || "",
-  customerEmail: session.customer_details?.email || session.metadata.customerEmail || "",
+  customerEmail: session.metadata.customerEmail || session.customer_details?.email || "",
   customerNotes,
 
   /* ===============================
@@ -1336,6 +1336,14 @@ dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
 };
 
 console.log("✅ BOOKING BUILT");
+
+console.log("📧 EMAIL SOURCE:", {
+  metadata: session.metadata.customerEmail,
+  stripe: session.customer_details?.email,
+  final: booking.customerEmail
+});
+
+
 
 
 /* ===============================
