@@ -1,36 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Processing deposit...</title>
+  <title>Secure Deposit</title>
+  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
-  <h2>Redirecting to secure payment...</h2>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const bookingId = params.get("bookingId");
+<h2>Secure £200 Deposit</h2>
 
-    if (!bookingId) {
-      document.body.innerHTML = "<h2>Invalid booking link</h2>";
+<form id="payment-form">
+  <div id="card-element"></div>
+  <button type="submit">Secure Deposit</button>
+</form>
+
+<div id="message"></div>
+
+<script>
+const stripe = Stripe("pk_test_YOUR_PUBLIC_KEY"); // 🔥 replace
+
+const params = new URLSearchParams(window.location.search);
+const bookingId = params.get("bookingId");
+
+if (!bookingId) {
+  document.body.innerHTML = "<h2>Invalid booking link</h2>";
+}
+
+let elements;
+
+fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId })
+})
+.then(res => res.json())
+.then(data => {
+
+  const clientSecret = data.clientSecret;
+
+  elements = stripe.elements();
+
+  const card = elements.create("card");
+  card.mount("#card-element");
+
+  document.getElementById("payment-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const result = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: card
+      }
+    });
+
+    if (result.error) {
+      document.getElementById("message").innerText = result.error.message;
     } else {
-
-      fetch(`https://equine-bookings-api.kverhagen.workers.dev/api/deposit-session?bookingId=${bookingId}`)
-        .then(res => res.json())
-        .then(data => {
-
-          if (data.url) {
-            window.location.href = data.url;
-          } else {
-            document.body.innerHTML = "<h2>Payment error</h2>";
-          }
-
-        })
-        .catch(() => {
-          document.body.innerHTML = "<h2>Connection error</h2>";
-        });
-
+      window.location.href = "index.html?deposit=success";
     }
-  </script>
+  });
+
+});
+</script>
 
 </body>
 </html>

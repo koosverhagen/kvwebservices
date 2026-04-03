@@ -191,16 +191,16 @@ export default {
    DEPOSIT STRIPE SESSION
 =============================== */
 
-if (request.method === "GET" && url.pathname === "/api/deposit-session") {
+if (request.method === "POST" && url.pathname === "/api/deposit-intent") {
 
-  const bookingId = url.searchParams.get("bookingId");
+  const { bookingId } = await request.json();
 
   if (!bookingId) {
     return withCors(json({ error: "Missing bookingId" }, 400), corsHeaders);
   }
 
   // ===============================
-  // FIND BOOKING IN KV
+  // FIND BOOKING
   // ===============================
 
   const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
@@ -210,7 +210,6 @@ if (request.method === "GET" && url.pathname === "/api/deposit-session") {
   for (const key of list.keys) {
 
     const data = await env.BOOKINGS_KV.get(key.name);
-
     if (!data) continue;
 
     try {
@@ -231,43 +230,34 @@ if (request.method === "GET" && url.pathname === "/api/deposit-session") {
     return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
   }
 
+  // ✅ prevent double hold
+  if (booking.depositPaid) {
+    return withCors(json({ error: "Deposit already secured" }, 400), corsHeaders);
+  }
 
-  
   // ===============================
-  // CREATE STRIPE SESSION
+  // CREATE PAYMENT INTENT (HOLD)
   // ===============================
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
-  const session = await stripe.checkout.sessions.create({
-  payment_method_types: ["card"],
-  mode: "payment",
-  customer_email: booking.customerEmail,
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: 20000, // £200
+    currency: "gbp",
 
-  line_items: [
-    {
-      price_data: {
-        currency: "gbp",
-        product_data: {
-          name: `Security Deposit – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
-        },
-        unit_amount: Math.round((booking.depositAmount || 200) * 100),
-      },
-      quantity: 1,
-    },
-  ],
+    capture_method: "manual", // 🔥 HOLD
 
-  // ✅ ADD THIS BLOCK
-  metadata: {
-    bookingId: bookingId,
-    paymentType: "deposit"
-  },
+    receipt_email: booking.customerEmail,
 
-  success_url: `${env.PUBLIC_SITE_URL}/booking-success?deposit=paid&bookingId=${bookingId}`,
-  cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
-});
+    metadata: {
+      bookingId: bookingId,
+      paymentType: "deposit"
+    }
+  });
 
-  return withCors(json({ url: session.url }), corsHeaders);
+  return withCors(json({
+    clientSecret: paymentIntent.client_secret
+  }), corsHeaders);
 }
 
 /* ===============================
