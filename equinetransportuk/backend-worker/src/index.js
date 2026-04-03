@@ -1339,80 +1339,7 @@ console.log("✅ BOOKING BUILT");
 
 
 /* ===============================
-   SAVE BOOKING TO D1 (CRITICAL FIX)
-=============================== */
-
-try {
-
-  await env.DB.prepare(`
-    INSERT INTO bookings (
-      id,
-      customer_id,
-      vehicle_id,
-      pickup_at,
-      dropoff_at,
-      duration_days,
-      status,
-      created_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-  .bind(
-    booking.id,
-    booking.customerId,
-    booking.vehicleId,
-    booking.pickupAt,
-    booking.dropoffAt,
-    booking.durationDays,
-    booking.status,
-    booking.createdAt
-  )
-  .run();
-
-  console.log("💾 Booking saved to D1 BEFORE form check");
-
-} catch (err) {
-
-  console.error("❌ Failed to save booking before form logic:", err);
-
-}
-
-/* ===============================
-   UPDATE CUSTOMER STATS (MISSING)
-=============================== */
-
-try {
-
-  if (booking.customerId) {
-
-    await env.DB.prepare(`
-      UPDATE customers
-      SET
-        hire_count = COALESCE(hire_count, 0) + 1,
-        last_hire_at = ?,
-        updated_at = ?
-      WHERE id = ?
-    `)
-    .bind(
-      booking.pickupAt,
-      new Date().toISOString(),
-      booking.customerId
-    )
-    .run();
-
-    console.log("📈 Customer stats updated");
-
-  }
-
-} catch (err) {
-
-  console.error("❌ Customer update failed:", err);
-
-}
-
-
-/* ===============================
-   SAVE CUSTOMER (SAFE)
+   SAVE CUSTOMER (FIRST - FIXED)
 =============================== */
 
 let customer = null;
@@ -1449,17 +1376,101 @@ try {
 
   }
 
-  // ✅ ALWAYS attach to booking (CRITICAL FIX)
-  booking.customerId = customer?.id || null;
-
 } catch (err) {
 
   console.log("⚠️ CUSTOMER ERROR:", err);
-
   customer = { id: null };
-  booking.customerId = null;
 
 }
+
+/* ===============================
+   🔥 CRITICAL LINE
+=============================== */
+
+booking.customerId = customer?.id || null;
+
+
+/* ===============================
+   UPDATE CUSTOMER STATS (MISSING)
+=============================== */
+
+try {
+
+  if (booking.customerId) {
+
+    await env.DB.prepare(`
+      UPDATE customers
+      SET
+        hire_count = COALESCE(hire_count, 0) + 1,
+        last_hire_at = ?,
+        updated_at = ?
+      WHERE id = ?
+    `)
+    .bind(
+      booking.pickupAt,
+      new Date().toISOString(),
+      booking.customerId
+    )
+    .run();
+
+    console.log("📈 Customer stats updated");
+
+  }
+
+} catch (err) {
+
+  console.error("❌ Customer update failed:", err);
+
+}
+
+
+
+ /* ===============================
+       SAVE BOOKING (DB)
+    =============================== */
+
+    console.log("💾 SAVE BOOKING DB");
+
+    try {
+
+  await env.DB.prepare(`
+    INSERT INTO bookings (
+      id,
+      customer_id,
+      vehicle_id,
+      pickup_at,
+      dropoff_at,
+      duration_days,
+      price_total,
+      paid_now,
+      status,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  .bind(
+    booking.id,
+    customer?.id || null,
+    booking.vehicleId,
+    booking.pickupAt,
+    booking.dropoffAt,
+    booking.durationDays,
+    booking.hireTotal,
+    booking.confirmationFee,
+    booking.status,
+    booking.createdAt,
+    booking.createdAt
+  )
+  .run();
+
+  console.log("✅ DB SAVED");
+
+} catch (err) {
+  console.log("💥 DB ERROR:", err);
+}
+
+
 
 
 /* ===============================
@@ -1477,16 +1488,16 @@ try {
       FROM bookings
       WHERE customer_id = ?
       ORDER BY pickup_at DESC
-      LIMIT 1
+      LIMIT 2
     `)
     .bind(booking.customerId)
     .all();
 
-    const lastBooking = result.results?.[0];
+    const previousBooking = result.results?.[1];
 
-    if (lastBooking?.pickup_at) {
+    if (previousBooking?.pickup_at) {
 
-      const lastHireDate = new Date(lastBooking.pickup_at);
+      const lastHireDate = new Date(previousBooking.pickup_at);
       const currentBookingDate = new Date(booking.pickupAt);
 
       const diffDays =
@@ -1563,50 +1574,7 @@ booking.outstandingLink = outstandingLink;
 
 console.log("🧪 PAYMENT LINKS:", depositLink, outstandingLink);
 
-    /* ===============================
-       SAVE BOOKING (DB)
-    =============================== */
-
-    console.log("💾 SAVE BOOKING DB");
-
-    try {
-
-  await env.DB.prepare(`
-    INSERT INTO bookings (
-      id,
-      customer_id,
-      vehicle_id,
-      pickup_at,
-      dropoff_at,
-      duration_days,
-      price_total,
-      paid_now,
-      status,
-      created_at,
-      updated_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-  .bind(
-    booking.id,
-    customer?.id || null,
-    booking.vehicleId,
-    booking.pickupAt,
-    booking.dropoffAt,
-    booking.durationDays,
-    booking.hireTotal,
-    booking.confirmationFee,
-    booking.status,
-    booking.createdAt,
-    booking.createdAt
-  )
-  .run();
-
-  console.log("✅ DB SAVED");
-
-} catch (err) {
-  console.log("💥 DB ERROR:", err);
-}
+   
 
 /* ===============================
    PAYMENT TRACKING
