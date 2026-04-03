@@ -5276,16 +5276,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-  /* ======================================================
-   RETURNING CUSTOMER AUTO LOOKUP
+/* ======================================================
+   RETURNING CUSTOMER AUTO LOOKUP (FIXED + EARLY CREATE)
 ====================================================== */
 
 if (customerEmailInput) {
 
+  let lookupInFlight = false; // 🔒 prevent spam calls
+
   customerEmailInput.addEventListener("change", async () => {
 
     const email = customerEmailInput.value.trim().toLowerCase();
-    if (!email) return;
+    if (!email || lookupInFlight) return;
+
+    lookupInFlight = true;
 
     try {
 
@@ -5297,32 +5301,67 @@ if (customerEmailInput) {
 
       console.log("Customer lookup response:", data);
 
-     if (!data.found) {
-
-  window.RETURNING_CUSTOMER = false;
-
-  const badge = document.getElementById("returning-customer-badge");
-  if (badge) badge.classList.add("hidden");
-
-  return;
-
-}
-
-      console.log("Returning customer detected:", data.customer);
       const badge = document.getElementById("returning-customer-badge");
 
-if (badge) {
+      /* ===============================
+         NOT FOUND → CREATE CUSTOMER EARLY
+      =============================== */
 
-  const hires = Number(data.customer.hire_count || 0);
+      if (!data.found) {
 
-  badge.textContent =
-    hires > 0
-      ? `✔ Returning customer — ${hires} previous hire${hires > 1 ? "s" : ""}`
-      : `✔ Returning customer`;
+        console.log("🆕 New customer → creating early");
 
-  badge.classList.remove("hidden");
+        try {
 
-}
+          await fetch(apiUrl(`/api/customers`), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              full_name: customerNameInput?.value || "",
+              email: email,
+              mobile: customerMobileInput?.value || ""
+            })
+          });
+
+        } catch (err) {
+
+          console.warn("⚠️ Failed to create customer early:", err);
+
+        }
+
+        window.RETURNING_CUSTOMER = false;
+
+        if (badge) {
+          badge.classList.add("hidden");
+        }
+
+        lookupInFlight = false;
+        return;
+
+      }
+
+      /* ===============================
+         FOUND → RETURNING CUSTOMER
+      =============================== */
+
+      console.log("Returning customer detected:", data.customer);
+
+      if (badge) {
+
+        const hires = Number(data.customer.hire_count || 0);
+
+        badge.textContent =
+          hires > 0
+            ? `✔ Returning customer — ${hires} previous hire${hires > 1 ? "s" : ""}`
+            : `✔ Returning customer`;
+
+        badge.classList.remove("hidden");
+
+      }
+
+      /* ===============================
+         AUTO-FILL
+      =============================== */
 
       if (customerNameInput && !customerNameInput.value) {
         customerNameInput.value = data.customer.full_name || "";
@@ -5337,6 +5376,10 @@ if (badge) {
     } catch (err) {
 
       console.warn("Customer lookup failed:", err);
+
+    } finally {
+
+      lookupInFlight = false;
 
     }
 
