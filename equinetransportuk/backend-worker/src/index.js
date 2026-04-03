@@ -1339,7 +1339,7 @@ console.log("✅ BOOKING BUILT");
 
 
 
-    /* ===============================
+/* ===============================
    SAVE CUSTOMER (SAFE)
 =============================== */
 
@@ -1377,53 +1377,84 @@ try {
 
   }
 
+  // ✅ ALWAYS attach to booking (CRITICAL FIX)
+  booking.customerId = customer?.id || null;
+
 } catch (err) {
+
   console.log("⚠️ CUSTOMER ERROR:", err);
 
-  // fallback → still allow booking
   customer = { id: null };
+  booking.customerId = null;
+
 }
 
 
-// ===============================
-// FORM TYPE LOGIC
-// ===============================
+/* ===============================
+   FORM TYPE LOGIC (FIXED)
+=============================== */
 
 let requiredFormType = "long";
 
 try {
-  const result = await env.DB.prepare(`
-    SELECT pickup_at
-    FROM bookings
-    WHERE customer_id = ?
-    ORDER BY pickup_at DESC
-    LIMIT 2
-  `)
-    .bind(customer?.id || null)
+
+  if (booking.customerId) {
+
+    const result = await env.DB.prepare(`
+      SELECT pickup_at
+      FROM bookings
+      WHERE customer_id = ?
+      ORDER BY pickup_at DESC
+      LIMIT 2
+    `)
+    .bind(booking.customerId)
     .all();
 
-  const previousBooking = result.results?.[1];
+    const previousBooking = result.results?.[1];
 
-  if (previousBooking?.pickup_at) {
-    const lastHireDate = new Date(previousBooking.pickup_at);
-    const now = new Date();
+    if (previousBooking?.pickup_at) {
 
-    const diffDays =
-      (now.getTime() - lastHireDate.getTime()) / (1000 * 60 * 60 * 24);
+      const lastHireDate = new Date(previousBooking.pickup_at);
+      const currentBookingDate = new Date(booking.pickupAt);
 
-    if (diffDays <= 90) {
-      requiredFormType = "short";
+      const diffDays =
+        (currentBookingDate.getTime() - lastHireDate.getTime()) /
+        (1000 * 60 * 60 * 24);
+
+      console.log("🧠 Days since last booking:", diffDays);
+
+      if (diffDays <= 90) {
+
+        requiredFormType = "short";
+        console.log("✅ SHORT FORM selected");
+
+      } else {
+
+        console.log("📄 LONG FORM selected (>90 days)");
+
+      }
+    } else {
+
+      console.log("📄 No previous booking → LONG FORM");
+
     }
+
+  } else {
+
+    console.log("⚠️ No customerId → LONG FORM fallback");
+
   }
 
 } catch (err) {
+
   console.warn("Form type check failed:", err);
+
 }
 
 
-// ===============================
-// FORM LINK BUILD
-// ===============================
+/* ===============================
+   FORM LINK BUILD (FIXED)
+=============================== */
 
 const bookingId = booking.id;
 
@@ -1432,13 +1463,22 @@ const formBase =
     ? `${SITE_BASE}/forms/short-form.html`
     : `${SITE_BASE}/forms/long-form.html`;
 
-const formLink = `${formBase}?bookingID=${encodeURIComponent(bookingId)}`;
+// ✅ FIXED PARAM NAME
+const formLink = `${formBase}?bookingId=${encodeURIComponent(bookingId)}`;
 
 booking.requiredFormType = requiredFormType;
 booking.requiredFormLink = formLink;
 
-// 🧪 DEBUG (keep for now)
-console.log("🧪 FORM DEBUG:", booking.requiredFormType, booking.requiredFormLink);
+
+/* ===============================
+   DEBUG (KEEP FOR NOW)
+=============================== */
+
+console.log("🧪 FORM DEBUG:", {
+  type: booking.requiredFormType,
+  link: booking.requiredFormLink,
+  customerId: booking.customerId
+});
 
 
 // ===============================
