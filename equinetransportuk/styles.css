@@ -2957,3 +2957,77 @@ textarea {
   color: #b91c1c;
   font-weight: 600;
 }
+
+/* ===============================
+   DEPOSIT PAGE
+=============================== */
+
+.deposit-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deposit-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px;
+  width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.deposit-logo {
+  width: 120px;
+  margin-bottom: 10px;
+}
+
+.deposit-card h2 {
+  margin-bottom: 8px;
+}
+
+#booking-info {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.deposit-card label {
+  display: block;
+  text-align: left;
+  margin: 12px 0 6px;
+  font-weight: 600;
+}
+
+.deposit-card input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+.stripe-card {
+  padding: 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+}
+
+#submit-btn {
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #1f6feb;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deposit-note {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #666;
+}
