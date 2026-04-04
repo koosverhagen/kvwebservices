@@ -342,7 +342,7 @@ if (request.method === "GET" && url.pathname === "/api/outstanding-session") {
     paymentType: "outstanding"
   },
 
-  success_url: `${env.PUBLIC_SITE_URL}/booking-success?outstanding=paid&bookingId=${bookingId}`,
+ success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${bookingId}`,
   cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
 });
 

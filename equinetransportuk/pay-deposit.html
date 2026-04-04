@@ -100,7 +100,7 @@ fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
     if (result.error) {
       document.getElementById("message").innerText = result.error.message;
     } else {
-      window.location.href = "index.html?deposit=success";
+      window.location.href = `index.html?deposit=success&bookingId=${bookingId}`;
     }
   });
 

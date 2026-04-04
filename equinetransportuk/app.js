@@ -1888,8 +1888,14 @@ async function handleStripeReturn() {
   IS_STRIPE_RETURN = true;
 
   const url = new URL(window.location.href);
+
   const state = url.searchParams.get("checkout");
   const sessionId = url.searchParams.get("session_id");
+
+  // 🔥 NEW
+  const bookingId = url.searchParams.get("bookingId");
+  const isDeposit = url.searchParams.get("deposit") === "success";
+  const isOutstanding = url.searchParams.get("outstanding") === "paid";
 
   /* ===============================
      EXIT CONDITIONS
@@ -1900,6 +1906,97 @@ async function handleStripeReturn() {
     IS_STRIPE_RETURN = false;
     return;
   }
+
+  /* ===============================
+     🔥 NEW: DEPOSIT / OUTSTANDING FLOW
+  =============================== */
+
+  if (bookingId && (isDeposit || isOutstanding)) {
+
+    console.log("💰 Payment success (non-checkout):", {
+      bookingId,
+      type: isDeposit ? "deposit" : "outstanding"
+    });
+
+    goToStep(5);
+
+    const container = document.getElementById("booking-confirmation");
+
+    if (container) {
+      container.innerHTML = `
+        <div class="confirmation-card pro">
+          <h2>✅ Payment received</h2>
+          <div class="confirmation-note">
+            Loading your booking…
+          </div>
+        </div>
+      `;
+    }
+
+    try {
+
+      const res = await fetch(
+        `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list?from=2020-01-01&to=2100-01-01`
+      );
+
+      const data = await res.json();
+
+      let booking = (data.bookings || []).find(
+        b => b.id === bookingId
+      );
+
+      if (!booking) {
+        throw new Error("Booking not found");
+      }
+
+      booking = normaliseBookingDates(booking);
+
+      renderBookingConfirmation(booking);
+
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + "#booking"
+      );
+
+      BOOKINGS_CACHE = null;
+      BOOKINGS_CACHE_AT = 0;
+
+      await getBookings(true);
+
+      STRIPE_FLOW_COMPLETED = true;
+
+    } catch (err) {
+
+      console.error("💥 Payment return error:", err);
+
+      if (container) {
+        container.innerHTML = `
+          <div class="confirmation-card pro">
+            <h2>⏳ Payment received</h2>
+            <div class="confirmation-note">
+              Your booking is being updated.<br>
+              Please refresh or check your email.
+            </div>
+            <button onclick="location.reload()" class="btn primary">
+              Refresh
+            </button>
+          </div>
+        `;
+      }
+
+    } finally {
+      setTimeout(() => {
+        IS_STRIPE_RETURN = false;
+      }, 1000);
+    }
+
+    return;
+  }
+
+  /* ===============================
+     NORMAL STRIPE CHECKOUT FLOW
+  =============================== */
 
   if (state !== "success" || !sessionId) {
     IS_STRIPE_RETURN = false;
@@ -1912,10 +2009,6 @@ async function handleStripeReturn() {
 
   stripeReturnHandled = true;
 
-  /* ===============================
-     MAIN FLOW
-  =============================== */
-
   stripeReturnPromise = (async () => {
 
     console.log("🚀 handleStripeReturn", { sessionId });
@@ -1923,10 +2016,6 @@ async function handleStripeReturn() {
     goToStep(5);
 
     const container = document.getElementById("booking-confirmation");
-
-    /* ===============================
-       🟢 INSTANT UI
-    =============================== */
 
     if (container) {
       container.innerHTML = `
@@ -1941,71 +2030,53 @@ async function handleStripeReturn() {
 
     try {
 
-      /* ===============================
-         FETCH BOOKING (RETRY SAFE)
-      =============================== */
-
       let booking = await fetchBookingWithRetry(sessionId);
 
       console.log("⚡ Stripe session result:", booking);
 
-      /* ===============================
-         STILL PROCESSING
-      =============================== */
-
       if (!booking || !booking.pickupAt) {
 
-  console.warn("⚠️ Booking not ready — retrying once");
+        console.warn("⚠️ Booking not ready — retrying once");
 
-  // small delay (lets webhook finish)
-  await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 500));
 
-  // retry once (fast path should now hit KV)
-  booking = await fetchBookingWithRetry(sessionId, 2);
+        booking = await fetchBookingWithRetry(sessionId, 2);
 
-  // still not ready → show fallback UI
-  if (!booking || !booking.pickupAt) {
+        if (!booking || !booking.pickupAt) {
 
-    console.warn("⚠️ Booking still not ready after retry");
+          console.warn("⚠️ Booking still not ready after retry");
 
-    if (container) {
-      container.innerHTML = `
-        <div class="confirmation-card pro">
-          <h2>⏳ Payment received</h2>
-          <div class="confirmation-note">
-            Finalising your booking…<br>
-            Please wait a few seconds.
-          </div>
-        </div>
-      `;
-    }
+          if (container) {
+            container.innerHTML = `
+              <div class="confirmation-card pro">
+                <h2>⏳ Payment received</h2>
+                <div class="confirmation-note">
+                  Finalising your booking…<br>
+                  Please wait a few seconds.
+                </div>
+              </div>
+            `;
+          }
 
-    return;
-  }
-}
-
-      /* ===============================
-         SUCCESS
-      =============================== */
+          return;
+        }
+      }
 
       console.log("✅ FINAL BOOKING:", booking);
 
       booking = normaliseBookingDates(booking);
 
-      // clear availability cache (booking now confirmed)
       VEHICLE_AVAILABILITY_CACHE.clear();
       VEHICLE_AVAILABILITY_PROMISES.clear();
 
       renderBookingConfirmation(booking);
 
-      // clean URL
       window.history.replaceState(
         {},
         "",
         window.location.pathname + "#booking"
       );
 
-      // refresh bookings cache
       BOOKINGS_CACHE = null;
       BOOKINGS_CACHE_AT = 0;
 
@@ -2013,7 +2084,6 @@ async function handleStripeReturn() {
 
       console.log("🎉 Stripe return complete");
 
-      // ✅ mark Stripe flow complete (prevents UI re-trigger)
       STRIPE_FLOW_COMPLETED = true;
 
     } catch (err) {
@@ -2036,10 +2106,6 @@ async function handleStripeReturn() {
       }
 
     } finally {
-
-      /* ===============================
-         DELAY UNLOCK (CRITICAL)
-      =============================== */
 
       setTimeout(() => {
         IS_STRIPE_RETURN = false;
