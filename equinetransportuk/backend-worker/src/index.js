@@ -1256,6 +1256,44 @@ console.log("🔥 BEFORE BUILD BOOKING");   // 👈 ADD THIS LINE
 console.log("📦 BUILD BOOKING");
 console.log("🚨 FORM BLOCK SHOULD RUN NEXT");
 
+/* ===============================
+   🔥 CUSTOMER NAME FIX (FINAL)
+=============================== */
+
+function cleanCustomerName(name) {
+
+  if (!name) return null;
+
+  let n = String(name).trim();
+
+  // ❌ block junk
+  const bad = ["test", "customer", "test customer"];
+  if (bad.includes(n.toLowerCase())) return null;
+
+  // remove double spaces
+  n = n.replace(/\s+/g, " ");
+
+  // Title Case
+  n = n
+    .toLowerCase()
+    .split(" ")
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
+
+  return n;
+}
+
+// 🔥 STRICT PRIORITY
+const finalCustomerName =
+  cleanCustomerName(session.metadata.customerName) ||
+  cleanCustomerName(session.customer_details?.name) ||
+  null;
+
+// 🔥 HARD FAIL SAFE
+if (!finalCustomerName) {
+  console.warn("⚠️ No valid customer name found");
+}
+
 console.log("🧪 NAME DEBUG:", {
   metadataName: session.metadata.customerName,
   stripeName: session.customer_details?.name
@@ -1283,11 +1321,7 @@ dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
   durationDays,
   pickupTime,
 
-  customerName: (
-  session.metadata.customerName ||
-  session.customer_details?.name ||
-  ""
-).trim() || "Customer",
+customerName: finalCustomerName || "Customer",
   customerEmail: session.metadata.customerEmail || session.customer_details?.email || "",
   customerNotes,
 
@@ -1326,6 +1360,10 @@ dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
 
 console.log("✅ BOOKING BUILT");
 
+if (!finalCustomerName) {
+  console.warn("❌ Booking created without proper name:", booking.id);
+}
+
 console.log("📧 EMAIL SOURCE:", {
   metadata: session.metadata.customerEmail,
   stripe: session.customer_details?.email,
@@ -1353,7 +1391,11 @@ try {
    🔥 FIX: UPDATE NAME IF CHANGED
 =============================== */
 
-if (customer && booking.customerName && customer.full_name !== booking.customerName) {
+if (
+  customer &&
+  finalCustomerName &&
+  customer.full_name !== finalCustomerName
+) {
 
   console.log("✏️ Updating customer name:", customer.full_name, "→", booking.customerName);
 
@@ -1362,11 +1404,11 @@ if (customer && booking.customerName && customer.full_name !== booking.customerN
     SET full_name = ?, updated_at = ?
     WHERE id = ?
   `)
-  .bind(
-    booking.customerName,
-    new Date().toISOString(),
-    customer.id
-  )
+ .bind(
+  finalCustomerName,
+  new Date().toISOString(),
+  customer.id
+)
   .run();
 
   // keep in memory updated
@@ -1385,7 +1427,7 @@ if (!customer) {
     `)
     .bind(
       customerId,
-      booking.customerName,
+      finalCustomerName || "Customer",
       booking.customerEmail,
       session.metadata.customerMobile || "",
       now,
