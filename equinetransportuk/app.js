@@ -1765,7 +1765,12 @@ function renderBookingConfirmation(booking) {
 
   const priceTotal = booking.hireTotal || 0;
   const paidNow = booking.confirmationFee || 0;
-  const remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
+  let remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
+
+// 🔥 FORCE ZERO IF FULLY PAID
+if (booking.paymentStatus === "fully_paid") {
+  remaining = 0;
+}
 
   let extrasHtml = "";
 
@@ -1860,7 +1865,7 @@ function renderBookingConfirmation(booking) {
         </div>
 
         ${
-          remaining > 0
+          remaining > 0 && booking.paymentStatus !== "fully_paid"
             ? `
           <div class="payment-row remaining">
             <span>Pay on collection</span>
