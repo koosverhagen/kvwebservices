@@ -1764,8 +1764,19 @@ function renderBookingConfirmation(booking) {
   const extras = booking.extras || {};
 
   const priceTotal = booking.hireTotal || 0;
-  const paidNow = booking.confirmationFee || 0;
-  let remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
+let paidNow = booking.confirmationFee || 0;
+
+// 🔥 IF FULLY PAID → EVERYTHING IS PAID
+if (booking.paymentStatus === "fully_paid") {
+  paidNow = priceTotal;
+}
+
+let remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
+
+// 🔥 FORCE ZERO IF FULLY PAID
+if (booking.paymentStatus === "fully_paid") {
+  remaining = 0;
+}
 
 // 🔥 FORCE ZERO IF FULLY PAID
 if (booking.paymentStatus === "fully_paid") {
@@ -1813,95 +1824,97 @@ if (booking.paymentStatus === "fully_paid") {
   const shortRef = booking.id?.slice(-8);
 
   /* ===============================
-     RENDER
-  =============================== */
+   RENDER
+=============================== */
 
-  container.innerHTML = `
-    <div class="confirmation-card apple">
+container.innerHTML = `
+  <div class="confirmation-card apple">
 
-      <div class="confirmation-header">
-        <h2>${statusTitle}</h2>
-        <div class="confirmation-ref">Ref ${shortRef}</div>
+    <div class="confirmation-header">
+      <h2>${statusTitle}</h2>
+      <div class="confirmation-ref">Ref ${shortRef}</div>
+    </div>
+
+    <div class="confirmation-note" style="margin-bottom:14px;">
+      ${statusNote}
+    </div>
+
+    <div class="confirmation-block">
+      <div class="label">Vehicle</div>
+      <div class="value strong">${vehicleName}</div>
+    </div>
+
+    <div class="confirmation-block grid">
+      <div>
+        <div class="label">Pickup</div>
+        <div class="value">${formatDate(booking.pickupAt)}</div>
       </div>
-
-      <div class="confirmation-note" style="margin-bottom:14px;">
-        ${statusNote}
+      <div>
+        <div class="label">Return</div>
+        <div class="value">${formatDate(booking.dropoffAt)}</div>
       </div>
+    </div>
 
-      <div class="confirmation-block">
-        <div class="label">Vehicle</div>
-        <div class="value strong">${vehicleName}</div>
-      </div>
+    <div class="payment-card">
 
-      <div class="confirmation-block grid">
-        <div>
-          <div class="label">Pickup</div>
-          <div class="value">${formatDate(booking.pickupAt)}</div>
+      ${extrasHtml ? `
+        <div class="payment-row" style="font-weight:600; margin-bottom:6px;">
+          Extras
         </div>
-        <div>
-          <div class="label">Return</div>
-          <div class="value">${formatDate(booking.dropoffAt)}</div>
-        </div>
+        ${extrasHtml}
+        <div style="height:1px; background:#e5e7eb; margin:10px 0;"></div>
+      ` : ""}
+
+      <div class="payment-row total">
+        <span>Total hire</span>
+        <span>£${priceTotal.toFixed(2)}</span>
       </div>
 
-      <div class="payment-card">
-
-        ${extrasHtml ? `
-          <div class="payment-row" style="font-weight:600; margin-bottom:6px;">
-            Extras
-          </div>
-          ${extrasHtml}
-          <div style="height:1px; background:#e5e7eb; margin:10px 0;"></div>
-        ` : ""}
-
-        <div class="payment-row total">
-          <span>Total hire</span>
+      ${
+        booking.paymentStatus === "fully_paid"
+          ? `
+        <!-- ✅ FULLY PAID CLEAN VIEW -->
+        <div class="payment-row paid" style="font-weight:600; color:#16a34a;">
+          <span>Total paid</span>
           <span>£${priceTotal.toFixed(2)}</span>
         </div>
+      `
+          : `
+        <!-- 💰 NORMAL / DEPOSIT VIEW -->
+        <div class="payment-row paid">
+          <span>Paid now</span>
+          <span>£${paidNow.toFixed(2)}</span>
+        </div>
 
-       ${
-  booking.paymentStatus === "fully_paid"
-    ? `
-  <div class="payment-row paid" style="font-weight:600; color:#16a34a;">
-    <span>Total paid</span>
-    <span>£${priceTotal.toFixed(2)}</span>
-  </div>
-`
-    : `
-  <div class="payment-row paid">
-    <span>Paid now</span>
-    <span>£${paidNow.toFixed(2)}</span>
-  </div>
-
-  ${
-    remaining > 0
-      ? `
-    <div class="payment-row remaining">
-      <span>Pay on collection</span>
-      <span>£${remaining.toFixed(2)}</span>
-    </div>
-  `
-      : ""
-  }
-`
-}
-
-      </div>
-
-      <div class="confirmation-trust">
-        <div class="trust-item">✔ Booking secured</div>
-        <div class="trust-item">✔ No hidden fees</div>
-        <div class="trust-item">✔ Email confirmation sent</div>
-      </div>
-
-      <div class="confirmation-actions">
-        <a href="https://kvwebservices.co.uk/equinetransportuk/index.html" class="btn">
-          Back to homepage
-        </a>
-      </div>
+        ${
+          remaining > 0
+            ? `
+          <div class="payment-row remaining">
+            <span>Pay on collection</span>
+            <span>£${remaining.toFixed(2)}</span>
+          </div>
+        `
+            : ""
+        }
+      `
+      }
 
     </div>
-  `;
+
+    <div class="confirmation-trust">
+      <div class="trust-item">✔ Booking secured</div>
+      <div class="trust-item">✔ No hidden fees</div>
+      <div class="trust-item">✔ Email confirmation sent</div>
+    </div>
+
+    <div class="confirmation-actions">
+      <a href="https://kvwebservices.co.uk/equinetransportuk/index.html" class="btn">
+        Back to homepage
+      </a>
+    </div>
+
+  </div>
+`;
 }
 
 
