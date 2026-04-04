@@ -1859,26 +1859,32 @@ if (booking.paymentStatus === "fully_paid") {
           <span>£${priceTotal.toFixed(2)}</span>
         </div>
 
-        <div class="payment-row paid">
-          <span>Paid now</span>
-          <span>£${paidNow.toFixed(2)}</span>
-        </div>
+       ${
+  booking.paymentStatus === "fully_paid"
+    ? `
+  <div class="payment-row paid" style="font-weight:600; color:#16a34a;">
+    <span>Total paid</span>
+    <span>£${priceTotal.toFixed(2)}</span>
+  </div>
+`
+    : `
+  <div class="payment-row paid">
+    <span>Paid now</span>
+    <span>£${paidNow.toFixed(2)}</span>
+  </div>
 
-        ${
-          remaining > 0 && booking.paymentStatus !== "fully_paid"
-            ? `
-          <div class="payment-row remaining">
-            <span>Pay on collection</span>
-            <span>£${remaining.toFixed(2)}</span>
-          </div>
-        `
-            : `
-          <div class="payment-row paid" style="color:#16a34a;">
-            <span>Balance</span>
-            <span>£0.00 (Paid)</span>
-          </div>
-        `
-        }
+  ${
+    remaining > 0
+      ? `
+    <div class="payment-row remaining">
+      <span>Pay on collection</span>
+      <span>£${remaining.toFixed(2)}</span>
+    </div>
+  `
+      : ""
+  }
+`
+}
 
       </div>
 
