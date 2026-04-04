@@ -43,7 +43,7 @@
 </div>
 
 <script>
-const stripe = Stripe("pk_test_YOUR_PUBLIC_KEY");
+const stripe = Stripe("psk_test_51PmwmdB9WIgqJu1YmR1A1HMrRqJRFjtLD9nbXb40yoFVLjEemJpJZH41S0FSEuPSWjaahEaGLFKaul0ZYXAMNj4o00dnCRPBm8"); // 🔥 IMPORTANT
 
 const params = new URLSearchParams(window.location.search);
 const bookingId = params.get("bookingId");
@@ -65,15 +65,19 @@ fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
   const clientSecret = data.clientSecret;
 
   elements = stripe.elements({
-  locale: "en-GB", // 🇬🇧 IMPORTANT
-  style: {
-    base: {
-      fontSize: "16px"
+    locale: "en-GB",
+    style: {
+      base: {
+        fontSize: "16px"
+      }
     }
-  }
-});
+  });
 
-  const card = elements.create("card");
+  // 🔥 FIX 1: remove postcode requirement
+  const card = elements.create("card", {
+    hidePostalCode: true
+  });
+
   card.mount("#card-element");
 
   const form = document.getElementById("payment-form");
@@ -84,15 +88,13 @@ fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
     const name = document.getElementById("card-name").value;
 
     const result = await stripe.confirmCardPayment(clientSecret, {
-     payment_method: {
-  card: card,
-  billing_details: {
-    name: name,
-    address: {
-      country: "GB"
-    }
-  }
-}
+      payment_method: {
+        card: card,
+        billing_details: {
+          name: name
+          // ❌ removed address block (prevents postcode error)
+        }
+      }
     });
 
     if (result.error) {
