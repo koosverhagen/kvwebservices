@@ -4179,64 +4179,38 @@ function renderFleet() {
 ====================================================== */
 
 
-async function fetchBookingWithRetry(sessionId, attempts = 5) {
+async function fetchBookingWithRetry(sessionId, attempts = 10) {
 
-  if (!sessionId) return null;
+  const delays = [300, 700, 1200, 2000, 3000, 4000, 5000];
 
-  if (BOOKING_BY_SESSION_PROMISES.has(sessionId)) {
-    return BOOKING_BY_SESSION_PROMISES.get(sessionId);
-  }
+  for (let i = 0; i < attempts; i++) {
 
-  const requestPromise = (async () => {
+    try {
 
-    for (let i = 0; i < attempts; i++) {
+      const res = await fetch(
+        `${BACKEND_API_BASE}/api/bookings/by-session?session_id=${sessionId}`
+      );
 
-      try {
+      const data = await res.json();
 
-        const res = await fetch(
-          apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
-        );
+      console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
 
-        if (res.ok) {
-
-          const data = await res.json();
-
-          console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
-
-          if (data?.booking?.pickupAt) {
-            return data.booking;
-          }
-        }
-
-      } catch (err) {
-        console.warn(`Retry attempt ${i + 1} failed`, err);
+      if (data?.found && data?.booking) {
+        return data.booking;
       }
 
-      /* ===============================
-         🔥 IMPROVED BACKOFF
-      =============================== */
-
-      if (i < attempts - 1) {
-
-        const delay = Math.min(300 + (i * 400), 2500);
-
-        console.log(`⏳ waiting ${delay}ms before retry`);
-
-        await new Promise(r => setTimeout(r, delay));
-      }
+    } catch (err) {
+      console.warn("Retry fetch failed:", err);
     }
 
-    return null;
+    const delay = delays[i] || 5000;
 
-  })();
+    console.log(`⏳ waiting ${delay}ms before retry`);
 
-  BOOKING_BY_SESSION_PROMISES.set(sessionId, requestPromise);
-
-  try {
-    return await requestPromise;
-  } finally {
-    BOOKING_BY_SESSION_PROMISES.delete(sessionId);
+    await new Promise(r => setTimeout(r, delay));
   }
+
+  return null;
 }
 
 function getVehicleMainImage(vehicle){
@@ -6902,7 +6876,7 @@ async function renderCalendarInternal() {
      MONTH SETUP
   =============================== */
 
-  const firstDay = new Date(year, month, 1);
+ const firstDay = new Date(Date.UTC(year, month, 1));
   const lastDay = new Date(year, month + 1, 0);
 
   // ✅ FIXED (Monday-based calendar)
@@ -6921,7 +6895,7 @@ async function renderCalendarInternal() {
 
   for (let day = 1; day <= lastDay.getDate(); day++) {
 
-    const dayDate = new Date(year, month, day);
+    const dayDate = new Date(Date.UTC(year, month, day));
     dayDate.setHours(0,0,0,0);
 
     const dayEl = document.createElement("div");
