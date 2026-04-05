@@ -1045,8 +1045,8 @@ function getDatesBetween(start, end) {
 async function handleStripeWebhook(request, env) {
 
   const SITE_BASE =
-    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://kvwebservices.co.uk/equinetransportuk";
+  env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+  "https://kvwebservices.co.uk/equinetransportuk";
 
   const payload = await request.text();
   const sig = request.headers.get("stripe-signature");
@@ -1065,328 +1065,816 @@ async function handleStripeWebhook(request, env) {
     );
   } catch (err) {
     console.log("❌ Webhook verification failed:", err.message);
-    return new Response(JSON.stringify({ error: "Webhook verification failed" }), { status: 400 });
+    return new Response(
+      JSON.stringify({ error: "Webhook signature verification failed" }),
+      { status: 400 }
+    );
   }
 
   const eventId = event.id;
 
-  if (await env.BOOKINGS_KV.get(eventId)) {
-    console.log("⚠️ Already processed:", eventId);
+  const alreadyProcessed = await env.BOOKINGS_KV.get(eventId);
+  if (alreadyProcessed) {
+    console.log("⚠️ Webhook already processed:", eventId);
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
-  let bookingSuccess = false;
-
   if (event.type === "checkout.session.completed") {
 
-    try {
+    console.log("🔥 CHECKOUT SESSION COMPLETED EVENT");
 
-      const session = event.data.object;
-      const meta = session.metadata || {};
-
-      const paymentType = meta.paymentType;
-      const paymentBookingId = meta.bookingId;
-
-      /* ===============================
-         HANDLE DEPOSIT / OUTSTANDING
-      =============================== */
-
-      if (paymentType && paymentBookingId) {
-
-        console.log("💳 Payment update:", paymentType, paymentBookingId);
-
-        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-        for (const key of list.keys) {
-
-          const data = await env.BOOKINGS_KV.get(key.name);
-          if (!data) continue;
-
-          let parsed;
-          try { parsed = JSON.parse(data); } catch { continue; }
-
-          if (!Array.isArray(parsed)) continue;
-
-          let updated = false;
-
-          for (const b of parsed) {
-
-            if (String(b.id) === String(paymentBookingId)) {
-
-              if (paymentType === "deposit") b.depositPaid = true;
-              if (paymentType === "outstanding") b.outstandingPaid = true;
-
-              updated = true;
-            }
-          }
-
-          if (updated) {
-            await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
-            console.log("✅ Payment status updated");
-            break;
-          }
-        }
-
-        await env.BOOKINGS_KV.put(eventId, "processed");
-        return new Response(JSON.stringify({ received: true }), { status: 200 });
-      }
-
-      /* ===============================
-         NORMAL BOOKING FLOW
-      =============================== */
-
-      if (!meta.vehicleId) {
-        console.log("⚠️ Missing vehicleId (not a booking)");
-        await env.BOOKINGS_KV.put(eventId, "processed");
-        return new Response(JSON.stringify({ received: true }), { status: 200 });
-      }
-
-      const bookingId = session.id; // 🔥 SINGLE SOURCE OF TRUTH
-
-      const totalHire = Number(meta.totalHire || 0);
-      const confirmationFee = Number(meta.confirmationFee || 0);
-      const outstandingAmount = Number(meta.outstandingAmount || 0);
-
-      const pickupDate = meta.pickupDate;
-      const pickupTime = meta.pickupTime || "07:00";
-      const durationDays = Number(meta.durationDays || 1);
-
-      const pickupAt = londonDateTimeToUtc(pickupDate, pickupTime);
-
-      let dropoffAt = new Date(pickupAt);
-
-      if (durationDays === 0.5) {
-        dropoffAt.setHours(pickupTime === "13:00" ? 19 : 13);
-      } else {
-        dropoffAt.setDate(dropoffAt.getDate() + durationDays - 1);
-        dropoffAt.setHours(19, 0, 0, 0);
-      }
-
-      const booking = {
-        id: bookingId,
-
-        vehicleId: meta.vehicleId,
-
-        vehicleSnapshot: {
-          id: meta.vehicleId,
-          name: meta.vehicleName || "Horsebox"
-        },
-
-        pickupAt: pickupAt.toISOString(),
-        dropoffAt: dropoffAt.toISOString(),
-
-        pickupAtLocal: toLondonLocalISOString(pickupAt),
-        dropoffAtLocal: toLondonLocalISOString(dropoffAt),
-
-        durationDays,
-        pickupTime,
-
-        customerName: meta.customerName || "Customer",
-        customerEmail: session.customer_details?.email || "",
-        customerMobile: meta.customerMobile || "",
-
-        hireTotal: totalHire,
-        confirmationFee,
-        outstandingAmount,
-        depositAmount: 200,
-
-        extrasTotal: Number(meta.extrasTotal || 0),
-        extras: (() => {
   try {
-    return JSON.parse(meta.extrasJson || "{}");
-  } catch (e) {
-    console.log("⚠️ extrasJson parse failed:", meta.extrasJson);
-    return {};
-  }
-})(),
 
-        createdAt: new Date().toISOString(),
-        status: "confirmed"
-      };
+    console.log("🔥 ENTERING TRY BLOCK");
 
-      console.log("📦 BOOKING BUILT:", booking.id);
+    console.log("🔥 WEBHOOK START");
 
-      /* ===============================
-         CUSTOMER
-      =============================== */
+    const session = event.data.object;
 
-      let customer = await findCustomerByEmailOrMobile(
-        env,
-        booking.customerEmail,
-        booking.customerMobile
-      );
+const paymentType = session.metadata?.paymentType;
+const paymentBookingId = session.metadata?.bookingId;
 
-      if (!customer) {
-        const id = "cus_" + crypto.randomUUID();
-        const now = new Date().toISOString();
+    console.log("👉 session received");
 
-        await env.DB.prepare(`
-          INSERT INTO customers (id, full_name, email, mobile, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `)
-        .bind(id, booking.customerName, booking.customerEmail, booking.customerMobile, now, now)
-        .run();
+    if (!session?.metadata?.vehicleId) {
+      console.log("⚠️ Missing vehicleId");
+      await env.BOOKINGS_KV.put(eventId, "processed");
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
 
-        customer = { id };
-      }
+    /* ===============================
+       SAFE NUMBER PARSING
+    =============================== */
 
-      booking.customerId = customer.id;
+    const totalHire = Number(session.metadata?.totalHire || 0);
+    const confirmationFee = Number(session.metadata?.confirmationFee || 0);
+    const outstandingAmount = Number(session.metadata?.outstandingAmount || 0);
+    const baseCost = Number(session.metadata?.baseCost || totalHire || 0);
+    const discountAmount = Number(session.metadata?.discountAmount || 0);
 
-      /* ===============================
-         FORM LOGIC
-      =============================== */
+    const dartfordTotal = Number(session.metadata?.dartfordTotal || 0);
+    const earlyPickupTotal = Number(session.metadata?.earlyPickupTotal || 0);
+    const extrasTotal = Number(session.metadata?.extrasTotal || 0);
 
-      const previous = await env.DB.prepare(`
-        SELECT pickup_at
-        FROM bookings
-        WHERE customer_id = ?
-        ORDER BY pickup_at DESC
-        LIMIT 1
-      `)
-      .bind(customer.id)
-      .first();
-
-      let useShortForm = false;
-
-      if (previous?.pickup_at) {
-        const diff = Date.now() - new Date(previous.pickup_at).getTime();
-        if (diff < 90 * 24 * 60 * 60 * 1000) useShortForm = true;
-      }
-
-      booking.requiredFormLink = useShortForm
-        ? `${SITE_BASE}/forms/short-form.html?bookingId=${booking.id}`
-        : `${SITE_BASE}/forms/long-form.html?bookingId=${booking.id}`;
-
-     booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${booking.id}`;
-booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${booking.id}`;
-      /* ===============================
-         SAVE DB
-      =============================== */
-
-      await env.DB.prepare(`
-        INSERT INTO bookings (
-          id, customer_id, vehicle_id,
-          pickup_at, dropoff_at, duration_days,
-          status, created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
-      .bind(
-        booking.id,
-        booking.customerId,
-        booking.vehicleId,
-        booking.pickupAt,
-        booking.dropoffAt,
-        booking.durationDays,
-        "confirmed",
-        booking.createdAt
-      )
-      .run();
-
-      /* ===============================
-   SAVE KV
-================================ */
-
-const monthKey = booking.pickupAt.slice(0, 7);
-const key = `bookings:${monthKey}`;
-
-let existing = [];
+    let extras = {};
 
 try {
-
-  const raw = await env.BOOKINGS_KV.get(key);
-
-  if (raw) {
-    existing = JSON.parse(raw);
-    if (!Array.isArray(existing)) existing = [];
-  }
-
-} catch (err) {
-
-  console.log("⚠️ KV parse failed, resetting month:", key);
-  existing = [];
-
+  extras = JSON.parse(session.metadata?.extrasJson || "{}");
+} catch {
+  extras = {};
 }
 
-if (!existing.find(b => b.id === booking.id)) {
-  existing.push(booking);
+const customerNotes = session.metadata?.customerNotes || "";
 
-  try {
-    await env.BOOKINGS_KV.put(key, JSON.stringify(existing));
-    console.log("💾 Booking stored in month index:", key);
-  } catch (err) {
-    console.log("❌ KV month save FAILED:", err);
-  }
-}
+
+
+    console.log("💰 PRICING OK");
+
+    console.log("📦 SAVING BOOKING WITH EXTRAS:", extras);
 
 /* ===============================
-   🔥 CRITICAL FIX — SESSION LOOKUP (HARDENED)
-================================ */
+   HALF DAY DROP-OFF HELPER
+=============================== */
 
-try {
+function getHalfDayDropoffTime(pickupTime, vehicleId) {
 
-  const sessionKey = `session:${booking.id}`; // 🔥 MUST match frontend session_id
+  // future-proof: only 3.5T supports half-day
+  if (!String(vehicleId || "").startsWith("v35")) return null;
 
-  await env.BOOKINGS_KV.put(
-    sessionKey,
-    JSON.stringify(booking),
-    { expirationTtl: 60 * 60 * 24 } // 24h
+  return pickupTime === "13:00" ? "19:00" : "13:00";
+}
+/* ===============================
+   DATES (FIXED FINAL)
+=============================== */
+
+const durationDays = Number(session.metadata.durationDays || 1);
+const pickupTime = session.metadata.pickupTime || "07:00";
+
+let rawPickupDate = session.metadata.pickupDate || "";
+
+if (rawPickupDate.includes("T")) {
+  rawPickupDate = rawPickupDate.split("T")[0];
+}
+
+console.log("📅 RAW DATE:", session.metadata.pickupDate);
+console.log("📅 CLEAN DATE:", rawPickupDate);
+
+/* ===============================
+   PICKUP (FIXED — MATCHES DROPOFF)
+=============================== */
+
+let pickupAt;
+let pickupAtDate;
+
+// ✅ use London-safe conversion
+pickupAtDate = londonDateTimeToUtc(rawPickupDate, pickupTime);
+
+// ✅ convert to ISO ONCE
+pickupAt = pickupAtDate.toISOString();
+/* ===============================
+   DROPOFF (FIXED — CLEAN + SAFE)
+=============================== */
+
+let dropoffAt;
+let dropoffAtDate;
+
+if (durationDays === 0.5) {
+
+  const dropoffTime = getHalfDayDropoffTime(
+    pickupTime,
+    session.metadata.vehicleId
   );
 
-  console.log("⚡ Session mapping saved:", sessionKey);
+  // ✅ use London-safe conversion
+  dropoffAtDate = londonDateTimeToUtc(rawPickupDate, dropoffTime);
+
+} else {
+
+  const dropoffDate = new Date(rawPickupDate);
+  dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
+
+  const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
+
+  // ✅ use London-safe conversion
+  dropoffAtDate = londonDateTimeToUtc(dropoffDateStr, "19:00");
+
+}
+
+// ✅ convert to ISO ONCE (final step only)
+dropoffAt = dropoffAtDate.toISOString();
+/* ===============================
+   SAFETY CHECK (FIXED — CONSISTENT)
+=============================== */
+
+if (
+  isNaN(pickupAtDate.getTime()) ||
+  isNaN(dropoffAtDate.getTime())
+) {
+
+  console.warn("⚠️ Invalid date detected — applying fallback", {
+    rawPickupDate,
+    pickupTime,
+    durationDays
+  });
+
+  const now = new Date();
+
+  // fallback pickup = now
+  pickupAtDate = now;
+
+  // fallback dropoff = +4 hours
+  dropoffAtDate = new Date(now);
+  dropoffAtDate.setHours(now.getHours() + 4);
+
+  // ✅ ALWAYS convert to ISO strings (consistent)
+  pickupAt = pickupAtDate.toISOString();
+  dropoffAt = dropoffAtDate.toISOString();
+}
+
+/* ===============================
+   SAFE LOGGING (ALWAYS WORKS)
+=============================== */
+
+console.log("📅 WEBHOOK TIMES:", {
+  pickupAt,
+  dropoffAt
+});
+
+
+console.log("🔥 FINAL TIMES CHECK:", {
+  pickupAt,
+  dropoffAt,
+  durationDays,
+  pickupTime
+});
+/* ===============================
+   BOOKING OBJECT
+=============================== */
+
+console.log("🔥 BEFORE BUILD BOOKING");   // 👈 ADD THIS LINE
+
+console.log("📦 BUILD BOOKING");
+console.log("🚨 FORM BLOCK SHOULD RUN NEXT");
+
+/* ===============================
+   🔥 CUSTOMER NAME FIX (FINAL)
+=============================== */
+
+function cleanCustomerName(name) {
+
+  if (!name) return null;
+
+  let n = String(name).trim();
+
+  // ❌ block junk
+  const bad = ["test", "customer", "test customer"];
+  if (bad.includes(n.toLowerCase())) return null;
+
+  // remove double spaces
+  n = n.replace(/\s+/g, " ");
+
+  // Title Case
+  n = n
+    .toLowerCase()
+    .split(" ")
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
+
+  return n;
+}
+
+// 🔥 STRICT PRIORITY
+const finalCustomerName =
+  cleanCustomerName(session.metadata.customerName) ||
+  cleanCustomerName(session.customer_details?.name) ||
+  null;
+
+// 🔥 HARD FAIL SAFE
+if (!finalCustomerName) {
+  console.warn("⚠️ No valid customer name found");
+}
+
+console.log("🧪 NAME DEBUG:", {
+  metadataName: session.metadata.customerName,
+  stripeName: session.customer_details?.name
+});
+
+const booking = {
+  id: session.metadata.bookingId || session.id,
+
+  vehicleId: session.metadata.vehicleId,
+
+  vehicleSnapshot: {
+    id: session.metadata.vehicleId,
+    name: session.metadata.vehicleName || "",
+    type: session.metadata.vehicleId.startsWith("v35")
+      ? "3.5 tonne"
+      : "7.5 tonne"
+  },
+
+pickupAt: pickupAt,
+dropoffAt: dropoffAt,
+
+ pickupAtLocal: toLondonLocalISOString(new Date(pickupAt)),
+dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
+
+  durationDays,
+  pickupTime,
+
+customerName: finalCustomerName || "Customer",
+  customerEmail: session.metadata.customerEmail || session.customer_details?.email || "",
+  customerNotes,
+
+  /* ===============================
+     🔥 PRICE STRUCTURE (FIX)
+  =============================== */
+
+  priceBase: baseCost,
+  priceExtras: extrasTotal,
+  priceTotal: totalHire,
+  paidNow: confirmationFee,
+  outstanding: outstandingAmount,
+
+  /* ===============================
+     KEEP OLD (for compatibility)
+  =============================== */
+
+  baseCost,
+  discountAmount,
+
+  dartfordTotal,
+  earlyPickupTotal,
+  extrasTotal,
+  extras,
+
+  hireTotal: totalHire,
+  confirmationFee,
+  outstandingAmount,
+
+  /* =============================== */
+
+  depositAmount: 200,
+  status: "confirmed",
+  createdAt: new Date().toISOString()
+};
+
+console.log("✅ BOOKING BUILT");
+
+if (!finalCustomerName) {
+  console.warn("❌ Booking created without proper name:", booking.id);
+}
+
+console.log("📧 EMAIL SOURCE:", {
+  metadata: session.metadata.customerEmail,
+  stripe: session.customer_details?.email,
+  final: booking.customerEmail
+});
+
+
+
+
+/* ===============================
+   SAVE CUSTOMER (FIRST - FIXED)
+=============================== */
+
+let customer = null;
+
+try {
+
+ customer = await findCustomerByEmailOrMobile(
+  env,
+  booking.customerEmail,
+  session.metadata.customerMobile || ""
+);
+
+/* ===============================
+   🔥 FIX: UPDATE NAME IF CHANGED
+=============================== */
+
+if (
+  customer &&
+  finalCustomerName &&
+  customer.full_name !== finalCustomerName
+) {
+
+  console.log("✏️ Updating customer name:", customer.full_name, "→", booking.customerName);
+
+  await env.DB.prepare(`
+    UPDATE customers
+    SET full_name = ?, updated_at = ?
+    WHERE id = ?
+  `)
+ .bind(
+  finalCustomerName,
+  new Date().toISOString(),
+  customer.id
+)
+  .run();
+
+  // keep in memory updated
+  customer.full_name = booking.customerName;
+}
+
+if (!customer) {
+
+    const customerId = "cus_" + crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    await env.DB.prepare(`
+      INSERT INTO customers (
+        id, full_name, email, mobile, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `)
+    .bind(
+      customerId,
+      finalCustomerName || "Customer",
+      booking.customerEmail,
+      session.metadata.customerMobile || "",
+      now,
+      now
+    )
+    .run();
+
+    customer = { id: customerId };
+
+  }
 
 } catch (err) {
 
-  console.log("❌ Session mapping FAILED:", err);
+  console.log("⚠️ CUSTOMER ERROR:", err);
+  customer = { id: null };
 
 }
 
 /* ===============================
-   MARK SUCCESS
-================================ */
+   🔥 CRITICAL LINE
+=============================== */
 
-bookingSuccess = true;
-      /* ===============================
-         EMAIL
-      =============================== */
+booking.customerId = customer?.id || null;
 
-      try {
 
-        const emailKey = `email_sent:${booking.id}`;
+/* ===============================
+   UPDATE CUSTOMER STATS (MISSING)
+=============================== */
 
-        if (!await env.BOOKINGS_KV.get(emailKey)) {
+try {
 
-          await sendBookingEmail(env, {
-            to: booking.customerEmail,
-            subject: `Booking confirmed — ${booking.vehicleSnapshot.name} (#${booking.id})`,
-            html: `<p>Booking confirmed. Ref: ${booking.id}</p>`
-          });
+  if (booking.customerId) {
 
-          await env.BOOKINGS_KV.put(emailKey, "1", {
-            expirationTtl: 60 * 60 * 24 * 30
-          });
-        }
+    await env.DB.prepare(`
+      UPDATE customers
+      SET
+        hire_count = COALESCE(hire_count, 0) + 1,
+        last_hire_at = ?,
+        updated_at = ?
+      WHERE id = ?
+    `)
+    .bind(
+      booking.pickupAt,
+      new Date().toISOString(),
+      booking.customerId
+    )
+    .run();
 
-      } catch (err) {
-        console.log("Email failed:", err);
-      }
+    console.log("📈 Customer stats updated");
 
-    } catch (err) {
+  }
 
-      console.log("💥 WEBHOOK CRASH:", err);
+} catch (err) {
 
-      await env.BOOKINGS_KV.put(eventId, "processed");
+  console.error("❌ Customer update failed:", err);
 
-      return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+}
+
+
+
+ /* ===============================
+   SAVE BOOKING (DB)
+=============================== */
+
+console.log("💾 SAVE BOOKING DB");
+
+try {
+
+  await env.DB.prepare(`
+    INSERT INTO bookings (
+      id,
+      customer_id,
+      vehicle_id,
+      pickup_at,
+      dropoff_at,
+      duration_days,
+      price_total,
+      paid_now,
+      status,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  .bind(
+    booking.id,
+    booking.customerId,   // ✅ FIXED
+    booking.vehicleId,
+    booking.pickupAt,
+    booking.dropoffAt,
+    booking.durationDays,
+    booking.hireTotal,
+    booking.confirmationFee,
+    booking.status,
+    booking.createdAt,
+    booking.createdAt
+  )
+  .run();
+
+  console.log("✅ DB SAVED");
+
+} catch (err) {
+  console.log("💥 DB ERROR:", err);
+}
+
+
+
+
+/* ===============================
+   FORM TYPE LOGIC (FIXED)
+=============================== */
+
+let requiredFormType = "long";
+
+try {
+
+  const result = await env.DB.prepare(`
+    SELECT pickup_at
+    FROM bookings
+    WHERE customer_id = ?
+    ORDER BY pickup_at DESC
+    LIMIT 1
+  `)
+  .bind(customer?.id || null)
+  .all();
+
+  const previousBooking = result.results?.[0];
+
+  if (previousBooking?.pickup_at) {
+
+    const lastHireDate = new Date(previousBooking.pickup_at);
+    const currentBookingDate = new Date(booking.pickupAt);
+
+    const diffDays =
+      (currentBookingDate.getTime() - lastHireDate.getTime()) /
+      (1000 * 60 * 60 * 24);
+
+    console.log("🧪 FORM CHECK:", {
+      lastHireDate,
+      currentBookingDate,
+      diffDays
+    });
+
+    if (diffDays <= 90) {
+      requiredFormType = "short";
     }
   }
 
-  if (bookingSuccess) {
-    await env.BOOKINGS_KV.put(eventId, "processed");
+} catch (err) {
+  console.warn("Form type check failed:", err);
+}
+
+/* ===============================
+   FORM LINK BUILD (FIXED)
+=============================== */
+
+const bookingId = booking.id;
+
+const formBase =
+  requiredFormType === "short"
+    ? `${SITE_BASE}/forms/short-form.html`
+    : `${SITE_BASE}/forms/long-form.html`;
+
+// ✅ FIXED PARAM NAME
+const formLink = `${formBase}?bookingId=${encodeURIComponent(bookingId)}`;
+
+booking.requiredFormType = requiredFormType;
+booking.requiredFormLink = formLink;
+
+
+/* ===============================
+   DEBUG (KEEP FOR NOW)
+=============================== */
+
+console.log("🧪 FORM DEBUG:", {
+  type: booking.requiredFormType,
+  link: booking.requiredFormLink,
+  customerId: booking.customerId
+});
+
+
+// ===============================
+// PAYMENT LINKS
+// ===============================
+
+const depositLink = `${SITE_BASE}/pay-deposit?bookingId=${encodeURIComponent(bookingId)}`;
+
+const outstandingLink = `${SITE_BASE}/pay-outstanding?bookingId=${encodeURIComponent(bookingId)}`;
+
+booking.depositLink = depositLink;
+booking.outstandingLink = outstandingLink;
+
+console.log("🧪 PAYMENT LINKS:", depositLink, outstandingLink);
+
+   
+
+/* ===============================
+   PAYMENT TRACKING
+=============================== */
+
+if (paymentType && paymentBookingId) {
+
+  console.log("💳 Payment detected:", paymentType, paymentBookingId);
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  for (const key of list.keys) {
+
+    const data = await env.BOOKINGS_KV.get(key.name);
+    if (!data) continue;
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      continue;
+    }
+
+    if (!Array.isArray(parsed)) continue;
+
+    let updated = false;
+
+    for (const b of parsed) {
+
+      if (String(b.id) === String(paymentBookingId)) {
+
+        if (paymentType === "deposit") {
+          b.depositPaid = true;
+        }
+
+        if (paymentType === "outstanding") {
+          b.outstandingPaid = true;
+        }
+
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
+      console.log("✅ Payment status updated");
+      break;
+    }
   }
+}
+
+    /* ===============================
+       SAVE TO KV
+    =============================== */
+
+    console.log("📦 SAVE KV");
+
+    const bookingMonth = booking.pickupAt.slice(0, 7);
+    const monthKey = `bookings:${bookingMonth}`;
+
+    let existingMonthBookings = [];
+
+    try {
+      const existingMonthData = await env.BOOKINGS_KV.get(monthKey);
+      if (existingMonthData) {
+        existingMonthBookings = JSON.parse(existingMonthData);
+        if (!Array.isArray(existingMonthBookings)) {
+          existingMonthBookings = [];
+        }
+      }
+    } catch {}
+
+    existingMonthBookings.push(booking);
+
+    await env.BOOKINGS_KV.put(
+      monthKey,
+      JSON.stringify(existingMonthBookings)
+    );
+
+    console.log("✅ KV SAVED");
+
+    /* ===============================
+   🔥 NEW: DIRECT SESSION LOOKUP
+================================ */
+
+const sessionKey = `session:${session.id}`;
+
+await env.BOOKINGS_KV.put(
+  sessionKey,
+  JSON.stringify(booking),
+  { expirationTtl: 86400 } // 24h is enough
+);
+
+console.log("⚡ Session mapping saved:", sessionKey);
+
+/* ===============================
+   EMAIL DEDUPE CHECK
+=============================== */
+
+const emailKey = `email_sent:${booking.id}`;
+const alreadySent = await env.BOOKINGS_KV.get(emailKey);
+
+if (alreadySent) {
+  console.log("⚠️ Email already sent, skipping");
+} else {
+
+
+
+    /* ===============================
+       SEND BOOKING EMAIL
+    =============================== */
+
+    try {
+
+      const vehicleName = booking.vehicleSnapshot?.name || "Horsebox Hire";
+
+      const emailHtml = `
+        <div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:680px;margin:0 auto;">
+          <h2 style="margin-bottom:8px;">Booking Confirmed</h2>
+
+          <p>Dear ${escapeHtml(booking.customerName)},</p>
+
+          <p>Thank you for your booking with Equine Transport UK.</p>
+
+          <h3 style="margin-top:24px;">Booking Details</h3>
+
+          <p>
+            <strong>Reference:</strong> #${escapeHtml(booking.id)}<br>
+            <strong>Lorry:</strong> ${escapeHtml(vehicleName)}<br>
+            <strong>From:</strong> ${escapeHtml(booking.pickupAtLocal)}<br>
+            <strong>To:</strong> ${escapeHtml(booking.dropoffAtLocal)}<br>
+            <strong>Email:</strong> ${escapeHtml(booking.customerEmail)}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <h3>${escapeHtml(String(booking.requiredFormType || "long").toUpperCase())} Form Required</h3>
+
+          <p>Please complete the required form before your hire.</p>
+
+          <p>
+            <a href="${escapeHtml(booking.requiredFormLink)}"
+               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+              Complete Form
+            </a>
+          </p>
+
+          <p style="font-size:13px;color:#555;">
+            ${escapeHtml(booking.requiredFormLink)}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <h3>Deposit (£200)</h3>
+
+          <p>This is a pre-authorisation hold, not a payment.</p>
+
+          <p>
+            <a href="${escapeHtml(booking.depositLink || "")}"
+               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+              Pay Deposit
+            </a>
+          </p>
+
+          <p style="font-size:13px;color:#555;">
+            ${escapeHtml(booking.depositLink || "")}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <h3>Outstanding Balance</h3>
+
+          <p>Please complete payment before collection.</p>
+
+          <p>
+            <a href="${escapeHtml(booking.outstandingLink || "")}"
+               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+              Pay Outstanding
+            </a>
+          </p>
+
+          <p style="font-size:13px;color:#555;">
+            ${escapeHtml(booking.outstandingLink || "")}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <p>
+            <strong>Price Summary</strong><br>
+            Total Hire: £${Number(booking.hireTotal || 0).toFixed(2)}<br>
+            Paid Now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
+            Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
+          </p>
+
+          <hr style="margin:24px 0;">
+
+          <p>
+            Kind regards,<br>
+            Koos & Avril<br>
+            Equine Transport UK<br><br>
+
+            📞 +44 7584 578654<br>
+            ✉️ info@equinetransportuk.com<br>
+            🌍 ${escapeHtml(SITE_BASE)}
+          </p>
+        </div>
+      `;
+
+    if (booking.customerEmail) {
+
+  await sendBookingEmail(env, {
+    to: booking.customerEmail,
+    subject: "Your Equine Transport UK booking is confirmed",
+    html: emailHtml
+  });
+
+  console.log("📧 BOOKING EMAIL SENT");
+
+  // ✅ mark as sent (DEDUPLICATION)
+  await env.BOOKINGS_KV.put(emailKey, "1", {
+    expirationTtl: 86400 // 24h
+  });
+
+} else {
+
+  console.log("⚠️ No customer email — skipping email send");
+
+}
+
+  } catch (emailErr) {
+  console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
+}
+
+} // ✅ closes "else" (EMAIL DEDUPE BLOCK)
+
+  } catch (err) {
+
+    console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
+
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500 }
+    );
+  }
+}
+
+  await env.BOOKINGS_KV.put(eventId, "processed");
 
   return new Response(JSON.stringify({ received: true }), { status: 200 });
 }
+
 /* ===============================
    LIST BOOKINGS API (MONTH BASED)
 ================================ */
@@ -1503,69 +1991,136 @@ async function handleBookingBySession(request, env) {
   const sessionId = url.searchParams.get("session_id");
 
   if (!sessionId) {
-    return json({ found: false }, 400);
+    return json({ error: "Missing session_id" }, 400);
   }
 
   /* ===============================
-     ⚡ FAST LOOKUP (NEW FIX)
+     ⚡ FAST PATH (NEW)
   =============================== */
 
-  try {
+  const sessionKey = `session:${sessionId}`;
 
-    const fast = await env.BOOKINGS_KV.get(`session:${sessionId}`);
+  const cached = await env.BOOKINGS_KV.get(sessionKey);
 
-    if (fast) {
-      console.log("⚡ FAST session hit:", sessionId);
+  if (cached) {
+    console.log("⚡ FAST session hit");
 
-      const booking = JSON.parse(fast);
+    try {
+      const booking = JSON.parse(cached);
 
       return json({
         found: true,
         booking
       });
+    } catch (err) {
+      console.log("⚠️ Session cache parse error:", err);
     }
-
-  } catch (err) {
-    console.log("⚠️ FAST lookup failed:", err);
   }
 
   /* ===============================
-     🐢 ORIGINAL FALLBACK (UNCHANGED)
+     HELPERS
   =============================== */
 
-  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+  function cleanIso(value) {
+    if (!value || typeof value !== "string") return value;
 
-  for (const key of list.keys) {
-
-    const data = await env.BOOKINGS_KV.get(key.name);
-    if (!data) continue;
-
-    let bookings;
-
-    try {
-      bookings = JSON.parse(data);
-    } catch {
-      continue;
+    if (value.includes("Z") && value.split("T").length > 2) {
+      return value.split("Z")[0] + "Z";
     }
 
-    if (!Array.isArray(bookings)) continue;
-
-    const found = bookings.find(b => String(b.id) === String(sessionId));
-
-    if (found) {
-      console.log("🐢 FALLBACK hit:", sessionId);
-
-      return json({
-        found: true,
-        booking: found
-      });
-    }
+    return value;
   }
 
-  console.log("❌ Booking not found:", sessionId);
+  /* ===============================
+     STRIPE LOOKUP (fallback)
+  =============================== */
+
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    apiVersion: "2024-06-20"
+  });
+
+  let session;
+
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId);
+  } catch (err) {
+    console.log("❌ Stripe lookup failed:", err);
+    return json({ error: "Stripe lookup failed" }, 500);
+  }
+
+  const bookingId =
+    session?.metadata?.bookingId ||
+    session?.id;
+
+  console.log("🔎 Looking for bookingId:", bookingId);
+
+  /* ===============================
+     KV MONTH SCAN (fallback)
+  =============================== */
+
+  const months = [];
+
+  const from = new Date();
+  from.setMonth(from.getMonth() - 2);
+
+  const to = new Date();
+  to.setMonth(to.getMonth() + 3);
+
+  const current = new Date(from);
+  current.setDate(1);
+
+  while (current <= to) {
+    months.push(current.toISOString().slice(0, 7));
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  for (const month of months) {
+
+    const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+    if (!data) continue;
+
+    try {
+
+      const bookings = JSON.parse(data);
+
+      const booking = bookings.find(
+        b => String(b.id) === String(bookingId)
+      );
+
+      if (booking) {
+
+        console.log("✅ Booking found in KV:", bookingId);
+
+        return json({
+          found: true,
+          booking: {
+            ...booking,
+            pickupAt: cleanIso(booking.pickupAt),
+            dropoffAt: cleanIso(booking.dropoffAt),
+            extras: booking.extras || {}
+          }
+        });
+      }
+
+    } catch (err) {
+      console.log("⚠️ KV parse error:", err);
+    }
+
+  }
+
+  /* ===============================
+     FINAL FALLBACK
+  =============================== */
+
+  console.log("⚠️ Booking not yet in KV, returning Stripe session");
 
   return json({
-    found: false
+    found: false,
+    session: {
+      id: session.id,
+      metadata: session.metadata || {},
+      customer_details: session.customer_details || null
+    }
   });
 }
 
