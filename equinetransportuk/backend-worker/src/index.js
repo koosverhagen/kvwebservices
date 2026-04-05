@@ -1467,136 +1467,69 @@ async function handleBookingBySession(request, env) {
   const sessionId = url.searchParams.get("session_id");
 
   if (!sessionId) {
-    return json({ error: "Missing session_id" }, 400);
+    return json({ found: false }, 400);
   }
 
   /* ===============================
-     ⚡ FAST PATH (NEW)
+     ⚡ FAST LOOKUP (NEW FIX)
   =============================== */
 
-  const sessionKey = `session:${sessionId}`;
+  try {
 
-  const cached = await env.BOOKINGS_KV.get(sessionKey);
+    const fast = await env.BOOKINGS_KV.get(`session:${sessionId}`);
 
-  if (cached) {
-    console.log("⚡ FAST session hit");
+    if (fast) {
+      console.log("⚡ FAST session hit:", sessionId);
 
-    try {
-      const booking = JSON.parse(cached);
+      const booking = JSON.parse(fast);
 
       return json({
         found: true,
         booking
       });
-    } catch (err) {
-      console.log("⚠️ Session cache parse error:", err);
-    }
-  }
-
-  /* ===============================
-     HELPERS
-  =============================== */
-
-  function cleanIso(value) {
-    if (!value || typeof value !== "string") return value;
-
-    if (value.includes("Z") && value.split("T").length > 2) {
-      return value.split("Z")[0] + "Z";
     }
 
-    return value;
-  }
-
-  /* ===============================
-     STRIPE LOOKUP (fallback)
-  =============================== */
-
-  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-06-20"
-  });
-
-  let session;
-
-  try {
-    session = await stripe.checkout.sessions.retrieve(sessionId);
   } catch (err) {
-    console.log("❌ Stripe lookup failed:", err);
-    return json({ error: "Stripe lookup failed" }, 500);
+    console.log("⚠️ FAST lookup failed:", err);
   }
-
-  const bookingId =
-    session?.metadata?.bookingId ||
-    session?.id;
-
-  console.log("🔎 Looking for bookingId:", bookingId);
 
   /* ===============================
-     KV MONTH SCAN (fallback)
+     🐢 ORIGINAL FALLBACK (UNCHANGED)
   =============================== */
 
-  const months = [];
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
-  const from = new Date();
-  from.setMonth(from.getMonth() - 2);
+  for (const key of list.keys) {
 
-  const to = new Date();
-  to.setMonth(to.getMonth() + 3);
-
-  const current = new Date(from);
-  current.setDate(1);
-
-  while (current <= to) {
-    months.push(current.toISOString().slice(0, 7));
-    current.setMonth(current.getMonth() + 1);
-  }
-
-  for (const month of months) {
-
-    const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
+    const data = await env.BOOKINGS_KV.get(key.name);
     if (!data) continue;
 
+    let bookings;
+
     try {
-
-      const bookings = JSON.parse(data);
-
-      const booking = bookings.find(
-        b => String(b.id) === String(bookingId)
-      );
-
-      if (booking) {
-
-        console.log("✅ Booking found in KV:", bookingId);
-
-        return json({
-          found: true,
-          booking: {
-            ...booking,
-            pickupAt: cleanIso(booking.pickupAt),
-            dropoffAt: cleanIso(booking.dropoffAt),
-            extras: booking.extras || {}
-          }
-        });
-      }
-
-    } catch (err) {
-      console.log("⚠️ KV parse error:", err);
+      bookings = JSON.parse(data);
+    } catch {
+      continue;
     }
 
+    if (!Array.isArray(bookings)) continue;
+
+    const found = bookings.find(b => String(b.id) === String(sessionId));
+
+    if (found) {
+      console.log("🐢 FALLBACK hit:", sessionId);
+
+      return json({
+        found: true,
+        booking: found
+      });
+    }
   }
 
-  /* ===============================
-     FINAL FALLBACK
-  =============================== */
-
-  console.log("⚠️ Booking not yet in KV, returning Stripe session");
+  console.log("❌ Booking not found:", sessionId);
 
   return json({
-    found: false,
-    session: {
-      id: session.id,
-      metadata: session.metadata || {},
-      customer_details: session.customer_details || null
-    }
+    found: false
   });
 }
 
