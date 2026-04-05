@@ -1191,7 +1191,14 @@ async function handleStripeWebhook(request, env) {
         depositAmount: 200,
 
         extrasTotal: Number(meta.extrasTotal || 0),
-        extras: JSON.parse(meta.extrasJson || "{}"),
+        extras: (() => {
+  try {
+    return JSON.parse(meta.extrasJson || "{}");
+  } catch (e) {
+    console.log("⚠️ extrasJson parse failed:", meta.extrasJson);
+    return {};
+  }
+})(),
 
         createdAt: new Date().toISOString(),
         status: "confirmed"
@@ -1250,9 +1257,8 @@ async function handleStripeWebhook(request, env) {
         ? `${SITE_BASE}/forms/short-form.html?bookingId=${booking.id}`
         : `${SITE_BASE}/forms/long-form.html?bookingId=${booking.id}`;
 
-      booking.depositLink = `${SITE_BASE}/pay-deposit?bookingId=${booking.id}`;
-      booking.outstandingLink = `${SITE_BASE}/pay-outstanding?bookingId=${booking.id}`;
-
+     booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${booking.id}`;
+booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${booking.id}`;
       /* ===============================
          SAVE DB
       =============================== */
@@ -1278,38 +1284,68 @@ async function handleStripeWebhook(request, env) {
       .run();
 
       /* ===============================
-         SAVE KV
-      =============================== */
+   SAVE KV
+================================ */
 
-      const monthKey = booking.pickupAt.slice(0, 7);
-      const key = `bookings:${monthKey}`;
+const monthKey = booking.pickupAt.slice(0, 7);
+const key = `bookings:${monthKey}`;
 
-      let existing = [];
+let existing = [];
 
-      const raw = await env.BOOKINGS_KV.get(key);
-      if (raw) {
-        try { existing = JSON.parse(raw); } catch {}
-      }
+try {
 
-      if (!existing.find(b => b.id === booking.id)) {
-        existing.push(booking);
-        await env.BOOKINGS_KV.put(key, JSON.stringify(existing));
-      }
+  const raw = await env.BOOKINGS_KV.get(key);
 
-      /* ===============================
-         🔥 CRITICAL FIX — SESSION LOOKUP
-      =============================== */
+  if (raw) {
+    existing = JSON.parse(raw);
+    if (!Array.isArray(existing)) existing = [];
+  }
 
-      await env.BOOKINGS_KV.put(
-        `session:${session.id}`,
-        JSON.stringify(booking),
-        { expirationTtl: 86400 }
-      );
+} catch (err) {
 
-      console.log("⚡ Session mapping saved");
+  console.log("⚠️ KV parse failed, resetting month:", key);
+  existing = [];
 
-      bookingSuccess = true;
+}
 
+if (!existing.find(b => b.id === booking.id)) {
+  existing.push(booking);
+
+  try {
+    await env.BOOKINGS_KV.put(key, JSON.stringify(existing));
+    console.log("💾 Booking stored in month index:", key);
+  } catch (err) {
+    console.log("❌ KV month save FAILED:", err);
+  }
+}
+
+/* ===============================
+   🔥 CRITICAL FIX — SESSION LOOKUP (HARDENED)
+================================ */
+
+try {
+
+  const sessionKey = `session:${booking.id}`; // 🔥 MUST match frontend session_id
+
+  await env.BOOKINGS_KV.put(
+    sessionKey,
+    JSON.stringify(booking),
+    { expirationTtl: 60 * 60 * 24 } // 24h
+  );
+
+  console.log("⚡ Session mapping saved:", sessionKey);
+
+} catch (err) {
+
+  console.log("❌ Session mapping FAILED:", err);
+
+}
+
+/* ===============================
+   MARK SUCCESS
+================================ */
+
+bookingSuccess = true;
       /* ===============================
          EMAIL
       =============================== */
