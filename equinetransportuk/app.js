@@ -6859,6 +6859,9 @@ async function renderCalendarInternal() {
   calGrid.dataset.rendering = "true";
   calWrap.dataset.rendering = "true";
 
+  // 🔥 CRITICAL FIX — CLEAR GRID BEFORE RENDER
+calGrid.innerHTML = "";
+
 /* ===============================
    LOAD BOOKINGS (DEDUPED + CACHED)
 =============================== */
