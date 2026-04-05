@@ -1084,16 +1084,64 @@ async function handleStripeWebhook(request, env) {
       const session = event.data.object;
       const meta = session.metadata || {};
 
-      if (!meta.vehicleId) {
-        console.log("⚠️ Missing vehicleId");
-        return;
+      const paymentType = meta.paymentType;
+      const paymentBookingId = meta.bookingId;
+
+      /* ===============================
+         HANDLE DEPOSIT / OUTSTANDING
+      =============================== */
+
+      if (paymentType && paymentBookingId) {
+
+        console.log("💳 Payment update:", paymentType, paymentBookingId);
+
+        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+        for (const key of list.keys) {
+
+          const data = await env.BOOKINGS_KV.get(key.name);
+          if (!data) continue;
+
+          let parsed;
+          try { parsed = JSON.parse(data); } catch { continue; }
+
+          if (!Array.isArray(parsed)) continue;
+
+          let updated = false;
+
+          for (const b of parsed) {
+
+            if (String(b.id) === String(paymentBookingId)) {
+
+              if (paymentType === "deposit") b.depositPaid = true;
+              if (paymentType === "outstanding") b.outstandingPaid = true;
+
+              updated = true;
+            }
+          }
+
+          if (updated) {
+            await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
+            console.log("✅ Payment status updated");
+            break;
+          }
+        }
+
+        await env.BOOKINGS_KV.put(eventId, "processed");
+        return new Response(JSON.stringify({ received: true }), { status: 200 });
       }
 
       /* ===============================
-         BUILD BOOKING
+         NORMAL BOOKING FLOW
       =============================== */
 
-      const bookingId = session.id;
+      if (!meta.vehicleId) {
+        console.log("⚠️ Missing vehicleId (not a booking)");
+        await env.BOOKINGS_KV.put(eventId, "processed");
+        return new Response(JSON.stringify({ received: true }), { status: 200 });
+      }
+
+      const bookingId = session.id; // 🔥 SINGLE SOURCE OF TRUTH
 
       const totalHire = Number(meta.totalHire || 0);
       const confirmationFee = Number(meta.confirmationFee || 0);
@@ -1116,6 +1164,7 @@ async function handleStripeWebhook(request, env) {
 
       const booking = {
         id: bookingId,
+
         vehicleId: meta.vehicleId,
 
         vehicleSnapshot: {
@@ -1151,7 +1200,7 @@ async function handleStripeWebhook(request, env) {
       console.log("📦 BOOKING BUILT:", booking.id);
 
       /* ===============================
-         CUSTOMER (D1)
+         CUSTOMER
       =============================== */
 
       let customer = await findCustomerByEmailOrMobile(
@@ -1161,7 +1210,6 @@ async function handleStripeWebhook(request, env) {
       );
 
       if (!customer) {
-
         const id = "cus_" + crypto.randomUUID();
         const now = new Date().toISOString();
 
@@ -1178,7 +1226,7 @@ async function handleStripeWebhook(request, env) {
       booking.customerId = customer.id;
 
       /* ===============================
-         RETURNING CUSTOMER CHECK
+         FORM LOGIC
       =============================== */
 
       const previous = await env.DB.prepare(`
@@ -1195,20 +1243,18 @@ async function handleStripeWebhook(request, env) {
 
       if (previous?.pickup_at) {
         const diff = Date.now() - new Date(previous.pickup_at).getTime();
-        if (diff < 90 * 24 * 60 * 60 * 1000) {
-          useShortForm = true;
-        }
+        if (diff < 90 * 24 * 60 * 60 * 1000) useShortForm = true;
       }
 
       booking.requiredFormLink = useShortForm
         ? `${SITE_BASE}/forms/short-form.html?bookingId=${booking.id}`
         : `${SITE_BASE}/forms/long-form.html?bookingId=${booking.id}`;
 
-      booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${booking.id}`;
-      booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${booking.id}`;
+      booking.depositLink = `${SITE_BASE}/pay-deposit?bookingId=${booking.id}`;
+      booking.outstandingLink = `${SITE_BASE}/pay-outstanding?bookingId=${booking.id}`;
 
       /* ===============================
-         SAVE BOOKING (D1)
+         SAVE DB
       =============================== */
 
       await env.DB.prepare(`
@@ -1232,7 +1278,7 @@ async function handleStripeWebhook(request, env) {
       .run();
 
       /* ===============================
-         SAVE KV (MONTH INDEX)
+         SAVE KV
       =============================== */
 
       const monthKey = booking.pickupAt.slice(0, 7);
@@ -1251,14 +1297,16 @@ async function handleStripeWebhook(request, env) {
       }
 
       /* ===============================
-         SESSION FAST LOOKUP
+         🔥 CRITICAL FIX — SESSION LOOKUP
       =============================== */
 
       await env.BOOKINGS_KV.put(
-        `session:${booking.id}`,
+        `session:${session.id}`,
         JSON.stringify(booking),
         { expirationTtl: 86400 }
       );
+
+      console.log("⚡ Session mapping saved");
 
       bookingSuccess = true;
 
