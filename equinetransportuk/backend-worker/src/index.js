@@ -1079,6 +1079,8 @@ async function handleStripeWebhook(request, env) {
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
+  let bookingSuccess = false;
+
   /* ===============================
      MAIN EVENT
   =============================== */
@@ -1097,24 +1099,26 @@ async function handleStripeWebhook(request, env) {
 
         /* ===============================
            👉 YOUR EXISTING BOOKING LOGIC
-           (UNCHANGED — KEEP EVERYTHING HERE)
+           (DO NOT CHANGE ANYTHING INSIDE HERE)
         =============================== */
 
-        // ⚠️ DO NOT TOUCH YOUR EXISTING LOGIC ABOVE EMAIL
-        // (booking build, DB save, KV save, etc.)
+        // ⚠️ your booking creation + KV save happens here
+        // must result in: booking object available
+
+        bookingSuccess = true; // ✅ MARK SUCCESS ONLY AFTER BOOKING IS BUILT
 
         /* ===============================
-           EMAIL DEDUPE CHECK
+           EMAIL (NON-BLOCKING)
         =============================== */
 
-        const emailKey = `email_sent:${booking.id}`;
-        const alreadySent = await env.BOOKINGS_KV.get(emailKey);
+        try {
 
-        if (alreadySent) {
-          console.log("⚠️ Email already sent, skipping");
-        } else {
+          const emailKey = `email_sent:${booking.id}`;
+          const alreadySent = await env.BOOKINGS_KV.get(emailKey);
 
-          try {
+          if (alreadySent) {
+            console.log("⚠️ Email already sent, skipping");
+          } else {
 
             const customerEmail = String(booking.customerEmail || "").trim();
             const customerName = String(booking.customerName || "Customer").trim() || "Customer";
@@ -1176,10 +1180,11 @@ async function handleStripeWebhook(request, env) {
               });
 
             }
-
-          } catch (emailErr) {
-            console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
           }
+
+        } catch (emailErr) {
+          console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
+          // ❗ DO NOT FAIL WEBHOOK IF EMAIL FAILS
         }
       }
 
@@ -1187,9 +1192,7 @@ async function handleStripeWebhook(request, env) {
 
       console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
 
-      // ❗ STILL mark processed to prevent infinite retries
-      await env.BOOKINGS_KV.put(eventId, "processed");
-
+      // ❗ DO NOT mark processed → allow Stripe retry
       return new Response(
         JSON.stringify({ error: err.message }),
         { status: 500 }
@@ -1198,10 +1201,12 @@ async function handleStripeWebhook(request, env) {
   }
 
   /* ===============================
-     ✅ ALWAYS MARK PROCESSED
+     ✅ MARK PROCESSED ONLY IF SUCCESS
   =============================== */
 
-  await env.BOOKINGS_KV.put(eventId, "processed");
+  if (bookingSuccess) {
+    await env.BOOKINGS_KV.put(eventId, "processed");
+  }
 
   return new Response(
     JSON.stringify({ received: true }),
