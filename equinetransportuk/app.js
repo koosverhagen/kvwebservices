@@ -1945,291 +1945,79 @@ function normaliseBookingDates(booking) {
 
 async function handleStripeReturn() {
 
-  IS_STRIPE_RETURN = true;
+  const params = new URLSearchParams(window.location.search);
 
-  const url = new URL(window.location.href);
+  const sessionId = params.get("session_id");
+  const success = params.get("checkout");
 
-  const state = url.searchParams.get("checkout");
-  const sessionId = url.searchParams.get("session_id");
-
-  // 🔥 NEW
-  const bookingId = url.searchParams.get("bookingId");
-  const isDeposit = url.searchParams.get("deposit") === "success";
-  const isOutstanding = url.searchParams.get("outstanding") === "paid";
-
-  /* ===============================
-     EXIT CONDITIONS
-  =============================== */
-
-  if (state === "cancelled") {
-    alert("Payment cancelled");
-    IS_STRIPE_RETURN = false;
-    return;
-  }
-
-  /* ===============================
-     🔥 NEW: DEPOSIT / OUTSTANDING FLOW
-  =============================== */
-
-  if (bookingId && (isDeposit || isOutstanding)) {
-
-    console.log("💰 Payment success (non-checkout):", {
-      bookingId,
-      type: isDeposit ? "deposit" : "outstanding"
-    });
-
-    goToStep(5);
-
-    const container = document.getElementById("booking-confirmation");
-
-    if (container) {
-      container.innerHTML = `
-        <div class="confirmation-card pro">
-          <h2>✅ Payment received</h2>
-          <div class="confirmation-note">
-            Loading your booking…
-          </div>
-        </div>
-      `;
-    }
-
-    try {
-
-  let booking = null;
-
-  /* ===============================
-     ⚡ FAST LOOKUP (PRIMARY)
-  =============================== */
-
-  try {
-
-    const res = await fetch(
-      `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-session?session_id=${bookingId}`
-    );
-
-    const data = await res.json();
-
-    if (data?.booking) {
-      booking = data.booking;
-    }
-
-  } catch (e) {
-    console.warn("⚠️ by-session lookup failed, fallback to list");
-  }
-
-  /* ===============================
-     🔁 FALLBACK (LIMITED RANGE)
-  =============================== */
-
-  if (!booking) {
-
-    const res = await fetch(
-      `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list?from=2025-01-01&to=2027-12-31`
-    );
-
-    const data = await res.json();
-
-    booking = (data.bookings || []).find(
-      b => b.id === bookingId
-    );
-  }
-
-  if (!booking) {
-    throw new Error("Booking not found");
-  }
-
- /* ===============================
-   NORMALISE + STATUS (DEPOSIT / OUTSTANDING ONLY)
-=============================== */
-
-booking = normaliseBookingDates(booking);
-
-// 🔥 ONLY HERE (deposit / outstanding flow)
-booking.paymentStatus = isDeposit
-  ? "deposit_paid"
-  : isOutstanding
-  ? "fully_paid"
-  : "confirmation_paid";
-
-/* ===============================
-   RENDER
-=============================== */
-
-renderBookingConfirmation(booking);
-
-/* ===============================
-   CLEAN URL
-=============================== */
-
-window.history.replaceState(
-  {},
-  "",
-  window.location.pathname + "#booking"
-);
-
-/* ===============================
-   REFRESH CACHE
-=============================== */
-
-BOOKINGS_CACHE = null;
-BOOKINGS_CACHE_AT = 0;
-
-await getBookings(true);
-
-STRIPE_FLOW_COMPLETED = true;
-
-} catch (err) {
-
-  console.error("💥 Payment return error:", err);
-
-  if (container) {
-    container.innerHTML = `
-      <div class="confirmation-card pro">
-        <h2>⏳ Payment received</h2>
-        <div class="confirmation-note">
-          Your booking is being updated.<br>
-          Please refresh or check your email.
-        </div>
-        <button onclick="location.reload()" class="btn primary">
-          Refresh
-        </button>
-      </div>
-    `;
-  }
-
-} finally {
-  setTimeout(() => {
-    IS_STRIPE_RETURN = false;
-  }, 1000);
-}
-
-return;
-}
-
-/* ===============================
-   NORMAL STRIPE CHECKOUT FLOW
-=============================== */
-
-if (state !== "success" || !sessionId) {
-  IS_STRIPE_RETURN = false;
-  return;
-}
-
-if (stripeReturnHandled) {
-  return stripeReturnPromise;
-}
-
-stripeReturnHandled = true;
-
-stripeReturnPromise = (async () => {
+  if (!sessionId || success !== "success") return;
 
   console.log("🚀 handleStripeReturn", { sessionId });
 
-  goToStep(5);
-
   const container = document.getElementById("booking-confirmation");
+  if (!container) return;
 
-  if (container) {
+  /* ===============================
+     ⚡ INSTANT UI (NO WAIT)
+  =============================== */
+
+  container.innerHTML = `
+    <div class="confirmation-card loading">
+
+      <h2>✅ Booking Confirmed</h2>
+
+      <p style="opacity:0.7">
+        Finalising your booking details…
+      </p>
+
+      <div class="spinner"></div>
+
+    </div>
+  `;
+
+  container.style.display = "block";
+
+  /* ===============================
+     ⚡ FAST FETCH (SESSION CACHE FIRST)
+  =============================== */
+
+  const result = await fetchBookingWithRetry(sessionId, 6);
+
+  console.log("⚡ Stripe session result:", result);
+
+  if (result?.found && result.booking) {
+
+    renderBookingConfirmation(result.booking);
+
+  } else {
+
+    /* ===============================
+       ⚠️ FALLBACK UI
+    =============================== */
+
     container.innerHTML = `
-      <div class="confirmation-card pro">
-        <h2>✅ Payment received</h2>
-        <div class="confirmation-note">
-          Finalising your booking…
-        </div>
+      <div class="confirmation-card">
+
+        <h2>✅ Booking Confirmed</h2>
+
+        <p>
+          Your booking is secure.
+        </p>
+
+        <p style="opacity:0.7">
+          We’re just finishing things in the background.<br>
+          You’ll receive your confirmation email shortly.
+        </p>
+
       </div>
     `;
   }
 
-  try {
+  /* ===============================
+     CLEAN URL
+  =============================== */
 
-    let booking = await fetchBookingWithRetry(sessionId);
-
-    console.log("⚡ Stripe session result:", booking);
-
-    if (!booking || !booking.pickupAt) {
-
-      console.warn("⚠️ Booking not ready — retrying once");
-
-      await new Promise(r => setTimeout(r, 500));
-
-      booking = await fetchBookingWithRetry(sessionId, 2);
-
-      if (!booking || !booking.pickupAt) {
-
-        console.warn("⚠️ Booking still not ready after retry");
-
-        if (container) {
-          container.innerHTML = `
-            <div class="confirmation-card pro">
-              <h2>⏳ Payment received</h2>
-              <div class="confirmation-note">
-                Finalising your booking…<br>
-                Please wait a few seconds.
-              </div>
-            </div>
-          `;
-        }
-
-        return;
-      }
-    }
-
-    console.log("✅ FINAL BOOKING:", booking);
-
-    booking = normaliseBookingDates(booking);
-
-    // ❌ NO paymentStatus here (IMPORTANT)
-
-    VEHICLE_AVAILABILITY_CACHE.clear();
-    VEHICLE_AVAILABILITY_PROMISES.clear();
-
-    renderBookingConfirmation(booking);
-
-    window.history.replaceState(
-      {},
-      "",
-      window.location.pathname + "#booking"
-    );
-
-    BOOKINGS_CACHE = null;
-    BOOKINGS_CACHE_AT = 0;
-
-    await getBookings(true);
-
-    console.log("🎉 Stripe return complete");
-
-    STRIPE_FLOW_COMPLETED = true;
-
-  } catch (err) {
-
-    console.error("💥 Stripe return error:", err);
-
-    if (container) {
-      container.innerHTML = `
-        <div class="confirmation-card pro">
-          <h2>⏳ Payment received</h2>
-          <div class="confirmation-note">
-            Your booking is being finalised.<br>
-            Please refresh or check your email.
-          </div>
-          <button onclick="location.reload()" class="btn primary">
-            Refresh
-          </button>
-        </div>
-      `;
-    }
-
-  } finally {
-
-    setTimeout(() => {
-      IS_STRIPE_RETURN = false;
-      console.log("🔓 Stripe lock released");
-    }, 1500);
-  }
-
-})();
-
-return stripeReturnPromise;
+  window.history.replaceState({}, "", window.location.pathname);
 }
 
 

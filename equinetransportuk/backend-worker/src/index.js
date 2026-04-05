@@ -1065,155 +1065,244 @@ async function handleStripeWebhook(request, env) {
     );
   } catch (err) {
     console.log("❌ Webhook verification failed:", err.message);
-    return new Response(
-      JSON.stringify({ error: "Webhook signature verification failed" }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: "Webhook verification failed" }), { status: 400 });
   }
 
   const eventId = event.id;
 
-  const alreadyProcessed = await env.BOOKINGS_KV.get(eventId);
-  if (alreadyProcessed) {
-    console.log("⚠️ Webhook already processed:", eventId);
+  if (await env.BOOKINGS_KV.get(eventId)) {
+    console.log("⚠️ Already processed:", eventId);
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
   let bookingSuccess = false;
 
-  /* ===============================
-     MAIN EVENT
-  =============================== */
-
   if (event.type === "checkout.session.completed") {
-
-    console.log("🔥 CHECKOUT SESSION COMPLETED EVENT");
 
     try {
 
       const session = event.data.object;
+      const meta = session.metadata || {};
 
-      if (!session?.metadata?.vehicleId) {
+      if (!meta.vehicleId) {
         console.log("⚠️ Missing vehicleId");
+        return;
+      }
+
+      /* ===============================
+         BUILD BOOKING
+      =============================== */
+
+      const bookingId = session.id;
+
+      const totalHire = Number(meta.totalHire || 0);
+      const confirmationFee = Number(meta.confirmationFee || 0);
+      const outstandingAmount = Number(meta.outstandingAmount || 0);
+
+      const pickupDate = meta.pickupDate;
+      const pickupTime = meta.pickupTime || "07:00";
+      const durationDays = Number(meta.durationDays || 1);
+
+      const pickupAt = londonDateTimeToUtc(pickupDate, pickupTime);
+
+      let dropoffAt = new Date(pickupAt);
+
+      if (durationDays === 0.5) {
+        dropoffAt.setHours(pickupTime === "13:00" ? 19 : 13);
       } else {
+        dropoffAt.setDate(dropoffAt.getDate() + durationDays - 1);
+        dropoffAt.setHours(19, 0, 0, 0);
+      }
 
-        /* ===============================
-           👉 YOUR EXISTING BOOKING LOGIC
-           (DO NOT CHANGE ANYTHING INSIDE HERE)
-        =============================== */
+      const booking = {
+        id: bookingId,
+        vehicleId: meta.vehicleId,
 
-        // ⚠️ your booking creation + KV save happens here
-        // must result in: booking object available
+        vehicleSnapshot: {
+          id: meta.vehicleId,
+          name: meta.vehicleName || "Horsebox"
+        },
 
-        bookingSuccess = true; // ✅ MARK SUCCESS ONLY AFTER BOOKING IS BUILT
+        pickupAt: pickupAt.toISOString(),
+        dropoffAt: dropoffAt.toISOString(),
 
-        /* ===============================
-           EMAIL (NON-BLOCKING)
-        =============================== */
+        pickupAtLocal: toLondonLocalISOString(pickupAt),
+        dropoffAtLocal: toLondonLocalISOString(dropoffAt),
 
-        try {
+        durationDays,
+        pickupTime,
 
-          const emailKey = `email_sent:${booking.id}`;
-          const alreadySent = await env.BOOKINGS_KV.get(emailKey);
+        customerName: meta.customerName || "Customer",
+        customerEmail: session.customer_details?.email || "",
+        customerMobile: meta.customerMobile || "",
 
-          if (alreadySent) {
-            console.log("⚠️ Email already sent, skipping");
-          } else {
+        hireTotal: totalHire,
+        confirmationFee,
+        outstandingAmount,
+        depositAmount: 200,
 
-            const customerEmail = String(booking.customerEmail || "").trim();
-            const customerName = String(booking.customerName || "Customer").trim() || "Customer";
-            const vehicleName = booking.vehicleSnapshot?.name || "Horsebox Hire";
+        extrasTotal: Number(meta.extrasTotal || 0),
+        extras: JSON.parse(meta.extrasJson || "{}"),
 
-            if (!customerEmail) {
-              console.log("⚠️ No customer email — skipping email send");
-            } else {
+        createdAt: new Date().toISOString(),
+        status: "confirmed"
+      };
 
-              const subject = `Booking confirmed — ${vehicleName} (#${booking.id})`;
+      console.log("📦 BOOKING BUILT:", booking.id);
 
-              const emailHtml = `
-                <div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:680px;margin:0 auto;">
-                  
-                  <h2>Booking Confirmed</h2>
+      /* ===============================
+         CUSTOMER (D1)
+      =============================== */
 
-                  <p>Dear ${escapeHtml(customerName)},</p>
+      let customer = await findCustomerByEmailOrMobile(
+        env,
+        booking.customerEmail,
+        booking.customerMobile
+      );
 
-                  <p>Thank you for your booking with Equine Transport UK.</p>
+      if (!customer) {
 
-                  <hr>
+        const id = "cus_" + crypto.randomUUID();
+        const now = new Date().toISOString();
 
-                  <p>
-                    <strong>Reference:</strong> #${escapeHtml(booking.id)}<br>
-                    <strong>Lorry:</strong> ${escapeHtml(vehicleName)}<br>
-                    <strong>From:</strong> ${escapeHtml(booking.pickupAtLocal || "—")}<br>
-                    <strong>To:</strong> ${escapeHtml(booking.dropoffAtLocal || "—")}
-                  </p>
+        await env.DB.prepare(`
+          INSERT INTO customers (id, full_name, email, mobile, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `)
+        .bind(id, booking.customerName, booking.customerEmail, booking.customerMobile, now, now)
+        .run();
 
-                  <hr>
+        customer = { id };
+      }
 
-                  <p>
-                    <a href="${escapeHtml(booking.requiredFormLink || "")}">Complete Form</a><br>
-                    <a href="${escapeHtml(booking.depositLink || "")}">Pay Deposit</a><br>
-                    <a href="${escapeHtml(booking.outstandingLink || "")}">Pay Outstanding</a>
-                  </p>
+      booking.customerId = customer.id;
 
-                  <hr>
+      /* ===============================
+         RETURNING CUSTOMER CHECK
+      =============================== */
 
-                  <p>
-                    Total: £${Number(booking.hireTotal || 0).toFixed(2)}<br>
-                    Paid: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
-                    Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
-                  </p>
+      const previous = await env.DB.prepare(`
+        SELECT pickup_at
+        FROM bookings
+        WHERE customer_id = ?
+        ORDER BY pickup_at DESC
+        LIMIT 1
+      `)
+      .bind(customer.id)
+      .first();
 
-                </div>
-              `;
+      let useShortForm = false;
 
-              await sendBookingEmail(env, {
-                to: customerEmail,
-                subject,
-                html: emailHtml
-              });
-
-              console.log("📧 BOOKING EMAIL SENT");
-
-              await env.BOOKINGS_KV.put(emailKey, "1", {
-                expirationTtl: 60 * 60 * 24 * 30
-              });
-
-            }
-          }
-
-        } catch (emailErr) {
-          console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
-          // ❗ DO NOT FAIL WEBHOOK IF EMAIL FAILS
+      if (previous?.pickup_at) {
+        const diff = Date.now() - new Date(previous.pickup_at).getTime();
+        if (diff < 90 * 24 * 60 * 60 * 1000) {
+          useShortForm = true;
         }
+      }
+
+      booking.requiredFormLink = useShortForm
+        ? `${SITE_BASE}/forms/short-form.html?bookingId=${booking.id}`
+        : `${SITE_BASE}/forms/long-form.html?bookingId=${booking.id}`;
+
+      booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${booking.id}`;
+      booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${booking.id}`;
+
+      /* ===============================
+         SAVE BOOKING (D1)
+      =============================== */
+
+      await env.DB.prepare(`
+        INSERT INTO bookings (
+          id, customer_id, vehicle_id,
+          pickup_at, dropoff_at, duration_days,
+          status, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .bind(
+        booking.id,
+        booking.customerId,
+        booking.vehicleId,
+        booking.pickupAt,
+        booking.dropoffAt,
+        booking.durationDays,
+        "confirmed",
+        booking.createdAt
+      )
+      .run();
+
+      /* ===============================
+         SAVE KV (MONTH INDEX)
+      =============================== */
+
+      const monthKey = booking.pickupAt.slice(0, 7);
+      const key = `bookings:${monthKey}`;
+
+      let existing = [];
+
+      const raw = await env.BOOKINGS_KV.get(key);
+      if (raw) {
+        try { existing = JSON.parse(raw); } catch {}
+      }
+
+      if (!existing.find(b => b.id === booking.id)) {
+        existing.push(booking);
+        await env.BOOKINGS_KV.put(key, JSON.stringify(existing));
+      }
+
+      /* ===============================
+         SESSION FAST LOOKUP
+      =============================== */
+
+      await env.BOOKINGS_KV.put(
+        `session:${booking.id}`,
+        JSON.stringify(booking),
+        { expirationTtl: 86400 }
+      );
+
+      bookingSuccess = true;
+
+      /* ===============================
+         EMAIL
+      =============================== */
+
+      try {
+
+        const emailKey = `email_sent:${booking.id}`;
+
+        if (!await env.BOOKINGS_KV.get(emailKey)) {
+
+          await sendBookingEmail(env, {
+            to: booking.customerEmail,
+            subject: `Booking confirmed — ${booking.vehicleSnapshot.name} (#${booking.id})`,
+            html: `<p>Booking confirmed. Ref: ${booking.id}</p>`
+          });
+
+          await env.BOOKINGS_KV.put(emailKey, "1", {
+            expirationTtl: 60 * 60 * 24 * 30
+          });
+        }
+
+      } catch (err) {
+        console.log("Email failed:", err);
       }
 
     } catch (err) {
 
-      console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
+      console.log("💥 WEBHOOK CRASH:", err);
 
-      // ❗ DO NOT mark processed → allow Stripe retry
-      return new Response(
-        JSON.stringify({ error: err.message }),
-        { status: 500 }
-      );
+      await env.BOOKINGS_KV.put(eventId, "processed");
+
+      return new Response(JSON.stringify({ error: err.message }), { status: 500 });
     }
   }
-
-  /* ===============================
-     ✅ MARK PROCESSED ONLY IF SUCCESS
-  =============================== */
 
   if (bookingSuccess) {
     await env.BOOKINGS_KV.put(eventId, "processed");
   }
 
-  return new Response(
-    JSON.stringify({ received: true }),
-    { status: 200 }
-  );
+  return new Response(JSON.stringify({ received: true }), { status: 200 });
 }
-
 /* ===============================
    LIST BOOKINGS API (MONTH BASED)
 ================================ */
