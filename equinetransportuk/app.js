@@ -1945,79 +1945,291 @@ function normaliseBookingDates(booking) {
 
 async function handleStripeReturn() {
 
-  const params = new URLSearchParams(window.location.search);
+  IS_STRIPE_RETURN = true;
 
-  const sessionId = params.get("session_id");
-  const success = params.get("checkout");
+  const url = new URL(window.location.href);
 
-  if (!sessionId || success !== "success") return;
+  const state = url.searchParams.get("checkout");
+  const sessionId = url.searchParams.get("session_id");
 
-  console.log("🚀 handleStripeReturn", { sessionId });
-
-  const container = document.getElementById("booking-confirmation");
-  if (!container) return;
-
-  /* ===============================
-     ⚡ INSTANT UI (NO WAIT)
-  =============================== */
-
-  container.innerHTML = `
-    <div class="confirmation-card loading">
-
-      <h2>✅ Booking Confirmed</h2>
-
-      <p style="opacity:0.7">
-        Finalising your booking details…
-      </p>
-
-      <div class="spinner"></div>
-
-    </div>
-  `;
-
-  container.style.display = "block";
+  // 🔥 NEW
+  const bookingId = url.searchParams.get("bookingId");
+  const isDeposit = url.searchParams.get("deposit") === "success";
+  const isOutstanding = url.searchParams.get("outstanding") === "paid";
 
   /* ===============================
-     ⚡ FAST FETCH (SESSION CACHE FIRST)
+     EXIT CONDITIONS
   =============================== */
 
-  const result = await fetchBookingWithRetry(sessionId, 6);
+  if (state === "cancelled") {
+    alert("Payment cancelled");
+    IS_STRIPE_RETURN = false;
+    return;
+  }
 
-  console.log("⚡ Stripe session result:", result);
+  /* ===============================
+     🔥 NEW: DEPOSIT / OUTSTANDING FLOW
+  =============================== */
 
-  if (result?.found && result.booking) {
+  if (bookingId && (isDeposit || isOutstanding)) {
 
-    renderBookingConfirmation(result.booking);
+    console.log("💰 Payment success (non-checkout):", {
+      bookingId,
+      type: isDeposit ? "deposit" : "outstanding"
+    });
 
-  } else {
+    goToStep(5);
 
-    /* ===============================
-       ⚠️ FALLBACK UI
-    =============================== */
+    const container = document.getElementById("booking-confirmation");
 
+    if (container) {
+      container.innerHTML = `
+        <div class="confirmation-card pro">
+          <h2>✅ Payment received</h2>
+          <div class="confirmation-note">
+            Loading your booking…
+          </div>
+        </div>
+      `;
+    }
+
+    try {
+
+  let booking = null;
+
+  /* ===============================
+     ⚡ FAST LOOKUP (PRIMARY)
+  =============================== */
+
+  try {
+
+    const res = await fetch(
+      `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-session?session_id=${bookingId}`
+    );
+
+    const data = await res.json();
+
+    if (data?.booking) {
+      booking = data.booking;
+    }
+
+  } catch (e) {
+    console.warn("⚠️ by-session lookup failed, fallback to list");
+  }
+
+  /* ===============================
+     🔁 FALLBACK (LIMITED RANGE)
+  =============================== */
+
+  if (!booking) {
+
+    const res = await fetch(
+      `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list?from=2025-01-01&to=2027-12-31`
+    );
+
+    const data = await res.json();
+
+    booking = (data.bookings || []).find(
+      b => b.id === bookingId
+    );
+  }
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+ /* ===============================
+   NORMALISE + STATUS (DEPOSIT / OUTSTANDING ONLY)
+=============================== */
+
+booking = normaliseBookingDates(booking);
+
+// 🔥 ONLY HERE (deposit / outstanding flow)
+booking.paymentStatus = isDeposit
+  ? "deposit_paid"
+  : isOutstanding
+  ? "fully_paid"
+  : "confirmation_paid";
+
+/* ===============================
+   RENDER
+=============================== */
+
+renderBookingConfirmation(booking);
+
+/* ===============================
+   CLEAN URL
+=============================== */
+
+window.history.replaceState(
+  {},
+  "",
+  window.location.pathname + "#booking"
+);
+
+/* ===============================
+   REFRESH CACHE
+=============================== */
+
+BOOKINGS_CACHE = null;
+BOOKINGS_CACHE_AT = 0;
+
+await getBookings(true);
+
+STRIPE_FLOW_COMPLETED = true;
+
+} catch (err) {
+
+  console.error("💥 Payment return error:", err);
+
+  if (container) {
     container.innerHTML = `
-      <div class="confirmation-card">
-
-        <h2>✅ Booking Confirmed</h2>
-
-        <p>
-          Your booking is secure.
-        </p>
-
-        <p style="opacity:0.7">
-          We’re just finishing things in the background.<br>
-          You’ll receive your confirmation email shortly.
-        </p>
-
+      <div class="confirmation-card pro">
+        <h2>⏳ Payment received</h2>
+        <div class="confirmation-note">
+          Your booking is being updated.<br>
+          Please refresh or check your email.
+        </div>
+        <button onclick="location.reload()" class="btn primary">
+          Refresh
+        </button>
       </div>
     `;
   }
 
-  /* ===============================
-     CLEAN URL
-  =============================== */
+} finally {
+  setTimeout(() => {
+    IS_STRIPE_RETURN = false;
+  }, 1000);
+}
 
-  window.history.replaceState({}, "", window.location.pathname);
+return;
+}
+
+/* ===============================
+   NORMAL STRIPE CHECKOUT FLOW
+=============================== */
+
+if (state !== "success" || !sessionId) {
+  IS_STRIPE_RETURN = false;
+  return;
+}
+
+if (stripeReturnHandled) {
+  return stripeReturnPromise;
+}
+
+stripeReturnHandled = true;
+
+stripeReturnPromise = (async () => {
+
+  console.log("🚀 handleStripeReturn", { sessionId });
+
+  goToStep(5);
+
+  const container = document.getElementById("booking-confirmation");
+
+  if (container) {
+    container.innerHTML = `
+      <div class="confirmation-card pro">
+        <h2>✅ Payment received</h2>
+        <div class="confirmation-note">
+          Finalising your booking…
+        </div>
+      </div>
+    `;
+  }
+
+  try {
+
+    let booking = await fetchBookingWithRetry(sessionId);
+
+    console.log("⚡ Stripe session result:", booking);
+
+    if (!booking || !booking.pickupAt) {
+
+      console.warn("⚠️ Booking not ready — retrying once");
+
+      await new Promise(r => setTimeout(r, 500));
+
+      booking = await fetchBookingWithRetry(sessionId, 2);
+
+      if (!booking || !booking.pickupAt) {
+
+        console.warn("⚠️ Booking still not ready after retry");
+
+        if (container) {
+          container.innerHTML = `
+            <div class="confirmation-card pro">
+              <h2>⏳ Payment received</h2>
+              <div class="confirmation-note">
+                Finalising your booking…<br>
+                Please wait a few seconds.
+              </div>
+            </div>
+          `;
+        }
+
+        return;
+      }
+    }
+
+    console.log("✅ FINAL BOOKING:", booking);
+
+    booking = normaliseBookingDates(booking);
+
+    // ❌ NO paymentStatus here (IMPORTANT)
+
+    VEHICLE_AVAILABILITY_CACHE.clear();
+    VEHICLE_AVAILABILITY_PROMISES.clear();
+
+    renderBookingConfirmation(booking);
+
+    window.history.replaceState(
+      {},
+      "",
+      window.location.pathname + "#booking"
+    );
+
+    BOOKINGS_CACHE = null;
+    BOOKINGS_CACHE_AT = 0;
+
+    await getBookings(true);
+
+    console.log("🎉 Stripe return complete");
+
+    STRIPE_FLOW_COMPLETED = true;
+
+  } catch (err) {
+
+    console.error("💥 Stripe return error:", err);
+
+    if (container) {
+      container.innerHTML = `
+        <div class="confirmation-card pro">
+          <h2>⏳ Payment received</h2>
+          <div class="confirmation-note">
+            Your booking is being finalised.<br>
+            Please refresh or check your email.
+          </div>
+          <button onclick="location.reload()" class="btn primary">
+            Refresh
+          </button>
+        </div>
+      `;
+    }
+
+  } finally {
+
+    setTimeout(() => {
+      IS_STRIPE_RETURN = false;
+      console.log("🔓 Stripe lock released");
+    }, 1500);
+  }
+
+})();
+
+return stripeReturnPromise;
 }
 
 
@@ -3967,38 +4179,64 @@ function renderFleet() {
 ====================================================== */
 
 
-async function fetchBookingWithRetry(sessionId, attempts = 10) {
+async function fetchBookingWithRetry(sessionId, attempts = 5) {
 
-  const delays = [300, 700, 1200, 2000, 3000, 4000, 5000];
+  if (!sessionId) return null;
 
-  for (let i = 0; i < attempts; i++) {
-
-    try {
-
-      const res = await fetch(
-        `${BACKEND_API_BASE}/api/bookings/by-session?session_id=${sessionId}`
-      );
-
-      const data = await res.json();
-
-      console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
-
-      if (data?.found && data?.booking) {
-        return data.booking;
-      }
-
-    } catch (err) {
-      console.warn("Retry fetch failed:", err);
-    }
-
-    const delay = delays[i] || 5000;
-
-    console.log(`⏳ waiting ${delay}ms before retry`);
-
-    await new Promise(r => setTimeout(r, delay));
+  if (BOOKING_BY_SESSION_PROMISES.has(sessionId)) {
+    return BOOKING_BY_SESSION_PROMISES.get(sessionId);
   }
 
-  return null;
+  const requestPromise = (async () => {
+
+    for (let i = 0; i < attempts; i++) {
+
+      try {
+
+        const res = await fetch(
+          apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
+        );
+
+        if (res.ok) {
+
+          const data = await res.json();
+
+          console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
+
+          if (data?.booking?.pickupAt) {
+            return data.booking;
+          }
+        }
+
+      } catch (err) {
+        console.warn(`Retry attempt ${i + 1} failed`, err);
+      }
+
+      /* ===============================
+         🔥 IMPROVED BACKOFF
+      =============================== */
+
+      if (i < attempts - 1) {
+
+        const delay = Math.min(300 + (i * 400), 2500);
+
+        console.log(`⏳ waiting ${delay}ms before retry`);
+
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+
+    return null;
+
+  })();
+
+  BOOKING_BY_SESSION_PROMISES.set(sessionId, requestPromise);
+
+  try {
+    return await requestPromise;
+  } finally {
+    BOOKING_BY_SESSION_PROMISES.delete(sessionId);
+  }
 }
 
 function getVehicleMainImage(vehicle){
@@ -6621,209 +6859,239 @@ async function renderCalendarInternal() {
   calGrid.dataset.rendering = "true";
   calWrap.dataset.rendering = "true";
 
+/* ===============================
+   LOAD BOOKINGS (DEDUPED + CACHED)
+=============================== */
+
+const bookings = BOOKINGS_CACHE || await getBookings(false);
+
+if (DEBUG) {
+  console.log("Calendar bookings:", bookings);
+}
+
+/* ===============================
+   CALENDAR HEADER
+=============================== */
+
+const year = currentDate.getFullYear();
+const month = currentDate.getMonth();
+
+const monthNames = [
+"January","February","March","April","May","June",
+"July","August","September","October","November","December"
+];
+
+calTitle.textContent = `${monthNames[month]} ${year}`;
+
+const fragment = document.createDocumentFragment();
+
+/* ===============================
+   SELECTED DATE RESTORE
+=============================== */
+
+const selectedDateValue = window.SELECTED_DATE;
+let selectedTimestamp = null;
+
+if (selectedDateValue) {
+  const selectedDate = new Date(selectedDateValue);
+  selectedDate.setHours(0,0,0,0);
+  selectedTimestamp = selectedDate.getTime();
+}
+
+/* ===============================
+   MONTH SETUP
+=============================== */
+
+const firstDay = new Date(year, month, 1);
+const lastDay = new Date(year, month + 1, 0);
+
+let startOffset = firstDay.getDay();
+startOffset = startOffset === 0 ? 6 : startOffset - 1;
+
+for (let i = 0; i < startOffset; i++) {
+  calGrid.appendChild(document.createElement("div"));
+}
+
+const today = new Date();
+today.setHours(0,0,0,0);
+
+/* ===============================
+   DAY LOOP
+=============================== */
+
+for (let day = 1; day <= lastDay.getDate(); day++) {
+
+  const dayDate = new Date(year, month, day);
+  dayDate.setHours(0,0,0,0);
+
+  const dayEl = document.createElement("div");
+  dayEl.className = "cal-day";
+  dayEl.textContent = day;
+
+  // 🔥 REQUIRED for prefetch
+  dayEl.dataset.date = formatDayKey(dayDate);
+
   /* ===============================
-     LOAD BOOKINGS (DEDUPED + CACHED)
+     RESTORE SELECTED DATE
   =============================== */
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
+  if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
+    dayEl.classList.add("cal-selected");
+  }
 
-  if (DEBUG) {
-    console.log("Calendar bookings:", bookings);
+  /* today marker */
+
+  if (dayDate.getTime() === today.getTime()) {
+    dayEl.classList.add("cal-today");
+  }
+
+  /* weekend shading */
+
+  const weekday = dayDate.getDay();
+  if (weekday === 0 || weekday === 6) {
+    dayEl.classList.add("cal-weekend");
   }
 
   /* ===============================
-     CALENDAR HEADER
+     PAST DATES
   =============================== */
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  const monthNames = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-
-  calTitle.textContent = `${monthNames[month]} ${year}`;
-
-  const fragment = document.createDocumentFragment();
-
-  /* ===============================
-     SELECTED DATE RESTORE
-  =============================== */
-
-  const selectedDateValue = window.SELECTED_DATE;
-  let selectedTimestamp = null;
-
-  if (selectedDateValue) {
-    const selectedDate = new Date(selectedDateValue);
-    selectedDate.setHours(0,0,0,0);
-    selectedTimestamp = selectedDate.getTime();
-  }
-
-  /* ===============================
-     MONTH SETUP
-  =============================== */
-
- const firstDay = new Date(Date.UTC(year, month, 1));
-  const lastDay = new Date(year, month + 1, 0);
-
-  // ✅ FIXED (Monday-based calendar)
-  const startOffset = (firstDay.getDay() + 6) % 7;
-
-  for (let i = 0; i < startOffset; i++) {
-    fragment.appendChild(document.createElement("div"));
-  }
-
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  /* ===============================
-     DAY LOOP
-  =============================== */
-
-  for (let day = 1; day <= lastDay.getDate(); day++) {
-
-    const dayDate = new Date(Date.UTC(year, month, day));
-    dayDate.setHours(0,0,0,0);
-
-    const dayEl = document.createElement("div");
-    dayEl.className = "cal-day";
-    dayEl.textContent = day;
-
-    dayEl.dataset.date = formatDayKey(dayDate);
-
-    if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
-      dayEl.classList.add("cal-selected");
-    }
-
-    if (dayDate.getTime() === today.getTime()) {
-      dayEl.classList.add("cal-today");
-    }
-
-    const weekday = dayDate.getDay();
-    if (weekday === 0 || weekday === 6) {
-      dayEl.classList.add("cal-weekend");
-    }
-
-    if (dayDate < today) {
-      dayEl.classList.add("cal-unavailable","cal-past");
-      fragment.appendChild(dayEl);
-      continue;
-    }
-
-    const status = checkDayLocalAvailability(dayDate, bookings);
-    const validStart = canStartRental(dayDate, bookings);
-
-    renderAvailabilityDots(dayEl, bookings, dayDate);
-
-    if (status === "available") {
-      dayEl.classList.add("cal-available");
-    } else {
-      dayEl.classList.add("cal-unavailable");
-    }
-
-    if (!validStart) {
-      dayEl.classList.remove("cal-available");
-      dayEl.classList.add("cal-unavailable","cal-no-start");
-    }
-
-    /* ===============================
-       PREFETCH / INTERACTIONS
-    =============================== */
-
-    dayEl.addEventListener("touchstart", () => {
-      if (IS_RESETTING) return;
-
-      const dateStr = dayEl.dataset.date;
-      if (!dateStr) return;
-
-      prefetchAvailabilityWindow(dateStr);
-      prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
-      prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 2));
-
-    }, { passive: true });
-
-    dayEl.addEventListener("mouseenter", (e) => {
-
-      if (IS_RESETTING) return;
-
-      const dateStr = dayEl.dataset.date;
-
-      if (dateStr) {
-        prefetchAvailabilityWindow(dateStr);
-      }
-
-      clearTimeout(hoverPreviewTimer);
-
-      hoverPreviewTimer = setTimeout(() => {
-        clearPreview();
-        previewRental(dayDate);
-        showVehiclePreview(dayDate, e);
-      }, 60);
-
-    });
-
-    if (!isMobile()) {
-      dayEl.addEventListener("mousemove", movePreview);
-    }
-
-    dayEl.addEventListener("mouseleave", () => {
-      clearTimeout(hoverPreviewTimer);
-      clearPreview();
-    });
-
-    /* ===============================
-       CLICK HANDLER
-    =============================== */
-
-    if (validStart || PRESELECTED_VEHICLE) {
-
-      let selecting = false;
-
-      const handleDaySelect = async (e) => {
-
-        if (selecting) return;
-        if (IS_RESETTING) return;
-        if (calGrid.dataset.rendering === "true") return;
-        if (calWrap.dataset.rendering === "true") return;
-
-        selecting = true;
-
-        try {
-          const dateStr = dayEl.dataset.date;
-          if (!dateStr) return;
-
-          prefetchAvailabilityWindow(dateStr);
-          prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
-
-          clearPreview();
-
-          await selectDate(dateStr);
-
-          if (isMobile()) {
-            previewRental(dayDate);
-            await showVehiclePreview(dayDate, e);
-          }
-
-        } finally {
-          selecting = false;
-        }
-      };
-
-      dayEl.addEventListener("click", handleDaySelect);
-    }
-
+  if (dayDate < today) {
+    dayEl.classList.add("cal-unavailable","cal-past");
     fragment.appendChild(dayEl);
+    continue;
   }
 
   /* ===============================
-     UNLOCK
+     AVAILABILITY CHECK
   =============================== */
 
-  restoreSelectedDate();
+  // remove unused dayKey
 
-  calGrid.innerHTML = "";
-  calGrid.appendChild(fragment);
+  const status = checkDayLocalAvailability(dayDate, bookings);
+  const validStart = canStartRental(dayDate, bookings);
+
+  renderAvailabilityDots(dayEl, bookings, dayDate);
+
+  /* ===============================
+     STATUS COLOURING
+  =============================== */
+
+  if (status === "available") {
+    dayEl.classList.add("cal-available");
+  } else {
+    dayEl.classList.add("cal-unavailable");
+  }
+
+  if (!validStart) {
+    dayEl.classList.remove("cal-available");
+    dayEl.classList.add("cal-unavailable","cal-no-start");
+  }
+
+  /* ===============================
+     🔥 TOUCHSTART PREFETCH (NEW)
+  =============================== */
+
+  dayEl.addEventListener("touchstart", () => {
+
+    if (IS_RESETTING) return;
+
+    const dateStr = dayEl.dataset.date;
+    if (!dateStr) return;
+
+    // Prefetch this date + next 2 days
+    prefetchAvailabilityWindow(dateStr);
+    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 2));
+
+  }, { passive: true });
+
+  /* ===============================
+     PREVIEW + HOVER PREFETCH
+  =============================== */
+
+   dayEl.addEventListener("mouseenter", (e) => {
+
+    if (IS_RESETTING) return;
+
+    const dateStr = dayEl.dataset.date;
+
+    if (dateStr) {
+      prefetchAvailabilityWindow(dateStr);
+    }
+
+    clearTimeout(hoverPreviewTimer);
+
+    hoverPreviewTimer = setTimeout(() => {
+      clearPreview();
+      previewRental(dayDate);
+      showVehiclePreview(dayDate, e);
+    }, 60);
+
+  });
+
+  if (!isMobile()) {
+    dayEl.addEventListener("mousemove", movePreview);
+  }
+
+  dayEl.addEventListener("mouseleave", () => {
+    clearTimeout(hoverPreviewTimer);
+    clearPreview();
+  });
+
+  /* ===============================
+     SINGLE DAY SELECTION HANDLER
+  =============================== */
+
+  if (validStart || PRESELECTED_VEHICLE) {
+
+    let selecting = false;
+
+    const handleDaySelect = async (e) => {
+
+  // 🔥 HARD GUARDS (VERY IMPORTANT)
+  if (selecting) return;
+  if (IS_RESETTING) return;
+  if (calGrid.dataset.rendering === "true") return;
+  if (calWrap.dataset.rendering === "true") return; // 👈 ADD HERE
+
+  selecting = true;
+
+  try {
+    const dateStr = dayEl.dataset.date;
+    if (!dateStr) return;
+
+    prefetchAvailabilityWindow(dateStr);
+    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+
+    clearPreview();
+
+    await selectDate(dateStr);
+
+    if (isMobile()) {
+      previewRental(dayDate);
+      await showVehiclePreview(dayDate, e);
+    }
+
+  } finally {
+    selecting = false;
+  }
+};
+
+    dayEl.addEventListener("click", handleDaySelect);
+  }
+
+  fragment.appendChild(dayEl);
+}
+
+/* ===============================
+   UNLOCK
+=============================== */
+
+restoreSelectedDate();
+
+calGrid.innerHTML = "";
+calGrid.appendChild(fragment);
 }
 
 /* ======================================================
