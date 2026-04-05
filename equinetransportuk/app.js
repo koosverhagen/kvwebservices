@@ -6859,239 +6859,209 @@ async function renderCalendarInternal() {
   calGrid.dataset.rendering = "true";
   calWrap.dataset.rendering = "true";
 
-/* ===============================
-   LOAD BOOKINGS (DEDUPED + CACHED)
-=============================== */
-
-const bookings = BOOKINGS_CACHE || await getBookings(false);
-
-if (DEBUG) {
-  console.log("Calendar bookings:", bookings);
-}
-
-/* ===============================
-   CALENDAR HEADER
-=============================== */
-
-const year = currentDate.getFullYear();
-const month = currentDate.getMonth();
-
-const monthNames = [
-"January","February","March","April","May","June",
-"July","August","September","October","November","December"
-];
-
-calTitle.textContent = `${monthNames[month]} ${year}`;
-
-const fragment = document.createDocumentFragment();
-
-/* ===============================
-   SELECTED DATE RESTORE
-=============================== */
-
-const selectedDateValue = window.SELECTED_DATE;
-let selectedTimestamp = null;
-
-if (selectedDateValue) {
-  const selectedDate = new Date(selectedDateValue);
-  selectedDate.setHours(0,0,0,0);
-  selectedTimestamp = selectedDate.getTime();
-}
-
-/* ===============================
-   MONTH SETUP
-=============================== */
-
-const firstDay = new Date(year, month, 1);
-const lastDay = new Date(year, month + 1, 0);
-
-let startOffset = firstDay.getDay();
-startOffset = startOffset === 0 ? 6 : startOffset - 1;
-
-for (let i = 0; i < startOffset; i++) {
-  calGrid.appendChild(document.createElement("div"));
-}
-
-const today = new Date();
-today.setHours(0,0,0,0);
-
-/* ===============================
-   DAY LOOP
-=============================== */
-
-for (let day = 1; day <= lastDay.getDate(); day++) {
-
-  const dayDate = new Date(year, month, day);
-  dayDate.setHours(0,0,0,0);
-
-  const dayEl = document.createElement("div");
-  dayEl.className = "cal-day";
-  dayEl.textContent = day;
-
-  // 🔥 REQUIRED for prefetch
-  dayEl.dataset.date = formatDayKey(dayDate);
-
   /* ===============================
-     RESTORE SELECTED DATE
+     LOAD BOOKINGS (DEDUPED + CACHED)
   =============================== */
 
-  if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
-    dayEl.classList.add("cal-selected");
-  }
+  const bookings = BOOKINGS_CACHE || await getBookings(false);
 
-  /* today marker */
-
-  if (dayDate.getTime() === today.getTime()) {
-    dayEl.classList.add("cal-today");
-  }
-
-  /* weekend shading */
-
-  const weekday = dayDate.getDay();
-  if (weekday === 0 || weekday === 6) {
-    dayEl.classList.add("cal-weekend");
+  if (DEBUG) {
+    console.log("Calendar bookings:", bookings);
   }
 
   /* ===============================
-     PAST DATES
+     CALENDAR HEADER
   =============================== */
 
-  if (dayDate < today) {
-    dayEl.classList.add("cal-unavailable","cal-past");
-    fragment.appendChild(dayEl);
-    continue;
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  calTitle.textContent = `${monthNames[month]} ${year}`;
+
+  const fragment = document.createDocumentFragment();
+
+  /* ===============================
+     SELECTED DATE RESTORE
+  =============================== */
+
+  const selectedDateValue = window.SELECTED_DATE;
+  let selectedTimestamp = null;
+
+  if (selectedDateValue) {
+    const selectedDate = new Date(selectedDateValue);
+    selectedDate.setHours(0,0,0,0);
+    selectedTimestamp = selectedDate.getTime();
   }
 
   /* ===============================
-     AVAILABILITY CHECK
+     MONTH SETUP
   =============================== */
 
-  // remove unused dayKey
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
 
-  const status = checkDayLocalAvailability(dayDate, bookings);
-  const validStart = canStartRental(dayDate, bookings);
+  // ✅ FIXED (Monday-based calendar)
+  const startOffset = (firstDay.getDay() + 6) % 7;
 
-  renderAvailabilityDots(dayEl, bookings, dayDate);
-
-  /* ===============================
-     STATUS COLOURING
-  =============================== */
-
-  if (status === "available") {
-    dayEl.classList.add("cal-available");
-  } else {
-    dayEl.classList.add("cal-unavailable");
+  for (let i = 0; i < startOffset; i++) {
+    fragment.appendChild(document.createElement("div"));
   }
 
-  if (!validStart) {
-    dayEl.classList.remove("cal-available");
-    dayEl.classList.add("cal-unavailable","cal-no-start");
-  }
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
   /* ===============================
-     🔥 TOUCHSTART PREFETCH (NEW)
+     DAY LOOP
   =============================== */
 
-  dayEl.addEventListener("touchstart", () => {
+  for (let day = 1; day <= lastDay.getDate(); day++) {
 
-    if (IS_RESETTING) return;
+    const dayDate = new Date(year, month, day);
+    dayDate.setHours(0,0,0,0);
 
-    const dateStr = dayEl.dataset.date;
-    if (!dateStr) return;
+    const dayEl = document.createElement("div");
+    dayEl.className = "cal-day";
+    dayEl.textContent = day;
 
-    // Prefetch this date + next 2 days
-    prefetchAvailabilityWindow(dateStr);
-    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
-    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 2));
+    dayEl.dataset.date = formatDayKey(dayDate);
 
-  }, { passive: true });
+    if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
+      dayEl.classList.add("cal-selected");
+    }
 
-  /* ===============================
-     PREVIEW + HOVER PREFETCH
-  =============================== */
+    if (dayDate.getTime() === today.getTime()) {
+      dayEl.classList.add("cal-today");
+    }
 
-   dayEl.addEventListener("mouseenter", (e) => {
+    const weekday = dayDate.getDay();
+    if (weekday === 0 || weekday === 6) {
+      dayEl.classList.add("cal-weekend");
+    }
 
-    if (IS_RESETTING) return;
+    if (dayDate < today) {
+      dayEl.classList.add("cal-unavailable","cal-past");
+      fragment.appendChild(dayEl);
+      continue;
+    }
 
-    const dateStr = dayEl.dataset.date;
+    const status = checkDayLocalAvailability(dayDate, bookings);
+    const validStart = canStartRental(dayDate, bookings);
 
-    if (dateStr) {
+    renderAvailabilityDots(dayEl, bookings, dayDate);
+
+    if (status === "available") {
+      dayEl.classList.add("cal-available");
+    } else {
+      dayEl.classList.add("cal-unavailable");
+    }
+
+    if (!validStart) {
+      dayEl.classList.remove("cal-available");
+      dayEl.classList.add("cal-unavailable","cal-no-start");
+    }
+
+    /* ===============================
+       PREFETCH / INTERACTIONS
+    =============================== */
+
+    dayEl.addEventListener("touchstart", () => {
+      if (IS_RESETTING) return;
+
+      const dateStr = dayEl.dataset.date;
+      if (!dateStr) return;
+
       prefetchAvailabilityWindow(dateStr);
+      prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+      prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 2));
+
+    }, { passive: true });
+
+    dayEl.addEventListener("mouseenter", (e) => {
+
+      if (IS_RESETTING) return;
+
+      const dateStr = dayEl.dataset.date;
+
+      if (dateStr) {
+        prefetchAvailabilityWindow(dateStr);
+      }
+
+      clearTimeout(hoverPreviewTimer);
+
+      hoverPreviewTimer = setTimeout(() => {
+        clearPreview();
+        previewRental(dayDate);
+        showVehiclePreview(dayDate, e);
+      }, 60);
+
+    });
+
+    if (!isMobile()) {
+      dayEl.addEventListener("mousemove", movePreview);
     }
 
-    clearTimeout(hoverPreviewTimer);
-
-    hoverPreviewTimer = setTimeout(() => {
+    dayEl.addEventListener("mouseleave", () => {
+      clearTimeout(hoverPreviewTimer);
       clearPreview();
-      previewRental(dayDate);
-      showVehiclePreview(dayDate, e);
-    }, 60);
+    });
 
-  });
+    /* ===============================
+       CLICK HANDLER
+    =============================== */
 
-  if (!isMobile()) {
-    dayEl.addEventListener("mousemove", movePreview);
+    if (validStart || PRESELECTED_VEHICLE) {
+
+      let selecting = false;
+
+      const handleDaySelect = async (e) => {
+
+        if (selecting) return;
+        if (IS_RESETTING) return;
+        if (calGrid.dataset.rendering === "true") return;
+        if (calWrap.dataset.rendering === "true") return;
+
+        selecting = true;
+
+        try {
+          const dateStr = dayEl.dataset.date;
+          if (!dateStr) return;
+
+          prefetchAvailabilityWindow(dateStr);
+          prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+
+          clearPreview();
+
+          await selectDate(dateStr);
+
+          if (isMobile()) {
+            previewRental(dayDate);
+            await showVehiclePreview(dayDate, e);
+          }
+
+        } finally {
+          selecting = false;
+        }
+      };
+
+      dayEl.addEventListener("click", handleDaySelect);
+    }
+
+    fragment.appendChild(dayEl);
   }
-
-  dayEl.addEventListener("mouseleave", () => {
-    clearTimeout(hoverPreviewTimer);
-    clearPreview();
-  });
 
   /* ===============================
-     SINGLE DAY SELECTION HANDLER
+     UNLOCK
   =============================== */
 
-  if (validStart || PRESELECTED_VEHICLE) {
+  restoreSelectedDate();
 
-    let selecting = false;
-
-    const handleDaySelect = async (e) => {
-
-  // 🔥 HARD GUARDS (VERY IMPORTANT)
-  if (selecting) return;
-  if (IS_RESETTING) return;
-  if (calGrid.dataset.rendering === "true") return;
-  if (calWrap.dataset.rendering === "true") return; // 👈 ADD HERE
-
-  selecting = true;
-
-  try {
-    const dateStr = dayEl.dataset.date;
-    if (!dateStr) return;
-
-    prefetchAvailabilityWindow(dateStr);
-    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
-
-    clearPreview();
-
-    await selectDate(dateStr);
-
-    if (isMobile()) {
-      previewRental(dayDate);
-      await showVehiclePreview(dayDate, e);
-    }
-
-  } finally {
-    selecting = false;
-  }
-};
-
-    dayEl.addEventListener("click", handleDaySelect);
-  }
-
-  fragment.appendChild(dayEl);
-}
-
-/* ===============================
-   UNLOCK
-=============================== */
-
-restoreSelectedDate();
-
-calGrid.innerHTML = "";
-calGrid.appendChild(fragment);
+  calGrid.innerHTML = "";
+  calGrid.appendChild(fragment);
 }
 
 /* ======================================================
