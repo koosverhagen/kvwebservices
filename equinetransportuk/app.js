@@ -7091,12 +7091,10 @@ for (let day = 1; day <= lastDay.getDate(); day++) {
    UNLOCK
 =============================== */
 
-restoreSelectedDate();
-
-calGrid.innerHTML = "";
 calGrid.appendChild(fragment);
-}
 
+restoreSelectedDate();
+}
 /* ======================================================
    Select date
 ====================================================== */
