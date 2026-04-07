@@ -496,6 +496,15 @@
       color: var(--ok);
       font-weight: 700;
     }
+
+    #clear-filters-btn {
+      opacity: 0.8;
+      display: none;
+    }
+
+    #clear-filters-btn:hover {
+      opacity: 1;
+    }
   </style>
 
   <link rel="icon" href="images/favicon.png">
@@ -553,6 +562,14 @@
             <label for="range-to">To</label>
             <input id="range-to" type="date">
           </div>
+
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="btn ghost" id="clear-filters-btn" type="button">
+              Clear filters
+            </button>
+          </div>
+
         </div>
 
         <div class="meta-row">
@@ -864,66 +881,73 @@
 
       if (!filteredBookings.length) {
         bookingsBody.innerHTML = `
-          <tr>
-            <td colspan="8" class="empty-state">No bookings found for the current filters.</td>
-          </tr>
-        `;
+      <tr>
+        <td colspan="8" class="empty-state">No bookings found for the current filters.</td>
+      </tr>
+    `;
+
+        // 🔥 ensure scroll still syncs (important)
+        setTimeout(syncScroll, 0);
+
         return;
       }
 
       bookingsBody.innerHTML = filteredBookings.map((booking) => `
-        <tr>
-          <td>
-            <div class="booking-ref">${escapeHtml(shortRef(booking.id))}</div>
-           <div 
-  class="tiny booking-id"
-  data-id="${escapeHtml(booking.id || "")}"
-  title="Click to copy"
->
-  ${escapeHtml(truncateBookingId(booking.id))}
-</div>
-          </td>
+    <tr>
+      <td>
+        <div class="booking-ref">${escapeHtml(shortRef(booking.id))}</div>
+        <div 
+          class="tiny booking-id"
+          data-id="${escapeHtml(booking.id || "")}"
+          title="Click to copy"
+        >
+          ${escapeHtml(truncateBookingId(booking.id))}
+        </div>
+      </td>
 
-          <td>
-            <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
-            <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
-            <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
-          </td>
+      <td>
+        <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
+        <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
+        <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
+      </td>
 
-          <td>
-            <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
-            <div class="tiny">${escapeHtml(booking.vehicleId || "—")}</div>
-          </td>
+      <td>
+        <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
+        <div class="tiny">${escapeHtml(booking.vehicleId || "—")}</div>
+      </td>
 
-          <td>
-            ${escapeHtml(formatDateTime(booking.pickupAt))}
-          </td>
+      <td>
+        ${escapeHtml(formatDateTime(booking.pickupAt))}
+      </td>
 
-          <td>
-            ${escapeHtml(formatDateTime(booking.dropoffAt))}
-          </td>
+      <td>
+        ${escapeHtml(formatDateTime(booking.dropoffAt))}
+      </td>
 
-          <td>
-            ${paymentHtml(booking)}
-            <div class="tiny" style="margin-top:6px;">
-              Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
-              Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
-            </div>
-          </td>
+      <td>
+        ${paymentHtml(booking)}
+        <div class="tiny" style="margin-top:6px;">
+          Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
+          Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
+        </div>
+      </td>
 
-          <td>
-            ${formHtml(booking)}
-          </td>
+      <td>
+        ${formHtml(booking)}
+      </td>
 
-          <td>
-            <div class="actions">
-              <button class="btn small primary" type="button" data-view-form="${escapeHtml(booking.id || "")}">
-                View Form
-              </button>
-            </div>
-          </td>
-        </tr>
-      `).join("");
+      <td>
+        <div class="actions">
+          <button class="btn small primary" type="button" data-view-form="${escapeHtml(booking.id || "")}">
+            View Form
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+
+      // 🔥 CRITICAL: run AFTER DOM update
+      setTimeout(syncScroll, 0);
     }
 
     function makeDetailBox(label, value) {
@@ -996,6 +1020,17 @@
       openModal();
     }
 
+    function updateClearButton() {
+      const hasFilters =
+        searchInput.value ||
+        statusFilter.value !== "all";
+
+      clearFiltersBtn.style.display = hasFilters ? "block" : "none";
+    }
+
+    searchInput.addEventListener("input", updateClearButton);
+    statusFilter.addEventListener("change", updateClearButton);
+
     modalClose.addEventListener("click", closeModal);
     modalCloseBtn.addEventListener("click", closeModal);
 
@@ -1034,7 +1069,23 @@
       }
     });
 
+    const clearFiltersBtn = document.getElementById("clear-filters-btn");
+
+    clearFiltersBtn.addEventListener("click", () => {
+
+      searchInput.value = "";
+      statusFilter.value = "all";
+
+      defaultRanges();
+
+      loadBookings();
+
+      updateClearButton(); // ✅ ADD THIS
+
+    });
+
     async function loadBookings() {
+
       const from = rangeFromInput.value;
       const to = rangeToInput.value;
 
@@ -1068,6 +1119,9 @@
         }
 
         allBookings = normaliseBookingsResponse(data);
+
+        console.log("ALL BOOKINGS:", allBookings);
+
         renderBookings();
 
         lastLoaded.textContent = `Last loaded: ${new Date().toLocaleString("en-GB", {
@@ -1192,6 +1246,7 @@
 
     defaultRanges();
     loadBookings();
+
 
     const scrollTop = document.getElementById("scroll-top");
     const listWrap = document.querySelector(".list-wrap");
