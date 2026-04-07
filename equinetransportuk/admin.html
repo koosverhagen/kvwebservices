@@ -295,7 +295,11 @@ table td:first-child{
   font-size:12px;
   color:var(--muted);
 
-  word-break: break-all;   /* 🔥 key fix */
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
 .vehicle-line{
@@ -773,6 +777,16 @@ table td:first-child {
       return true;
     }
 
+function truncateBookingId(id) {
+  if (!id) return "—";
+
+  const str = String(id);
+
+  if (str.length <= 18) return str;
+
+  return str.slice(0, 14) + "…" + str.slice(-6);
+}
+
     function renderBookings() {
       const search = searchInput.value.trim();
       const filter = statusFilter.value;
@@ -797,7 +811,9 @@ table td:first-child {
         <tr>
           <td>
             <div class="booking-ref">${escapeHtml(shortRef(booking.id))}</div>
-            <div class="tiny">${escapeHtml(booking.id || "—")}</div>
+            <div class="tiny" title="${escapeHtml(booking.id || "")}">
+  ${escapeHtml(truncateBookingId(booking.id))}
+</div>
           </td>
 
           <td>
