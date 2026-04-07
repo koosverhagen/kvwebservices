@@ -8,26 +8,24 @@
   <style>
 
 /* ===============================
-   MODAL (FORCE LOAD FIRST)
+   MODAL (SCROLL + STYLING)
 =============================== */
 
 .et-modal.hidden {
-  display: none;
+  display: none !important;
 }
 
 .et-modal {
   position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
+  inset: 0 !important;
   z-index: 999999 !important;
 }
 
 .et-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,.45);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
   z-index: 1;
 }
 
@@ -36,19 +34,130 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+
   z-index: 2;
 
-  width: min(900px, 92vw);
-  max-height: 90vh;
+  width: min(960px, 94vw);
+  max-height: min(88vh, 900px);
 
-  background: #fff;
+  background: #ffffff;
+  border: 1px solid #dbe1e8;
   border-radius: 18px;
-  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,.25);
 
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* keep rounded corners */
+}
 
-  box-shadow: 0 30px 80px rgba(0,0,0,.25);
+/* Header stays visible */
+.et-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 14px 16px;
+  border-bottom: 1px solid #e6ebf2;
+  background: #fff;
+  flex: 0 0 auto;
+}
+
+.et-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: #1d2530;
+}
+
+.et-modal-header button {
+  appearance: none;
+  border: 1px solid #dbe1e8;
+  background: #fff;
+  color: #1d2530;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.et-modal-header button:hover {
+  background: #f8fafc;
+  border-color: #c7d2e0;
+}
+
+/* THIS is the scrollable area */
+.et-modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0; /* critical for scrolling in flex */
+}
+
+/* Nice layout for summary boxes */
+#modal-form-summary.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 860px) {
+  #modal-form-summary.detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Fields list styling */
+.kv-list {
+  display: grid;
+  gap: 10px;
+}
+
+.kv-item {
+  background: #fff;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.kv-key {
+  font-size: 12px;
+  color: #5a6675;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 6px;
+}
+
+.kv-value {
+  font-size: 14px;
+  color: #1d2530;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Signature */
+.et-modal-signature img {
+  width: 100%;
+  height: auto;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+  background: #fff;
+  display: block;
+}
+
+/* Empty / no-form state */
+.empty-state {
+  color: #5a6675;
+  background: #f8fafc;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+  padding: 14px;
 }
 
     :root{
@@ -1000,8 +1109,20 @@ function closeModal() {
   document.body.style.overflow = "";
 }
 
+function showModalLoading() {
+  modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
+  modalFields.innerHTML = "";
+  modalSignature.innerHTML = "";
+  openModal();
+}
+
 modalClose.addEventListener("click", closeModal);
 modalCloseBtn.addEventListener("click", closeModal);
+
+const modalCard = modal.querySelector(".et-modal-card");
+if (modalCard) {
+  modalCard.addEventListener("click", (e) => e.stopPropagation());
+}
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
@@ -1068,6 +1189,9 @@ try {
 
     async function loadForm(bookingId) {
   if (!bookingId) return;
+
+
+  showModalLoading();
 
   try {
     const res = await fetch(
