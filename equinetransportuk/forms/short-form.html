@@ -526,7 +526,7 @@
     statusEl.textContent = "Submitting...";
 
     try {
-      const res = await fetch("/api/forms/submit", {
+      const res = await fetch("https://equine-bookings-api.kverhagen.workers.dev/api/form-submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)

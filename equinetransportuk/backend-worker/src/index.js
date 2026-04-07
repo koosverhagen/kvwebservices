@@ -529,6 +529,15 @@ if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
 }
 
 /* ===============================
+   FORM SUBMIT (NEW)
+================================ */
+
+if (request.method === "POST" && url.pathname === "/api/form-submit") {
+  const response = await handleFormSubmit(request, env);
+  return withCors(response, corsHeaders);
+}
+
+/* ===============================
    FALLBACK
 ================================ */
 
@@ -1019,6 +1028,8 @@ async function handleCreateCheckoutSession(request, env) {
 
   return json({ url: session.url });
 }
+
+
 
 function getDatesBetween(start, end) {
 
@@ -2731,4 +2742,83 @@ function withCors(response, corsHeaders) {
     headers
   });
 
+}
+
+async function handleFormSubmit(request, env) {
+
+  try {
+
+    const data = await request.json();
+
+    const {
+      bookingId,
+      licenceNumber,
+      dvlaCode,
+      signature
+    } = data;
+
+    if (!bookingId) {
+      return json({ error: "Missing bookingId" }, 400);
+    }
+
+    // ===============================
+    // FIND BOOKING (KV)
+    // ===============================
+
+    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+    let booking = null;
+
+    for (const key of list.keys) {
+
+      const raw = await env.BOOKINGS_KV.get(key.name);
+      if (!raw) continue;
+
+      try {
+        const parsed = JSON.parse(raw);
+
+        if (Array.isArray(parsed)) {
+          const found = parsed.find(b => b.id === bookingId);
+          if (found) {
+            booking = found;
+            break;
+          }
+        }
+
+      } catch {}
+    }
+
+    if (!booking) {
+      return json({ error: "Booking not found" }, 404);
+    }
+
+    // ===============================
+    // SAVE TO DB (basic)
+    // ===============================
+
+    await env.DB.prepare(`
+      UPDATE bookings
+      SET
+        form_completed = 1,
+        updated_at = ?
+      WHERE id = ?
+    `)
+    .bind(
+      new Date().toISOString(),
+      bookingId
+    )
+    .run();
+
+    // ===============================
+    // OPTIONAL: SAVE FULL DATA LATER
+    // ===============================
+
+    return json({ success: true });
+
+  } catch (err) {
+
+    console.error("❌ FORM ERROR:", err);
+
+    return json({ error: "Form submission failed" }, 500);
+  }
 }
