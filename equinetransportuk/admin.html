@@ -287,11 +287,15 @@ table td:first-child{
 .booking-ref{
   font-weight:800;
   font-size:18px;
+
+  word-break: break-word;
 }
 
 .tiny{
   font-size:12px;
   color:var(--muted);
+
+  word-break: break-all;   /* 🔥 key fix */
 }
 
 .vehicle-line{
@@ -405,14 +409,24 @@ table td:first-child {
   z-index: 10;
   background: #fff;
 
-  width: 140px; /* 🔥 controlled width */
-  min-width: 140px;
-  max-width: 140px;
+  width: 180px;
+min-width: 180px;
+max-width: 180px;
 }
 
 /* header above cells */
 thead th:first-child {
   z-index: 25;
+}
+
+/* ===============================
+   FIX COLUMN 1 OVERFLOW
+=============================== */
+
+table td:first-child {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 </style>
