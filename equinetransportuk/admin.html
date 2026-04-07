@@ -1,442 +1,506 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin | Equine Transport UK</title>
 
   <style>
-
-/* ===============================
+    /* ===============================
    ROOT / BASE
 =============================== */
 
-:root{
-  --bg:#f5f7fa;
-  --card:#ffffff;
-  --text:#1d2530;
-  --muted:#5a6675;
-  --line:#dbe1e8;
-  --accent:#1f6feb;
-  --accent-dark:#1557b0;
-  --ok:#137a3d;
-  --warn:#b45309;
-  --bad:#b42318;
-  --soft:#f8fafc;
-  --radius:16px;
-  --shadow:0 12px 30px rgba(15,23,42,.08);
-}
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --text: #1d2530;
+      --muted: #5a6675;
+      --line: #dbe1e8;
+      --accent: #1f6feb;
+      --accent-dark: #1557b0;
+      --ok: #137a3d;
+      --warn: #b45309;
+      --bad: #b42318;
+      --soft: #f8fafc;
+      --radius: 16px;
+      --shadow: 0 12px 30px rgba(15, 23, 42, .08);
+    }
 
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
+    * {
+      box-sizing: border-box
+    }
 
-body{
-  font-family:"SF Pro Display","SF Pro Text",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  color:var(--text);
-  background:linear-gradient(180deg,#f8f9fb 0%,#eef1f6 100%);
-  line-height:1.45;
-}
+    html,
+    body {
+      margin: 0;
+      padding: 0
+    }
 
-/* ===============================
+    body {
+      font-family: "SF Pro Display", "SF Pro Text", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
+      line-height: 1.45;
+    }
+
+    /* ===============================
    MODAL
 =============================== */
 
-.et-modal.hidden { display:none !important; }
+    .et-modal.hidden {
+      display: none !important;
+    }
 
-.et-modal{
-  position:fixed;
-  inset:0;
-  z-index:999999;
-}
+    .et-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+    }
 
-.et-modal-backdrop{
-  position:absolute;
-  inset:0;
-  background:rgba(15,23,42,0.45);
-  backdrop-filter:blur(4px);
-}
+    .et-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+    }
 
-.et-modal-card{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
+    .et-modal-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
 
-  width:min(960px,94vw);
-  max-height:88vh;
+      width: min(960px, 94vw);
+      max-height: 88vh;
 
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:18px;
-  box-shadow:0 30px 80px rgba(0,0,0,.25);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .25);
 
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-.et-modal-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:14px 16px;
-  border-bottom:1px solid var(--line);
-  background:#fff;
-}
+    .et-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
 
-.et-modal-header h3{
-  margin:0;
-  font-size:20px;
-  letter-spacing:-0.01em;
-}
+    .et-modal-header h3 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+    }
 
-.et-modal-header button{
-  border:1px solid var(--line);
-  background:#fff;
-  width:36px;
-  height:36px;
-  border-radius:10px;
-  cursor:pointer;
-}
+    .et-modal-header button {
+      border: 1px solid var(--line);
+      background: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
 
-.et-modal-body{
-  padding:16px;
-  overflow-y:auto;
-  overflow-x:hidden;
-  flex:1;
-  min-height:0;
-}
+    .et-modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      flex: 1;
+      min-height: 0;
+    }
 
-/* ===============================
+    /* ===============================
    LAYOUT
 =============================== */
 
-.container{
-  width:min(1180px,92vw);
-  margin:0 auto;
-}
+    .container {
+      width: min(1180px, 92vw);
+      margin: 0 auto;
+    }
 
-.site-header{
-  position:sticky;
-  top:0;
-  z-index:50;
-  background:rgba(255,255,255,.9);
-  backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--line);
-}
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, .9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
 
-.header-inner{
-  min-height:72px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
+    .header-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  font-weight:800;
-}
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+    }
 
-.brand-logo{
-  width:52px;
-  height:32px;
-  object-fit:contain;
-}
+    .brand-logo {
+      width: 52px;
+      height: 32px;
+      object-fit: contain;
+    }
 
-.header-actions{
-  display:flex;
-  gap:10px;
-}
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
 
-/* ===============================
+    /* ===============================
    BUTTONS
 =============================== */
 
-.btn{
-  border:none;
-  border-radius:12px;
-  padding:12px 16px;
-  font-weight:700;
-  cursor:pointer;
-}
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
 
-.btn.primary{
-  background:var(--accent);
-  color:#fff;
-}
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+    }
 
-.btn.ghost{
-  background:#fff;
-  border:1px solid var(--line);
-}
+    .btn.ghost {
+      background: #fff;
+      border: 1px solid var(--line);
+    }
 
-/* ===============================
+    /* ===============================
    HERO / TOOLBAR
 =============================== */
 
-.hero{
-  padding:28px 0 18px;
-}
+    .hero {
+      padding: 28px 0 18px;
+    }
 
-.hero-card{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:22px;
-  padding:22px;
-  box-shadow:var(--shadow);
-}
+    .hero-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
 
-.toolbar{
-  display:grid;
-  grid-template-columns:1fr auto auto auto;
-  gap:12px;
-  margin-top:18px;
-}
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 12px;
+      margin-top: 18px;
+    }
 
-.field label{
-  font-size:13px;
-  font-weight:700;
-}
+    .field label {
+      font-size: 13px;
+      font-weight: 700;
+    }
 
-.field input,
-.field select{
-  width:100%;
-  min-height:46px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:10px;
-}
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
 
-/* ===============================
+    /* ===============================
    TABLE (FIXED VERSION)
 =============================== */
 
-.list-wrap{
-  overflow-x:auto;
-  overflow-y:hidden;
-  border-radius:18px;
-}
+    .list-wrap {
+      overflow-x: auto;
+      overflow-y: hidden;
+      border-radius: 18px;
+    }
 
-/* isolate table */
-.list-wrap table{
-  width:100%;
-  border-collapse:collapse;
-  table-layout:auto;
-  background:#fff;
-}
+    /* isolate table */
+    .list-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+      background: #fff;
+    }
 
-/* header */
-thead th {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+    table {
+      border-collapse: separate;
+      /* 🔥 prevents sticky overlap bugs */
+      border-spacing: 0;
+    }
 
-  background: #f8fafc;
-  border-bottom: 1px solid var(--line);
+    /* header */
+    thead th {
+      position: sticky;
+      top: 0;
 
-  padding: 14px;
-  font-size: 12px;
-  text-transform: uppercase;
-  color: var(--muted);
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
 
-  box-shadow: 0 2px 6px rgba(0,0,0,.05);
-}
+      padding: 14px;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--muted);
 
-/* prevent crazy stretching */
-td, th {
-  vertical-align: top;
-}
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .05);
+    }
 
-/* control layout */
-td:nth-child(2) { width: 220px; } /* customer */
-td:nth-child(3) { width: 200px; } /* vehicle */
-td:nth-child(4),
-td:nth-child(5) { width: 160px; }
+    /* prevent crazy stretching */
+    td,
+    th {
+      vertical-align: top;
+    }
 
-/* rows */
-tbody td{
-  padding:14px;
-  border-bottom:1px solid #edf2f7;
-  font-size:14px;
-}
+    /* control layout */
+    td:nth-child(2) {
+      width: 220px;
+    }
 
-/* prevent squashing */
-td, th{
-  white-space:nowrap;
-}
+    /* customer */
+    td:nth-child(3) {
+      width: 200px;
+    }
 
-/* allow wrapping */
-td:nth-child(2),
-td:nth-child(6),
-td:nth-child(7){
-  white-space:normal;
-}
+    /* vehicle */
+    td:nth-child(4),
+    td:nth-child(5) {
+      width: 160px;
+    }
 
-/* first column tight */
-table th:first-child,
-table td:first-child{
-  width:1%;
-}
+    /* rows */
+    tbody td {
+      padding: 14px;
+      border-bottom: 1px solid #edf2f7;
+      font-size: 14px;
+    }
 
-/* ===============================
+    /* prevent squashing */
+    td,
+    th {
+      white-space: nowrap;
+    }
+
+    /* allow wrapping */
+    td:nth-child(2),
+    td:nth-child(6),
+    td:nth-child(7) {
+      white-space: normal;
+    }
+
+    /* first column tight */
+    table th:first-child,
+    table td:first-child {
+      width: 1%;
+    }
+
+    /* ===============================
    UI ELEMENTS
 =============================== */
 
-.booking-ref{
-  font-weight:800;
-  font-size:18px;
+    .booking-ref {
+      font-weight: 800;
+      font-size: 18px;
 
-  word-break: break-word;
-}
+      word-break: break-word;
+    }
 
-.tiny{
-  font-size:12px;
-  color:var(--muted);
+    .tiny {
+      font-size: 12px;
+      color: var(--muted);
 
-  display:block;
-  max-width:100%;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
-.vehicle-line{
-  font-weight:700;
-}
+    .vehicle-line {
+      font-weight: 700;
+    }
 
-.pill{
-  display:inline-flex;
-  padding:4px 10px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:800;
-  margin:2px 6px 2px 0;
-}
+    .pill {
+      display: inline-flex;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      margin: 2px 6px 2px 0;
+    }
 
-.pill.ok{ background:#ecfdf3; color:var(--ok); }
-.pill.warn{ background:#fff7ed; color:var(--warn); }
-.pill.bad{ background:#fff1f2; color:var(--bad); }
-.pill.neutral{ background:#f3f4f6; }
+    .pill.ok {
+      background: #ecfdf3;
+      color: var(--ok);
+    }
 
-/* ===============================
+    .pill.warn {
+      background: #fff7ed;
+      color: var(--warn);
+    }
+
+    .pill.bad {
+      background: #fff1f2;
+      color: var(--bad);
+    }
+
+    .pill.neutral {
+      background: #f3f4f6;
+    }
+
+    /* ===============================
    FORM / MODAL CONTENT
 =============================== */
 
-.detail-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-  margin-bottom:14px;
-}
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
 
-.kv-list{
-  display:grid;
-  gap:10px;
-}
+    .kv-list {
+      display: grid;
+      gap: 10px;
+    }
 
-.kv-item{
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:12px;
-}
+    .kv-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
 
-.kv-key{
-  font-size:12px;
-  font-weight:800;
-  color:var(--muted);
-  margin-bottom:6px;
-}
+    .kv-key {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
 
-.kv-value{
-  font-size:14px;
-  word-break:break-word;
-}
+    .kv-value {
+      font-size: 14px;
+      word-break: break-word;
+    }
 
-.et-modal-signature img{
-  width:100%;
-  border-radius:12px;
-  border:1px solid var(--line);
-}
+    .et-modal-signature img {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
 
-/* ===============================
+    /* ===============================
    EMPTY STATE
 =============================== */
 
-.empty-state{
-  padding:20px;
-  color:var(--muted);
-}
+    .empty-state {
+      padding: 20px;
+      color: var(--muted);
+    }
 
-/* ===============================
+    /* ===============================
    RESPONSIVE
 =============================== */
 
-@media (max-width:860px){
-  .toolbar{
-    grid-template-columns:1fr;
-  }
-  .detail-grid{
-    grid-template-columns:1fr;
-  }
-}
+    @media (max-width:860px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
 
-/* ===============================
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ===============================
    DOUBLE SCROLL (TOP + BOTTOM)
 =============================== */
 
-.table-scroll-top {
-  overflow-x: auto;
-  overflow-y: hidden;
-  height: 12px;
-}
+    .table-scroll-top {
+      overflow-x: auto;
+      overflow-y: hidden;
+      height: 12px;
+    }
 
-.table-scroll-top div {
-  height: 1px;
-}
+    .table-scroll-top div {
+      height: 1px;
+    }
 
-/* Keep bottom scroll */
-.list-wrap {
-  overflow-x: auto;
-  overflow-y: hidden;
-}
+    /* Keep bottom scroll */
+    .list-wrap {
+      overflow-x: auto;
+      overflow-y: hidden;
+      position: relative;
+      /* 🔥 REQUIRED for sticky to behave correctly */
+    }
 
-/* ===============================
+    /* ===============================
    STICKY FIRST COLUMN
 =============================== */
 
-table th:first-child,
-table td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 10;
-  background: #fff;
+    table th:first-child,
+    table td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 10;
+      background: #fff;
 
-  width: 180px;
-min-width: 180px;
-max-width: 180px;
-}
+      width: 140px;
+      min-width: 140px;
+      max-width: 140px;
+    }
 
-/* header above cells */
-thead th:first-child {
-  z-index: 25;
-}
+    /* header above cells */
+    thead th:first-child {
+      z-index: 25;
+    }
 
-/* ===============================
+    /* ===============================
    FIX COLUMN 1 OVERFLOW
 =============================== */
 
-table td:first-child {
-  white-space: normal !important;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
+    table td:first-child {
+      white-space: normal !important;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
 
-</style>
+    /* ===============================
+   CLICKABLE BOOKING ID
+=============================== */
+
+    .booking-id {
+      cursor: pointer;
+      transition: .15s ease;
+      position: relative;
+    }
+
+    .booking-id:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    /* copied state */
+    .booking-id.copied {
+      color: var(--ok);
+      font-weight: 700;
+    }
+  </style>
 
   <link rel="icon" href="images/favicon.png">
 </head>
+
 <body>
 
   <header class="site-header">
@@ -535,42 +599,42 @@ table td:first-child {
         </table>
       </div>
     </section>
-    
+
   </main>
 
-<!-- ===============================
+  <!-- ===============================
    FORM MODAL (FIXED)
 =============================== -->
-<div id="form-modal" class="et-modal hidden">
+  <div id="form-modal" class="et-modal hidden">
 
-  <div class="et-modal-backdrop" id="modal-close"></div>
+    <div class="et-modal-backdrop" id="modal-close"></div>
 
-  <div class="et-modal-card">
+    <div class="et-modal-card">
 
-    <div class="et-modal-header">
-      <h3>Form details</h3>
-      <button id="modal-close-btn">✕</button>
-    </div>
-
-    <div class="et-modal-body">
-
-      <div id="modal-form-summary" class="detail-grid"></div>
-
-      <div class="subsection">
-        <h4>Submitted fields</h4>
-        <div id="modal-form-fields" class="kv-list"></div>
+      <div class="et-modal-header">
+        <h3>Form details</h3>
+        <button id="modal-close-btn">✕</button>
       </div>
 
-      <div class="subsection">
-        <h4>Signature</h4>
-        <div id="modal-signature" class="et-modal-signature"></div>
+      <div class="et-modal-body">
+
+        <div id="modal-form-summary" class="detail-grid"></div>
+
+        <div class="subsection">
+          <h4>Submitted fields</h4>
+          <div id="modal-form-fields" class="kv-list"></div>
+        </div>
+
+        <div class="subsection">
+          <h4>Signature</h4>
+          <div id="modal-signature" class="et-modal-signature"></div>
+        </div>
+
       </div>
 
     </div>
 
   </div>
-
-</div>
 
   <script>
     const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
@@ -762,8 +826,8 @@ table td:first-child {
         booking?.status,
         booking?.requiredFormType
       ]
-      .join(" ")
-      .toLowerCase();
+        .join(" ")
+        .toLowerCase();
 
       return haystack.includes(search.toLowerCase());
     }
@@ -777,15 +841,15 @@ table td:first-child {
       return true;
     }
 
-function truncateBookingId(id) {
-  if (!id) return "—";
+    function truncateBookingId(id) {
+      if (!id) return "—";
 
-  const str = String(id);
+      const str = String(id);
 
-  if (str.length <= 18) return str;
+      if (str.length <= 18) return str;
 
-  return str.slice(0, 14) + "…" + str.slice(-6);
-}
+      return str.slice(0, 14) + "…" + str.slice(-6);
+    }
 
     function renderBookings() {
       const search = searchInput.value.trim();
@@ -811,7 +875,11 @@ function truncateBookingId(id) {
         <tr>
           <td>
             <div class="booking-ref">${escapeHtml(shortRef(booking.id))}</div>
-            <div class="tiny" title="${escapeHtml(booking.id || "")}">
+           <div 
+  class="tiny booking-id"
+  data-id="${escapeHtml(booking.id || "")}"
+  title="Click to copy"
+>
   ${escapeHtml(truncateBookingId(booking.id))}
 </div>
           </td>
@@ -909,36 +977,62 @@ function truncateBookingId(id) {
         ""
       );
     }
-    
+
 
     function openModal() {
-  modal.classList.remove("hidden");
-  document.body.style.overflow = "hidden";
-}
+      modal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+    }
 
-function closeModal() {
-  modal.classList.add("hidden");
-  document.body.style.overflow = "";
-}
+    function closeModal() {
+      modal.classList.add("hidden");
+      document.body.style.overflow = "";
+    }
 
-function showModalLoading() {
-  modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
-  modalFields.innerHTML = "";
-  modalSignature.innerHTML = "";
-  openModal();
-}
+    function showModalLoading() {
+      modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
+      modalFields.innerHTML = "";
+      modalSignature.innerHTML = "";
+      openModal();
+    }
 
-modalClose.addEventListener("click", closeModal);
-modalCloseBtn.addEventListener("click", closeModal);
+    modalClose.addEventListener("click", closeModal);
+    modalCloseBtn.addEventListener("click", closeModal);
 
-const modalCard = modal.querySelector(".et-modal-card");
-if (modalCard) {
-  modalCard.addEventListener("click", (e) => e.stopPropagation());
-}
+    const modalCard = modal.querySelector(".et-modal-card");
+    if (modalCard) {
+      modalCard.addEventListener("click", (e) => e.stopPropagation());
+    }
 
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeModal();
-});
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+
+    document.addEventListener("click", async (e) => {
+      const el = e.target.closest(".booking-id");
+      if (!el) return;
+
+      const id = el.getAttribute("data-id");
+      if (!id) return;
+
+      try {
+        await navigator.clipboard.writeText(id);
+
+        // 🔥 feedback
+        const original = el.textContent;
+        el.textContent = "Copied ✓";
+
+        el.classList.add("copied");
+
+        setTimeout(() => {
+          el.textContent = truncateBookingId(id);
+          el.classList.remove("copied");
+        }, 1200);
+
+      } catch (err) {
+        console.warn("Copy failed", err);
+      }
+    });
 
     async function loadBookings() {
       const from = rangeFromInput.value;
@@ -963,11 +1057,11 @@ document.addEventListener("keydown", (e) => {
         );
 
         let data = {};
-try {
-  data = await res.json();
-} catch {
-  data = {};
-}
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
 
         if (!res.ok) {
           throw new Error(data?.error || `Bookings API error (${res.status})`);
@@ -1000,89 +1094,89 @@ try {
     }
 
     async function loadForm(bookingId) {
-  if (!bookingId) return;
+      if (!bookingId) return;
 
 
-  showModalLoading();
+      showModalLoading();
 
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`
-    );
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`
+        );
 
-    // 🔥 SAFELY parse JSON (prevents crash on empty 404 body)
-    let data = {};
-    try {
-      data = await res.json();
-    } catch {
-      data = {};
-    }
+        // 🔥 SAFELY parse JSON (prevents crash on empty 404 body)
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
 
-    // ✅ HANDLE "NO FORM" (NORMAL CASE)
-    if (res.status === 404) {
-      modalSummary.innerHTML = `
+        // ✅ HANDLE "NO FORM" (NORMAL CASE)
+        if (res.status === 404) {
+          modalSummary.innerHTML = `
         <div class="empty-state">
           No form submitted yet for this booking.
         </div>
       `;
-      modalFields.innerHTML = "";
-      modalSignature.innerHTML = "";
-      openModal();
-      return;
-    }
+          modalFields.innerHTML = "";
+          modalSignature.innerHTML = "";
+          openModal();
+          return;
+        }
 
-    // ❌ REAL ERROR
-    if (!res.ok) {
-      throw new Error(data?.error || `Form API error (${res.status})`);
-    }
+        // ❌ REAL ERROR
+        if (!res.ok) {
+          throw new Error(data?.error || `Form API error (${res.status})`);
+        }
 
-    // ✅ NORMAL FLOW
-    const formData = data.form || data;
+        // ✅ NORMAL FLOW
+        const formData = data.form || data;
 
-    modalSummary.innerHTML = `
+        modalSummary.innerHTML = `
       ${makeDetailBox("Booking reference", shortRef(bookingId))}
       ${makeDetailBox("Form type", formData.formType || "—")}
       ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
     `;
 
-    const entries = buildFieldEntries(formData);
+        const entries = buildFieldEntries(formData);
 
-    modalFields.innerHTML = entries.map(([key, value]) => `
+        modalFields.innerHTML = entries.map(([key, value]) => `
       <div class="kv-item">
         <div class="kv-key">${escapeHtml(key)}</div>
         <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
       </div>
     `).join("");
 
-    const signatureData = getSignatureData(formData);
+        const signatureData = getSignatureData(formData);
 
-   if (signatureData) {
-  modalSignature.innerHTML = `
+        if (signatureData) {
+          modalSignature.innerHTML = `
     <div class="et-modal-signature">
       <img src="${signatureData}" />
     </div>
   `;
-} else {
-  modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
-}
+        } else {
+          modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
+        }
 
-    openModal();
+        openModal();
 
-  } catch (err) {
-    console.error("Failed to load form:", err);
+      } catch (err) {
+        console.error("Failed to load form:", err);
 
-    modalSummary.innerHTML = `
+        modalSummary.innerHTML = `
       <div class="empty-state">
         ${escapeHtml(err.message || "Failed to load form.")}
       </div>
     `;
 
-    modalFields.innerHTML = "";
-    modalSignature.innerHTML = "";
+        modalFields.innerHTML = "";
+        modalSignature.innerHTML = "";
 
-    openModal();
-  }
-}
+        openModal();
+      }
+    }
 
     bookingsBody.addEventListener("click", (event) => {
       const btn = event.target.closest("[data-view-form]");
@@ -1099,31 +1193,32 @@ try {
     defaultRanges();
     loadBookings();
 
-const scrollTop = document.getElementById("scroll-top");
-const listWrap = document.querySelector(".list-wrap");
+    const scrollTop = document.getElementById("scroll-top");
+    const listWrap = document.querySelector(".list-wrap");
 
-function syncScroll() {
-  if (!scrollTop || !listWrap) return;
+    function syncScroll() {
+      if (!scrollTop || !listWrap) return;
 
-  const table = listWrap.querySelector("table");
-  if (!table) return;
+      const table = listWrap.querySelector("table");
+      if (!table) return;
 
-  // create fake width
-  scrollTop.innerHTML = `<div style="width:${table.scrollWidth}px"></div>`;
+      // create fake width
+      scrollTop.innerHTML = `<div style="width:${table.scrollWidth}px"></div>`;
 
-  scrollTop.onscroll = () => {
-    listWrap.scrollLeft = scrollTop.scrollLeft;
-  };
+      scrollTop.onscroll = () => {
+        listWrap.scrollLeft = scrollTop.scrollLeft;
+      };
 
-  listWrap.onscroll = () => {
-    scrollTop.scrollLeft = listWrap.scrollLeft;
-  };
-}
+      listWrap.onscroll = () => {
+        scrollTop.scrollLeft = listWrap.scrollLeft;
+      };
+    }
 
-// call after render
-setTimeout(syncScroll, 100);
+    // call after render
+    setTimeout(syncScroll, 100);
 
   </script>
- 
+
 </body>
+
 </html>
