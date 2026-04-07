@@ -533,8 +533,20 @@ if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
 ================================ */
 
 if (request.method === "POST" && url.pathname === "/api/form-submit") {
-  const response = await handleFormSubmit(request, env);
-  return withCors(response, corsHeaders);
+  try {
+
+    const response = await handleFormSubmit(request, env);
+    return withCors(response, corsHeaders);
+
+  } catch (err) {
+
+    console.error("❌ FORM ROUTE CRASH:", err);
+
+    return withCors(
+      json({ error: "Server error" }, 500),
+      corsHeaders
+    );
+  }
 }
 
 /* ===============================
@@ -2754,20 +2766,23 @@ async function handleFormSubmit(request, env) {
       bookingId,
       licenceNumber,
       dvlaCode,
-      signature
+      signature,
+      formType = "unknown"
     } = data;
 
     if (!bookingId) {
       return json({ error: "Missing bookingId" }, 400);
     }
 
-    // ===============================
-    // FIND BOOKING (KV)
-    // ===============================
+    /* ===============================
+       FIND BOOKING (KV)
+    =============================== */
 
     const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
     let booking = null;
+    let monthKeyUsed = null;
+    let monthData = null;
 
     for (const key of list.keys) {
 
@@ -2775,14 +2790,18 @@ async function handleFormSubmit(request, env) {
       if (!raw) continue;
 
       try {
+
         const parsed = JSON.parse(raw);
 
-        if (Array.isArray(parsed)) {
-          const found = parsed.find(b => b.id === bookingId);
-          if (found) {
-            booking = found;
-            break;
-          }
+        if (!Array.isArray(parsed)) continue;
+
+        const found = parsed.find(b => String(b.id) === String(bookingId));
+
+        if (found) {
+          booking = found;
+          monthKeyUsed = key.name;
+          monthData = parsed;
+          break;
         }
 
       } catch {}
@@ -2792,26 +2811,56 @@ async function handleFormSubmit(request, env) {
       return json({ error: "Booking not found" }, 404);
     }
 
-    // ===============================
-    // SAVE TO DB (basic)
-    // ===============================
+    /* ===============================
+       UPDATE BOOKING (KV)
+    =============================== */
 
-    await env.DB.prepare(`
-      UPDATE bookings
-      SET
-        form_completed = 1,
-        updated_at = ?
-      WHERE id = ?
-    `)
-    .bind(
-      new Date().toISOString(),
-      bookingId
-    )
-    .run();
+    booking.formCompleted = true;
+    booking.formType = formType;
+    booking.formSubmittedAt = new Date().toISOString();
 
-    // ===============================
-    // OPTIONAL: SAVE FULL DATA LATER
-    // ===============================
+    // optional fields (safe)
+    booking.licenceNumber = licenceNumber || null;
+    booking.dvlaCode = dvlaCode || null;
+    booking.signature = signature || null;
+
+    if (monthKeyUsed && monthData) {
+
+      const updated = monthData.map(b =>
+        String(b.id) === String(bookingId) ? booking : b
+      );
+
+      await env.BOOKINGS_KV.put(
+        monthKeyUsed,
+        JSON.stringify(updated)
+      );
+    }
+
+    /* ===============================
+       UPDATE DB (SAFE)
+    =============================== */
+
+    try {
+
+      await env.DB.prepare(`
+        UPDATE bookings
+        SET
+          form_completed = 1,
+          updated_at = ?
+        WHERE id = ?
+      `)
+      .bind(
+        new Date().toISOString(),
+        bookingId
+      )
+      .run();
+
+    } catch (err) {
+
+      console.warn("DB update skipped:", err.message);
+    }
+
+    console.log("✅ FORM SAVED:", bookingId);
 
     return json({ success: true });
 
