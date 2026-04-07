@@ -228,21 +228,32 @@ body{
 }
 
 /* header */
-thead th{
-  position:sticky;
-  top:0;
-  z-index:20;
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
 
-  background:#f8fafc;
-  border-bottom:1px solid var(--line);
+  background: #f8fafc;
+  border-bottom: 1px solid var(--line);
 
-  padding:14px;
-  font-size:12px;
-  text-transform:uppercase;
-  color:var(--muted);
+  padding: 14px;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
 
-  box-shadow:0 2px 6px rgba(0,0,0,.05);
+  box-shadow: 0 2px 6px rgba(0,0,0,.05);
 }
+
+/* prevent crazy stretching */
+td, th {
+  vertical-align: top;
+}
+
+/* control layout */
+td:nth-child(2) { width: 220px; } /* customer */
+td:nth-child(3) { width: 200px; } /* vehicle */
+td:nth-child(4),
+td:nth-child(5) { width: 160px; }
 
 /* rows */
 tbody td{
@@ -363,6 +374,47 @@ table td:first-child{
   }
 }
 
+/* ===============================
+   DOUBLE SCROLL (TOP + BOTTOM)
+=============================== */
+
+.table-scroll-top {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 12px;
+}
+
+.table-scroll-top div {
+  height: 1px;
+}
+
+/* Keep bottom scroll */
+.list-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* ===============================
+   STICKY FIRST COLUMN
+=============================== */
+
+table th:first-child,
+table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: #fff;
+
+  width: 140px; /* 🔥 controlled width */
+  min-width: 140px;
+  max-width: 140px;
+}
+
+/* header above cells */
+thead th:first-child {
+  z-index: 25;
+}
+
 </style>
 
   <link rel="icon" href="images/favicon.png">
@@ -439,6 +491,9 @@ table td:first-child{
       </div>
 
       <div class="card list-wrap">
+
+        <div class="table-scroll-top" id="scroll-top"></div>
+
         <table>
           <thead>
             <tr>
@@ -523,6 +578,8 @@ table td:first-child{
 
     let allBookings = [];
     let filteredBookings = [];
+
+
 
     function pad(n) {
       return String(n).padStart(2, "0");
@@ -1011,6 +1068,31 @@ try {
 
     defaultRanges();
     loadBookings();
+
+const scrollTop = document.getElementById("scroll-top");
+const listWrap = document.querySelector(".list-wrap");
+
+function syncScroll() {
+  if (!scrollTop || !listWrap) return;
+
+  const table = listWrap.querySelector("table");
+  if (!table) return;
+
+  // create fake width
+  scrollTop.innerHTML = `<div style="width:${table.scrollWidth}px"></div>`;
+
+  scrollTop.onscroll = () => {
+    listWrap.scrollLeft = scrollTop.scrollLeft;
+  };
+
+  listWrap.onscroll = () => {
+    scrollTop.scrollLeft = listWrap.scrollLeft;
+  };
+}
+
+// call after render
+setTimeout(syncScroll, 100);
+
   </script>
  
 </body>
