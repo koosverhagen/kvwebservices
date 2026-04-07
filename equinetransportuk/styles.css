@@ -3044,6 +3044,10 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 99999;
+
+  display: flex;              /* 🔥 KEY FIX */
+  align-items: center;        /* vertical center */
+  justify-content: center;    /* horizontal center */
 }
 
 .modal-backdrop {
@@ -3057,7 +3061,9 @@ textarea {
   position: relative;
   width: min(900px, 92vw);
   max-height: 90vh;
-  margin: 40px auto;
+
+  margin: 0; /* 🔥 REMOVE margin */
+
   background: #fff;
   border-radius: 18px;
   overflow: hidden;
@@ -3065,7 +3071,6 @@ textarea {
   flex-direction: column;
   box-shadow: 0 30px 80px rgba(0,0,0,.25);
 }
-
 .modal-header {
   display: flex;
   justify-content: space-between;
