@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin | Equine Transport UK</title>
+
+  <style>
+    :root{
+      --bg:#f5f7fa;
+      --card:#ffffff;
+      --text:#1d2530;
+      --muted:#5a6675;
+      --line:#dbe1e8;
+      --accent:#1f6feb;
+      --accent-dark:#1557b0;
+      --ok:#137a3d;
+      --warn:#b45309;
+      --bad:#b42318;
+      --soft:#f8fafc;
+      --radius:16px;
+      --shadow:0 12px 30px rgba(15,23,42,.08);
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family:"SF Pro Display","SF Pro Text",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg,#f8f9fb 0%,#eef1f6 100%);
+      line-height:1.45;
+    }
+
+    .container{
+      width:min(1180px,92vw);
+      margin:0 auto;
+    }
+
+    .site-header{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background:rgba(255,255,255,.9);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--line);
+    }
+
+    .header-inner{
+      min-height:72px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      text-decoration:none;
+      color:var(--text);
+      font-weight:800;
+      letter-spacing:.01em;
+    }
+
+    .brand-logo{
+      width:52px;
+      height:32px;
+      object-fit:contain;
+      border-radius:8px;
+      background:#fff;
+      border:1px solid var(--line);
+      padding:2px;
+    }
+
+    .header-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      appearance:none;
+      border:none;
+      border-radius:12px;
+      padding:12px 16px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.18s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+
+    .btn.primary{
+      background:var(--accent);
+      color:#fff;
+    }
+
+    .btn.primary:hover{
+      background:var(--accent-dark);
+    }
+
+    .btn.ghost{
+      background:#fff;
+      color:var(--text);
+      border:1px solid var(--line);
+    }
+
+    .btn.ghost:hover{
+      border-color:#b9c5d2;
+      background:#fbfdff;
+    }
+
+    .hero{
+      padding:28px 0 18px;
+    }
+
+    .hero-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px;
+    }
+
+    .hero-kicker{
+      margin:0 0 8px;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      font-size:11px;
+      color:var(--muted);
+      font-weight:800;
+    }
+
+    .hero h1{
+      margin:0 0 10px;
+      font-size:clamp(28px,4vw,42px);
+      line-height:1.05;
+      letter-spacing:-.02em;
+    }
+
+    .hero p{
+      margin:0;
+      color:var(--muted);
+      max-width:70ch;
+    }
+
+    .toolbar{
+      display:grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap:12px;
+      margin-top:18px;
+      align-items:end;
+    }
+
+    .field label{
+      display:block;
+      font-size:13px;
+      font-weight:700;
+      color:var(--muted);
+      margin:0 0 6px;
+    }
+
+    .field input,
+    .field select{
+      width:100%;
+      min-height:46px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      padding:10px 12px;
+      font:inherit;
+      color:var(--text);
+    }
+
+    .meta-row{
+      margin-top:14px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+    }
+
+    .section{
+      margin:18px 0 28px;
+    }
+
+    .section-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:12px;
+    }
+
+    .section-head h2{
+      margin:0;
+      font-size:22px;
+      letter-spacing:-.02em;
+    }
+
+    .muted{ color:var(--muted); }
+
+    .status-bar{
+      padding:14px 16px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      margin-top:14px;
+      font-size:14px;
+    }
+
+    .status-bar.loading{
+      color:var(--muted);
+    }
+
+    .status-bar.error{
+      border-color:#fecaca;
+      background:#fff5f5;
+      color:var(--bad);
+    }
+
+    .list-wrap{
+      overflow:auto;
+      border-radius:18px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1080px;
+      background:#fff;
+    }
+
+    thead th{
+      text-align:left;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      color:var(--muted);
+      background:#f8fafc;
+      border-bottom:1px solid var(--line);
+      padding:14px 14px;
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+
+    tbody td{
+      padding:14px;
+      border-bottom:1px solid #edf2f7;
+      vertical-align:top;
+      font-size:14px;
+    }
+
+    tbody tr:hover{
+      background:#fbfdff;
+    }
+
+    .booking-ref{
+      font-weight:800;
+      letter-spacing:.01em;
+    }
+
+    .tiny{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .vehicle-line{
+      font-weight:700;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      min-height:28px;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      border:1px solid transparent;
+      white-space:nowrap;
+      margin:2px 6px 2px 0;
+    }
+
+    .pill.ok{
+      background:#ecfdf3;
+      color:var(--ok);
+      border-color:#b7ebc6;
+    }
+
+    .pill.warn{
+      background:#fff7ed;
+      color:var(--warn);
+      border-color:#fed7aa;
+    }
+
+    .pill.bad{
+      background:#fff1f2;
+      color:var(--bad);
+      border-color:#fecdd3;
+    }
+
+    .pill.neutral{
+      background:#f3f4f6;
+      color:#475467;
+      border-color:#e5e7eb;
+    }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .btn.small{
+      min-height:36px;
+      padding:8px 12px;
+      font-size:13px;
+      border-radius:10px;
+    }
+
+    .split{
+      display:grid;
+      grid-template-columns: minmax(320px, 1.1fr) minmax(320px, .9fr);
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      padding:18px;
+    }
+
+    .panel h3{
+      margin:0 0 12px;
+      font-size:20px;
+      letter-spacing:-.02em;
+    }
+
+    .empty-state{
+      padding:24px;
+      color:var(--muted);
+    }
+
+    .detail-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .detail-box{
+      background:var(--soft);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .detail-box .label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      margin-bottom:6px;
+    }
+
+    .detail-box .value{
+      font-size:14px;
+      font-weight:700;
+      word-break:break-word;
+    }
+
+    .subsection{
+      margin-top:16px;
+      padding-top:16px;
+      border-top:1px solid var(--line);
+    }
+
+    .subsection h4{
+      margin:0 0 12px;
+      font-size:15px;
+      letter-spacing:-.01em;
+    }
+
+    .kv-list{
+      display:grid;
+      gap:10px;
+    }
+
+    .kv-item{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+    }
+
+    .kv-key{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      margin-bottom:6px;
+    }
+
+    .kv-value{
+      font-size:14px;
+      color:var(--text);
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+
+    .signature-card{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .signature-card img{
+      display:block;
+      width:100%;
+      max-width:100%;
+      height:auto;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+    }
+
+    .right-note{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:10px;
+    }
+
+    .spinner{
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      border:2px solid #dbe1e8;
+      border-top-color:var(--accent);
+      animation:spin .7s linear infinite;
+      display:inline-block;
+      vertical-align:middle;
+      margin-right:8px;
+    }
+
+    @keyframes spin{
+      to{ transform:rotate(360deg); }
+    }
+
+    @media (max-width: 1020px){
+      .toolbar{
+        grid-template-columns:1fr 1fr;
+      }
+      .split{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 720px){
+      .header-inner{
+        align-items:flex-start;
+        padding:12px 0;
+        flex-direction:column;
+      }
+      .toolbar{
+        grid-template-columns:1fr;
+      }
+      .detail-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">
+        <img class="brand-logo" src="images/logo.png" alt="Equine Transport UK logo">
+        <span>Equine Transport UK Admin</span>
+      </a>
+
+      <div class="header-actions">
+        <a class="btn ghost" href="index.html">← Back to site</a>
+        <button class="btn primary" id="refresh-btn" type="button">Refresh bookings</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="hero-card">
+        <p class="hero-kicker">Admin</p>
+        <h1>Booking register & form viewer</h1>
+        <p>
+          View bookings, check payment progress, confirm form completion,
+          and open the full submitted long/short form including signature.
+        </p>
+
+        <div class="toolbar">
+          <div class="field">
+            <label for="search-input">Search</label>
+            <input id="search-input" type="text" placeholder="Reference, customer, email, vehicle...">
+          </div>
+
+          <div class="field">
+            <label for="status-filter">Form filter</label>
+            <select id="status-filter">
+              <option value="all">All bookings</option>
+              <option value="form_complete">Form complete</option>
+              <option value="form_missing">Form missing</option>
+              <option value="short_required">Short form required</option>
+              <option value="long_required">Long form required</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="range-from">From</label>
+            <input id="range-from" type="date">
+          </div>
+
+          <div class="field">
+            <label for="range-to">To</label>
+            <input id="range-to" type="date">
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <div id="booking-count">0 bookings</div>
+          <div id="last-loaded">Not loaded yet</div>
+        </div>
+
+        <div id="top-status" class="status-bar loading">
+          Ready.
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Bookings</h2>
+        <div class="muted">Click “View Form” to load full submission</div>
+      </div>
+
+      <div class="card list-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Customer</th>
+              <th>Vehicle</th>
+              <th>Pickup</th>
+              <th>Return</th>
+              <th>Payment</th>
+              <th>Form</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="bookings-body">
+            <tr>
+              <td colspan="8" class="empty-state">
+                Loading bookings...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Form details</h2>
+        <div class="muted">Selected booking form</div>
+      </div>
+
+      <div class="split">
+        <div class="card panel" id="form-panel-left">
+          <h3>Form overview</h3>
+          <div class="empty-state" id="form-empty">
+            No form selected yet.
+          </div>
+
+          <div id="form-content" style="display:none;">
+            <div class="detail-grid" id="form-summary-grid"></div>
+
+            <div class="subsection">
+              <h4>Submitted fields</h4>
+              <div class="kv-list" id="form-fields"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel" id="form-panel-right">
+          <h3>Signature</h3>
+          <div id="signature-wrap">
+            <div class="empty-state">No signature loaded yet.</div>
+          </div>
+          <div class="right-note">
+            Signature is shown from the saved form record when available.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
+
+    const bookingsBody = document.getElementById("bookings-body");
+    const refreshBtn = document.getElementById("refresh-btn");
+    const topStatus = document.getElementById("top-status");
+    const bookingCount = document.getElementById("booking-count");
+    const lastLoaded = document.getElementById("last-loaded");
+
+    const searchInput = document.getElementById("search-input");
+    const statusFilter = document.getElementById("status-filter");
+    const rangeFromInput = document.getElementById("range-from");
+    const rangeToInput = document.getElementById("range-to");
+
+    const formEmpty = document.getElementById("form-empty");
+    const formContent = document.getElementById("form-content");
+    const formSummaryGrid = document.getElementById("form-summary-grid");
+    const formFields = document.getElementById("form-fields");
+    const signatureWrap = document.getElementById("signature-wrap");
+
+    let allBookings = [];
+    let filteredBookings = [];
+
+    function pad(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function toDateInputValue(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function defaultRanges() {
+      const from = new Date();
+      from.setMonth(from.getMonth() - 2);
+
+      const to = new Date();
+      to.setMonth(to.getMonth() + 4);
+
+      rangeFromInput.value = toDateInputValue(from);
+      rangeToInput.value = toDateInputValue(to);
+    }
+
+    function setStatus(message, mode = "loading") {
+      topStatus.className = `status-bar ${mode}`;
+      topStatus.innerHTML = message;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "—";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+
+      return d.toLocaleString("en-GB", {
+        timeZone: "Europe/London",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+    }
+
+    function shortRef(id) {
+      if (!id) return "—";
+      return "#" + String(id).slice(-8);
+    }
+
+    function yesNoPill(value, yesText = "Yes", noText = "No") {
+      if (value) return `<span class="pill ok">${escapeHtml(yesText)}</span>`;
+      return `<span class="pill bad">${escapeHtml(noText)}</span>`;
+    }
+
+    function normaliseBookingsResponse(data) {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.bookings)) return data.bookings;
+      return [];
+    }
+
+    function getVehicleName(booking) {
+      return (
+        booking?.vehicleSnapshot?.name ||
+        booking?.vehicleName ||
+        booking?.vehicle_id ||
+        booking?.vehicleId ||
+        "—"
+      );
+    }
+
+    function getCustomerName(booking) {
+      return booking?.customerName || booking?.customer_name || "—";
+    }
+
+    function getCustomerEmail(booking) {
+      return booking?.customerEmail || booking?.customer_email || "—";
+    }
+
+    function isFormComplete(booking) {
+      return booking?.formCompleted === true || booking?.form_completed === true;
+    }
+
+    function getRequiredFormType(booking) {
+      return (
+        booking?.requiredFormType ||
+        booking?.required_form_type ||
+        booking?.formTypeRequired ||
+        null
+      );
+    }
+
+    function isDepositPaid(booking) {
+      return booking?.depositPaid === true || booking?.deposit_paid === true;
+    }
+
+    function isOutstandingPaid(booking) {
+      if (booking?.outstandingPaid === true || booking?.outstanding_paid === true) return true;
+      if (booking?.paymentStatus === "fully_paid") return true;
+      if (booking?.status === "fully_paid") return true;
+      if (Number(booking?.outstandingAmount || 0) <= 0) return true;
+      return false;
+    }
+
+    function isConfirmationPaid(booking) {
+      if (booking?.status === "pending_confirmation_payment") return false;
+      if (booking?.paymentStatus === "confirmation_paid") return true;
+      if (booking?.paymentStatus === "deposit_paid") return true;
+      if (booking?.paymentStatus === "fully_paid") return true;
+      return true;
+    }
+
+    function paymentHtml(booking) {
+      const confirmation = isConfirmationPaid(booking);
+      const deposit = isDepositPaid(booking);
+      const outstanding = isOutstandingPaid(booking);
+
+      return `
+        ${confirmation ? '<span class="pill ok">Confirmation paid</span>' : '<span class="pill bad">Confirmation pending</span>'}
+        ${deposit ? '<span class="pill ok">Deposit secured</span>' : '<span class="pill warn">Deposit not secured</span>'}
+        ${outstanding ? '<span class="pill ok">Outstanding paid</span>' : '<span class="pill warn">Outstanding open</span>'}
+      `;
+    }
+
+    function formHtml(booking) {
+      const complete = isFormComplete(booking);
+      const requiredType = getRequiredFormType(booking);
+
+      let pills = complete
+        ? '<span class="pill ok">Form submitted</span>'
+        : '<span class="pill bad">Form missing</span>';
+
+      if (requiredType === "short") {
+        pills += '<span class="pill neutral">Short required</span>';
+      } else if (requiredType === "long") {
+        pills += '<span class="pill neutral">Long required</span>';
+      }
+
+      if (booking?.formSubmittedAt) {
+        pills += `<div class="tiny">Submitted: ${escapeHtml(formatDateTime(booking.formSubmittedAt))}</div>`;
+      }
+
+      return pills;
+    }
+
+    function bookingMatchesSearch(booking, search) {
+      if (!search) return true;
+
+      const haystack = [
+        booking?.id,
+        shortRef(booking?.id),
+        getCustomerName(booking),
+        getCustomerEmail(booking),
+        booking?.customerMobile,
+        getVehicleName(booking),
+        booking?.vehicleId,
+        booking?.status,
+        booking?.requiredFormType
+      ]
+      .join(" ")
+      .toLowerCase();
+
+      return haystack.includes(search.toLowerCase());
+    }
+
+    function bookingMatchesFilter(booking, filter) {
+      if (filter === "all") return true;
+      if (filter === "form_complete") return isFormComplete(booking);
+      if (filter === "form_missing") return !isFormComplete(booking);
+      if (filter === "short_required") return getRequiredFormType(booking) === "short";
+      if (filter === "long_required") return getRequiredFormType(booking) === "long";
+      return true;
+    }
+
+    function renderBookings() {
+      const search = searchInput.value.trim();
+      const filter = statusFilter.value;
+
+      filteredBookings = allBookings
+        .filter((booking) => bookingMatchesSearch(booking, search))
+        .filter((booking) => bookingMatchesFilter(booking, filter))
+        .sort((a, b) => new Date(b.pickupAt || 0) - new Date(a.pickupAt || 0));
+
+      bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
+
+      if (!filteredBookings.length) {
+        bookingsBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="empty-state">No bookings found for the current filters.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      bookingsBody.innerHTML = filteredBookings.map((booking) => `
+        <tr>
+          <td>
+            <div class="booking-ref">${escapeHtml(shortRef(booking.id))}</div>
+            <div class="tiny">${escapeHtml(booking.id || "—")}</div>
+          </td>
+
+          <td>
+            <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
+            <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
+            <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
+          </td>
+
+          <td>
+            <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
+            <div class="tiny">${escapeHtml(booking.vehicleId || "—")}</div>
+          </td>
+
+          <td>
+            ${escapeHtml(formatDateTime(booking.pickupAt))}
+          </td>
+
+          <td>
+            ${escapeHtml(formatDateTime(booking.dropoffAt))}
+          </td>
+
+          <td>
+            ${paymentHtml(booking)}
+            <div class="tiny" style="margin-top:6px;">
+              Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
+              Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
+            </div>
+          </td>
+
+          <td>
+            ${formHtml(booking)}
+          </td>
+
+          <td>
+            <div class="actions">
+              <button class="btn small primary" type="button" data-view-form="${escapeHtml(booking.id || "")}">
+                View Form
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function makeDetailBox(label, value) {
+      return `
+        <div class="detail-box">
+          <div class="label">${escapeHtml(label)}</div>
+          <div class="value">${escapeHtml(value ?? "—")}</div>
+        </div>
+      `;
+    }
+
+    function prettyValue(value) {
+      if (value === null || value === undefined || value === "") return "—";
+      if (typeof value === "boolean") return value ? "Yes" : "No";
+      if (typeof value === "object") return JSON.stringify(value, null, 2);
+      return String(value);
+    }
+
+    function buildFieldEntries(formData) {
+      const entries = [];
+
+      if (formData?.payload && typeof formData.payload === "object") {
+        for (const [key, value] of Object.entries(formData.payload)) {
+          if (key === "signatureData") continue;
+          entries.push([key, value]);
+        }
+      }
+
+      if (!entries.length) {
+        for (const [key, value] of Object.entries(formData || {})) {
+          if (
+            [
+              "found", "payload", "signatureData", "signature_data",
+              "form", "customer", "bookingId", "bookingID"
+            ].includes(key)
+          ) continue;
+          if (typeof value === "object" && value !== null) continue;
+          entries.push([key, value]);
+        }
+      }
+
+      return entries;
+    }
+
+    function getSignatureData(formData) {
+      return (
+        formData?.signatureData ||
+        formData?.signature_data ||
+        formData?.payload?.signatureData ||
+        formData?.form?.signatureData ||
+        ""
+      );
+    }
+
+    function renderFormDetails(formData, bookingId) {
+      const payload = formData?.payload || {};
+      const customer = formData?.customer || {};
+      const formType =
+        formData?.formType ||
+        formData?.form?.formType ||
+        payload?.formType ||
+        "—";
+
+      const submittedAt =
+        formData?.submittedAt ||
+        formData?.form?.submittedAt ||
+        payload?.submittedAt ||
+        formData?.updatedAt ||
+        "—";
+
+      const customerName =
+        formData?.customerName ||
+        formData?.form?.customerName ||
+        payload?.customerName ||
+        customer?.full_name ||
+        payload?.firstName && payload?.lastName
+          ? `${payload.firstName} ${payload.lastName}`.trim()
+          : "—";
+
+      const customerEmail =
+        formData?.customerEmail ||
+        formData?.form?.customerEmail ||
+        payload?.customerEmail ||
+        customer?.email ||
+        "—";
+
+      formSummaryGrid.innerHTML = `
+        ${makeDetailBox("Booking reference", shortRef(bookingId))}
+        ${makeDetailBox("Booking ID", bookingId || "—")}
+        ${makeDetailBox("Form type", formType)}
+        ${makeDetailBox("Submitted at", submittedAt === "—" ? "—" : formatDateTime(submittedAt))}
+        ${makeDetailBox("Customer", customerName)}
+        ${makeDetailBox("Email", customerEmail)}
+      `;
+
+      const entries = buildFieldEntries(formData);
+
+      formFields.innerHTML = entries.length
+        ? entries.map(([key, value]) => `
+            <div class="kv-item">
+              <div class="kv-key">${escapeHtml(key)}</div>
+              <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
+            </div>
+          `).join("")
+        : `<div class="empty-state">No payload fields found.</div>`;
+
+      const signatureData = getSignatureData(formData);
+
+      if (signatureData) {
+        signatureWrap.innerHTML = `
+          <div class="signature-card">
+            <img src="${signatureData}" alt="Saved signature">
+          </div>
+        `;
+      } else {
+        signatureWrap.innerHTML = `<div class="empty-state">No signature saved for this form.</div>`;
+      }
+
+      formEmpty.style.display = "none";
+      formContent.style.display = "block";
+    }
+
+    async function loadBookings() {
+      const from = rangeFromInput.value;
+      const to = rangeToInput.value;
+
+      if (!from || !to) {
+        setStatus("Please select both from and to dates.", "error");
+        return;
+      }
+
+      setStatus(`<span class="spinner"></span>Loading bookings...`, "loading");
+
+      bookingsBody.innerHTML = `
+        <tr>
+          <td colspan="8" class="empty-state">Loading bookings...</td>
+        </tr>
+      `;
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/bookings/list?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || `Bookings API error (${res.status})`);
+        }
+
+        allBookings = normaliseBookingsResponse(data);
+        renderBookings();
+
+        lastLoaded.textContent = `Last loaded: ${new Date().toLocaleString("en-GB", {
+          timeZone: "Europe/London",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        })}`;
+
+        setStatus(`Bookings loaded successfully.`, "loading");
+
+      } catch (err) {
+        console.error("Failed to load bookings:", err);
+        setStatus(escapeHtml(err.message || "Failed to load bookings."), "error");
+        bookingsBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="empty-state">Failed to load bookings.</td>
+          </tr>
+        `;
+      }
+    }
+
+    async function loadForm(bookingId) {
+      if (!bookingId) return;
+
+      formEmpty.style.display = "block";
+      formContent.style.display = "none";
+      formEmpty.innerHTML = `<span class="spinner"></span>Loading form for ${escapeHtml(shortRef(bookingId))}...`;
+      signatureWrap.innerHTML = `<div class="empty-state">Loading signature...</div>`;
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || `Form API error (${res.status})`);
+        }
+
+        if (!data?.found) {
+          formEmpty.style.display = "block";
+          formContent.style.display = "none";
+          formEmpty.textContent = "No form found for this booking yet.";
+          signatureWrap.innerHTML = `<div class="empty-state">No signature loaded yet.</div>`;
+          return;
+        }
+
+        renderFormDetails(data.form || data, bookingId);
+
+      } catch (err) {
+        console.error("Failed to load form:", err);
+        formEmpty.style.display = "block";
+        formContent.style.display = "none";
+        formEmpty.textContent = err.message || "Failed to load form.";
+        signatureWrap.innerHTML = `<div class="empty-state">Could not load signature.</div>`;
+      }
+    }
+
+    bookingsBody.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-view-form]");
+      if (!btn) return;
+      loadForm(btn.getAttribute("data-view-form"));
+    });
+
+    refreshBtn.addEventListener("click", loadBookings);
+    searchInput.addEventListener("input", renderBookings);
+    statusFilter.addEventListener("change", renderBookings);
+    rangeFromInput.addEventListener("change", loadBookings);
+    rangeToInput.addEventListener("change", loadBookings);
+
+    defaultRanges();
+    loadBookings();
+  </script>
+</body>
+</html>
