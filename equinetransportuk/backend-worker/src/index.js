@@ -549,6 +549,12 @@ if (request.method === "POST" && url.pathname === "/api/form-submit") {
   }
 }
 
+if (request.method === "GET" && url.pathname === "/api/admin/form") {
+  const response = await handleAdminFormView(request, env);
+  return withCors(response, corsHeaders);
+}
+
+
 /* ===============================
    FALLBACK
 ================================ */
@@ -2762,20 +2768,19 @@ async function handleFormSubmit(request, env) {
 
     const data = await request.json();
 
-    const {
-      bookingId,
-      licenceNumber,
-      dvlaCode,
-      signature,
-      formType = "unknown"
-    } = data;
+    const bookingId = String(data.bookingId || data.bookingID || "").trim();
+    const formType = String(data.formType || "unknown").trim().toLowerCase();
 
     if (!bookingId) {
       return json({ error: "Missing bookingId" }, 400);
     }
 
+    if (!["short", "long"].includes(formType)) {
+      return json({ error: "Invalid formType" }, 400);
+    }
+
     /* ===============================
-       FIND BOOKING (KV)
+       FIND BOOKING IN KV
     =============================== */
 
     const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
@@ -2792,10 +2797,9 @@ async function handleFormSubmit(request, env) {
       try {
 
         const parsed = JSON.parse(raw);
-
         if (!Array.isArray(parsed)) continue;
 
-        const found = parsed.find(b => String(b.id) === String(bookingId));
+        const found = parsed.find(b => String(b.id) === bookingId);
 
         if (found) {
           booking = found;
@@ -2812,22 +2816,112 @@ async function handleFormSubmit(request, env) {
     }
 
     /* ===============================
-       UPDATE BOOKING (KV)
+       NORMALISE + BASIC VALIDATION
+    =============================== */
+
+    const cleaned = { ...data };
+
+    cleaned.bookingId = bookingId;
+    cleaned.bookingID = bookingId;
+    cleaned.formType = formType;
+
+    const customerName =
+      [cleaned.firstName, cleaned.lastName]
+        .filter(Boolean)
+        .map(v => String(v).trim())
+        .join(" ")
+        .trim() || booking.customerName || null;
+
+    const customerEmail =
+      String(cleaned.email || booking.customerEmail || "")
+        .trim()
+        .toLowerCase() || null;
+
+    const customerMobile =
+      String(cleaned.mobile || booking.customerMobile || "")
+        .trim() || null;
+
+    const signatureData =
+      String(cleaned.signatureData || cleaned.signature || "").trim() || null;
+
+    if (!signatureData) {
+      return json({ error: "Missing signature" }, 400);
+    }
+
+    if (formType === "long") {
+      const dvla = String(cleaned.dvlaCheckCode || "").trim();
+      if (dvla.length !== 8) {
+        return json({ error: "DVLA check code must be exactly 8 characters" }, 400);
+      }
+    }
+
+    if (formType === "short") {
+      const dvla = String(cleaned.dvlaCode || "").trim();
+      if (dvla.length !== 8) {
+        return json({ error: "DVLA access code must be exactly 8 characters" }, 400);
+      }
+    }
+
+    const now = new Date().toISOString();
+    const formId = `form_${bookingId}`;
+
+    /* ===============================
+       SAVE FULL FORM TO D1
+    =============================== */
+
+    await env.DB.prepare(`
+      INSERT INTO booking_forms (
+        id,
+        booking_id,
+        form_type,
+        customer_id,
+        customer_name,
+        customer_email,
+        customer_mobile,
+        payload_json,
+        signature_data,
+        submitted_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        form_type = excluded.form_type,
+        customer_id = excluded.customer_id,
+        customer_name = excluded.customer_name,
+        customer_email = excluded.customer_email,
+        customer_mobile = excluded.customer_mobile,
+        payload_json = excluded.payload_json,
+        signature_data = excluded.signature_data,
+        updated_at = excluded.updated_at
+    `)
+    .bind(
+      formId,
+      bookingId,
+      formType,
+      booking.customerId || null,
+      customerName,
+      customerEmail,
+      customerMobile,
+      JSON.stringify(cleaned),
+      signatureData,
+      now,
+      now
+    )
+    .run();
+
+    /* ===============================
+       UPDATE BOOKING IN KV
     =============================== */
 
     booking.formCompleted = true;
     booking.formType = formType;
-    booking.formSubmittedAt = new Date().toISOString();
-
-    // optional fields (safe)
-    booking.licenceNumber = licenceNumber || null;
-    booking.dvlaCode = dvlaCode || null;
-    booking.signature = signature || null;
+    booking.formSubmittedAt = now;
+    booking.formRecordId = formId;
 
     if (monthKeyUsed && monthData) {
 
       const updated = monthData.map(b =>
-        String(b.id) === String(bookingId) ? booking : b
+        String(b.id) === bookingId ? booking : b
       );
 
       await env.BOOKINGS_KV.put(
@@ -2837,7 +2931,7 @@ async function handleFormSubmit(request, env) {
     }
 
     /* ===============================
-       UPDATE DB (SAFE)
+       UPDATE BOOKING IN D1
     =============================== */
 
     try {
@@ -2849,25 +2943,98 @@ async function handleFormSubmit(request, env) {
           updated_at = ?
         WHERE id = ?
       `)
-      .bind(
-        new Date().toISOString(),
-        bookingId
-      )
+      .bind(now, bookingId)
       .run();
 
     } catch (err) {
-
-      console.warn("DB update skipped:", err.message);
+      console.warn("⚠️ bookings table update skipped:", err.message);
     }
 
-    console.log("✅ FORM SAVED:", bookingId);
+    console.log("✅ FORM SAVED:", {
+      bookingId,
+      formType,
+      formId
+    });
 
-    return json({ success: true });
+    return json({
+      success: true,
+      bookingId,
+      formType,
+      formId
+    });
 
   } catch (err) {
 
     console.error("❌ FORM ERROR:", err);
 
     return json({ error: "Form submission failed" }, 500);
+  }
+}
+
+async function handleAdminFormView(request, env) {
+
+  try {
+
+    const url = new URL(request.url);
+    const bookingId = String(url.searchParams.get("bookingId") || "").trim();
+
+    if (!bookingId) {
+      return json({ error: "Missing bookingId" }, 400);
+    }
+
+    const row = await env.DB.prepare(`
+      SELECT
+        id,
+        booking_id,
+        form_type,
+        customer_id,
+        customer_name,
+        customer_email,
+        customer_mobile,
+        payload_json,
+        signature_data,
+        submitted_at,
+        updated_at
+      FROM booking_forms
+      WHERE booking_id = ?
+      LIMIT 1
+    `)
+    .bind(bookingId)
+    .first();
+
+    if (!row) {
+      return json({ found: false }, 404);
+    }
+
+    let payload = null;
+
+    try {
+      payload = JSON.parse(row.payload_json || "{}");
+    } catch {
+      payload = {};
+    }
+
+    return json({
+      found: true,
+      form: {
+        id: row.id,
+        bookingId: row.booking_id,
+        formType: row.form_type,
+        customerId: row.customer_id,
+        customerName: row.customer_name,
+        customerEmail: row.customer_email,
+        customerMobile: row.customer_mobile,
+        submittedAt: row.submitted_at,
+        updatedAt: row.updated_at,
+        signatureData: row.signature_data,
+        payload
+      }
+    });
+
+  } catch (err) {
+
+    console.error("❌ ADMIN FORM VIEW ERROR:", err);
+
+    return json({ error: "Failed to load form" }, 500);
   }
 }
