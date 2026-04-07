@@ -1045,8 +1045,8 @@ function getDatesBetween(start, end) {
 async function handleStripeWebhook(request, env) {
 
   const SITE_BASE =
-  env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-  "https://kvwebservices.co.uk/equinetransportuk";
+    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://kvwebservices.co.uk/equinetransportuk";
 
   const payload = await request.text();
   const sig = request.headers.get("stripe-signature");
@@ -1083,792 +1083,783 @@ async function handleStripeWebhook(request, env) {
 
     console.log("🔥 CHECKOUT SESSION COMPLETED EVENT");
 
-  try {
-
-    console.log("🔥 ENTERING TRY BLOCK");
-
-    console.log("🔥 WEBHOOK START");
-
-    const session = event.data.object;
-
-const paymentType = session.metadata?.paymentType;
-const paymentBookingId = session.metadata?.bookingId;
-
-    console.log("👉 session received");
-
-    if (!session?.metadata?.vehicleId) {
-      console.log("⚠️ Missing vehicleId");
-      await env.BOOKINGS_KV.put(eventId, "processed");
-      return new Response(JSON.stringify({ received: true }), { status: 200 });
-    }
-
-    /* ===============================
-       SAFE NUMBER PARSING
-    =============================== */
-
-    const totalHire = Number(session.metadata?.totalHire || 0);
-    const confirmationFee = Number(session.metadata?.confirmationFee || 0);
-    const outstandingAmount = Number(session.metadata?.outstandingAmount || 0);
-    const baseCost = Number(session.metadata?.baseCost || totalHire || 0);
-    const discountAmount = Number(session.metadata?.discountAmount || 0);
-
-    const dartfordTotal = Number(session.metadata?.dartfordTotal || 0);
-    const earlyPickupTotal = Number(session.metadata?.earlyPickupTotal || 0);
-    const extrasTotal = Number(session.metadata?.extrasTotal || 0);
-
-    let extras = {};
-
-try {
-  extras = JSON.parse(session.metadata?.extrasJson || "{}");
-} catch {
-  extras = {};
-}
-
-const customerNotes = session.metadata?.customerNotes || "";
-
-
-
-    console.log("💰 PRICING OK");
-
-    console.log("📦 SAVING BOOKING WITH EXTRAS:", extras);
-
-/* ===============================
-   HALF DAY DROP-OFF HELPER
-=============================== */
-
-function getHalfDayDropoffTime(pickupTime, vehicleId) {
-
-  // future-proof: only 3.5T supports half-day
-  if (!String(vehicleId || "").startsWith("v35")) return null;
-
-  return pickupTime === "13:00" ? "19:00" : "13:00";
-}
-/* ===============================
-   DATES (FIXED FINAL)
-=============================== */
-
-const durationDays = Number(session.metadata.durationDays || 1);
-const pickupTime = session.metadata.pickupTime || "07:00";
-
-let rawPickupDate = session.metadata.pickupDate || "";
-
-if (rawPickupDate.includes("T")) {
-  rawPickupDate = rawPickupDate.split("T")[0];
-}
-
-console.log("📅 RAW DATE:", session.metadata.pickupDate);
-console.log("📅 CLEAN DATE:", rawPickupDate);
-
-/* ===============================
-   PICKUP (FIXED — MATCHES DROPOFF)
-=============================== */
-
-let pickupAt;
-let pickupAtDate;
-
-// ✅ use London-safe conversion
-pickupAtDate = londonDateTimeToUtc(rawPickupDate, pickupTime);
-
-// ✅ convert to ISO ONCE
-pickupAt = pickupAtDate.toISOString();
-/* ===============================
-   DROPOFF (FIXED — CLEAN + SAFE)
-=============================== */
-
-let dropoffAt;
-let dropoffAtDate;
-
-if (durationDays === 0.5) {
-
-  const dropoffTime = getHalfDayDropoffTime(
-    pickupTime,
-    session.metadata.vehicleId
-  );
-
-  // ✅ use London-safe conversion
-  dropoffAtDate = londonDateTimeToUtc(rawPickupDate, dropoffTime);
-
-} else {
-
-  const dropoffDate = new Date(rawPickupDate);
-  dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
-
-  const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
-
-  // ✅ use London-safe conversion
-  dropoffAtDate = londonDateTimeToUtc(dropoffDateStr, "19:00");
-
-}
-
-// ✅ convert to ISO ONCE (final step only)
-dropoffAt = dropoffAtDate.toISOString();
-/* ===============================
-   SAFETY CHECK (FIXED — CONSISTENT)
-=============================== */
-
-if (
-  isNaN(pickupAtDate.getTime()) ||
-  isNaN(dropoffAtDate.getTime())
-) {
-
-  console.warn("⚠️ Invalid date detected — applying fallback", {
-    rawPickupDate,
-    pickupTime,
-    durationDays
-  });
-
-  const now = new Date();
-
-  // fallback pickup = now
-  pickupAtDate = now;
-
-  // fallback dropoff = +4 hours
-  dropoffAtDate = new Date(now);
-  dropoffAtDate.setHours(now.getHours() + 4);
-
-  // ✅ ALWAYS convert to ISO strings (consistent)
-  pickupAt = pickupAtDate.toISOString();
-  dropoffAt = dropoffAtDate.toISOString();
-}
-
-/* ===============================
-   SAFE LOGGING (ALWAYS WORKS)
-=============================== */
-
-console.log("📅 WEBHOOK TIMES:", {
-  pickupAt,
-  dropoffAt
-});
-
-
-console.log("🔥 FINAL TIMES CHECK:", {
-  pickupAt,
-  dropoffAt,
-  durationDays,
-  pickupTime
-});
-/* ===============================
-   BOOKING OBJECT
-=============================== */
-
-console.log("🔥 BEFORE BUILD BOOKING");   // 👈 ADD THIS LINE
-
-console.log("📦 BUILD BOOKING");
-console.log("🚨 FORM BLOCK SHOULD RUN NEXT");
-
-/* ===============================
-   🔥 CUSTOMER NAME FIX (FINAL)
-=============================== */
-
-function cleanCustomerName(name) {
-
-  if (!name) return null;
-
-  let n = String(name).trim();
-
-  // ❌ block junk
-  const bad = ["test", "customer", "test customer"];
-  if (bad.includes(n.toLowerCase())) return null;
-
-  // remove double spaces
-  n = n.replace(/\s+/g, " ");
-
-  // Title Case
-  n = n
-    .toLowerCase()
-    .split(" ")
-    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
-    .join(" ");
-
-  return n;
-}
-
-// 🔥 STRICT PRIORITY
-const finalCustomerName =
-  cleanCustomerName(session.metadata.customerName) ||
-  cleanCustomerName(session.customer_details?.name) ||
-  null;
-
-// 🔥 HARD FAIL SAFE
-if (!finalCustomerName) {
-  console.warn("⚠️ No valid customer name found");
-}
-
-console.log("🧪 NAME DEBUG:", {
-  metadataName: session.metadata.customerName,
-  stripeName: session.customer_details?.name
-});
-
-const booking = {
-  id: session.metadata.bookingId || session.id,
-
-  vehicleId: session.metadata.vehicleId,
-
-  vehicleSnapshot: {
-    id: session.metadata.vehicleId,
-    name: session.metadata.vehicleName || "",
-    type: session.metadata.vehicleId.startsWith("v35")
-      ? "3.5 tonne"
-      : "7.5 tonne"
-  },
-
-pickupAt: pickupAt,
-dropoffAt: dropoffAt,
-
- pickupAtLocal: toLondonLocalISOString(new Date(pickupAt)),
-dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
-
-  durationDays,
-  pickupTime,
-
-customerName: finalCustomerName || "Customer",
-  customerEmail: session.metadata.customerEmail || session.customer_details?.email || "",
-  customerNotes,
-
-  /* ===============================
-     🔥 PRICE STRUCTURE (FIX)
-  =============================== */
-
-  priceBase: baseCost,
-  priceExtras: extrasTotal,
-  priceTotal: totalHire,
-  paidNow: confirmationFee,
-  outstanding: outstandingAmount,
-
-  /* ===============================
-     KEEP OLD (for compatibility)
-  =============================== */
-
-  baseCost,
-  discountAmount,
-
-  dartfordTotal,
-  earlyPickupTotal,
-  extrasTotal,
-  extras,
-
-  hireTotal: totalHire,
-  confirmationFee,
-  outstandingAmount,
-
-  /* =============================== */
-
-  depositAmount: 200,
-  status: "confirmed",
-  createdAt: new Date().toISOString()
-};
-
-console.log("✅ BOOKING BUILT");
-
-if (!finalCustomerName) {
-  console.warn("❌ Booking created without proper name:", booking.id);
-}
-
-console.log("📧 EMAIL SOURCE:", {
-  metadata: session.metadata.customerEmail,
-  stripe: session.customer_details?.email,
-  final: booking.customerEmail
-});
-
-
-
-
-/* ===============================
-   SAVE CUSTOMER (FIRST - FIXED)
-=============================== */
-
-let customer = null;
-
-try {
-
- customer = await findCustomerByEmailOrMobile(
-  env,
-  booking.customerEmail,
-  session.metadata.customerMobile || ""
-);
-
-/* ===============================
-   🔥 FIX: UPDATE NAME IF CHANGED
-=============================== */
-
-if (
-  customer &&
-  finalCustomerName &&
-  customer.full_name !== finalCustomerName
-) {
-
-  console.log("✏️ Updating customer name:", customer.full_name, "→", booking.customerName);
-
-  await env.DB.prepare(`
-    UPDATE customers
-    SET full_name = ?, updated_at = ?
-    WHERE id = ?
-  `)
- .bind(
-  finalCustomerName,
-  new Date().toISOString(),
-  customer.id
-)
-  .run();
-
-  // keep in memory updated
-  customer.full_name = booking.customerName;
-}
-
-if (!customer) {
-
-    const customerId = "cus_" + crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    await env.DB.prepare(`
-      INSERT INTO customers (
-        id, full_name, email, mobile, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `)
-    .bind(
-      customerId,
-      finalCustomerName || "Customer",
-      booking.customerEmail,
-      session.metadata.customerMobile || "",
-      now,
-      now
-    )
-    .run();
-
-    customer = { id: customerId };
-
-  }
-
-} catch (err) {
-
-  console.log("⚠️ CUSTOMER ERROR:", err);
-  customer = { id: null };
-
-}
-
-/* ===============================
-   🔥 CRITICAL LINE
-=============================== */
-
-booking.customerId = customer?.id || null;
-
-
-/* ===============================
-   UPDATE CUSTOMER STATS (MISSING)
-=============================== */
-
-try {
-
-  if (booking.customerId) {
-
-    await env.DB.prepare(`
-      UPDATE customers
-      SET
-        hire_count = COALESCE(hire_count, 0) + 1,
-        last_hire_at = ?,
-        updated_at = ?
-      WHERE id = ?
-    `)
-    .bind(
-      booking.pickupAt,
-      new Date().toISOString(),
-      booking.customerId
-    )
-    .run();
-
-    console.log("📈 Customer stats updated");
-
-  }
-
-} catch (err) {
-
-  console.error("❌ Customer update failed:", err);
-
-}
-
-
-
- /* ===============================
-   SAVE BOOKING (DB)
-=============================== */
-
-console.log("💾 SAVE BOOKING DB");
-
-try {
-
-  await env.DB.prepare(`
-    INSERT INTO bookings (
-      id,
-      customer_id,
-      vehicle_id,
-      pickup_at,
-      dropoff_at,
-      duration_days,
-      price_total,
-      paid_now,
-      status,
-      created_at,
-      updated_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-  .bind(
-    booking.id,
-    booking.customerId,   // ✅ FIXED
-    booking.vehicleId,
-    booking.pickupAt,
-    booking.dropoffAt,
-    booking.durationDays,
-    booking.hireTotal,
-    booking.confirmationFee,
-    booking.status,
-    booking.createdAt,
-    booking.createdAt
-  )
-  .run();
-
-  console.log("✅ DB SAVED");
-
-} catch (err) {
-  console.log("💥 DB ERROR:", err);
-}
-
-
-
-
-/* ===============================
-   FORM TYPE LOGIC (FIXED)
-=============================== */
-
-let requiredFormType = "long";
-
-try {
-
-  const result = await env.DB.prepare(`
-    SELECT pickup_at
-    FROM bookings
-    WHERE customer_id = ?
-    ORDER BY pickup_at DESC
-    LIMIT 1
-  `)
-  .bind(customer?.id || null)
-  .all();
-
-  const previousBooking = result.results?.[0];
-
-  if (previousBooking?.pickup_at) {
-
-    const lastHireDate = new Date(previousBooking.pickup_at);
-    const currentBookingDate = new Date(booking.pickupAt);
-
-    const diffDays =
-      (currentBookingDate.getTime() - lastHireDate.getTime()) /
-      (1000 * 60 * 60 * 24);
-
-    console.log("🧪 FORM CHECK:", {
-      lastHireDate,
-      currentBookingDate,
-      diffDays
-    });
-
-    if (diffDays <= 90) {
-      requiredFormType = "short";
-    }
-  }
-
-} catch (err) {
-  console.warn("Form type check failed:", err);
-}
-
-/* ===============================
-   FORM LINK BUILD (FIXED)
-=============================== */
-
-const bookingId = booking.id;
-
-const formBase =
-  requiredFormType === "short"
-    ? `${SITE_BASE}/forms/short-form.html`
-    : `${SITE_BASE}/forms/long-form.html`;
-
-// ✅ FIXED PARAM NAME
-const formLink = `${formBase}?bookingId=${encodeURIComponent(bookingId)}`;
-
-booking.requiredFormType = requiredFormType;
-booking.requiredFormLink = formLink;
-
-
-/* ===============================
-   DEBUG (KEEP FOR NOW)
-=============================== */
-
-console.log("🧪 FORM DEBUG:", {
-  type: booking.requiredFormType,
-  link: booking.requiredFormLink,
-  customerId: booking.customerId
-});
-
-
-// ===============================
-// PAYMENT LINKS
-// ===============================
-
-const depositLink = `${SITE_BASE}/pay-deposit?bookingId=${encodeURIComponent(bookingId)}`;
-
-const outstandingLink = `${SITE_BASE}/pay-outstanding?bookingId=${encodeURIComponent(bookingId)}`;
-
-booking.depositLink = depositLink;
-booking.outstandingLink = outstandingLink;
-
-console.log("🧪 PAYMENT LINKS:", depositLink, outstandingLink);
-
-   
-
-/* ===============================
-   PAYMENT TRACKING
-=============================== */
-
-if (paymentType && paymentBookingId) {
-
-  console.log("💳 Payment detected:", paymentType, paymentBookingId);
-
-  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-  for (const key of list.keys) {
-
-    const data = await env.BOOKINGS_KV.get(key.name);
-    if (!data) continue;
-
-    let parsed;
-
     try {
-      parsed = JSON.parse(data);
-    } catch {
-      continue;
-    }
 
-    if (!Array.isArray(parsed)) continue;
+      console.log("🔥 ENTERING TRY BLOCK");
+      console.log("🔥 WEBHOOK START");
 
-    let updated = false;
+      const session = event.data.object;
 
-    for (const b of parsed) {
+      const paymentType = session.metadata?.paymentType || "";
+      const paymentBookingId = session.metadata?.bookingId || "";
 
-      if (String(b.id) === String(paymentBookingId)) {
+      console.log("👉 session received");
 
-        if (paymentType === "deposit") {
-          b.depositPaid = true;
+      /* ===============================
+         PAYMENT-ONLY SESSIONS FIRST
+      =============================== */
+
+      if (paymentType && paymentBookingId) {
+
+        console.log("💳 Payment detected:", paymentType, paymentBookingId);
+
+        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+        for (const key of list.keys) {
+
+          const data = await env.BOOKINGS_KV.get(key.name);
+          if (!data) continue;
+
+          let parsed;
+
+          try {
+            parsed = JSON.parse(data);
+          } catch {
+            continue;
+          }
+
+          if (!Array.isArray(parsed)) continue;
+
+          let updated = false;
+
+          for (const b of parsed) {
+
+            if (String(b.id) === String(paymentBookingId)) {
+
+              if (paymentType === "deposit") {
+                b.depositPaid = true;
+              }
+
+              if (paymentType === "outstanding") {
+                b.outstandingPaid = true;
+                b.outstandingAmount = 0;
+                b.outstanding = 0;
+              }
+
+              b.updatedAt = new Date().toISOString();
+              updated = true;
+            }
+          }
+
+          if (updated) {
+            await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
+            console.log("✅ Payment status updated in KV");
+            break;
+          }
         }
 
-        if (paymentType === "outstanding") {
-          b.outstandingPaid = true;
-        }
+        await env.BOOKINGS_KV.put(eventId, "processed");
 
-        updated = true;
+        return new Response(JSON.stringify({ received: true }), { status: 200 });
       }
-    }
 
-    if (updated) {
-      await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
-      console.log("✅ Payment status updated");
-      break;
-    }
-  }
-}
+      if (!session?.metadata?.vehicleId) {
+        console.log("⚠️ Missing vehicleId");
+        await env.BOOKINGS_KV.put(eventId, "processed");
+        return new Response(JSON.stringify({ received: true }), { status: 200 });
+      }
 
-    /* ===============================
-       SAVE TO KV
-    =============================== */
+      /* ===============================
+         SAFE NUMBER PARSING
+      =============================== */
 
-    console.log("📦 SAVE KV");
+      const totalHire = Number(session.metadata?.totalHire || 0);
+      const confirmationFee = Number(session.metadata?.confirmationFee || 0);
+      const outstandingAmount = Number(session.metadata?.outstandingAmount || 0);
+      const baseCost = Number(session.metadata?.baseCost || totalHire || 0);
+      const discountAmount = Number(session.metadata?.discountAmount || 0);
 
-    const bookingMonth = booking.pickupAt.slice(0, 7);
-    const monthKey = `bookings:${bookingMonth}`;
+      const dartfordTotal = Number(session.metadata?.dartfordTotal || 0);
+      const earlyPickupTotal = Number(session.metadata?.earlyPickupTotal || 0);
+      const extrasTotal = Number(session.metadata?.extrasTotal || 0);
 
-    let existingMonthBookings = [];
+      let extras = {};
 
-    try {
-      const existingMonthData = await env.BOOKINGS_KV.get(monthKey);
-      if (existingMonthData) {
-        existingMonthBookings = JSON.parse(existingMonthData);
-        if (!Array.isArray(existingMonthBookings)) {
-          existingMonthBookings = [];
+      try {
+        extras = JSON.parse(session.metadata?.extrasJson || "{}");
+      } catch {
+        extras = {};
+      }
+
+      const customerNotes = session.metadata?.customerNotes || "";
+
+      console.log("💰 PRICING OK");
+      console.log("📦 SAVING BOOKING WITH EXTRAS:", extras);
+
+      /* ===============================
+         HALF DAY DROP-OFF HELPER
+      =============================== */
+
+      function getHalfDayDropoffTime(pickupTime, vehicleId) {
+        if (!String(vehicleId || "").startsWith("v35")) return null;
+        return pickupTime === "13:00" ? "19:00" : "13:00";
+      }
+
+      /* ===============================
+         DATES (FIXED FINAL)
+      =============================== */
+
+      const durationDays = Number(session.metadata.durationDays || 1);
+      const pickupTime = session.metadata.pickupTime || "07:00";
+
+      let rawPickupDate = session.metadata.pickupDate || "";
+
+      if (rawPickupDate.includes("T")) {
+        rawPickupDate = rawPickupDate.split("T")[0];
+      }
+
+      console.log("📅 RAW DATE:", session.metadata.pickupDate);
+      console.log("📅 CLEAN DATE:", rawPickupDate);
+
+      /* ===============================
+         PICKUP
+      =============================== */
+
+      let pickupAt;
+      let pickupAtDate = londonDateTimeToUtc(rawPickupDate, pickupTime);
+      pickupAt = pickupAtDate.toISOString();
+
+      /* ===============================
+         DROPOFF
+      =============================== */
+
+      let dropoffAt;
+      let dropoffAtDate;
+
+      if (durationDays === 0.5) {
+
+        const dropoffTime = getHalfDayDropoffTime(
+          pickupTime,
+          session.metadata.vehicleId
+        );
+
+        dropoffAtDate = londonDateTimeToUtc(rawPickupDate, dropoffTime);
+
+      } else {
+
+        const dropoffDate = new Date(rawPickupDate);
+        dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
+
+        const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
+        dropoffAtDate = londonDateTimeToUtc(dropoffDateStr, "19:00");
+      }
+
+      dropoffAt = dropoffAtDate.toISOString();
+
+      /* ===============================
+         SAFETY CHECK
+      =============================== */
+
+      if (
+        isNaN(pickupAtDate.getTime()) ||
+        isNaN(dropoffAtDate.getTime())
+      ) {
+
+        console.warn("⚠️ Invalid date detected — applying fallback", {
+          rawPickupDate,
+          pickupTime,
+          durationDays
+        });
+
+        const now = new Date();
+
+        pickupAtDate = now;
+
+        dropoffAtDate = new Date(now);
+        dropoffAtDate.setHours(now.getHours() + 4);
+
+        pickupAt = pickupAtDate.toISOString();
+        dropoffAt = dropoffAtDate.toISOString();
+      }
+
+      console.log("📅 WEBHOOK TIMES:", {
+        pickupAt,
+        dropoffAt
+      });
+
+      console.log("🔥 FINAL TIMES CHECK:", {
+        pickupAt,
+        dropoffAt,
+        durationDays,
+        pickupTime
+      });
+
+      /* ===============================
+         CUSTOMER NAME FIX
+      =============================== */
+
+      function cleanCustomerName(name) {
+
+        if (!name) return null;
+
+        let n = String(name).trim();
+
+        const bad = ["test", "customer", "test customer"];
+        if (bad.includes(n.toLowerCase())) return null;
+
+        n = n.replace(/\s+/g, " ");
+
+        n = n
+          .toLowerCase()
+          .split(" ")
+          .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+          .join(" ");
+
+        return n;
+      }
+
+      const finalCustomerName =
+        cleanCustomerName(session.metadata.customerName) ||
+        cleanCustomerName(session.customer_details?.name) ||
+        null;
+
+      if (!finalCustomerName) {
+        console.warn("⚠️ No valid customer name found");
+      }
+
+      console.log("🧪 NAME DEBUG:", {
+        metadataName: session.metadata.customerName,
+        stripeName: session.customer_details?.name
+      });
+
+      /* ===============================
+         BOOKING OBJECT
+      =============================== */
+
+      const booking = {
+        id: session.metadata.bookingId || session.id,
+
+        vehicleId: session.metadata.vehicleId,
+
+        vehicleSnapshot: {
+          id: session.metadata.vehicleId,
+          name: session.metadata.vehicleName || "",
+          type: session.metadata.vehicleId.startsWith("v35")
+            ? "3.5 tonne"
+            : "7.5 tonne"
+        },
+
+        pickupAt,
+        dropoffAt,
+
+        pickupAtLocal: toLondonLocalISOString(new Date(pickupAt)),
+        dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
+
+        durationDays,
+        pickupTime,
+
+        customerName: finalCustomerName || "Customer",
+        customerEmail: session.metadata.customerEmail || session.customer_details?.email || "",
+        customerMobile: session.metadata.customerMobile || "",
+        customerNotes,
+
+        priceBase: baseCost,
+        priceExtras: extrasTotal,
+        priceTotal: totalHire,
+        paidNow: confirmationFee,
+        outstanding: outstandingAmount,
+
+        baseCost,
+        discountAmount,
+
+        dartfordTotal,
+        earlyPickupTotal,
+        extrasTotal,
+        extras,
+
+        hireTotal: totalHire,
+        confirmationFee,
+        outstandingAmount,
+
+        depositAmount: 200,
+        depositPaid: false,
+        outstandingPaid: false,
+        status: "confirmed",
+        createdAt: new Date().toISOString()
+      };
+
+      console.log("✅ BOOKING BUILT");
+
+      if (!finalCustomerName) {
+        console.warn("❌ Booking created without proper name:", booking.id);
+      }
+
+      console.log("📧 EMAIL SOURCE:", {
+        metadata: session.metadata.customerEmail,
+        stripe: session.customer_details?.email,
+        final: booking.customerEmail
+      });
+
+      /* ===============================
+         SAVE CUSTOMER (FIRST)
+      =============================== */
+
+      let customer = null;
+
+      try {
+
+        customer = await findCustomerByEmailOrMobile(
+          env,
+          booking.customerEmail,
+          booking.customerMobile
+        );
+
+        /* ===============================
+           UPDATE NAME IF CHANGED
+        =============================== */
+
+        if (
+          customer &&
+          finalCustomerName &&
+          customer.full_name !== finalCustomerName
+        ) {
+
+          console.log(
+            "✏️ Updating customer name:",
+            customer.full_name,
+            "→",
+            booking.customerName
+          );
+
+          await env.DB.prepare(`
+            UPDATE customers
+            SET full_name = ?, updated_at = ?
+            WHERE id = ?
+          `)
+          .bind(
+            finalCustomerName,
+            new Date().toISOString(),
+            customer.id
+          )
+          .run();
+
+          customer.full_name = booking.customerName;
+        }
+
+        if (!customer) {
+
+          const customerId = "cus_" + crypto.randomUUID();
+          const now = new Date().toISOString();
+
+          await env.DB.prepare(`
+            INSERT INTO customers (
+              id, full_name, email, mobile, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+          `)
+          .bind(
+            customerId,
+            finalCustomerName || "Customer",
+            booking.customerEmail,
+            booking.customerMobile,
+            now,
+            now
+          )
+          .run();
+
+          customer = { id: customerId };
+        }
+
+      } catch (err) {
+
+        console.log("⚠️ CUSTOMER ERROR:", err);
+        customer = { id: null };
+      }
+
+      booking.customerId = customer?.id || null;
+
+      /* ===============================
+         SAVE BOOKING (DB) FIRST
+      =============================== */
+
+      console.log("💾 SAVE BOOKING DB");
+
+      try {
+
+        await env.DB.prepare(`
+          INSERT INTO bookings (
+            id,
+            customer_id,
+            vehicle_id,
+            pickup_at,
+            dropoff_at,
+            duration_days,
+            price_total,
+            paid_now,
+            status,
+            created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .bind(
+          booking.id,
+          booking.customerId,
+          booking.vehicleId,
+          booking.pickupAt,
+          booking.dropoffAt,
+          booking.durationDays,
+          booking.hireTotal,
+          booking.confirmationFee,
+          booking.status,
+          booking.createdAt,
+          booking.createdAt
+        )
+        .run();
+
+        console.log("✅ DB SAVED");
+
+      } catch (err) {
+        console.log("💥 DB ERROR:", err);
+      }
+
+      /* ===============================
+         UPDATE CUSTOMER STATS
+      =============================== */
+
+      try {
+
+        if (booking.customerId) {
+
+          await env.DB.prepare(`
+            UPDATE customers
+            SET
+              hire_count = COALESCE(hire_count, 0) + 1,
+              last_hire_at = ?,
+              updated_at = ?
+            WHERE id = ?
+          `)
+          .bind(
+            booking.pickupAt,
+            new Date().toISOString(),
+            booking.customerId
+          )
+          .run();
+
+          console.log("📈 Customer stats updated");
+        }
+
+      } catch (err) {
+        console.error("❌ Customer update failed:", err);
+      }
+
+      /* ===============================
+         FORM TYPE LOGIC (PRODUCTION SAFE)
+      =============================== */
+
+      let requiredFormType = "long";
+
+      try {
+
+        if (booking.customerId) {
+
+          const result = await env.DB.prepare(`
+            SELECT pickup_at
+            FROM bookings
+            WHERE customer_id = ?
+            ORDER BY pickup_at DESC
+            LIMIT 2
+          `)
+          .bind(booking.customerId)
+          .all();
+
+          const rows = result.results || [];
+          const previousBooking = rows[1];
+
+          if (previousBooking?.pickup_at) {
+
+            const previousPickup = new Date(previousBooking.pickup_at);
+            const currentPickup = new Date(booking.pickupAt);
+
+            const diffDays =
+              (currentPickup.getTime() - previousPickup.getTime()) /
+              (1000 * 60 * 60 * 24);
+
+            console.log("🧪 FORM CHECK:", {
+              previousPickup: previousBooking.pickup_at,
+              currentPickup: booking.pickupAt,
+              diffDays
+            });
+
+            if (diffDays <= 90) {
+              requiredFormType = "short";
+            }
+          }
+        }
+
+      } catch (err) {
+        console.warn("Form type check failed:", err);
+      }
+
+      /* ===============================
+         FORM LINK BUILD
+      =============================== */
+
+      const bookingId = booking.id;
+
+      const formBase =
+        requiredFormType === "short"
+          ? `${SITE_BASE}/forms/short-form.html`
+          : `${SITE_BASE}/forms/long-form.html`;
+
+      const formLink = `${formBase}?bookingId=${encodeURIComponent(bookingId)}`;
+
+      booking.requiredFormType = requiredFormType;
+      booking.requiredFormLink = formLink;
+
+      console.log("🧪 FORM DEBUG:", {
+        type: booking.requiredFormType,
+        link: booking.requiredFormLink,
+        customerId: booking.customerId
+      });
+
+      /* ===============================
+         PAYMENT LINKS
+      =============================== */
+
+      const depositLink =
+        `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(bookingId)}`;
+
+      const outstandingLink =
+        `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(bookingId)}`;
+
+      booking.depositLink = depositLink;
+      booking.outstandingLink = outstandingLink;
+
+      console.log("🧪 PAYMENT LINKS:", depositLink, outstandingLink);
+
+      /* ===============================
+         SAVE TO KV
+      =============================== */
+
+      console.log("📦 SAVE KV");
+
+      const bookingMonth = booking.pickupAt.slice(0, 7);
+      const monthKey = `bookings:${bookingMonth}`;
+
+      let existingMonthBookings = [];
+
+      try {
+        const existingMonthData = await env.BOOKINGS_KV.get(monthKey);
+        if (existingMonthData) {
+          existingMonthBookings = JSON.parse(existingMonthData);
+          if (!Array.isArray(existingMonthBookings)) {
+            existingMonthBookings = [];
+          }
+        }
+      } catch {}
+
+      existingMonthBookings.push(booking);
+
+      await env.BOOKINGS_KV.put(
+        monthKey,
+        JSON.stringify(existingMonthBookings)
+      );
+
+      console.log("✅ KV SAVED");
+
+      /* ===============================
+         DIRECT SESSION LOOKUP
+      =============================== */
+
+      const sessionKey = `session:${session.id}`;
+
+      await env.BOOKINGS_KV.put(
+        sessionKey,
+        JSON.stringify(booking),
+        { expirationTtl: 86400 }
+      );
+
+      console.log("⚡ Session mapping saved:", sessionKey);
+
+      /* ===============================
+         EMAIL DEDUPE CHECK
+      =============================== */
+
+      const emailKey = `email_sent:${booking.id}`;
+      const alreadySent = await env.BOOKINGS_KV.get(emailKey);
+
+      if (alreadySent) {
+        console.log("⚠️ Email already sent, skipping");
+      } else {
+
+        try {
+
+          const vehicleName = booking.vehicleSnapshot?.name || "Horsebox Hire";
+
+          const extras = booking.extras || {};
+          const dartfordCount = Number(extras.dartford || 0);
+          const earlyPickupEnabled = !!extras.earlyPickup;
+
+          const extrasLines = [];
+
+          if (earlyPickupEnabled) {
+            extrasLines.push(`Early pickup: £${Number(booking.earlyPickupTotal || 0).toFixed(2)}`);
+          }
+
+          if (dartfordCount > 0) {
+            extrasLines.push(
+              `Dartford crossings: ${dartfordCount} (£${Number(booking.dartfordTotal || 0).toFixed(2)})`
+            );
+          }
+
+          const extrasHtml = extrasLines.length
+            ? `
+              <hr style="margin:24px 0;">
+              <h3>Extras</h3>
+              <p>${extrasLines.join("<br>")}</p>
+            `
+            : "";
+
+          const formLabel =
+            String(booking.requiredFormType || "long").toLowerCase() === "short"
+              ? "SHORT Form Required"
+              : "LONG Form Required";
+
+          const outstandingAmountNumber = Number(booking.outstandingAmount || 0);
+          const showOutstandingSection = outstandingAmountNumber > 0;
+
+          const outstandingHtml = showOutstandingSection
+            ? `
+              <hr style="margin:24px 0;">
+
+              <h3>Outstanding Balance</h3>
+
+              <p>Please complete payment before collection.</p>
+
+              <p>
+                <a href="${escapeHtml(booking.outstandingLink || "")}"
+                   style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+                  Pay Outstanding
+                </a>
+              </p>
+
+              <p style="font-size:13px;color:#555;">
+                ${escapeHtml(booking.outstandingLink || "")}
+              </p>
+            `
+            : `
+              <hr style="margin:24px 0;">
+              <h3>Outstanding Balance</h3>
+              <p>No outstanding balance remains on this booking.</p>
+            `;
+
+          const emailHtml = `
+            <div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:680px;margin:0 auto;">
+              <h2 style="margin-bottom:8px;">Booking Confirmed</h2>
+
+              <p>Dear ${escapeHtml(booking.customerName || "Customer")},</p>
+
+              <p>Thank you for your booking with Equine Transport UK.</p>
+
+              <hr style="margin:24px 0;">
+
+              <h3>Booking Summary</h3>
+
+              <p>
+                <strong>Reference:</strong> #${escapeHtml(booking.id)}<br>
+                <strong>Lorry:</strong> ${escapeHtml(vehicleName)}<br>
+                <strong>From:</strong> ${escapeHtml(booking.pickupAtLocal || "")}<br>
+                <strong>To:</strong> ${escapeHtml(booking.dropoffAtLocal || "")}<br>
+                <strong>Email:</strong> ${escapeHtml(booking.customerEmail || "")}<br>
+                <strong>Mobile:</strong> ${escapeHtml(booking.customerMobile || "")}
+              </p>
+
+              ${extrasHtml}
+
+              <hr style="margin:24px 0;">
+
+              <h3>${escapeHtml(formLabel)}</h3>
+
+              <p>Please complete the required form before your hire.</p>
+
+              <p>
+                <a href="${escapeHtml(booking.requiredFormLink || "")}"
+                   style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+                  Complete Form
+                </a>
+              </p>
+
+              <p style="font-size:13px;color:#555;">
+                ${escapeHtml(booking.requiredFormLink || "")}
+              </p>
+
+              <hr style="margin:24px 0;">
+
+              <h3>Deposit Hold (£200)</h3>
+
+              <p>
+                This is a card pre-authorisation hold only. No money is taken unless required
+                under the hire terms.
+              </p>
+
+              <p>
+                <a href="${escapeHtml(booking.depositLink || "")}"
+                   style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+                  Secure Deposit Hold
+                </a>
+              </p>
+
+              <p style="font-size:13px;color:#555;">
+                ${escapeHtml(booking.depositLink || "")}
+              </p>
+
+              ${outstandingHtml}
+
+              <hr style="margin:24px 0;">
+
+              <h3>Price Summary</h3>
+
+              <p>
+                <strong>Total Hire:</strong> £${Number(booking.hireTotal || 0).toFixed(2)}<br>
+                <strong>Paid Now:</strong> £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
+                <strong>Outstanding:</strong> £${outstandingAmountNumber.toFixed(2)}
+              </p>
+
+              <p>
+                Kind regards,<br>
+                Koos & Avril<br>
+                Equine Transport UK<br><br>
+                📞 +44 7584 578654<br>
+                ✉️ info@equinetransportuk.com<br>
+                🌍 ${escapeHtml(SITE_BASE)}
+              </p>
+            </div>
+          `;
+
+          if (booking.customerEmail) {
+
+            await sendBookingEmail(env, {
+              to: booking.customerEmail,
+              subject: "Your Equine Transport UK booking is confirmed",
+              html: emailHtml
+            });
+
+            console.log("📧 BOOKING EMAIL SENT");
+
+            await env.BOOKINGS_KV.put(emailKey, "1", {
+              expirationTtl: 86400
+            });
+
+          } else {
+
+            console.log("⚠️ No customer email — skipping email send");
+          }
+
+        } catch (emailErr) {
+          console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
         }
       }
-    } catch {}
 
-    existingMonthBookings.push(booking);
+    } catch (err) {
 
-    await env.BOOKINGS_KV.put(
-      monthKey,
-      JSON.stringify(existingMonthBookings)
-    );
+      console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
 
-    console.log("✅ KV SAVED");
-
-    /* ===============================
-   🔥 NEW: DIRECT SESSION LOOKUP
-================================ */
-
-const sessionKey = `session:${session.id}`;
-
-await env.BOOKINGS_KV.put(
-  sessionKey,
-  JSON.stringify(booking),
-  { expirationTtl: 86400 } // 24h is enough
-);
-
-console.log("⚡ Session mapping saved:", sessionKey);
-
-/* ===============================
-   EMAIL DEDUPE CHECK
-=============================== */
-
-const emailKey = `email_sent:${booking.id}`;
-const alreadySent = await env.BOOKINGS_KV.get(emailKey);
-
-if (alreadySent) {
-  console.log("⚠️ Email already sent, skipping");
-} else {
-
-
-
-    /* ===============================
-       SEND BOOKING EMAIL
-    =============================== */
-
-    try {
-
-      const vehicleName = booking.vehicleSnapshot?.name || "Horsebox Hire";
-
-      const emailHtml = `
-        <div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:680px;margin:0 auto;">
-          <h2 style="margin-bottom:8px;">Booking Confirmed</h2>
-
-          <p>Dear ${escapeHtml(booking.customerName)},</p>
-
-          <p>Thank you for your booking with Equine Transport UK.</p>
-
-          <h3 style="margin-top:24px;">Booking Details</h3>
-
-          <p>
-            <strong>Reference:</strong> #${escapeHtml(booking.id)}<br>
-            <strong>Lorry:</strong> ${escapeHtml(vehicleName)}<br>
-            <strong>From:</strong> ${escapeHtml(booking.pickupAtLocal)}<br>
-            <strong>To:</strong> ${escapeHtml(booking.dropoffAtLocal)}<br>
-            <strong>Email:</strong> ${escapeHtml(booking.customerEmail)}
-          </p>
-
-          <hr style="margin:24px 0;">
-
-          <h3>${escapeHtml(String(booking.requiredFormType || "long").toUpperCase())} Form Required</h3>
-
-          <p>Please complete the required form before your hire.</p>
-
-          <p>
-            <a href="${escapeHtml(booking.requiredFormLink)}"
-               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
-              Complete Form
-            </a>
-          </p>
-
-          <p style="font-size:13px;color:#555;">
-            ${escapeHtml(booking.requiredFormLink)}
-          </p>
-
-          <hr style="margin:24px 0;">
-
-          <h3>Deposit (£200)</h3>
-
-          <p>This is a pre-authorisation hold, not a payment.</p>
-
-          <p>
-            <a href="${escapeHtml(booking.depositLink || "")}"
-               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
-              Pay Deposit
-            </a>
-          </p>
-
-          <p style="font-size:13px;color:#555;">
-            ${escapeHtml(booking.depositLink || "")}
-          </p>
-
-          <hr style="margin:24px 0;">
-
-          <h3>Outstanding Balance</h3>
-
-          <p>Please complete payment before collection.</p>
-
-          <p>
-            <a href="${escapeHtml(booking.outstandingLink || "")}"
-               style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
-              Pay Outstanding
-            </a>
-          </p>
-
-          <p style="font-size:13px;color:#555;">
-            ${escapeHtml(booking.outstandingLink || "")}
-          </p>
-
-          <hr style="margin:24px 0;">
-
-          <p>
-            <strong>Price Summary</strong><br>
-            Total Hire: £${Number(booking.hireTotal || 0).toFixed(2)}<br>
-            Paid Now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
-            Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
-          </p>
-
-          <hr style="margin:24px 0;">
-
-          <p>
-            Kind regards,<br>
-            Koos & Avril<br>
-            Equine Transport UK<br><br>
-
-            📞 +44 7584 578654<br>
-            ✉️ info@equinetransportuk.com<br>
-            🌍 ${escapeHtml(SITE_BASE)}
-          </p>
-        </div>
-      `;
-
-    if (booking.customerEmail) {
-
-  await sendBookingEmail(env, {
-    to: booking.customerEmail,
-    subject: "Your Equine Transport UK booking is confirmed",
-    html: emailHtml
-  });
-
-  console.log("📧 BOOKING EMAIL SENT");
-
-  // ✅ mark as sent (DEDUPLICATION)
-  await env.BOOKINGS_KV.put(emailKey, "1", {
-    expirationTtl: 86400 // 24h
-  });
-
-} else {
-
-  console.log("⚠️ No customer email — skipping email send");
-
-}
-
-  } catch (emailErr) {
-  console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
-}
-
-} // ✅ closes "else" (EMAIL DEDUPE BLOCK)
-
-  } catch (err) {
-
-    console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
-
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500 }
-    );
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        { status: 500 }
+      );
+    }
   }
-}
 
   await env.BOOKINGS_KV.put(eventId, "processed");
 
@@ -2020,6 +2011,31 @@ async function handleBookingBySession(request, env) {
   /* ===============================
      HELPERS
   =============================== */
+
+  async function getRequiredFormType(env, customerId, pickupAt) {
+
+  if (!customerId) return "long";
+
+  const rows = await env.DB.prepare(`
+    SELECT pickup_at
+    FROM bookings
+    WHERE customer_id = ?
+    ORDER BY pickup_at DESC
+    LIMIT 2
+  `).bind(customerId).all();
+
+  const bookings = rows?.results || [];
+
+  // first booking ever
+  if (bookings.length < 2) return "long";
+
+  const previous = new Date(bookings[1].pickup_at);
+  const current = new Date(pickupAt);
+
+  const diffDays = (current - previous) / (1000 * 60 * 60 * 24);
+
+  return diffDays <= 90 ? "short" : "long";
+}
 
   function cleanIso(value) {
     if (!value || typeof value !== "string") return value;
