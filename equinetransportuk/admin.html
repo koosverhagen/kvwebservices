@@ -1075,15 +1075,15 @@ try {
 
     const signatureData = getSignatureData(formData);
 
-    if (signatureData) {
-      modalSignature.innerHTML = `
-        <div class="modal-signature">
-          <img src="${signatureData}" />
-        </div>
-      `;
-    } else {
-      modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
-    }
+   if (signatureData) {
+  modalSignature.innerHTML = `
+    <div class="et-modal-signature">
+      <img src="${signatureData}" />
+    </div>
+  `;
+} else {
+  modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
+}
 
     openModal();
 
