@@ -984,7 +984,12 @@ document.addEventListener("keydown", (e) => {
           `${API_BASE}/api/bookings/list?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
         );
 
-        const data = await res.json();
+        let data = {};
+try {
+  data = await res.json();
+} catch {
+  data = {};
+}
 
         if (!res.ok) {
           throw new Error(data?.error || `Bookings API error (${res.status})`);
@@ -1017,79 +1022,86 @@ document.addEventListener("keydown", (e) => {
     }
 
     async function loadForm(bookingId) {
-      if (!bookingId) return;
+  if (!bookingId) return;
 
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`
-        );
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`
+    );
 
-        const data = await res.json();
-
-       if (res.status === 404) {
-  modalSummary.innerHTML = `
-    <div class="empty-state">
-      No form submitted yet for this booking.
-    </div>
-  `;
-  modalFields.innerHTML = "";
-  modalSignature.innerHTML = "";
-  openModal();
-  return;
-}
-
-if (!res.ok) {
-  throw new Error(data?.error || `Form API error (${res.status})`);
-}
-
-       const formData = data.form || data;
-
-const payload = formData?.payload || {};
-
-modalSummary.innerHTML = `
-  ${makeDetailBox("Booking reference", shortRef(bookingId))}
-  ${makeDetailBox("Form type", formData.formType || "—")}
-  ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
-`;
-
-const entries = buildFieldEntries(formData);
-
-modalFields.innerHTML = entries.map(([key, value]) => `
-  <div class="kv-item">
-    <div class="kv-key">${escapeHtml(key)}</div>
-    <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
-  </div>
-`).join("");
-
-const signatureData = getSignatureData(formData);
-
-if (signatureData) {
-  modalSignature.innerHTML = `
-    <div class="modal-signature">
-      <img src="${signatureData}" />
-    </div>
-  `;
-} else {
-  modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
-}
-
-openModal();
-
-      } catch (err) {
-        console.error("Failed to load form:", err);
-
-        modalSummary.innerHTML = `
-          <div class="empty-state">
-            ${escapeHtml(err.message || "Failed to load form.")}
-          </div>
-        `;
-
-        modalFields.innerHTML = "";
-        modalSignature.innerHTML = "";
-
-        openModal();
-      }
+    // 🔥 SAFELY parse JSON (prevents crash on empty 404 body)
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
     }
+
+    // ✅ HANDLE "NO FORM" (NORMAL CASE)
+    if (res.status === 404) {
+      modalSummary.innerHTML = `
+        <div class="empty-state">
+          No form submitted yet for this booking.
+        </div>
+      `;
+      modalFields.innerHTML = "";
+      modalSignature.innerHTML = "";
+      openModal();
+      return;
+    }
+
+    // ❌ REAL ERROR
+    if (!res.ok) {
+      throw new Error(data?.error || `Form API error (${res.status})`);
+    }
+
+    // ✅ NORMAL FLOW
+    const formData = data.form || data;
+
+    modalSummary.innerHTML = `
+      ${makeDetailBox("Booking reference", shortRef(bookingId))}
+      ${makeDetailBox("Form type", formData.formType || "—")}
+      ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
+    `;
+
+    const entries = buildFieldEntries(formData);
+
+    modalFields.innerHTML = entries.map(([key, value]) => `
+      <div class="kv-item">
+        <div class="kv-key">${escapeHtml(key)}</div>
+        <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
+      </div>
+    `).join("");
+
+    const signatureData = getSignatureData(formData);
+
+    if (signatureData) {
+      modalSignature.innerHTML = `
+        <div class="modal-signature">
+          <img src="${signatureData}" />
+        </div>
+      `;
+    } else {
+      modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
+    }
+
+    openModal();
+
+  } catch (err) {
+    console.error("Failed to load form:", err);
+
+    modalSummary.innerHTML = `
+      <div class="empty-state">
+        ${escapeHtml(err.message || "Failed to load form.")}
+      </div>
+    `;
+
+    modalFields.innerHTML = "";
+    modalSignature.innerHTML = "";
+
+    openModal();
+  }
+}
 
     bookingsBody.addEventListener("click", (event) => {
       const btn = event.target.closest("[data-view-form]");
