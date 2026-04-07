@@ -6,6 +6,51 @@
   <title>Admin | Equine Transport UK</title>
 
   <style>
+
+/* ===============================
+   MODAL (FORCE LOAD FIRST)
+=============================== */
+
+.et-modal.hidden {
+  display: none;
+}
+
+.et-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 999999 !important;
+}
+
+.et-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 1;
+}
+
+.et-modal-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+
+  width: min(900px, 92vw);
+  max-height: 90vh;
+
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  box-shadow: 0 30px 80px rgba(0,0,0,.25);
+}
+
     :root{
       --bg:#f5f7fa;
       --card:#ffffff;
