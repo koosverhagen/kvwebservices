@@ -3033,7 +3033,7 @@ textarea {
 }
 
 /* ===============================
-   MODAL
+   MODAL (FINAL FIX)
 =============================== */
 
 .et-modal.hidden {
@@ -3042,61 +3042,42 @@ textarea {
 
 .et-modal {
   position: fixed;
-  inset: 0;
-  z-index: 99999;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
 
-  display: flex;              /* 🔥 KEY FIX */
-  align-items: center;        /* vertical center */
-  justify-content: center;    /* horizontal center */
+  z-index: 999999; /* 🔥 increase again */
+
+  pointer-events: auto;
 }
 
+/* 🔥 BACKDROP BELOW */
 .et-modal-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,.45);
   backdrop-filter: blur(4px);
+  z-index: 1;
 }
 
 .et-modal-card {
-  position: relative;
+  position: absolute;   /* 🔥 KEY CHANGE */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  z-index: 2;
+
   width: min(900px, 92vw);
   max-height: 90vh;
-
-  margin: 0; /* 🔥 REMOVE margin */
 
   background: #fff;
   border-radius: 18px;
   overflow: hidden;
+
   display: flex;
   flex-direction: column;
+
   box-shadow: 0 30px 80px rgba(0,0,0,.25);
-}
-.et-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--line);
-}
-
-.et-modal-header h3 {
-  margin: 0;
-}
-
-.et-modal-header button {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.et-modal-body {
-  padding: 18px;
-  overflow-y: auto;
-}
-
-.et-modal-signature img {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--line);
 }
