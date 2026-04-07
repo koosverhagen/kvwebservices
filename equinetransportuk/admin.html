@@ -5,6 +5,63 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin | Equine Transport UK</title>
 <style>
+
+/* ===============================
+   MODAL (FIX - REQUIRED)
+=============================== */
+
+.et-modal.hidden {
+  display: none !important;
+}
+
+.et-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+}
+
+.et-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1;
+}
+
+.et-modal-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+
+  width: min(960px, 94vw);
+  max-height: 88vh;
+
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.25);
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.et-modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.et-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e6ebf2;
+}
+
  /* ===============================
    TABLE + SCROLL (FIXED UX)
 =============================== */
