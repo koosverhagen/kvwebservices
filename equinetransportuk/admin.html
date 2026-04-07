@@ -8,7 +8,7 @@
   <style>
 
 /* ===============================
-   MODAL (FINAL – SCROLL + UX)
+   MODAL (SCROLL + STYLING)
 =============================== */
 
 .et-modal.hidden {
@@ -21,7 +21,6 @@
   z-index: 999999 !important;
 }
 
-/* BACKDROP */
 .et-modal-backdrop {
   position: absolute;
   inset: 0;
@@ -30,7 +29,6 @@
   z-index: 1;
 }
 
-/* MODAL CARD */
 .et-modal-card {
   position: absolute;
   top: 50%;
@@ -40,7 +38,6 @@
   z-index: 2;
 
   width: min(960px, 94vw);
-  max-width: 100%; /* 🔥 prevents overflow */
   max-height: min(88vh, 900px);
 
   background: #ffffff;
@@ -50,18 +47,10 @@
 
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: hidden; /* keep rounded corners */
 }
 
-/* SMALL SCREEN IMPROVEMENT */
-@media (max-height: 700px) {
-  .et-modal-card {
-    top: 20px;
-    transform: translateX(-50%);
-  }
-}
-
-/* HEADER */
+/* Header stays visible */
 .et-modal-header {
   display: flex;
   align-items: center;
@@ -71,7 +60,6 @@
   padding: 14px 16px;
   border-bottom: 1px solid #e6ebf2;
   background: #fff;
-
   flex: 0 0 auto;
 }
 
@@ -87,11 +75,9 @@
   border: 1px solid #dbe1e8;
   background: #fff;
   color: #1d2530;
-
   width: 36px;
   height: 36px;
   border-radius: 10px;
-
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -102,28 +88,17 @@
   border-color: #c7d2e0;
 }
 
-/* SCROLL AREA */
+/* THIS is the scrollable area */
 .et-modal-body {
   padding: 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 0; /* critical for scrolling in flex */
 }
 
-/* SCROLLBAR (OPTIONAL NICE TOUCH) */
-.et-modal-body::-webkit-scrollbar {
-  width: 10px;
-}
-
-.et-modal-body::-webkit-scrollbar-thumb {
-  background: #cfd8e3;
-  border-radius: 999px;
-}
-
-/* SUMMARY GRID */
+/* Nice layout for summary boxes */
 #modal-form-summary.detail-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -137,7 +112,7 @@
   }
 }
 
-/* FIELD LIST */
+/* Fields list styling */
 .kv-list {
   display: grid;
   gap: 10px;
@@ -166,7 +141,7 @@
   word-break: break-word;
 }
 
-/* SIGNATURE */
+/* Signature */
 .et-modal-signature img {
   width: 100%;
   height: auto;
@@ -180,24 +155,18 @@
    TABLE COLUMN WIDTH FIX
 =============================== */
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-
-  /* ❌ REMOVE this */
-  /* min-width: 1080px; */
-
-  table-layout: auto; /* keep */
-}
-
+/* First column (Reference) */
 table th:first-child,
 table td:first-child {
-  width: 1%;
-  white-space: nowrap;
+  width: 1%;              /* 🔥 shrink to content */
+  white-space: nowrap;    /* prevent wrapping */
 }
 
-/* REFERENCE STYLING */
+/* Make sure table uses natural sizing */
+table {
+  table-layout: auto;     /* 🔥 important */
+}
+
 .booking-ref {
   font-size: 18px;
 }
@@ -207,7 +176,7 @@ table td:first-child {
   margin-top: 2px;
 }
 
-/* EMPTY STATE */
+/* Empty / no-form state */
 .empty-state {
   color: #5a6675;
   background: #f8fafc;
@@ -442,12 +411,17 @@ table td:first-child {
       color:var(--bad);
     }
 
-.list-wrap {
-  overflow-x: auto;   /* only horizontal */
-  overflow-y: visible; /* let page scroll vertically */
-  border-radius: 18px;
-}
+    .list-wrap{
+      overflow:auto;
+      border-radius:18px;
+    }
 
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1080px;
+      background:#fff;
+    }
 
     thead th{
       text-align:left;
@@ -479,15 +453,10 @@ table td:first-child {
       letter-spacing:.01em;
     }
 
- .tiny {
-  font-size: 12px;
-  color: var(--muted);
-
-  max-width: 180px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+    .tiny{
+      font-size:12px;
+      color:var(--muted);
+    }
 
     .vehicle-line{
       font-weight:700;
