@@ -3036,11 +3036,11 @@ textarea {
    MODAL
 =============================== */
 
-.modal.hidden {
+.et-modal.hidden {
   display: none;
 }
 
-.modal {
+.et-modal {
   position: fixed;
   inset: 0;
   z-index: 99999;
@@ -3050,14 +3050,14 @@ textarea {
   justify-content: center;    /* horizontal center */
 }
 
-.modal-backdrop {
+.et-modal-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,.45);
   backdrop-filter: blur(4px);
 }
 
-.modal-card {
+.et-modal-card {
   position: relative;
   width: min(900px, 92vw);
   max-height: 90vh;
@@ -3071,7 +3071,7 @@ textarea {
   flex-direction: column;
   box-shadow: 0 30px 80px rgba(0,0,0,.25);
 }
-.modal-header {
+.et-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3079,23 +3079,23 @@ textarea {
   border-bottom: 1px solid var(--line);
 }
 
-.modal-header h3 {
+.et-modal-header h3 {
   margin: 0;
 }
 
-.modal-header button {
+.et-modal-header button {
   background: none;
   border: none;
   font-size: 20px;
   cursor: pointer;
 }
 
-.modal-body {
+.et-modal-body {
   padding: 18px;
   overflow-y: auto;
 }
 
-.modal-signature img {
+.et-modal-signature img {
   width: 100%;
   border-radius: 12px;
   border: 1px solid var(--line);
