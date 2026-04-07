@@ -48,6 +48,9 @@ const stripe = Stripe("pk_test_51PmwmdB9WIgqJu1YURUMM1LhXuhCDRKs7vQR28P7tcKElI1t
 const params = new URLSearchParams(window.location.search);
 const bookingId = params.get("bookingId");
 
+document.getElementById("booking-info").innerText =
+  "Booking ID: " + bookingId;
+
 if (!bookingId) {
   document.body.innerHTML = "<h2>Invalid booking link</h2>";
 }
@@ -61,6 +64,18 @@ fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
 })
 .then(res => res.json())
 .then(data => {
+
+  console.log("Deposit API response:", data);
+
+  if (!data.clientSecret) {
+
+    document.getElementById("message").innerText =
+      data.error || "Unable to start deposit payment.";
+
+    console.error("❌ Deposit error:", data);
+
+    return;
+  }
 
   const clientSecret = data.clientSecret;
 
