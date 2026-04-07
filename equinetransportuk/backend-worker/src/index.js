@@ -776,7 +776,7 @@ async function handleCreateCheckoutSession(request, env) {
   }
 
   /* ===============================
-     🔥 CLEAN CUSTOMER NAME (CRITICAL FIX)
+     🔥 CLEAN CUSTOMER NAME
   =============================== */
 
   let cleanCustomerName = (booking.customerName || "").trim();
@@ -942,6 +942,9 @@ async function handleCreateCheckoutSession(request, env) {
     apiVersion: "2024-06-20"
   });
 
+  // 🔥 CRITICAL FIX — GENERATE BOOKING ID HERE
+  const bookingId = "book_" + crypto.randomUUID();
+
   let session;
 
   try {
@@ -968,7 +971,7 @@ async function handleCreateCheckoutSession(request, env) {
 
       metadata: {
 
-        bookingId: booking.id,
+        bookingId: bookingId, // ✅ FIXED
 
         vehicleId: booking.vehicleId,
         vehicleName: vehicleName,
@@ -977,7 +980,6 @@ async function handleCreateCheckoutSession(request, env) {
         pickupTime,
         durationDays: String(durationDays),
 
-        // 🔥 FIXED HERE
         customerName: cleanCustomerName,
         customerEmail: (booking.customerEmail || "").slice(0, 100),
         customerMobile: (booking.customerMobile || "").slice(0, 30),
@@ -1088,7 +1090,21 @@ async function handleStripeWebhook(request, env) {
       console.log("🔥 ENTERING TRY BLOCK");
       console.log("🔥 WEBHOOK START");
 
-      const session = event.data.object;
+     const session = event.data.object;
+
+// 🔥 ADD THIS BLOCK HERE (EXACT SPOT)
+if (!session.metadata?.bookingId) {
+  console.log("❌ Missing bookingId in metadata");
+
+  await env.BOOKINGS_KV.put(eventId, "processed");
+
+  return new Response(
+    JSON.stringify({ error: "Missing bookingId in metadata" }),
+    { status: 400 }
+  );
+}
+
+
 
       const paymentType = session.metadata?.paymentType || "";
       const paymentBookingId = session.metadata?.bookingId || "";
@@ -1327,7 +1343,7 @@ async function handleStripeWebhook(request, env) {
       =============================== */
 
       const booking = {
-        id: session.metadata.bookingId || session.id,
+        id: session.metadata.bookingId,
 
         vehicleId: session.metadata.vehicleId,
 
