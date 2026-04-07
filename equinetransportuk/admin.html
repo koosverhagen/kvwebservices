@@ -149,26 +149,32 @@ tbody tr:hover{
 }
 
 /* ===============================
-   STICKY FIRST COLUMN
+   STICKY FIRST COLUMN (FINAL)
 =============================== */
 
-/* header */
+/* HEADER */
 table th:first-child {
   position: sticky;
   left: 0;
-  z-index: 3; /* above other cells */
-  background: #f8fafc; /* match header */
+  z-index: 5; /* higher than body */
+  background: #f8fafc;
+
+  /* subtle elevation */
+  box-shadow: 2px 0 6px rgba(0,0,0,0.06);
 }
 
-/* body */
+/* BODY */
 table td:first-child {
   position: sticky;
   left: 0;
-  z-index: 2;
-  background: #ffffff; /* prevent overlap transparency */
+  z-index: 4;
+  background: #ffffff;
+
+  /* subtle elevation */
+  box-shadow: 2px 0 6px rgba(0,0,0,0.04);
 }
 
-/* subtle divider (nice UX touch) */
+/* divider line */
 table td:first-child::after,
 table th:first-child::after {
   content: "";
@@ -178,6 +184,10 @@ table th:first-child::after {
   width: 1px;
   height: 100%;
   background: #e6ebf2;
+}
+
+tbody tr:hover td:first-child {
+  background: #f9fbff;
 }
 
 </style>
