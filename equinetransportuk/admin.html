@@ -583,41 +583,7 @@
         </table>
       </div>
     </section>
-
-    <section class="section">
-      <div class="section-head">
-        <h2>Form details</h2>
-        <div class="muted">Selected booking form</div>
-      </div>
-
-      <div class="split">
-        <div class="card panel" id="form-panel-left">
-          <h3>Form overview</h3>
-          <div class="empty-state" id="form-empty">
-            No form selected yet.
-          </div>
-
-          <div id="form-content" style="display:none;">
-            <div class="detail-grid" id="form-summary-grid"></div>
-
-            <div class="subsection">
-              <h4>Submitted fields</h4>
-              <div class="kv-list" id="form-fields"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card panel" id="form-panel-right">
-          <h3>Signature</h3>
-          <div id="signature-wrap">
-            <div class="empty-state">No signature loaded yet.</div>
-          </div>
-          <div class="right-note">
-            Signature is shown from the saved form record when available.
-          </div>
-        </div>
-      </div>
-    </section>
+    
   </main>
 
   <script>
@@ -639,6 +605,14 @@
     const formSummaryGrid = document.getElementById("form-summary-grid");
     const formFields = document.getElementById("form-fields");
     const signatureWrap = document.getElementById("signature-wrap");
+
+    const modal = document.getElementById("form-modal");
+    const modalClose = document.getElementById("modal-close");
+    const modalCloseBtn = document.getElementById("modal-close-btn");
+
+    const modalSummary = document.getElementById("modal-form-summary");
+    const modalFields = document.getElementById("modal-form-fields");
+    const modalSignature = document.getElementById("modal-signature");
 
     let allBookings = [];
     let filteredBookings = [];
@@ -941,6 +915,7 @@
         ""
       );
     }
+    
 
     function renderFormDetails(formData, bookingId) {
       const payload = formData?.payload || {};
@@ -1009,6 +984,23 @@
       formEmpty.style.display = "none";
       formContent.style.display = "block";
     }
+
+    function openModal() {
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+  modal.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+modalClose.addEventListener("click", closeModal);
+modalCloseBtn.addEventListener("click", closeModal);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
 
     async function loadBookings() {
       const from = rangeFromInput.value;
@@ -1091,7 +1083,38 @@
           return;
         }
 
-        renderFormDetails(data.form || data, bookingId);
+       const formData = data.form || data;
+
+const payload = formData?.payload || {};
+
+modalSummary.innerHTML = `
+  ${makeDetailBox("Booking reference", shortRef(bookingId))}
+  ${makeDetailBox("Form type", formData.formType || "—")}
+  ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
+`;
+
+const entries = buildFieldEntries(formData);
+
+modalFields.innerHTML = entries.map(([key, value]) => `
+  <div class="kv-item">
+    <div class="kv-key">${escapeHtml(key)}</div>
+    <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
+  </div>
+`).join("");
+
+const signatureData = getSignatureData(formData);
+
+if (signatureData) {
+  modalSignature.innerHTML = `
+    <div class="modal-signature">
+      <img src="${signatureData}" />
+    </div>
+  `;
+} else {
+  modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
+}
+
+openModal();
 
       } catch (err) {
         console.error("Failed to load form:", err);
@@ -1117,5 +1140,38 @@
     defaultRanges();
     loadBookings();
   </script>
+  <!-- ===============================
+   FORM MODAL (NEW)
+=============================== -->
+<div id="form-modal" class="modal hidden">
+
+  <div class="modal-backdrop" id="modal-close"></div>
+
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <h3>Form details</h3>
+      <button id="modal-close-btn">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <div id="modal-form-summary" class="detail-grid"></div>
+
+      <div class="subsection">
+        <h4>Submitted fields</h4>
+        <div id="modal-form-fields" class="kv-list"></div>
+      </div>
+
+      <div class="subsection">
+        <h4>Signature</h4>
+        <div id="modal-signature"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
 </body>
 </html>
