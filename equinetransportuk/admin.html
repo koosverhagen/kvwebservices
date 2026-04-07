@@ -8,7 +8,7 @@
   <style>
 
 /* ===============================
-   MODAL (SCROLL + STYLING)
+   MODAL (FINAL – SCROLL + UX)
 =============================== */
 
 .et-modal.hidden {
@@ -21,6 +21,7 @@
   z-index: 999999 !important;
 }
 
+/* BACKDROP */
 .et-modal-backdrop {
   position: absolute;
   inset: 0;
@@ -29,6 +30,7 @@
   z-index: 1;
 }
 
+/* MODAL CARD */
 .et-modal-card {
   position: absolute;
   top: 50%;
@@ -38,6 +40,7 @@
   z-index: 2;
 
   width: min(960px, 94vw);
+  max-width: 100%; /* 🔥 prevents overflow */
   max-height: min(88vh, 900px);
 
   background: #ffffff;
@@ -47,10 +50,18 @@
 
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* keep rounded corners */
+  overflow: hidden;
 }
 
-/* Header stays visible */
+/* SMALL SCREEN IMPROVEMENT */
+@media (max-height: 700px) {
+  .et-modal-card {
+    top: 20px;
+    transform: translateX(-50%);
+  }
+}
+
+/* HEADER */
 .et-modal-header {
   display: flex;
   align-items: center;
@@ -60,6 +71,7 @@
   padding: 14px 16px;
   border-bottom: 1px solid #e6ebf2;
   background: #fff;
+
   flex: 0 0 auto;
 }
 
@@ -75,9 +87,11 @@
   border: 1px solid #dbe1e8;
   background: #fff;
   color: #1d2530;
+
   width: 36px;
   height: 36px;
   border-radius: 10px;
+
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -88,17 +102,28 @@
   border-color: #c7d2e0;
 }
 
-/* THIS is the scrollable area */
+/* SCROLL AREA */
 .et-modal-body {
   padding: 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+
   flex: 1 1 auto;
-  min-height: 0; /* critical for scrolling in flex */
+  min-height: 0;
 }
 
-/* Nice layout for summary boxes */
+/* SCROLLBAR (OPTIONAL NICE TOUCH) */
+.et-modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.et-modal-body::-webkit-scrollbar-thumb {
+  background: #cfd8e3;
+  border-radius: 999px;
+}
+
+/* SUMMARY GRID */
 #modal-form-summary.detail-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -112,7 +137,7 @@
   }
 }
 
-/* Fields list styling */
+/* FIELD LIST */
 .kv-list {
   display: grid;
   gap: 10px;
@@ -141,7 +166,7 @@
   word-break: break-word;
 }
 
-/* Signature */
+/* SIGNATURE */
 .et-modal-signature img {
   width: 100%;
   height: auto;
@@ -151,7 +176,31 @@
   display: block;
 }
 
-/* Empty / no-form state */
+/* ===============================
+   TABLE COLUMN WIDTH FIX
+=============================== */
+
+table {
+  table-layout: auto;
+}
+
+table th:first-child,
+table td:first-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* REFERENCE STYLING */
+.booking-ref {
+  font-size: 18px;
+}
+
+.booking-ref + .tiny {
+  display: block;
+  margin-top: 2px;
+}
+
+/* EMPTY STATE */
 .empty-state {
   color: #5a6675;
   background: #f8fafc;
