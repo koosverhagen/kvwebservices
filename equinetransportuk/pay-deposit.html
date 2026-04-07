@@ -43,19 +43,25 @@
 </div>
 
 <script>
-const stripe = Stripe("pk_test_51PmwmdB9WIgqJu1YURUMM1LhXuhCDRKs7vQR28P7tcKElI1tonLWvjorRDwYSShdWUAUK0B8VIudUKAjkZTV7ufR00RElx5bHg"); // 🔥 IMPORTANT
+const stripe = Stripe("pk_test_51PmwmdB9WIgqJu1YURUMM1LhXuhCDRKs7vQR28P7tcKElI1tonLWvjorRDwYSShdWUAUK0B8VIudUKAjkZTV7ufR00RElx5bHg");
 
 const params = new URLSearchParams(window.location.search);
 const bookingId = params.get("bookingId");
 
-document.getElementById("booking-info").innerText =
-  "Booking ID: " + bookingId;
-
 if (!bookingId) {
   document.body.innerHTML = "<h2>Invalid booking link</h2>";
+  throw new Error("Missing bookingId");
 }
 
+document.getElementById("booking-info").innerText =
+  "Reference: #" + bookingId.slice(-8);
+
+document.getElementById("message").innerText = "Loading secure payment...";
+
 let elements;
+let card;
+let clientSecret;
+let isSubmitting = false;
 
 fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
   method: "POST",
@@ -77,48 +83,69 @@ fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
     return;
   }
 
-  const clientSecret = data.clientSecret;
+  clientSecret = data.clientSecret;
 
   elements = stripe.elements({
-    locale: "en-GB",
-    style: {
-      base: {
-        fontSize: "16px"
-      }
-    }
+    locale: "en-GB"
   });
 
-  // 🔥 FIX 1: remove postcode requirement
-  const card = elements.create("card", {
+  card = elements.create("card", {
     hidePostalCode: true
   });
 
   card.mount("#card-element");
 
+  document.getElementById("message").innerText = "";
+
   const form = document.getElementById("payment-form");
+  const btn = document.getElementById("submit-btn");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const name = document.getElementById("card-name").value;
+    if (isSubmitting) return;
+    isSubmitting = true;
+
+    btn.disabled = true;
+    btn.innerText = "Processing...";
+
+    const nameInput = document.getElementById("card-name");
+    const name = nameInput.value.trim();
+
+    if (!name) {
+      document.getElementById("message").innerText =
+        "Please enter your name.";
+
+      isSubmitting = false;
+      btn.disabled = false;
+      btn.innerText = "Confirm Hold";
+      return;
+    }
 
     const result = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
         card: card,
-        billing_details: {
-          name: name
-          // ❌ removed address block (prevents postcode error)
-        }
+        billing_details: { name }
       }
     });
 
     if (result.error) {
       document.getElementById("message").innerText = result.error.message;
+
+      isSubmitting = false;
+      btn.disabled = false;
+      btn.innerText = "Confirm Hold";
     } else {
-      window.location.href = `index.html?deposit=success&bookingId=${bookingId}`;
+      window.location.href =
+        `index.html?deposit=success&bookingId=${bookingId}`;
     }
   });
 
+})
+.catch(err => {
+  console.error("❌ Fetch failed:", err);
+  document.getElementById("message").innerText =
+    "Connection error. Please try again.";
 });
 </script>
 
