@@ -1088,6 +1088,8 @@ async function handleStripeWebhook(request, env) {
 
   let event;
 
+  console.log("📩 STRIPE EVENT TYPE:", event?.type);
+
   try {
     event = await stripe.webhooks.constructEventAsync(
       payload,
