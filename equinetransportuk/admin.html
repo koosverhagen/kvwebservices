@@ -334,7 +334,7 @@
     }
 
     .pill {
-      display: inline-flex;
+      display: inline-block;
       padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
@@ -634,32 +634,26 @@
       /* orange */
     }
 
-    .pill.action {
-      cursor: pointer;
-      display: inline-flex;
-      text-decoration: none;
-      pointer-events: auto;
-      transition: all 0.15s ease;
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      margin: 2px 6px 2px 0;
     }
 
+    .pill.action {
+      display: inline-block;
+      cursor: pointer;
+      text-decoration: none;
+    }
 
     .pill.action:hover {
       transform: translateY(-1px);
       filter: brightness(0.95);
     }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-    }
-
-    /* 🔥 force anchor pills to behave same as spans */
-    .pill.action {
-      display: inline-flex !important;
-      align-items: center;
-      cursor: pointer;
-      text-decoration: none;
-    }
 
 
     .bookings-table td[data-label="Payment"] {
@@ -669,6 +663,16 @@
     .bookings-table td[data-label="Payment"] .pill {
       display: inline-block;
       margin-bottom: 4px;
+    }
+
+    .bookings-table td {
+      position: relative;
+      z-index: 1;
+    }
+
+    .bookings-table td a {
+      position: relative;
+      z-index: 2;
     }
 
 
