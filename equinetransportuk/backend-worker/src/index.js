@@ -33,19 +33,19 @@ async function cleanupExpiredReservations(env) {
 
     if (!reservation.createdAt) continue;
 
-const createdAt = Number(reservation.createdAt);
+    const createdAt = Number(reservation.createdAt);
 
-if (!Number.isFinite(createdAt)) continue;
+    if (!Number.isFinite(createdAt)) continue;
 
-const age = now - createdAt;
+    const age = now - createdAt;
 
-if (age > EXPIRY_TIME) {
+    if (age > EXPIRY_TIME) {
 
-  await env.BOOKINGS_KV.delete(key.name);
+      await env.BOOKINGS_KV.delete(key.name);
 
-  console.log("⏳ Expired reservation removed:", key.name);
+      console.log("⏳ Expired reservation removed:", key.name);
 
-}
+    }
 
   }
 
@@ -57,351 +57,351 @@ export default {
      HTTP REQUEST HANDLER
   ================================ */
 
- async fetch(request, env, ctx) {
+  async fetch(request, env, ctx) {
 
-  const url = new URL(request.url);
+    const url = new URL(request.url);
 
-  /* ===============================
-     STRIPE WEBHOOK FIRST
-     (must bypass CORS)
+    /* ===============================
+       STRIPE WEBHOOK FIRST
+       (must bypass CORS)
+    ================================ */
+
+    if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
+      return handleStripeWebhook(request, env);
+    }
+
+    const corsHeaders = buildCorsHeaders();
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    try {
+
+      /* ===============================
+         PRICING ENGINE
+      ================================ */
+
+      if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
+        const response = await handlePricingQuote(request);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+         STRIPE CHECKOUT SESSION
+      ================================ */
+
+      if (request.method === "POST" && url.pathname === "/api/bookings/create-checkout-session") {
+        const response = await handleCreateCheckoutSession(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+         LIST BOOKINGS
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/bookings/list") {
+        const response = await handleListBookings(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+         🔥 DEBUG — LAST BOOKING (NEW)
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/debug/last-booking") {
+
+        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+        let latest = null;
+
+        for (const key of list.keys) {
+
+          const data = await env.BOOKINGS_KV.get(key.name);
+
+          if (!data) continue;
+
+          try {
+            const parsed = JSON.parse(data);
+
+            if (Array.isArray(parsed) && parsed.length) {
+              latest = parsed[parsed.length - 1];
+            }
+
+          } catch { }
+        }
+
+        return withCors(json({ latest }), corsHeaders);
+      }
+
+      /* ===============================
+         BOOKING BY SESSION
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/bookings/by-session") {
+        return withCors(await handleBookingBySession(request, env), corsHeaders);
+      }
+
+      /* ===============================
+         AVAILABILITY API
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/availability") {
+        const response = await handleAvailability(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+         VEHICLE AVAILABILITY
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/vehicles/available") {
+        const response = await handleVehicleAvailability(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+         MONTH AVAILABILITY (CALENDAR)
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/availability/month") {
+        const response = await handleMonthAvailability(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+         CLEAR BOOKINGS (ADMIN)
+      ================================ */
+
+      if (request.method === "POST" && url.pathname === "/api/bookings/clear") {
+        const response = await handleClearBookings(env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+         BOOKINGS VERSION
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/bookings/version") {
+        const response = await handleBookingsVersion(env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+     DEPOSIT STRIPE SESSION
+  =============================== */
+
+      if (request.method === "POST" && url.pathname === "/api/deposit-intent") {
+
+        const { bookingId } = await request.json();
+
+        if (!bookingId) {
+          return withCors(json({ error: "Missing bookingId" }, 400), corsHeaders);
+        }
+
+        // ===============================
+        // FIND BOOKING
+        // ===============================
+
+        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+        let booking = null;
+
+        for (const key of list.keys) {
+
+          const data = await env.BOOKINGS_KV.get(key.name);
+          if (!data) continue;
+
+          try {
+            const parsed = JSON.parse(data);
+
+            if (Array.isArray(parsed)) {
+              const found = parsed.find(b => b.id === bookingId);
+              if (found) {
+                booking = found;
+                break;
+              }
+            }
+
+          } catch { }
+        }
+
+        if (!booking) {
+          return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
+        }
+
+        // ✅ prevent double hold
+        if (booking.depositPaid) {
+          return withCors(json({ error: "Deposit already secured" }, 400), corsHeaders);
+        }
+
+        // ===============================
+        // CREATE PAYMENT INTENT (HOLD)
+        // ===============================
+
+        const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: 20000, // £200
+          currency: "gbp",
+
+          capture_method: "manual", // 🔥 HOLD
+
+          receipt_email: booking.customerEmail,
+
+          metadata: {
+            bookingId: bookingId,
+            paymentType: "deposit"
+          }
+        });
+
+        return withCors(json({
+          clientSecret: paymentIntent.client_secret
+        }), corsHeaders);
+      }
+
+      /* ===============================
+         OUTSTANDING STRIPE SESSION
+      =============================== */
+
+      if (request.method === "GET" && url.pathname === "/api/outstanding-session") {
+
+        const bookingId = url.searchParams.get("bookingId");
+
+        if (!bookingId) {
+          return withCors(json({ error: "Missing bookingId" }, 400), corsHeaders);
+        }
+
+        // ===============================
+        // FIND BOOKING IN KV
+        // ===============================
+
+        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+        let booking = null;
+
+        for (const key of list.keys) {
+
+          const data = await env.BOOKINGS_KV.get(key.name);
+
+          if (!data) continue;
+
+          try {
+            const parsed = JSON.parse(data);
+
+            if (Array.isArray(parsed)) {
+              const found = parsed.find(b => b.id === bookingId);
+              if (found) {
+                booking = found;
+                break;
+              }
+            }
+
+          } catch { }
+        }
+
+        if (!booking) {
+          return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
+        }
+
+        // ===============================
+        // PREVENT DOUBLE PAYMENT
+        // ===============================
+
+        if (!booking.outstandingAmount || booking.outstandingAmount <= 0) {
+          return withCors(json({ error: "Nothing to pay" }, 400), corsHeaders);
+        }
+
+        // ===============================
+        // CREATE STRIPE SESSION
+        // ===============================
+
+        const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          mode: "payment",
+          customer_email: booking.customerEmail,
+
+          line_items: [
+            {
+              price_data: {
+                currency: "gbp",
+                product_data: {
+                  name: `Outstanding Balance – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
+                },
+                unit_amount: Math.round(booking.outstandingAmount * 100),
+              },
+              quantity: 1,
+            },
+          ],
+
+          // ✅ ADD THIS BLOCK
+          metadata: {
+            bookingId: bookingId,
+            paymentType: "outstanding"
+          },
+
+          success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${bookingId}`,
+          cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
+        });
+
+        return withCors(json({ url: session.url }), corsHeaders);
+      }
+
+      /* ===============================
+     CREATE / FIND CUSTOMER (FIXED SAFE)
   ================================ */
 
-  if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
-    return handleStripeWebhook(request, env);
-  }
+      if (url.pathname === "/api/customers" && request.method === "POST") {
 
-  const corsHeaders = buildCorsHeaders();
-
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
-
-  try {
-
-    /* ===============================
-       PRICING ENGINE
-    ================================ */
-
-    if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
-      const response = await handlePricingQuote(request);
-      return withCors(response, corsHeaders);
-    }
-
-    /* ===============================
-       STRIPE CHECKOUT SESSION
-    ================================ */
-
-    if (request.method === "POST" && url.pathname === "/api/bookings/create-checkout-session") {
-      const response = await handleCreateCheckoutSession(request, env);
-      return withCors(response, corsHeaders);
-    }
-
-    /* ===============================
-       LIST BOOKINGS
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/bookings/list") {
-      const response = await handleListBookings(request, env);
-      return withCors(response, corsHeaders);
-    }
-
-    /* ===============================
-       🔥 DEBUG — LAST BOOKING (NEW)
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/debug/last-booking") {
-
-      const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-      let latest = null;
-
-      for (const key of list.keys) {
-
-        const data = await env.BOOKINGS_KV.get(key.name);
-
-        if (!data) continue;
+        let body;
 
         try {
-          const parsed = JSON.parse(data);
+          body = await request.json();
+          console.log("📥 CUSTOMER BODY:", body);
+        } catch (err) {
+          return withCors(json({ error: "Invalid JSON" }, 400), corsHeaders);
+        }
 
-          if (Array.isArray(parsed) && parsed.length) {
-            latest = parsed[parsed.length - 1];
+        const name = body.full_name?.trim();
+        const email = body.email?.trim().toLowerCase() || null;
+        const mobile = body.mobile?.trim() || null;
+
+        if (!name) {
+          return withCors(json({ error: "Name required" }, 400), corsHeaders);
+        }
+
+        if (!email && !mobile) {
+          return withCors(json({ error: "Email or mobile required" }, 400), corsHeaders);
+        }
+
+        try {
+
+          /* ===============================
+             FIND EXISTING FIRST
+          =============================== */
+
+          const existing = await findCustomerByEmailOrMobile(env, email, mobile);
+
+          if (existing) {
+            console.log("👤 EXISTING CUSTOMER:", existing.id);
+
+            return withCors(json({
+              ok: true,
+              mode: "existing",
+              customer: existing
+            }), corsHeaders);
           }
 
-        } catch {}
-      }
+          /* ===============================
+             CREATE NEW CUSTOMER
+          =============================== */
 
-      return withCors(json({ latest }), corsHeaders);
-    }
+          const id = "cus_" + crypto.randomUUID();
+          const now = new Date().toISOString();
 
-    /* ===============================
-       BOOKING BY SESSION
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/bookings/by-session") {
-      return withCors(await handleBookingBySession(request, env), corsHeaders);
-    }
-
-    /* ===============================
-       AVAILABILITY API
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/availability") {
-      const response = await handleAvailability(request, env);
-      return withCors(response, corsHeaders);
-    }
-
-    /* ===============================
-       VEHICLE AVAILABILITY
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/vehicles/available") {
-      const response = await handleVehicleAvailability(request, env);
-      return withCors(response, corsHeaders);
-    }
-
-    /* ===============================
-       MONTH AVAILABILITY (CALENDAR)
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/availability/month") {
-      const response = await handleMonthAvailability(request, env);
-      return withCors(response, corsHeaders);
-    }
-
-    /* ===============================
-       CLEAR BOOKINGS (ADMIN)
-    ================================ */
-
-    if (request.method === "POST" && url.pathname === "/api/bookings/clear") {
-      const response = await handleClearBookings(env);
-      return withCors(response, corsHeaders);
-    }
-
-    /* ===============================
-       BOOKINGS VERSION
-    ================================ */
-
-    if (request.method === "GET" && url.pathname === "/api/bookings/version") {
-      const response = await handleBookingsVersion(env);
-      return withCors(response, corsHeaders);
-    }
-
-    /* ===============================
-   DEPOSIT STRIPE SESSION
-=============================== */
-
-if (request.method === "POST" && url.pathname === "/api/deposit-intent") {
-
-  const { bookingId } = await request.json();
-
-  if (!bookingId) {
-    return withCors(json({ error: "Missing bookingId" }, 400), corsHeaders);
-  }
-
-  // ===============================
-  // FIND BOOKING
-  // ===============================
-
-  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-  let booking = null;
-
-  for (const key of list.keys) {
-
-    const data = await env.BOOKINGS_KV.get(key.name);
-    if (!data) continue;
-
-    try {
-      const parsed = JSON.parse(data);
-
-      if (Array.isArray(parsed)) {
-        const found = parsed.find(b => b.id === bookingId);
-        if (found) {
-          booking = found;
-          break;
-        }
-      }
-
-    } catch {}
-  }
-
-  if (!booking) {
-    return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
-  }
-
-  // ✅ prevent double hold
-  if (booking.depositPaid) {
-    return withCors(json({ error: "Deposit already secured" }, 400), corsHeaders);
-  }
-
-  // ===============================
-  // CREATE PAYMENT INTENT (HOLD)
-  // ===============================
-
-  const stripe = new Stripe(env.STRIPE_SECRET_KEY);
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: 20000, // £200
-    currency: "gbp",
-
-    capture_method: "manual", // 🔥 HOLD
-
-    receipt_email: booking.customerEmail,
-
-    metadata: {
-      bookingId: bookingId,
-      paymentType: "deposit"
-    }
-  });
-
-  return withCors(json({
-    clientSecret: paymentIntent.client_secret
-  }), corsHeaders);
-}
-
-/* ===============================
-   OUTSTANDING STRIPE SESSION
-=============================== */
-
-if (request.method === "GET" && url.pathname === "/api/outstanding-session") {
-
-  const bookingId = url.searchParams.get("bookingId");
-
-  if (!bookingId) {
-    return withCors(json({ error: "Missing bookingId" }, 400), corsHeaders);
-  }
-
-  // ===============================
-  // FIND BOOKING IN KV
-  // ===============================
-
-  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-  let booking = null;
-
-  for (const key of list.keys) {
-
-    const data = await env.BOOKINGS_KV.get(key.name);
-
-    if (!data) continue;
-
-    try {
-      const parsed = JSON.parse(data);
-
-      if (Array.isArray(parsed)) {
-        const found = parsed.find(b => b.id === bookingId);
-        if (found) {
-          booking = found;
-          break;
-        }
-      }
-
-    } catch {}
-  }
-
-  if (!booking) {
-    return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
-  }
-
-  // ===============================
-  // PREVENT DOUBLE PAYMENT
-  // ===============================
-
-  if (!booking.outstandingAmount || booking.outstandingAmount <= 0) {
-    return withCors(json({ error: "Nothing to pay" }, 400), corsHeaders);
-  }
-
-  // ===============================
-  // CREATE STRIPE SESSION
-  // ===============================
-
-  const stripe = new Stripe(env.STRIPE_SECRET_KEY);
-
-  const session = await stripe.checkout.sessions.create({
-  payment_method_types: ["card"],
-  mode: "payment",
-  customer_email: booking.customerEmail,
-
-  line_items: [
-    {
-      price_data: {
-        currency: "gbp",
-        product_data: {
-          name: `Outstanding Balance – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
-        },
-        unit_amount: Math.round(booking.outstandingAmount * 100),
-      },
-      quantity: 1,
-    },
-  ],
-
-  // ✅ ADD THIS BLOCK
-  metadata: {
-    bookingId: bookingId,
-    paymentType: "outstanding"
-  },
-
- success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${bookingId}`,
-  cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
-});
-
-  return withCors(json({ url: session.url }), corsHeaders);
-}
-
-    /* ===============================
-   CREATE / FIND CUSTOMER (FIXED SAFE)
-================================ */
-
-if (url.pathname === "/api/customers" && request.method === "POST") {
-
-  let body;
-
-  try {
-    body = await request.json();
-    console.log("📥 CUSTOMER BODY:", body);
-  } catch (err) {
-    return withCors(json({ error: "Invalid JSON" }, 400), corsHeaders);
-  }
-
-  const name = body.full_name?.trim();
-  const email = body.email?.trim().toLowerCase() || null;
-  const mobile = body.mobile?.trim() || null;
-
-  if (!name) {
-    return withCors(json({ error: "Name required" }, 400), corsHeaders);
-  }
-
-  if (!email && !mobile) {
-    return withCors(json({ error: "Email or mobile required" }, 400), corsHeaders);
-  }
-
-  try {
-
-    /* ===============================
-       FIND EXISTING FIRST
-    =============================== */
-
-    const existing = await findCustomerByEmailOrMobile(env, email, mobile);
-
-    if (existing) {
-      console.log("👤 EXISTING CUSTOMER:", existing.id);
-
-      return withCors(json({
-        ok: true,
-        mode: "existing",
-        customer: existing
-      }), corsHeaders);
-    }
-
-    /* ===============================
-       CREATE NEW CUSTOMER
-    =============================== */
-
-    const id = "cus_" + crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    await env.DB.prepare(`
+          await env.DB.prepare(`
       INSERT INTO customers (
         id,
         full_name,
@@ -412,95 +412,95 @@ if (url.pathname === "/api/customers" && request.method === "POST") {
       )
       VALUES (?, ?, ?, ?, ?, ?)
     `)
-    .bind(
-      id,
-      name,
-      email,   // ✅ NULL safe
-      mobile,  // ✅ NULL safe
-      now,
-      now
-    )
-    .run();
+            .bind(
+              id,
+              name,
+              email,   // ✅ NULL safe
+              mobile,  // ✅ NULL safe
+              now,
+              now
+            )
+            .run();
 
-    console.log("✅ CUSTOMER CREATED:", id);
+          console.log("✅ CUSTOMER CREATED:", id);
 
-    const customer = await env.DB.prepare(
-      "SELECT * FROM customers WHERE id = ?"
-    ).bind(id).first();
+          const customer = await env.DB.prepare(
+            "SELECT * FROM customers WHERE id = ?"
+          ).bind(id).first();
 
-    return withCors(json({
-      ok: true,
-      mode: "created",
-      customer
-    }), corsHeaders);
+          return withCors(json({
+            ok: true,
+            mode: "created",
+            customer
+          }), corsHeaders);
 
-  } catch (err) {
+        } catch (err) {
 
-    console.error("❌ CUSTOMER CREATE ERROR:", err);
+          console.error("❌ CUSTOMER CREATE ERROR:", err);
 
-    return withCors(json({
-      error: "Customer creation failed",
-      detail: err.message
-    }, 500), corsHeaders);
-  }
-}
-
-/* ===============================
-   CUSTOMER LOOKUP (SAFE)
-================================ */
-
-if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
-
-  try {
-
-    const email = url.searchParams.get("email")?.trim().toLowerCase();
-    const mobile = url.searchParams.get("mobile")?.trim();
-
-    if (!email && !mobile) {
-      return withCors(json({ found:false }), corsHeaders);
-    }
-
-    const customer = await findCustomerByEmailOrMobile(env, email, mobile);
-
-    if (!customer) {
-      return withCors(json({ found:false }), corsHeaders);
-    }
-
-    return withCors(json({
-      found: true,
-      customer: {
-        id: customer.id,
-        full_name: customer.full_name,
-        email: customer.email,
-        mobile: customer.mobile,
-        hire_count: customer.hire_count || 0,
-        last_hire_at: customer.last_hire_at
+          return withCors(json({
+            error: "Customer creation failed",
+            detail: err.message
+          }, 500), corsHeaders);
+        }
       }
-    }), corsHeaders);
 
-  } catch (err) {
+      /* ===============================
+         CUSTOMER LOOKUP (SAFE)
+      ================================ */
 
-    console.error("❌ CUSTOMER LOOKUP ERROR:", err);
+      if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
 
-    return withCors(json({ found:false }), corsHeaders);
-  }
-}
+        try {
 
-/* ===============================
-   CUSTOMER BOOKING HISTORY (SAFE)
-================================ */
+          const email = url.searchParams.get("email")?.trim().toLowerCase();
+          const mobile = url.searchParams.get("mobile")?.trim();
 
-if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
+          if (!email && !mobile) {
+            return withCors(json({ found: false }), corsHeaders);
+          }
 
-  try {
+          const customer = await findCustomerByEmailOrMobile(env, email, mobile);
 
-    const customerId = url.searchParams.get("customer_id");
+          if (!customer) {
+            return withCors(json({ found: false }), corsHeaders);
+          }
 
-    if (!customerId) {
-      return withCors(json({ bookings: [] }), corsHeaders);
-    }
+          return withCors(json({
+            found: true,
+            customer: {
+              id: customer.id,
+              full_name: customer.full_name,
+              email: customer.email,
+              mobile: customer.mobile,
+              hire_count: customer.hire_count || 0,
+              last_hire_at: customer.last_hire_at
+            }
+          }), corsHeaders);
 
-    const result = await env.DB.prepare(`
+        } catch (err) {
+
+          console.error("❌ CUSTOMER LOOKUP ERROR:", err);
+
+          return withCors(json({ found: false }), corsHeaders);
+        }
+      }
+
+      /* ===============================
+         CUSTOMER BOOKING HISTORY (SAFE)
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
+
+        try {
+
+          const customerId = url.searchParams.get("customer_id");
+
+          if (!customerId) {
+            return withCors(json({ bookings: [] }), corsHeaders);
+          }
+
+          const result = await env.DB.prepare(`
       SELECT
         id,
         vehicle_id,
@@ -513,76 +513,76 @@ if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
       ORDER BY pickup_at DESC
       LIMIT 5
     `)
-    .bind(customerId)
-    .all();
+            .bind(customerId)
+            .all();
 
-    return withCors(json({
-      bookings: result.results || []
-    }), corsHeaders);
+          return withCors(json({
+            bookings: result.results || []
+          }), corsHeaders);
 
-  } catch (err) {
+        } catch (err) {
 
-    console.error("❌ CUSTOMER BOOKINGS ERROR:", err);
+          console.error("❌ CUSTOMER BOOKINGS ERROR:", err);
 
-    return withCors(json({ bookings: [] }), corsHeaders);
-  }
-}
+          return withCors(json({ bookings: [] }), corsHeaders);
+        }
+      }
 
-/* ===============================
-   FORM SUBMIT (NEW)
-================================ */
+      /* ===============================
+         FORM SUBMIT (NEW)
+      ================================ */
 
-if (request.method === "POST" && url.pathname === "/api/form-submit") {
-  try {
+      if (request.method === "POST" && url.pathname === "/api/form-submit") {
+        try {
 
-    const response = await handleFormSubmit(request, env);
-    return withCors(response, corsHeaders);
+          const response = await handleFormSubmit(request, env);
+          return withCors(response, corsHeaders);
 
-  } catch (err) {
+        } catch (err) {
 
-    console.error("❌ FORM ROUTE CRASH:", err);
+          console.error("❌ FORM ROUTE CRASH:", err);
 
-    return withCors(
-      json({ error: "Server error" }, 500),
-      corsHeaders
-    );
-  }
-}
+          return withCors(
+            json({ error: "Server error" }, 500),
+            corsHeaders
+          );
+        }
+      }
 
-if (request.method === "GET" && url.pathname === "/api/admin/form") {
-  const response = await handleAdminFormView(request, env);
-  return withCors(response, corsHeaders);
-}
+      if (request.method === "GET" && url.pathname === "/api/admin/form") {
+        const response = await handleAdminFormView(request, env);
+        return withCors(response, corsHeaders);
+      }
 
 
-/* ===============================
-   FALLBACK
-================================ */
+      /* ===============================
+         FALLBACK
+      ================================ */
 
-return withCors(json({ error: "Not found" }, 404), corsHeaders);
+      return withCors(json({ error: "Not found" }, 404), corsHeaders);
 
-} catch (error) {
+    } catch (error) {
 
-  console.error("❌ FETCH ERROR:", error);
+      console.error("❌ FETCH ERROR:", error);
 
-  return withCors(
-    json({
-      error: "Server error",
-      detail: error?.message || "Unknown error"
-    }, 500),
-    corsHeaders
-  );
-}
-},
+      return withCors(
+        json({
+          error: "Server error",
+          detail: error?.message || "Unknown error"
+        }, 500),
+        corsHeaders
+      );
+    }
+  },
 
   /* ===============================
      CRON JOB — RESERVATION CLEANUP
   ================================ */
 
   async scheduled(event, env, ctx) {
-  console.log("🧹 Running reservation cleanup");
-  ctx.waitUntil(cleanupExpiredReservations(env));
-}
+    console.log("🧹 Running reservation cleanup");
+    ctx.waitUntil(cleanupExpiredReservations(env));
+  }
 
 };
 
@@ -615,13 +615,13 @@ async function handlePricingQuote(request) {
   const payload = await request.json();
 
   const {
-  vehicleId,
-  durationDays,
-  pickupDate,
-  pickupTime,
-  discountCode,
-  extras = {}
-} = payload;
+    vehicleId,
+    durationDays,
+    pickupDate,
+    pickupTime,
+    discountCode,
+    extras = {}
+  } = payload;
 
   if (!vehicleId || !durationDays || !pickupDate || !pickupTime) {
     return json({ error: "Missing required pricing fields" }, 400);
@@ -629,41 +629,41 @@ async function handlePricingQuote(request) {
 
   const baseCost = calculateServerBaseCost(vehicleId, durationDays, pickupDate);
 
-const discount = resolveDiscount({
-  code: discountCode,
-  vehicleId,
-  durationDays,
-  baseCost
-});
+  const discount = resolveDiscount({
+    code: discountCode,
+    vehicleId,
+    durationDays,
+    baseCost
+  });
 
-if (discount.error) {
-  return json({ error: discount.error }, 400);
-}
+  if (discount.error) {
+    return json({ error: discount.error }, 400);
+  }
 
-const discountAmount = discount.discountAmount || 0;
+  const discountAmount = discount.discountAmount || 0;
 
-/* ===============================
-   🔥 ADD HERE (EXACT SPOT)
-================================ */
+  /* ===============================
+     🔥 ADD HERE (EXACT SPOT)
+  ================================ */
 
-const dartfordTotal = (extras.dartford || 0) * 4.2;
-const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
-const extrasTotal = dartfordTotal + earlyPickupTotal;
+  const dartfordTotal = (extras.dartford || 0) * 4.2;
+  const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
+  const extrasTotal = dartfordTotal + earlyPickupTotal;
 
-/* ===============================
-   TOTAL
-================================ */
+  /* ===============================
+     TOTAL
+  ================================ */
 
-const discountedTotal = Math.max(
-  0,
-  baseCost - discountAmount + extrasTotal
-);
-return json({
-  baseCost,
-  discountAmount,
-  extrasTotal,
-  total: discountedTotal
-});
+  const discountedTotal = Math.max(
+    0,
+    baseCost - discountAmount + extrasTotal
+  );
+  return json({
+    baseCost,
+    discountAmount,
+    extrasTotal,
+    total: discountedTotal
+  });
 }
 
 
@@ -1054,11 +1054,11 @@ function getDatesBetween(start, end) {
   const dates = [];
   const current = new Date(start);
 
-  current.setHours(0,0,0,0);
+  current.setHours(0, 0, 0, 0);
 
   while (current <= end) {
 
-    dates.push(current.toISOString().slice(0,10));
+    dates.push(current.toISOString().slice(0, 10));
 
     current.setDate(current.getDate() + 1);
 
@@ -1119,19 +1119,19 @@ async function handleStripeWebhook(request, env) {
       console.log("🔥 ENTERING TRY BLOCK");
       console.log("🔥 WEBHOOK START");
 
-     const session = event.data.object;
+      const session = event.data.object;
 
-// 🔥 ADD THIS BLOCK HERE (EXACT SPOT)
-if (!session.metadata?.bookingId) {
-  console.log("❌ Missing bookingId in metadata");
+      // 🔥 ADD THIS BLOCK HERE (EXACT SPOT)
+      if (!session.metadata?.bookingId) {
+        console.log("❌ Missing bookingId in metadata");
 
-  await env.BOOKINGS_KV.put(eventId, "processed");
+        await env.BOOKINGS_KV.put(eventId, "processed");
 
-  return new Response(
-    JSON.stringify({ error: "Missing bookingId in metadata" }),
-    { status: 400 }
-  );
-}
+        return new Response(
+          JSON.stringify({ error: "Missing bookingId in metadata" }),
+          { status: 400 }
+        );
+      }
 
 
 
@@ -1172,7 +1172,26 @@ if (!session.metadata?.bookingId) {
             if (String(b.id) === String(paymentBookingId)) {
 
               if (paymentType === "deposit") {
+
                 b.depositPaid = true;
+
+                // ✅ ALSO SAVE TO DATABASE (CRITICAL FIX)
+                try {
+
+                  await env.DB.prepare(`
+      UPDATE bookings
+      SET deposit_paid = 1,
+          updated_at = ?
+      WHERE id = ?
+    `)
+                    .bind(new Date().toISOString(), paymentBookingId)
+                    .run();
+
+                  console.log("✅ Deposit marked as paid in DB:", paymentBookingId);
+
+                } catch (err) {
+                  console.error("❌ Failed to update deposit in DB:", err);
+                }
               }
 
               if (paymentType === "outstanding") {
@@ -1471,12 +1490,12 @@ if (!session.metadata?.bookingId) {
             SET full_name = ?, updated_at = ?
             WHERE id = ?
           `)
-          .bind(
-            finalCustomerName,
-            new Date().toISOString(),
-            customer.id
-          )
-          .run();
+            .bind(
+              finalCustomerName,
+              new Date().toISOString(),
+              customer.id
+            )
+            .run();
 
           customer.full_name = booking.customerName;
         }
@@ -1491,15 +1510,15 @@ if (!session.metadata?.bookingId) {
               id, full_name, email, mobile, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?)
           `)
-          .bind(
-            customerId,
-            finalCustomerName || "Customer",
-            booking.customerEmail,
-            booking.customerMobile,
-            now,
-            now
-          )
-          .run();
+            .bind(
+              customerId,
+              finalCustomerName || "Customer",
+              booking.customerEmail,
+              booking.customerMobile,
+              now,
+              now
+            )
+            .run();
 
           customer = { id: customerId };
         }
@@ -1536,20 +1555,20 @@ if (!session.metadata?.bookingId) {
           )
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
-        .bind(
-          booking.id,
-          booking.customerId,
-          booking.vehicleId,
-          booking.pickupAt,
-          booking.dropoffAt,
-          booking.durationDays,
-          booking.hireTotal,
-          booking.confirmationFee,
-          booking.status,
-          booking.createdAt,
-          booking.createdAt
-        )
-        .run();
+          .bind(
+            booking.id,
+            booking.customerId,
+            booking.vehicleId,
+            booking.pickupAt,
+            booking.dropoffAt,
+            booking.durationDays,
+            booking.hireTotal,
+            booking.confirmationFee,
+            booking.status,
+            booking.createdAt,
+            booking.createdAt
+          )
+          .run();
 
         console.log("✅ DB SAVED");
 
@@ -1573,12 +1592,12 @@ if (!session.metadata?.bookingId) {
               updated_at = ?
             WHERE id = ?
           `)
-          .bind(
-            booking.pickupAt,
-            new Date().toISOString(),
-            booking.customerId
-          )
-          .run();
+            .bind(
+              booking.pickupAt,
+              new Date().toISOString(),
+              booking.customerId
+            )
+            .run();
 
           console.log("📈 Customer stats updated");
         }
@@ -1604,8 +1623,8 @@ if (!session.metadata?.bookingId) {
             ORDER BY pickup_at DESC
             LIMIT 2
           `)
-          .bind(booking.customerId)
-          .all();
+            .bind(booking.customerId)
+            .all();
 
           const rows = result.results || [];
           const previousBooking = rows[1];
@@ -1691,7 +1710,7 @@ if (!session.metadata?.bookingId) {
             existingMonthBookings = [];
           }
         }
-      } catch {}
+      } catch { }
 
       existingMonthBookings.push(booking);
 
@@ -1935,17 +1954,17 @@ async function handleListBookings(request, env) {
 
   const months = [];
 
-const current = new Date(from);
-current.setDate(1);
+  const current = new Date(from);
+  current.setDate(1);
 
-while (current <= to) {
+  while (current <= to) {
 
-  const monthKey = current.toISOString().slice(0,7);
-  months.push(monthKey);
+    const monthKey = current.toISOString().slice(0, 7);
+    months.push(monthKey);
 
-  current.setMonth(current.getMonth() + 1);
+    current.setMonth(current.getMonth() + 1);
 
-}
+  }
 
   let bookings = [];
 
@@ -1961,7 +1980,7 @@ while (current <= to) {
 
       bookings = bookings.concat(parsed);
 
-    } catch {}
+    } catch { }
 
   }
 
@@ -1979,19 +1998,19 @@ while (current <= to) {
 
     for (const key of list.keys) {
 
-  const parts = key.name.split(":");
+      const parts = key.name.split(":");
 
-  if (parts.length >= 3) {
+      if (parts.length >= 3) {
 
-    reservations.push({
-      vehicleId: parts[1],
-      date: parts[2],
-      slot: parts[3] || "full"
-    });
+        reservations.push({
+          vehicleId: parts[1],
+          date: parts[2],
+          slot: parts[3] || "full"
+        });
 
-  }
+      }
 
-}
+    }
 
   } catch (err) {
 
@@ -2001,23 +2020,23 @@ while (current <= to) {
 
   const transformedBookings = bookings.map(booking => {
 
-  const extras = booking.extras || null;
+    const extras = booking.extras || null;
 
-  return {
-    ...booking,
+    return {
+      ...booking,
 
-    // always safe number
-    extrasTotal: Number(booking.extrasTotal || 0),
+      // always safe number
+      extrasTotal: Number(booking.extrasTotal || 0),
 
-    // parsed object for frontend
-    extras
-  };
-});
+      // parsed object for frontend
+      extras
+    };
+  });
 
-return json({
-  bookings: transformedBookings,
-  reservations
-});
+  return json({
+    bookings: transformedBookings,
+    reservations
+  });
 
 }
 
@@ -2059,9 +2078,9 @@ async function handleBookingBySession(request, env) {
 
   async function getRequiredFormType(env, customerId, pickupAt) {
 
-  if (!customerId) return "long";
+    if (!customerId) return "long";
 
-  const rows = await env.DB.prepare(`
+    const rows = await env.DB.prepare(`
     SELECT pickup_at
     FROM bookings
     WHERE customer_id = ?
@@ -2069,18 +2088,18 @@ async function handleBookingBySession(request, env) {
     LIMIT 2
   `).bind(customerId).all();
 
-  const bookings = rows?.results || [];
+    const bookings = rows?.results || [];
 
-  // first booking ever
-  if (bookings.length < 2) return "long";
+    // first booking ever
+    if (bookings.length < 2) return "long";
 
-  const previous = new Date(bookings[1].pickup_at);
-  const current = new Date(pickupAt);
+    const previous = new Date(bookings[1].pickup_at);
+    const current = new Date(pickupAt);
 
-  const diffDays = (current - previous) / (1000 * 60 * 60 * 24);
+    const diffDays = (current - previous) / (1000 * 60 * 60 * 24);
 
-  return diffDays <= 90 ? "short" : "long";
-}
+    return diffDays <= 90 ? "short" : "long";
+  }
 
   function cleanIso(value) {
     if (!value || typeof value !== "string") return value;
@@ -2220,18 +2239,18 @@ async function handleAvailability(request, env) {
           new Date(booking.dropoffAt)
         );
 
-     const slot = getSlotFromBooking(booking);
+        const slot = getSlotFromBooking(booking);
 
-for (const d of dates) {
-  availability.push({
-    vehicleId: booking.vehicleId,
-    date: d,
-    slot,
-    status: "booked"
-  });
-}
+        for (const d of dates) {
+          availability.push({
+            vehicleId: booking.vehicleId,
+            date: d,
+            slot,
+            status: "booked"
+          });
+        }
       }
-    } catch {}
+    } catch { }
   }
 
   /* ===============================
@@ -2315,7 +2334,7 @@ async function handleVehicleAvailability(request, env) {
       if (Array.isArray(parsed)) {
         bookings.push(...parsed);
       }
-    } catch {}
+    } catch { }
   }
 
   const result = [];
@@ -2491,7 +2510,7 @@ async function handleMonthAvailability(request, env) {
 
   while (current <= end) {
 
-    const date = current.toISOString().slice(0,10);
+    const date = current.toISOString().slice(0, 10);
 
     const booked = new Set();
     const reserved = new Set();
@@ -2547,7 +2566,7 @@ async function handleMonthAvailability(request, env) {
 }
 
 
-  async function handleBookingsVersion(env) {
+async function handleBookingsVersion(env) {
 
   const version = await env.BOOKINGS_KV.get("bookings:version");
 
@@ -2808,7 +2827,7 @@ async function handleFormSubmit(request, env) {
           break;
         }
 
-      } catch {}
+      } catch { }
     }
 
     if (!booking) {
@@ -2894,20 +2913,20 @@ async function handleFormSubmit(request, env) {
         signature_data = excluded.signature_data,
         updated_at = excluded.updated_at
     `)
-    .bind(
-      formId,
-      bookingId,
-      formType,
-      booking.customerId || null,
-      customerName,
-      customerEmail,
-      customerMobile,
-      JSON.stringify(cleaned),
-      signatureData,
-      now,
-      now
-    )
-    .run();
+      .bind(
+        formId,
+        bookingId,
+        formType,
+        booking.customerId || null,
+        customerName,
+        customerEmail,
+        customerMobile,
+        JSON.stringify(cleaned),
+        signatureData,
+        now,
+        now
+      )
+      .run();
 
     /* ===============================
        UPDATE BOOKING IN KV
@@ -2943,8 +2962,8 @@ async function handleFormSubmit(request, env) {
           updated_at = ?
         WHERE id = ?
       `)
-      .bind(now, bookingId)
-      .run();
+        .bind(now, bookingId)
+        .run();
 
     } catch (err) {
       console.warn("⚠️ bookings table update skipped:", err.message);
@@ -2999,8 +3018,8 @@ async function handleAdminFormView(request, env) {
       WHERE booking_id = ?
       LIMIT 1
     `)
-    .bind(bookingId)
-    .first();
+      .bind(bookingId)
+      .first();
 
     if (!row) {
       return json({ found: false }, 404);
