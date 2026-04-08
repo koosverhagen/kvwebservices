@@ -583,6 +583,70 @@
       }
 
     }
+
+    /* ===============================
+   CONTACT BUTTONS
+=============================== */
+
+    .contact-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .contact-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      width: 30px;
+      height: 30px;
+
+      border-radius: 8px;
+      border: 1px solid var(--line);
+
+      background: #fff;
+      text-decoration: none;
+      font-size: 14px;
+
+      transition: all 0.15s ease;
+    }
+
+    .contact-btn:hover {
+      background: var(--soft);
+      transform: translateY(-1px);
+    }
+
+    .contact-call {
+      color: var(--ok);
+    }
+
+    .contact-email {
+      color: var(--accent);
+    }
+
+    .contact-whatsapp {
+      color: #25D366;
+    }
+
+    /* ===============================
+   WHATSAPP ACTION BUTTONS
+=============================== */
+
+    .wa-form {
+      color: #2563eb;
+      /* blue */
+    }
+
+    .wa-deposit {
+      color: #16a34a;
+      /* green */
+    }
+
+    .wa-outstanding {
+      color: #b45309;
+      /* orange */
+    }
   </style>
 
   <link rel="icon" href="images/favicon.png">
@@ -647,7 +711,15 @@
               Clear filters
             </button>
           </div>
+        </div>
 
+        <!-- ===============================
+         BULK WHATSAPP ACTIONS (NEW)
+    =============================== -->
+        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn ghost" id="bulk-form-btn">Send Form Links</button>
+          <button class="btn ghost" id="bulk-deposit-btn">Send Deposit Links</button>
+          <button class="btn ghost" id="bulk-outstanding-btn">Send Outstanding</button>
         </div>
 
         <div class="meta-row">
@@ -674,6 +746,9 @@
         <table>
           <thead>
             <tr>
+              <th>
+                <input type="checkbox" id="select-all">
+              </th>
               <th>Customer</th>
               <th>Vehicle</th>
               <th>Pickup</th>
@@ -752,10 +827,140 @@
     const modalFields = document.getElementById("modal-form-fields");
     const modalSignature = document.getElementById("modal-signature");
 
+
     let allBookings = [];
     let filteredBookings = [];
+    let selectedBookingIds = new Set();
 
+    function buildContactButtons(booking) {
 
+      let phone = booking.customerMobile || "";
+      const email = booking.customerEmail || "";
+      const name = booking.customerName || "there";
+      const bookingId = booking.id || "";
+
+      /* ===============================
+         FORMAT UK NUMBER
+      =============================== */
+
+      let whatsapp = "";
+
+      if (phone) {
+        let cleaned = phone.replace(/\s+/g, "");
+
+        if (cleaned.startsWith("07")) {
+          cleaned = "44" + cleaned.slice(1);
+        }
+
+        if (cleaned.startsWith("44")) {
+          whatsapp = cleaned;
+        }
+      }
+
+      /* ===============================
+         LINKS
+      =============================== */
+
+      const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+      const formType =
+        booking.requiredFormType ||
+        booking.required_form_type ||
+        "long";
+
+      const formPath = formType === "short"
+        ? "/forms/short-form.html"
+        : "/forms/long-form.html";
+
+      const formLink = `${BASE}${formPath}?bookingId=${bookingId}`;
+      const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
+      const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
+
+      /* ===============================
+         WHATSAPP MESSAGES
+      =============================== */
+
+      const msgForm = encodeURIComponent(
+        `Hi ${name},
+
+Please complete your required ${formType.toUpperCase()} form for your booking.
+
+Booking reference: ${shortRef(bookingId)}
+
+👉 ${formLink}
+
+Thank you,
+Equine Transport UK`
+      );
+
+      const msgDeposit = encodeURIComponent(
+        `Hi ${name},
+
+Please complete your £200 security deposit hold for your booking.
+
+Booking reference: ${shortRef(bookingId)}
+
+👉 ${depositLink}
+
+This is a card authorisation only.
+
+Thank you,
+Equine Transport UK`
+      );
+
+      const msgOutstanding = encodeURIComponent(
+        `Hi ${name},
+
+Your outstanding balance is now ready to be paid.
+
+Booking reference: ${shortRef(bookingId)}
+
+👉 ${outstandingLink}
+
+Thank you,
+Equine Transport UK`
+      );
+
+      /* ===============================
+         BUTTONS
+      =============================== */
+
+      const phoneBtn = phone
+        ? `<a href="tel:${phone}" class="contact-btn contact-call" title="Call ${phone}">📞</a>`
+        : "";
+
+      const emailBtn = email
+        ? `<a href="mailto:${email}" class="contact-btn contact-email" title="Email ${email}">✉️</a>`
+        : "";
+
+      const waBase = whatsapp
+        ? `https://wa.me/${whatsapp}`
+        : "";
+
+      const waFormBtn = whatsapp
+        ? `<a href="${waBase}?text=${msgForm}" target="_blank" class="contact-btn wa-form" title="Send form link">📄</a>`
+        : "";
+
+      const waDepositBtn = whatsapp
+        ? `<a href="${waBase}?text=${msgDeposit}" target="_blank" class="contact-btn wa-deposit" title="Send deposit link">🔒</a>`
+        : "";
+
+      const waOutstandingBtn = whatsapp
+        ? `<a href="${waBase}?text=${msgOutstanding}" target="_blank" class="contact-btn wa-outstanding" title="Send outstanding link">💰</a>`
+        : "";
+
+      if (!phoneBtn && !emailBtn && !waFormBtn && !waDepositBtn && !waOutstandingBtn) return "";
+
+      return `
+    <div class="contact-actions">
+      ${phoneBtn}
+      ${waFormBtn}
+      ${waDepositBtn}
+      ${waOutstandingBtn}
+      ${emailBtn}
+    </div>
+  `;
+    }
 
     function pad(n) {
       return String(n).padStart(2, "0");
@@ -1004,21 +1209,32 @@
 
       bookingsBody.innerHTML = filteredBookings.map((booking) => `
    <tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
+  
+<td data-label="Select">
+  <input 
+    type="checkbox" 
+    class="row-select"
+    data-id="${escapeHtml(booking.id || "")}"
+    ${selectedBookingIds.has(booking.id) ? "checked" : ""}
+  >
+</td>
 
   <td data-label="Customer">
-    <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
+  <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
 
-    <span 
-      class="tiny booking-id"
-      data-id="${escapeHtml(booking.id || "")}"
-      title="Click to copy full booking reference"
-    >
-      Ref: ${escapeHtml(shortRef(booking.id))}
-    </span>
+  <span 
+    class="tiny booking-id"
+    data-id="${escapeHtml(booking.id || "")}"
+    title="Click to copy full booking reference"
+  >
+    Ref: ${escapeHtml(shortRef(booking.id))}
+  </span>
 
-    <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
-    <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
-  </td>
+  <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
+  <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
+
+  ${buildContactButtons(booking)}
+</td>
 
   <td data-label="Vehicle">
     <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
@@ -1143,6 +1359,73 @@
       clearFiltersBtn.style.display = hasFilters ? "block" : "none";
     }
 
+    function sendBulkWhatsApp(type) {
+
+      const selected = filteredBookings.filter(b =>
+        selectedBookingIds.has(b.id)
+      );
+
+      if (!selected.length) {
+        alert("Select at least one booking");
+        return;
+      }
+
+      selected.forEach((booking, index) => {
+
+        let phone = booking.customerMobile || "";
+        if (!phone) return;
+
+        let cleaned = phone.replace(/\s+/g, "");
+
+        if (cleaned.startsWith("07")) {
+          cleaned = "44" + cleaned.slice(1);
+        }
+
+        if (!cleaned.startsWith("44")) return;
+
+        const base = "https://wa.me/" + cleaned;
+        const name = booking.customerName || "there";
+        const id = booking.id || "";
+
+        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+        const formType =
+          booking.requiredFormType ||
+          booking.required_form_type ||
+          "long";
+
+        const formPath = formType === "short"
+          ? "/forms/short-form.html"
+          : "/forms/long-form.html";
+
+        const formLink = `${BASE}${formPath}?bookingId=${id}`;
+        const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
+        const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
+
+        let text = "";
+
+        if (type === "form") {
+          text = `Hi ${name}, please complete your ${formType} form:\n${formLink}`;
+        }
+
+        if (type === "deposit") {
+          text = `Hi ${name}, please complete your £200 deposit:\n${depositLink}`;
+        }
+
+        if (type === "outstanding") {
+          text = `Hi ${name}, your outstanding balance:\n${outstandingLink}`;
+        }
+
+        const url = base + "?text=" + encodeURIComponent(text);
+
+        setTimeout(() => {
+          window.open(url, "_blank");
+        }, index * 400); // stagger open (prevents popup blocking)
+
+      });
+
+    }
+
     searchInput.addEventListener("input", updateClearButton);
     statusFilter.addEventListener("change", updateClearButton);
 
@@ -1181,6 +1464,38 @@
       } catch (err) {
         console.warn("Copy failed", err);
       }
+    });
+
+    document.addEventListener("change", (e) => {
+
+      // individual checkbox
+      if (e.target.classList.contains("row-select")) {
+        const id = e.target.getAttribute("data-id");
+
+        if (e.target.checked) {
+          selectedBookingIds.add(id);
+        } else {
+          selectedBookingIds.delete(id);
+        }
+      }
+
+      // select all
+      if (e.target.id === "select-all") {
+        const checked = e.target.checked;
+
+        document.querySelectorAll(".row-select").forEach(cb => {
+          cb.checked = checked;
+
+          const id = cb.getAttribute("data-id");
+
+          if (checked) {
+            selectedBookingIds.add(id);
+          } else {
+            selectedBookingIds.delete(id);
+          }
+        });
+      }
+
     });
 
     const clearFiltersBtn = document.getElementById("clear-filters-btn");
@@ -1357,6 +1672,14 @@
     statusFilter.addEventListener("change", renderBookings);
     rangeFromInput.addEventListener("change", loadBookings);
     rangeToInput.addEventListener("change", loadBookings);
+
+    // ===============================
+    // BULK WHATSAPP BUTTON HANDLERS
+    // ===============================
+
+    document.getElementById("bulk-form-btn").onclick = () => sendBulkWhatsApp("form");
+    document.getElementById("bulk-deposit-btn").onclick = () => sendBulkWhatsApp("deposit");
+    document.getElementById("bulk-outstanding-btn").onclick = () => sendBulkWhatsApp("outstanding");
 
     defaultRanges();
     loadBookings();
