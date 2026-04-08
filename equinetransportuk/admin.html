@@ -1005,12 +1005,7 @@
       bookingsBody.innerHTML = filteredBookings.map((booking) => `
     <tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
 
-  <td data-label="Customer">
-    <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
-    <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
-    <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
-    <span class="tiny">Ref: ${shortRef(booking.id)}</span>
-  </td>
+<span class="tiny">Ref: ${shortRef(booking.id)}</span>
 
   <td data-label="Vehicle">
     <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
@@ -1160,14 +1155,13 @@
       try {
         await navigator.clipboard.writeText(id);
 
-        // 🔥 feedback
         const original = el.textContent;
-        el.textContent = "Copied ✓";
 
+        el.textContent = "Copied ✓";
         el.classList.add("copied");
 
         setTimeout(() => {
-          el.textContent = truncateBookingId(id);
+          el.textContent = "Ref: " + shortRef(id);
           el.classList.remove("copied");
         }, 1200);
 
