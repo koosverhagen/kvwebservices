@@ -1191,6 +1191,81 @@ async function handleStripeWebhook(request, env) {
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
+  /* ===============================
+   DEPOSIT HOLD (FINAL FINAL FIX)
+================================ */
+
+  if (event.type === "payment_intent.amount_capturable_updated") {
+
+    console.log("💳 DEPOSIT HOLD EVENT");
+
+    const paymentIntent = event.data.object;
+
+    const bookingId = paymentIntent.metadata?.bookingId;
+    const paymentType = paymentIntent.metadata?.paymentType;
+
+    console.log("🧪 METADATA:", paymentIntent.metadata);
+
+    if (!bookingId || paymentType !== "deposit") {
+      console.log("⚠️ Not a deposit");
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
+
+    console.log("🔥 DEPOSIT HOLD CONFIRMED:", bookingId);
+
+    try {
+
+      // ✅ UPDATE DB
+      await env.DB.prepare(`
+      UPDATE bookings
+      SET deposit_paid = 1,
+          updated_at = ?
+      WHERE id = ?
+    `)
+        .bind(new Date().toISOString(), bookingId)
+        .run();
+
+      console.log("✅ Deposit marked in DB");
+
+    } catch (err) {
+      console.error("❌ DB update failed:", err);
+    }
+
+    // ✅ UPDATE KV
+    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+    for (const key of list.keys) {
+
+      const data = await env.BOOKINGS_KV.get(key.name);
+      if (!data) continue;
+
+      try {
+
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed)) continue;
+
+        let updated = false;
+
+        for (const b of parsed) {
+          if (String(b.id) === String(bookingId)) {
+            b.depositPaid = true;
+            b.updatedAt = new Date().toISOString();
+            updated = true;
+          }
+        }
+
+        if (updated) {
+          await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
+          console.log("✅ Deposit updated in KV");
+          break;
+        }
+
+      } catch { }
+    }
+
+    return new Response(JSON.stringify({ received: true }), { status: 200 });
+  }
+
   if (event.type === "checkout.session.completed") {
 
     console.log("🔥 CHECKOUT SESSION COMPLETED EVENT");
