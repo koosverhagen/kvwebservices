@@ -1003,9 +1003,22 @@
       }
 
       bookingsBody.innerHTML = filteredBookings.map((booking) => `
-    <tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
+   <tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
 
-<span class="tiny">Ref: ${shortRef(booking.id)}</span>
+  <td data-label="Customer">
+    <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
+
+    <span 
+      class="tiny booking-id"
+      data-id="${escapeHtml(booking.id || "")}"
+      title="Click to copy full booking reference"
+    >
+      Ref: ${escapeHtml(shortRef(booking.id))}
+    </span>
+
+    <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
+    <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
+  </td>
 
   <td data-label="Vehicle">
     <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
