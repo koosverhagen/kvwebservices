@@ -1149,22 +1149,26 @@ Equine Transport UK`;
 
       const waDeposit = phone
         ? `<button 
-          class="pill action warn js-wa"
-          data-phone="${phone}"
-          data-msg="${encodeURIComponent(msgDeposit)}"
-       >
-          Deposit not secured
-       </button>`
+        class="pill action warn js-wa"
+        data-phone="${phone}"
+        data-type="deposit"
+        data-name="${firstName}"
+        data-id="${id}"
+     >
+        Deposit not secured
+     </button>`
         : `<span class="pill warn">Deposit not secured</span>`;
 
       const waOutstanding = phone
         ? `<button 
-          class="pill action warn js-wa"
-          data-phone="${phone}"
-          data-msg="${encodeURIComponent(msgOutstanding)}"
-       >
-          Outstanding open
-       </button>`
+        class="pill action warn js-wa"
+        data-phone="${phone}"
+        data-type="outstanding"
+        data-name="${firstName}"
+        data-id="${id}"
+     >
+        Outstanding open
+     </button>`
         : `<span class="pill warn">Outstanding open</span>`;
 
       return `
@@ -1512,24 +1516,51 @@ Equine Transport UK`
       if (waBtn) {
 
         const phone = waBtn.getAttribute("data-phone");
-        const msg = waBtn.getAttribute("data-msg");
+        const type = waBtn.getAttribute("data-type");
+        const name = waBtn.getAttribute("data-name");
+        const id = waBtn.getAttribute("data-id");
 
-        if (!phone || !msg) return;
+        if (!phone || !type) return;
 
         let cleaned = phone.replace(/\s+/g, "");
-
-        if (cleaned.startsWith("07")) {
-          cleaned = "44" + cleaned.slice(1);
-        }
-
+        if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
         if (!cleaned.startsWith("44")) return;
 
-        const url = "https://wa.me/" + cleaned + "?text=" + msg;
+        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+        let text = "";
+
+        if (type === "deposit") {
+          text = `Dear ${name},
+
+Please complete your £200 security deposit for your booking.
+
+${BASE}/pay-deposit.html?bookingId=${id}
+
+This is a card authorisation only.
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`;
+        }
+
+        if (type === "outstanding") {
+          text = `Dear ${name},
+
+Your outstanding balance is now ready to be paid.
+
+${BASE}/pay-outstanding.html?bookingId=${id}
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`;
+        }
+
+        const url = "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
 
         window.open(url, "_blank");
         return;
       }
-
       /* ===============================
          🔒 IGNORE NORMAL BUTTONS/LINKS
       =============================== */
