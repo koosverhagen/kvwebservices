@@ -663,9 +663,12 @@
 
 
     .bookings-table td[data-label="Payment"] {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+      white-space: normal;
+    }
+
+    .bookings-table td[data-label="Payment"] .pill {
+      display: inline-block;
+      margin-bottom: 4px;
     }
 
 
@@ -1174,19 +1177,61 @@ Equine Transport UK`
     }
 
     function formHtml(booking) {
+
       const complete = isFormComplete(booking);
       const requiredType = getRequiredFormType(booking);
 
-      let pills = complete
-        ? '<span class="pill ok">Form submitted</span>'
-        : '<span class="pill bad">Form missing</span>';
+      const firstName = getFirstName(getCustomerName(booking));
+      const id = booking.id || "";
 
+      let phone = booking.customerMobile || "";
+      let whatsapp = "";
+
+      if (phone) {
+        let cleaned = phone.replace(/\s+/g, "");
+        if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
+        if (cleaned.startsWith("44")) whatsapp = cleaned;
+      }
+
+      const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+      const formPath = requiredType === "short"
+        ? "/forms/short-form.html"
+        : "/forms/long-form.html";
+
+      const formLink = `${BASE}${formPath}?bookingId=${id}`;
+
+      const msgForm = encodeURIComponent(
+        `Dear ${firstName},
+
+Please complete your ${requiredType?.toUpperCase() || "required"} form for your booking.
+
+${formLink}
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`
+      );
+
+      let pills = "";
+
+      // ✅ FORM STATUS
+      if (complete) {
+        pills += '<span class="pill ok">Form submitted</span>';
+      } else {
+        pills += whatsapp
+          ? `<a href="https://wa.me/${whatsapp}?text=${msgForm}" target="_blank" class="pill action bad">Form missing</a>`
+          : `<span class="pill bad">Form missing</span>`;
+      }
+
+      // ✅ REQUIRED TYPE
       if (requiredType === "short") {
         pills += '<span class="pill neutral">Short required</span>';
       } else if (requiredType === "long") {
         pills += '<span class="pill neutral">Long required</span>';
       }
 
+      // ✅ SUBMITTED DATE
       if (booking?.formSubmittedAt) {
         pills += `<div class="tiny">Submitted: ${escapeHtml(formatDateTime(booking.formSubmittedAt))}</div>`;
       }
