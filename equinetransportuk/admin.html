@@ -1119,24 +1119,13 @@ Equine Transport UK`
       const id = booking.id || "";
 
       let phone = booking.customerMobile || "";
-      let whatsapp = "";
-
-      if (phone) {
-        let cleaned = phone.replace(/\s+/g, "");
-        if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
-        if (cleaned.startsWith("44")) whatsapp = cleaned;
-      }
 
       const BASE = "https://kvwebservices.co.uk/equinetransportuk";
 
       const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
       const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
 
-      /* ===============================
-         RAW (NOT encoded yet)
-      =============================== */
-
-      const msgDepositRaw = `Dear ${firstName},
+      const msgDeposit = `Dear ${firstName},
 
 Please complete your £200 security deposit for your booking.
 
@@ -1148,7 +1137,7 @@ Kind regards,
 Koos & Avril  
 Equine Transport UK`;
 
-      const msgOutstandingRaw = `Dear ${firstName},
+      const msgOutstanding = `Dear ${firstName},
 
 Your outstanding balance is now ready to be paid.
 
@@ -1158,23 +1147,21 @@ Kind regards,
 Koos & Avril  
 Equine Transport UK`;
 
-      /* ===============================
-         BUTTONS (JS SAFE)
-      =============================== */
-
-      const waDeposit = whatsapp
+      const waDeposit = phone
         ? `<button 
-          class="pill action warn"
-          onclick="openWhatsApp('${phone}', \`${msgDepositRaw}\`)"
+          class="pill action warn js-wa"
+          data-phone="${phone}"
+          data-msg="${encodeURIComponent(msgDeposit)}"
        >
           Deposit not secured
        </button>`
         : `<span class="pill warn">Deposit not secured</span>`;
 
-      const waOutstanding = whatsapp
+      const waOutstanding = phone
         ? `<button 
-          class="pill action warn"
-          onclick="openWhatsApp('${phone}', \`${msgOutstandingRaw}\`)"
+          class="pill action warn js-wa"
+          data-phone="${phone}"
+          data-msg="${encodeURIComponent(msgOutstanding)}"
        >
           Outstanding open
        </button>`
@@ -1517,8 +1504,41 @@ Equine Transport UK`
 
     document.addEventListener("click", async (e) => {
 
-      // 🔥 IMPORTANT: ignore clicks on links/buttons
+      /* ===============================
+         ✅ WHATSAPP BUTTONS FIRST
+      =============================== */
+
+      const waBtn = e.target.closest(".js-wa");
+      if (waBtn) {
+
+        const phone = waBtn.getAttribute("data-phone");
+        const msg = waBtn.getAttribute("data-msg");
+
+        if (!phone || !msg) return;
+
+        let cleaned = phone.replace(/\s+/g, "");
+
+        if (cleaned.startsWith("07")) {
+          cleaned = "44" + cleaned.slice(1);
+        }
+
+        if (!cleaned.startsWith("44")) return;
+
+        const url = "https://wa.me/" + cleaned + "?text=" + msg;
+
+        window.open(url, "_blank");
+        return;
+      }
+
+      /* ===============================
+         🔒 IGNORE NORMAL BUTTONS/LINKS
+      =============================== */
+
       if (e.target.closest("a, button")) return;
+
+      /* ===============================
+         📋 COPY BOOKING ID
+      =============================== */
 
       const el = e.target.closest(".booking-id");
       if (!el) return;
