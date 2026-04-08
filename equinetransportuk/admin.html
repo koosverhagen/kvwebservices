@@ -1790,9 +1790,21 @@ Equine Transport UK`;
     // BULK WHATSAPP BUTTON HANDLERS
     // ===============================
 
-    document.getElementById("bulk-form-btn").onclick = () => sendBulkWhatsApp("form");
-    document.getElementById("bulk-deposit-btn").onclick = () => sendBulkWhatsApp("deposit");
-    document.getElementById("bulk-outstanding-btn").onclick = () => sendBulkWhatsApp("outstanding");
+    const bulkFormBtn = document.getElementById("bulk-form-btn");
+    const bulkDepositBtn = document.getElementById("bulk-deposit-btn");
+    const bulkOutstandingBtn = document.getElementById("bulk-outstanding-btn");
+
+    if (bulkFormBtn) {
+      bulkFormBtn.onclick = () => sendBulkWhatsApp("form");
+    }
+
+    if (bulkDepositBtn) {
+      bulkDepositBtn.onclick = () => sendBulkWhatsApp("deposit");
+    }
+
+    if (bulkOutstandingBtn) {
+      bulkOutstandingBtn.onclick = () => sendBulkWhatsApp("outstanding");
+    }
 
     defaultRanges();
     loadBookings();
