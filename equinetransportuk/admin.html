@@ -872,7 +872,7 @@
       let whatsapp = "";
 
       if (phone) {
-        let cleaned = phone.replace(/\s+/g, "");
+        let cleaned = normaliseUKPhone(phone);
 
         if (cleaned.startsWith("07")) {
           cleaned = "44" + cleaned.slice(1);
@@ -1581,7 +1581,34 @@ Equine Transport UK`;
       clearFiltersBtn.style.display = hasFilters ? "block" : "none";
     }
 
+    function normaliseUKPhone(phone) {
+      if (!phone) return "";
 
+      let cleaned = String(phone)
+        .trim()
+        .replace(/\s+/g, "")   // remove spaces
+        .replace(/[^\d+]/g, "") // remove weird chars
+        .replace(/^\+/, "");   // remove leading +
+
+      // Convert 07 → 44
+      if (cleaned.startsWith("07")) {
+        cleaned = "44" + cleaned.slice(1);
+      }
+
+      // Already correct
+      if (cleaned.startsWith("44")) {
+        return cleaned;
+      }
+
+      return ""; // invalid
+    }
+
+    function formatUKDisplay(phone) {
+      const cleaned = normaliseUKPhone(phone);
+      if (!cleaned) return phone || "—";
+
+      return "0" + cleaned.slice(2);
+    }
 
     searchInput.addEventListener("input", updateClearButton);
     statusFilter.addEventListener("change", updateClearButton);
@@ -1626,10 +1653,9 @@ Equine Transport UK`;
           return;
         }
 
-        let cleaned = phone.replace(/\s+/g, "");
-        if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
+        const cleaned = normaliseUKPhone(phone);
 
-        if (!cleaned.startsWith("44")) {
+        if (!cleaned) {
           console.warn("Invalid phone:", phone);
           return;
         }
