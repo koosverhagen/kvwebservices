@@ -1324,7 +1324,64 @@ Equine Transport UK`
       window.open(url, "_blank");
     }
 
+    function attachWhatsAppHandlers() {
+
+      document.querySelectorAll(".js-wa").forEach(btn => {
+
+        btn.onclick = () => {
+
+          const phone = btn.getAttribute("data-phone");
+          const type = btn.getAttribute("data-type");
+          const name = btn.getAttribute("data-name");
+          const id = btn.getAttribute("data-id");
+
+          if (!phone || !type) return;
+
+          let cleaned = phone.replace(/\s+/g, "");
+          if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
+          if (!cleaned.startsWith("44")) return;
+
+          const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+          let text = "";
+
+          if (type === "deposit") {
+            text = `Dear ${name},
+
+Please complete your £200 security deposit for your booking.
+
+${BASE}/pay-deposit.html?bookingId=${id}
+
+This is a card authorisation only.
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`;
+          }
+
+          if (type === "outstanding") {
+            text = `Dear ${name},
+
+Your outstanding balance is now ready to be paid.
+
+${BASE}/pay-outstanding.html?bookingId=${id}
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`;
+          }
+
+          const url = "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
+
+          window.open(url, "_blank");
+        };
+
+      });
+
+    }
+
     function renderBookings() {
+
       const search = searchInput.value.trim();
       const filter = statusFilter.value;
 
@@ -1335,39 +1392,53 @@ Equine Transport UK`
 
       bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
 
+      /* ===============================
+         EMPTY STATE
+      =============================== */
+
       if (!filteredBookings.length) {
         bookingsBody.innerHTML = `
       <tr>
-        <td colspan="7" class="empty-state">No bookings found for the current filters.</td>
+        <td colspan="7" class="empty-state">
+          No bookings found for the current filters.
+        </td>
       </tr>
     `;
 
-        // 🔥 ensure scroll still syncs (important)
         setTimeout(syncScroll, 0);
-
         return;
       }
 
-      bookingsBody.innerHTML = filteredBookings.map((booking) => `
-   <tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
-  
+      /* ===============================
+         RENDER TABLE
+      =============================== */
+
+      bookingsBody.innerHTML = filteredBookings.map((booking) => {
+
+        const bookingId = escapeHtml(booking.id || "");
+        const phone = escapeHtml(booking.customerMobile || "");
+
+        return `
+<tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
 
   <td data-label="Customer">
-  <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
 
-  <span 
-    class="tiny booking-id"
-    data-id="${escapeHtml(booking.id || "")}"
-    title="Click to copy full booking reference"
-  >
-    Ref: ${escapeHtml(shortRef(booking.id))}
-  </span>
+    <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
 
-  <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
-  <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
+    <span 
+      class="tiny booking-id"
+      data-id="${bookingId}"
+      title="Click to copy full booking reference"
+    >
+      Ref: ${escapeHtml(shortRef(booking.id))}
+    </span>
 
-  ${buildContactButtons(booking)}
-</td>
+    <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
+    <span class="tiny">${phone}</span>
+
+    ${buildContactButtons(booking)}
+
+  </td>
 
   <td data-label="Vehicle">
     <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
@@ -1383,13 +1454,14 @@ Equine Transport UK`
   </td>
 
   <td data-label="Payment">
-    ${paymentHtml(booking)}
 
+    ${paymentHtml(booking)}
 
     <div class="tiny" style="margin-top:6px;">
       Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
       Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
     </div>
+
   </td>
 
   <td data-label="Form">
@@ -1398,17 +1470,37 @@ Equine Transport UK`
 
   <td data-label="Actions">
     <div class="actions">
-      <button class="btn small primary" type="button" data-view-form="${escapeHtml(booking.id || "")}">
+      <button 
+        class="btn small primary"
+        type="button"
+        data-view-form="${bookingId}"
+      >
         View Form
       </button>
     </div>
   </td>
 
 </tr>
-  `).join("");
+`;
+      }).join("");
 
-      // 🔥 CRITICAL: run AFTER DOM update
-      setTimeout(syncScroll, 0);
+      /* ===============================
+         🔥 DEBUG CHECK (IMPORTANT)
+      =============================== */
+
+      setTimeout(() => {
+
+        const waButtons = document.querySelectorAll(".js-wa");
+
+        console.log("WA buttons found:", waButtons.length);
+
+        if (waButtons.length === 0) {
+          console.warn("⚠️ No WhatsApp buttons rendered");
+        }
+
+        syncScroll();
+
+      }, 0);
     }
 
     function makeDetailBox(label, value) {
@@ -1509,22 +1601,38 @@ Equine Transport UK`
     document.addEventListener("click", async (e) => {
 
       /* ===============================
-         ✅ WHATSAPP BUTTONS FIRST
+         🎯 TARGET ELEMENT (STABLE)
       =============================== */
 
-      const waBtn = e.target.closest(".js-wa");
+      const target = e.target;
+
+      /* ===============================
+         ✅ WHATSAPP BUTTONS (PRIORITY)
+      =============================== */
+
+      const waBtn = target.closest(".js-wa");
       if (waBtn) {
 
-        const phone = waBtn.getAttribute("data-phone");
-        const type = waBtn.getAttribute("data-type");
-        const name = waBtn.getAttribute("data-name");
-        const id = waBtn.getAttribute("data-id");
+        e.preventDefault();
+        e.stopPropagation();
 
-        if (!phone || !type) return;
+        const phone = waBtn.dataset.phone;
+        const type = waBtn.dataset.type;
+        const name = waBtn.dataset.name;
+        const id = waBtn.dataset.id;
+
+        if (!phone || !type) {
+          console.warn("WA button missing data", waBtn);
+          return;
+        }
 
         let cleaned = phone.replace(/\s+/g, "");
         if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
-        if (!cleaned.startsWith("44")) return;
+
+        if (!cleaned.startsWith("44")) {
+          console.warn("Invalid phone:", phone);
+          return;
+        }
 
         const BASE = "https://kvwebservices.co.uk/equinetransportuk";
 
@@ -1558,39 +1666,46 @@ Equine Transport UK`;
 
         const url = "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
 
+        console.log("Opening WhatsApp:", url); // 🔥 debug
+
         window.open(url, "_blank");
         return;
       }
-      /* ===============================
-         🔒 IGNORE NORMAL BUTTONS/LINKS
-      =============================== */
-
-      if (e.target.closest("a, button")) return;
 
       /* ===============================
          📋 COPY BOOKING ID
       =============================== */
 
-      const el = e.target.closest(".booking-id");
-      if (!el) return;
+      const el = target.closest(".booking-id");
+      if (el) {
 
-      const id = el.getAttribute("data-id");
-      if (!id) return;
+        const id = el.getAttribute("data-id");
+        if (!id) return;
 
-      try {
-        await navigator.clipboard.writeText(id);
+        try {
+          await navigator.clipboard.writeText(id);
 
-        el.textContent = "Copied ✓";
-        el.classList.add("copied");
+          el.textContent = "Copied ✓";
+          el.classList.add("copied");
 
-        setTimeout(() => {
-          el.textContent = "Ref: " + shortRef(id);
-          el.classList.remove("copied");
-        }, 1200);
+          setTimeout(() => {
+            el.textContent = "Ref: " + shortRef(id);
+            el.classList.remove("copied");
+          }, 1200);
 
-      } catch (err) {
-        console.warn("Copy failed", err);
+        } catch (err) {
+          console.warn("Copy failed", err);
+        }
+
+        return;
       }
+
+      /* ===============================
+         🔒 IGNORE OTHER BUTTONS/LINKS
+      =============================== */
+
+      if (target.closest("a, button")) return;
+
     });
 
 
