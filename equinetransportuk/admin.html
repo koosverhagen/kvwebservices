@@ -265,18 +265,19 @@
     }
 
     /* control layout */
+    /* customer */
+    td:nth-child(1) {
+      width: 260px;
+    }
+
+    /* vehicle */
     td:nth-child(2) {
       width: 220px;
     }
 
-    /* customer */
-    td:nth-child(3) {
-      width: 200px;
-    }
-
-    /* vehicle */
-    td:nth-child(4),
-    td:nth-child(5) {
+    /* pickup / return */
+    td:nth-child(3),
+    td:nth-child(4) {
       width: 160px;
     }
 
@@ -449,18 +450,6 @@
    STICKY FIRST COLUMN
 =============================== */
 
-    table th:first-child,
-    table td:first-child {
-      position: sticky;
-      left: 0;
-      z-index: 10;
-      background: #fff;
-
-      width: 140px;
-      min-width: 140px;
-      max-width: 140px;
-    }
-
     /* header above cells */
     thead th:first-child {
       z-index: 25;
@@ -511,11 +500,11 @@
    STICKY FIRST VISIBLE COLUMN (CUSTOMER)
 =============================== */
 
-    .bookings-table th:nth-child(2),
-    .bookings-table td:nth-child(2) {
+    .bookings-table th:first-child,
+    .bookings-table td:first-child {
       position: sticky;
       left: 0;
-      z-index: 2;
+      z-index: 5;
       background: #fff;
       box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
     }
@@ -568,10 +557,7 @@
         margin-bottom: 6px;
       }
 
-      /* STATUS BADGES AREA */
-      .bookings-table td[data-label="Payment"] {
-        margin-top: 10px;
-      }
+
 
       /* ACTION BUTTON */
       .bookings-table .actions {
@@ -650,9 +636,12 @@
 
     .pill.action {
       cursor: pointer;
+      display: inline-flex;
       text-decoration: none;
+      pointer-events: auto;
       transition: all 0.15s ease;
     }
+
 
     .pill.action:hover {
       transform: translateY(-1px);
@@ -672,18 +661,13 @@
       text-decoration: none;
     }
 
-    /* 🔥 prevent weird stacking */
-    td[data-label="Payment"] {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 4px;
-    }
 
     .bookings-table td[data-label="Payment"] {
-      display: flex !important;
+      display: flex;
       flex-wrap: wrap;
+      gap: 6px;
     }
+
 
     .pill.action:hover {
       outline: 2px solid rgba(0, 0, 0, 0.05);
@@ -784,9 +768,6 @@
         <table class="bookings-table">
           <thead>
             <tr>
-              <th>
-                <input type="checkbox" id="select-all">
-              </th>
               <th>Customer</th>
               <th>Vehicle</th>
               <th>Pickup</th>
@@ -798,7 +779,7 @@
           </thead>
           <tbody id="bookings-body">
             <tr>
-              <td colspan="8" class="empty-state">
+              <td colspan="7" class="empty-state">
                 Loading bookings...
               </td>
             </tr>
@@ -868,7 +849,7 @@
 
     let allBookings = [];
     let filteredBookings = [];
-    let selectedBookingIds = new Set();
+
 
     function buildContactButtons(booking) {
 
@@ -1287,7 +1268,7 @@ Equine Transport UK`
       if (!filteredBookings.length) {
         bookingsBody.innerHTML = `
       <tr>
-        <td colspan="8" class="empty-state">No bookings found for the current filters.</td>
+        <td colspan="7" class="empty-state">No bookings found for the current filters.</td>
       </tr>
     `;
 
@@ -1300,14 +1281,6 @@ Equine Transport UK`
       bookingsBody.innerHTML = filteredBookings.map((booking) => `
    <tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
   
-<td data-label="Select">
-  <input 
-    type="checkbox" 
-    class="row-select"
-    data-id="${escapeHtml(booking.id || "")}"
-    ${selectedBookingIds.has(booking.id) ? "checked" : ""}
-  >
-</td>
 
   <td data-label="Customer">
   <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
@@ -1446,98 +1419,7 @@ Equine Transport UK`
       clearFiltersBtn.style.display = hasFilters ? "block" : "none";
     }
 
-    function sendBulkWhatsApp(type) {
 
-      const selected = filteredBookings.filter(b =>
-        selectedBookingIds.has(b.id)
-      );
-
-      if (!selected.length) {
-        alert("Select at least one booking");
-        return;
-      }
-
-      selected.forEach((booking, index) => {
-
-        let phone = booking.customerMobile || "";
-        if (!phone) return;
-
-        let cleaned = phone.replace(/\s+/g, "");
-
-        if (cleaned.startsWith("07")) {
-          cleaned = "44" + cleaned.slice(1);
-        }
-
-        if (!cleaned.startsWith("44")) return;
-
-        const base = "https://wa.me/" + cleaned;
-        const firstName = getFirstName(getCustomerName(booking));
-        const id = booking.id || "";
-
-        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
-
-        const formType =
-          booking.requiredFormType ||
-          booking.required_form_type ||
-          "long";
-
-        const formPath = formType === "short"
-          ? "/forms/short-form.html"
-          : "/forms/long-form.html";
-
-        const formLink = `${BASE}${formPath}?bookingId=${id}`;
-        const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
-        const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
-
-        let text = "";
-
-        if (type === "form") {
-          text = `Dear ${firstName},
-
-Please complete your ${formType.toUpperCase()} form for your booking.
-
-${formLink}
-
-Kind regards,  
-Koos & Avril  
-Equine Transport UK`;
-        }
-
-        if (type === "deposit") {
-          text = `Dear ${firstName},
-
-Please complete your £200 security deposit for your booking.
-
-${depositLink}
-
-This is a card authorisation only.
-
-Kind regards,  
-Koos & Avril  
-Equine Transport UK`;
-        }
-
-        if (type === "outstanding") {
-          text = `Dear ${firstName},
-
-Your outstanding balance is now ready to be paid.
-
-${outstandingLink}
-
-Kind regards,  
-Koos & Avril  
-Equine Transport UK`;
-        }
-
-        const url = base + "?text=" + encodeURIComponent(text);
-
-        setTimeout(() => {
-          window.open(url, "_blank");
-        }, index * 400); // stagger open (prevents popup blocking)
-
-      });
-
-    }
 
     searchInput.addEventListener("input", updateClearButton);
     statusFilter.addEventListener("change", updateClearButton);
@@ -1579,37 +1461,6 @@ Equine Transport UK`;
       }
     });
 
-    document.addEventListener("change", (e) => {
-
-      // individual checkbox
-      if (e.target.classList.contains("row-select")) {
-        const id = e.target.getAttribute("data-id");
-
-        if (e.target.checked) {
-          selectedBookingIds.add(id);
-        } else {
-          selectedBookingIds.delete(id);
-        }
-      }
-
-      // select all
-      if (e.target.id === "select-all") {
-        const checked = e.target.checked;
-
-        document.querySelectorAll(".row-select").forEach(cb => {
-          cb.checked = checked;
-
-          const id = cb.getAttribute("data-id");
-
-          if (checked) {
-            selectedBookingIds.add(id);
-          } else {
-            selectedBookingIds.delete(id);
-          }
-        });
-      }
-
-    });
 
     const clearFiltersBtn = document.getElementById("clear-filters-btn");
 
@@ -1640,7 +1491,7 @@ Equine Transport UK`;
 
       bookingsBody.innerHTML = `
         <tr>
-          <td colspan="8" class="empty-state">Loading bookings...</td>
+          <td colspan="7" class="empty-state">Loading bookings...</td>
         </tr>
       `;
 
@@ -1683,7 +1534,7 @@ Equine Transport UK`;
         setStatus(escapeHtml(err.message || "Failed to load bookings."), "error");
         bookingsBody.innerHTML = `
           <tr>
-            <td colspan="8" class="empty-state">Failed to load bookings.</td>
+            <td colspan="7" class="empty-state">Failed to load bookings.</td>
           </tr>
         `;
       }
@@ -1786,29 +1637,7 @@ Equine Transport UK`;
     rangeFromInput.addEventListener("change", loadBookings);
     rangeToInput.addEventListener("change", loadBookings);
 
-    // ===============================
-    // BULK WHATSAPP BUTTON HANDLERS
-    // ===============================
 
-    document.addEventListener("DOMContentLoaded", () => {
-
-      const bulkFormBtn = document.getElementById("bulk-form-btn");
-      const bulkDepositBtn = document.getElementById("bulk-deposit-btn");
-      const bulkOutstandingBtn = document.getElementById("bulk-outstanding-btn");
-
-      if (bulkFormBtn) {
-        bulkFormBtn.onclick = () => sendBulkWhatsApp("form");
-      }
-
-      if (bulkDepositBtn) {
-        bulkDepositBtn.onclick = () => sendBulkWhatsApp("deposit");
-      }
-
-      if (bulkOutstandingBtn) {
-        bulkOutstandingBtn.onclick = () => sendBulkWhatsApp("outstanding");
-      }
-
-    });
 
     defaultRanges();
     loadBookings();
