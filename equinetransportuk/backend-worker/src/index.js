@@ -1110,6 +1110,79 @@ async function handleStripeWebhook(request, env) {
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
+  /* ===============================
+     DEPOSIT PAYMENT INTENT (CRITICAL FIX)
+  ================================ */
+
+  if (event.type === "payment_intent.succeeded") {
+
+    console.log("💳 PAYMENT INTENT SUCCEEDED");
+
+    const paymentIntent = event.data.object;
+
+    const bookingId = paymentIntent.metadata?.bookingId;
+    const paymentType = paymentIntent.metadata?.paymentType;
+
+    if (!bookingId || paymentType !== "deposit") {
+      console.log("⚠️ Not a deposit payment intent");
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
+
+    console.log("🔥 DEPOSIT PAYMENT CONFIRMED:", bookingId);
+
+    try {
+
+      // ✅ UPDATE DATABASE
+      await env.DB.prepare(`
+      UPDATE bookings
+      SET deposit_paid = 1,
+          updated_at = ?
+      WHERE id = ?
+    `)
+        .bind(new Date().toISOString(), bookingId)
+        .run();
+
+      console.log("✅ Deposit updated in DB");
+
+    } catch (err) {
+      console.error("❌ DB update failed:", err);
+    }
+
+    // ✅ UPDATE KV (IMPORTANT)
+    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+    for (const key of list.keys) {
+
+      const data = await env.BOOKINGS_KV.get(key.name);
+      if (!data) continue;
+
+      try {
+
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed)) continue;
+
+        let updated = false;
+
+        for (const b of parsed) {
+          if (String(b.id) === String(bookingId)) {
+            b.depositPaid = true;
+            b.updatedAt = new Date().toISOString();
+            updated = true;
+          }
+        }
+
+        if (updated) {
+          await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
+          console.log("✅ Deposit updated in KV");
+          break;
+        }
+
+      } catch { }
+    }
+
+    return new Response(JSON.stringify({ received: true }), { status: 200 });
+  }
+
   if (event.type === "checkout.session.completed") {
 
     console.log("🔥 CHECKOUT SESSION COMPLETED EVENT");
