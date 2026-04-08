@@ -506,14 +506,6 @@
       opacity: 1;
     }
 
-    /* ===============================
-   HIDE BOOKING REF COLUMN
-=============================== */
-
-    .bookings-table th:first-child,
-    .bookings-table td:first-child {
-      display: none;
-    }
 
     /* ===============================
    STICKY FIRST VISIBLE COLUMN (CUSTOMER)
@@ -682,7 +674,6 @@
         <table>
           <thead>
             <tr>
-              <th>Reference</th>
               <th>Customer</th>
               <th>Vehicle</th>
               <th>Pickup</th>
@@ -1018,6 +1009,7 @@
     <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
     <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
     <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
+    <span class="tiny">Ref: ${shortRef(booking.id)}</span>
   </td>
 
   <td data-label="Vehicle">
