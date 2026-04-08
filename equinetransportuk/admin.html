@@ -647,6 +647,17 @@
       color: #b45309;
       /* orange */
     }
+
+    .pill.action {
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .pill.action:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.95);
+    }
   </style>
 
   <link rel="icon" href="images/favicon.png">
@@ -1078,16 +1089,80 @@ Equine Transport UK`
       return true;
     }
 
+    function getFirstName(fullName) {
+      if (!fullName) return "Customer";
+      return fullName.trim().split(" ")[0];
+    }
+
     function paymentHtml(booking) {
+
       const confirmation = isConfirmationPaid(booking);
       const deposit = isDepositPaid(booking);
       const outstanding = isOutstandingPaid(booking);
 
+      const firstName = getFirstName(getCustomerName(booking));
+      const id = booking.id || "";
+
+      let phone = booking.customerMobile || "";
+      let whatsapp = "";
+
+      if (phone) {
+        let cleaned = phone.replace(/\s+/g, "");
+        if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
+        if (cleaned.startsWith("44")) whatsapp = cleaned;
+      }
+
+      const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+      const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
+      const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
+
+      const msgDeposit = encodeURIComponent(
+        `Dear ${firstName},
+
+Please complete your £200 security deposit for your booking.
+
+${depositLink}
+
+This is a card authorisation only.
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`
+      );
+
+      const msgOutstanding = encodeURIComponent(
+        `Dear ${firstName},
+
+Your outstanding balance is now ready to be paid.
+
+${outstandingLink}
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`
+      );
+      const waDeposit = whatsapp
+        ? `<a href="https://wa.me/${whatsapp}?text=${msgDeposit}" target="_blank" class="pill action warn">Deposit not secured</a>`
+        : `<span class="pill warn">Deposit not secured</span>`;
+
+      const waOutstanding = whatsapp
+        ? `<a href="https://wa.me/${whatsapp}?text=${msgOutstanding}" target="_blank" class="pill action warn">Outstanding open</a>`
+        : `<span class="pill warn">Outstanding open</span>`;
+
       return `
-        ${confirmation ? '<span class="pill ok">Confirmation paid</span>' : '<span class="pill bad">Confirmation pending</span>'}
-        ${deposit ? '<span class="pill ok">Deposit secured</span>' : '<span class="pill warn">Deposit not secured</span>'}
-        ${outstanding ? '<span class="pill ok">Outstanding paid</span>' : '<span class="pill warn">Outstanding open</span>'}
-      `;
+    ${confirmation
+          ? '<span class="pill ok">Confirmation paid</span>'
+          : '<span class="pill bad">Confirmation pending</span>'}
+
+    ${deposit
+          ? '<span class="pill ok">Deposit secured</span>'
+          : waDeposit}
+
+    ${outstanding
+          ? '<span class="pill ok">Outstanding paid</span>'
+          : waOutstanding}
+  `;
     }
 
     function formHtml(booking) {
@@ -1170,18 +1245,6 @@ Equine Transport UK`
       return diffHours <= 48;
     }
 
-    function depositStatusHtml(booking) {
-
-      const paid =
-        booking?.depositPaid === true ||
-        booking?.deposit_paid === 1;
-
-      if (paid) {
-        return `<span class="pill ok">Deposit secured</span>`;
-      }
-
-      return `<span class="pill warn">Deposit pending</span>`;
-    }
 
     function renderBookings() {
       const search = searchInput.value.trim();
@@ -1252,9 +1315,6 @@ Equine Transport UK`
   <td data-label="Payment">
     ${paymentHtml(booking)}
 
-    <div style="margin-top:6px;">
-      ${depositStatusHtml(booking)}
-    </div>
 
     <div class="tiny" style="margin-top:6px;">
       Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
@@ -1384,7 +1444,7 @@ Equine Transport UK`
         if (!cleaned.startsWith("44")) return;
 
         const base = "https://wa.me/" + cleaned;
-        const name = booking.customerName || "there";
+        const firstName = getFirstName(getCustomerName(booking));
         const id = booking.id || "";
 
         const BASE = "https://kvwebservices.co.uk/equinetransportuk";
@@ -1405,15 +1465,41 @@ Equine Transport UK`
         let text = "";
 
         if (type === "form") {
-          text = `Hi ${name}, please complete your ${formType} form:\n${formLink}`;
+          text = `Dear ${firstName},
+
+Please complete your ${formType.toUpperCase()} form for your booking.
+
+${formLink}
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`;
         }
 
         if (type === "deposit") {
-          text = `Hi ${name}, please complete your £200 deposit:\n${depositLink}`;
+          text = `Dear ${firstName},
+
+Please complete your £200 security deposit for your booking.
+
+${depositLink}
+
+This is a card authorisation only.
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`;
         }
 
         if (type === "outstanding") {
-          text = `Hi ${name}, your outstanding balance:\n${outstandingLink}`;
+          text = `Dear ${firstName},
+
+Your outstanding balance is now ready to be paid.
+
+${outstandingLink}
+
+Kind regards,  
+Koos & Avril  
+Equine Transport UK`;
         }
 
         const url = base + "?text=" + encodeURIComponent(text);
