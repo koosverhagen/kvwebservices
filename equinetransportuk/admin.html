@@ -1132,8 +1132,11 @@ Equine Transport UK`
       const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
       const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
 
-      const msgDeposit = encodeURIComponent(
-        `Dear ${firstName},
+      /* ===============================
+         RAW (NOT encoded yet)
+      =============================== */
+
+      const msgDepositRaw = `Dear ${firstName},
 
 Please complete your £200 security deposit for your booking.
 
@@ -1143,11 +1146,9 @@ This is a card authorisation only.
 
 Kind regards,  
 Koos & Avril  
-Equine Transport UK`
-      );
+Equine Transport UK`;
 
-      const msgOutstanding = encodeURIComponent(
-        `Dear ${firstName},
+      const msgOutstandingRaw = `Dear ${firstName},
 
 Your outstanding balance is now ready to be paid.
 
@@ -1155,14 +1156,28 @@ ${outstandingLink}
 
 Kind regards,  
 Koos & Avril  
-Equine Transport UK`
-      );
+Equine Transport UK`;
+
+      /* ===============================
+         BUTTONS (JS SAFE)
+      =============================== */
+
       const waDeposit = whatsapp
-        ? `<a href="https://wa.me/${whatsapp}?text=${msgDeposit}" target="_blank" class="pill action warn">Deposit not secured</a>`
+        ? `<button 
+          class="pill action warn"
+          onclick="openWhatsApp('${phone}', \`${msgDepositRaw}\`)"
+       >
+          Deposit not secured
+       </button>`
         : `<span class="pill warn">Deposit not secured</span>`;
 
       const waOutstanding = whatsapp
-        ? `<a href="https://wa.me/${whatsapp}?text=${msgOutstanding}" target="_blank" class="pill action warn">Outstanding open</a>`
+        ? `<button 
+          class="pill action warn"
+          onclick="openWhatsApp('${phone}', \`${msgOutstandingRaw}\`)"
+       >
+          Outstanding open
+       </button>`
         : `<span class="pill warn">Outstanding open</span>`;
 
       return `
@@ -1302,6 +1317,21 @@ Equine Transport UK`
       return diffHours <= 48;
     }
 
+    function openWhatsApp(phone, text) {
+      if (!phone) return;
+
+      let cleaned = phone.replace(/\s+/g, "");
+
+      if (cleaned.startsWith("07")) {
+        cleaned = "44" + cleaned.slice(1);
+      }
+
+      if (!cleaned.startsWith("44")) return;
+
+      const url = "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
+
+      window.open(url, "_blank");
+    }
 
     function renderBookings() {
       const search = searchInput.value.trim();
