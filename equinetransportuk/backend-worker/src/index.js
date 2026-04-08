@@ -1118,7 +1118,7 @@ async function handleStripeWebhook(request, env) {
 
   if (event.type === "payment_intent.succeeded") {
 
-    console.log("💳 PAYMENT INTENT SUCCEEDED");
+    console.log("💳 PAYMENT INTENT EVENT");
 
     const paymentIntent = event.data.object;
 
@@ -1126,15 +1126,21 @@ async function handleStripeWebhook(request, env) {
     const paymentType = paymentIntent.metadata?.paymentType;
 
     if (!bookingId || paymentType !== "deposit") {
-      console.log("⚠️ Not a deposit payment intent");
+      console.log("⚠️ Not a deposit payment");
       return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
 
-    console.log("🔥 DEPOSIT PAYMENT CONFIRMED:", bookingId);
+    console.log("🔥 DEPOSIT CONFIRMED:", bookingId);
+
+    // ✅ IMPORTANT: check status
+    if (paymentIntent.status !== "requires_capture") {
+      console.log("⚠️ Not a HOLD payment:", paymentIntent.status);
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
 
     try {
 
-      // ✅ UPDATE DATABASE
+      // ✅ UPDATE DB
       await env.DB.prepare(`
       UPDATE bookings
       SET deposit_paid = 1,
@@ -1150,7 +1156,7 @@ async function handleStripeWebhook(request, env) {
       console.error("❌ DB update failed:", err);
     }
 
-    // ✅ UPDATE KV (IMPORTANT)
+    // ✅ UPDATE KV (same as before)
     const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
     for (const key of list.keys) {
