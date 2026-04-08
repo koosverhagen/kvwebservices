@@ -505,6 +505,92 @@
     #clear-filters-btn:hover {
       opacity: 1;
     }
+
+    /* ===============================
+   HIDE BOOKING REF COLUMN
+=============================== */
+
+    .bookings-table th:first-child,
+    .bookings-table td:first-child {
+      display: none;
+    }
+
+    /* ===============================
+   STICKY FIRST VISIBLE COLUMN (CUSTOMER)
+=============================== */
+
+    .bookings-table th:nth-child(2),
+    .bookings-table td:nth-child(2) {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: #fff;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ===============================
+   MOBILE CARD LAYOUT
+=============================== */
+
+    @media (max-width: 768px) {
+
+      .bookings-table thead {
+        display: none;
+      }
+
+      .bookings-table,
+      .bookings-table tbody,
+      .bookings-table tr,
+      .bookings-table td {
+        display: block;
+        width: 100%;
+      }
+
+      .bookings-table tr {
+        margin-bottom: 16px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      }
+
+      .bookings-table td {
+        padding: 6px 0;
+        border: none;
+      }
+
+      /* LABELS (from data-label) */
+      .bookings-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: #888;
+        margin-bottom: 2px;
+      }
+
+      /* CUSTOMER FIRST + STRONG */
+      .bookings-table td[data-label="Customer"] {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+
+      /* STATUS BADGES AREA */
+      .bookings-table td[data-label="Payment"] {
+        margin-top: 10px;
+      }
+
+      /* ACTION BUTTON */
+      .bookings-table .actions {
+        margin-top: 10px;
+      }
+
+      .bookings-table .btn {
+        width: 100%;
+      }
+
+    }
   </style>
 
   <link rel="icon" href="images/favicon.png">
@@ -893,57 +979,53 @@
       }
 
       bookingsBody.innerHTML = filteredBookings.map((booking) => `
-    <tr>
-      <td>
-        <div class="booking-ref">${escapeHtml(shortRef(booking.id))}</div>
-        <div 
-          class="tiny booking-id"
-          data-id="${escapeHtml(booking.id || "")}"
-          title="Click to copy"
-        >
-          ${escapeHtml(truncateBookingId(booking.id))}
-        </div>
-      </td>
+    <tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
 
-      <td>
-        <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
-        <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
-        <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
-      </td>
+  <td data-label="Customer">
+    <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
+    <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
+    <span class="tiny">${escapeHtml(booking.customerMobile || "—")}</span>
+  </td>
 
-      <td>
-        <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
-        <div class="tiny">${escapeHtml(booking.vehicleId || "—")}</div>
-      </td>
+  <td data-label="Vehicle">
+    <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
+    <div class="tiny">${escapeHtml(booking.vehicleId || "—")}</div>
+  </td>
 
-      <td>
-        ${escapeHtml(formatDateTime(booking.pickupAt))}
-      </td>
+  <td data-label="Pickup">
+    ${escapeHtml(formatDateTime(booking.pickupAt))}
+  </td>
 
-      <td>
-        ${escapeHtml(formatDateTime(booking.dropoffAt))}
-      </td>
+  <td data-label="Drop-off">
+    ${escapeHtml(formatDateTime(booking.dropoffAt))}
+  </td>
 
-      <td>
-        ${paymentHtml(booking)}
-        <div class="tiny" style="margin-top:6px;">
-          Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
-          Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
-        </div>
-      </td>
+  <td data-label="Payment">
+    ${paymentHtml(booking)}
 
-      <td>
-        ${formHtml(booking)}
-      </td>
+    <div style="margin-top:6px;">
+      ${depositStatusHtml(booking)}
+    </div>
 
-      <td>
-        <div class="actions">
-          <button class="btn small primary" type="button" data-view-form="${escapeHtml(booking.id || "")}">
-            View Form
-          </button>
-        </div>
-      </td>
-    </tr>
+    <div class="tiny" style="margin-top:6px;">
+      Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
+      Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
+    </div>
+  </td>
+
+  <td data-label="Form">
+    ${formHtml(booking)}
+  </td>
+
+  <td data-label="Actions">
+    <div class="actions">
+      <button class="btn small primary" type="button" data-view-form="${escapeHtml(booking.id || "")}">
+        View Form
+      </button>
+    </div>
+  </td>
+
+</tr>
   `).join("");
 
       // 🔥 CRITICAL: run AFTER DOM update
