@@ -1486,6 +1486,10 @@ Equine Transport UK`
     });
 
     document.addEventListener("click", async (e) => {
+
+      // 🔥 IMPORTANT: ignore clicks on links/buttons
+      if (e.target.closest("a, button")) return;
+
       const el = e.target.closest(".booking-id");
       if (!el) return;
 
@@ -1494,8 +1498,6 @@ Equine Transport UK`
 
       try {
         await navigator.clipboard.writeText(id);
-
-        const original = el.textContent;
 
         el.textContent = "Copied ✓";
         el.classList.add("copied");
