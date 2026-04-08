@@ -954,6 +954,39 @@
       return str.slice(0, 14) + "…" + str.slice(-6);
     }
 
+    function isUrgentBooking(booking) {
+      if (!booking) return false;
+
+      // if deposit already paid → not urgent
+      if (booking.depositPaid === true || booking.deposit_paid === 1) {
+        return false;
+      }
+
+      if (!booking.pickupAt) return false;
+
+      const now = Date.now();
+      const pickup = new Date(booking.pickupAt).getTime();
+
+      if (isNaN(pickup)) return false;
+
+      const diffHours = (pickup - now) / (1000 * 60 * 60);
+
+      return diffHours <= 48;
+    }
+
+    function depositStatusHtml(booking) {
+
+      const paid =
+        booking?.depositPaid === true ||
+        booking?.deposit_paid === 1;
+
+      if (paid) {
+        return `<span class="pill ok">Deposit secured</span>`;
+      }
+
+      return `<span class="pill warn">Deposit pending</span>`;
+    }
+
     function renderBookings() {
       const search = searchInput.value.trim();
       const filter = statusFilter.value;
