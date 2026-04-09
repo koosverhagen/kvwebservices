@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Secure Deposit</title>
   <script src="https://js.stripe.com/v3/"></script>
@@ -8,146 +9,147 @@
 
 <body>
 
-<div class="deposit-wrap">
+  <div class="deposit-wrap">
 
-  <div class="deposit-card">
+    <div class="deposit-card">
 
-    <img src="images/logo.png" class="deposit-logo">
+      <img src="images/logo.png" class="deposit-logo">
 
-    <h2>Deposit Hold (£200.00)</h2>
+      <h2>Deposit Hold (£200.00)</h2>
 
-    <p id="booking-info"></p>
+      <p id="booking-info"></p>
 
-    <form id="payment-form">
+      <form id="payment-form">
 
-      <label>Full Name</label>
-      <input type="text" id="card-name" placeholder="Full Name" required>
+        <label>Full Name</label>
+        <input type="text" id="card-name" placeholder="Full Name" required>
 
-      <label>Card Details</label>
-      <div id="card-element" class="stripe-card"></div>
+        <label>Card Details</label>
+        <div id="card-element" class="stripe-card"></div>
 
-      <button id="submit-btn">
-        Confirm Hold
-      </button>
+        <button id="submit-btn">
+          Confirm Hold
+        </button>
 
-    </form>
+      </form>
 
-    <div id="message"></div>
+      <div id="message"></div>
 
-    <p class="deposit-note">
-      This is a <strong>card authorisation only</strong>. No money is taken unless required.
-    </p>
+      <p class="deposit-note">
+        This is a <strong>card authorisation only</strong>. No money is taken unless required.
+      </p>
+
+    </div>
 
   </div>
 
-</div>
+  <script>
+    const stripe = Stripe("pk_test_51PmwmdB9WIgqJu1YURUMM1LhXuhCDRKs7vQR28P7tcKElI1tonLWvjorRDwYSShdWUAUK0B8VIudUKAjkZTV7ufR00RElx5bHg");
 
-<script>
-const stripe = Stripe("pk_test_51PmwmdB9WIgqJu1YURUMM1LhXuhCDRKs7vQR28P7tcKElI1tonLWvjorRDwYSShdWUAUK0B8VIudUKAjkZTV7ufR00RElx5bHg");
+    const params = new URLSearchParams(window.location.search);
+    const bookingId = params.get("bookingId");
 
-const params = new URLSearchParams(window.location.search);
-const bookingId = params.get("bookingId");
-
-if (!bookingId) {
-  document.body.innerHTML = "<h2>Invalid booking link</h2>";
-  throw new Error("Missing bookingId");
-}
-
-document.getElementById("booking-info").innerText =
-  "Reference: #" + bookingId.slice(-8);
-
-document.getElementById("message").innerText = "Loading secure payment...";
-
-let elements;
-let card;
-let clientSecret;
-let isSubmitting = false;
-
-fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ bookingId })
-})
-.then(res => res.json())
-.then(data => {
-
-  console.log("Deposit API response:", data);
-
-  if (!data.clientSecret) {
-
-    document.getElementById("message").innerText =
-      data.error || "Unable to start deposit payment.";
-
-    console.error("❌ Deposit error:", data);
-
-    return;
-  }
-
-  clientSecret = data.clientSecret;
-
-  elements = stripe.elements({
-    locale: "en-GB"
-  });
-
-  card = elements.create("card", {
-    hidePostalCode: true
-  });
-
-  card.mount("#card-element");
-
-  document.getElementById("message").innerText = "";
-
-  const form = document.getElementById("payment-form");
-  const btn = document.getElementById("submit-btn");
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    if (isSubmitting) return;
-    isSubmitting = true;
-
-    btn.disabled = true;
-    btn.innerText = "Processing...";
-
-    const nameInput = document.getElementById("card-name");
-    const name = nameInput.value.trim();
-
-    if (!name) {
-      document.getElementById("message").innerText =
-        "Please enter your name.";
-
-      isSubmitting = false;
-      btn.disabled = false;
-      btn.innerText = "Confirm Hold";
-      return;
+    if (!bookingId) {
+      document.body.innerHTML = "<h2>Invalid booking link</h2>";
+      throw new Error("Missing bookingId");
     }
 
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: card,
-        billing_details: { name }
-      }
-    });
+    document.getElementById("booking-info").innerText =
+      "Reference: #" + bookingId.slice(-8);
 
-    if (result.error) {
-      document.getElementById("message").innerText = result.error.message;
+    document.getElementById("message").innerText = "Loading secure payment...";
 
-      isSubmitting = false;
-      btn.disabled = false;
-      btn.innerText = "Confirm Hold";
-    } else {
-      window.location.href =
-        `index.html?deposit=success&bookingId=${bookingId}`;
-    }
-  });
+    let elements;
+    let card;
+    let clientSecret;
+    let isSubmitting = false;
 
-})
-.catch(err => {
-  console.error("❌ Fetch failed:", err);
-  document.getElementById("message").innerText =
-    "Connection error. Please try again.";
-});
-</script>
+    fetch("https://equine-bookings-api.kverhagen.workers.dev/api/deposit-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookingId })
+    })
+      .then(res => res.json())
+      .then(data => {
+
+        console.log("Deposit API response:", data);
+
+        if (!data.clientSecret) {
+
+          document.getElementById("message").innerText =
+            data.error || "Unable to start deposit payment.";
+
+          console.error("❌ Deposit error:", data);
+
+          return;
+        }
+
+        clientSecret = data.clientSecret;
+
+        elements = stripe.elements({
+          locale: "en-GB"
+        });
+
+        card = elements.create("card", {
+          hidePostalCode: true
+        });
+
+        card.mount("#card-element");
+
+        document.getElementById("message").innerText = "";
+
+        const form = document.getElementById("payment-form");
+        const btn = document.getElementById("submit-btn");
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          if (isSubmitting) return;
+          isSubmitting = true;
+
+          btn.disabled = true;
+          btn.innerText = "Processing...";
+
+          const nameInput = document.getElementById("card-name");
+          const name = nameInput.value.trim();
+
+          if (!name) {
+            document.getElementById("message").innerText =
+              "Please enter your name.";
+
+            isSubmitting = false;
+            btn.disabled = false;
+            btn.innerText = "Confirm Hold";
+            return;
+          }
+
+          const result = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+              card: card,
+              billing_details: { name }
+            }
+          });
+
+          if (result.error) {
+            document.getElementById("message").innerText = result.error.message;
+
+            isSubmitting = false;
+            btn.disabled = false;
+            btn.innerText = "Confirm Hold";
+          } else {
+            window.location.href =
+              `index.html?deposit=success&bookingId=${bookingId}`;
+          }
+        });
+
+      })
+      .catch(err => {
+        console.error("❌ Fetch failed:", err);
+        document.getElementById("message").innerText =
+          "Connection error. Please try again.";
+      });
+  </script>
 
 </body>
+
 </html>
