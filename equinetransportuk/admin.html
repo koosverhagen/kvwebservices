@@ -261,25 +261,28 @@
    CONTACT BUTTONS
 =============================== */
 
-      .contact-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 6px;
-      }
-
       .contact-btn {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        height: 30px;
+        gap: 4px;
+
+        height: 26px;
         padding: 0 8px;
-        border-radius: 8px;
+
+        border-radius: 6px;
         border: 1px solid var(--line);
+
         background: #fff;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
-        transition: 0.15s ease;
+
+        line-height: 1;
+      }
+
+      .contact-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
       }
 
       .contact-btn:hover {
@@ -311,25 +314,32 @@
 =============================== */
 
       .pill {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
         padding: 4px 10px;
         border-radius: 999px;
-        font-size: 12px;
-        font-weight: 800;
-        margin: 2px 6px 2px 0;
+
+        font-size: 11px;
+        font-weight: 700;
+
+        border: none;
       }
 
       .pill.ok {
-        background: #ecfdf3;
-        color: var(--ok);
+        background: #e6f4ea;
+        color: #137a3d;
       }
+
       .pill.warn {
-        background: #fff7ed;
-        color: var(--warn);
+        background: #fff4e5;
+        color: #b45309;
       }
+
       .pill.bad {
-        background: #fff1f2;
-        color: var(--bad);
+        background: #fde8e8;
+        color: #b42318;
       }
       .pill.neutral {
         background: #f3f4f6;
@@ -391,6 +401,12 @@
       .et-modal-body {
         padding: 16px;
         overflow-y: auto;
+      }
+
+      .et-modal-header {
+        padding: 16px 20px;
+        font-size: 18px;
+        font-weight: 700;
       }
 
       /* ===============================
@@ -455,6 +471,37 @@
       .status-bar.error {
         background: #fff1f2;
         color: var(--bad);
+      }
+
+      .kv-item {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        background: #fafafa;
+      }
+
+      .kv-key {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .kv-value {
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .kv-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .modal-section-title {
+        margin: 18px 0 8px;
+        font-size: 14px;
+        font-weight: 700;
       }
     </style>
 
@@ -579,7 +626,7 @@
 
       <div class="et-modal-card">
         <div class="et-modal-header">
-          <h3>Form details</h3>
+          <h3>Booking Form</h3>
           <button id="modal-close-btn">✕</button>
         </div>
 
@@ -1043,36 +1090,28 @@ Equine Transport UK`;
             : "";
 
         return `
-    <div class="status-stack">
+  <div class="stack">
 
-      <div class="status-row">
-        <span class="status-label">Form</span>
-        <span class="status-pill ${complete ? "status-ok" : "status-bad"}">
-          ${complete ? "Submitted" : "Missing"}
-        </span>
-      </div>
-
-      <div class="status-row">
-        <span class="status-label">Required</span>
-        <span class="status-pill status-neutral">
-          ${requiredType === "short" ? "Short" : "Long"}
-        </span>
-      </div>
-
-      ${
-        booking?.formSubmittedAt
-          ? `
-        <div class="status-meta">
-          Submitted: ${escapeHtml(formatDateTime(booking.formSubmittedAt))}
-        </div>
-      `
-          : ""
-      }
-
-      ${!complete ? `<div class="status-actions">${resendBtn}</div>` : ""}
-
+    <div>
+      <strong>${complete ? "Form submitted" : "Form missing"}</strong>
     </div>
-  `;
+
+    <div class="tiny">
+      Required: ${requiredType === "short" ? "Short" : "Long"}
+    </div>
+
+    ${
+      booking?.formSubmittedAt
+        ? `<div class="tiny">
+            ${formatDateTime(booking.formSubmittedAt)}
+          </div>`
+        : ""
+    }
+
+    ${!complete ? `<div>${resendBtn}</div>` : ""}
+
+  </div>
+`;
       }
 
       function bookingMatchesSearch(booking, search) {
@@ -1672,16 +1711,65 @@ Equine Transport UK`;
 
           const entries = buildFieldEntries(formData);
 
-          modalFields.innerHTML = entries
-            .map(
-              ([key, value]) => `
-      <div class="kv-item">
-        <div class="kv-key">${escapeHtml(key)}</div>
-        <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
-      </div>
-    `,
-            )
-            .join("");
+          /* ===============================
+   GROUP FIELDS
+=============================== */
+
+          const groups = {
+            customer: [],
+            licence: [],
+            hire: [],
+            other: [],
+          };
+
+          entries.forEach(([key, value]) => {
+            const k = key.toLowerCase();
+
+            if (["firstname", "lastname", "email", "mobile"].includes(k)) {
+              groups.customer.push([key, value]);
+            } else if (k.includes("licence") || k.includes("dvla")) {
+              groups.licence.push([key, value]);
+            } else if (k.includes("hire") || k.includes("date")) {
+              groups.hire.push([key, value]);
+            } else {
+              groups.other.push([key, value]);
+            }
+          });
+
+          /* ===============================
+   RENDER SECTION
+=============================== */
+
+          function renderSection(title, items) {
+            if (!items.length) return "";
+
+            return `
+    <h4 class="modal-section-title">${title}</h4>
+    <div class="kv-list">
+      ${items
+        .map(
+          ([key, value]) => `
+        <div class="kv-item">
+          <div class="kv-key">${escapeHtml(key)}</div>
+          <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
+        </div>
+      `,
+        )
+        .join("")}
+    </div>
+  `;
+          }
+
+          /* ===============================
+   OUTPUT
+=============================== */
+
+          modalFields.innerHTML = `
+  ${renderSection("Customer Details", groups.customer)}
+  ${renderSection("Licence / DVLA", groups.licence)}
+  ${renderSection("Hire Details", groups.hire)}
+  ${renderSection("Other", groups.other)}
+`;
 
           const signatureData = getSignatureData(formData);
 
