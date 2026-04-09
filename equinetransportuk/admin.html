@@ -1,913 +1,904 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Admin | Equine Transport UK</title>
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin | Equine Transport UK</title>
-
-  <style>
-    /* ===============================
+    <style>
+      /* ===============================
    ROOT / BASE
 =============================== */
 
-    :root {
-      --bg: #f5f7fa;
-      --card: #ffffff;
-      --text: #1d2530;
-      --muted: #5a6675;
-      --line: #dbe1e8;
-      --accent: #1f6feb;
-      --accent-dark: #1557b0;
-      --ok: #137a3d;
-      --warn: #b45309;
-      --bad: #b42318;
-      --soft: #f8fafc;
-      --radius: 16px;
-      --shadow: 0 12px 30px rgba(15, 23, 42, .08);
-    }
+      :root {
+        --bg: #f5f7fa;
+        --card: #ffffff;
+        --text: #1d2530;
+        --muted: #5a6675;
+        --line: #dbe1e8;
+        --accent: #1f6feb;
+        --accent-dark: #1557b0;
+        --ok: #137a3d;
+        --warn: #b45309;
+        --bad: #b42318;
+        --soft: #f8fafc;
+        --radius: 16px;
+        --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      }
 
-    * {
-      box-sizing: border-box
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    html,
-    body {
-      margin: 0;
-      padding: 0
-    }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
 
-    body {
-      font-family: "SF Pro Display", "SF Pro Text", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: var(--text);
-      background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
-      line-height: 1.45;
-    }
+      body {
+        font-family:
+          "SF Pro Display",
+          "SF Pro Text",
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        color: var(--text);
+        background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
+        line-height: 1.45;
+      }
 
-    /* ===============================
+      /* ===============================
    MODAL
 =============================== */
 
-    .et-modal.hidden {
-      display: none !important;
-    }
+      .et-modal.hidden {
+        display: none !important;
+      }
 
-    .et-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 999999;
-    }
+      .et-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+      }
 
-    .et-modal-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.45);
-      backdrop-filter: blur(4px);
-    }
+      .et-modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(4px);
+      }
 
-    .et-modal-card {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      .et-modal-card {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
 
-      width: min(960px, 94vw);
-      max-height: 88vh;
+        width: min(960px, 94vw);
+        max-height: 88vh;
 
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, .25);
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
 
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
 
-    .et-modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-      background: #fff;
-    }
+      .et-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        background: #fff;
+      }
 
-    .et-modal-header h3 {
-      margin: 0;
-      font-size: 20px;
-      letter-spacing: -0.01em;
-    }
+      .et-modal-header h3 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: -0.01em;
+      }
 
-    .et-modal-header button {
-      border: 1px solid var(--line);
-      background: #fff;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
+      .et-modal-header button {
+        border: 1px solid var(--line);
+        background: #fff;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
 
-    .et-modal-body {
-      padding: 16px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      flex: 1;
-      min-height: 0;
-    }
+      .et-modal-body {
+        padding: 16px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1;
+        min-height: 0;
+      }
 
-    /* ===============================
+      /* ===============================
    LAYOUT
 =============================== */
 
-    .container {
-      width: min(1180px, 92vw);
-      margin: 0 auto;
-    }
+      .container {
+        width: min(1180px, 92vw);
+        margin: 0 auto;
+      }
 
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(255, 255, 255, .9);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--line);
-    }
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--line);
+      }
 
-    .header-inner {
-      min-height: 72px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+      .header-inner {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 800;
-    }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+      }
 
-    .brand-logo {
-      width: 52px;
-      height: 32px;
-      object-fit: contain;
-    }
+      .brand-logo {
+        width: 52px;
+        height: 32px;
+        object-fit: contain;
+      }
 
-    .header-actions {
-      display: flex;
-      gap: 10px;
-    }
+      .header-actions {
+        display: flex;
+        gap: 10px;
+      }
 
-    /* ===============================
+      /* ===============================
    BUTTONS
 =============================== */
 
-    .btn {
-      border: none;
-      border-radius: 12px;
-      padding: 12px 16px;
-      font-weight: 700;
-      cursor: pointer;
-    }
+      .btn {
+        border: none;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-weight: 700;
+        cursor: pointer;
+      }
 
-    .btn.primary {
-      background: var(--accent);
-      color: #fff;
-    }
+      .btn.primary {
+        background: var(--accent);
+        color: #fff;
+      }
 
-    .btn.ghost {
-      background: #fff;
-      border: 1px solid var(--line);
-    }
+      .btn.ghost {
+        background: #fff;
+        border: 1px solid var(--line);
+      }
 
-    /* ===============================
+      /* ===============================
    HERO / TOOLBAR
 =============================== */
 
-    .hero {
-      padding: 28px 0 18px;
-    }
+      .hero {
+        padding: 28px 0 18px;
+      }
 
-    .hero-card {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      padding: 22px;
-      box-shadow: var(--shadow);
-    }
+      .hero-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 22px;
+        box-shadow: var(--shadow);
+      }
 
-    .toolbar {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
-      gap: 12px;
-      margin-top: 18px;
-    }
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto;
+        gap: 12px;
+        margin-top: 18px;
+      }
 
-    .field label {
-      font-size: 13px;
-      font-weight: 700;
-    }
+      .field label {
+        font-size: 13px;
+        font-weight: 700;
+      }
 
-    .field input,
-    .field select {
-      width: 100%;
-      min-height: 46px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px;
-    }
+      .field input,
+      .field select {
+        width: 100%;
+        min-height: 46px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+      }
 
-    /* ===============================
+      /* ===============================
    TABLE (FIXED VERSION)
 =============================== */
 
-    .list-wrap {
-      overflow-x: auto;
-      overflow-y: hidden;
-      border-radius: 18px;
-    }
+      .list-wrap {
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-radius: 18px;
+      }
 
-    /* isolate table */
-    .list-wrap table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: auto;
-      background: #fff;
-    }
+      /* isolate table */
+      .list-wrap table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;
+        background: #fff;
+      }
 
-    table {
-      border-collapse: separate;
-      /* 🔥 prevents sticky overlap bugs */
-      border-spacing: 0;
-    }
+      table {
+        border-collapse: separate;
+        /* 🔥 prevents sticky overlap bugs */
+        border-spacing: 0;
+      }
 
-    /* header */
-    thead th {
-      position: sticky;
-      top: 0;
+      /* header */
+      thead th {
+        position: sticky;
+        top: 0;
 
-      background: #f8fafc;
-      border-bottom: 1px solid var(--line);
+        background: #f8fafc;
+        border-bottom: 1px solid var(--line);
 
-      padding: 14px;
-      font-size: 12px;
-      text-transform: uppercase;
-      color: var(--muted);
+        padding: 14px;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--muted);
 
-      box-shadow: 0 2px 6px rgba(0, 0, 0, .05);
-    }
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      }
 
-    /* prevent crazy stretching */
-    td,
-    th {
-      vertical-align: top;
-    }
+      /* prevent crazy stretching */
+      td,
+      th {
+        vertical-align: top;
+      }
 
-    /* control layout */
-    /* customer */
-    td:nth-child(1) {
-      width: 260px;
-    }
+      /* control layout */
+      /* customer */
+      td:nth-child(1) {
+        width: 260px;
+      }
 
-    /* vehicle */
-    td:nth-child(2) {
-      width: 220px;
-    }
+      /* vehicle */
+      td:nth-child(2) {
+        width: 220px;
+      }
 
-    /* pickup / return */
-    td:nth-child(3),
-    td:nth-child(4) {
-      width: 160px;
-    }
+      /* pickup / return */
+      td:nth-child(3),
+      td:nth-child(4) {
+        width: 160px;
+      }
 
-    /* rows */
-    tbody td {
-      padding: 14px;
-      border-bottom: 1px solid #edf2f7;
-      font-size: 14px;
-    }
+      /* rows */
+      tbody td {
+        padding: 14px;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 14px;
+      }
 
-    /* prevent squashing */
-    td,
-    th {
-      white-space: nowrap;
-    }
+      /* prevent squashing */
+      td,
+      th {
+        white-space: nowrap;
+      }
 
-    /* allow wrapping */
-    td:nth-child(2),
-    td:nth-child(6),
-    td:nth-child(7) {
-      white-space: normal;
-    }
+      /* allow wrapping */
+      td:nth-child(2),
+      td:nth-child(6),
+      td:nth-child(7) {
+        white-space: normal;
+      }
 
-    /* first column tight */
-    table th:first-child,
-    table td:first-child {
-      width: 1%;
-    }
+      /* first column tight */
+      table th:first-child,
+      table td:first-child {
+        width: 1%;
+      }
 
-    /* ===============================
+      /* ===============================
    UI ELEMENTS
 =============================== */
 
-    .booking-ref {
-      font-weight: 800;
-      font-size: 18px;
+      .booking-ref {
+        font-weight: 800;
+        font-size: 18px;
 
-      word-break: break-word;
-    }
+        word-break: break-word;
+      }
 
-    .tiny {
-      font-size: 12px;
-      color: var(--muted);
+      .tiny {
+        font-size: 12px;
+        color: var(--muted);
 
-      display: block;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
-    .vehicle-line {
-      font-weight: 700;
-    }
+      .vehicle-line {
+        font-weight: 700;
+      }
 
-    .pill {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      margin: 2px 6px 2px 0;
-    }
+      .pill {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        margin: 2px 6px 2px 0;
+      }
 
-    .pill.ok {
-      background: #ecfdf3;
-      color: var(--ok);
-    }
+      .pill.ok {
+        background: #ecfdf3;
+        color: var(--ok);
+      }
 
-    .pill.warn {
-      background: #fff7ed;
-      color: var(--warn);
-    }
+      .pill.warn {
+        background: #fff7ed;
+        color: var(--warn);
+      }
 
-    .pill.bad {
-      background: #fff1f2;
-      color: var(--bad);
-    }
+      .pill.bad {
+        background: #fff1f2;
+        color: var(--bad);
+      }
 
-    .pill.neutral {
-      background: #f3f4f6;
-    }
+      .pill.neutral {
+        background: #f3f4f6;
+      }
 
-    /* ===============================
+      /* ===============================
    FORM / MODAL CONTENT
 =============================== */
 
-    .detail-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .kv-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .kv-item {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-    }
-
-    .kv-key {
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    .kv-value {
-      font-size: 14px;
-      word-break: break-word;
-    }
-
-    .et-modal-signature img {
-      width: 100%;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-    }
-
-    /* ===============================
-   EMPTY STATE
-=============================== */
-
-    .empty-state {
-      padding: 20px;
-      color: var(--muted);
-    }
-
-    /* ===============================
-   RESPONSIVE
-=============================== */
-
-    @media (max-width:860px) {
-      .toolbar {
-        grid-template-columns: 1fr;
-      }
-
       .detail-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* ===============================
-   DOUBLE SCROLL (TOP + BOTTOM)
-=============================== */
-
-    .table-scroll-top {
-      overflow-x: auto;
-      overflow-y: hidden;
-      height: 12px;
-    }
-
-    .table-scroll-top div {
-      height: 1px;
-    }
-
-    /* Keep bottom scroll */
-    .list-wrap {
-      overflow-x: auto;
-      overflow-y: hidden;
-      position: relative;
-      /* 🔥 REQUIRED for sticky to behave correctly */
-    }
-
-    /* ===============================
-   STICKY FIRST COLUMN
-=============================== */
-
-    /* header above cells */
-    thead th:first-child {
-      z-index: 25;
-    }
-
-    /* ===============================
-   FIX COLUMN 1 OVERFLOW
-=============================== */
-
-    table td:first-child {
-      white-space: normal !important;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-    }
-
-    /* ===============================
-   CLICKABLE BOOKING ID
-=============================== */
-
-    .booking-id {
-      cursor: pointer;
-      transition: .15s ease;
-      position: relative;
-    }
-
-    .booking-id:hover {
-      color: var(--accent);
-      text-decoration: underline;
-    }
-
-    /* copied state */
-    .booking-id.copied {
-      color: var(--ok);
-      font-weight: 700;
-    }
-
-    #clear-filters-btn {
-      opacity: 0.8;
-      display: none;
-    }
-
-    #clear-filters-btn:hover {
-      opacity: 1;
-    }
-
-
-    /* ===============================
-   STICKY FIRST VISIBLE COLUMN (CUSTOMER)
-=============================== */
-
-    .bookings-table th:first-child,
-    .bookings-table td:first-child {
-      position: sticky;
-      left: 0;
-      z-index: 5;
-      background: #fff;
-      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
-    }
-
-    /* ===============================
-   MOBILE CARD LAYOUT
-=============================== */
-
-    @media (max-width: 768px) {
-
-      .bookings-table thead {
-        display: none;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
       }
 
-      .bookings-table,
-      .bookings-table tbody,
-      .bookings-table tr,
-      .bookings-table td {
-        display: block;
-        width: 100%;
+      .kv-list {
+        display: grid;
+        gap: 10px;
       }
 
-      .bookings-table tr {
-        margin-bottom: 16px;
-        background: #fff;
+      .kv-item {
+        border: 1px solid var(--line);
         border-radius: 12px;
-        padding: 14px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        padding: 12px;
       }
 
-      .bookings-table td {
-        padding: 6px 0;
-        border: none;
-      }
-
-      /* LABELS (from data-label) */
-      .bookings-table td::before {
-        content: attr(data-label);
-        display: block;
-        font-size: 11px;
-        font-weight: 600;
-        color: #888;
-        margin-bottom: 2px;
-      }
-
-      /* CUSTOMER FIRST + STRONG */
-      .bookings-table td[data-label="Customer"] {
-        font-size: 16px;
-        font-weight: 600;
+      .kv-key {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--muted);
         margin-bottom: 6px;
       }
 
-
-
-      /* ACTION BUTTON */
-      .bookings-table .actions {
-        margin-top: 10px;
+      .kv-value {
+        font-size: 14px;
+        word-break: break-word;
       }
 
-      .bookings-table .btn {
+      .et-modal-signature img {
         width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
       }
 
-    }
+      /* ===============================
+   EMPTY STATE
+=============================== */
 
-    /* ===============================
+      .empty-state {
+        padding: 20px;
+        color: var(--muted);
+      }
+
+      /* ===============================
+   RESPONSIVE
+=============================== */
+
+      @media (max-width: 860px) {
+        .toolbar {
+          grid-template-columns: 1fr;
+        }
+
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ===============================
+   DOUBLE SCROLL (TOP + BOTTOM)
+=============================== */
+
+      .table-scroll-top {
+        overflow-x: auto;
+        overflow-y: hidden;
+        height: 12px;
+      }
+
+      .table-scroll-top div {
+        height: 1px;
+      }
+
+      /* Keep bottom scroll */
+      .list-wrap {
+        overflow-x: auto;
+        overflow-y: hidden;
+        position: relative;
+        /* 🔥 REQUIRED for sticky to behave correctly */
+      }
+
+      /* ===============================
+   STICKY FIRST COLUMN
+=============================== */
+
+      /* header above cells */
+      thead th:first-child {
+        z-index: 25;
+      }
+
+      /* ===============================
+   FIX COLUMN 1 OVERFLOW
+=============================== */
+
+      table td:first-child {
+        white-space: normal !important;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      /* ===============================
+   CLICKABLE BOOKING ID
+=============================== */
+
+      .booking-id {
+        cursor: pointer;
+        transition: 0.15s ease;
+        position: relative;
+      }
+
+      .booking-id:hover {
+        color: var(--accent);
+        text-decoration: underline;
+      }
+
+      /* copied state */
+      .booking-id.copied {
+        color: var(--ok);
+        font-weight: 700;
+      }
+
+      #clear-filters-btn {
+        opacity: 0.8;
+        display: none;
+      }
+
+      #clear-filters-btn:hover {
+        opacity: 1;
+      }
+
+      /* ===============================
+   STICKY FIRST VISIBLE COLUMN (CUSTOMER)
+=============================== */
+
+      .bookings-table th:first-child,
+      .bookings-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        background: #fff;
+        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+      }
+
+      /* ===============================
+   MOBILE CARD LAYOUT
+=============================== */
+
+      @media (max-width: 768px) {
+        .bookings-table thead {
+          display: none;
+        }
+
+        .bookings-table,
+        .bookings-table tbody,
+        .bookings-table tr,
+        .bookings-table td {
+          display: block;
+          width: 100%;
+        }
+
+        .bookings-table tr {
+          margin-bottom: 16px;
+          background: #fff;
+          border-radius: 12px;
+          padding: 14px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .bookings-table td {
+          padding: 6px 0;
+          border: none;
+        }
+
+        /* LABELS (from data-label) */
+        .bookings-table td::before {
+          content: attr(data-label);
+          display: block;
+          font-size: 11px;
+          font-weight: 600;
+          color: #888;
+          margin-bottom: 2px;
+        }
+
+        /* CUSTOMER FIRST + STRONG */
+        .bookings-table td[data-label="Customer"] {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 6px;
+        }
+
+        /* ACTION BUTTON */
+        .bookings-table .actions {
+          margin-top: 10px;
+        }
+
+        .bookings-table .btn {
+          width: 100%;
+        }
+      }
+
+      /* ===============================
    CONTACT BUTTONS
 =============================== */
 
-    .contact-actions {
-      display: flex;
-      gap: 6px;
-      margin-top: 6px;
-    }
-
-    .contact-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-
-      width: 30px;
-      height: 30px;
-
-      border-radius: 8px;
-      border: 1px solid var(--line);
-
-      background: #fff;
-      text-decoration: none;
-      font-size: 14px;
-
-      transition: all 0.15s ease;
-    }
-
-    .contact-btn:hover {
-      background: var(--soft);
-      transform: translateY(-1px);
-    }
-
-    .contact-call {
-      color: var(--ok);
-    }
-
-    .contact-email {
-      color: var(--accent);
-    }
-
-    .contact-whatsapp {
-      color: #25D366;
-    }
-
-    /* ===============================
-   WHATSAPP ACTION BUTTONS
-=============================== */
-
-    .wa-form {
-      color: #2563eb;
-      /* blue */
-    }
-
-    .wa-deposit {
-      color: #16a34a;
-      /* green */
-    }
-
-    .wa-outstanding {
-      color: #b45309;
-      /* orange */
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      margin: 2px 6px 2px 0;
-    }
-
-    .pill.action {
-      display: inline-block;
-      cursor: pointer;
-      text-decoration: none;
-    }
-
-    .pill.action:hover {
-      transform: translateY(-1px);
-      filter: brightness(0.95);
-    }
-
-
-
-    .bookings-table td[data-label="Payment"] {
-      white-space: normal;
-    }
-
-    .bookings-table td[data-label="Payment"] .pill {
-      display: inline-block;
-      margin-bottom: 4px;
-    }
-
-    .bookings-table td {
-      position: relative;
-      z-index: 1;
-    }
-
-    .bookings-table td a {
-      position: relative;
-      z-index: 2;
-    }
-
-
-    .pill.action:hover {
-      outline: 2px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .pill.action.warn {
-      background: #fff1e6;
-      border: 1px solid #f59e0b;
-    }
-  </style>
-
-  <link rel="icon" href="images/favicon.png">
-</head>
-
-<body>
-
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="index.html">
-        <img class="brand-logo" src="images/logo.png" alt="Equine Transport UK logo">
-        <span>Equine Transport UK Admin</span>
-      </a>
-
-      <div class="header-actions">
-        <a class="btn ghost" href="index.html">← Back to site</a>
-        <button class="btn primary" id="refresh-btn" type="button">Refresh bookings</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="container">
-    <section class="hero">
-      <div class="hero-card">
-        <p class="hero-kicker">Admin</p>
-        <h1>Booking register & form viewer</h1>
-        <p>
-          View bookings, check payment progress, confirm form completion,
-          and open the full submitted long/short form including signature.
-        </p>
-
-        <div class="toolbar">
-          <div class="field">
-            <label for="search-input">Search</label>
-            <input id="search-input" type="text" placeholder="Reference, customer, email, vehicle...">
-          </div>
-
-          <div class="field">
-            <label for="status-filter">Form filter</label>
-            <select id="status-filter">
-              <option value="all">All bookings</option>
-              <option value="form_complete">Form complete</option>
-              <option value="form_missing">Form missing</option>
-              <option value="short_required">Short form required</option>
-              <option value="long_required">Long form required</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="range-from">From</label>
-            <input id="range-from" type="date">
-          </div>
-
-          <div class="field">
-            <label for="range-to">To</label>
-            <input id="range-to" type="date">
-          </div>
-
-          <div class="field">
-            <label>&nbsp;</label>
-            <button class="btn ghost" id="clear-filters-btn" type="button">
-              Clear filters
-            </button>
-          </div>
-        </div>
-
-
-        <div class="meta-row">
-          <div id="booking-count">0 bookings</div>
-          <div id="last-loaded">Not loaded yet</div>
-        </div>
-
-        <div id="top-status" class="status-bar loading">
-          Ready.
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <h2>Bookings</h2>
-        <div class="muted">Click “View Form” to load full submission</div>
-      </div>
-
-      <div class="card list-wrap">
-
-        <div class="table-scroll-top" id="scroll-top"></div>
-
-        <table class="bookings-table">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Vehicle</th>
-              <th>Pickup</th>
-              <th>Return</th>
-              <th>Payment</th>
-              <th>Form</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="bookings-body">
-            <tr>
-              <td colspan="7" class="empty-state">
-                Loading bookings...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- ===============================
-   FORM MODAL (FIXED)
-=============================== -->
-  <div id="form-modal" class="et-modal hidden">
-
-    <div class="et-modal-backdrop" id="modal-close"></div>
-
-    <div class="et-modal-card">
-
-      <div class="et-modal-header">
-        <h3>Form details</h3>
-        <button id="modal-close-btn">✕</button>
-      </div>
-
-      <div class="et-modal-body">
-
-        <div id="modal-form-summary" class="detail-grid"></div>
-
-        <div class="subsection">
-          <h4>Submitted fields</h4>
-          <div id="modal-form-fields" class="kv-list"></div>
-        </div>
-
-        <div class="subsection">
-          <h4>Signature</h4>
-          <div id="modal-signature" class="et-modal-signature"></div>
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <script>
-    const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
-
-    const bookingsBody = document.getElementById("bookings-body");
-    const refreshBtn = document.getElementById("refresh-btn");
-    const topStatus = document.getElementById("top-status");
-    const bookingCount = document.getElementById("booking-count");
-    const lastLoaded = document.getElementById("last-loaded");
-
-    const searchInput = document.getElementById("search-input");
-    const statusFilter = document.getElementById("status-filter");
-    const rangeFromInput = document.getElementById("range-from");
-    const rangeToInput = document.getElementById("range-to");
-
-    const modal = document.getElementById("form-modal");
-    const modalClose = document.getElementById("modal-close");
-    const modalCloseBtn = document.getElementById("modal-close-btn");
-
-    const modalSummary = document.getElementById("modal-form-summary");
-    const modalFields = document.getElementById("modal-form-fields");
-    const modalSignature = document.getElementById("modal-signature");
-
-
-    let allBookings = [];
-    let filteredBookings = [];
-
-
-    function buildContactButtons(booking) {
-
-      let phone = booking.customerMobile || "";
-      const email = booking.customerEmail || "";
-      const name = booking.customerName || "there";
-      const bookingId = booking.id || "";
-
-      /* ===============================
-         FORMAT UK NUMBER
-      =============================== */
-
-      let whatsapp = "";
-
-      if (phone) {
-        let cleaned = normaliseUKPhone(phone);
-
-        if (cleaned.startsWith("07")) {
-          cleaned = "44" + cleaned.slice(1);
-        }
-
-        if (cleaned.startsWith("44")) {
-          whatsapp = cleaned;
-        }
+      .contact-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .contact-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        width: 30px;
+        height: 30px;
+
+        border-radius: 8px;
+        border: 1px solid var(--line);
+
+        background: #fff;
+        text-decoration: none;
+        font-size: 14px;
+
+        transition: all 0.15s ease;
+      }
+
+      .contact-btn:hover {
+        background: var(--soft);
+        transform: translateY(-1px);
+      }
+
+      .contact-call {
+        color: var(--ok);
+      }
+
+      .contact-email {
+        color: var(--accent);
+      }
+
+      .contact-whatsapp {
+        color: #25d366;
       }
 
       /* ===============================
-         LINKS
-      =============================== */
+   WHATSAPP ACTION BUTTONS
+=============================== */
 
-      const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+      .wa-form {
+        color: #2563eb;
+        /* blue */
+      }
 
-      const formType =
-        booking.requiredFormType ||
-        booking.required_form_type ||
-        "long";
+      .wa-deposit {
+        color: #16a34a;
+        /* green */
+      }
 
-      const formPath = formType === "short"
-        ? "/forms/short-form.html"
-        : "/forms/long-form.html";
+      .wa-outstanding {
+        color: #b45309;
+        /* orange */
+      }
 
-      const formLink = `${BASE}${formPath}?bookingId=${bookingId}`;
-      const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
-      const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
+      .pill {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        margin: 2px 6px 2px 0;
+      }
 
-      /* ===============================
-         WHATSAPP MESSAGES
-      =============================== */
+      .pill.action {
+        display: inline-block;
+        cursor: pointer;
+        text-decoration: none;
+      }
 
-      const msgForm = encodeURIComponent(
-        `Hi ${name},
+      .pill.action:hover {
+        transform: translateY(-1px);
+        filter: brightness(0.95);
+      }
+
+      .bookings-table td[data-label="Payment"] {
+        white-space: normal;
+      }
+
+      .bookings-table td[data-label="Payment"] .pill {
+        display: inline-block;
+        margin-bottom: 4px;
+      }
+
+      .bookings-table td {
+        position: relative;
+        z-index: 1;
+      }
+
+      .bookings-table td a {
+        position: relative;
+        z-index: 2;
+      }
+
+      .pill.action:hover {
+        outline: 2px solid rgba(0, 0, 0, 0.05);
+      }
+
+      .pill.action.warn {
+        background: #fff1e6;
+        border: 1px solid #f59e0b;
+      }
+    </style>
+
+    <link rel="icon" href="images/favicon.png" />
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html">
+          <img
+            class="brand-logo"
+            src="images/logo.png"
+            alt="Equine Transport UK logo"
+          />
+          <span>Equine Transport UK Admin</span>
+        </a>
+
+        <div class="header-actions">
+          <a class="btn ghost" href="index.html">← Back to site</a>
+          <button class="btn primary" id="refresh-btn" type="button">
+            Refresh bookings
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div class="hero-card">
+          <p class="hero-kicker">Admin</p>
+          <h1>Booking register & form viewer</h1>
+          <p>
+            View bookings, check payment progress, confirm form completion, and
+            open the full submitted long/short form including signature.
+          </p>
+
+          <div class="toolbar">
+            <div class="field">
+              <label for="search-input">Search</label>
+              <input
+                id="search-input"
+                type="text"
+                placeholder="Reference, customer, email, vehicle..."
+              />
+            </div>
+
+            <div class="field">
+              <label for="status-filter">Form filter</label>
+              <select id="status-filter">
+                <option value="all">All bookings</option>
+                <option value="form_complete">Form complete</option>
+                <option value="form_missing">Form missing</option>
+                <option value="short_required">Short form required</option>
+                <option value="long_required">Long form required</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="range-from">From</label>
+              <input id="range-from" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="range-to">To</label>
+              <input id="range-to" type="date" />
+            </div>
+
+            <div class="field">
+              <label>&nbsp;</label>
+              <button class="btn ghost" id="clear-filters-btn" type="button">
+                Clear filters
+              </button>
+            </div>
+          </div>
+
+          <div class="meta-row">
+            <div id="booking-count">0 bookings</div>
+            <div id="last-loaded">Not loaded yet</div>
+          </div>
+
+          <div id="top-status" class="status-bar loading">Ready.</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Bookings</h2>
+          <div class="muted">Click “View Form” to load full submission</div>
+        </div>
+
+        <div class="card list-wrap">
+          <div class="table-scroll-top" id="scroll-top"></div>
+
+          <table class="bookings-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Vehicle</th>
+                <th>Pickup</th>
+                <th>Return</th>
+                <th>Payment</th>
+                <th>Form</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="bookings-body">
+              <tr>
+                <td colspan="7" class="empty-state">Loading bookings...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===============================
+   FORM MODAL (FIXED)
+=============================== -->
+    <div id="form-modal" class="et-modal hidden">
+      <div class="et-modal-backdrop" id="modal-close"></div>
+
+      <div class="et-modal-card">
+        <div class="et-modal-header">
+          <h3>Form details</h3>
+          <button id="modal-close-btn">✕</button>
+        </div>
+
+        <div class="et-modal-body">
+          <div id="modal-form-summary" class="detail-grid"></div>
+
+          <div class="subsection">
+            <h4>Submitted fields</h4>
+            <div id="modal-form-fields" class="kv-list"></div>
+          </div>
+
+          <div class="subsection">
+            <h4>Signature</h4>
+            <div id="modal-signature" class="et-modal-signature"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
+
+      const bookingsBody = document.getElementById("bookings-body");
+      const refreshBtn = document.getElementById("refresh-btn");
+      const topStatus = document.getElementById("top-status");
+      const bookingCount = document.getElementById("booking-count");
+      const lastLoaded = document.getElementById("last-loaded");
+
+      const searchInput = document.getElementById("search-input");
+      const statusFilter = document.getElementById("status-filter");
+      const rangeFromInput = document.getElementById("range-from");
+      const rangeToInput = document.getElementById("range-to");
+
+      const modal = document.getElementById("form-modal");
+      const modalClose = document.getElementById("modal-close");
+      const modalCloseBtn = document.getElementById("modal-close-btn");
+
+      const modalSummary = document.getElementById("modal-form-summary");
+      const modalFields = document.getElementById("modal-form-fields");
+      const modalSignature = document.getElementById("modal-signature");
+
+      let allBookings = [];
+      let filteredBookings = [];
+
+      function buildContactButtons(booking) {
+        let phone = booking.customerMobile || "";
+        const email = booking.customerEmail || "";
+        const name = booking.customerName || "there";
+        const bookingId = booking.id || "";
+
+        /* ===============================
+       FORMAT UK NUMBER
+    =============================== */
+
+        let whatsapp = "";
+
+        if (phone) {
+          let cleaned = normaliseUKPhone(phone);
+
+          if (cleaned.startsWith("07")) {
+            cleaned = "44" + cleaned.slice(1);
+          }
+
+          if (cleaned.startsWith("44")) {
+            whatsapp = cleaned;
+          }
+        }
+
+        /* ===============================
+       LINKS
+    =============================== */
+
+        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+        const formType =
+          booking.requiredFormType || booking.required_form_type || "long";
+
+        const formPath =
+          formType === "short"
+            ? "/forms/short-form.html"
+            : "/forms/long-form.html";
+
+        const formLink = `${BASE}${formPath}?bookingId=${bookingId}`;
+        const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
+        const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
+
+        /* ===============================
+       WHATSAPP MESSAGES
+    =============================== */
+
+        const msgForm = encodeURIComponent(
+          `Hi ${name},
 
 Please complete your required ${formType.toUpperCase()} form for your booking.
 
@@ -916,11 +907,11 @@ Booking reference: ${shortRef(bookingId)}
 👉 ${formLink}
 
 Thank you,
-Equine Transport UK`
-      );
+Equine Transport UK`,
+        );
 
-      const msgDeposit = encodeURIComponent(
-        `Hi ${name},
+        const msgDeposit = encodeURIComponent(
+          `Hi ${name},
 
 Please complete your £200 security deposit hold for your booking.
 
@@ -931,11 +922,11 @@ Booking reference: ${shortRef(bookingId)}
 This is a card authorisation only.
 
 Thank you,
-Equine Transport UK`
-      );
+Equine Transport UK`,
+        );
 
-      const msgOutstanding = encodeURIComponent(
-        `Hi ${name},
+        const msgOutstanding = encodeURIComponent(
+          `Hi ${name},
 
 Your outstanding balance is now ready to be paid.
 
@@ -944,62 +935,67 @@ Booking reference: ${shortRef(bookingId)}
 👉 ${outstandingLink}
 
 Thank you,
-Equine Transport UK`
-      );
+Equine Transport UK`,
+        );
 
-      /* ===============================
-         BUTTONS
-      =============================== */
+        /* ===============================
+       BUTTONS
+    =============================== */
 
-      const phoneBtn = phone
-        ? `<a href="tel:${phone}" class="contact-btn contact-call" title="Call ${phone}">📞</a>`
-        : "";
+        const phoneBtn = phone
+          ? `<a href="tel:${phone}" class="contact-btn contact-call" title="Call ${phone}">📞</a>`
+          : "";
 
-      const emailBase = email ? `mailto:${email}` : "";
+        const emailBase = email ? `mailto:${email}` : "";
 
-      const emailFormBtn = email
-        ? `<a 
+        const emailFormBtn = email
+          ? `<a 
         href="${emailBase}?subject=${encodeURIComponent("Complete your booking form")}&body=${msgForm}"
         class="contact-btn contact-email"
         title="Send form email"
      >📄</a>`
-        : "";
+          : "";
 
-      const emailDepositBtn = email
-        ? `<a 
+        const emailDepositBtn = email
+          ? `<a 
         href="${emailBase}?subject=${encodeURIComponent("Complete your deposit")}&body=${msgDeposit}"
         class="contact-btn contact-email"
         title="Send deposit email"
      >🔒</a>`
-        : "";
+          : "";
 
-      const emailOutstandingBtn = email
-        ? `<a 
+        const emailOutstandingBtn = email
+          ? `<a 
         href="${emailBase}?subject=${encodeURIComponent("Outstanding balance payment")}&body=${msgOutstanding}"
         class="contact-btn contact-email"
         title="Send outstanding email" 
      >💰</a>`
-        : "";
+          : "";
 
-      const waBase = whatsapp
-        ? `https://wa.me/${whatsapp}`
-        : "";
+        const waBase = whatsapp ? `https://wa.me/${whatsapp}` : "";
 
-      const waFormBtn = whatsapp
-        ? `<a href="${waBase}?text=${msgForm}" target="_blank" class="contact-btn wa-form" title="Send form link">📄</a>`
-        : "";
+        const waFormBtn = whatsapp
+          ? `<a href="${waBase}?text=${msgForm}" target="_blank" class="contact-btn wa-form" title="Send form link">📄</a>`
+          : "";
 
-      const waDepositBtn = whatsapp
-        ? `<a href="${waBase}?text=${msgDeposit}" target="_blank" class="contact-btn wa-deposit" title="Send deposit link">🔒</a>`
-        : "";
+        const waDepositBtn = whatsapp
+          ? `<a href="${waBase}?text=${msgDeposit}" target="_blank" class="contact-btn wa-deposit" title="Send deposit link">🔒</a>`
+          : "";
 
-      const waOutstandingBtn = whatsapp
-        ? `<a href="${waBase}?text=${msgOutstanding}" target="_blank" class="contact-btn wa-outstanding" title="Send outstanding link">💰</a>`
-        : "";
+        const waOutstandingBtn = whatsapp
+          ? `<a href="${waBase}?text=${msgOutstanding}" target="_blank" class="contact-btn wa-outstanding" title="Send outstanding link">💰</a>`
+          : "";
 
-      if (!phoneBtn && !emailBtn && !waFormBtn && !waDepositBtn && !waOutstandingBtn) return "";
+        if (
+          !phoneBtn &&
+          !emailBtn &&
+          !waFormBtn &&
+          !waDepositBtn &&
+          !waOutstandingBtn
+        )
+          return "";
 
-      return `
+        return `
     <div class="contact-actions">
   ${phoneBtn}
 
@@ -1013,146 +1009,151 @@ ${waOutstandingBtn}
 ${emailOutstandingBtn}
     </div>
   `;
-    }
+      }
 
-    function pad(n) {
-      return String(n).padStart(2, "0");
-    }
+      function pad(n) {
+        return String(n).padStart(2, "0");
+      }
 
-    function toDateInputValue(date) {
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    }
+      function toDateInputValue(date) {
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      }
 
-    function defaultRanges() {
-      const from = new Date();
-      from.setMonth(from.getMonth() - 2);
+      function defaultRanges() {
+        const from = new Date();
+        from.setMonth(from.getMonth() - 2);
 
-      const to = new Date();
-      to.setMonth(to.getMonth() + 4);
+        const to = new Date();
+        to.setMonth(to.getMonth() + 4);
 
-      rangeFromInput.value = toDateInputValue(from);
-      rangeToInput.value = toDateInputValue(to);
-    }
+        rangeFromInput.value = toDateInputValue(from);
+        rangeToInput.value = toDateInputValue(to);
+      }
 
-    function setStatus(message, mode = "loading") {
-      topStatus.className = `status-bar ${mode}`;
-      topStatus.innerHTML = message;
-    }
+      function setStatus(message, mode = "loading") {
+        topStatus.className = `status-bar ${mode}`;
+        topStatus.innerHTML = message;
+      }
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
 
-    function formatDateTime(value) {
-      if (!value) return "—";
-      const d = new Date(value);
-      if (Number.isNaN(d.getTime())) return String(value);
+      function formatDateTime(value) {
+        if (!value) return "—";
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return String(value);
 
-      return d.toLocaleString("en-GB", {
-        timeZone: "Europe/London",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
-      });
-    }
+        return d.toLocaleString("en-GB", {
+          timeZone: "Europe/London",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      }
 
-    function shortRef(id) {
-      if (!id) return "—";
-      return "#" + String(id).slice(-8);
-    }
+      function shortRef(id) {
+        if (!id) return "—";
+        return "#" + String(id).slice(-8);
+      }
 
-    function yesNoPill(value, yesText = "Yes", noText = "No") {
-      if (value) return `<span class="pill ok">${escapeHtml(yesText)}</span>`;
-      return `<span class="pill bad">${escapeHtml(noText)}</span>`;
-    }
+      function yesNoPill(value, yesText = "Yes", noText = "No") {
+        if (value) return `<span class="pill ok">${escapeHtml(yesText)}</span>`;
+        return `<span class="pill bad">${escapeHtml(noText)}</span>`;
+      }
 
-    function normaliseBookingsResponse(data) {
-      if (Array.isArray(data)) return data;
-      if (Array.isArray(data?.bookings)) return data.bookings;
-      return [];
-    }
+      function normaliseBookingsResponse(data) {
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.bookings)) return data.bookings;
+        return [];
+      }
 
-    function getVehicleName(booking) {
-      return (
-        booking?.vehicleSnapshot?.name ||
-        booking?.vehicleName ||
-        booking?.vehicle_id ||
-        booking?.vehicleId ||
-        "—"
-      );
-    }
+      function getVehicleName(booking) {
+        return (
+          booking?.vehicleSnapshot?.name ||
+          booking?.vehicleName ||
+          booking?.vehicle_id ||
+          booking?.vehicleId ||
+          "—"
+        );
+      }
 
-    function getCustomerName(booking) {
-      return booking?.customerName || booking?.customer_name || "—";
-    }
+      function getCustomerName(booking) {
+        return booking?.customerName || booking?.customer_name || "—";
+      }
 
-    function getCustomerEmail(booking) {
-      return booking?.customerEmail || booking?.customer_email || "—";
-    }
+      function getCustomerEmail(booking) {
+        return booking?.customerEmail || booking?.customer_email || "—";
+      }
 
-    function isFormComplete(booking) {
-      return booking?.formCompleted === true || booking?.form_completed === true;
-    }
+      function isFormComplete(booking) {
+        return (
+          booking?.formCompleted === true || booking?.form_completed === true
+        );
+      }
 
-    function getRequiredFormType(booking) {
-      return (
-        booking?.requiredFormType ||
-        booking?.required_form_type ||
-        booking?.formTypeRequired ||
-        null
-      );
-    }
+      function getRequiredFormType(booking) {
+        return (
+          booking?.requiredFormType ||
+          booking?.required_form_type ||
+          booking?.formTypeRequired ||
+          null
+        );
+      }
 
-    function isDepositPaid(booking) {
-      return booking?.depositPaid === true || booking?.deposit_paid === true;
-    }
+      function isDepositPaid(booking) {
+        return booking?.depositPaid === true || booking?.deposit_paid === true;
+      }
 
-    function isOutstandingPaid(booking) {
-      if (booking?.outstandingPaid === true || booking?.outstanding_paid === true) return true;
-      if (booking?.paymentStatus === "fully_paid") return true;
-      if (booking?.status === "fully_paid") return true;
-      if (Number(booking?.outstandingAmount || 0) <= 0) return true;
-      return false;
-    }
+      function isOutstandingPaid(booking) {
+        if (
+          booking?.outstandingPaid === true ||
+          booking?.outstanding_paid === true
+        )
+          return true;
+        if (booking?.paymentStatus === "fully_paid") return true;
+        if (booking?.status === "fully_paid") return true;
+        if (Number(booking?.outstandingAmount || 0) <= 0) return true;
+        return false;
+      }
 
-    function isConfirmationPaid(booking) {
-      if (booking?.status === "pending_confirmation_payment") return false;
-      if (booking?.paymentStatus === "confirmation_paid") return true;
-      if (booking?.paymentStatus === "deposit_paid") return true;
-      if (booking?.paymentStatus === "fully_paid") return true;
-      return true;
-    }
+      function isConfirmationPaid(booking) {
+        if (booking?.status === "pending_confirmation_payment") return false;
+        if (booking?.paymentStatus === "confirmation_paid") return true;
+        if (booking?.paymentStatus === "deposit_paid") return true;
+        if (booking?.paymentStatus === "fully_paid") return true;
+        return true;
+      }
 
-    function getFirstName(fullName) {
-      if (!fullName) return "Customer";
-      return fullName.trim().split(" ")[0];
-    }
+      function getFirstName(fullName) {
+        if (!fullName) return "Customer";
+        return fullName.trim().split(" ")[0];
+      }
 
-    function paymentHtml(booking) {
+      function paymentHtml(booking) {
+        const confirmation = isConfirmationPaid(booking);
+        const deposit = isDepositPaid(booking);
+        const outstanding = isOutstandingPaid(booking);
 
-      const confirmation = isConfirmationPaid(booking);
-      const deposit = isDepositPaid(booking);
-      const outstanding = isOutstandingPaid(booking);
+        const firstName = getFirstName(getCustomerName(booking));
+        const id = booking.id || "";
 
-      const firstName = getFirstName(getCustomerName(booking));
-      const id = booking.id || "";
+        let phone = booking.customerMobile || "";
 
-      let phone = booking.customerMobile || "";
+        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
 
-      const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+        const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
+        const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
 
-      const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
-      const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
-
-      const msgDeposit = `Dear ${firstName},
+        const msgDeposit = `Dear ${firstName},
 
 Please complete your £200 security deposit for your booking.
 
@@ -1164,7 +1165,7 @@ Kind regards,
 Koos & Avril  
 Equine Transport UK`;
 
-      const msgOutstanding = `Dear ${firstName},
+        const msgOutstanding = `Dear ${firstName},
 
 Your outstanding balance is now ready to be paid.
 
@@ -1174,8 +1175,8 @@ Kind regards,
 Koos & Avril  
 Equine Transport UK`;
 
-      const waDeposit = phone
-        ? `<button 
+        const waDeposit = phone
+          ? `<button 
         class="pill action warn js-wa"
         data-phone="${phone}"
         data-type="deposit"
@@ -1184,10 +1185,10 @@ Equine Transport UK`;
      >
         Deposit not secured
      </button>`
-        : `<span class="pill warn">Deposit not secured</span>`;
+          : `<span class="pill warn">Deposit not secured</span>`;
 
-      const waOutstanding = phone
-        ? `<button 
+        const waOutstanding = phone
+          ? `<button 
         class="pill action warn js-wa"
         data-phone="${phone}"
         data-type="outstanding"
@@ -1196,44 +1197,46 @@ Equine Transport UK`;
      >
         Outstanding open
      </button>`
-        : `<span class="pill warn">Outstanding open</span>`;
+          : `<span class="pill warn">Outstanding open</span>`;
 
-      return `
-    ${confirmation
-          ? '<span class="pill ok">Confirmation paid</span>'
-          : '<span class="pill bad">Confirmation pending</span>'}
-
-    ${deposit
-          ? '<span class="pill ok">Deposit secured</span>'
-          : waDeposit}
-
-    ${outstanding
-          ? '<span class="pill ok">Outstanding paid</span>'
-          : waOutstanding}
-  `;
+        return `
+    ${
+      confirmation
+        ? '<span class="pill ok">Confirmation paid</span>'
+        : '<span class="pill bad">Confirmation pending</span>'
     }
 
-    function formHtml(booking) {
+    ${deposit ? '<span class="pill ok">Deposit secured</span>' : waDeposit}
 
-      const complete = isFormComplete(booking);
-      const requiredType = getRequiredFormType(booking);
+    ${
+      outstanding
+        ? '<span class="pill ok">Outstanding paid</span>'
+        : waOutstanding
+    }
+  `;
+      }
 
-      const firstName = getFirstName(getCustomerName(booking));
-      const id = booking.id || "";
+      function formHtml(booking) {
+        const complete = isFormComplete(booking);
+        const requiredType = getRequiredFormType(booking);
 
-      const phone = booking.customerMobile || "";
-      const whatsapp = normaliseUKPhone(phone); // ✅ FIXED
+        const firstName = getFirstName(getCustomerName(booking));
+        const id = booking.id || "";
 
-      const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+        const phone = booking.customerMobile || "";
+        const whatsapp = normaliseUKPhone(phone); // ✅ FIXED
 
-      const formPath = requiredType === "short"
-        ? "/forms/short-form.html"
-        : "/forms/long-form.html";
+        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
 
-      const formLink = `${BASE}${formPath}?bookingId=${id}`;
+        const formPath =
+          requiredType === "short"
+            ? "/forms/short-form.html"
+            : "/forms/long-form.html";
 
-      const msgForm = encodeURIComponent(
-        `Dear ${firstName},
+        const formLink = `${BASE}${formPath}?bookingId=${id}`;
+
+        const msgForm = encodeURIComponent(
+          `Dear ${firstName},
 
 Please complete your ${requiredType?.toUpperCase() || "required"} form for your booking.
 
@@ -1241,152 +1244,152 @@ ${formLink}
 
 Kind regards,  
 Koos & Avril  
-Equine Transport UK`
-      );
+Equine Transport UK`,
+        );
 
-      let pills = "";
+        let pills = "";
 
-      /* ===============================
-         FORM STATUS (CLICKABLE)
-      =============================== */
+        /* ===============================
+       FORM STATUS (CLICKABLE)
+    =============================== */
 
-      if (complete) {
-        pills += '<span class="pill ok">Form submitted</span>';
-      } else {
-        pills += whatsapp
-          ? `<a 
+        if (complete) {
+          pills += '<span class="pill ok">Form submitted</span>';
+        } else {
+          pills += whatsapp
+            ? `<a 
            href="https://wa.me/${whatsapp}?text=${msgForm}" 
            target="_blank" 
            class="pill action bad"
          >
            Form missing
          </a>`
-          : `<span class="pill bad">Form missing</span>`;
-      }
+            : `<span class="pill bad">Form missing</span>`;
+        }
 
-      /* ===============================
-         REQUIRED TYPE
-      =============================== */
+        /* ===============================
+       REQUIRED TYPE
+    =============================== */
 
-      if (requiredType === "short") {
-        pills += '<span class="pill neutral">Short required</span>';
-      } else if (requiredType === "long") {
-        pills += '<span class="pill neutral">Long required</span>';
-      }
+        if (requiredType === "short") {
+          pills += '<span class="pill neutral">Short required</span>';
+        } else if (requiredType === "long") {
+          pills += '<span class="pill neutral">Long required</span>';
+        }
 
-      /* ===============================
-         SUBMITTED DATE
-      =============================== */
+        /* ===============================
+       SUBMITTED DATE
+    =============================== */
 
-      if (booking?.formSubmittedAt) {
-        pills += `
+        if (booking?.formSubmittedAt) {
+          pills += `
       <div class="tiny">
         Submitted: ${escapeHtml(formatDateTime(booking.formSubmittedAt))}
       </div>
     `;
+        }
+
+        return pills;
       }
 
-      return pills;
-    }
+      function bookingMatchesSearch(booking, search) {
+        if (!search) return true;
 
-    function bookingMatchesSearch(booking, search) {
-      if (!search) return true;
+        const haystack = [
+          booking?.id,
+          shortRef(booking?.id),
+          getCustomerName(booking),
+          getCustomerEmail(booking),
+          booking?.customerMobile,
+          getVehicleName(booking),
+          booking?.vehicleId,
+          booking?.status,
+          booking?.requiredFormType,
+        ]
+          .join(" ")
+          .toLowerCase();
 
-      const haystack = [
-        booking?.id,
-        shortRef(booking?.id),
-        getCustomerName(booking),
-        getCustomerEmail(booking),
-        booking?.customerMobile,
-        getVehicleName(booking),
-        booking?.vehicleId,
-        booking?.status,
-        booking?.requiredFormType
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(search.toLowerCase());
-    }
-
-    function bookingMatchesFilter(booking, filter) {
-      if (filter === "all") return true;
-      if (filter === "form_complete") return isFormComplete(booking);
-      if (filter === "form_missing") return !isFormComplete(booking);
-      if (filter === "short_required") return getRequiredFormType(booking) === "short";
-      if (filter === "long_required") return getRequiredFormType(booking) === "long";
-      return true;
-    }
-
-    function truncateBookingId(id) {
-      if (!id) return "—";
-
-      const str = String(id);
-
-      if (str.length <= 18) return str;
-
-      return str.slice(0, 14) + "…" + str.slice(-6);
-    }
-
-    function isUrgentBooking(booking) {
-      if (!booking) return false;
-
-      // if deposit already paid → not urgent
-      if (booking.depositPaid === true || booking.deposit_paid === 1) {
-        return false;
+        return haystack.includes(search.toLowerCase());
       }
 
-      if (!booking.pickupAt) return false;
-
-      const now = Date.now();
-      const pickup = new Date(booking.pickupAt).getTime();
-
-      if (isNaN(pickup)) return false;
-
-      const diffHours = (pickup - now) / (1000 * 60 * 60);
-
-      return diffHours <= 48;
-    }
-
-    function openWhatsApp(phone, text) {
-      if (!phone) return;
-
-      let cleaned = phone.replace(/\s+/g, "");
-
-      if (cleaned.startsWith("07")) {
-        cleaned = "44" + cleaned.slice(1);
+      function bookingMatchesFilter(booking, filter) {
+        if (filter === "all") return true;
+        if (filter === "form_complete") return isFormComplete(booking);
+        if (filter === "form_missing") return !isFormComplete(booking);
+        if (filter === "short_required")
+          return getRequiredFormType(booking) === "short";
+        if (filter === "long_required")
+          return getRequiredFormType(booking) === "long";
+        return true;
       }
 
-      if (!cleaned.startsWith("44")) return;
+      function truncateBookingId(id) {
+        if (!id) return "—";
 
-      const url = "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
+        const str = String(id);
 
-      window.open(url, "_blank");
-    }
+        if (str.length <= 18) return str;
 
-    function attachWhatsAppHandlers() {
+        return str.slice(0, 14) + "…" + str.slice(-6);
+      }
 
-      document.querySelectorAll(".js-wa").forEach(btn => {
+      function isUrgentBooking(booking) {
+        if (!booking) return false;
 
-        btn.onclick = () => {
+        // if deposit already paid → not urgent
+        if (booking.depositPaid === true || booking.deposit_paid === 1) {
+          return false;
+        }
 
-          const phone = btn.getAttribute("data-phone");
-          const type = btn.getAttribute("data-type");
-          const name = btn.getAttribute("data-name");
-          const id = btn.getAttribute("data-id");
+        if (!booking.pickupAt) return false;
 
-          if (!phone || !type) return;
+        const now = Date.now();
+        const pickup = new Date(booking.pickupAt).getTime();
 
-          let cleaned = phone.replace(/\s+/g, "");
-          if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
-          if (!cleaned.startsWith("44")) return;
+        if (isNaN(pickup)) return false;
 
-          const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+        const diffHours = (pickup - now) / (1000 * 60 * 60);
 
-          let text = "";
+        return diffHours <= 48;
+      }
 
-          if (type === "deposit") {
-            text = `Dear ${name},
+      function openWhatsApp(phone, text) {
+        if (!phone) return;
+
+        let cleaned = phone.replace(/\s+/g, "");
+
+        if (cleaned.startsWith("07")) {
+          cleaned = "44" + cleaned.slice(1);
+        }
+
+        if (!cleaned.startsWith("44")) return;
+
+        const url =
+          "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
+
+        window.open(url, "_blank");
+      }
+
+      function attachWhatsAppHandlers() {
+        document.querySelectorAll(".js-wa").forEach((btn) => {
+          btn.onclick = () => {
+            const phone = btn.getAttribute("data-phone");
+            const type = btn.getAttribute("data-type");
+            const name = btn.getAttribute("data-name");
+            const id = btn.getAttribute("data-id");
+
+            if (!phone || !type) return;
+
+            let cleaned = phone.replace(/\s+/g, "");
+            if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
+            if (!cleaned.startsWith("44")) return;
+
+            const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+            let text = "";
+
+            if (type === "deposit") {
+              text = `Dear ${name},
 
 Please complete your £200 security deposit for your booking.
 
@@ -1397,10 +1400,10 @@ This is a card authorisation only.
 Kind regards,  
 Koos & Avril  
 Equine Transport UK`;
-          }
+            }
 
-          if (type === "outstanding") {
-            text = `Dear ${name},
+            if (type === "outstanding") {
+              text = `Dear ${name},
 
 Your outstanding balance is now ready to be paid.
 
@@ -1409,35 +1412,35 @@ ${BASE}/pay-outstanding.html?bookingId=${id}
 Kind regards,  
 Koos & Avril  
 Equine Transport UK`;
-          }
+            }
 
-          const url = "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
+            const url =
+              "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
 
-          window.open(url, "_blank");
-        };
+            window.open(url, "_blank");
+          };
+        });
+      }
 
-      });
+      function renderBookings() {
+        const search = searchInput.value.trim();
+        const filter = statusFilter.value;
 
-    }
+        filteredBookings = allBookings
+          .filter((booking) => bookingMatchesSearch(booking, search))
+          .filter((booking) => bookingMatchesFilter(booking, filter))
+          .sort(
+            (a, b) => new Date(b.pickupAt || 0) - new Date(a.pickupAt || 0),
+          );
 
-    function renderBookings() {
+        bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
 
-      const search = searchInput.value.trim();
-      const filter = statusFilter.value;
+        /* ===============================
+       EMPTY STATE
+    =============================== */
 
-      filteredBookings = allBookings
-        .filter((booking) => bookingMatchesSearch(booking, search))
-        .filter((booking) => bookingMatchesFilter(booking, filter))
-        .sort((a, b) => new Date(b.pickupAt || 0) - new Date(a.pickupAt || 0));
-
-      bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
-
-      /* ===============================
-         EMPTY STATE
-      =============================== */
-
-      if (!filteredBookings.length) {
-        bookingsBody.innerHTML = `
+        if (!filteredBookings.length) {
+          bookingsBody.innerHTML = `
       <tr>
         <td colspan="7" class="empty-state">
           No bookings found for the current filters.
@@ -1445,27 +1448,27 @@ Equine Transport UK`;
       </tr>
     `;
 
-        setTimeout(syncScroll, 0);
-        return;
-      }
+          setTimeout(syncScroll, 0);
+          return;
+        }
 
-      /* ===============================
-         RENDER TABLE
-      =============================== */
+        /* ===============================
+       RENDER TABLE
+    =============================== */
 
-      bookingsBody.innerHTML = filteredBookings.map((booking) => {
+        bookingsBody.innerHTML = filteredBookings
+          .map((booking) => {
+            const bookingId = escapeHtml(booking.id || "");
+            const phone = escapeHtml(booking.customerMobile || "");
 
-        const bookingId = escapeHtml(booking.id || "");
-        const phone = escapeHtml(booking.customerMobile || "");
-
-        return `
-<tr class="${isUrgentBooking(booking) ? 'urgent-booking' : ''}">
+            return `
+<tr class="${isUrgentBooking(booking) ? "urgent-booking" : ""}">
 
   <td data-label="Customer">
 
     <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
 
-    <span 
+        <span 
       class="tiny booking-id"
       data-id="${bookingId}"
       title="Click to copy full booking reference"
@@ -1522,190 +1525,191 @@ Equine Transport UK`;
 
 </tr>
 `;
-      }).join("");
+          })
+          .join("");
 
-      /* ===============================
-         🔥 DEBUG CHECK (IMPORTANT)
-      =============================== */
+        /* ===============================
+       🔥 DEBUG CHECK (IMPORTANT)
+    =============================== */
 
-      setTimeout(() => {
+        setTimeout(() => {
+          const waButtons = document.querySelectorAll(".js-wa");
 
-        const waButtons = document.querySelectorAll(".js-wa");
+          console.log("WA buttons found:", waButtons.length);
 
-        console.log("WA buttons found:", waButtons.length);
+          if (waButtons.length === 0) {
+            console.warn("⚠️ No WhatsApp buttons rendered");
+          }
 
-        if (waButtons.length === 0) {
-          console.warn("⚠️ No WhatsApp buttons rendered");
-        }
+          syncScroll();
+        }, 0);
+      }
 
-        syncScroll();
-
-      }, 0);
-    }
-
-    function makeDetailBox(label, value) {
-      return `
+      function makeDetailBox(label, value) {
+        return `
         <div class="detail-box">
           <div class="label">${escapeHtml(label)}</div>
           <div class="value">${escapeHtml(value ?? "—")}</div>
         </div>
       `;
-    }
-
-    function prettyValue(value) {
-      if (value === null || value === undefined || value === "") return "—";
-      if (typeof value === "boolean") return value ? "Yes" : "No";
-      if (typeof value === "object") return JSON.stringify(value, null, 2);
-      return String(value);
-    }
-
-    function buildFieldEntries(formData) {
-      const entries = [];
-
-      if (formData?.payload && typeof formData.payload === "object") {
-        for (const [key, value] of Object.entries(formData.payload)) {
-          if (key === "signatureData") continue;
-          entries.push([key, value]);
-        }
       }
 
-      if (!entries.length) {
-        for (const [key, value] of Object.entries(formData || {})) {
-          if (
-            [
-              "found", "payload", "signatureData", "signature_data",
-              "form", "customer", "bookingId", "bookingID"
-            ].includes(key)
-          ) continue;
-          if (typeof value === "object" && value !== null) continue;
-          entries.push([key, value]);
-        }
+      function prettyValue(value) {
+        if (value === null || value === undefined || value === "") return "—";
+        if (typeof value === "boolean") return value ? "Yes" : "No";
+        if (typeof value === "object") return JSON.stringify(value, null, 2);
+        return String(value);
       }
 
-      return entries;
-    }
+      function buildFieldEntries(formData) {
+        const entries = [];
 
-    function getSignatureData(formData) {
-      return (
-        formData?.signatureData ||
-        formData?.signature_data ||
-        formData?.payload?.signatureData ||
-        formData?.form?.signatureData ||
-        ""
-      );
-    }
-
-
-    function openModal() {
-      modal.classList.remove("hidden");
-      document.body.style.overflow = "hidden";
-    }
-
-    function closeModal() {
-      modal.classList.add("hidden");
-      document.body.style.overflow = "";
-    }
-
-    function showModalLoading() {
-      modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
-      modalFields.innerHTML = "";
-      modalSignature.innerHTML = "";
-      openModal();
-    }
-
-    function updateClearButton() {
-      const hasFilters =
-        searchInput.value ||
-        statusFilter.value !== "all";
-
-      clearFiltersBtn.style.display = hasFilters ? "block" : "none";
-    }
-
-    function normaliseUKPhone(phone) {
-      if (!phone) return "";
-
-      let cleaned = String(phone)
-        .trim()
-        .replace(/\s+/g, "")   // remove spaces
-        .replace(/[^\d+]/g, "") // remove weird chars
-        .replace(/^\+/, "");   // remove leading +
-
-      // Convert 07 → 44
-      if (cleaned.startsWith("07")) {
-        cleaned = "44" + cleaned.slice(1);
-      }
-
-      // Already correct
-      if (cleaned.startsWith("44")) {
-        return cleaned;
-      }
-
-      return ""; // invalid
-    }
-
-    function formatUKDisplay(phone) {
-      const cleaned = normaliseUKPhone(phone);
-      if (!cleaned) return phone || "—";
-
-      return "0" + cleaned.slice(2);
-    }
-
-    searchInput.addEventListener("input", updateClearButton);
-    statusFilter.addEventListener("change", updateClearButton);
-
-    modalClose.addEventListener("click", closeModal);
-    modalCloseBtn.addEventListener("click", closeModal);
-
-    const modalCard = modal.querySelector(".et-modal-card");
-    if (modalCard) {
-      modalCard.addEventListener("click", (e) => e.stopPropagation());
-    }
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeModal();
-    });
-
-    document.addEventListener("click", async (e) => {
-
-      /* ===============================
-         🎯 TARGET ELEMENT (STABLE)
-      =============================== */
-
-      const target = e.target;
-
-      /* ===============================
-         ✅ WHATSAPP BUTTONS (PRIORITY)
-      =============================== */
-
-      const waBtn = target.closest(".js-wa");
-      if (waBtn) {
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        const phone = waBtn.dataset.phone;
-        const type = waBtn.dataset.type;
-        const name = waBtn.dataset.name;
-        const id = waBtn.dataset.id;
-
-        if (!phone || !type) {
-          console.warn("WA button missing data", waBtn);
-          return;
+        if (formData?.payload && typeof formData.payload === "object") {
+          for (const [key, value] of Object.entries(formData.payload)) {
+            if (key === "signatureData") continue;
+            entries.push([key, value]);
+          }
         }
 
+        if (!entries.length) {
+          for (const [key, value] of Object.entries(formData || {})) {
+            if (
+              [
+                "found",
+                "payload",
+                "signatureData",
+                "signature_data",
+                "form",
+                "customer",
+                "bookingId",
+                "bookingID",
+              ].includes(key)
+            )
+              continue;
+            if (typeof value === "object" && value !== null) continue;
+            entries.push([key, value]);
+          }
+        }
+
+        return entries;
+      }
+
+      function getSignatureData(formData) {
+        return (
+          formData?.signatureData ||
+          formData?.signature_data ||
+          formData?.payload?.signatureData ||
+          formData?.form?.signatureData ||
+          ""
+        );
+      }
+
+      function openModal() {
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeModal() {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+
+      function showModalLoading() {
+        modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
+        modalFields.innerHTML = "";
+        modalSignature.innerHTML = "";
+        openModal();
+      }
+
+      function updateClearButton() {
+        const hasFilters = searchInput.value || statusFilter.value !== "all";
+
+        clearFiltersBtn.style.display = hasFilters ? "block" : "none";
+      }
+
+      function normaliseUKPhone(phone) {
+        if (!phone) return "";
+
+        let cleaned = String(phone)
+          .trim()
+          .replace(/\s+/g, "") // remove spaces
+          .replace(/[^\d+]/g, "") // remove weird chars
+          .replace(/^\+/, ""); // remove leading +
+
+        // Convert 07 → 44
+        if (cleaned.startsWith("07")) {
+          cleaned = "44" + cleaned.slice(1);
+        }
+
+        // Already correct
+        if (cleaned.startsWith("44")) {
+          return cleaned;
+        }
+
+        return ""; // invalid
+      }
+
+      function formatUKDisplay(phone) {
         const cleaned = normaliseUKPhone(phone);
+        if (!cleaned) return phone || "—";
 
-        if (!cleaned) {
-          console.warn("Invalid phone:", phone);
-          return;
-        }
+        return "0" + cleaned.slice(2);
+      }
 
-        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+      searchInput.addEventListener("input", updateClearButton);
+      statusFilter.addEventListener("change", updateClearButton);
 
-        let text = "";
+      modalClose.addEventListener("click", closeModal);
+      modalCloseBtn.addEventListener("click", closeModal);
 
-        if (type === "deposit") {
-          text = `Dear ${name},
+      const modalCard = modal.querySelector(".et-modal-card");
+      if (modalCard) {
+        modalCard.addEventListener("click", (e) => e.stopPropagation());
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+      });
+
+      document.addEventListener("click", async (e) => {
+        /* ===============================
+       🎯 TARGET ELEMENT (STABLE)
+    =============================== */
+
+        const target = e.target;
+
+        /* ===============================
+       ✅ WHATSAPP BUTTONS (PRIORITY)
+    =============================== */
+
+        const waBtn = target.closest(".js-wa");
+        if (waBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const phone = waBtn.dataset.phone;
+          const type = waBtn.dataset.type;
+          const name = waBtn.dataset.name;
+          const id = waBtn.dataset.id;
+
+          if (!phone || !type) {
+            console.warn("WA button missing data", waBtn);
+            return;
+          }
+
+          const cleaned = normaliseUKPhone(phone);
+
+          if (!cleaned) {
+            console.warn("Invalid phone:", phone);
+            return;
+          }
+
+          const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+          let text = "";
+
+          if (type === "deposit") {
+            text = `Dear ${name},
 
 Please complete your £200 security deposit for your booking.
 
@@ -1716,10 +1720,10 @@ This is a card authorisation only.
 Kind regards,  
 Koos & Avril  
 Equine Transport UK`;
-        }
+          }
 
-        if (type === "outstanding") {
-          text = `Dear ${name},
+          if (type === "outstanding") {
+            text = `Dear ${name},
 
 Your outstanding balance is now ready to be paid.
 
@@ -1728,260 +1732,260 @@ ${BASE}/pay-outstanding.html?bookingId=${id}
 Kind regards,  
 Koos & Avril  
 Equine Transport UK`;
+          }
+
+          const url =
+            "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
+
+          console.log("Opening WhatsApp:", url); // 🔥 debug
+
+          window.open(url, "_blank");
+          return;
         }
 
-        const url = "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
+        /* ===============================
+       📋 COPY BOOKING ID
+    =============================== */
 
-        console.log("Opening WhatsApp:", url); // 🔥 debug
+        const el = target.closest(".booking-id");
+        if (el) {
+          const id = el.getAttribute("data-id");
+          if (!id) return;
 
-        window.open(url, "_blank");
-        return;
-      }
+          try {
+            await navigator.clipboard.writeText(id);
 
-      /* ===============================
-         📋 COPY BOOKING ID
-      =============================== */
+            el.textContent = "Copied ✓";
+            el.classList.add("copied");
 
-      const el = target.closest(".booking-id");
-      if (el) {
+            setTimeout(() => {
+              el.textContent = "Ref: " + shortRef(id);
+              el.classList.remove("copied");
+            }, 1200);
+          } catch (err) {
+            console.warn("Copy failed", err);
+          }
 
-        const id = el.getAttribute("data-id");
-        if (!id) return;
-
-        try {
-          await navigator.clipboard.writeText(id);
-
-          el.textContent = "Copied ✓";
-          el.classList.add("copied");
-
-          setTimeout(() => {
-            el.textContent = "Ref: " + shortRef(id);
-            el.classList.remove("copied");
-          }, 1200);
-
-        } catch (err) {
-          console.warn("Copy failed", err);
+          return;
         }
 
-        return;
-      }
+        /* ===============================
+       🔒 IGNORE OTHER BUTTONS/LINKS
+    =============================== */
 
-      /* ===============================
-         🔒 IGNORE OTHER BUTTONS/LINKS
-      =============================== */
+        if (target.closest("a, button")) return;
+      });
 
-      if (target.closest("a, button")) return;
+      const clearFiltersBtn = document.getElementById("clear-filters-btn");
 
-    });
+      clearFiltersBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        statusFilter.value = "all";
 
+        defaultRanges();
 
-    const clearFiltersBtn = document.getElementById("clear-filters-btn");
+        loadBookings();
 
-    clearFiltersBtn.addEventListener("click", () => {
+        updateClearButton(); // ✅ ADD THIS
+      });
 
-      searchInput.value = "";
-      statusFilter.value = "all";
+      async function loadBookings() {
+        const from = rangeFromInput.value;
+        const to = rangeToInput.value;
 
-      defaultRanges();
+        if (!from || !to) {
+          setStatus("Please select both from and to dates.", "error");
+          return;
+        }
 
-      loadBookings();
+        setStatus(
+          `<span class="spinner"></span>Loading bookings...`,
+          "loading",
+        );
 
-      updateClearButton(); // ✅ ADD THIS
-
-    });
-
-    async function loadBookings() {
-
-      const from = rangeFromInput.value;
-      const to = rangeToInput.value;
-
-      if (!from || !to) {
-        setStatus("Please select both from and to dates.", "error");
-        return;
-      }
-
-      setStatus(`<span class="spinner"></span>Loading bookings...`, "loading");
-
-      bookingsBody.innerHTML = `
+        bookingsBody.innerHTML = `
         <tr>
           <td colspan="7" class="empty-state">Loading bookings...</td>
         </tr>
       `;
 
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/bookings/list?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-        );
-
-        let data = {};
         try {
-          data = await res.json();
-        } catch {
-          data = {};
-        }
+          const res = await fetch(
+            `${API_BASE}/api/bookings/list?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+          );
 
-        if (!res.ok) {
-          throw new Error(data?.error || `Bookings API error (${res.status})`);
-        }
+          let data = {};
+          try {
+            data = await res.json();
+          } catch {
+            data = {};
+          }
 
-        allBookings = normaliseBookingsResponse(data);
+          if (!res.ok) {
+            throw new Error(
+              data?.error || `Bookings API error (${res.status})`,
+            );
+          }
 
-        console.log("ALL BOOKINGS:", allBookings);
+          allBookings = normaliseBookingsResponse(data);
 
-        renderBookings();
+          console.log("ALL BOOKINGS:", allBookings);
 
-        lastLoaded.textContent = `Last loaded: ${new Date().toLocaleString("en-GB", {
-          timeZone: "Europe/London",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false
-        })}`;
+          renderBookings();
 
-        setStatus(`Bookings loaded successfully.`, "loading");
+          lastLoaded.textContent = `Last loaded: ${new Date().toLocaleString(
+            "en-GB",
+            {
+              timeZone: "Europe/London",
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            },
+          )}`;
 
-      } catch (err) {
-        console.error("Failed to load bookings:", err);
-        setStatus(escapeHtml(err.message || "Failed to load bookings."), "error");
-        bookingsBody.innerHTML = `
+          setStatus(`Bookings loaded successfully.`, "loading");
+        } catch (err) {
+          console.error("Failed to load bookings:", err);
+          setStatus(
+            escapeHtml(err.message || "Failed to load bookings."),
+            "error",
+          );
+          bookingsBody.innerHTML = `
           <tr>
             <td colspan="7" class="empty-state">Failed to load bookings.</td>
           </tr>
         `;
-      }
-    }
-
-    async function loadForm(bookingId) {
-      if (!bookingId) return;
-
-
-      showModalLoading();
-
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`
-        );
-
-        // 🔥 SAFELY parse JSON (prevents crash on empty 404 body)
-        let data = {};
-        try {
-          data = await res.json();
-        } catch {
-          data = {};
         }
+      }
 
-        // ✅ HANDLE "NO FORM" (NORMAL CASE)
-        if (res.status === 404) {
-          modalSummary.innerHTML = `
+      async function loadForm(bookingId) {
+        if (!bookingId) return;
+
+        showModalLoading();
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
+          );
+
+          // 🔥 SAFELY parse JSON (prevents crash on empty 404 body)
+          let data = {};
+          try {
+            data = await res.json();
+          } catch {
+            data = {};
+          }
+
+          // ✅ HANDLE "NO FORM" (NORMAL CASE)
+          if (res.status === 404) {
+            modalSummary.innerHTML = `
         <div class="empty-state">
           No form submitted yet for this booking.
         </div>
       `;
-          modalFields.innerHTML = "";
-          modalSignature.innerHTML = "";
-          openModal();
-          return;
-        }
+            modalFields.innerHTML = "";
+            modalSignature.innerHTML = "";
+            openModal();
+            return;
+          }
 
-        // ❌ REAL ERROR
-        if (!res.ok) {
-          throw new Error(data?.error || `Form API error (${res.status})`);
-        }
+          // ❌ REAL ERROR
+          if (!res.ok) {
+            throw new Error(data?.error || `Form API error (${res.status})`);
+          }
 
-        // ✅ NORMAL FLOW
-        const formData = data.form || data;
+          // ✅ NORMAL FLOW
+          const formData = data.form || data;
 
-        modalSummary.innerHTML = `
+          modalSummary.innerHTML = `
       ${makeDetailBox("Booking reference", shortRef(bookingId))}
       ${makeDetailBox("Form type", formData.formType || "—")}
       ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
     `;
 
-        const entries = buildFieldEntries(formData);
+          const entries = buildFieldEntries(formData);
 
-        modalFields.innerHTML = entries.map(([key, value]) => `
+          modalFields.innerHTML = entries
+            .map(
+              ([key, value]) => `
       <div class="kv-item">
         <div class="kv-key">${escapeHtml(key)}</div>
         <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
       </div>
-    `).join("");
+    `,
+            )
+            .join("");
 
-        const signatureData = getSignatureData(formData);
+          const signatureData = getSignatureData(formData);
 
-        if (signatureData) {
-          modalSignature.innerHTML = `
+          if (signatureData) {
+            modalSignature.innerHTML = `
     <div class="et-modal-signature">
       <img src="${signatureData}" />
     </div>
   `;
-        } else {
-          modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
-        }
+          } else {
+            modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
+          }
 
-        openModal();
+          openModal();
+        } catch (err) {
+          console.error("Failed to load form:", err);
 
-      } catch (err) {
-        console.error("Failed to load form:", err);
-
-        modalSummary.innerHTML = `
+          modalSummary.innerHTML = `
       <div class="empty-state">
         ${escapeHtml(err.message || "Failed to load form.")}
       </div>
     `;
 
-        modalFields.innerHTML = "";
-        modalSignature.innerHTML = "";
+          modalFields.innerHTML = "";
+          modalSignature.innerHTML = "";
 
-        openModal();
+          openModal();
+        }
       }
-    }
 
-    bookingsBody.addEventListener("click", (event) => {
-      const btn = event.target.closest("[data-view-form]");
-      if (!btn) return;
-      loadForm(btn.getAttribute("data-view-form"));
-    });
+      bookingsBody.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-view-form]");
+        if (!btn) return;
+        loadForm(btn.getAttribute("data-view-form"));
+      });
 
-    refreshBtn.addEventListener("click", loadBookings);
-    searchInput.addEventListener("input", renderBookings);
-    statusFilter.addEventListener("change", renderBookings);
-    rangeFromInput.addEventListener("change", loadBookings);
-    rangeToInput.addEventListener("change", loadBookings);
+      refreshBtn.addEventListener("click", loadBookings);
+      searchInput.addEventListener("input", renderBookings);
+      statusFilter.addEventListener("change", renderBookings);
+      rangeFromInput.addEventListener("change", loadBookings);
+      rangeToInput.addEventListener("change", loadBookings);
 
+      defaultRanges();
+      loadBookings();
 
+      const scrollTop = document.getElementById("scroll-top");
+      const listWrap = document.querySelector(".list-wrap");
 
-    defaultRanges();
-    loadBookings();
+      function syncScroll() {
+        if (!scrollTop || !listWrap) return;
 
+        const table = listWrap.querySelector("table");
+        if (!table) return;
 
-    const scrollTop = document.getElementById("scroll-top");
-    const listWrap = document.querySelector(".list-wrap");
+        // create fake width
+        scrollTop.innerHTML = `<div style="width:${table.scrollWidth}px"></div>`;
 
-    function syncScroll() {
-      if (!scrollTop || !listWrap) return;
+        scrollTop.onscroll = () => {
+          listWrap.scrollLeft = scrollTop.scrollLeft;
+        };
 
-      const table = listWrap.querySelector("table");
-      if (!table) return;
+        listWrap.onscroll = () => {
+          scrollTop.scrollLeft = listWrap.scrollLeft;
+        };
+      }
 
-      // create fake width
-      scrollTop.innerHTML = `<div style="width:${table.scrollWidth}px"></div>`;
-
-      scrollTop.onscroll = () => {
-        listWrap.scrollLeft = scrollTop.scrollLeft;
-      };
-
-      listWrap.onscroll = () => {
-        scrollTop.scrollLeft = listWrap.scrollLeft;
-      };
-    }
-
-    // call after render
-    setTimeout(syncScroll, 100);
-
-  </script>
-
-</body>
-
+      // call after render
+      setTimeout(syncScroll, 100);
+    </script>
+  </body>
 </html>
