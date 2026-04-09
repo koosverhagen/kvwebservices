@@ -52,78 +52,6 @@
       }
 
       /* ===============================
-   MODAL
-=============================== */
-
-      .et-modal.hidden {
-        display: none !important;
-      }
-
-      .et-modal {
-        position: fixed;
-        inset: 0;
-        z-index: 999999;
-      }
-
-      .et-modal-backdrop {
-        position: absolute;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.45);
-        backdrop-filter: blur(4px);
-      }
-
-      .et-modal-card {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-
-        width: min(960px, 94vw);
-        max-height: 88vh;
-
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
-
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-
-      .et-modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--line);
-        background: #fff;
-      }
-
-      .et-modal-header h3 {
-        margin: 0;
-        font-size: 20px;
-        letter-spacing: -0.01em;
-      }
-
-      .et-modal-header button {
-        border: 1px solid var(--line);
-        background: #fff;
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        cursor: pointer;
-      }
-
-      .et-modal-body {
-        padding: 16px;
-        overflow-y: auto;
-        overflow-x: hidden;
-        flex: 1;
-        min-height: 0;
-      }
-
-      /* ===============================
    LAYOUT
 =============================== */
 
@@ -161,11 +89,6 @@
         object-fit: contain;
       }
 
-      .header-actions {
-        display: flex;
-        gap: 10px;
-      }
-
       /* ===============================
    BUTTONS
 =============================== */
@@ -186,6 +109,12 @@
       .btn.ghost {
         background: #fff;
         border: 1px solid var(--line);
+      }
+
+      .btn-small {
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 8px;
       }
 
       /* ===============================
@@ -226,119 +155,160 @@
       }
 
       /* ===============================
-   TABLE (FIXED VERSION)
+   TABLE BASE
 =============================== */
 
       .list-wrap {
         overflow-x: auto;
-        overflow-y: hidden;
-        border-radius: 18px;
-      }
-
-      /* isolate table */
-      .list-wrap table {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: auto;
-        background: #fff;
+        padding: 6px;
       }
 
       table {
+        width: 100%;
         border-collapse: separate;
-        /* 🔥 prevents sticky overlap bugs */
         border-spacing: 0;
+        background: #fff;
       }
 
-      /* header */
       thead th {
         position: sticky;
         top: 0;
-
-        background: #f8fafc;
+        background: #f9fafb;
         border-bottom: 1px solid var(--line);
-
-        padding: 14px;
-        font-size: 12px;
+        font-size: 11px;
         text-transform: uppercase;
-        color: var(--muted);
-
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        color: #6b7280;
       }
 
-      /* prevent crazy stretching */
+      /* ===============================
+   STRIPE ROW CARDS
+=============================== */
+
+      .bookings-table tbody tr {
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.15s ease;
+      }
+
+      .bookings-table tbody tr:hover {
+        background: #f8fafc;
+      }
+
+      .bookings-table tbody tr td {
+        padding: 16px;
+        background: #fff;
+        border-bottom: none;
+      }
+
+      .bookings-table tbody tr + tr td {
+        border-top: 10px solid transparent;
+      }
+
+      /* ===============================
+   COLUMN CONTROL
+=============================== */
+
       td,
       th {
         vertical-align: top;
-      }
-
-      /* control layout */
-      /* customer */
-      td:nth-child(1) {
-        width: 260px;
-      }
-
-      /* vehicle */
-      td:nth-child(2) {
-        width: 220px;
-      }
-
-      /* pickup / return */
-      td:nth-child(3),
-      td:nth-child(4) {
-        width: 160px;
-      }
-
-      /* rows */
-      tbody td {
-        padding: 14px;
-        border-bottom: 1px solid #edf2f7;
-        font-size: 14px;
-      }
-
-      /* prevent squashing */
-      td,
-      th {
         white-space: nowrap;
       }
 
-      /* allow wrapping */
       td:nth-child(2),
       td:nth-child(6),
       td:nth-child(7) {
         white-space: normal;
       }
 
-      /* first column tight */
-      table th:first-child,
       table td:first-child {
-        width: 1%;
+        white-space: normal !important;
       }
 
       /* ===============================
-   UI ELEMENTS
+   CUSTOMER BLOCK
 =============================== */
 
-      .booking-ref {
-        font-weight: 800;
-        font-size: 18px;
-
-        word-break: break-word;
+      .customer-block {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
       }
+
+      .customer-name {
+        font-weight: 700;
+      }
+
+      .booking-id {
+        font-weight: 800;
+        color: var(--accent);
+        cursor: pointer;
+      }
+
+      .booking-id:hover {
+        text-decoration: underline;
+      }
+
+      /* ===============================
+   TEXT
+=============================== */
 
       .tiny {
         font-size: 12px;
         color: var(--muted);
-
-        display: block;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
       }
 
-      .vehicle-line {
-        font-weight: 700;
+      /* ===============================
+   CONTACT BUTTONS
+=============================== */
+
+      .contact-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
       }
+
+      .contact-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 30px;
+        padding: 0 8px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        transition: 0.15s ease;
+      }
+
+      .contact-btn:hover {
+        background: var(--soft);
+        transform: translateY(-1px);
+      }
+
+      .contact-call {
+        color: var(--ok);
+      }
+      .contact-email {
+        color: var(--accent);
+      }
+      .wa-form {
+        color: #2563eb;
+        background: #eff6ff;
+      }
+      .wa-deposit {
+        color: #16a34a;
+        background: #f0fdf4;
+      }
+      .wa-outstanding {
+        color: #b45309;
+        background: #fff7ed;
+      }
+
+      /* ===============================
+   STATUS PILLS
+=============================== */
 
       .pill {
         display: inline-block;
@@ -353,173 +323,85 @@
         background: #ecfdf3;
         color: var(--ok);
       }
-
       .pill.warn {
         background: #fff7ed;
         color: var(--warn);
       }
-
       .pill.bad {
         background: #fff1f2;
         color: var(--bad);
       }
-
       .pill.neutral {
         background: #f3f4f6;
       }
 
       /* ===============================
-   FORM / MODAL CONTENT
+   STACK (NEW STRUCTURE)
 =============================== */
 
-      .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin-bottom: 14px;
-      }
-
-      .kv-list {
-        display: grid;
-        gap: 10px;
-      }
-
-      .kv-item {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 12px;
-      }
-
-      .kv-key {
-        font-size: 12px;
-        font-weight: 800;
-        color: var(--muted);
-        margin-bottom: 6px;
-      }
-
-      .kv-value {
-        font-size: 14px;
-        word-break: break-word;
-      }
-
-      .et-modal-signature img {
-        width: 100%;
-        border-radius: 12px;
-        border: 1px solid var(--line);
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
       }
 
       /* ===============================
-   EMPTY STATE
+   URGENCY
 =============================== */
 
-      .empty-state {
-        padding: 20px;
-        color: var(--muted);
+      .urgent-booking {
+        border-left: 4px solid #ef4444;
+        background: #fff7f7;
       }
 
       /* ===============================
-   RESPONSIVE
+   MODAL
 =============================== */
 
-      @media (max-width: 860px) {
+      .et-modal.hidden {
+        display: none !important;
+      }
+
+      .et-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+      }
+
+      .et-modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+      }
+
+      .et-modal-card {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(960px, 94vw);
+        max-height: 88vh;
+        background: #fff;
+        border-radius: 18px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .et-modal-body {
+        padding: 16px;
+        overflow-y: auto;
+      }
+
+      /* ===============================
+   MOBILE
+=============================== */
+
+      @media (max-width: 768px) {
         .toolbar {
           grid-template-columns: 1fr;
         }
 
-        .detail-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* ===============================
-   DOUBLE SCROLL (TOP + BOTTOM)
-=============================== */
-
-      .table-scroll-top {
-        overflow-x: auto;
-        overflow-y: hidden;
-        height: 12px;
-      }
-
-      .table-scroll-top div {
-        height: 1px;
-      }
-
-      /* Keep bottom scroll */
-      .list-wrap {
-        overflow-x: auto;
-        overflow-y: hidden;
-        position: relative;
-        /* 🔥 REQUIRED for sticky to behave correctly */
-      }
-
-      /* ===============================
-   STICKY FIRST COLUMN
-=============================== */
-
-      /* header above cells */
-      thead th:first-child {
-        z-index: 25;
-      }
-
-      /* ===============================
-   FIX COLUMN 1 OVERFLOW
-=============================== */
-
-      table td:first-child {
-        white-space: normal !important;
-        word-break: break-word;
-        overflow-wrap: anywhere;
-      }
-
-      /* ===============================
-   CLICKABLE BOOKING ID
-=============================== */
-
-      .booking-id {
-        cursor: pointer;
-        transition: 0.15s ease;
-        position: relative;
-      }
-
-      .booking-id:hover {
-        color: var(--accent);
-        text-decoration: underline;
-      }
-
-      /* copied state */
-      .booking-id.copied {
-        color: var(--ok);
-        font-weight: 700;
-      }
-
-      #clear-filters-btn {
-        opacity: 0.8;
-        display: none;
-      }
-
-      #clear-filters-btn:hover {
-        opacity: 1;
-      }
-
-      /* ===============================
-   STICKY FIRST VISIBLE COLUMN (CUSTOMER)
-=============================== */
-
-      .bookings-table th:first-child,
-      .bookings-table td:first-child {
-        position: sticky;
-        left: 0;
-        z-index: 5;
-        background: #fff;
-        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
-      }
-
-      /* ===============================
-   MOBILE CARD LAYOUT
-=============================== */
-
-      @media (max-width: 768px) {
         .bookings-table thead {
           display: none;
         }
@@ -534,212 +416,45 @@
 
         .bookings-table tr {
           margin-bottom: 16px;
-          background: #fff;
           border-radius: 12px;
           padding: 14px;
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
         }
 
-        .bookings-table td {
-          padding: 6px 0;
-          border: none;
-        }
-
-        /* LABELS (from data-label) */
         .bookings-table td::before {
           content: attr(data-label);
-          display: block;
           font-size: 11px;
-          font-weight: 600;
           color: #888;
-          margin-bottom: 2px;
-        }
-
-        /* CUSTOMER FIRST + STRONG */
-        .bookings-table td[data-label="Customer"] {
-          font-size: 16px;
-          font-weight: 600;
-          margin-bottom: 6px;
-        }
-
-        /* ACTION BUTTON */
-        .bookings-table .actions {
-          margin-top: 10px;
-        }
-
-        .bookings-table .btn {
-          width: 100%;
-        }
-      }
-
-      /* ===============================
-   CONTACT BUTTONS (UPGRADED)
-=============================== */
-
-      .contact-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 6px;
-      }
-
-      /* BASE BUTTON */
-      .contact-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-
-        height: 30px;
-        padding: 0 8px;
-
-        border-radius: 8px;
-        border: 1px solid var(--line);
-
-        background: #fff;
-        text-decoration: none;
-
-        font-size: 12px;
-        font-weight: 600;
-
-        line-height: 1;
-        white-space: nowrap;
-
-        transition: all 0.15s ease;
-      }
-
-      /* ICON */
-      .contact-btn span {
-        margin-right: 4px;
-      }
-
-      /* HOVER */
-      .contact-btn:hover {
-        background: var(--soft);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-      }
-
-      /* ===============================
-   TYPES
-=============================== */
-
-      .contact-call {
-        color: var(--ok);
-      }
-
-      .contact-email {
-        color: var(--accent);
-      }
-
-      .wa-form {
-        color: #2563eb; /* blue */
-      }
-
-      .wa-deposit {
-        color: #16a34a; /* green */
-      }
-
-      .wa-outstanding {
-        color: #b45309; /* orange */
-      }
-
-      /* ===============================
-   OPTIONAL: SUBTLE BACKGROUNDS
-=============================== */
-
-      .contact-btn.wa-deposit {
-        background: #f0fdf4;
-      }
-
-      .contact-btn.wa-outstanding {
-        background: #fff7ed;
-      }
-
-      .contact-btn.wa-form {
-        background: #eff6ff;
-      }
-
-      /* ===============================
-   MOBILE
-=============================== */
-
-      @media (max-width: 768px) {
-        .contact-actions {
-          gap: 4px;
         }
 
         .contact-btn {
           height: 28px;
           font-size: 11px;
-          padding: 0 6px;
         }
       }
 
-      /* ===============================
-   WHATSAPP ACTION BUTTONS
-=============================== */
-
-      .wa-form {
-        color: #2563eb;
-        /* blue */
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--muted);
       }
 
-      .wa-deposit {
-        color: #16a34a;
-        /* green */
+      .status-bar {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 13px;
       }
 
-      .wa-outstanding {
-        color: #b45309;
-        /* orange */
+      .status-bar.loading {
+        background: #f1f5f9;
       }
 
-      .pill {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 800;
-        margin: 2px 6px 2px 0;
-      }
-
-      .pill.action {
-        display: inline-block;
-        cursor: pointer;
-        text-decoration: none;
-      }
-
-      .pill.action:hover {
-        transform: translateY(-1px);
-        filter: brightness(0.95);
-      }
-
-      .bookings-table td[data-label="Payment"] {
-        white-space: normal;
-      }
-
-      .bookings-table td[data-label="Payment"] .pill {
-        display: inline-block;
-        margin-bottom: 4px;
-      }
-
-      .bookings-table td {
-        position: relative;
-        z-index: 1;
-      }
-
-      .bookings-table td a {
-        position: relative;
-        z-index: 2;
-      }
-
-      .pill.action:hover {
-        outline: 2px solid rgba(0, 0, 0, 0.05);
-      }
-
-      .pill.action.warn {
-        background: #fff1e6;
-        border: 1px solid #f59e0b;
+      .status-bar.error {
+        background: #fff1f2;
+        color: var(--bad);
       }
     </style>
 
@@ -986,8 +701,10 @@ Equine Transport UK`,
 =============================== */
 
         const phoneBtn = phone
-          ? `<a href="tel:${phone}" class="contact-btn contact-call" title="Call customer">
-       <span>📞</span>Call
+          ? `<a href="tel:${phone}" 
+        class="contact-btn contact-call" 
+        title="Call ${escapeHtml(formatUKDisplay(phone))}">
+        <span>📞</span>Call
      </a>`
           : "";
 
@@ -1259,26 +976,28 @@ Equine Transport UK`;
 
         const waDeposit = phone
           ? `<button 
-        class="pill action warn js-wa"
-        data-phone="${phone}"
-        data-type="deposit"
-        data-name="${firstName}"
-        data-id="${id}"
-     >
-        Deposit not secured
-     </button>`
+      class="pill action warn js-wa"
+      data-phone="${phone}"
+      data-type="deposit"
+      data-name="${firstName}"
+      data-id="${id}"
+      title="Send deposit to ${escapeHtml(formatUKDisplay(phone))}"
+    >
+      Deposit not secured
+    </button>`
           : `<span class="pill warn">Deposit not secured</span>`;
 
         const waOutstanding = phone
           ? `<button 
-        class="pill action warn js-wa"
-        data-phone="${phone}"
-        data-type="outstanding"
-        data-name="${firstName}"
-        data-id="${id}"
-     >
-        Outstanding open
-     </button>`
+      class="pill action warn js-wa"
+      data-phone="${phone}"
+      data-type="outstanding"
+      data-name="${firstName}"
+      data-id="${id}"
+      title="Send payment link to ${escapeHtml(formatUKDisplay(phone))}"
+    >
+      Outstanding open
+    </button>`
           : `<span class="pill warn">Outstanding open</span>`;
 
         return `
@@ -1300,78 +1019,60 @@ Equine Transport UK`;
 
       function formHtml(booking) {
         const complete = isFormComplete(booking);
-        const requiredType = getRequiredFormType(booking);
+        const requiredType = getRequiredFormType(booking) || "long";
 
         const firstName = getFirstName(getCustomerName(booking));
         const id = booking.id || "";
-
         const phone = booking.customerMobile || "";
-        const whatsapp = normaliseUKPhone(phone); // ✅ FIXED
 
-        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+        const resendBtn =
+          phone && !complete
+            ? `
+      <button
+        class="status-link status-bad js-wa"
+        type="button"
+        data-phone="${escapeHtml(phone)}"
+        data-type="form"
+        data-name="${escapeHtml(firstName)}"
+        data-id="${escapeHtml(id)}"
+        data-formtype="${escapeHtml(requiredType)}"
+      >
+        Send form link
+      </button>
+    `
+            : "";
 
-        const formPath =
-          requiredType === "short"
-            ? "/forms/short-form.html"
-            : "/forms/long-form.html";
+        return `
+    <div class="status-stack">
 
-        const formLink = `${BASE}${formPath}?bookingId=${id}`;
-
-        const msgForm = encodeURIComponent(
-          `Dear ${firstName},
-
-Please complete your ${requiredType?.toUpperCase() || "required"} form for your booking.
-
-${formLink}
-
-Kind regards,  
-Koos & Avril  
-Equine Transport UK`,
-        );
-
-        let pills = "";
-
-        /* ===============================
-       FORM STATUS (CLICKABLE)
-    =============================== */
-
-        if (complete) {
-          pills += '<span class="pill ok">Form submitted</span>';
-        } else {
-          pills += whatsapp
-            ? `<a 
-           href="https://wa.me/${whatsapp}?text=${msgForm}" 
-           target="_blank" 
-           class="pill action bad"
-         >
-           Form missing
-         </a>`
-            : `<span class="pill bad">Form missing</span>`;
-        }
-
-        /* ===============================
-       REQUIRED TYPE
-    =============================== */
-
-        if (requiredType === "short") {
-          pills += '<span class="pill neutral">Short required</span>';
-        } else if (requiredType === "long") {
-          pills += '<span class="pill neutral">Long required</span>';
-        }
-
-        /* ===============================
-       SUBMITTED DATE
-    =============================== */
-
-        if (booking?.formSubmittedAt) {
-          pills += `
-      <div class="tiny">
-        Submitted: ${escapeHtml(formatDateTime(booking.formSubmittedAt))}
+      <div class="status-row">
+        <span class="status-label">Form</span>
+        <span class="status-pill ${complete ? "status-ok" : "status-bad"}">
+          ${complete ? "Submitted" : "Missing"}
+        </span>
       </div>
-    `;
-        }
 
-        return pills;
+      <div class="status-row">
+        <span class="status-label">Required</span>
+        <span class="status-pill status-neutral">
+          ${requiredType === "short" ? "Short" : "Long"}
+        </span>
+      </div>
+
+      ${
+        booking?.formSubmittedAt
+          ? `
+        <div class="status-meta">
+          Submitted: ${escapeHtml(formatDateTime(booking.formSubmittedAt))}
+        </div>
+      `
+          : ""
+      }
+
+      ${!complete ? `<div class="status-actions">${resendBtn}</div>` : ""}
+
+    </div>
+  `;
       }
 
       function bookingMatchesSearch(booking, search) {
@@ -1435,75 +1136,6 @@ Equine Transport UK`,
         return diffHours <= 48;
       }
 
-      function openWhatsApp(phone, text) {
-        if (!phone) return;
-
-        let cleaned = phone.replace(/\s+/g, "");
-
-        if (cleaned.startsWith("07")) {
-          cleaned = "44" + cleaned.slice(1);
-        }
-
-        if (!cleaned.startsWith("44")) return;
-
-        const url =
-          "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
-
-        window.open(url, "_blank");
-      }
-
-      function attachWhatsAppHandlers() {
-        document.querySelectorAll(".js-wa").forEach((btn) => {
-          btn.onclick = () => {
-            const phone = btn.getAttribute("data-phone");
-            const type = btn.getAttribute("data-type");
-            const name = btn.getAttribute("data-name");
-            const id = btn.getAttribute("data-id");
-
-            if (!phone || !type) return;
-
-            let cleaned = phone.replace(/\s+/g, "");
-            if (cleaned.startsWith("07")) cleaned = "44" + cleaned.slice(1);
-            if (!cleaned.startsWith("44")) return;
-
-            const BASE = "https://kvwebservices.co.uk/equinetransportuk";
-
-            let text = "";
-
-            if (type === "deposit") {
-              text = `Dear ${name},
-
-Please complete your £200 security deposit for your booking.
-
-${BASE}/pay-deposit.html?bookingId=${id}
-
-This is a card authorisation only.
-
-Kind regards,  
-Koos & Avril  
-Equine Transport UK`;
-            }
-
-            if (type === "outstanding") {
-              text = `Dear ${name},
-
-Your outstanding balance is now ready to be paid.
-
-${BASE}/pay-outstanding.html?bookingId=${id}
-
-Kind regards,  
-Koos & Avril  
-Equine Transport UK`;
-            }
-
-            const url =
-              "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
-
-            window.open(url, "_blank");
-          };
-        });
-      }
-
       function renderBookings() {
         const search = searchInput.value.trim();
         const filter = statusFilter.value;
@@ -1543,67 +1175,99 @@ Equine Transport UK`;
             const bookingId = escapeHtml(booking.id || "");
             const phone = escapeHtml(booking.customerMobile || "");
 
-            return `
-<tr class="${isUrgentBooking(booking) ? "urgent-booking" : ""}">
+            /* ===============================
+   BUILD CELLS
+=============================== */
 
-  <td data-label="Customer">
+            const customerCell = `
+  <div class="customer-block">
 
-    <strong>${escapeHtml(getCustomerName(booking))}</strong><br>
-
-        <span 
-      class="tiny booking-id"
+    <div 
+      class="booking-id"
       data-id="${bookingId}"
       title="Click to copy full booking reference"
     >
-      Ref: ${escapeHtml(shortRef(booking.id))}
-    </span>
+      ${escapeHtml(shortRef(booking.id))}
+    </div>
 
-    <span class="tiny">${escapeHtml(getCustomerEmail(booking))}</span><br>
-    <span class="tiny">${phone}</span>
+    <div class="customer-name">
+      ${escapeHtml(getCustomerName(booking))}
+    </div>
+
+    <div class="tiny">
+      ${escapeHtml(getCustomerEmail(booking))}
+    </div>
+
+   <div class="tiny">
+  ${escapeHtml(formatUKDisplay(booking.customerMobile))}
+</div>
 
     ${buildContactButtons(booking)}
 
-  </td>
+  </div>
+`;
 
-  <td data-label="Vehicle">
+            const vehicleCell = `
+  <div>
     <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
-    <div class="tiny">${escapeHtml(booking.vehicleId || "—")}</div>
-  </td>
+    <div class="tiny">${escapeHtml(booking.vehicleId || "")}</div>
+  </div>
+`;
 
-  <td data-label="Pickup">
+            const pickupCell = `
+  <div>
     ${escapeHtml(formatDateTime(booking.pickupAt))}
-  </td>
+  </div>
+`;
 
-  <td data-label="Drop-off">
+            const returnCell = `
+  <div>
     ${escapeHtml(formatDateTime(booking.dropoffAt))}
-  </td>
+  </div>
+`;
 
-  <td data-label="Payment">
-
+            const paymentCell = `
+  <div class="stack">
     ${paymentHtml(booking)}
-
-    <div class="tiny" style="margin-top:6px;">
+    <div class="tiny">
       Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
       Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
     </div>
+  </div>
+`;
 
-  </td>
-
-  <td data-label="Form">
+            const formCell = `
+  <div class="stack">
     ${formHtml(booking)}
-  </td>
+  </div>
+`;
 
-  <td data-label="Actions">
-    <div class="actions">
-      <button 
-        class="btn small primary"
-        type="button"
-        data-view-form="${bookingId}"
-      >
-        View Form
-      </button>
-    </div>
-  </td>
+            const actionsCell = `
+  <div class="actions">
+    <button 
+      class="btn ghost btn-small"
+      type="button"
+      data-view-form="${bookingId}"
+    >
+      View Form
+    </button>
+  </div>
+`;
+
+            /* ===============================
+   RETURN ROW
+=============================== */
+
+            return `
+<tr class="${isUrgentBooking(booking) ? "urgent-booking" : ""}">
+
+  <td data-label="Customer">${customerCell}</td>
+  <td data-label="Vehicle">${vehicleCell}</td>
+  <td data-label="Pickup">${pickupCell}</td>
+  <td data-label="Drop-off">${returnCell}</td>
+  <td data-label="Payment">${paymentCell}</td>
+  <td data-label="Form">${formCell}</td>
+  <td data-label="Actions">${actionsCell}</td>
 
 </tr>
 `;
@@ -1790,6 +1454,24 @@ Equine Transport UK`;
 
           let text = "";
 
+          if (type === "form") {
+            const formType = waBtn.dataset.formtype || "long";
+            const formPath =
+              formType === "short"
+                ? "/forms/short-form.html"
+                : "/forms/long-form.html";
+
+            text = `Dear ${name},
+
+Please complete your ${formType.toUpperCase()} form for your booking.
+
+${BASE}${formPath}?bookingId=${id}
+
+Kind regards,
+Koos & Avril
+Equine Transport UK`;
+          }
+
           if (type === "deposit") {
             text = `Dear ${name},
 
@@ -1799,8 +1481,8 @@ ${BASE}/pay-deposit.html?bookingId=${id}
 
 This is a card authorisation only.
 
-Kind regards,  
-Koos & Avril  
+Kind regards,
+Koos & Avril
 Equine Transport UK`;
           }
 
@@ -1811,8 +1493,8 @@ Your outstanding balance is now ready to be paid.
 
 ${BASE}/pay-outstanding.html?bookingId=${id}
 
-Kind regards,  
-Koos & Avril  
+Kind regards,
+Koos & Avril
 Equine Transport UK`;
           }
 
