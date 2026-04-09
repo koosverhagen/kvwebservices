@@ -955,8 +955,30 @@ Equine Transport UK`
         ? `<a href="tel:${phone}" class="contact-btn contact-call" title="Call ${phone}">📞</a>`
         : "";
 
-      const emailBtn = email
-        ? `<a href="mailto:${email}" class="contact-btn contact-email" title="Email ${email}">✉️</a>`
+      const emailBase = email ? `mailto:${email}` : "";
+
+      const emailFormBtn = email
+        ? `<a 
+        href="${emailBase}?subject=${encodeURIComponent("Complete your booking form")}&body=${msgForm}"
+        class="contact-btn contact-email"
+        title="Send form email"
+     >📄</a>`
+        : "";
+
+      const emailDepositBtn = email
+        ? `<a 
+        href="${emailBase}?subject=${encodeURIComponent("Complete your deposit")}&body=${msgDeposit}"
+        class="contact-btn contact-email"
+        title="Send deposit email"
+     >🔒</a>`
+        : "";
+
+      const emailOutstandingBtn = email
+        ? `<a 
+        href="${emailBase}?subject=${encodeURIComponent("Outstanding balance payment")}&body=${msgOutstanding}"
+        class="contact-btn contact-email"
+        title="Send outstanding email" 
+     >💰</a>`
         : "";
 
       const waBase = whatsapp
@@ -979,11 +1001,16 @@ Equine Transport UK`
 
       return `
     <div class="contact-actions">
-      ${phoneBtn}
-      ${waFormBtn}
-      ${waDepositBtn}
-      ${waOutstandingBtn}
-      ${emailBtn}
+  ${phoneBtn}
+
+${waFormBtn}
+${emailFormBtn}
+
+${waDepositBtn}
+${emailDepositBtn}
+
+${waOutstandingBtn}
+${emailOutstandingBtn}
     </div>
   `;
     }
