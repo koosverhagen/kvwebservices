@@ -573,37 +573,55 @@
       }
 
       /* ===============================
-   CONTACT BUTTONS
+   CONTACT BUTTONS (UPGRADED)
 =============================== */
 
       .contact-actions {
         display: flex;
+        flex-wrap: wrap;
         gap: 6px;
         margin-top: 6px;
       }
 
+      /* BASE BUTTON */
       .contact-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
 
-        width: 30px;
         height: 30px;
+        padding: 0 8px;
 
         border-radius: 8px;
         border: 1px solid var(--line);
 
         background: #fff;
         text-decoration: none;
-        font-size: 14px;
+
+        font-size: 12px;
+        font-weight: 600;
+
+        line-height: 1;
+        white-space: nowrap;
 
         transition: all 0.15s ease;
       }
 
+      /* ICON */
+      .contact-btn span {
+        margin-right: 4px;
+      }
+
+      /* HOVER */
       .contact-btn:hover {
         background: var(--soft);
         transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
       }
+
+      /* ===============================
+   TYPES
+=============================== */
 
       .contact-call {
         color: var(--ok);
@@ -613,8 +631,48 @@
         color: var(--accent);
       }
 
-      .contact-whatsapp {
-        color: #25d366;
+      .wa-form {
+        color: #2563eb; /* blue */
+      }
+
+      .wa-deposit {
+        color: #16a34a; /* green */
+      }
+
+      .wa-outstanding {
+        color: #b45309; /* orange */
+      }
+
+      /* ===============================
+   OPTIONAL: SUBTLE BACKGROUNDS
+=============================== */
+
+      .contact-btn.wa-deposit {
+        background: #f0fdf4;
+      }
+
+      .contact-btn.wa-outstanding {
+        background: #fff7ed;
+      }
+
+      .contact-btn.wa-form {
+        background: #eff6ff;
+      }
+
+      /* ===============================
+   MOBILE
+=============================== */
+
+      @media (max-width: 768px) {
+        .contact-actions {
+          gap: 4px;
+        }
+
+        .contact-btn {
+          height: 28px;
+          font-size: 11px;
+          padding: 0 6px;
+        }
       }
 
       /* ===============================
@@ -854,30 +912,8 @@
       function buildContactButtons(booking) {
         let phone = booking.customerMobile || "";
         const email = booking.customerEmail || "";
-        const name = booking.customerName || "there";
+        const name = getFirstName(getCustomerName(booking));
         const bookingId = booking.id || "";
-
-        /* ===============================
-       FORMAT UK NUMBER
-    =============================== */
-
-        let whatsapp = "";
-
-        if (phone) {
-          let cleaned = normaliseUKPhone(phone);
-
-          if (cleaned.startsWith("07")) {
-            cleaned = "44" + cleaned.slice(1);
-          }
-
-          if (cleaned.startsWith("44")) {
-            whatsapp = cleaned;
-          }
-        }
-
-        /* ===============================
-       LINKS
-    =============================== */
 
         const BASE = "https://kvwebservices.co.uk/equinetransportuk";
 
@@ -894,121 +930,167 @@
         const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
 
         /* ===============================
-       WHATSAPP MESSAGES
-    =============================== */
+     PHONE CLEAN
+  =============================== */
 
-        const msgForm = encodeURIComponent(
-          `Hi ${name},
+        let whatsapp = "";
+        if (phone) {
+          let cleaned = normaliseUKPhone(phone);
+          if (cleaned.startsWith("44")) whatsapp = cleaned;
+        }
 
-Please complete your required ${formType.toUpperCase()} form for your booking.
+        /* ===============================
+     EMAIL CONTENT
+  =============================== */
 
-Booking reference: ${shortRef(bookingId)}
+        const emailForm = `mailto:${email}?subject=Form required for your booking&body=${encodeURIComponent(
+          `Dear ${name},
 
-👉 ${formLink}
+Please complete your ${formType.toUpperCase()} form for your booking.
 
-Thank you,
+${formLink}
+
+Kind regards,
+Koos & Avril
 Equine Transport UK`,
-        );
+        )}`;
 
-        const msgDeposit = encodeURIComponent(
-          `Hi ${name},
+        const emailDeposit = `mailto:${email}?subject=Deposit required for your booking&body=${encodeURIComponent(
+          `Dear ${name},
 
-Please complete your £200 security deposit hold for your booking.
+Please complete your £200 security deposit.
 
-Booking reference: ${shortRef(bookingId)}
-
-👉 ${depositLink}
+${depositLink}
 
 This is a card authorisation only.
 
-Thank you,
+Kind regards,
+Koos & Avril
 Equine Transport UK`,
-        );
+        )}`;
 
-        const msgOutstanding = encodeURIComponent(
-          `Hi ${name},
+        const emailOutstanding = `mailto:${email}?subject=Outstanding balance payment&body=${encodeURIComponent(
+          `Dear ${name},
 
-Your outstanding balance is now ready to be paid.
+Your outstanding balance is ready to be paid.
 
-Booking reference: ${shortRef(bookingId)}
+${outstandingLink}
 
-👉 ${outstandingLink}
-
-Thank you,
+Kind regards,
+Koos & Avril
 Equine Transport UK`,
-        );
+        )}`;
 
         /* ===============================
-       BUTTONS
-    =============================== */
+   BUTTONS (UPGRADED UI)
+=============================== */
 
         const phoneBtn = phone
-          ? `<a href="tel:${phone}" class="contact-btn contact-call" title="Call ${phone}">📞</a>`
+          ? `<a href="tel:${phone}" class="contact-btn contact-call" title="Call customer">
+       <span>📞</span>Call
+     </a>`
           : "";
 
-        const emailBase = email ? `mailto:${email}` : "";
-
-        const emailFormBtn = email
-          ? `<a 
-        href="${emailBase}?subject=${encodeURIComponent("Complete your booking form")}&body=${msgForm}"
-        class="contact-btn contact-email"
-        title="Send form email"
-     >📄</a>`
-          : "";
-
-        const emailDepositBtn = email
-          ? `<a 
-        href="${emailBase}?subject=${encodeURIComponent("Complete your deposit")}&body=${msgDeposit}"
-        class="contact-btn contact-email"
-        title="Send deposit email"
-     >🔒</a>`
-          : "";
-
-        const emailOutstandingBtn = email
-          ? `<a 
-        href="${emailBase}?subject=${encodeURIComponent("Outstanding balance payment")}&body=${msgOutstanding}"
-        class="contact-btn contact-email"
-        title="Send outstanding email" 
-     >💰</a>`
-          : "";
-
-        const waBase = whatsapp ? `https://wa.me/${whatsapp}` : "";
+        /* ===============================
+   WHATSAPP
+=============================== */
 
         const waFormBtn = whatsapp
-          ? `<a href="${waBase}?text=${msgForm}" target="_blank" class="contact-btn wa-form" title="Send form link">📄</a>`
+          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
+
+Please complete your ${formType.toUpperCase()} form for your booking.
+
+${formLink}
+
+Kind regards,
+Koos & Avril
+Equine Transport UK`)}"
+       target="_blank"
+       class="contact-btn wa-form"
+       title="Send form via WhatsApp">
+       <span>📄</span>Form
+     </a>`
           : "";
 
         const waDepositBtn = whatsapp
-          ? `<a href="${waBase}?text=${msgDeposit}" target="_blank" class="contact-btn wa-deposit" title="Send deposit link">🔒</a>`
+          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
+
+Please complete your £200 security deposit.
+
+${depositLink}
+
+This is a card authorisation only.
+
+Kind regards,
+Koos & Avril
+Equine Transport UK`)}"
+       target="_blank"
+       class="contact-btn wa-deposit"
+       title="Send deposit via WhatsApp">
+       <span>🔒</span>Deposit
+     </a>`
           : "";
 
         const waOutstandingBtn = whatsapp
-          ? `<a href="${waBase}?text=${msgOutstanding}" target="_blank" class="contact-btn wa-outstanding" title="Send outstanding link">💰</a>`
+          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
+
+Your outstanding balance is now ready to be paid.
+
+${outstandingLink}
+
+Kind regards,
+Koos & Avril
+Equine Transport UK`)}"
+       target="_blank"
+       class="contact-btn wa-outstanding"
+       title="Send outstanding via WhatsApp">
+       <span>💰</span>Outstanding
+     </a>`
           : "";
 
-        if (
-          !phoneBtn &&
-          !emailBtn &&
-          !waFormBtn &&
-          !waDepositBtn &&
-          !waOutstandingBtn
-        )
-          return "";
+        /* ===============================
+   EMAIL
+=============================== */
+
+        const emailFormBtn = email
+          ? `<a href="${emailForm}"
+       class="contact-btn contact-email"
+       title="Send form via email">
+       <span>📧</span>Form
+     </a>`
+          : "";
+
+        const emailDepositBtn = email
+          ? `<a href="${emailDeposit}"
+       class="contact-btn contact-email"
+       title="Send deposit via email">
+       <span>📧</span>Deposit
+     </a>`
+          : "";
+
+        const emailOutstandingBtn = email
+          ? `<a href="${emailOutstanding}"
+       class="contact-btn contact-email"
+       title="Send outstanding via email">
+       <span>📧</span>Outstanding
+     </a>`
+          : "";
+
+        /* ===============================
+   OUTPUT
+=============================== */
 
         return `
-    <div class="contact-actions">
-  ${phoneBtn}
-
-${waFormBtn}
-${emailFormBtn}
-
-${waDepositBtn}
-${emailDepositBtn}
-
-${waOutstandingBtn}
-${emailOutstandingBtn}
-    </div>
-  `;
+  <div class="contact-actions">
+    ${phoneBtn}
+    ${waFormBtn}
+    ${waDepositBtn}
+    ${waOutstandingBtn}
+    ${emailFormBtn}
+    ${emailDepositBtn}
+    ${emailOutstandingBtn}
+  </div>
+`;
       }
 
       function pad(n) {
