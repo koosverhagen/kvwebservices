@@ -389,24 +389,29 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: min(960px, 94vw);
-        max-height: 88vh;
+
+        width: min(900px, 92vw);
+        max-height: 90vh;
+
         background: #fff;
         border-radius: 18px;
+
         display: flex;
         flex-direction: column;
+
         overflow: hidden;
       }
 
       .et-modal-body {
-        padding: 16px;
+        padding: 20px;
         overflow-y: auto;
+        overflow-x: hidden; /* 🔥 FIX SIDE SCROLL */
       }
 
       .et-modal-header {
-        padding: 16px 20px;
-        font-size: 18px;
-        font-weight: 700;
+        position: relative;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
       }
 
       /* ===============================
@@ -494,14 +499,46 @@
 
       .kv-list {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 10px;
       }
 
       .modal-section-title {
-        margin: 18px 0 8px;
+        margin: 20px 0 8px;
         font-size: 14px;
         font-weight: 700;
+      }
+
+      /* 🔥 wrap section properly */
+      .modal-section {
+        margin-bottom: 10px;
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+
+        width: 34px;
+        height: 34px;
+
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .modal-close:hover {
+        background: var(--soft);
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
       }
     </style>
 
@@ -627,7 +664,7 @@
       <div class="et-modal-card">
         <div class="et-modal-header">
           <h3>Booking Form</h3>
-          <button id="modal-close-btn">✕</button>
+          <button id="modal-close-btn" class="modal-close">✕</button>
         </div>
 
         <div class="et-modal-body">
@@ -1744,8 +1781,9 @@ Equine Transport UK`;
             if (!items.length) return "";
 
             return `
-    <h4 class="modal-section-title">${title}</h4>
-    <div class="kv-list">
+   <div class="modal-section">
+  <h4 class="modal-section-title">${title}</h4>
+  <div class="kv-list">
       ${items
         .map(
           ([key, value]) => `
@@ -1757,6 +1795,7 @@ Equine Transport UK`;
         )
         .join("")}
     </div>
+  </div>
   `;
           }
 
