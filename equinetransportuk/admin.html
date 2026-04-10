@@ -215,8 +215,7 @@
       }
 
       td:nth-child(2),
-      td:nth-child(6),
-      td:nth-child(7) {
+      td:nth-child(6) {
         white-space: normal;
       }
 
@@ -540,6 +539,42 @@
         gap: 10px;
         margin-bottom: 16px;
       }
+
+      .actions-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .action-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .action-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+
+      .hire-block {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .hire-row {
+        display: flex;
+        gap: 6px;
+        font-size: 13px;
+      }
+
+      .hire-label {
+        font-weight: 700;
+        color: var(--muted);
+        min-width: 36px;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -638,11 +673,11 @@
               <tr>
                 <th>Customer</th>
                 <th>Vehicle</th>
-                <th>Pickup</th>
-                <th>Return</th>
+                <th>Hire</th>
                 <th>Payment</th>
                 <th>Form</th>
                 <th>Actions</th>
+                <th>DVLA</th>
               </tr>
             </thead>
             <tbody id="bookings-body">
@@ -707,192 +742,6 @@
 
       let allBookings = [];
       let filteredBookings = [];
-
-      function buildContactButtons(booking) {
-        let phone = booking.customerMobile || "";
-        const email = booking.customerEmail || "";
-        const name = getFirstName(getCustomerName(booking));
-        const bookingId = booking.id || "";
-
-        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
-
-        const formType =
-          booking.requiredFormType || booking.required_form_type || "long";
-
-        const formPath =
-          formType === "short"
-            ? "/forms/short-form.html"
-            : "/forms/long-form.html";
-
-        const formLink = `${BASE}${formPath}?bookingId=${bookingId}`;
-        const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
-        const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
-
-        /* ===============================
-     PHONE CLEAN
-  =============================== */
-
-        let whatsapp = "";
-        if (phone) {
-          let cleaned = normaliseUKPhone(phone);
-          if (cleaned.startsWith("44")) whatsapp = cleaned;
-        }
-
-        /* ===============================
-     EMAIL CONTENT
-  =============================== */
-
-        const emailForm = `mailto:${email}?subject=Form required for your booking&body=${encodeURIComponent(
-          `Dear ${name},
-
-Please complete your ${formType.toUpperCase()} form for your booking.
-
-${formLink}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`,
-        )}`;
-
-        const emailDeposit = `mailto:${email}?subject=Deposit required for your booking&body=${encodeURIComponent(
-          `Dear ${name},
-
-Please complete your £200 security deposit.
-
-${depositLink}
-
-This is a card authorisation only.
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`,
-        )}`;
-
-        const emailOutstanding = `mailto:${email}?subject=Outstanding balance payment&body=${encodeURIComponent(
-          `Dear ${name},
-
-Your outstanding balance is ready to be paid.
-
-${outstandingLink}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`,
-        )}`;
-
-        /* ===============================
-   BUTTONS (UPGRADED UI)
-=============================== */
-
-        const phoneBtn = phone
-          ? `<a href="tel:${phone}" 
-        class="contact-btn contact-call" 
-        title="Call ${escapeHtml(formatUKDisplay(phone))}">
-        <span>📞</span>Call
-     </a>`
-          : "";
-
-        /* ===============================
-   WHATSAPP
-=============================== */
-
-        const waFormBtn = whatsapp
-          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
-
-Please complete your ${formType.toUpperCase()} form for your booking.
-
-${formLink}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`)}"
-       target="_blank"
-       class="contact-btn wa-form"
-       title="Send form via WhatsApp">
-       <span>📄</span>Form
-     </a>`
-          : "";
-
-        const waDepositBtn = whatsapp
-          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
-
-Please complete your £200 security deposit.
-
-${depositLink}
-
-This is a card authorisation only.
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`)}"
-       target="_blank"
-       class="contact-btn wa-deposit"
-       title="Send deposit via WhatsApp">
-       <span>🔒</span>Deposit
-     </a>`
-          : "";
-
-        const waOutstandingBtn = whatsapp
-          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
-
-Your outstanding balance is now ready to be paid.
-
-${outstandingLink}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`)}"
-       target="_blank"
-       class="contact-btn wa-outstanding"
-       title="Send outstanding via WhatsApp">
-       <span>💰</span>Outstanding
-     </a>`
-          : "";
-
-        /* ===============================
-   EMAIL
-=============================== */
-
-        const emailFormBtn = email
-          ? `<a href="${emailForm}"
-       class="contact-btn contact-email"
-       title="Send form via email">
-       <span>📧</span>Form
-     </a>`
-          : "";
-
-        const emailDepositBtn = email
-          ? `<a href="${emailDeposit}"
-       class="contact-btn contact-email"
-       title="Send deposit via email">
-       <span>📧</span>Deposit
-     </a>`
-          : "";
-
-        const emailOutstandingBtn = email
-          ? `<a href="${emailOutstanding}"
-       class="contact-btn contact-email"
-       title="Send outstanding via email">
-       <span>📧</span>Outstanding
-     </a>`
-          : "";
-
-        /* ===============================
-   OUTPUT
-=============================== */
-
-        return `
-  <div class="contact-actions">
-    ${phoneBtn}
-    ${waFormBtn}
-    ${waDepositBtn}
-    ${waOutstandingBtn}
-    ${emailFormBtn}
-    ${emailDepositBtn}
-    ${emailOutstandingBtn}
-  </div>
-`;
-      }
 
       function pad(n) {
         return String(n).padStart(2, "0");
@@ -1212,6 +1061,27 @@ Equine Transport UK`;
         return diffHours <= 48;
       }
 
+      function getDvlaData(booking) {
+        const f =
+          booking?.formPayload || booking?.form_payload || booking?.form || {};
+
+        // try multiple structures (your system varies slightly)
+        const payload = f.payload || f;
+
+        const licence =
+          payload?.drivingLicenceNumber ||
+          payload?.licenceNumber ||
+          payload?.driverLicence ||
+          "";
+
+        const dvlaCode = payload?.dvlaCheckCode || payload?.dvlaCode || "";
+
+        return {
+          licence: String(licence || ""),
+          dvlaCode: String(dvlaCode || ""),
+        };
+      }
+
       function renderBookings() {
         const search = searchInput.value.trim();
         const filter = statusFilter.value;
@@ -1271,14 +1141,41 @@ Equine Transport UK`;
     </div>
 
     <div class="tiny">
+      ${escapeHtml(formatUKDisplay(booking.customerMobile))}
+    </div>
+
+    <div class="tiny">
       ${escapeHtml(getCustomerEmail(booking))}
     </div>
 
-   <div class="tiny">
-  ${escapeHtml(formatUKDisplay(booking.customerMobile))}
-</div>
+    <div class="contact-actions">
 
-    ${buildContactButtons(booking)}
+      ${
+        booking.customerMobile
+          ? `<a href="tel:${booking.customerMobile}" class="contact-btn contact-call">
+               📞 Call
+             </a>`
+          : ""
+      }
+
+      ${
+        booking.customerEmail
+          ? `<a href="mailto:${booking.customerEmail}?subject=Equine Transport UK&body=${encodeURIComponent(
+              `Dear ${getFirstName(getCustomerName(booking))},
+
+...
+
+With kind regards,
+Koos & Avril
+Equine Transport UK`,
+            )}"
+             class="contact-btn contact-email">
+             ✉️ Email
+           </a>`
+          : ""
+      }
+
+    </div>
 
   </div>
 `;
@@ -1290,15 +1187,19 @@ Equine Transport UK`;
   </div>
 `;
 
-            const pickupCell = `
-  <div>
-    ${escapeHtml(formatDateTime(booking.pickupAt))}
-  </div>
-`;
+            const hireCell = `
+  <div class="hire-block">
 
-            const returnCell = `
-  <div>
-    ${escapeHtml(formatDateTime(booking.dropoffAt))}
+    <div class="hire-row">
+      <span class="hire-label">From</span>
+      <span>${escapeHtml(formatDateTime(booking.pickupAt))}</span>
+    </div>
+
+    <div class="hire-row">
+      <span class="hire-label">To</span>
+      <span>${escapeHtml(formatDateTime(booking.dropoffAt))}</span>
+    </div>
+
   </div>
 `;
 
@@ -1319,14 +1220,146 @@ Equine Transport UK`;
 `;
 
             const actionsCell = `
-  <div class="actions">
-    <button 
-      class="btn ghost btn-small"
-      type="button"
-      data-view-form="${bookingId}"
-    >
-      View Form
-    </button>
+
+  <div class="actions-grid">
+
+    <!-- =======================
+         DEPOSIT
+    ======================= -->
+    <div class="action-group">
+      <div class="action-title">Deposit</div>
+
+      ${
+        isDepositPaid(booking)
+          ? `<span class="pill ok">Paid</span>`
+          : `
+            <button class="contact-btn wa-deposit js-wa"
+              data-phone="${booking.customerMobile}"
+              data-type="deposit"
+              data-name="${getFirstName(getCustomerName(booking))}"
+              data-id="${bookingId}">
+              WhatsApp
+            </button>
+
+            <a href="mailto:${booking.customerEmail}?subject=Deposit required&body=${encodeURIComponent(
+              `Dear ${getFirstName(getCustomerName(booking))},
+
+Please complete your £200 deposit.
+
+Kind regards,
+Koos & Avril`,
+            )}"
+            class="contact-btn contact-email">
+              Email
+            </a>
+          `
+      }
+    </div>
+
+    <!-- =======================
+         OUTSTANDING
+    ======================= -->
+    <div class="action-group">
+      <div class="action-title">Outstanding</div>
+
+      ${
+        isOutstandingPaid(booking)
+          ? `<span class="pill ok">Paid</span>`
+          : `
+            <button class="contact-btn wa-outstanding js-wa"
+              data-phone="${booking.customerMobile}"
+              data-type="outstanding"
+              data-name="${getFirstName(getCustomerName(booking))}"
+              data-id="${bookingId}">
+              WhatsApp
+            </button>
+
+            <a href="mailto:${booking.customerEmail}?subject=Outstanding payment&body=${encodeURIComponent(
+              `Dear ${getFirstName(getCustomerName(booking))},
+
+Your outstanding balance is ready.
+
+Kind regards,
+Koos & Avril`,
+            )}"
+            class="contact-btn contact-email">
+              Email
+            </a>
+          `
+      }
+    </div>
+
+    <!-- =======================
+         FORM
+    ======================= -->
+    <div class="action-group">
+      <div class="action-title">Form</div>
+
+      ${
+        isFormComplete(booking)
+          ? `<button class="btn primary btn-small"
+                data-view-form="${bookingId}">
+                View Form
+             </button>`
+          : `
+            <button class="contact-btn wa-form js-wa"
+              data-phone="${booking.customerMobile}"
+              data-type="form"
+              data-name="${getFirstName(getCustomerName(booking))}"
+              data-id="${bookingId}">
+              WhatsApp
+            </button>
+
+            <a href="mailto:${booking.customerEmail}?subject=Form required&body=${encodeURIComponent(
+              `Dear ${getFirstName(getCustomerName(booking))},
+
+Please complete your form.
+
+Kind regards,
+Koos & Avril`,
+            )}"
+            class="contact-btn contact-email">
+              Email
+            </a>
+          `
+      }
+
+    </div>
+
+  </div>
+`;
+
+            /* ===============================
+   DVLA COLUMN (NEW)
+=============================== */
+
+            const dvla = getDvlaData(booking);
+
+            const dvlaCell = `
+  <div class="stack">
+
+    ${
+      isFormComplete(booking) && dvla.licence && dvla.dvlaCode
+        ? `
+          <div class="tiny">
+            Licence: ••••${escapeHtml(dvla.licence.slice(-4))}
+          </div>
+
+          <div class="tiny">
+            Code: ${escapeHtml(dvla.dvlaCode)}
+          </div>
+
+          <button 
+            class="contact-btn js-copy-dvla"
+            data-licence="${escapeHtml(dvla.licence)}"
+            data-code="${escapeHtml(dvla.dvlaCode)}"
+          >
+            Copy
+          </button>
+        `
+        : `<span class="pill neutral">—</span>`
+    }
+
   </div>
 `;
 
@@ -1339,11 +1372,11 @@ Equine Transport UK`;
 
   <td data-label="Customer">${customerCell}</td>
   <td data-label="Vehicle">${vehicleCell}</td>
-  <td data-label="Pickup">${pickupCell}</td>
-  <td data-label="Drop-off">${returnCell}</td>
+  <td data-label="Hire">${hireCell}</td>
   <td data-label="Payment">${paymentCell}</td>
   <td data-label="Form">${formCell}</td>
   <td data-label="Actions">${actionsCell}</td>
+  <td data-label="DVLA">${dvlaCell}</td>
 
 </tr>
 `;
@@ -1499,6 +1532,30 @@ Equine Transport UK`;
     =============================== */
 
         const target = e.target;
+
+        const copyBtn = e.target.closest(".js-copy-dvla");
+        if (copyBtn) {
+          e.preventDefault();
+
+          const licence = copyBtn.dataset.licence;
+          const code = copyBtn.dataset.code;
+
+          const text = `Licence: ${licence}\nDVLA Code: ${code}`;
+
+          try {
+            await navigator.clipboard.writeText(text);
+
+            copyBtn.textContent = "Copied ✓";
+
+            setTimeout(() => {
+              copyBtn.textContent = "Copy";
+            }, 1200);
+          } catch (err) {
+            console.warn("Copy failed", err);
+          }
+
+          return;
+        }
 
         /* ===============================
        ✅ WHATSAPP BUTTONS (PRIORITY)
