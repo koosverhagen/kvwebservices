@@ -743,6 +743,52 @@
       let allBookings = [];
       let filteredBookings = [];
 
+      const DVLA_CACHE = {};
+
+      async function fetchDvlaData(bookingId) {
+        if (!bookingId) return null;
+
+        // ✅ return from cache if already loaded
+        if (DVLA_CACHE[bookingId]) {
+          return DVLA_CACHE[bookingId];
+        }
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
+          );
+
+          // no form → no DVLA
+          if (!res.ok) return null;
+
+          const data = await res.json();
+
+          const form = data.form || data;
+          const payload = form?.payload || form;
+
+          const licence =
+            payload?.drivingLicenceNumber ||
+            payload?.licenceNumber ||
+            payload?.driverLicence ||
+            "";
+
+          const dvlaCode = payload?.dvlaCheckCode || payload?.dvlaCode || "";
+
+          const result = {
+            licence: String(licence || ""),
+            dvlaCode: String(dvlaCode || ""),
+          };
+
+          // ✅ store in cache
+          DVLA_CACHE[bookingId] = result;
+
+          return result;
+        } catch (err) {
+          console.warn("DVLA fetch failed", err);
+          return null;
+        }
+      }
+
       function pad(n) {
         return String(n).padStart(2, "0");
       }
@@ -1337,29 +1383,7 @@ Koos & Avril`,
 
             const dvlaCell = `
   <div class="stack">
-
-    ${
-      isFormComplete(booking) && dvla.licence && dvla.dvlaCode
-        ? `
-          <div class="tiny">
-            Licence: ••••${escapeHtml(dvla.licence.slice(-4))}
-          </div>
-
-          <div class="tiny">
-            Code: ${escapeHtml(dvla.dvlaCode)}
-          </div>
-
-          <button 
-            class="contact-btn js-copy-dvla"
-            data-licence="${escapeHtml(dvla.licence)}"
-            data-code="${escapeHtml(dvla.dvlaCode)}"
-          >
-            Copy
-          </button>
-        `
-        : `<span class="pill neutral">—</span>`
-    }
-
+    <span class="pill neutral">Loading…</span>
   </div>
 `;
 
@@ -1376,7 +1400,7 @@ Koos & Avril`,
   <td data-label="Payment">${paymentCell}</td>
   <td data-label="Form">${formCell}</td>
   <td data-label="Actions">${actionsCell}</td>
-  <td data-label="DVLA">${dvlaCell}</td>
+  <td data-label="DVLA" data-dvla-id="${bookingId}">${dvlaCell}</td>
 
 </tr>
 `;
@@ -1395,6 +1419,42 @@ Koos & Avril`,
           if (waButtons.length === 0) {
             console.warn("⚠️ No WhatsApp buttons rendered");
           }
+
+          filteredBookings.forEach(async (booking) => {
+            if (!isFormComplete(booking)) return;
+
+            const dvla = await fetchDvlaData(booking.id);
+
+            if (!dvla || !dvla.licence || !dvla.dvlaCode) return;
+
+            const cell = document.querySelector(
+              `[data-dvla-id="${booking.id}"]`,
+            );
+
+            if (!cell) return;
+
+            cell.innerHTML = `
+      <div class="stack">
+
+        <div class="tiny">
+          Licence: ••••${escapeHtml(dvla.licence.slice(-4))}
+        </div>
+
+        <div class="tiny">
+          Code: ${escapeHtml(dvla.dvlaCode)}
+        </div>
+
+        <button
+          class="contact-btn js-copy-dvla"
+          data-licence="${escapeHtml(dvla.licence)}"
+          data-code="${escapeHtml(dvla.dvlaCode)}"
+        >
+          Copy
+        </button>
+
+      </div>
+    `;
+          });
 
           syncScroll();
         }, 0);
