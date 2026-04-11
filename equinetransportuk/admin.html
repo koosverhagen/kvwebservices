@@ -747,8 +747,7 @@
       async function fetchDvlaData(bookingId) {
         if (!bookingId) return null;
 
-        // ✅ return from cache if already loaded
-        if (DVLA_CACHE[bookingId]) {
+        if (Object.prototype.hasOwnProperty.call(DVLA_CACHE, bookingId)) {
           return DVLA_CACHE[bookingId];
         }
 
@@ -757,8 +756,10 @@
             `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
           );
 
-          // no form → no DVLA
-          if (!res.ok) return null;
+          if (!res.ok) {
+            DVLA_CACHE[bookingId] = null;
+            return null;
+          }
 
           const data = await res.json();
 
@@ -769,21 +770,27 @@
             payload?.drivingLicenceNumber ||
             payload?.licenceNumber ||
             payload?.driverLicence ||
+            payload?.drivingLicence ||
+            payload?.driving_license_number ||
             "";
 
-          const dvlaCode = payload?.dvlaCheckCode || payload?.dvlaCode || "";
+          const dvlaCode =
+            payload?.dvlaCheckCode ||
+            payload?.dvlaCode ||
+            payload?.checkCode ||
+            payload?.dvla_check_code ||
+            "";
 
           const result = {
             licence: String(licence || ""),
             dvlaCode: String(dvlaCode || ""),
           };
 
-          // ✅ store in cache
           DVLA_CACHE[bookingId] = result;
-
           return result;
         } catch (err) {
           console.warn("DVLA fetch failed", err);
+          DVLA_CACHE[bookingId] = null;
           return null;
         }
       }
@@ -1110,27 +1117,6 @@ Equine Transport UK`;
         return diffHours <= 48;
       }
 
-      function getDvlaData(booking) {
-        const f =
-          booking?.formPayload || booking?.form_payload || booking?.form || {};
-
-        // try multiple structures (your system varies slightly)
-        const payload = f.payload || f;
-
-        const licence =
-          payload?.drivingLicenceNumber ||
-          payload?.licenceNumber ||
-          payload?.driverLicence ||
-          "";
-
-        const dvlaCode = payload?.dvlaCheckCode || payload?.dvlaCode || "";
-
-        return {
-          licence: String(licence || ""),
-          dvlaCode: String(dvlaCode || ""),
-        };
-      }
-
       function renderBookings() {
         const search = searchInput.value.trim();
         const filter = statusFilter.value;
@@ -1453,42 +1439,6 @@ Koos & Avril`,
           if (waButtons.length === 0) {
             console.warn("⚠️ No WhatsApp buttons rendered");
           }
-
-          filteredBookings.forEach(async (booking) => {
-            if (!isFormComplete(booking)) return;
-
-            const dvla = await fetchDvlaData(booking.id);
-
-            if (!dvla || !dvla.licence || !dvla.dvlaCode) return;
-
-            const cell = document.querySelector(
-              `[data-dvla-id="${booking.id}"]`,
-            );
-
-            if (!cell) return;
-
-            cell.innerHTML = `
-      <div class="stack">
-
-        <div class="tiny">
-          Licence: ••••${escapeHtml(dvla.licence.slice(-4))}
-        </div>
-
-        <div class="tiny">
-          Code: ${escapeHtml(dvla.dvlaCode)}
-        </div>
-
-        <button
-          class="contact-btn js-copy-dvla"
-          data-licence="${escapeHtml(dvla.licence)}"
-          data-code="${escapeHtml(dvla.dvlaCode)}"
-        >
-          Copy
-        </button>
-
-      </div>
-    `;
-          });
 
           syncScroll();
         }, 0);
