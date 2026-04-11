@@ -675,14 +675,13 @@
                 <th>Vehicle</th>
                 <th>Hire</th>
                 <th>Payment</th>
-                <th>Form</th>
                 <th>Actions</th>
                 <th>DVLA</th>
               </tr>
             </thead>
             <tbody id="bookings-body">
               <tr>
-                <td colspan="7" class="empty-state">Loading bookings...</td>
+                <td colspan="6" class="empty-state">Loading bookings...</td>
               </tr>
             </tbody>
           </table>
@@ -1066,6 +1065,10 @@ Equine Transport UK`;
         return haystack.includes(search.toLowerCase());
       }
 
+      function isDvlaChecked(bookingId) {
+        return localStorage.getItem(`dvla_checked_${bookingId}`) === "true";
+      }
+
       function bookingMatchesFilter(booking, filter) {
         if (filter === "all") return true;
         if (filter === "form_complete") return isFormComplete(booking);
@@ -1148,7 +1151,7 @@ Equine Transport UK`;
         if (!filteredBookings.length) {
           bookingsBody.innerHTML = `
       <tr>
-        <td colspan="7" class="empty-state">
+        <td colspan="6" class="empty-state">
           No bookings found for the current filters.
         </td>
       </tr>
@@ -1379,11 +1382,43 @@ Koos & Avril`,
    DVLA COLUMN (NEW)
 =============================== */
 
-            const dvla = getDvlaData(booking);
+            const checked = isDvlaChecked(bookingId);
 
             const dvlaCell = `
   <div class="stack">
-    <span class="pill neutral">Loading…</span>
+
+    ${
+      isFormComplete(booking)
+        ? `
+        
+        <button 
+          class="btn primary btn-small js-open-dvla"
+          data-id="${bookingId}"
+        >
+          Open DVLA
+        </button>
+
+        <button 
+          class="contact-btn js-copy-code"
+          data-id="${bookingId}"
+        >
+          Copy Access Code
+        </button>
+
+        <label class="tiny" style="display:flex;align-items:center;gap:6px;">
+          <input 
+            type="checkbox"
+            class="js-dvla-check"
+            data-id="${bookingId}"
+            ${checked ? "checked" : ""}
+          >
+          Checked
+        </label>
+
+        `
+        : `<span class="pill neutral">—</span>`
+    }
+
   </div>
 `;
 
@@ -1398,7 +1433,6 @@ Koos & Avril`,
   <td data-label="Vehicle">${vehicleCell}</td>
   <td data-label="Hire">${hireCell}</td>
   <td data-label="Payment">${paymentCell}</td>
-  <td data-label="Form">${formCell}</td>
   <td data-label="Actions">${actionsCell}</td>
   <td data-label="DVLA" data-dvla-id="${bookingId}">${dvlaCell}</td>
 
@@ -1593,26 +1627,53 @@ Koos & Avril`,
 
         const target = e.target;
 
-        const copyBtn = e.target.closest(".js-copy-dvla");
-        if (copyBtn) {
+        const openBtn = target.closest(".js-open-dvla");
+        if (openBtn) {
           e.preventDefault();
 
-          const licence = copyBtn.dataset.licence;
-          const code = copyBtn.dataset.code;
+          const id = openBtn.dataset.id;
+          const dvla = await fetchDvlaData(id);
 
-          const text = `Licence: ${licence}\nDVLA Code: ${code}`;
+          if (!dvla || !dvla.licence) return;
+
+          const last8 = dvla.licence.slice(-8);
 
           try {
-            await navigator.clipboard.writeText(text);
+            await navigator.clipboard.writeText(last8);
+          } catch {}
 
-            copyBtn.textContent = "Copied ✓";
+          window.open(
+            "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
+            "_blank",
+          );
 
-            setTimeout(() => {
-              copyBtn.textContent = "Copy";
-            }, 1200);
-          } catch (err) {
-            console.warn("Copy failed", err);
-          }
+          openBtn.textContent = "Opened ✓";
+
+          setTimeout(() => {
+            openBtn.textContent = "Open DVLA";
+          }, 1200);
+
+          return;
+        }
+
+        const copyCodeBtn = e.target.closest(".js-copy-code");
+        if (copyCodeBtn) {
+          e.preventDefault();
+
+          const id = copyCodeBtn.dataset.id;
+          const dvla = await fetchDvlaData(id);
+
+          if (!dvla || !dvla.dvlaCode) return;
+
+          try {
+            await navigator.clipboard.writeText(dvla.dvlaCode);
+          } catch {}
+
+          copyCodeBtn.textContent = "Copied ✓";
+
+          setTimeout(() => {
+            copyCodeBtn.textContent = "Copy Access Code";
+          }, 1200);
 
           return;
         }
@@ -1733,6 +1794,19 @@ Equine Transport UK`;
         if (target.closest("a, button")) return;
       });
 
+      document.addEventListener("change", (e) => {
+        const check = e.target.closest(".js-dvla-check");
+        if (!check) return;
+
+        const id = check.dataset.id;
+        if (!id) return;
+
+        localStorage.setItem(
+          `dvla_checked_${id}`,
+          check.checked ? "true" : "false",
+        );
+      });
+
       const clearFiltersBtn = document.getElementById("clear-filters-btn");
 
       clearFiltersBtn.addEventListener("click", () => {
@@ -1762,7 +1836,7 @@ Equine Transport UK`;
 
         bookingsBody.innerHTML = `
         <tr>
-          <td colspan="7" class="empty-state">Loading bookings...</td>
+          <td colspan="6" class="empty-state">Loading bookings...</td>
         </tr>
       `;
 
@@ -1812,7 +1886,7 @@ Equine Transport UK`;
           );
           bookingsBody.innerHTML = `
           <tr>
-            <td colspan="7" class="empty-state">Failed to load bookings.</td>
+            <td colspan="6" class="empty-state">Failed to load bookings.</td>
           </tr>
         `;
         }
