@@ -1413,11 +1413,10 @@ async function handleBookingBySession(request, env) {
   }
 
   /* ===============================
-     ⚡ FAST PATH (NEW)
+     ⚡ FAST PATH (SESSION CACHE)
   =============================== */
 
   const sessionKey = `session:${sessionId}`;
-
   const cached = await env.BOOKINGS_KV.get(sessionKey);
 
   if (cached) {
@@ -1435,6 +1434,8 @@ async function handleBookingBySession(request, env) {
     }
   }
 
+  console.log("⏳ Not in session cache → checking fallbacks...");
+
   /* ===============================
      HELPERS
   =============================== */
@@ -1444,19 +1445,18 @@ async function handleBookingBySession(request, env) {
 
     const rows = await env.DB.prepare(
       `
-    SELECT pickup_at
-    FROM bookings
-    WHERE customer_id = ?
-    ORDER BY pickup_at DESC
-    LIMIT 2
-  `,
+      SELECT pickup_at
+      FROM bookings
+      WHERE customer_id = ?
+      ORDER BY pickup_at DESC
+      LIMIT 2
+    `,
     )
       .bind(customerId)
       .all();
 
     const bookings = rows?.results || [];
 
-    // first booking ever
     if (bookings.length < 2) return "long";
 
     const previous = new Date(bookings[1].pickup_at);
@@ -1478,7 +1478,7 @@ async function handleBookingBySession(request, env) {
   }
 
   /* ===============================
-     STRIPE LOOKUP (fallback)
+     STRIPE LOOKUP (FALLBACK)
   =============================== */
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
@@ -1499,7 +1499,7 @@ async function handleBookingBySession(request, env) {
   console.log("🔎 Looking for bookingId:", bookingId);
 
   /* ===============================
-     KV MONTH SCAN (fallback)
+     KV MONTH SCAN (FALLBACK)
   =============================== */
 
   const months = [];
@@ -1546,18 +1546,14 @@ async function handleBookingBySession(request, env) {
   }
 
   /* ===============================
-     FINAL FALLBACK
+     FINAL RESPONSE (FIXED)
   =============================== */
 
-  console.log("⚠️ Booking not yet in KV, returning Stripe session");
+  console.log("⏳ Booking not ready yet → return pending");
 
   return json({
     found: false,
-    session: {
-      id: session.id,
-      metadata: session.metadata || {},
-      customer_details: session.customer_details || null,
-    },
+    pending: true,
   });
 }
 
