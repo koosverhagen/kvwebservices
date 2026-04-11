@@ -870,6 +870,14 @@
         );
       }
 
+      function getDvlaStatus(booking, bookingId) {
+        if (!isFormComplete(booking)) return "missing";
+
+        if (isDvlaChecked(bookingId)) return "checked";
+
+        return "ready";
+      }
+
       function getCustomerName(booking) {
         return booking?.customerName || booking?.customer_name || "—";
       }
@@ -1368,41 +1376,66 @@ Koos & Avril`,
    DVLA COLUMN (NEW)
 =============================== */
 
-            const checked = isDvlaChecked(bookingId);
+            const status = getDvlaStatus(booking, bookingId);
 
             const dvlaCell = `
   <div class="stack">
 
     ${
-      isFormComplete(booking)
+      status === "missing"
+        ? `<span class="pill neutral">Form missing</span>`
+        : ""
+    }
+
+    ${
+      status === "ready"
         ? `
-        
-        <button 
-          class="btn primary btn-small js-open-dvla"
-          data-id="${bookingId}"
-        >
-          Open DVLA
-        </button>
+          <span class="pill warn">DVLA required</span>
 
-        <button 
-          class="contact-btn js-copy-code"
-          data-id="${bookingId}"
-        >
-          Copy Access Code
-        </button>
+          <button 
+            class="btn primary btn-small js-open-dvla"
+            data-id="${bookingId}">
+            Open DVLA
+          </button>
 
-        <label class="tiny" style="display:flex;align-items:center;gap:6px;">
-          <input 
-            type="checkbox"
-            class="js-dvla-check"
-            data-id="${bookingId}"
-            ${checked ? "checked" : ""}
-          >
-          Checked
-        </label>
+          <button 
+            class="contact-btn js-copy-code"
+            data-id="${bookingId}">
+            Copy Access Code
+          </button>
 
+          <label class="tiny" style="display:flex;align-items:center;gap:6px;">
+            <input 
+              type="checkbox"
+              class="js-dvla-check"
+              data-id="${bookingId}">
+            Mark as checked
+          </label>
         `
-        : `<span class="pill neutral">—</span>`
+        : ""
+    }
+
+    ${
+      status === "checked"
+        ? `
+          <span class="pill ok">DVLA checked</span>
+
+          <button 
+            class="contact-btn js-copy-code"
+            data-id="${bookingId}">
+            Copy Access Code
+          </button>
+
+          <label class="tiny" style="display:flex;align-items:center;gap:6px;">
+            <input 
+              type="checkbox"
+              class="js-dvla-check"
+              data-id="${bookingId}"
+              checked>
+            Checked
+          </label>
+        `
+        : ""
     }
 
   </div>
@@ -1597,11 +1630,11 @@ Koos & Avril`,
             "_blank",
           );
 
-          openBtn.textContent = "Opened ✓";
+          // ✅ AUTO MARK CHECKED
+          localStorage.setItem(`dvla_checked_${id}`, "true");
 
-          setTimeout(() => {
-            openBtn.textContent = "Open DVLA";
-          }, 1200);
+          // ✅ RE-RENDER UI
+          renderBookings();
 
           return;
         }
