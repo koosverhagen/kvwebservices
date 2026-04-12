@@ -1285,17 +1285,19 @@ Equine Transport UK`,
         el.innerHTML = `
     <div class="stack">
 
+      <!-- Licence (AUTO OPENS DVLA) -->
       <div class="dvla-row">
         <span><strong>${escapeHtml(data.last8 || "—")}</strong></span>
         <button
-          class="btn ghost btn-small copy-btn"
+          class="btn primary btn-small copy-licence"
           data-copy="${escapeHtml(data.last8 || "")}"
-          title="Copy last 8 digits of licence"
+          title="Copy licence and open DVLA check"
         >
-          Copy Licence
+          Copy Licence ↗
         </button>
       </div>
 
+      <!-- DVLA Code -->
       <div class="dvla-row">
         <span>${escapeHtml(data.dvla || "—")}</span>
         <button
@@ -1305,18 +1307,6 @@ Equine Transport UK`,
         >
           Copy Code
         </button>
-      </div>
-
-      <div class="dvla-row">
-        <a
-          href="https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="btn primary btn-small"
-          title="Open DVLA check page"
-        >
-          Open DVLA Check ↗
-        </a>
       </div>
 
     </div>
@@ -1864,7 +1854,38 @@ Equine Transport UK`;
         }
 
         /* ===============================
-     📋 COPY DVLA (NEW)
+     🚗 COPY LICENCE + OPEN DVLA
+  =============================== */
+
+        const licenceBtn = target.closest(".copy-licence");
+        if (licenceBtn) {
+          e.preventDefault();
+
+          const text = licenceBtn.dataset.copy;
+          if (!text) return;
+
+          try {
+            await navigator.clipboard.writeText(text);
+
+            licenceBtn.textContent = "Opening… ✓";
+
+            window.open(
+              "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
+              "_blank",
+            );
+
+            setTimeout(() => {
+              licenceBtn.textContent = "Copy Licence ↗";
+            }, 1200);
+          } catch (err) {
+            console.warn("Licence copy failed", err);
+          }
+
+          return;
+        }
+
+        /* ===============================
+     📋 COPY DVLA CODE
   =============================== */
 
         const copyBtn = target.closest(".copy-btn");
