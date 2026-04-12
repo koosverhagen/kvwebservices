@@ -339,7 +339,7 @@
       }
 
       /* ===============================
-   MODAL (FIXED + RESTORED)
+   MODAL (FINAL FIX - STABLE)
 =============================== */
 
       .et-modal.hidden {
@@ -351,41 +351,52 @@
         inset: 0;
         z-index: 999999;
 
-        display: flex; /* 🔥 FIX */
-        align-items: center; /* 🔥 vertical center */
-        justify-content: center; /* 🔥 horizontal center */
+        /* 🔥 DO NOT FLEX HERE */
       }
 
+      /* 🔥 BACKDROP LAYER */
       .et-modal-backdrop {
         position: absolute;
         inset: 0;
         background: rgba(15, 23, 42, 0.45);
+        z-index: 1;
       }
 
-      /* 🔥 RESTORED CARD LAYOUT */
-      .et-modal-card {
-        position: relative; /* 🔥 FIX (was absolute) */
+      /* 🔥 CENTERING WRAPPER (NEW) */
+      .et-modal-center {
+        position: absolute;
+        inset: 0;
 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        z-index: 2;
+      }
+
+      /* 🔥 CARD (RESTORED BEHAVIOR) */
+      .et-modal-card {
         width: min(900px, 92vw);
         max-height: 90vh;
 
         background: #fff;
         border-radius: 18px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15); /* 🔥 polish */
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
 
         display: flex;
         flex-direction: column;
 
         overflow: hidden;
-        z-index: 2;
       }
 
+      /* BODY */
       .et-modal-body {
         padding: 20px;
         overflow-y: auto;
         overflow-x: hidden;
       }
 
+      /* HEADER */
       .et-modal-header {
         position: relative;
         padding: 18px 20px;
@@ -642,25 +653,29 @@
    FORM MODAL (FIXED)
 =============================== -->
     <div id="form-modal" class="et-modal hidden">
+      <!-- BACKDROP -->
       <div class="et-modal-backdrop" id="modal-close"></div>
 
-      <div class="et-modal-card">
-        <div class="et-modal-header">
-          <h3>Booking Form</h3>
-          <button id="modal-close-btn" class="modal-close">✕</button>
-        </div>
-
-        <div class="et-modal-body">
-          <div id="modal-form-summary" class="detail-grid"></div>
-
-          <div class="subsection">
-            <h4>Submitted fields</h4>
-            <div id="modal-form-fields" class="kv-list"></div>
+      <!-- 🔥 NEW CENTER WRAPPER -->
+      <div class="et-modal-center">
+        <div class="et-modal-card">
+          <div class="et-modal-header">
+            <h3>Booking Form</h3>
+            <button id="modal-close-btn" class="modal-close">✕</button>
           </div>
 
-          <div class="subsection">
-            <h4>Signature</h4>
-            <div id="modal-signature" class="et-modal-signature"></div>
+          <div class="et-modal-body">
+            <div id="modal-form-summary" class="detail-grid"></div>
+
+            <div class="subsection">
+              <h4>Submitted fields</h4>
+              <div id="modal-form-fields" class="kv-list"></div>
+            </div>
+
+            <div class="subsection">
+              <h4>Signature</h4>
+              <div id="modal-signature" class="et-modal-signature"></div>
+            </div>
           </div>
         </div>
       </div>
