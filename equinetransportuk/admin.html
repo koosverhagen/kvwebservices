@@ -339,7 +339,7 @@
       }
 
       /* ===============================
-   MODAL
+   MODAL (FIXED + RESTORED)
 =============================== */
 
       .et-modal.hidden {
@@ -350,6 +350,10 @@
         position: fixed;
         inset: 0;
         z-index: 999999;
+
+        display: flex; /* 🔥 FIX */
+        align-items: center; /* 🔥 vertical center */
+        justify-content: center; /* 🔥 horizontal center */
       }
 
       .et-modal-backdrop {
@@ -358,26 +362,32 @@
         background: rgba(15, 23, 42, 0.45);
       }
 
+      /* 🔥 RESTORED CARD LAYOUT */
       .et-modal-card {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        position: relative; /* 🔥 FIX (was absolute) */
+
         width: min(900px, 92vw);
         max-height: 90vh;
+
         background: #fff;
         border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15); /* 🔥 polish */
+
         display: flex;
         flex-direction: column;
+
         overflow: hidden;
+        z-index: 2;
       }
 
       .et-modal-body {
         padding: 20px;
         overflow-y: auto;
+        overflow-x: hidden;
       }
 
       .et-modal-header {
+        position: relative;
         padding: 18px 20px;
         border-bottom: 1px solid var(--line);
       }
@@ -504,6 +514,14 @@
         iframe[src*="stripe"] {
           width: 100% !important;
           min-height: 600px !important;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .et-modal-card {
+          width: 94vw;
+          max-height: 92vh;
+          border-radius: 14px;
         }
       }
     </style>
