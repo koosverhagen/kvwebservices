@@ -1576,14 +1576,20 @@ Equine Transport UK`;
   =============================== */
 
         const inProgress = [];
+        const today = [];
         const tomorrow = [];
         const rest = [];
 
         /* ===============================
-   🔥 TIME-SAFE GROUPING (FIXED)
+   🔥 TIME-SAFE GROUPING (FINAL)
 =============================== */
 
         const nowTime = Date.now();
+
+        // today boundaries (local safe)
+        const startOfTodayTime = startOfToday.getTime();
+        const startOfTomorrowTime = startOfTomorrow.getTime();
+        const startOfDayAfterTime = startOfDayAfter.getTime();
 
         filteredBookings.forEach((booking) => {
           const pickupTime = new Date(booking.pickupAt).getTime();
@@ -1600,16 +1606,25 @@ Equine Transport UK`;
             return;
           }
 
-          // 🔴 IN PROGRESS (timezone safe)
+          // 🔴 IN PROGRESS
           if (pickupTime <= nowTime && dropoffTime >= nowTime) {
             inProgress.push(booking);
             return;
           }
 
-          // 🟠 TOMORROW (keep your existing boundaries)
+          // 🟡 TODAY (starts today but not yet started)
           if (
-            pickupTime >= startOfTomorrow.getTime() &&
-            pickupTime < startOfDayAfter.getTime()
+            pickupTime >= startOfTodayTime &&
+            pickupTime < startOfTomorrowTime
+          ) {
+            today.push(booking);
+            return;
+          }
+
+          // 🟠 TOMORROW
+          if (
+            pickupTime >= startOfTomorrowTime &&
+            pickupTime < startOfDayAfterTime
           ) {
             tomorrow.push(booking);
             return;
@@ -1620,7 +1635,7 @@ Equine Transport UK`;
         });
 
         /* ===============================
-   SORTING (SAFE)
+   SORTING
 =============================== */
 
         const sortFn = (a, b) =>
@@ -1628,6 +1643,7 @@ Equine Transport UK`;
           new Date(b.pickupAt || 0).getTime();
 
         inProgress.sort(sortFn);
+        today.sort(sortFn);
         tomorrow.sort(sortFn);
         rest.sort(sortFn);
         /* ===============================
@@ -1694,9 +1710,10 @@ Equine Transport UK`;
   =============================== */
 
         bookingsBody.innerHTML = `
-    ${renderSection("🔴 In Progress", inProgress)}
-    ${renderSection("🟠 Tomorrow", tomorrow)}
-    ${renderSection("All Bookings", rest)}
+${renderSection("🔴 In Progress", inProgress)}
+${renderSection("🟡 Today", today)}
+${renderSection("🟠 Tomorrow", tomorrow)}
+${renderSection("All Bookings", rest)}
   `;
 
         /* ===============================
