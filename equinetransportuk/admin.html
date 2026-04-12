@@ -1215,7 +1215,10 @@ Equine Transport UK`,
         const bookingId = booking.id || "";
 
         return `
-    <div class="stack dvla-cell" data-dvla-id="${escapeHtml(bookingId)}">
+    <div 
+      class="stack dvla-cell" 
+      data-booking-id="${escapeHtml(bookingId)}"
+    >
       <div class="tiny">Loading…</div>
     </div>
   `;
@@ -1576,23 +1579,38 @@ Equine Transport UK`;
         const tomorrow = [];
         const rest = [];
 
-        filteredBookings.forEach((booking) => {
-          const pickup = new Date(booking.pickupAt);
-          const dropoff = new Date(booking.dropoffAt);
+        /* ===============================
+   🔥 TIME-SAFE GROUPING (FIXED)
+=============================== */
 
-          if (!pickup || !dropoff) {
+        const nowTime = Date.now();
+
+        filteredBookings.forEach((booking) => {
+          const pickupTime = new Date(booking.pickupAt).getTime();
+          const dropoffTime = new Date(booking.dropoffAt).getTime();
+
+          // ❌ invalid dates → fallback
+          if (
+            !pickupTime ||
+            !dropoffTime ||
+            isNaN(pickupTime) ||
+            isNaN(dropoffTime)
+          ) {
             rest.push(booking);
             return;
           }
 
-          // 🔴 IN PROGRESS
-          if (pickup <= now && dropoff >= now) {
+          // 🔴 IN PROGRESS (timezone safe)
+          if (pickupTime <= nowTime && dropoffTime >= nowTime) {
             inProgress.push(booking);
             return;
           }
 
-          // 🟠 TOMORROW
-          if (pickup >= startOfTomorrow && pickup < startOfDayAfter) {
+          // 🟠 TOMORROW (keep your existing boundaries)
+          if (
+            pickupTime >= startOfTomorrow.getTime() &&
+            pickupTime < startOfDayAfter.getTime()
+          ) {
             tomorrow.push(booking);
             return;
           }
@@ -1601,13 +1619,17 @@ Equine Transport UK`;
           rest.push(booking);
         });
 
+        /* ===============================
+   SORTING (SAFE)
+=============================== */
+
         const sortFn = (a, b) =>
-          new Date(a.pickupAt || 0) - new Date(b.pickupAt || 0);
+          new Date(a.pickupAt || 0).getTime() -
+          new Date(b.pickupAt || 0).getTime();
 
         inProgress.sort(sortFn);
         tomorrow.sort(sortFn);
         rest.sort(sortFn);
-
         /* ===============================
      RENDER HELPERS
   =============================== */
@@ -1691,32 +1713,35 @@ Equine Transport UK`;
           }
 
           /* ===============================
-       🔥 FIXED DVLA LOADING
-       (no index bug anymore)
-    =============================== */
+   🔥 FIXED DVLA LOADING (FINAL)
+   (no index bug + grouping safe)
+=============================== */
 
           document.querySelectorAll(".dvla-cell").forEach((el) => {
-            const row = el.closest("tr");
-            if (!row) return;
+            // ✅ get ID directly from DOM (no index guessing)
+            const id = el.dataset.bookingId;
 
-            const index = Array.from(
-              bookingsBody.querySelectorAll("tr"),
-            ).indexOf(row);
-
-            // fallback safety
-            const booking = filteredBookings[index];
-            const id = booking?.id;
-
+            // ❌ invalid id
             if (!id || !id.startsWith("book_")) {
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
 
+            // ✅ find correct booking
+            const booking = allBookings.find((b) => b.id === id);
+
+            if (!booking) {
+              el.innerHTML = `<div class="tiny">—</div>`;
+              return;
+            }
+
+            // 🔒 only show if form complete
             if (!isFormComplete(booking)) {
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
 
+            // 🚀 load DVLA
             loadDvlaForRow(el, id);
           });
 
