@@ -1598,8 +1598,14 @@ Equine Transport UK`;
               return;
             }
 
-            // 🔥 ONLY load if form is completed
-            if (!isFormComplete(booking)) {
+            // 🔥 ONLY load if DVLA data actually exists
+            const hasDvla =
+              booking?.dvlaCheckCode ||
+              booking?.dvlaCode ||
+              booking?.formPayload?.dvlaCheckCode ||
+              booking?.formPayload?.dvlaCode;
+
+            if (!hasDvla) {
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
