@@ -540,6 +540,18 @@
         gap: 10px;
         margin-bottom: 16px;
       }
+
+      .btn.disabled,
+      .btn[disabled] {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .pill.done {
+        background: #e5e7eb;
+        color: #6b7280;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -638,16 +650,15 @@
               <tr>
                 <th>Customer</th>
                 <th>Vehicle</th>
-                <th>Pickup</th>
-                <th>Return</th>
+                <th>Hire</th>
                 <th>Payment</th>
-                <th>Form</th>
                 <th>Actions</th>
+                <th>DVLA Check</th>
               </tr>
             </thead>
             <tbody id="bookings-body">
               <tr>
-                <td colspan="7" class="empty-state">Loading bookings...</td>
+                <td colspan="6" class="empty-state">Loading bookings...</td>
               </tr>
             </tbody>
           </table>
@@ -709,189 +720,46 @@
       let filteredBookings = [];
 
       function buildContactButtons(booking) {
-        let phone = booking.customerMobile || "";
+        const phone = booking.customerMobile || "";
         const email = booking.customerEmail || "";
-        const name = getFirstName(getCustomerName(booking));
-        const bookingId = booking.id || "";
+        const name = getCustomerName(booking) || "Customer";
 
-        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
-
-        const formType =
-          booking.requiredFormType || booking.required_form_type || "long";
-
-        const formPath =
-          formType === "short"
-            ? "/forms/short-form.html"
-            : "/forms/long-form.html";
-
-        const formLink = `${BASE}${formPath}?bookingId=${bookingId}`;
-        const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
-        const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
-
-        /* ===============================
-     PHONE CLEAN
-  =============================== */
-
-        let whatsapp = "";
-        if (phone) {
-          let cleaned = normaliseUKPhone(phone);
-          if (cleaned.startsWith("44")) whatsapp = cleaned;
-        }
-
-        /* ===============================
-     EMAIL CONTENT
-  =============================== */
-
-        const emailForm = `mailto:${email}?subject=Form required for your booking&body=${encodeURIComponent(
-          `Dear ${name},
-
-Please complete your ${formType.toUpperCase()} form for your booking.
-
-${formLink}
+        const emailHref = email
+          ? `mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
+              `Dear ${name},
 
 Kind regards,
-Koos & Avril
+Koos & Avril,
 Equine Transport UK`,
-        )}`;
-
-        const emailDeposit = `mailto:${email}?subject=Deposit required for your booking&body=${encodeURIComponent(
-          `Dear ${name},
-
-Please complete your £200 security deposit.
-
-${depositLink}
-
-This is a card authorisation only.
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`,
-        )}`;
-
-        const emailOutstanding = `mailto:${email}?subject=Outstanding balance payment&body=${encodeURIComponent(
-          `Dear ${name},
-
-Your outstanding balance is ready to be paid.
-
-${outstandingLink}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`,
-        )}`;
-
-        /* ===============================
-   BUTTONS (UPGRADED UI)
-=============================== */
+            )}`
+          : "";
 
         const phoneBtn = phone
-          ? `<a href="tel:${phone}" 
-        class="contact-btn contact-call" 
-        title="Call ${escapeHtml(formatUKDisplay(phone))}">
-        <span>📞</span>Call
-     </a>`
-          : "";
+          ? `<a
+         href="tel:${escapeHtml(phone)}"
+         class="contact-btn contact-call"
+         title="Call ${escapeHtml(formatUKDisplay(phone))}"
+       >
+         <span>📞</span>Call
+       </a>`
+          : `<span class="tiny">—</span>`;
 
-        /* ===============================
-   WHATSAPP
-=============================== */
-
-        const waFormBtn = whatsapp
-          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
-
-Please complete your ${formType.toUpperCase()} form for your booking.
-
-${formLink}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`)}"
-       target="_blank"
-       class="contact-btn wa-form"
-       title="Send form via WhatsApp">
-       <span>📄</span>Form
-     </a>`
-          : "";
-
-        const waDepositBtn = whatsapp
-          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
-
-Please complete your £200 security deposit.
-
-${depositLink}
-
-This is a card authorisation only.
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`)}"
-       target="_blank"
-       class="contact-btn wa-deposit"
-       title="Send deposit via WhatsApp">
-       <span>🔒</span>Deposit
-     </a>`
-          : "";
-
-        const waOutstandingBtn = whatsapp
-          ? `<a href="https://wa.me/${whatsapp}?text=${encodeURIComponent(`Dear ${name},
-
-Your outstanding balance is now ready to be paid.
-
-${outstandingLink}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`)}"
-       target="_blank"
-       class="contact-btn wa-outstanding"
-       title="Send outstanding via WhatsApp">
-       <span>💰</span>Outstanding
-     </a>`
-          : "";
-
-        /* ===============================
-   EMAIL
-=============================== */
-
-        const emailFormBtn = email
-          ? `<a href="${emailForm}"
-       class="contact-btn contact-email"
-       title="Send form via email">
-       <span>📧</span>Form
-     </a>`
-          : "";
-
-        const emailDepositBtn = email
-          ? `<a href="${emailDeposit}"
-       class="contact-btn contact-email"
-       title="Send deposit via email">
-       <span>📧</span>Deposit
-     </a>`
-          : "";
-
-        const emailOutstandingBtn = email
-          ? `<a href="${emailOutstanding}"
-       class="contact-btn contact-email"
-       title="Send outstanding via email">
-       <span>📧</span>Outstanding
-     </a>`
-          : "";
-
-        /* ===============================
-   OUTPUT
-=============================== */
+        const emailBtn = email
+          ? `<a
+         href="${emailHref}"
+         class="contact-btn contact-email"
+         title="Email ${escapeHtml(email)}"
+       >
+         <span>✉️</span>Email
+       </a>`
+          : `<span class="tiny">—</span>`;
 
         return `
-  <div class="contact-actions">
-    ${phoneBtn}
-    ${waFormBtn}
-    ${waDepositBtn}
-    ${waOutstandingBtn}
-    ${emailFormBtn}
-    ${emailDepositBtn}
-    ${emailOutstandingBtn}
-  </div>
-`;
+    <div class="contact-actions">
+      ${phoneBtn}
+      ${emailBtn}
+    </div>
+  `;
       }
 
       function pad(n) {
@@ -1019,6 +887,280 @@ Equine Transport UK`)}"
       function getFirstName(fullName) {
         if (!fullName) return "Customer";
         return fullName.trim().split(" ")[0];
+      }
+
+      function formatMoney(value) {
+        return `£${Number(value || 0).toFixed(2)}`;
+      }
+
+      function getFormPayload(booking) {
+        if (booking?.formPayload && typeof booking.formPayload === "object") {
+          return booking.formPayload;
+        }
+
+        if (booking?.form && typeof booking.form === "object") {
+          return booking.form;
+        }
+
+        if (booking?.payload && typeof booking.payload === "object") {
+          return booking.payload;
+        }
+
+        return null;
+      }
+
+      function getDvlaCodeValue(booking) {
+        const payload = getFormPayload(booking);
+
+        return (
+          booking?.dvlaCheckCode ||
+          booking?.dvlaCode ||
+          payload?.dvlaCheckCode ||
+          payload?.dvlaCode ||
+          ""
+        );
+      }
+
+      function getLicenceValue(booking) {
+        const payload = getFormPayload(booking);
+
+        return (
+          booking?.drivingLicenceNumber ||
+          booking?.licenceNumber ||
+          payload?.drivingLicenceNumber ||
+          payload?.licenceNumber ||
+          ""
+        );
+      }
+
+      function getLicenceLast8(booking) {
+        const raw = String(getLicenceValue(booking) || "")
+          .replace(/\s+/g, "")
+          .toUpperCase();
+
+        if (!raw) return "";
+        return raw.slice(-8);
+      }
+
+      function hireCellHtml(booking) {
+        return `
+    <div class="stack">
+      <div><strong>From:</strong> ${escapeHtml(formatDateTime(booking.pickupAt))}</div>
+      <div><strong>Until:</strong> ${escapeHtml(formatDateTime(booking.dropoffAt))}</div>
+    </div>
+  `;
+      }
+
+      function buildActionButtons(booking) {
+        const bookingId = booking.id || "";
+        const complete = isFormComplete(booking);
+        const requiredType = getRequiredFormType(booking) || "long";
+
+        const phone = booking.customerMobile || "";
+        const email = booking.customerEmail || "";
+        const firstName = getFirstName(getCustomerName(booking));
+
+        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+        const formPath =
+          requiredType === "short"
+            ? "/forms/short-form.html"
+            : "/forms/long-form.html";
+
+        const formLink = `${BASE}${formPath}?bookingId=${bookingId}`;
+        const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
+        const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
+
+        const depositDone = isDepositPaid(booking);
+        const outstandingDone = isOutstandingPaid(booking);
+
+        const formWhatsapp = phone
+          ? `
+      <button
+        class="btn ghost btn-small js-wa"
+        type="button"
+        data-phone="${escapeHtml(phone)}"
+        data-type="form"
+        data-name="${escapeHtml(firstName)}"
+        data-id="${escapeHtml(bookingId)}"
+        data-formtype="${escapeHtml(requiredType)}"
+        ${complete ? 'style="display:none;"' : ""}
+      >
+        WhatsApp
+      </button>
+    `
+          : "";
+
+        const formEmail =
+          email && !complete
+            ? `
+      <a
+        href="mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
+          `Dear ${firstName},
+
+Please complete your ${requiredType.toUpperCase()} form for your booking.
+
+${formLink}
+
+Kind regards,
+Koos & Avril,
+Equine Transport UK`,
+        )}"
+        class="btn ghost btn-small"
+      >
+        Email
+      </a>
+    `
+            : "";
+
+        const depositWhatsapp =
+          phone && !depositDone
+            ? `
+      <button
+        class="btn ghost btn-small js-wa"
+        type="button"
+        data-phone="${escapeHtml(phone)}"
+        data-type="deposit"
+        data-name="${escapeHtml(firstName)}"
+        data-id="${escapeHtml(bookingId)}"
+      >
+        WhatsApp
+      </button>
+    `
+            : "";
+
+        const depositEmail =
+          email && !depositDone
+            ? `
+      <a
+        href="mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
+          `Dear ${firstName},
+
+Please complete your £200 security deposit for your booking.
+
+${depositLink}
+
+This is a card authorisation only.
+
+Kind regards,
+Koos & Avril,
+Equine Transport UK`,
+        )}"
+        class="btn ghost btn-small"
+      >
+        Email
+      </a>
+    `
+            : "";
+
+        const outstandingWhatsapp =
+          phone && !outstandingDone
+            ? `
+      <button
+        class="btn ghost btn-small js-wa"
+        type="button"
+        data-phone="${escapeHtml(phone)}"
+        data-type="outstanding"
+        data-name="${escapeHtml(firstName)}"
+        data-id="${escapeHtml(bookingId)}"
+      >
+        WhatsApp
+      </button>
+    `
+            : "";
+
+        const outstandingEmail =
+          email && !outstandingDone
+            ? `
+      <a
+        href="mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
+          `Dear ${firstName},
+
+Your outstanding balance is now ready to be paid.
+
+${outstandingLink}
+
+Kind regards,
+Koos & Avril,
+Equine Transport UK`,
+        )}"
+        class="btn ghost btn-small"
+      >
+        Email
+      </a>
+    `
+            : "";
+
+        return `
+  <div class="stack">
+
+    <!-- FORM -->
+    <div class="stack">
+      <strong>Form</strong>
+      ${
+        complete
+          ? `
+            <button
+              class="btn ghost btn-small"
+              type="button"
+              data-view-form="${escapeHtml(bookingId)}"
+            >
+              View Form
+            </button>
+          `
+          : `
+            <div class="contact-actions">
+              ${formWhatsapp}
+              ${formEmail}
+            </div>
+          `
+      }
+    </div>
+
+    <!-- DEPOSIT -->
+    <div class="stack">
+      <strong>Deposit</strong>
+      ${
+        depositDone
+          ? `<span class="pill done">Done</span>`
+          : `<div class="contact-actions">${depositWhatsapp}${depositEmail}</div>`
+      }
+    </div>
+
+    <!-- OUTSTANDING -->
+    <div class="stack">
+      <strong>Outstanding</strong>
+      ${
+        outstandingDone
+          ? `<span class="pill done">Done</span>`
+          : `<div class="contact-actions">${outstandingWhatsapp}${outstandingEmail}</div>`
+      }
+    </div>
+
+  </div>
+`;
+      }
+
+      function dvlaCellHtml(booking) {
+        if (!isFormComplete(booking)) {
+          return `<div class="tiny">—</div>`;
+        }
+
+        const licenceLast8 = getLicenceLast8(booking);
+        const dvlaCode = getDvlaCodeValue(booking);
+
+        return `
+    <div class="stack">
+      <div>
+        <strong>Licence:</strong>
+        ${escapeHtml(licenceLast8 || "—")}
+      </div>
+      <div>
+        <strong>Code:</strong>
+        ${escapeHtml(dvlaCode || "—")}
+      </div>
+    </div>
+  `;
       }
 
       function paymentHtml(booking) {
@@ -1232,7 +1374,7 @@ Equine Transport UK`;
         if (!filteredBookings.length) {
           bookingsBody.innerHTML = `
       <tr>
-        <td colspan="7" class="empty-state">
+        <td colspan="6" class="empty-state">
           No bookings found for the current filters.
         </td>
       </tr>
@@ -1257,29 +1399,11 @@ Equine Transport UK`;
 
             const customerCell = `
   <div class="customer-block">
-
-    <div 
-      class="booking-id"
-      data-id="${bookingId}"
-      title="Click to copy full booking reference"
-    >
-      ${escapeHtml(shortRef(booking.id))}
-    </div>
-
     <div class="customer-name">
       ${escapeHtml(getCustomerName(booking))}
     </div>
 
-    <div class="tiny">
-      ${escapeHtml(getCustomerEmail(booking))}
-    </div>
-
-   <div class="tiny">
-  ${escapeHtml(formatUKDisplay(booking.customerMobile))}
-</div>
-
     ${buildContactButtons(booking)}
-
   </div>
 `;
 
@@ -1290,45 +1414,20 @@ Equine Transport UK`;
   </div>
 `;
 
-            const pickupCell = `
-  <div>
-    ${escapeHtml(formatDateTime(booking.pickupAt))}
-  </div>
-`;
-
-            const returnCell = `
-  <div>
-    ${escapeHtml(formatDateTime(booking.dropoffAt))}
-  </div>
-`;
+            const hireCell = hireCellHtml(booking);
 
             const paymentCell = `
   <div class="stack">
     ${paymentHtml(booking)}
     <div class="tiny">
-      Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
-      Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
+      Paid now: ${formatMoney(booking.confirmationFee)}<br>
+      Outstanding: ${formatMoney(booking.outstandingAmount)}
     </div>
   </div>
 `;
 
-            const formCell = `
-  <div class="stack">
-    ${formHtml(booking)}
-  </div>
-`;
-
-            const actionsCell = `
-  <div class="actions">
-    <button 
-      class="btn ghost btn-small"
-      type="button"
-      data-view-form="${bookingId}"
-    >
-      View Form
-    </button>
-  </div>
-`;
+            const actionsCell = buildActionButtons(booking);
+            const dvlaCell = dvlaCellHtml(booking);
 
             /* ===============================
    RETURN ROW
@@ -1336,15 +1435,12 @@ Equine Transport UK`;
 
             return `
 <tr class="${isUrgentBooking(booking) ? "urgent-booking" : ""}">
-
   <td data-label="Customer">${customerCell}</td>
   <td data-label="Vehicle">${vehicleCell}</td>
-  <td data-label="Pickup">${pickupCell}</td>
-  <td data-label="Drop-off">${returnCell}</td>
+  <td data-label="Hire">${hireCell}</td>
   <td data-label="Payment">${paymentCell}</td>
-  <td data-label="Form">${formCell}</td>
   <td data-label="Actions">${actionsCell}</td>
-
+  <td data-label="DVLA Check">${dvlaCell}</td>
 </tr>
 `;
           })
@@ -1645,7 +1741,7 @@ Equine Transport UK`;
 
         bookingsBody.innerHTML = `
         <tr>
-          <td colspan="7" class="empty-state">Loading bookings...</td>
+          <td colspan="6" class="empty-state">Loading bookings...</td>
         </tr>
       `;
 
@@ -1694,10 +1790,10 @@ Equine Transport UK`;
             "error",
           );
           bookingsBody.innerHTML = `
-          <tr>
-            <td colspan="7" class="empty-state">Failed to load bookings.</td>
-          </tr>
-        `;
+  <tr>
+    <td colspan="6" class="empty-state">Failed to load bookings.</td>
+  </tr>
+`;
         }
       }
 
