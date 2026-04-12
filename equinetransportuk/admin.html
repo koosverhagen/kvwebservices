@@ -758,7 +758,11 @@
       const modalSignature = document.getElementById("modal-signature");
 
       const DVLA_CACHE = new Map();
-      const DVLA_MISSING = new Set();
+
+      // 🔥 persistent missing cache
+      const DVLA_MISSING = new Set(
+        JSON.parse(localStorage.getItem("dvla_missing") || "[]"),
+      );
 
       let allBookings = [];
       let filteredBookings = [];
@@ -1223,7 +1227,14 @@ Equine Transport UK`,
 
         // ✅ NO FORM → cache and STOP future calls
         if (res.status === 404) {
-          DVLA_MISSING.add(bookingId); // 🔥 THIS IS THE FIX
+          DVLA_MISSING.add(bookingId);
+
+          // 🔥 persist to localStorage
+          localStorage.setItem(
+            "dvla_missing",
+            JSON.stringify([...DVLA_MISSING]),
+          );
+
           el.innerHTML = `<div class="tiny">—</div>`;
           return;
         }
