@@ -1579,11 +1579,18 @@ Equine Transport UK`;
      🔥 LOAD DVLA DATA (NEW)
   =============================== */
 
-          document.querySelectorAll(".dvla-cell").forEach((el) => {
-            const id = el.dataset.dvlaId;
+          document.querySelectorAll(".dvla-cell").forEach((el, index) => {
+            const booking = filteredBookings[index];
+            const id = booking?.id;
 
-            // ❌ skip invalid / Stripe IDs
+            // ❌ skip invalid
             if (!id || !id.startsWith("book_")) {
+              el.innerHTML = `<div class="tiny">—</div>`;
+              return;
+            }
+
+            // 🔥 ONLY load if form is completed
+            if (!isFormComplete(booking)) {
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
