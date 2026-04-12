@@ -1290,8 +1290,10 @@ Equine Transport UK`,
       <!-- Licence -->
       <div class="dvla-row">
         <span><strong>${escapeHtml(data.last8)}</strong></span>
-        <button class="btn ghost btn-small copy-btn"
-          data-copy="${escapeHtml(data.last8)}">
+        <button 
+          class="btn ghost btn-small copy-btn"
+          data-copy="${escapeHtml(data.last8)}"
+        >
           Copy
         </button>
       </div>
@@ -1299,29 +1301,23 @@ Equine Transport UK`,
       <!-- DVLA Code -->
       <div class="dvla-row">
         <span>${escapeHtml(data.dvla)}</span>
-        <button class="btn ghost btn-small copy-btn"
-          data-copy="${escapeHtml(data.dvla)}">
+        <button 
+          class="btn ghost btn-small copy-btn"
+          data-copy="${escapeHtml(data.dvla)}"
+        >
           Copy
         </button>
       </div>
 
-      <!-- 🔥 NEW: Copy BOTH -->
+      <!-- 🔥 ONE-CLICK DVLA FLOW -->
       <div class="dvla-row">
-        <button class="btn primary btn-small copy-btn"
-          data-copy="${escapeHtml(combined)}">
-          Copy Both
-        </button>
-      </div>
-
-      <!-- 🔥 NEW: GOV BUTTON -->
-      <div class="dvla-row">
-        <a 
-          href="https://www.gov.uk/view-driving-licence"
-          target="_blank"
-          class="btn ghost btn-small"
+        <button 
+          class="btn primary btn-small dvla-go"
+          data-copy="${escapeHtml(combined)}"
+          title="Copy licence + code and open DVLA check"
         >
-          Open DVLA
-        </a>
+          Check DVLA ↗
+        </button>
       </div>
 
     </div>
@@ -1788,6 +1784,37 @@ Equine Transport UK`;
         /* ===============================
      ✅ WHATSAPP BUTTONS (PRIORITY)
   =============================== */
+
+        /* ===============================
+   🚗 ONE-CLICK DVLA FLOW
+================================ */
+
+        const dvlaBtn = target.closest(".dvla-go");
+        if (dvlaBtn) {
+          e.preventDefault();
+
+          const text = dvlaBtn.dataset.copy;
+          if (!text) return;
+
+          try {
+            await navigator.clipboard.writeText(text);
+
+            dvlaBtn.textContent = "Opening… ✓";
+
+            window.open(
+              "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
+              "_blank",
+            );
+
+            setTimeout(() => {
+              dvlaBtn.textContent = "Check DVLA ↗";
+            }, 1200);
+          } catch (err) {
+            console.warn("DVLA flow failed", err);
+          }
+
+          return;
+        }
 
         const waBtn = target.closest(".js-wa");
         if (waBtn) {
