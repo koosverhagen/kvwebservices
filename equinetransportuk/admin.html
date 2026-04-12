@@ -563,9 +563,12 @@
         align-items: center;
 
         padding: 10px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: #fafafa;
+
+        /* ✅ remove double border */
+        border: none;
+
+        /* keep subtle separation */
+        background: #f8fafc;
       }
 
       .et-modal-signature img {
@@ -577,6 +580,18 @@
 
         /* optional polish */
         max-height: 180px;
+      }
+
+      .dvla-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .copy-btn {
+        font-size: 11px;
+        padding: 4px 8px;
       }
     </style>
 
@@ -741,6 +756,8 @@
       const modalSummary = document.getElementById("modal-form-summary");
       const modalFields = document.getElementById("modal-form-fields");
       const modalSignature = document.getElementById("modal-signature");
+
+      const DVLA_CACHE = new Map();
 
       let allBookings = [];
       let filteredBookings = [];
@@ -1168,23 +1185,89 @@ Equine Transport UK`,
       }
 
       function dvlaCellHtml(booking) {
-        if (!isFormComplete(booking)) {
-          return `<div class="tiny">—</div>`;
-        }
-
-        const licenceLast8 = getLicenceLast8(booking);
-        const dvlaCode = getDvlaCodeValue(booking);
+        const bookingId = booking.id || "";
 
         return `
+    <div class="stack dvla-cell" data-dvla-id="${escapeHtml(bookingId)}">
+      <div class="tiny">Loading…</div>
+    </div>
+  `;
+      }
+
+      async function loadDvlaForRow(el, bookingId) {
+        if (!bookingId || !el) return;
+
+        // already loaded
+        if (DVLA_CACHE.has(bookingId)) {
+          renderDvla(el, DVLA_CACHE.get(bookingId));
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
+          );
+
+          if (!res.ok) {
+            el.innerHTML = `<div class="tiny">—</div>`;
+            return;
+          }
+
+          const data = await res.json();
+          const form = data.form || data;
+
+          const licence =
+            form?.drivingLicenceNumber ||
+            form?.licenceNumber ||
+            form?.payload?.drivingLicenceNumber ||
+            form?.payload?.licenceNumber ||
+            "";
+
+          const dvla =
+            form?.dvlaCheckCode ||
+            form?.dvlaCode ||
+            form?.payload?.dvlaCheckCode ||
+            form?.payload?.dvlaCode ||
+            "";
+
+          const last8 = licence
+            ? String(licence).replace(/\s+/g, "").slice(-8).toUpperCase()
+            : "";
+
+          const result = { last8, dvla };
+
+          DVLA_CACHE.set(bookingId, result);
+
+          renderDvla(el, result);
+        } catch (err) {
+          console.warn("DVLA load failed", err);
+          el.innerHTML = `<div class="tiny">—</div>`;
+        }
+      }
+
+      function renderDvla(el, data) {
+        if (!data || (!data.last8 && !data.dvla)) {
+          el.innerHTML = `<div class="tiny">—</div>`;
+          return;
+        }
+
+        el.innerHTML = `
     <div class="stack">
-      <div>
-        <strong>Licence:</strong>
-        ${escapeHtml(licenceLast8 || "—")}
+
+      <div class="dvla-row">
+        <span><strong>${escapeHtml(data.last8)}</strong></span>
+        <button class="btn ghost btn-small copy-btn" data-copy="${escapeHtml(data.last8)}">
+          Copy
+        </button>
       </div>
-      <div>
-        <strong>Code:</strong>
-        ${escapeHtml(dvlaCode || "—")}
+
+      <div class="dvla-row">
+        <span>${escapeHtml(data.dvla)}</span>
+        <button class="btn ghost btn-small copy-btn" data-copy="${escapeHtml(data.dvla)}">
+          Copy
+        </button>
       </div>
+
     </div>
   `;
       }
@@ -1485,6 +1568,15 @@ Equine Transport UK`;
             console.warn("⚠️ No WhatsApp buttons rendered");
           }
 
+          /* ===============================
+     🔥 LOAD DVLA DATA (NEW)
+  =============================== */
+
+          document.querySelectorAll(".dvla-cell").forEach((el) => {
+            const id = el.dataset.dvlaId;
+            loadDvlaForRow(el, id);
+          });
+
           syncScroll();
         }, 0);
       }
@@ -1617,14 +1709,14 @@ Equine Transport UK`;
 
       document.addEventListener("click", async (e) => {
         /* ===============================
-       🎯 TARGET ELEMENT (STABLE)
-    =============================== */
+     🎯 TARGET ELEMENT (STABLE)
+  =============================== */
 
         const target = e.target;
 
         /* ===============================
-       ✅ WHATSAPP BUTTONS (PRIORITY)
-    =============================== */
+     ✅ WHATSAPP BUTTONS (PRIORITY)
+  =============================== */
 
         const waBtn = target.closest(".js-wa");
         if (waBtn) {
@@ -1699,15 +1791,41 @@ Equine Transport UK`;
           const url =
             "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
 
-          console.log("Opening WhatsApp:", url); // 🔥 debug
+          console.log("Opening WhatsApp:", url);
 
           window.open(url, "_blank");
           return;
         }
 
         /* ===============================
-       📋 COPY BOOKING ID
-    =============================== */
+     📋 COPY DVLA (NEW)
+  =============================== */
+
+        const copyBtn = target.closest(".copy-btn");
+        if (copyBtn) {
+          e.preventDefault();
+
+          const text = copyBtn.dataset.copy;
+          if (!text) return;
+
+          try {
+            await navigator.clipboard.writeText(text);
+
+            copyBtn.textContent = "Copied ✓";
+
+            setTimeout(() => {
+              copyBtn.textContent = "Copy";
+            }, 1200);
+          } catch (err) {
+            console.warn("DVLA copy failed", err);
+          }
+
+          return;
+        }
+
+        /* ===============================
+     📋 COPY BOOKING ID
+  =============================== */
 
         const el = target.closest(".booking-id");
         if (el) {
@@ -1732,8 +1850,8 @@ Equine Transport UK`;
         }
 
         /* ===============================
-       🔒 IGNORE OTHER BUTTONS/LINKS
-    =============================== */
+     🔒 IGNORE OTHER BUTTONS/LINKS
+  =============================== */
 
         if (target.closest("a, button")) return;
       });
