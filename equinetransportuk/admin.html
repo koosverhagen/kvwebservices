@@ -117,6 +117,12 @@
         border-radius: 8px;
       }
 
+      .btn.disabled,
+      .btn[disabled] {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
       /* ===============================
    HERO / TOOLBAR
 =============================== */
@@ -155,7 +161,7 @@
       }
 
       /* ===============================
-   TABLE BASE
+   TABLE
 =============================== */
 
       .list-wrap {
@@ -180,14 +186,9 @@
         color: #6b7280;
       }
 
-      /* ===============================
-   STRIPE ROW CARDS
-=============================== */
-
       .bookings-table tbody tr {
         border-radius: 12px;
-        overflow: hidden;
-        transition: all 0.15s ease;
+        transition: 0.15s;
       }
 
       .bookings-table tbody tr:hover {
@@ -197,7 +198,6 @@
       .bookings-table tbody tr td {
         padding: 16px;
         background: #fff;
-        border-bottom: none;
       }
 
       .bookings-table tbody tr + tr td {
@@ -216,16 +216,13 @@
 
       td:nth-child(2),
       td:nth-child(6),
-      td:nth-child(7) {
+      td:nth-child(7),
+      table td:first-child {
         white-space: normal;
       }
 
-      table td:first-child {
-        white-space: normal !important;
-      }
-
       /* ===============================
-   CUSTOMER BLOCK
+   CUSTOMER
 =============================== */
 
       .customer-block {
@@ -258,31 +255,26 @@
       }
 
       /* ===============================
-   CONTACT BUTTONS
+   CONTACT
 =============================== */
-
-      .contact-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-
-        height: 26px;
-        padding: 0 8px;
-
-        border-radius: 6px;
-        border: 1px solid var(--line);
-
-        background: #fff;
-        font-size: 11px;
-        font-weight: 600;
-
-        line-height: 1;
-      }
 
       .contact-actions {
         display: flex;
         flex-wrap: wrap;
         gap: 4px;
+      }
+
+      .contact-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 26px;
+        padding: 0 8px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: #fff;
+        font-size: 11px;
+        font-weight: 600;
       }
 
       .contact-btn:hover {
@@ -296,47 +288,29 @@
       .contact-email {
         color: var(--accent);
       }
-      .wa-form {
-        color: #2563eb;
-        background: #eff6ff;
-      }
-      .wa-deposit {
-        color: #16a34a;
-        background: #f0fdf4;
-      }
-      .wa-outstanding {
-        color: #b45309;
-        background: #fff7ed;
-      }
 
       /* ===============================
-   STATUS PILLS
+   PILLS
 =============================== */
 
       .pill {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-
         padding: 4px 10px;
         border-radius: 999px;
-
         font-size: 11px;
         font-weight: 700;
-
-        border: none;
       }
 
       .pill.ok {
         background: #e6f4ea;
         color: #137a3d;
       }
-
       .pill.warn {
         background: #fff4e5;
         color: #b45309;
       }
-
       .pill.bad {
         background: #fde8e8;
         color: #b42318;
@@ -344,9 +318,13 @@
       .pill.neutral {
         background: #f3f4f6;
       }
+      .pill.done {
+        background: #e5e7eb;
+        color: #6b7280;
+      }
 
       /* ===============================
-   STACK (NEW STRUCTURE)
+   STRUCTURE
 =============================== */
 
       .stack {
@@ -355,17 +333,13 @@
         gap: 6px;
       }
 
-      /* ===============================
-   URGENCY
-=============================== */
-
       .urgent-booking {
         border-left: 4px solid #ef4444;
         background: #fff7f7;
       }
 
       /* ===============================
-   MODAL
+   MODAL (FIXED + RESTORED)
 =============================== */
 
       .et-modal.hidden {
@@ -376,6 +350,10 @@
         position: fixed;
         inset: 0;
         z-index: 999999;
+
+        display: flex; /* 🔥 FIX */
+        align-items: center; /* 🔥 vertical center */
+        justify-content: center; /* 🔥 horizontal center */
       }
 
       .et-modal-backdrop {
@@ -384,28 +362,28 @@
         background: rgba(15, 23, 42, 0.45);
       }
 
+      /* 🔥 RESTORED CARD LAYOUT */
       .et-modal-card {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        position: relative; /* 🔥 FIX (was absolute) */
 
         width: min(900px, 92vw);
         max-height: 90vh;
 
         background: #fff;
         border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15); /* 🔥 polish */
 
         display: flex;
         flex-direction: column;
 
         overflow: hidden;
+        z-index: 2;
       }
 
       .et-modal-body {
         padding: 20px;
         overflow-y: auto;
-        overflow-x: hidden; /* 🔥 FIX SIDE SCROLL */
+        overflow-x: hidden;
       }
 
       .et-modal-header {
@@ -415,7 +393,68 @@
       }
 
       /* ===============================
-   MOBILE
+   DVLA
+=============================== */
+
+      .dvla-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .copy-btn {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+
+      /* ===============================
+   SECTION HEADERS
+=============================== */
+
+      .section-header td {
+        background: #f1f5f9;
+        font-weight: 800;
+        font-size: 13px;
+        padding: 10px 16px;
+        border-top: 1px solid var(--line);
+      }
+
+      .section-header {
+        position: sticky;
+        top: 48px;
+        z-index: 5;
+      }
+
+      /* ===============================
+   META
+=============================== */
+
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .status-bar {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 13px;
+      }
+
+      .status-bar.loading {
+        background: #f1f5f9;
+      }
+      .status-bar.error {
+        background: #fff1f2;
+        color: var(--bad);
+      }
+
+      /* ===============================
+   MOBILE (MERGED)
 =============================== */
 
       @media (max-width: 768px) {
@@ -437,8 +476,8 @@
 
         .bookings-table tr {
           margin-bottom: 16px;
-          border-radius: 12px;
           padding: 14px;
+          border-radius: 12px;
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
         }
 
@@ -452,93 +491,38 @@
           height: 28px;
           font-size: 11px;
         }
+
+        .section-header {
+          top: 0;
+        }
+
+        /* 🔥 PAYMENT FIX */
+        .payment-card,
+        .stripe-card,
+        .deposit-card {
+          width: 100% !important;
+          max-width: 100% !important;
+          transform: none !important;
+        }
+
+        .payment-wrapper,
+        .checkout-container {
+          padding-left: 12px;
+          padding-right: 12px;
+        }
+
+        iframe[src*="stripe"] {
+          width: 100% !important;
+          min-height: 600px !important;
+        }
       }
 
-      .meta-row {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 12px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      .status-bar {
-        margin-top: 12px;
-        padding: 10px 12px;
-        border-radius: 10px;
-        font-size: 13px;
-      }
-
-      .status-bar.loading {
-        background: #f1f5f9;
-      }
-
-      .status-bar.error {
-        background: #fff1f2;
-        color: var(--bad);
-      }
-
-      .kv-item {
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 10px;
-        background: #fafafa;
-      }
-
-      .kv-key {
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--muted);
-        margin-bottom: 4px;
-      }
-
-      .kv-value {
-        font-size: 13px;
-        font-weight: 500;
-      }
-
-      .kv-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 10px;
-      }
-
-      .modal-section-title {
-        margin: 20px 0 8px;
-        font-size: 14px;
-        font-weight: 700;
-      }
-
-      /* 🔥 wrap section properly */
-      .modal-section {
-        margin-bottom: 10px;
-      }
-
-      .modal-close {
-        position: absolute;
-        top: 14px;
-        right: 14px;
-
-        width: 34px;
-        height: 34px;
-
-        border-radius: 8px;
-        border: 1px solid var(--line);
-        background: #fff;
-
-        cursor: pointer;
-        font-size: 16px;
-      }
-
-      .modal-close:hover {
-        background: var(--soft);
-      }
-
-      .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 10px;
-        margin-bottom: 16px;
+      @media (max-width: 768px) {
+        .et-modal-card {
+          width: 94vw;
+          max-height: 92vh;
+          border-radius: 14px;
+        }
       }
     </style>
 
