@@ -552,6 +552,32 @@
         background: #e5e7eb;
         color: #6b7280;
       }
+
+      .et-modal-signature {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fafafa;
+      }
+
+      .et-modal-signature img {
+        max-width: 100%;
+        height: auto;
+
+        /* 🔥 THIS FIXES CROPPING */
+        object-fit: contain;
+
+        /* optional polish */
+        max-height: 180px;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
