@@ -1282,21 +1282,46 @@ Equine Transport UK`,
           return;
         }
 
+        const combined = `${data.last8} ${data.dvla}`.trim();
+
         el.innerHTML = `
     <div class="stack">
 
+      <!-- Licence -->
       <div class="dvla-row">
         <span><strong>${escapeHtml(data.last8)}</strong></span>
-        <button class="btn ghost btn-small copy-btn" data-copy="${escapeHtml(data.last8)}">
+        <button class="btn ghost btn-small copy-btn"
+          data-copy="${escapeHtml(data.last8)}">
           Copy
         </button>
       </div>
 
+      <!-- DVLA Code -->
       <div class="dvla-row">
         <span>${escapeHtml(data.dvla)}</span>
-        <button class="btn ghost btn-small copy-btn" data-copy="${escapeHtml(data.dvla)}">
+        <button class="btn ghost btn-small copy-btn"
+          data-copy="${escapeHtml(data.dvla)}">
           Copy
         </button>
+      </div>
+
+      <!-- 🔥 NEW: Copy BOTH -->
+      <div class="dvla-row">
+        <button class="btn primary btn-small copy-btn"
+          data-copy="${escapeHtml(combined)}">
+          Copy Both
+        </button>
+      </div>
+
+      <!-- 🔥 NEW: GOV BUTTON -->
+      <div class="dvla-row">
+        <a 
+          href="https://www.gov.uk/view-driving-licence"
+          target="_blank"
+          class="btn ghost btn-small"
+        >
+          Open DVLA
+        </a>
       </div>
 
     </div>
