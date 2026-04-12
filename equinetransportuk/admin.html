@@ -758,6 +758,7 @@
       const modalSignature = document.getElementById("modal-signature");
 
       const DVLA_CACHE = new Map();
+      const DVLA_MISSING = new Set();
 
       let allBookings = [];
       let filteredBookings = [];
@@ -1197,9 +1198,15 @@ Equine Transport UK`,
       async function loadDvlaForRow(el, bookingId) {
         if (!bookingId || !el) return;
 
-        // already loaded
+        // ✅ already loaded
         if (DVLA_CACHE.has(bookingId)) {
           renderDvla(el, DVLA_CACHE.get(bookingId));
+          return;
+        }
+
+        // 🔥 already known missing → skip fetch completely
+        if (DVLA_MISSING.has(bookingId)) {
+          el.innerHTML = `<div class="tiny">—</div>`;
           return;
         }
 
@@ -1210,20 +1217,18 @@ Equine Transport UK`,
             `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
           );
         } catch (err) {
-          // 🔇 silent network fail (prevents console spam)
           el.innerHTML = `<div class="tiny">—</div>`;
           return;
         }
 
-        // ✅ no form exists (normal case)
+        // ✅ NO FORM → cache and STOP future calls
         if (res.status === 404) {
+          DVLA_MISSING.add(bookingId); // 🔥 THIS IS THE FIX
           el.innerHTML = `<div class="tiny">—</div>`;
           return;
         }
 
-        // ❌ real error
         if (!res.ok) {
-          console.warn("DVLA fetch error:", res.status);
           el.innerHTML = `<div class="tiny">—</div>`;
           return;
         }
@@ -1256,7 +1261,6 @@ Equine Transport UK`,
 
           renderDvla(el, result);
         } catch (err) {
-          console.warn("DVLA parse failed", err);
           el.innerHTML = `<div class="tiny">—</div>`;
         }
       }
