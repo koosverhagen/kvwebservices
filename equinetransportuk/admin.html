@@ -1208,7 +1208,14 @@ Equine Transport UK`,
             `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
           );
 
+          if (res.status === 404) {
+            // ✅ NORMAL: no form exists
+            el.innerHTML = `<div class="tiny">—</div>`;
+            return;
+          }
+
           if (!res.ok) {
+            console.warn("DVLA fetch error:", res.status);
             el.innerHTML = `<div class="tiny">—</div>`;
             return;
           }
@@ -1574,6 +1581,13 @@ Equine Transport UK`;
 
           document.querySelectorAll(".dvla-cell").forEach((el) => {
             const id = el.dataset.dvlaId;
+
+            // ❌ skip invalid / Stripe IDs
+            if (!id || !id.startsWith("book_")) {
+              el.innerHTML = `<div class="tiny">—</div>`;
+              return;
+            }
+
             loadDvlaForRow(el, id);
           });
 
