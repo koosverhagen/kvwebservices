@@ -593,6 +593,28 @@
         font-size: 11px;
         padding: 4px 8px;
       }
+
+      .section-header td {
+        background: #f1f5f9;
+        font-weight: 800;
+        font-size: 13px;
+        padding: 10px 16px;
+        border-top: 1px solid var(--line);
+      }
+
+      /* 🔥 STICKY HEADERS */
+      .section-header {
+        position: sticky;
+        top: 48px; /* below table header */
+        z-index: 5;
+      }
+
+      /* mobile fix */
+      @media (max-width: 768px) {
+        .section-header {
+          top: 0;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -1508,18 +1530,30 @@ Equine Transport UK`;
         const search = searchInput.value.trim();
         const filter = statusFilter.value;
 
+        const now = new Date();
+
+        const startOfToday = new Date(now);
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const startOfTomorrow = new Date(startOfToday);
+        startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+        const startOfDayAfter = new Date(startOfTomorrow);
+        startOfDayAfter.setDate(startOfDayAfter.getDate() + 1);
+
+        /* ===============================
+     FILTER
+  =============================== */
+
         filteredBookings = allBookings
-          .filter((booking) => bookingMatchesSearch(booking, search))
-          .filter((booking) => bookingMatchesFilter(booking, filter))
-          .sort(
-            (a, b) => new Date(b.pickupAt || 0) - new Date(a.pickupAt || 0),
-          );
+          .filter((b) => bookingMatchesSearch(b, search))
+          .filter((b) => bookingMatchesFilter(b, filter));
 
         bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
 
         /* ===============================
-       EMPTY STATE
-    =============================== */
+     EMPTY STATE
+  =============================== */
 
         if (!filteredBookings.length) {
           bookingsBody.innerHTML = `
@@ -1535,70 +1569,117 @@ Equine Transport UK`;
         }
 
         /* ===============================
-       RENDER TABLE
-    =============================== */
+     GROUPING
+  =============================== */
 
-        bookingsBody.innerHTML = filteredBookings
-          .map((booking) => {
-            const bookingId = escapeHtml(booking.id || "");
-            const phone = escapeHtml(booking.customerMobile || "");
+        const inProgress = [];
+        const tomorrow = [];
+        const rest = [];
 
-            /* ===============================
-   BUILD CELLS
-=============================== */
+        filteredBookings.forEach((booking) => {
+          const pickup = new Date(booking.pickupAt);
+          const dropoff = new Date(booking.dropoffAt);
 
-            const customerCell = `
-  <div class="customer-block">
-    <div class="customer-name">
-      ${escapeHtml(getCustomerName(booking))}
-    </div>
+          if (!pickup || !dropoff) {
+            rest.push(booking);
+            return;
+          }
 
-    ${buildContactButtons(booking)}
-  </div>
-`;
+          // 🔴 IN PROGRESS
+          if (pickup <= now && dropoff >= now) {
+            inProgress.push(booking);
+            return;
+          }
 
-            const vehicleCell = `
-  <div>
-    <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
-    <div class="tiny">${escapeHtml(booking.vehicleId || "")}</div>
-  </div>
-`;
+          // 🟠 TOMORROW
+          if (pickup >= startOfTomorrow && pickup < startOfDayAfter) {
+            tomorrow.push(booking);
+            return;
+          }
 
-            const hireCell = hireCellHtml(booking);
+          // ⚪ REST
+          rest.push(booking);
+        });
 
-            const paymentCell = `
-  <div class="stack">
-    ${paymentHtml(booking)}
-    <div class="tiny">
-      Paid now: ${formatMoney(booking.confirmationFee)}<br>
-      Outstanding: ${formatMoney(booking.outstandingAmount)}
-    </div>
-  </div>
-`;
+        const sortFn = (a, b) =>
+          new Date(a.pickupAt || 0) - new Date(b.pickupAt || 0);
 
-            const actionsCell = buildActionButtons(booking);
-            const dvlaCell = dvlaCellHtml(booking);
-
-            /* ===============================
-   RETURN ROW
-=============================== */
-
-            return `
-<tr class="${isUrgentBooking(booking) ? "urgent-booking" : ""}">
-  <td data-label="Customer">${customerCell}</td>
-  <td data-label="Vehicle">${vehicleCell}</td>
-  <td data-label="Hire">${hireCell}</td>
-  <td data-label="Payment">${paymentCell}</td>
-  <td data-label="Actions">${actionsCell}</td>
-  <td data-label="DVLA Check">${dvlaCell}</td>
-</tr>
-`;
-          })
-          .join("");
+        inProgress.sort(sortFn);
+        tomorrow.sort(sortFn);
+        rest.sort(sortFn);
 
         /* ===============================
-       🔥 DEBUG CHECK (IMPORTANT)
-    =============================== */
+     RENDER HELPERS
+  =============================== */
+
+        function renderRow(booking) {
+          const customerCell = `
+      <div class="customer-block">
+        <div class="customer-name">
+          ${escapeHtml(getCustomerName(booking))}
+        </div>
+        ${buildContactButtons(booking)}
+      </div>
+    `;
+
+          const vehicleCell = `
+      <div>
+        <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
+        <div class="tiny">${escapeHtml(booking.vehicleId || "")}</div>
+      </div>
+    `;
+
+          const hireCell = hireCellHtml(booking);
+
+          const paymentCell = `
+      <div class="stack">
+        ${paymentHtml(booking)}
+        <div class="tiny">
+          Paid now: ${formatMoney(booking.confirmationFee)}<br>
+          Outstanding: ${formatMoney(booking.outstandingAmount)}
+        </div>
+      </div>
+    `;
+
+          const actionsCell = buildActionButtons(booking);
+          const dvlaCell = dvlaCellHtml(booking);
+
+          return `
+      <tr class="${isUrgentBooking(booking) ? "urgent-booking" : ""}">
+        <td data-label="Customer">${customerCell}</td>
+        <td data-label="Vehicle">${vehicleCell}</td>
+        <td data-label="Hire">${hireCell}</td>
+        <td data-label="Payment">${paymentCell}</td>
+        <td data-label="Actions">${actionsCell}</td>
+        <td data-label="DVLA Check">${dvlaCell}</td>
+      </tr>
+    `;
+        }
+
+        function renderSection(title, list) {
+          if (!list.length) return "";
+
+          return `
+      <tr class="section-header">
+        <td colspan="6">${title}</td>
+      </tr>
+      ${list.map(renderRow).join("")}
+    `;
+        }
+
+        /* ===============================
+     RENDER TABLE
+  =============================== */
+
+        bookingsBody.innerHTML = `
+    ${renderSection("🔴 In Progress", inProgress)}
+    ${renderSection("🟠 Tomorrow", tomorrow)}
+    ${renderSection("All Bookings", rest)}
+  `;
+
+        /* ===============================
+     🔥 DEBUG + DVLA LOAD (FIXED)
+  =============================== */
 
         setTimeout(() => {
           const waButtons = document.querySelectorAll(".js-wa");
@@ -1610,26 +1691,32 @@ Equine Transport UK`;
           }
 
           /* ===============================
-     🔥 LOAD DVLA DATA (NEW)
-  =============================== */
+       🔥 FIXED DVLA LOADING
+       (no index bug anymore)
+    =============================== */
 
-          document.querySelectorAll(".dvla-cell").forEach((el, index) => {
+          document.querySelectorAll(".dvla-cell").forEach((el) => {
+            const row = el.closest("tr");
+            if (!row) return;
+
+            const index = Array.from(
+              bookingsBody.querySelectorAll("tr"),
+            ).indexOf(row);
+
+            // fallback safety
             const booking = filteredBookings[index];
             const id = booking?.id;
 
-            // ❌ invalid id
             if (!id || !id.startsWith("book_")) {
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
 
-            // 🔥 ONLY load if form is completed (reliable enough)
             if (!isFormComplete(booking)) {
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
 
-            // ✅ load DVLA (from API)
             loadDvlaForRow(el, id);
           });
 
