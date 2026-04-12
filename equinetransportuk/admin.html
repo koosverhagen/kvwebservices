@@ -1203,23 +1203,32 @@ Equine Transport UK`,
           return;
         }
 
+        let res;
+
         try {
-          const res = await fetch(
+          res = await fetch(
             `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
           );
+        } catch (err) {
+          // 🔇 silent network fail (prevents console spam)
+          el.innerHTML = `<div class="tiny">—</div>`;
+          return;
+        }
 
-          if (res.status === 404) {
-            // ✅ NORMAL: no form exists
-            el.innerHTML = `<div class="tiny">—</div>`;
-            return;
-          }
+        // ✅ no form exists (normal case)
+        if (res.status === 404) {
+          el.innerHTML = `<div class="tiny">—</div>`;
+          return;
+        }
 
-          if (!res.ok) {
-            console.warn("DVLA fetch error:", res.status);
-            el.innerHTML = `<div class="tiny">—</div>`;
-            return;
-          }
+        // ❌ real error
+        if (!res.ok) {
+          console.warn("DVLA fetch error:", res.status);
+          el.innerHTML = `<div class="tiny">—</div>`;
+          return;
+        }
 
+        try {
           const data = await res.json();
           const form = data.form || data;
 
@@ -1247,7 +1256,7 @@ Equine Transport UK`,
 
           renderDvla(el, result);
         } catch (err) {
-          console.warn("DVLA load failed", err);
+          console.warn("DVLA parse failed", err);
           el.innerHTML = `<div class="tiny">—</div>`;
         }
       }
