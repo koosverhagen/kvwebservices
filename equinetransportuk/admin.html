@@ -1592,24 +1592,19 @@ Equine Transport UK`;
             const booking = filteredBookings[index];
             const id = booking?.id;
 
-            // ❌ skip invalid
+            // ❌ invalid id
             if (!id || !id.startsWith("book_")) {
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
 
-            // 🔥 ONLY load if DVLA data actually exists
-            const hasDvla =
-              booking?.dvlaCheckCode ||
-              booking?.dvlaCode ||
-              booking?.formPayload?.dvlaCheckCode ||
-              booking?.formPayload?.dvlaCode;
-
-            if (!hasDvla) {
+            // 🔥 ONLY load if form is completed (reliable enough)
+            if (!isFormComplete(booking)) {
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
 
+            // ✅ load DVLA (from API)
             loadDvlaForRow(el, id);
           });
 
