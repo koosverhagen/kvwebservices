@@ -2788,7 +2788,7 @@ function buildModernEmail({
       <!-- LOGO -->
       <div style="text-align:center;margin:0 0 22px;">
         <img
-          src="https://kvwebservices.co.uk/equinetransportuk/logo.png"
+          src="https://kvwebservices.co.uk/equinetransportuk/images/logo.png"
           alt="Equine Transport UK"
           style="max-width:280px;width:100%;height:auto;"
         >
