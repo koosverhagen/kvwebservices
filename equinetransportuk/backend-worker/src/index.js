@@ -1956,15 +1956,19 @@ async function handleStripeWebhook(request, env) {
             `;
 
           const emailHtml = buildModernEmail({
-            title: "Booking Confirmation",
+            title: "Equine Transport UK – Booking Confirmation",
             customerName: booking.customerName,
             booking: {
               id: booking.id,
               vehicle: booking.vehicleSnapshot?.name || "Horsebox Hire",
               from: booking.pickupAtLocal,
               to: booking.dropoffAtLocal,
+              email: booking.customerEmail,
+              mobile: booking.customerMobile,
               paid: booking.confirmationFee,
               outstanding: booking.outstandingAmount,
+              total: booking.hireTotal,
+              formType: booking.requiredFormType,
             },
             formLink: booking.requiredFormLink,
             depositLink: booking.depositLink,
@@ -2732,6 +2736,10 @@ function toLondonLocalISOString(date) {
    📧 MODERN EMAIL TEMPLATE
 =============================== */
 
+/* ===============================
+   📧 MODERN EMAIL TEMPLATE
+=============================== */
+
 function buildModernEmail({
   title,
   customerName,
@@ -2742,67 +2750,298 @@ function buildModernEmail({
 }) {
   const money = (v) => `£${Number(v || 0).toFixed(2)}`;
 
-  return `
-  <div style="background:#0f172a;padding:20px;font-family:Arial,sans-serif;color:#e5e7eb;">
+  const safeTitle = escapeHtml(title || "Equine Transport UK");
+  const safeCustomerName = escapeHtml(customerName || "Customer");
 
-    <div style="max-width:600px;margin:0 auto;">
+  const safeBookingId = escapeHtml(booking?.id || "");
+  const safeVehicle = escapeHtml(booking?.vehicle || "Horsebox Hire");
+  const safeFrom = escapeHtml(booking?.from || "");
+  const safeTo = escapeHtml(booking?.to || "");
+  const safeEmail = escapeHtml(booking?.email || "");
+  const safeMobile = escapeHtml(booking?.mobile || "");
+  const safeFormType =
+    String(booking?.formType || "long").toLowerCase() === "short"
+      ? "SHORT Form Required"
+      : "LONG Form Required";
+
+  const safeFormLink = escapeHtml(formLink || "");
+  const safeDepositLink = escapeHtml(depositLink || "");
+  const safeOutstandingLink = escapeHtml(outstandingLink || "");
+
+  const paidNow = Number(booking?.paid || 0);
+  const outstanding = Number(booking?.outstanding || 0);
+  const totalHire = Number(booking?.total || paidNow + outstanding || 0);
+
+  const showOutstanding = outstanding > 0;
+
+  return `
+  <div style="margin:0;padding:0;background:#f3f4f6;">
+    <div style="
+      max-width:760px;
+      margin:0 auto;
+      padding:34px 22px 40px;
+      font-family:Arial,sans-serif;
+      color:#2b2b2b;
+      line-height:1.6;
+    ">
 
       <!-- LOGO -->
-      <div style="text-align:center;margin-bottom:20px;">
-        <img src="https://kvwebservices.co.uk/equinetransportuk/images/logo.png" style="max-width:180px;">
+      <div style="text-align:center;margin:0 0 22px;">
+        <img
+          src="https://kvwebservices.co.uk/equinetransportuk/logo.png"
+          alt="Equine Transport UK"
+          style="max-width:280px;width:100%;height:auto;"
+        >
       </div>
 
       <!-- TITLE -->
-      <h2 style="text-align:center;color:#60a5fa;">${title}</h2>
+      <h1 style="
+        margin:0 0 22px;
+        text-align:center;
+        color:#1673ea;
+        font-size:28px;
+        line-height:1.3;
+      ">
+        ${safeTitle}
+      </h1>
 
       <!-- INTRO -->
-      <p>Dear ${escapeHtml(customerName || "Customer")},</p>
-      <p>Thank you for your booking with <strong>Equine Transport UK</strong>.</p>
+      <p style="margin:0 0 16px;font-size:16px;">Dear ${safeCustomerName},</p>
 
-      <!-- BOOKING CARD -->
-      <div style="background:#1f2937;border-radius:10px;padding:16px;margin-top:16px;">
-        <strong style="color:#93c5fd;">Booking Details</strong>
-        <ul style="margin-top:10px;">
-          <li><strong>Reference:</strong> ${escapeHtml(booking.id)}</li>
-          <li><strong>Lorry:</strong> ${escapeHtml(booking.vehicle)}</li>
-          <li><strong>From:</strong> ${escapeHtml(booking.from)}</li>
-          <li><strong>To:</strong> ${escapeHtml(booking.to)}</li>
+      <p style="margin:0 0 18px;font-size:16px;">
+        Thank you for your booking with <strong>Equine Transport UK</strong>.
+        Please complete the next steps below for your upcoming hire.
+      </p>
+
+      <!-- BOOKING DETAILS CARD -->
+      <div style="
+        background:#eef4ff;
+        border:1px solid #c9dafc;
+        border-radius:14px;
+        padding:20px 24px;
+        margin:0 0 28px;
+      ">
+        <h2 style="margin:0 0 14px;color:#0f4f9c;font-size:18px;">
+          Booking Details
+        </h2>
+
+        <ul style="margin:0;padding-left:24px;font-size:16px;">
+          <li><strong>Booking reference:</strong> #${safeBookingId}</li>
+          <li><strong>Lorry:</strong> ${safeVehicle}</li>
+          <li><strong>From:</strong> ${safeFrom}</li>
+          <li><strong>To:</strong> ${safeTo}</li>
+          ${safeEmail ? `<li><strong>Email:</strong> ${safeEmail}</li>` : ""}
+          ${safeMobile ? `<li><strong>Mobile:</strong> ${safeMobile}</li>` : ""}
         </ul>
       </div>
 
-      <!-- PAYMENT -->
-      <div style="background:#111827;border-radius:10px;padding:14px;margin-top:14px;">
-        <strong style="color:#60a5fa;">Payment Summary</strong><br>
-        Paid now: <strong>${money(booking.paid)}</strong><br>
-        Outstanding: <strong>${money(booking.outstanding)}</strong>
+      <!-- PAYMENT SUMMARY -->
+      <div style="
+        background:#ffffff;
+        border:1px solid #e5e7eb;
+        border-radius:14px;
+        padding:18px 22px;
+        margin:0 0 28px;
+      ">
+        <h2 style="margin:0 0 12px;color:#0f4f9c;font-size:18px;">
+          Payment Summary
+        </h2>
+
+        <p style="margin:0;font-size:16px;">
+          <strong>Total hire:</strong> ${money(totalHire)}<br>
+          <strong>Paid now:</strong> ${money(paidNow)}<br>
+          <strong>Outstanding:</strong> ${money(outstanding)}
+        </p>
       </div>
 
-      <!-- BUTTONS -->
-      <div style="margin-top:18px;">
-        <a href="${formLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700;margin:4px;">
+      <!-- FORM -->
+      <h2 style="margin:0 0 8px;color:#1673ea;font-size:22px;">
+        ${safeFormType}
+      </h2>
+
+      <p style="margin:0 0 10px;font-size:16px;">
+        Please complete the required hire form before collection.
+      </p>
+
+      <div style="text-align:center;margin:18px 0 14px;">
+        <a href="${safeFormLink}"
+           style="
+             display:inline-block;
+             background:#1673ea;
+             color:#ffffff;
+             text-decoration:none;
+             font-weight:700;
+             font-size:16px;
+             line-height:1;
+             padding:16px 28px;
+             border-radius:10px;
+           ">
           Complete Form
         </a>
+      </div>
 
-        <a href="${depositLink}" style="display:inline-block;background:#10b981;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700;margin:4px;">
-          Pay Deposit
+      <div style="
+        margin:20px 0 26px;
+        padding:18px 20px;
+        background:#f4ecd8;
+        border:1px solid #e5b54a;
+        border-radius:12px;
+        color:#6f4c00;
+        font-size:15px;
+        line-height:1.7;
+      ">
+        <strong>Why this matters:</strong>
+        This form is required before the hire can proceed. It allows us to confirm your details, licence information and hire readiness.
+      </div>
+
+      <p style="margin:0 0 8px;color:#222;font-size:15px;">
+        If the button does not work, please use this link:
+      </p>
+      <p style="margin:0 0 24px;">
+        <a href="${safeFormLink}" style="color:#1673ea;word-break:break-all;">
+          ${safeFormLink}
         </a>
+      </p>
 
-        <a href="${outstandingLink}" style="display:inline-block;background:#f59e0b;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700;margin:4px;">
-          Pay Outstanding
+      <!-- DEPOSIT -->
+      <h2 style="margin:0 0 8px;color:#1673ea;font-size:22px;">
+        Deposit Hold
+      </h2>
+
+      <p style="margin:0 0 10px;font-size:16px;">
+        The required deposit hold amount is: <strong>£200.00</strong>
+      </p>
+
+      <div style="text-align:center;margin:18px 0 14px;">
+        <a href="${safeDepositLink}"
+           style="
+             display:inline-block;
+             background:#1673ea;
+             color:#ffffff;
+             text-decoration:none;
+             font-weight:700;
+             font-size:16px;
+             line-height:1;
+             padding:16px 28px;
+             border-radius:10px;
+           ">
+          💳 Pay Deposit Securely
         </a>
       </div>
 
-      <!-- IMPORTANT -->
-      <div style="margin-top:18px;padding:12px;border-radius:8px;background:#78350f;color:#fde68a;">
-        Deposit is a pre-authorisation (hold), not a payment.
+      <div style="
+        margin:20px 0 26px;
+        padding:18px 20px;
+        background:#f4ecd8;
+        border:1px solid #e5b54a;
+        border-radius:12px;
+        color:#6f4c00;
+        font-size:15px;
+        line-height:1.7;
+      ">
+        <strong>Important:</strong>
+        This is a <strong>pre-authorisation (hold)</strong>, not an immediate payment.
+        The funds are reserved on your card and will either be released after the hire
+        or partially/fully captured only if required under the hire agreement
+        (for example, damage, excessive cleaning, or fuel charges).
       </div>
+
+      <p style="margin:0 0 8px;color:#222;font-size:15px;">
+        If the button does not work, please use this link:
+      </p>
+      <p style="margin:0 0 24px;">
+        <a href="${safeDepositLink}" style="color:#1673ea;word-break:break-all;">
+          ${safeDepositLink}
+        </a>
+      </p>
+
+      <!-- OUTSTANDING -->
+      <h2 style="margin:0 0 8px;color:#1673ea;font-size:22px;">
+        Outstanding Balance
+      </h2>
+
+      ${
+        showOutstanding
+          ? `
+            <p style="margin:0 0 10px;font-size:16px;">
+              Your remaining balance is: <strong>${money(outstanding)}</strong>
+            </p>
+
+            <div style="text-align:center;margin:18px 0 14px;">
+              <a href="${safeOutstandingLink}"
+                 style="
+                   display:inline-block;
+                   background:#1673ea;
+                   color:#ffffff;
+                   text-decoration:none;
+                   font-weight:700;
+                   font-size:16px;
+                   line-height:1;
+                   padding:16px 28px;
+                   border-radius:10px;
+                 ">
+                Pay Outstanding Balance
+              </a>
+            </div>
+
+            <div style="
+              margin:20px 0 26px;
+              padding:18px 20px;
+              background:#f4ecd8;
+              border:1px solid #e5b54a;
+              border-radius:12px;
+              color:#6f4c00;
+              font-size:15px;
+              line-height:1.7;
+            ">
+              <strong>When to pay:</strong>
+              This is the remaining hire balance after your confirmation payment.
+              Please complete this payment before collection unless agreed otherwise with us.
+            </div>
+
+            <p style="margin:0 0 8px;color:#222;font-size:15px;">
+              If the button does not work, please use this link:
+            </p>
+            <p style="margin:0 0 24px;">
+              <a href="${safeOutstandingLink}" style="color:#1673ea;word-break:break-all;">
+                ${safeOutstandingLink}
+              </a>
+            </p>
+          `
+          : `
+            <div style="
+              margin:20px 0 26px;
+              padding:18px 20px;
+              background:#edf8f0;
+              border:1px solid #9ed2ab;
+              border-radius:12px;
+              color:#215c31;
+              font-size:15px;
+              line-height:1.7;
+            ">
+              <strong>No balance due:</strong>
+              There is no outstanding balance left on this booking.
+            </div>
+          `
+      }
+
+      <!-- SIGN OFF -->
+      <p style="margin:26px 0 0;font-size:16px;">With kind regards,</p>
+
+      <p style="margin:8px 0 0;font-size:16px;">
+        <strong>Koos & Avril</strong><br>
+        <strong>Equine Transport UK</strong>
+      </p>
 
       <!-- FOOTER -->
-      <div style="margin-top:20px;font-size:12px;color:#9ca3af;text-align:center;">
-        Equine Transport UK<br>
+      <hr style="border:none;border-top:1px solid #d6d6d6;margin:34px 0 20px;">
+
+      <div style="text-align:center;color:#555;font-size:14px;line-height:1.7;">
+        <strong>Equine Transport UK</strong><br>
+        Upper Broadreed Farm, Stonehurst Lane, Five Ashes, TN20 6LL, East Sussex, GB<br>
         📞 +44 7584 578654<br>
         ✉️ info@equinetransportuk.com<br>
-        🌍 https://www.equinetransportuk.com
+        🌍 www.equinetransportuk.com
       </div>
 
     </div>
