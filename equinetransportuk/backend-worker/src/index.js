@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 
 const JSON_HEADERS = {
-  "content-type": "application/json; charset=utf-8"
+  "content-type": "application/json; charset=utf-8",
 };
 const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
 
@@ -10,7 +10,6 @@ const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
 ================================ */
 
 async function cleanupExpiredReservations(env) {
-
   const EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes
 
   const list = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
@@ -18,7 +17,6 @@ async function cleanupExpiredReservations(env) {
   const now = Date.now();
 
   for (const key of list.keys) {
-
     const data = await env.BOOKINGS_KV.get(key.name);
 
     if (!data) continue;
@@ -40,25 +38,19 @@ async function cleanupExpiredReservations(env) {
     const age = now - createdAt;
 
     if (age > EXPIRY_TIME) {
-
       await env.BOOKINGS_KV.delete(key.name);
 
       console.log("⏳ Expired reservation removed:", key.name);
-
     }
-
   }
-
 }
 
 export default {
-
   /* ===============================
      HTTP REQUEST HANDLER
   ================================ */
 
   async fetch(request, env, ctx) {
-
     const url = new URL(request.url);
 
     /* ===============================
@@ -66,7 +58,10 @@ export default {
        (must bypass CORS)
     ================================ */
 
-    if (request.method === "POST" && url.pathname === "/api/bookings/stripe-webhook") {
+    if (
+      request.method === "POST" &&
+      url.pathname === "/api/bookings/stripe-webhook"
+    ) {
       return handleStripeWebhook(request, env);
     }
 
@@ -77,7 +72,6 @@ export default {
     }
 
     try {
-
       /* ===============================
          PRICING ENGINE
       ================================ */
@@ -91,7 +85,10 @@ export default {
          STRIPE CHECKOUT SESSION
       ================================ */
 
-      if (request.method === "POST" && url.pathname === "/api/bookings/create-checkout-session") {
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/bookings/create-checkout-session"
+      ) {
         const response = await handleCreateCheckoutSession(request, env);
         return withCors(response, corsHeaders);
       }
@@ -109,14 +106,15 @@ export default {
          🔥 DEBUG — LAST BOOKING (NEW)
       ================================ */
 
-      if (request.method === "GET" && url.pathname === "/api/debug/last-booking") {
-
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/debug/last-booking"
+      ) {
         const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
         let latest = null;
 
         for (const key of list.keys) {
-
           const data = await env.BOOKINGS_KV.get(key.name);
 
           if (!data) continue;
@@ -127,8 +125,7 @@ export default {
             if (Array.isArray(parsed) && parsed.length) {
               latest = parsed[parsed.length - 1];
             }
-
-          } catch { }
+          } catch {}
         }
 
         return withCors(json({ latest }), corsHeaders);
@@ -138,8 +135,14 @@ export default {
          BOOKING BY SESSION
       ================================ */
 
-      if (request.method === "GET" && url.pathname === "/api/bookings/by-session") {
-        return withCors(await handleBookingBySession(request, env), corsHeaders);
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/bookings/by-session"
+      ) {
+        return withCors(
+          await handleBookingBySession(request, env),
+          corsHeaders,
+        );
       }
 
       /* ===============================
@@ -155,7 +158,10 @@ export default {
          VEHICLE AVAILABILITY
       ================================ */
 
-      if (request.method === "GET" && url.pathname === "/api/vehicles/available") {
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/vehicles/available"
+      ) {
         const response = await handleVehicleAvailability(request, env);
         return withCors(response, corsHeaders);
       }
@@ -164,7 +170,10 @@ export default {
          MONTH AVAILABILITY (CALENDAR)
       ================================ */
 
-      if (request.method === "GET" && url.pathname === "/api/availability/month") {
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/availability/month"
+      ) {
         const response = await handleMonthAvailability(request, env);
         return withCors(response, corsHeaders);
       }
@@ -182,7 +191,10 @@ export default {
          BOOKINGS VERSION
       ================================ */
 
-      if (request.method === "GET" && url.pathname === "/api/bookings/version") {
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/bookings/version"
+      ) {
         const response = await handleBookingsVersion(env);
         return withCors(response, corsHeaders);
       }
@@ -192,11 +204,13 @@ export default {
   =============================== */
 
       if (request.method === "POST" && url.pathname === "/api/deposit-intent") {
-
         const { bookingId } = await request.json();
 
         if (!bookingId) {
-          return withCors(json({ error: "Missing bookingId" }, 400), corsHeaders);
+          return withCors(
+            json({ error: "Missing bookingId" }, 400),
+            corsHeaders,
+          );
         }
 
         // ===============================
@@ -208,7 +222,6 @@ export default {
         let booking = null;
 
         for (const key of list.keys) {
-
           const data = await env.BOOKINGS_KV.get(key.name);
           if (!data) continue;
 
@@ -216,23 +229,28 @@ export default {
             const parsed = JSON.parse(data);
 
             if (Array.isArray(parsed)) {
-              const found = parsed.find(b => b.id === bookingId);
+              const found = parsed.find((b) => b.id === bookingId);
               if (found) {
                 booking = found;
                 break;
               }
             }
-
-          } catch { }
+          } catch {}
         }
 
         if (!booking) {
-          return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
+          return withCors(
+            json({ error: "Booking not found" }, 404),
+            corsHeaders,
+          );
         }
 
         // ✅ prevent double hold
         if (booking.depositPaid) {
-          return withCors(json({ error: "Deposit already secured" }, 400), corsHeaders);
+          return withCors(
+            json({ error: "Deposit already secured" }, 400),
+            corsHeaders,
+          );
         }
 
         // ===============================
@@ -251,25 +269,33 @@ export default {
 
           metadata: {
             bookingId: bookingId,
-            paymentType: "deposit"
-          }
+            paymentType: "deposit",
+          },
         });
 
-        return withCors(json({
-          clientSecret: paymentIntent.client_secret
-        }), corsHeaders);
+        return withCors(
+          json({
+            clientSecret: paymentIntent.client_secret,
+          }),
+          corsHeaders,
+        );
       }
 
       /* ===============================
          OUTSTANDING STRIPE SESSION
       =============================== */
 
-      if (request.method === "GET" && url.pathname === "/api/outstanding-session") {
-
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/outstanding-session"
+      ) {
         const bookingId = url.searchParams.get("bookingId");
 
         if (!bookingId) {
-          return withCors(json({ error: "Missing bookingId" }, 400), corsHeaders);
+          return withCors(
+            json({ error: "Missing bookingId" }, 400),
+            corsHeaders,
+          );
         }
 
         // ===============================
@@ -281,7 +307,6 @@ export default {
         let booking = null;
 
         for (const key of list.keys) {
-
           const data = await env.BOOKINGS_KV.get(key.name);
 
           if (!data) continue;
@@ -290,18 +315,20 @@ export default {
             const parsed = JSON.parse(data);
 
             if (Array.isArray(parsed)) {
-              const found = parsed.find(b => b.id === bookingId);
+              const found = parsed.find((b) => b.id === bookingId);
               if (found) {
                 booking = found;
                 break;
               }
             }
-
-          } catch { }
+          } catch {}
         }
 
         if (!booking) {
-          return withCors(json({ error: "Booking not found" }, 404), corsHeaders);
+          return withCors(
+            json({ error: "Booking not found" }, 404),
+            corsHeaders,
+          );
         }
 
         // ===============================
@@ -328,7 +355,7 @@ export default {
               price_data: {
                 currency: "gbp",
                 product_data: {
-                  name: `Outstanding Balance – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`
+                  name: `Outstanding Balance – ${booking.vehicleSnapshot?.name || "Horsebox Hire"}`,
                 },
                 unit_amount: Math.round(booking.outstandingAmount * 100),
               },
@@ -339,7 +366,7 @@ export default {
           // ✅ ADD THIS BLOCK
           metadata: {
             bookingId: bookingId,
-            paymentType: "outstanding"
+            paymentType: "outstanding",
           },
 
           success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${bookingId}`,
@@ -354,7 +381,6 @@ export default {
   ================================ */
 
       if (url.pathname === "/api/customers" && request.method === "POST") {
-
         let body;
 
         try {
@@ -373,25 +399,34 @@ export default {
         }
 
         if (!email && !mobile) {
-          return withCors(json({ error: "Email or mobile required" }, 400), corsHeaders);
+          return withCors(
+            json({ error: "Email or mobile required" }, 400),
+            corsHeaders,
+          );
         }
 
         try {
-
           /* ===============================
              FIND EXISTING FIRST
           =============================== */
 
-          const existing = await findCustomerByEmailOrMobile(env, email, mobile);
+          const existing = await findCustomerByEmailOrMobile(
+            env,
+            email,
+            mobile,
+          );
 
           if (existing) {
             console.log("👤 EXISTING CUSTOMER:", existing.id);
 
-            return withCors(json({
-              ok: true,
-              mode: "existing",
-              customer: existing
-            }), corsHeaders);
+            return withCors(
+              json({
+                ok: true,
+                mode: "existing",
+                customer: existing,
+              }),
+              corsHeaders,
+            );
           }
 
           /* ===============================
@@ -401,7 +436,8 @@ export default {
           const id = "cus_" + crypto.randomUUID();
           const now = new Date().toISOString();
 
-          await env.DB.prepare(`
+          await env.DB.prepare(
+            `
       INSERT INTO customers (
         id,
         full_name,
@@ -411,37 +447,47 @@ export default {
         updated_at
       )
       VALUES (?, ?, ?, ?, ?, ?)
-    `)
+    `,
+          )
             .bind(
               id,
               name,
-              email,   // ✅ NULL safe
-              mobile,  // ✅ NULL safe
+              email, // ✅ NULL safe
+              mobile, // ✅ NULL safe
               now,
-              now
+              now,
             )
             .run();
 
           console.log("✅ CUSTOMER CREATED:", id);
 
           const customer = await env.DB.prepare(
-            "SELECT * FROM customers WHERE id = ?"
-          ).bind(id).first();
+            "SELECT * FROM customers WHERE id = ?",
+          )
+            .bind(id)
+            .first();
 
-          return withCors(json({
-            ok: true,
-            mode: "created",
-            customer
-          }), corsHeaders);
-
+          return withCors(
+            json({
+              ok: true,
+              mode: "created",
+              customer,
+            }),
+            corsHeaders,
+          );
         } catch (err) {
-
           console.error("❌ CUSTOMER CREATE ERROR:", err);
 
-          return withCors(json({
-            error: "Customer creation failed",
-            detail: err.message
-          }, 500), corsHeaders);
+          return withCors(
+            json(
+              {
+                error: "Customer creation failed",
+                detail: err.message,
+              },
+              500,
+            ),
+            corsHeaders,
+          );
         }
       }
 
@@ -449,10 +495,11 @@ export default {
          CUSTOMER LOOKUP (SAFE)
       ================================ */
 
-      if (request.method === "GET" && url.pathname === "/api/customers/lookup") {
-
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/customers/lookup"
+      ) {
         try {
-
           const email = url.searchParams.get("email")?.trim().toLowerCase();
           const mobile = url.searchParams.get("mobile")?.trim();
 
@@ -460,26 +507,31 @@ export default {
             return withCors(json({ found: false }), corsHeaders);
           }
 
-          const customer = await findCustomerByEmailOrMobile(env, email, mobile);
+          const customer = await findCustomerByEmailOrMobile(
+            env,
+            email,
+            mobile,
+          );
 
           if (!customer) {
             return withCors(json({ found: false }), corsHeaders);
           }
 
-          return withCors(json({
-            found: true,
-            customer: {
-              id: customer.id,
-              full_name: customer.full_name,
-              email: customer.email,
-              mobile: customer.mobile,
-              hire_count: customer.hire_count || 0,
-              last_hire_at: customer.last_hire_at
-            }
-          }), corsHeaders);
-
+          return withCors(
+            json({
+              found: true,
+              customer: {
+                id: customer.id,
+                full_name: customer.full_name,
+                email: customer.email,
+                mobile: customer.mobile,
+                hire_count: customer.hire_count || 0,
+                last_hire_at: customer.last_hire_at,
+              },
+            }),
+            corsHeaders,
+          );
         } catch (err) {
-
           console.error("❌ CUSTOMER LOOKUP ERROR:", err);
 
           return withCors(json({ found: false }), corsHeaders);
@@ -490,17 +542,19 @@ export default {
          CUSTOMER BOOKING HISTORY (SAFE)
       ================================ */
 
-      if (request.method === "GET" && url.pathname === "/api/customers/bookings") {
-
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/customers/bookings"
+      ) {
         try {
-
           const customerId = url.searchParams.get("customer_id");
 
           if (!customerId) {
             return withCors(json({ bookings: [] }), corsHeaders);
           }
 
-          const result = await env.DB.prepare(`
+          const result = await env.DB.prepare(
+            `
       SELECT
         id,
         vehicle_id,
@@ -512,16 +566,18 @@ export default {
       WHERE customer_id = ?
       ORDER BY pickup_at DESC
       LIMIT 5
-    `)
+    `,
+          )
             .bind(customerId)
             .all();
 
-          return withCors(json({
-            bookings: result.results || []
-          }), corsHeaders);
-
+          return withCors(
+            json({
+              bookings: result.results || [],
+            }),
+            corsHeaders,
+          );
         } catch (err) {
-
           console.error("❌ CUSTOMER BOOKINGS ERROR:", err);
 
           return withCors(json({ bookings: [] }), corsHeaders);
@@ -534,18 +590,12 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/api/form-submit") {
         try {
-
           const response = await handleFormSubmit(request, env);
           return withCors(response, corsHeaders);
-
         } catch (err) {
-
           console.error("❌ FORM ROUTE CRASH:", err);
 
-          return withCors(
-            json({ error: "Server error" }, 500),
-            corsHeaders
-          );
+          return withCors(json({ error: "Server error" }, 500), corsHeaders);
         }
       }
 
@@ -554,23 +604,23 @@ export default {
         return withCors(response, corsHeaders);
       }
 
-
       /* ===============================
          FALLBACK
       ================================ */
 
       return withCors(json({ error: "Not found" }, 404), corsHeaders);
-
     } catch (error) {
-
       console.error("❌ FETCH ERROR:", error);
 
       return withCors(
-        json({
-          error: "Server error",
-          detail: error?.message || "Unknown error"
-        }, 500),
-        corsHeaders
+        json(
+          {
+            error: "Server error",
+            detail: error?.message || "Unknown error",
+          },
+          500,
+        ),
+        corsHeaders,
       );
     }
   },
@@ -582,10 +632,8 @@ export default {
   async scheduled(event, env, ctx) {
     console.log("🧹 Running reservation cleanup");
     ctx.waitUntil(cleanupExpiredReservations(env));
-  }
-
+  },
 };
-
 
 /* ===============================
    PRICING + DISCOUNT ENGINE
@@ -598,7 +646,7 @@ const DISCOUNT_CODES = [
     value: 10,
     expires: "2026-05-31",
     vehicles: "all",
-    minDuration: 1
+    minDuration: 1,
   },
   {
     code: "HALFDAY15",
@@ -606,12 +654,11 @@ const DISCOUNT_CODES = [
     value: 15,
     expires: "2026-12-31",
     vehicles: ["v35-1", "v35-2", "v35-3"],
-    minDuration: 0.5
-  }
+    minDuration: 0.5,
+  },
 ];
 
 async function handlePricingQuote(request) {
-
   const payload = await request.json();
 
   const {
@@ -620,7 +667,7 @@ async function handlePricingQuote(request) {
     pickupDate,
     pickupTime,
     discountCode,
-    extras = {}
+    extras = {},
   } = payload;
 
   if (!vehicleId || !durationDays || !pickupDate || !pickupTime) {
@@ -633,7 +680,7 @@ async function handlePricingQuote(request) {
     code: discountCode,
     vehicleId,
     durationDays,
-    baseCost
+    baseCost,
   });
 
   if (discount.error) {
@@ -654,36 +701,29 @@ async function handlePricingQuote(request) {
      TOTAL
   ================================ */
 
-  const discountedTotal = Math.max(
-    0,
-    baseCost - discountAmount + extrasTotal
-  );
+  const discountedTotal = Math.max(0, baseCost - discountAmount + extrasTotal);
   return json({
     baseCost,
     discountAmount,
     extrasTotal,
-    total: discountedTotal
+    total: discountedTotal,
   });
 }
-
-
 
 /* ===============================
    VEHICLE PRICING ENGINE
 ================================ */
 
 function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
-
   const duration = Number(durationDays);
   const date = new Date(pickupDate);
   const day = date.getDay();
 
-  const isWeekend = (day === 0 || day === 6);
+  const isWeekend = day === 0 || day === 6;
 
   /* 3.5T */
 
   if (String(vehicleId || "").startsWith("v35")) {
-
     const prices = {
       0.5: 75,
       1: 105,
@@ -692,7 +732,7 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
       4: 400,
       5: 500,
       6: 600,
-      7: 700
+      7: 700,
     };
 
     return prices[duration] ?? 105 * duration;
@@ -701,7 +741,6 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
   /* 7.5T WITH LIVING */
 
   if (vehicleId === "v75-1") {
-
     const prices = {
       1: 175,
       2: 350,
@@ -709,7 +748,7 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
       4: 700,
       5: 875,
       6: 1050,
-      7: 1225
+      7: 1225,
     };
 
     return prices[duration] ?? 175 * duration;
@@ -718,14 +757,11 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
   /* 7.5T NO LIVING */
 
   if (vehicleId === "v75-2") {
-
     let total = 165 * duration;
 
     if (isWeekend) {
-
       if (duration === 1) total = 175;
       if (duration === 2) total = 350;
-
     }
 
     return total;
@@ -734,18 +770,15 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
   return 0;
 }
 
-
-
 /* ===============================
    DISCOUNT LOGIC
 ================================ */
 
 function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
-
   if (!code) return { discountAmount: 0 };
 
   const entry = DISCOUNT_CODES.find(
-    d => d.code.toUpperCase() === code.toUpperCase()
+    (d) => d.code.toUpperCase() === code.toUpperCase(),
   );
 
   if (!entry) return { error: "Invalid code" };
@@ -776,27 +809,21 @@ function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
   discountAmount = Math.min(discountAmount, baseCost);
 
   return {
-    discountAmount: Number(discountAmount.toFixed(2))
+    discountAmount: Number(discountAmount.toFixed(2)),
   };
 }
-
-
-
 
 /* ===============================
    STRIPE CHECKOUT SESSION
 ================================ */
 
 async function handleCreateCheckoutSession(request, env) {
-
   const booking = await request.json();
 
   const customerNotes = String(booking.customerNotes || "").slice(0, 500);
 
   const vehicleName =
-    booking.vehicleName ||
-    booking.vehicleSnapshot?.name ||
-    "Horsebox";
+    booking.vehicleName || booking.vehicleSnapshot?.name || "Horsebox";
 
   if (!booking.vehicleId) {
     return json({ error: "Invalid booking data" }, 400);
@@ -836,14 +863,14 @@ async function handleCreateCheckoutSession(request, env) {
   const baseCost = calculateServerBaseCost(
     booking.vehicleId,
     durationDays,
-    booking.pickupDate
+    booking.pickupDate,
   );
 
   const discount = resolveDiscount({
     code: booking.discountCode,
     vehicleId: booking.vehicleId,
     durationDays,
-    baseCost
+    baseCost,
   });
 
   if (discount.error) {
@@ -870,10 +897,7 @@ async function handleCreateCheckoutSession(request, env) {
      FINAL TOTAL
   =============================== */
 
-  const totalHire = Math.max(
-    0,
-    baseCost - discountAmount + extrasTotal
-  );
+  const totalHire = Math.max(0, baseCost - discountAmount + extrasTotal);
 
   function getExpectedConfirmationFee(vehicleId) {
     const id = String(vehicleId || "").trim();
@@ -935,7 +959,7 @@ async function handleCreateCheckoutSession(request, env) {
 
       const confirmedDates = getDatesBetween(
         new Date(confirmed.pickupAt),
-        new Date(confirmed.dropoffAt)
+        new Date(confirmed.dropoffAt),
       );
 
       const confirmedSlot = getConfirmedSlot(confirmed);
@@ -945,9 +969,12 @@ async function handleCreateCheckoutSession(request, env) {
           reservedDates.includes(d) &&
           slotsConflict(requestedSlot, confirmedSlot)
         ) {
-          return json({
-            error: "Vehicle already booked for selected dates."
-          }, 409);
+          return json(
+            {
+              error: "Vehicle already booked for selected dates.",
+            },
+            409,
+          );
         }
       }
     }
@@ -966,7 +993,7 @@ async function handleCreateCheckoutSession(request, env) {
     "https://kvwebservices.co.uk/equinetransportuk";
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-06-20"
+    apiVersion: "2024-06-20",
   });
 
   // 🔥 CRITICAL FIX — GENERATE BOOKING ID HERE
@@ -975,7 +1002,6 @@ async function handleCreateCheckoutSession(request, env) {
   let session;
 
   try {
-
     session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -988,16 +1014,15 @@ async function handleCreateCheckoutSession(request, env) {
           price_data: {
             currency: "gbp",
             product_data: {
-              name: `Horsebox booking — ${vehicleName}`
+              name: `Horsebox booking — ${vehicleName}`,
             },
-            unit_amount: Math.round(confirmationFee * 100)
+            unit_amount: Math.round(confirmationFee * 100),
           },
-          quantity: 1
-        }
+          quantity: 1,
+        },
       ],
 
       metadata: {
-
         bookingId: bookingId, // ✅ FIXED
 
         vehicleId: booking.vehicleId,
@@ -1025,19 +1050,17 @@ async function handleCreateCheckoutSession(request, env) {
 
         totalHire: String(totalHire),
         confirmationFee: String(confirmationFee),
-        outstandingAmount: String(outstandingAmount)
-
-      }
-
+        outstandingAmount: String(outstandingAmount),
+      },
     });
-
   } catch (err) {
-
-    return json({
-      error: "Stripe session creation failed",
-      detail: err?.message || "Unknown Stripe error"
-    }, 500);
-
+    return json(
+      {
+        error: "Stripe session creation failed",
+        detail: err?.message || "Unknown Stripe error",
+      },
+      500,
+    );
   }
 
   if (!session?.url) {
@@ -1047,34 +1070,26 @@ async function handleCreateCheckoutSession(request, env) {
   return json({ url: session.url });
 }
 
-
-
 function getDatesBetween(start, end) {
-
   const dates = [];
   const current = new Date(start);
 
   current.setHours(0, 0, 0, 0);
 
   while (current <= end) {
-
     dates.push(current.toISOString().slice(0, 10));
 
     current.setDate(current.getDate() + 1);
-
   }
 
   return dates;
-
 }
-
 
 /* ===============================
    STRIPE WEBHOOK
 ================================ */
 
 async function handleStripeWebhook(request, env) {
-
   const SITE_BASE =
     env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
     "https://kvwebservices.co.uk/equinetransportuk";
@@ -1083,7 +1098,7 @@ async function handleStripeWebhook(request, env) {
   const sig = request.headers.get("stripe-signature");
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-06-20"
+    apiVersion: "2024-06-20",
   });
 
   let event;
@@ -1094,13 +1109,13 @@ async function handleStripeWebhook(request, env) {
     event = await stripe.webhooks.constructEventAsync(
       payload,
       sig,
-      env.STRIPE_WEBHOOK_SECRET
+      env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
     console.log("❌ Webhook verification failed:", err.message);
     return new Response(
       JSON.stringify({ error: "Webhook signature verification failed" }),
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -1117,7 +1132,6 @@ async function handleStripeWebhook(request, env) {
   ================================ */
 
   if (event.type === "payment_intent.succeeded") {
-
     console.log("💳 PAYMENT INTENT EVENT");
 
     const paymentIntent = event.data.object;
@@ -1139,19 +1153,19 @@ async function handleStripeWebhook(request, env) {
     }
 
     try {
-
       // ✅ UPDATE DB
-      await env.DB.prepare(`
+      await env.DB.prepare(
+        `
       UPDATE bookings
       SET deposit_paid = 1,
           updated_at = ?
       WHERE id = ?
-    `)
+    `,
+      )
         .bind(new Date().toISOString(), bookingId)
         .run();
 
       console.log("✅ Deposit updated in DB");
-
     } catch (err) {
       console.error("❌ DB update failed:", err);
     }
@@ -1160,12 +1174,10 @@ async function handleStripeWebhook(request, env) {
     const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
     for (const key of list.keys) {
-
       const data = await env.BOOKINGS_KV.get(key.name);
       if (!data) continue;
 
       try {
-
         const parsed = JSON.parse(data);
         if (!Array.isArray(parsed)) continue;
 
@@ -1184,8 +1196,7 @@ async function handleStripeWebhook(request, env) {
           console.log("✅ Deposit updated in KV");
           break;
         }
-
-      } catch { }
+      } catch {}
     }
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });
@@ -1196,7 +1207,6 @@ async function handleStripeWebhook(request, env) {
 ================================ */
 
   if (event.type === "payment_intent.amount_capturable_updated") {
-
     console.log("💳 DEPOSIT HOLD EVENT");
 
     const paymentIntent = event.data.object;
@@ -1214,19 +1224,19 @@ async function handleStripeWebhook(request, env) {
     console.log("🔥 DEPOSIT HOLD CONFIRMED:", bookingId);
 
     try {
-
       // ✅ UPDATE DB
-      await env.DB.prepare(`
+      await env.DB.prepare(
+        `
       UPDATE bookings
       SET deposit_paid = 1,
           updated_at = ?
       WHERE id = ?
-    `)
+    `,
+      )
         .bind(new Date().toISOString(), bookingId)
         .run();
 
       console.log("✅ Deposit marked in DB");
-
     } catch (err) {
       console.error("❌ DB update failed:", err);
     }
@@ -1235,12 +1245,10 @@ async function handleStripeWebhook(request, env) {
     const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
     for (const key of list.keys) {
-
       const data = await env.BOOKINGS_KV.get(key.name);
       if (!data) continue;
 
       try {
-
         const parsed = JSON.parse(data);
         if (!Array.isArray(parsed)) continue;
 
@@ -1259,19 +1267,16 @@ async function handleStripeWebhook(request, env) {
           console.log("✅ Deposit updated in KV");
           break;
         }
-
-      } catch { }
+      } catch {}
     }
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
   if (event.type === "checkout.session.completed") {
-
     console.log("🔥 CHECKOUT SESSION COMPLETED EVENT");
 
     try {
-
       console.log("🔥 ENTERING TRY BLOCK");
       console.log("🔥 WEBHOOK START");
 
@@ -1285,11 +1290,9 @@ async function handleStripeWebhook(request, env) {
 
         return new Response(
           JSON.stringify({ error: "Missing bookingId in metadata" }),
-          { status: 400 }
+          { status: 400 },
         );
       }
-
-
 
       const paymentType = session.metadata?.paymentType || "";
       const paymentBookingId = session.metadata?.bookingId || "";
@@ -1301,13 +1304,11 @@ async function handleStripeWebhook(request, env) {
       =============================== */
 
       if (paymentType && paymentBookingId) {
-
         console.log("💳 Payment detected:", paymentType, paymentBookingId);
 
         const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
         for (const key of list.keys) {
-
           const data = await env.BOOKINGS_KV.get(key.name);
           if (!data) continue;
 
@@ -1324,27 +1325,27 @@ async function handleStripeWebhook(request, env) {
           let updated = false;
 
           for (const b of parsed) {
-
             if (String(b.id) === String(paymentBookingId)) {
-
               if (paymentType === "deposit") {
-
                 b.depositPaid = true;
 
                 // ✅ ALSO SAVE TO DATABASE (CRITICAL FIX)
                 try {
-
-                  await env.DB.prepare(`
+                  await env.DB.prepare(
+                    `
       UPDATE bookings
       SET deposit_paid = 1,
           updated_at = ?
       WHERE id = ?
-    `)
+    `,
+                  )
                     .bind(new Date().toISOString(), paymentBookingId)
                     .run();
 
-                  console.log("✅ Deposit marked as paid in DB:", paymentBookingId);
-
+                  console.log(
+                    "✅ Deposit marked as paid in DB:",
+                    paymentBookingId,
+                  );
                 } catch (err) {
                   console.error("❌ Failed to update deposit in DB:", err);
                 }
@@ -1370,13 +1371,17 @@ async function handleStripeWebhook(request, env) {
 
         await env.BOOKINGS_KV.put(eventId, "processed");
 
-        return new Response(JSON.stringify({ received: true }), { status: 200 });
+        return new Response(JSON.stringify({ received: true }), {
+          status: 200,
+        });
       }
 
       if (!session?.metadata?.vehicleId) {
         console.log("⚠️ Missing vehicleId");
         await env.BOOKINGS_KV.put(eventId, "processed");
-        return new Response(JSON.stringify({ received: true }), { status: 200 });
+        return new Response(JSON.stringify({ received: true }), {
+          status: 200,
+        });
       }
 
       /* ===============================
@@ -1385,7 +1390,9 @@ async function handleStripeWebhook(request, env) {
 
       const totalHire = Number(session.metadata?.totalHire || 0);
       const confirmationFee = Number(session.metadata?.confirmationFee || 0);
-      const outstandingAmount = Number(session.metadata?.outstandingAmount || 0);
+      const outstandingAmount = Number(
+        session.metadata?.outstandingAmount || 0,
+      );
       const baseCost = Number(session.metadata?.baseCost || totalHire || 0);
       const discountAmount = Number(session.metadata?.discountAmount || 0);
 
@@ -1447,16 +1454,13 @@ async function handleStripeWebhook(request, env) {
       let dropoffAtDate;
 
       if (durationDays === 0.5) {
-
         const dropoffTime = getHalfDayDropoffTime(
           pickupTime,
-          session.metadata.vehicleId
+          session.metadata.vehicleId,
         );
 
         dropoffAtDate = londonDateTimeToUtc(rawPickupDate, dropoffTime);
-
       } else {
-
         const dropoffDate = new Date(rawPickupDate);
         dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
 
@@ -1470,15 +1474,11 @@ async function handleStripeWebhook(request, env) {
          SAFETY CHECK
       =============================== */
 
-      if (
-        isNaN(pickupAtDate.getTime()) ||
-        isNaN(dropoffAtDate.getTime())
-      ) {
-
+      if (isNaN(pickupAtDate.getTime()) || isNaN(dropoffAtDate.getTime())) {
         console.warn("⚠️ Invalid date detected — applying fallback", {
           rawPickupDate,
           pickupTime,
-          durationDays
+          durationDays,
         });
 
         const now = new Date();
@@ -1494,14 +1494,14 @@ async function handleStripeWebhook(request, env) {
 
       console.log("📅 WEBHOOK TIMES:", {
         pickupAt,
-        dropoffAt
+        dropoffAt,
       });
 
       console.log("🔥 FINAL TIMES CHECK:", {
         pickupAt,
         dropoffAt,
         durationDays,
-        pickupTime
+        pickupTime,
       });
 
       /* ===============================
@@ -1509,7 +1509,6 @@ async function handleStripeWebhook(request, env) {
       =============================== */
 
       function cleanCustomerName(name) {
-
         if (!name) return null;
 
         let n = String(name).trim();
@@ -1522,7 +1521,7 @@ async function handleStripeWebhook(request, env) {
         n = n
           .toLowerCase()
           .split(" ")
-          .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+          .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
           .join(" ");
 
         return n;
@@ -1539,7 +1538,7 @@ async function handleStripeWebhook(request, env) {
 
       console.log("🧪 NAME DEBUG:", {
         metadataName: session.metadata.customerName,
-        stripeName: session.customer_details?.name
+        stripeName: session.customer_details?.name,
       });
 
       /* ===============================
@@ -1556,7 +1555,7 @@ async function handleStripeWebhook(request, env) {
           name: session.metadata.vehicleName || "",
           type: session.metadata.vehicleId.startsWith("v35")
             ? "3.5 tonne"
-            : "7.5 tonne"
+            : "7.5 tonne",
         },
 
         pickupAt,
@@ -1569,7 +1568,10 @@ async function handleStripeWebhook(request, env) {
         pickupTime,
 
         customerName: finalCustomerName || "Customer",
-        customerEmail: session.metadata.customerEmail || session.customer_details?.email || "",
+        customerEmail:
+          session.metadata.customerEmail ||
+          session.customer_details?.email ||
+          "",
         customerMobile: session.metadata.customerMobile || "",
         customerNotes,
 
@@ -1595,7 +1597,7 @@ async function handleStripeWebhook(request, env) {
         depositPaid: false,
         outstandingPaid: false,
         status: "confirmed",
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
       console.log("✅ BOOKING BUILT");
@@ -1607,7 +1609,7 @@ async function handleStripeWebhook(request, env) {
       console.log("📧 EMAIL SOURCE:", {
         metadata: session.metadata.customerEmail,
         stripe: session.customer_details?.email,
-        final: booking.customerEmail
+        final: booking.customerEmail,
       });
 
       /* ===============================
@@ -1617,11 +1619,10 @@ async function handleStripeWebhook(request, env) {
       let customer = null;
 
       try {
-
         customer = await findCustomerByEmailOrMobile(
           env,
           booking.customerEmail,
-          booking.customerMobile
+          booking.customerMobile,
         );
 
         /* ===============================
@@ -1633,54 +1634,50 @@ async function handleStripeWebhook(request, env) {
           finalCustomerName &&
           customer.full_name !== finalCustomerName
         ) {
-
           console.log(
             "✏️ Updating customer name:",
             customer.full_name,
             "→",
-            booking.customerName
+            booking.customerName,
           );
 
-          await env.DB.prepare(`
+          await env.DB.prepare(
+            `
             UPDATE customers
             SET full_name = ?, updated_at = ?
             WHERE id = ?
-          `)
-            .bind(
-              finalCustomerName,
-              new Date().toISOString(),
-              customer.id
-            )
+          `,
+          )
+            .bind(finalCustomerName, new Date().toISOString(), customer.id)
             .run();
 
           customer.full_name = booking.customerName;
         }
 
         if (!customer) {
-
           const customerId = "cus_" + crypto.randomUUID();
           const now = new Date().toISOString();
 
-          await env.DB.prepare(`
+          await env.DB.prepare(
+            `
             INSERT INTO customers (
               id, full_name, email, mobile, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?)
-          `)
+          `,
+          )
             .bind(
               customerId,
               finalCustomerName || "Customer",
               booking.customerEmail,
               booking.customerMobile,
               now,
-              now
+              now,
             )
             .run();
 
           customer = { id: customerId };
         }
-
       } catch (err) {
-
         console.log("⚠️ CUSTOMER ERROR:", err);
         customer = { id: null };
       }
@@ -1694,8 +1691,8 @@ async function handleStripeWebhook(request, env) {
       console.log("💾 SAVE BOOKING DB");
 
       try {
-
-        await env.DB.prepare(`
+        await env.DB.prepare(
+          `
           INSERT INTO bookings (
             id,
             customer_id,
@@ -1710,7 +1707,8 @@ async function handleStripeWebhook(request, env) {
             updated_at
           )
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
+        `,
+        )
           .bind(
             booking.id,
             booking.customerId,
@@ -1722,12 +1720,11 @@ async function handleStripeWebhook(request, env) {
             booking.confirmationFee,
             booking.status,
             booking.createdAt,
-            booking.createdAt
+            booking.createdAt,
           )
           .run();
 
         console.log("✅ DB SAVED");
-
       } catch (err) {
         console.log("💥 DB ERROR:", err);
       }
@@ -1737,27 +1734,26 @@ async function handleStripeWebhook(request, env) {
       =============================== */
 
       try {
-
         if (booking.customerId) {
-
-          await env.DB.prepare(`
+          await env.DB.prepare(
+            `
             UPDATE customers
             SET
               hire_count = COALESCE(hire_count, 0) + 1,
               last_hire_at = ?,
               updated_at = ?
             WHERE id = ?
-          `)
+          `,
+          )
             .bind(
               booking.pickupAt,
               new Date().toISOString(),
-              booking.customerId
+              booking.customerId,
             )
             .run();
 
           console.log("📈 Customer stats updated");
         }
-
       } catch (err) {
         console.error("❌ Customer update failed:", err);
       }
@@ -1769,16 +1765,16 @@ async function handleStripeWebhook(request, env) {
       let requiredFormType = "long";
 
       try {
-
         if (booking.customerId) {
-
-          const result = await env.DB.prepare(`
+          const result = await env.DB.prepare(
+            `
             SELECT pickup_at
             FROM bookings
             WHERE customer_id = ?
             ORDER BY pickup_at DESC
             LIMIT 2
-          `)
+          `,
+          )
             .bind(booking.customerId)
             .all();
 
@@ -1786,7 +1782,6 @@ async function handleStripeWebhook(request, env) {
           const previousBooking = rows[1];
 
           if (previousBooking?.pickup_at) {
-
             const previousPickup = new Date(previousBooking.pickup_at);
             const currentPickup = new Date(booking.pickupAt);
 
@@ -1797,7 +1792,7 @@ async function handleStripeWebhook(request, env) {
             console.log("🧪 FORM CHECK:", {
               previousPickup: previousBooking.pickup_at,
               currentPickup: booking.pickupAt,
-              diffDays
+              diffDays,
             });
 
             if (diffDays <= 90) {
@@ -1805,7 +1800,6 @@ async function handleStripeWebhook(request, env) {
             }
           }
         }
-
       } catch (err) {
         console.warn("Form type check failed:", err);
       }
@@ -1829,18 +1823,16 @@ async function handleStripeWebhook(request, env) {
       console.log("🧪 FORM DEBUG:", {
         type: booking.requiredFormType,
         link: booking.requiredFormLink,
-        customerId: booking.customerId
+        customerId: booking.customerId,
       });
 
       /* ===============================
          PAYMENT LINKS
       =============================== */
 
-      const depositLink =
-        `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(bookingId)}`;
+      const depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(bookingId)}`;
 
-      const outstandingLink =
-        `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(bookingId)}`;
+      const outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(bookingId)}`;
 
       booking.depositLink = depositLink;
       booking.outstandingLink = outstandingLink;
@@ -1866,13 +1858,13 @@ async function handleStripeWebhook(request, env) {
             existingMonthBookings = [];
           }
         }
-      } catch { }
+      } catch {}
 
       existingMonthBookings.push(booking);
 
       await env.BOOKINGS_KV.put(
         monthKey,
-        JSON.stringify(existingMonthBookings)
+        JSON.stringify(existingMonthBookings),
       );
 
       console.log("✅ KV SAVED");
@@ -1883,11 +1875,9 @@ async function handleStripeWebhook(request, env) {
 
       const sessionKey = `session:${session.id}`;
 
-      await env.BOOKINGS_KV.put(
-        sessionKey,
-        JSON.stringify(booking),
-        { expirationTtl: 86400 }
-      );
+      await env.BOOKINGS_KV.put(sessionKey, JSON.stringify(booking), {
+        expirationTtl: 86400,
+      });
 
       console.log("⚡ Session mapping saved:", sessionKey);
 
@@ -1901,9 +1891,7 @@ async function handleStripeWebhook(request, env) {
       if (alreadySent) {
         console.log("⚠️ Email already sent, skipping");
       } else {
-
         try {
-
           const vehicleName = booking.vehicleSnapshot?.name || "Horsebox Hire";
 
           const extras = booking.extras || {};
@@ -1913,12 +1901,14 @@ async function handleStripeWebhook(request, env) {
           const extrasLines = [];
 
           if (earlyPickupEnabled) {
-            extrasLines.push(`Early pickup: £${Number(booking.earlyPickupTotal || 0).toFixed(2)}`);
+            extrasLines.push(
+              `Early pickup: £${Number(booking.earlyPickupTotal || 0).toFixed(2)}`,
+            );
           }
 
           if (dartfordCount > 0) {
             extrasLines.push(
-              `Dartford crossings: ${dartfordCount} (£${Number(booking.dartfordTotal || 0).toFixed(2)})`
+              `Dartford crossings: ${dartfordCount} (£${Number(booking.dartfordTotal || 0).toFixed(2)})`,
             );
           }
 
@@ -1935,7 +1925,9 @@ async function handleStripeWebhook(request, env) {
               ? "SHORT Form Required"
               : "LONG Form Required";
 
-          const outstandingAmountNumber = Number(booking.outstandingAmount || 0);
+          const outstandingAmountNumber = Number(
+            booking.outstandingAmount || 0,
+          );
           const showOutstandingSection = outstandingAmountNumber > 0;
 
           const outstandingHtml = showOutstandingSection
@@ -1963,121 +1955,47 @@ async function handleStripeWebhook(request, env) {
               <p>No outstanding balance remains on this booking.</p>
             `;
 
-          const emailHtml = `
-            <div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:680px;margin:0 auto;">
-              <h2 style="margin-bottom:8px;">Booking Confirmed</h2>
-
-              <p>Dear ${escapeHtml(booking.customerName || "Customer")},</p>
-
-              <p>Thank you for your booking with Equine Transport UK.</p>
-
-              <hr style="margin:24px 0;">
-
-              <h3>Booking Summary</h3>
-
-              <p>
-                <strong>Reference:</strong> #${escapeHtml(booking.id)}<br>
-                <strong>Lorry:</strong> ${escapeHtml(vehicleName)}<br>
-                <strong>From:</strong> ${escapeHtml(booking.pickupAtLocal || "")}<br>
-                <strong>To:</strong> ${escapeHtml(booking.dropoffAtLocal || "")}<br>
-                <strong>Email:</strong> ${escapeHtml(booking.customerEmail || "")}<br>
-                <strong>Mobile:</strong> ${escapeHtml(booking.customerMobile || "")}
-              </p>
-
-              ${extrasHtml}
-
-              <hr style="margin:24px 0;">
-
-              <h3>${escapeHtml(formLabel)}</h3>
-
-              <p>Please complete the required form before your hire.</p>
-
-              <p>
-                <a href="${escapeHtml(booking.requiredFormLink || "")}"
-                   style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
-                  Complete Form
-                </a>
-              </p>
-
-              <p style="font-size:13px;color:#555;">
-                ${escapeHtml(booking.requiredFormLink || "")}
-              </p>
-
-              <hr style="margin:24px 0;">
-
-              <h3>Deposit Hold (£200)</h3>
-
-              <p>
-                This is a card pre-authorisation hold only. No money is taken unless required
-                under the hire terms.
-              </p>
-
-              <p>
-                <a href="${escapeHtml(booking.depositLink || "")}"
-                   style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
-                  Secure Deposit Hold
-                </a>
-              </p>
-
-              <p style="font-size:13px;color:#555;">
-                ${escapeHtml(booking.depositLink || "")}
-              </p>
-
-              ${outstandingHtml}
-
-              <hr style="margin:24px 0;">
-
-              <h3>Price Summary</h3>
-
-              <p>
-                <strong>Total Hire:</strong> £${Number(booking.hireTotal || 0).toFixed(2)}<br>
-                <strong>Paid Now:</strong> £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
-                <strong>Outstanding:</strong> £${outstandingAmountNumber.toFixed(2)}
-              </p>
-
-              <p>
-                Kind regards,<br>
-                Koos & Avril<br>
-                Equine Transport UK<br><br>
-                📞 +44 7584 578654<br>
-                ✉️ info@equinetransportuk.com<br>
-                🌍 ${escapeHtml(SITE_BASE)}
-              </p>
-            </div>
-          `;
+          const emailHtml = buildModernEmail({
+            title: "Booking Confirmation",
+            customerName: booking.customerName,
+            booking: {
+              id: booking.id,
+              vehicle: booking.vehicleSnapshot?.name || "Horsebox Hire",
+              from: booking.pickupAtLocal,
+              to: booking.dropoffAtLocal,
+              paid: booking.confirmationFee,
+              outstanding: booking.outstandingAmount,
+            },
+            formLink: booking.requiredFormLink,
+            depositLink: booking.depositLink,
+            outstandingLink: booking.outstandingLink,
+          });
 
           if (booking.customerEmail) {
-
             await sendBookingEmail(env, {
               to: booking.customerEmail,
               subject: "Your Equine Transport UK booking is confirmed",
-              html: emailHtml
+              html: emailHtml,
             });
 
             console.log("📧 BOOKING EMAIL SENT");
 
             await env.BOOKINGS_KV.put(emailKey, "1", {
-              expirationTtl: 86400
+              expirationTtl: 86400,
             });
-
           } else {
-
             console.log("⚠️ No customer email — skipping email send");
           }
-
         } catch (emailErr) {
           console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
         }
       }
-
     } catch (err) {
-
       console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
 
-      return new Response(
-        JSON.stringify({ error: err.message }),
-        { status: 500 }
-      );
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+      });
     }
   }
 
@@ -2091,7 +2009,6 @@ async function handleStripeWebhook(request, env) {
 ================================ */
 
 async function handleListBookings(request, env) {
-
   const url = new URL(request.url);
 
   const fromParam = url.searchParams.get("from");
@@ -2114,30 +2031,24 @@ async function handleListBookings(request, env) {
   current.setDate(1);
 
   while (current <= to) {
-
     const monthKey = current.toISOString().slice(0, 7);
     months.push(monthKey);
 
     current.setMonth(current.getMonth() + 1);
-
   }
 
   let bookings = [];
 
   for (const month of months) {
-
     const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
 
     if (!data) continue;
 
     try {
-
       const parsed = JSON.parse(data);
 
       bookings = bookings.concat(parsed);
-
-    } catch { }
-
+    } catch {}
   }
 
   /* ===============================
@@ -2147,35 +2058,26 @@ async function handleListBookings(request, env) {
   const reservations = [];
 
   try {
-
     const list = await env.BOOKINGS_KV.list({
-      prefix: "reservation:"
+      prefix: "reservation:",
     });
 
     for (const key of list.keys) {
-
       const parts = key.name.split(":");
 
       if (parts.length >= 3) {
-
         reservations.push({
           vehicleId: parts[1],
           date: parts[2],
-          slot: parts[3] || "full"
+          slot: parts[3] || "full",
         });
-
       }
-
     }
-
   } catch (err) {
-
     console.log("⚠️ Reservation scan failed:", err);
-
   }
 
-  const transformedBookings = bookings.map(booking => {
-
+  const transformedBookings = bookings.map((booking) => {
     const extras = booking.extras || null;
 
     return {
@@ -2185,19 +2087,17 @@ async function handleListBookings(request, env) {
       extrasTotal: Number(booking.extrasTotal || 0),
 
       // parsed object for frontend
-      extras
+      extras,
     };
   });
 
   return json({
     bookings: transformedBookings,
-    reservations
+    reservations,
   });
-
 }
 
 async function handleBookingBySession(request, env) {
-
   const url = new URL(request.url);
   const sessionId = url.searchParams.get("session_id");
 
@@ -2221,7 +2121,7 @@ async function handleBookingBySession(request, env) {
 
       return json({
         found: true,
-        booking
+        booking,
       });
     } catch (err) {
       console.log("⚠️ Session cache parse error:", err);
@@ -2233,16 +2133,19 @@ async function handleBookingBySession(request, env) {
   =============================== */
 
   async function getRequiredFormType(env, customerId, pickupAt) {
-
     if (!customerId) return "long";
 
-    const rows = await env.DB.prepare(`
+    const rows = await env.DB.prepare(
+      `
     SELECT pickup_at
     FROM bookings
     WHERE customer_id = ?
     ORDER BY pickup_at DESC
     LIMIT 2
-  `).bind(customerId).all();
+  `,
+    )
+      .bind(customerId)
+      .all();
 
     const bookings = rows?.results || [];
 
@@ -2272,7 +2175,7 @@ async function handleBookingBySession(request, env) {
   =============================== */
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-06-20"
+    apiVersion: "2024-06-20",
   });
 
   let session;
@@ -2284,9 +2187,7 @@ async function handleBookingBySession(request, env) {
     return json({ error: "Stripe lookup failed" }, 500);
   }
 
-  const bookingId =
-    session?.metadata?.bookingId ||
-    session?.id;
+  const bookingId = session?.metadata?.bookingId || session?.id;
 
   console.log("🔎 Looking for bookingId:", bookingId);
 
@@ -2311,20 +2212,15 @@ async function handleBookingBySession(request, env) {
   }
 
   for (const month of months) {
-
     const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
     if (!data) continue;
 
     try {
-
       const bookings = JSON.parse(data);
 
-      const booking = bookings.find(
-        b => String(b.id) === String(bookingId)
-      );
+      const booking = bookings.find((b) => String(b.id) === String(bookingId));
 
       if (booking) {
-
         console.log("✅ Booking found in KV:", bookingId);
 
         return json({
@@ -2333,15 +2229,13 @@ async function handleBookingBySession(request, env) {
             ...booking,
             pickupAt: cleanIso(booking.pickupAt),
             dropoffAt: cleanIso(booking.dropoffAt),
-            extras: booking.extras || {}
-          }
+            extras: booking.extras || {},
+          },
         });
       }
-
     } catch (err) {
       console.log("⚠️ KV parse error:", err);
     }
-
   }
 
   /* ===============================
@@ -2355,13 +2249,12 @@ async function handleBookingBySession(request, env) {
     session: {
       id: session.id,
       metadata: session.metadata || {},
-      customer_details: session.customer_details || null
-    }
+      customer_details: session.customer_details || null,
+    },
   });
 }
 
 async function handleAvailability(request, env) {
-
   const url = new URL(request.url);
 
   const fromParam = url.searchParams.get("from");
@@ -2382,7 +2275,6 @@ async function handleAvailability(request, env) {
   =============================== */
 
   for (const month of months) {
-
     const data = await env.BOOKINGS_KV.get(`bookings:${month}`);
     if (!data) continue;
 
@@ -2392,7 +2284,7 @@ async function handleAvailability(request, env) {
       for (const booking of bookings) {
         const dates = getDatesBetween(
           new Date(booking.pickupAt),
-          new Date(booking.dropoffAt)
+          new Date(booking.dropoffAt),
         );
 
         const slot = getSlotFromBooking(booking);
@@ -2402,11 +2294,11 @@ async function handleAvailability(request, env) {
             vehicleId: booking.vehicleId,
             date: d,
             slot,
-            status: "booked"
+            status: "booked",
           });
         }
       }
-    } catch { }
+    } catch {}
   }
 
   /* ===============================
@@ -2423,7 +2315,7 @@ async function handleAvailability(request, env) {
       vehicleId: parts[1],
       date: parts[2],
       slot: parts[3] || "full",
-      status: "reserved"
+      status: "reserved",
     });
   }
 
@@ -2431,7 +2323,6 @@ async function handleAvailability(request, env) {
 }
 
 async function handleVehicleAvailability(request, env) {
-
   const url = new URL(request.url);
 
   const date = url.searchParams.get("date");
@@ -2450,13 +2341,7 @@ async function handleVehicleAvailability(request, env) {
     else requestedSlot = "any";
   }
 
-  const vehicles = [
-    "v35-1",
-    "v35-2",
-    "v35-3",
-    "v75-1",
-    "v75-2"
-  ];
+  const vehicles = ["v35-1", "v35-2", "v35-3", "v75-1", "v75-2"];
 
   /* ===============================
      BUILD REQUESTED DATE RANGE
@@ -2477,7 +2362,7 @@ async function handleVehicleAvailability(request, env) {
      LOAD RELEVANT MONTHS
   =============================== */
 
-  const months = [...new Set(requestedDates.map(d => d.slice(0, 7)))];
+  const months = [...new Set(requestedDates.map((d) => d.slice(0, 7)))];
   let bookings = [];
 
   for (const month of months) {
@@ -2490,15 +2375,14 @@ async function handleVehicleAvailability(request, env) {
       if (Array.isArray(parsed)) {
         bookings.push(...parsed);
       }
-    } catch { }
+    } catch {}
   }
 
   const result = [];
 
   for (const vehicleId of vehicles) {
-
     const vehicleBookings = bookings.filter(
-      b => b.vehicleId === vehicleId && b.status !== "cancelled"
+      (b) => b.vehicleId === vehicleId && b.status !== "cancelled",
     );
 
     let available = true;
@@ -2509,7 +2393,6 @@ async function handleVehicleAvailability(request, env) {
     =============================== */
 
     if (duration === 0.5) {
-
       let amBlocked = false;
       let pmBlocked = false;
       let fullBlocked = false;
@@ -2517,7 +2400,7 @@ async function handleVehicleAvailability(request, env) {
       for (const b of vehicleBookings) {
         const dates = getDatesBetween(
           new Date(b.pickupAt),
-          new Date(b.dropoffAt)
+          new Date(b.dropoffAt),
         );
 
         if (!dates.includes(date)) continue;
@@ -2535,7 +2418,7 @@ async function handleVehicleAvailability(request, env) {
       }
 
       const list = await env.BOOKINGS_KV.list({
-        prefix: `reservation:${vehicleId}:${date}`
+        prefix: `reservation:${vehicleId}:${date}`,
       });
 
       for (const key of list.keys) {
@@ -2562,15 +2445,12 @@ async function handleVehicleAvailability(request, env) {
       } else {
         available = availableSlots.length > 0;
       }
-
     } else {
-
       /* ===============================
          FULL / MULTI-DAY
       =============================== */
 
       for (const requestedDate of requestedDates) {
-
         let amBlocked = false;
         let pmBlocked = false;
         let fullBlocked = false;
@@ -2578,7 +2458,7 @@ async function handleVehicleAvailability(request, env) {
         for (const b of vehicleBookings) {
           const dates = getDatesBetween(
             new Date(b.pickupAt),
-            new Date(b.dropoffAt)
+            new Date(b.dropoffAt),
           );
 
           if (!dates.includes(requestedDate)) continue;
@@ -2596,7 +2476,7 @@ async function handleVehicleAvailability(request, env) {
         }
 
         const list = await env.BOOKINGS_KV.list({
-          prefix: `reservation:${vehicleId}:${requestedDate}`
+          prefix: `reservation:${vehicleId}:${requestedDate}`,
         });
 
         for (const key of list.keys) {
@@ -2625,7 +2505,7 @@ async function handleVehicleAvailability(request, env) {
     result.push({
       vehicleId,
       available,
-      availableSlots
+      availableSlots,
     });
   }
 
@@ -2637,7 +2517,6 @@ async function handleVehicleAvailability(request, env) {
 ================================ */
 
 async function handleMonthAvailability(request, env) {
-
   const url = new URL(request.url);
 
   const month = url.searchParams.get("month");
@@ -2646,13 +2525,7 @@ async function handleMonthAvailability(request, env) {
     return json({ error: "Missing month parameter (YYYY-MM)" }, 400);
   }
 
-  const vehicles = [
-    "v35-1",
-    "v35-2",
-    "v35-3",
-    "v75-1",
-    "v75-2"
-  ];
+  const vehicles = ["v35-1", "v35-2", "v35-3", "v75-1", "v75-2"];
 
   const days = [];
 
@@ -2665,7 +2538,6 @@ async function handleMonthAvailability(request, env) {
   const current = new Date(start);
 
   while (current <= end) {
-
     const date = current.toISOString().slice(0, 10);
 
     const booked = new Set();
@@ -2675,8 +2547,8 @@ async function handleMonthAvailability(request, env) {
        CONFIRMED BOOKINGS (FAST INDEX)
     ================================ */
 
-    const checks = vehicles.map(v =>
-      env.BOOKINGS_KV.get(`booking:${v}:${date}`)
+    const checks = vehicles.map((v) =>
+      env.BOOKINGS_KV.get(`booking:${v}:${date}`),
     );
 
     const results = await Promise.all(checks);
@@ -2690,11 +2562,10 @@ async function handleMonthAvailability(request, env) {
     ================================ */
 
     const reservations = await env.BOOKINGS_KV.list({
-      prefix: "reservation:"
+      prefix: "reservation:",
     });
 
     for (const key of reservations.keys) {
-
       const parts = key.name.split(":");
 
       if (parts.length < 3) continue;
@@ -2702,51 +2573,46 @@ async function handleMonthAvailability(request, env) {
       if (parts[2] === date) {
         reserved.add(parts[1]);
       }
-
     }
 
     days.push({
       date,
-      vehicles: vehicles.map(v => ({
+      vehicles: vehicles.map((v) => ({
         vehicleId: v,
-        available: !(booked.has(v) || reserved.has(v))
-      }))
+        available: !(booked.has(v) || reserved.has(v)),
+      })),
     });
 
     current.setDate(current.getDate() + 1);
-
   }
 
   return json({ days });
-
 }
 
-
 async function handleBookingsVersion(env) {
-
   const version = await env.BOOKINGS_KV.get("bookings:version");
 
   return json({
-    version: version || "0"
+    version: version || "0",
   });
-
 }
 
 async function handleClearBookings(env) {
-
   const bookingsList = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
   await Promise.all(
-    bookingsList.keys.map(key => env.BOOKINGS_KV.delete(key.name))
+    bookingsList.keys.map((key) => env.BOOKINGS_KV.delete(key.name)),
   );
 
   const bookingIndexList = await env.BOOKINGS_KV.list({ prefix: "booking:" });
   await Promise.all(
-    bookingIndexList.keys.map(key => env.BOOKINGS_KV.delete(key.name))
+    bookingIndexList.keys.map((key) => env.BOOKINGS_KV.delete(key.name)),
   );
 
-  const reservationsList = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
+  const reservationsList = await env.BOOKINGS_KV.list({
+    prefix: "reservation:",
+  });
   await Promise.all(
-    reservationsList.keys.map(key => env.BOOKINGS_KV.delete(key.name))
+    reservationsList.keys.map((key) => env.BOOKINGS_KV.delete(key.name)),
   );
 
   await env.BOOKINGS_KV.delete("bookings:version");
@@ -2755,19 +2621,22 @@ async function handleClearBookings(env) {
 }
 
 async function findCustomerByEmailOrMobile(env, email, mobile) {
-
   if (email) {
     const result = await env.DB.prepare(
-      "SELECT * FROM customers WHERE email = ? LIMIT 1"
-    ).bind(email).first();
+      "SELECT * FROM customers WHERE email = ? LIMIT 1",
+    )
+      .bind(email)
+      .first();
 
     if (result) return result;
   }
 
   if (mobile) {
     const result = await env.DB.prepare(
-      "SELECT * FROM customers WHERE mobile = ? LIMIT 1"
-    ).bind(mobile).first();
+      "SELECT * FROM customers WHERE mobile = ? LIMIT 1",
+    )
+      .bind(mobile)
+      .first();
 
     if (result) return result;
   }
@@ -2797,12 +2666,10 @@ function slotsConflict(a, b) {
 }
 
 function json(payload, status = 200) {
-
   return new Response(JSON.stringify(payload), {
     status,
-    headers: JSON_HEADERS
+    headers: JSON_HEADERS,
   });
-
 }
 
 function londonDateTimeToUtc(dateString, timeString) {
@@ -2818,10 +2685,10 @@ function londonDateTimeToUtc(dateString, timeString) {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   }).formatToParts(guessUtc);
 
-  const get = (type) => londonParts.find(p => p.type === type)?.value || "";
+  const get = (type) => londonParts.find((p) => p.type === type)?.value || "";
 
   const londonYear = Number(get("year"));
   const londonMonth = Number(get("month"));
@@ -2836,7 +2703,7 @@ function londonDateTimeToUtc(dateString, timeString) {
     londonDay,
     londonHour,
     londonMinute,
-    0
+    0,
   );
 
   const offsetMs = shownAsLondonMs - guessUtc.getTime();
@@ -2853,12 +2720,94 @@ function toLondonLocalISOString(date) {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false
+    hour12: false,
   }).formatToParts(date);
 
-  const get = (type) => parts.find(p => p.type === type)?.value || "";
+  const get = (type) => parts.find((p) => p.type === type)?.value || "";
 
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}`;
+}
+
+/* ===============================
+   📧 MODERN EMAIL TEMPLATE
+=============================== */
+
+function buildModernEmail({
+  title,
+  customerName,
+  booking,
+  formLink,
+  depositLink,
+  outstandingLink,
+}) {
+  const money = (v) => `£${Number(v || 0).toFixed(2)}`;
+
+  return `
+  <div style="background:#0f172a;padding:20px;font-family:Arial,sans-serif;color:#e5e7eb;">
+
+    <div style="max-width:600px;margin:0 auto;">
+
+      <!-- LOGO -->
+      <div style="text-align:center;margin-bottom:20px;">
+        <img src="https://kvwebservices.co.uk/equinetransportuk/images/logo.png" style="max-width:180px;">
+      </div>
+
+      <!-- TITLE -->
+      <h2 style="text-align:center;color:#60a5fa;">${title}</h2>
+
+      <!-- INTRO -->
+      <p>Dear ${escapeHtml(customerName || "Customer")},</p>
+      <p>Thank you for your booking with <strong>Equine Transport UK</strong>.</p>
+
+      <!-- BOOKING CARD -->
+      <div style="background:#1f2937;border-radius:10px;padding:16px;margin-top:16px;">
+        <strong style="color:#93c5fd;">Booking Details</strong>
+        <ul style="margin-top:10px;">
+          <li><strong>Reference:</strong> ${escapeHtml(booking.id)}</li>
+          <li><strong>Lorry:</strong> ${escapeHtml(booking.vehicle)}</li>
+          <li><strong>From:</strong> ${escapeHtml(booking.from)}</li>
+          <li><strong>To:</strong> ${escapeHtml(booking.to)}</li>
+        </ul>
+      </div>
+
+      <!-- PAYMENT -->
+      <div style="background:#111827;border-radius:10px;padding:14px;margin-top:14px;">
+        <strong style="color:#60a5fa;">Payment Summary</strong><br>
+        Paid now: <strong>${money(booking.paid)}</strong><br>
+        Outstanding: <strong>${money(booking.outstanding)}</strong>
+      </div>
+
+      <!-- BUTTONS -->
+      <div style="margin-top:18px;">
+        <a href="${formLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700;margin:4px;">
+          Complete Form
+        </a>
+
+        <a href="${depositLink}" style="display:inline-block;background:#10b981;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700;margin:4px;">
+          Pay Deposit
+        </a>
+
+        <a href="${outstandingLink}" style="display:inline-block;background:#f59e0b;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700;margin:4px;">
+          Pay Outstanding
+        </a>
+      </div>
+
+      <!-- IMPORTANT -->
+      <div style="margin-top:18px;padding:12px;border-radius:8px;background:#78350f;color:#fde68a;">
+        Deposit is a pre-authorisation (hold), not a payment.
+      </div>
+
+      <!-- FOOTER -->
+      <div style="margin-top:20px;font-size:12px;color:#9ca3af;text-align:center;">
+        Equine Transport UK<br>
+        📞 +44 7584 578654<br>
+        ✉️ info@equinetransportuk.com<br>
+        🌍 https://www.equinetransportuk.com
+      </div>
+
+    </div>
+  </div>
+  `;
 }
 
 function escapeHtml(value) {
@@ -2870,12 +2819,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-async function sendBookingEmail(env, {
-  to,
-  subject,
-  html
-}) {
-
+async function sendBookingEmail(env, { to, subject, html }) {
   if (!env.SENDGRID_API_KEY) {
     throw new Error("Missing SENDGRID_API_KEY");
   }
@@ -2883,27 +2827,27 @@ async function sendBookingEmail(env, {
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${env.SENDGRID_API_KEY}`,
-      "Content-Type": "application/json"
+      Authorization: `Bearer ${env.SENDGRID_API_KEY}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       personalizations: [
         {
-          to: [{ email: to }]
-        }
+          to: [{ email: to }],
+        },
       ],
       from: {
         email: "info@equinetransportuk.com",
-        name: "Equine Transport UK"
+        name: "Equine Transport UK",
       },
       subject,
       content: [
         {
           type: "text/html",
-          value: html
-        }
-      ]
-    })
+          value: html,
+        },
+      ],
+    }),
   });
 
   if (!response.ok) {
@@ -2913,38 +2857,34 @@ async function sendBookingEmail(env, {
 }
 
 function buildCorsHeaders() {
-
   return {
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET,POST,OPTIONS",
-    "access-control-allow-headers": "content-type,stripe-signature"
+    "access-control-allow-headers": "content-type,stripe-signature",
   };
-
 }
 
 function withCors(response, corsHeaders) {
-
   const headers = new Headers(response.headers);
 
   Object.entries(corsHeaders).forEach(([key, value]) =>
-    headers.set(key, value)
+    headers.set(key, value),
   );
 
   return new Response(response.body, {
     status: response.status,
-    headers
+    headers,
   });
-
 }
 
 async function handleFormSubmit(request, env) {
-
   try {
-
     const data = await request.json();
 
     const bookingId = String(data.bookingId || data.bookingID || "").trim();
-    const formType = String(data.formType || "unknown").trim().toLowerCase();
+    const formType = String(data.formType || "unknown")
+      .trim()
+      .toLowerCase();
 
     if (!bookingId) {
       return json({ error: "Missing bookingId" }, 400);
@@ -2965,16 +2905,14 @@ async function handleFormSubmit(request, env) {
     let monthData = null;
 
     for (const key of list.keys) {
-
       const raw = await env.BOOKINGS_KV.get(key.name);
       if (!raw) continue;
 
       try {
-
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed)) continue;
 
-        const found = parsed.find(b => String(b.id) === bookingId);
+        const found = parsed.find((b) => String(b.id) === bookingId);
 
         if (found) {
           booking = found;
@@ -2982,8 +2920,7 @@ async function handleFormSubmit(request, env) {
           monthData = parsed;
           break;
         }
-
-      } catch { }
+      } catch {}
     }
 
     if (!booking) {
@@ -3003,9 +2940,11 @@ async function handleFormSubmit(request, env) {
     const customerName =
       [cleaned.firstName, cleaned.lastName]
         .filter(Boolean)
-        .map(v => String(v).trim())
+        .map((v) => String(v).trim())
         .join(" ")
-        .trim() || booking.customerName || null;
+        .trim() ||
+      booking.customerName ||
+      null;
 
     const customerEmail =
       String(cleaned.email || booking.customerEmail || "")
@@ -3013,8 +2952,7 @@ async function handleFormSubmit(request, env) {
         .toLowerCase() || null;
 
     const customerMobile =
-      String(cleaned.mobile || booking.customerMobile || "")
-        .trim() || null;
+      String(cleaned.mobile || booking.customerMobile || "").trim() || null;
 
     const signatureData =
       String(cleaned.signatureData || cleaned.signature || "").trim() || null;
@@ -3026,14 +2964,20 @@ async function handleFormSubmit(request, env) {
     if (formType === "long") {
       const dvla = String(cleaned.dvlaCheckCode || "").trim();
       if (dvla.length !== 8) {
-        return json({ error: "DVLA check code must be exactly 8 characters" }, 400);
+        return json(
+          { error: "DVLA check code must be exactly 8 characters" },
+          400,
+        );
       }
     }
 
     if (formType === "short") {
       const dvla = String(cleaned.dvlaCode || "").trim();
       if (dvla.length !== 8) {
-        return json({ error: "DVLA access code must be exactly 8 characters" }, 400);
+        return json(
+          { error: "DVLA access code must be exactly 8 characters" },
+          400,
+        );
       }
     }
 
@@ -3044,7 +2988,8 @@ async function handleFormSubmit(request, env) {
        SAVE FULL FORM TO D1
     =============================== */
 
-    await env.DB.prepare(`
+    await env.DB.prepare(
+      `
       INSERT INTO booking_forms (
         id,
         booking_id,
@@ -3068,7 +3013,8 @@ async function handleFormSubmit(request, env) {
         payload_json = excluded.payload_json,
         signature_data = excluded.signature_data,
         updated_at = excluded.updated_at
-    `)
+    `,
+    )
       .bind(
         formId,
         bookingId,
@@ -3080,7 +3026,7 @@ async function handleFormSubmit(request, env) {
         JSON.stringify(cleaned),
         signatureData,
         now,
-        now
+        now,
       )
       .run();
 
@@ -3094,15 +3040,11 @@ async function handleFormSubmit(request, env) {
     booking.formRecordId = formId;
 
     if (monthKeyUsed && monthData) {
-
-      const updated = monthData.map(b =>
-        String(b.id) === bookingId ? booking : b
+      const updated = monthData.map((b) =>
+        String(b.id) === bookingId ? booking : b,
       );
 
-      await env.BOOKINGS_KV.put(
-        monthKeyUsed,
-        JSON.stringify(updated)
-      );
+      await env.BOOKINGS_KV.put(monthKeyUsed, JSON.stringify(updated));
     }
 
     /* ===============================
@@ -3110,17 +3052,17 @@ async function handleFormSubmit(request, env) {
     =============================== */
 
     try {
-
-      await env.DB.prepare(`
+      await env.DB.prepare(
+        `
         UPDATE bookings
         SET
           form_completed = 1,
           updated_at = ?
         WHERE id = ?
-      `)
+      `,
+      )
         .bind(now, bookingId)
         .run();
-
     } catch (err) {
       console.warn("⚠️ bookings table update skipped:", err.message);
     }
@@ -3128,18 +3070,16 @@ async function handleFormSubmit(request, env) {
     console.log("✅ FORM SAVED:", {
       bookingId,
       formType,
-      formId
+      formId,
     });
 
     return json({
       success: true,
       bookingId,
       formType,
-      formId
+      formId,
     });
-
   } catch (err) {
-
     console.error("❌ FORM ERROR:", err);
 
     return json({ error: "Form submission failed" }, 500);
@@ -3147,9 +3087,7 @@ async function handleFormSubmit(request, env) {
 }
 
 async function handleAdminFormView(request, env) {
-
   try {
-
     const url = new URL(request.url);
     const bookingId = String(url.searchParams.get("bookingId") || "").trim();
 
@@ -3157,7 +3095,8 @@ async function handleAdminFormView(request, env) {
       return json({ error: "Missing bookingId" }, 400);
     }
 
-    const row = await env.DB.prepare(`
+    const row = await env.DB.prepare(
+      `
       SELECT
         id,
         booking_id,
@@ -3173,7 +3112,8 @@ async function handleAdminFormView(request, env) {
       FROM booking_forms
       WHERE booking_id = ?
       LIMIT 1
-    `)
+    `,
+    )
       .bind(bookingId)
       .first();
 
@@ -3202,12 +3142,10 @@ async function handleAdminFormView(request, env) {
         submittedAt: row.submitted_at,
         updatedAt: row.updated_at,
         signatureData: row.signature_data,
-        payload
-      }
+        payload,
+      },
     });
-
   } catch (err) {
-
     console.error("❌ ADMIN FORM VIEW ERROR:", err);
 
     return json({ error: "Failed to load form" }, 500);
