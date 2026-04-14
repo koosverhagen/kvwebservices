@@ -45,6 +45,91 @@ async function cleanupExpiredReservations(env) {
   }
 }
 
+/* ===============================
+   ⏰ PROCESS REMINDERS
+=============================== */
+
+async function processReminders(env) {
+  const now = new Date();
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "reminder:" });
+
+  for (const key of list.keys) {
+    const data = await env.BOOKINGS_KV.get(key.name);
+    if (!data) continue;
+
+    let reminder;
+
+    try {
+      reminder = JSON.parse(data);
+    } catch {
+      continue;
+    }
+
+    if (!reminder.sendAt) continue;
+
+    const sendTime = new Date(reminder.sendAt);
+
+    if (now < sendTime) continue;
+
+    console.log("📨 Sending reminder:", reminder.bookingId);
+
+    const booking = await findBookingById(env, reminder.bookingId);
+
+    if (!booking || !booking.customerEmail) {
+      console.log("⚠️ Booking/email missing");
+      await env.BOOKINGS_KV.delete(key.name);
+      continue;
+    }
+
+    try {
+      const reminderType = booking.formCompleted ? "outstanding" : "form";
+      const emailHtml = buildModernEmail({
+        title:
+          reminderType === "form"
+            ? "Reminder – Form required before your hire"
+            : "Reminder – Outstanding balance due",
+
+        customerName: booking.customerName,
+
+        booking: {
+          id: booking.id,
+          vehicle: booking.vehicleSnapshot?.name,
+          from: booking.pickupAtLocal,
+          to: booking.dropoffAtLocal,
+          email: booking.customerEmail,
+          mobile: booking.customerMobile,
+          paid: booking.confirmationFee,
+          outstanding: booking.outstandingAmount,
+          total: booking.hireTotal,
+          formType: booking.requiredFormType,
+          depositPaid: booking.depositPaid,
+        },
+
+        formLink: booking.requiredFormLink,
+        depositLink: booking.depositLink,
+        outstandingLink: booking.outstandingLink,
+      });
+
+      await sendBookingEmail(env, {
+        to: booking.customerEmail,
+        subject:
+          reminderType === "form"
+            ? "Reminder: Please complete your form"
+            : "Reminder: Outstanding balance due",
+        html: emailHtml,
+      });
+
+      console.log("✅ Reminder email sent");
+    } catch (err) {
+      console.error("❌ Reminder email failed:", err);
+    }
+
+    // ✅ DELETE AFTER SEND
+    await env.BOOKINGS_KV.delete(key.name);
+  }
+}
+
 export default {
   /* ===============================
      HTTP REQUEST HANDLER
@@ -642,8 +727,12 @@ export default {
   ================================ */
 
   async scheduled(event, env, ctx) {
-    console.log("🧹 Running reservation cleanup");
+    console.log("🧹 Running scheduled jobs");
+
     ctx.waitUntil(cleanupExpiredReservations(env));
+
+    // 🔥 NEW
+    ctx.waitUntil(processReminders(env));
   },
 };
 
@@ -1095,6 +1184,26 @@ function getDatesBetween(start, end) {
   }
 
   return dates;
+}
+
+async function findBookingById(env, bookingId) {
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  for (const key of list.keys) {
+    const data = await env.BOOKINGS_KV.get(key.name);
+    if (!data) continue;
+
+    try {
+      const parsed = JSON.parse(data);
+
+      if (Array.isArray(parsed)) {
+        const found = parsed.find((b) => String(b.id) === String(bookingId));
+        if (found) return found;
+      }
+    } catch {}
+  }
+
+  return null;
 }
 
 /* ===============================
@@ -1614,6 +1723,39 @@ async function handleStripeWebhook(request, env) {
 
       console.log("✅ BOOKING BUILT");
 
+      /* ===============================
+   ⏰ SCHEDULE REMINDER (NEW)
+=============================== */
+
+      try {
+        const pickupDate = new Date(booking.pickupAt);
+
+        const reminderDate = new Date(pickupDate);
+        reminderDate.setDate(reminderDate.getDate() - 1);
+        reminderDate.setHours(16, 0, 0, 0); // 4PM UK time
+
+        const reminderKey = `reminder:${booking.id}`;
+
+        await env.BOOKINGS_KV.put(
+          reminderKey,
+          JSON.stringify({
+            bookingId: booking.id,
+            sendAt: reminderDate.toISOString(),
+          }),
+          {
+            expirationTtl: 60 * 60 * 24 * 7, // 7 days safety
+          },
+        );
+
+        console.log(
+          "⏰ Reminder scheduled:",
+          reminderKey,
+          reminderDate.toISOString(),
+        );
+      } catch (err) {
+        console.warn("⚠️ Failed to schedule reminder:", err);
+      }
+
       if (!finalCustomerName) {
         console.warn("❌ Booking created without proper name:", booking.id);
       }
@@ -1981,6 +2123,9 @@ async function handleStripeWebhook(request, env) {
               outstanding: booking.outstandingAmount,
               total: booking.hireTotal,
               formType: booking.requiredFormType,
+
+              // ✅ ADD THIS
+              depositPaid: booking.depositPaid,
             },
             formLink: booking.requiredFormLink,
             depositLink: booking.depositLink,
@@ -2781,10 +2926,14 @@ function buildModernEmail({
   const safeOutstandingLink = escapeHtml(outstandingLink || "");
 
   const paidNow = Number(booking?.paid || 0);
+
   const outstanding = Number(booking?.outstanding || 0);
   const totalHire = Number(booking?.total || paidNow + outstanding || 0);
 
   const showOutstanding = outstanding > 0;
+
+  const depositPaid = !!booking?.depositPaid;
+  const showDeposit = !depositPaid;
 
   return `
   <div style="margin:0;padding:0;background:#f3f4f6;">
@@ -2916,10 +3065,13 @@ function buildModernEmail({
       </p>
 
       <!-- DEPOSIT -->
-      <h2 style="margin:0 0 8px;color:#1673ea;font-size:22px;">
-        Deposit Hold
-      </h2>
+<h2 style="margin:0 0 8px;color:#1673ea;font-size:22px;">
+  Deposit Hold
+</h2>
 
+${
+  !booking?.depositPaid
+    ? `
       <p style="margin:0 0 10px;font-size:16px;">
         The required deposit hold amount is: <strong>£200.00</strong>
       </p>
@@ -2953,9 +3105,7 @@ function buildModernEmail({
       ">
         <strong>Important:</strong>
         This is a <strong>pre-authorisation (hold)</strong>, not an immediate payment.
-        The funds are reserved on your card and will either be released after the hire
-        or partially/fully captured only if required under the hire agreement
-        (for example, damage, excessive cleaning, or fuel charges).
+        The funds are reserved on your card and may only be captured if required under the hire agreement.
       </div>
 
       <p style="margin:0 0 8px;color:#222;font-size:15px;">
@@ -2966,7 +3116,23 @@ function buildModernEmail({
           ${safeDepositLink}
         </a>
       </p>
-
+    `
+    : `
+      <div style="
+        margin:20px 0 26px;
+        padding:18px 20px;
+        background:#edf8f0;
+        border:1px solid #9ed2ab;
+        border-radius:12px;
+        color:#215c31;
+        font-size:15px;
+        line-height:1.7;
+      ">
+        <strong>Deposit secured:</strong>
+        Your £200 deposit has already been authorised. No further action is required.
+      </div>
+    `
+}
       <!-- OUTSTANDING -->
       <h2 style="margin:0 0 8px;color:#1673ea;font-size:22px;">
         Outstanding Balance
@@ -3059,6 +3225,165 @@ function buildModernEmail({
     </div>
   </div>
   `;
+}
+
+function buildResendCardEmail({
+  booking,
+  type,
+  formLink,
+  depositLink,
+  outstandingLink,
+}) {
+  const firstName = booking.customerName?.split(" ")[0] || "Customer";
+
+  const showForm = type === "form";
+  const showDeposit = type === "deposit";
+  const showOutstanding = type === "outstanding";
+
+  const formatDate = (value) => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (isNaN(d)) return value;
+
+    return d.toLocaleString("en-GB", {
+      timeZone: "Europe/London",
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  };
+
+  return `
+<div style="font-family:Arial,sans-serif;background:#f5f7fa;padding:20px;">
+
+  <div style="max-width:600px;margin:0 auto;">
+
+    <div style="background:#ffffff;border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
+
+      <h2 style="margin-top:0;">Equine Transport UK</h2>
+
+      <p>Dear ${firstName},</p>
+
+      <!-- ===============================
+           BOOKING SUMMARY
+      =============================== -->
+
+      <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;">
+        <strong>Booking Summary</strong><br><br>
+
+        Reference: #${(booking.id || "").slice(-8)}<br>
+        Lorry: ${booking.vehicleSnapshot?.name || "Horsebox Hire"}<br>
+        From: ${formatDate(booking.pickupAt)}<br>
+        Until: ${formatDate(booking.dropoffAt)}
+      </div>
+
+      <!-- ===============================
+           💰 PAYMENT SUMMARY (NEW)
+      =============================== -->
+
+      <div style="margin-top:16px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#ffffff;">
+        <strong>Payment Summary</strong><br><br>
+
+        Total hire: £${Number(booking.hireTotal || 0).toFixed(2)}<br>
+        Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
+        Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
+      </div>
+
+      <!-- ===============================
+           ACTION BLOCK
+      =============================== -->
+
+      ${
+        showForm
+          ? `
+      <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;">
+        <strong>Form Required</strong>
+        <p>Please complete your hire form before collection.</p>
+
+        <a href="${formLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
+          Complete Form
+        </a>
+
+        <p style="margin-top:10px;font-size:13px;color:#555;">
+          Required before your hire can proceed.
+        </p>
+      </div>
+      `
+          : ""
+      }
+
+      ${
+        showDeposit
+          ? `
+      <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;">
+        <strong>Deposit Hold (£200)</strong>
+
+        <p>This secures your booking.</p>
+
+        <a href="${depositLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
+          Pay Deposit
+        </a>
+
+        <p style="margin-top:10px;font-size:13px;color:#555;">
+          Must be completed before collection.
+        </p>
+      </div>
+      `
+          : ""
+      }
+
+      ${
+        showOutstanding
+          ? `
+      <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;">
+        <strong>Outstanding Balance</strong>
+
+        <p>Your remaining balance is:</p>
+
+        <div style="font-size:20px;font-weight:700;margin:10px 0;">
+          £${Number(booking.outstandingAmount || 0).toFixed(2)}
+        </div>
+
+        <a href="${outstandingLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
+          Pay Outstanding
+        </a>
+
+        <p style="margin-top:10px;font-size:13px;color:#b45309;">
+          ⚠ Please complete before collection
+        </p>
+      </div>
+      `
+          : ""
+      }
+
+      <!-- ===============================
+           💬 WHATSAPP CTA (NEW)
+      =============================== -->
+
+      <div style="margin-top:24px;text-align:center;">
+        <a href="https://wa.me/447584578654"
+           style="display:inline-block;padding:10px 16px;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
+          💬 Message us on WhatsApp
+        </a>
+      </div>
+
+      <!-- ===============================
+           FOOTER
+      =============================== -->
+
+      <p style="margin-top:30px;">
+        With kind regards,<br>
+        Koos & Avril<br>
+        Equine Transport UK
+      </p>
+
+    </div>
+  </div>
+</div>
+`;
 }
 
 function escapeHtml(value) {
@@ -3474,24 +3799,12 @@ async function handleResendEmail(request, env) {
        BUILD EMAIL (REUSE TEMPLATE)
     =============================== */
 
-    const emailHtml = buildModernEmail({
-      title,
-      customerName: booking.customerName,
-      booking: {
-        id: booking.id,
-        vehicle: booking.vehicleSnapshot?.name,
-        from: booking.pickupAtLocal,
-        to: booking.dropoffAtLocal,
-        email: booking.customerEmail,
-        mobile: booking.customerMobile,
-        paid: booking.confirmationFee,
-        outstanding: booking.outstandingAmount,
-        total: booking.hireTotal,
-        formType: booking.requiredFormType,
-      },
-      formLink: booking.requiredFormLink,
-      depositLink: booking.depositLink,
-      outstandingLink: booking.outstandingLink,
+    const emailHtml = buildResendCardEmail({
+      booking,
+      type,
+      formLink,
+      depositLink,
+      outstandingLink,
     });
 
     /* ===============================
