@@ -3240,6 +3240,13 @@ function buildResendCardEmail({
   const showDeposit = type === "deposit";
   const showOutstanding = type === "outstanding";
 
+  const hasOutstanding = Number(booking.outstandingAmount || 0) > 0;
+
+  // ✅ SAFE LINKS (prevents crashes)
+  const safeFormLink = formLink || "#";
+  const safeDepositLink = depositLink || "#";
+  const safeOutstandingLink = outstandingLink || "#";
+
   const formatDate = (value) => {
     if (!value) return "—";
     const d = new Date(value);
@@ -3256,6 +3263,12 @@ function buildResendCardEmail({
     });
   };
 
+  const title = showForm
+    ? "Form Required"
+    : showDeposit
+      ? "Deposit Required"
+      : "Outstanding Balance";
+
   return `
 <div style="font-family:Arial,sans-serif;background:#f5f7fa;padding:20px;">
 
@@ -3263,7 +3276,7 @@ function buildResendCardEmail({
 
     <div style="background:#ffffff;border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
 
-      <h2 style="margin-top:0;">Equine Transport UK</h2>
+      <h2 style="margin-top:0;">${title}</h2>
 
       <p>Dear ${firstName},</p>
 
@@ -3281,7 +3294,7 @@ function buildResendCardEmail({
       </div>
 
       <!-- ===============================
-           💰 PAYMENT SUMMARY (NEW)
+           PAYMENT SUMMARY
       =============================== -->
 
       <div style="margin-top:16px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#ffffff;">
@@ -3303,7 +3316,7 @@ function buildResendCardEmail({
         <strong>Form Required</strong>
         <p>Please complete your hire form before collection.</p>
 
-        <a href="${formLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
+        <a href="${safeFormLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
           Complete Form
         </a>
 
@@ -3323,7 +3336,7 @@ function buildResendCardEmail({
 
         <p>This secures your booking.</p>
 
-        <a href="${depositLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
+        <a href="${safeDepositLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
           Pay Deposit
         </a>
 
@@ -3336,7 +3349,7 @@ function buildResendCardEmail({
       }
 
       ${
-        showOutstanding
+        showOutstanding && hasOutstanding
           ? `
       <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;">
         <strong>Outstanding Balance</strong>
@@ -3347,7 +3360,7 @@ function buildResendCardEmail({
           £${Number(booking.outstandingAmount || 0).toFixed(2)}
         </div>
 
-        <a href="${outstandingLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
+        <a href="${safeOutstandingLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
           Pay Outstanding
         </a>
 
@@ -3360,7 +3373,7 @@ function buildResendCardEmail({
       }
 
       <!-- ===============================
-           💬 WHATSAPP CTA (NEW)
+           WHATSAPP CTA
       =============================== -->
 
       <div style="margin-top:24px;text-align:center;">
