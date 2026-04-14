@@ -2308,16 +2308,23 @@ async function handleListBookings(request, env) {
   }
 
   const transformedBookings = bookings.map((booking) => {
-  return {
-    ...booking,
+    return {
+      ...booking,
 
-    extrasTotal: Number(booking.extrasTotal || 0),
-    extras: booking.extras || null,
+      extrasTotal: Number(booking.extrasTotal || 0),
+      extras: booking.extras || null,
 
-    // ✅ THIS IS THE CORRECT PLACE
-    dvlaVerified: dvlaMap[booking.id] || false,
-  };
-});
+      // ✅ ADD THIS
+      dvlaVerified:
+        booking.dvla_verified === 1 || booking.dvlaVerified === true,
+    };
+  });
+
+  return json({
+    bookings: transformedBookings,
+    reservations,
+  });
+}
 
 async function handleBookingBySession(request, env) {
   const url = new URL(request.url);
