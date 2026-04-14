@@ -702,6 +702,49 @@ export default {
       }
 
       /* ===============================
+   DVLA VERIFY TOGGLE (NEW)
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/dvla-verify"
+      ) {
+        try {
+          const { bookingId, verified } = await request.json();
+
+          if (!bookingId) {
+            return withCors(
+              json({ error: "Missing bookingId" }, 400),
+              corsHeaders,
+            );
+          }
+
+          const value = verified ? 1 : 0;
+
+          await env.DB.prepare(
+            `
+      UPDATE bookings
+      SET dvla_verified = ?
+      WHERE id = ?
+    `,
+          )
+            .bind(value, bookingId)
+            .run();
+
+          console.log("✅ DVLA updated:", bookingId, value);
+
+          return withCors(json({ ok: true }), corsHeaders);
+        } catch (err) {
+          console.error("❌ DVLA VERIFY ERROR:", err);
+
+          return withCors(
+            json({ error: "Failed to update DVLA status" }, 500),
+            corsHeaders,
+          );
+        }
+      }
+
+      /* ===============================
          FALLBACK
       ================================ */
 
@@ -2213,6 +2256,32 @@ async function handleListBookings(request, env) {
   }
 
   /* ===============================
+   🔐 ENRICH WITH DVLA STATUS (NEW)
+================================ */
+
+  const ids = bookings.map((b) => b.id);
+
+  let dvlaMap = {};
+
+  if (ids.length) {
+    const placeholders = ids.map(() => "?").join(",");
+
+    const result = await env.DB.prepare(
+      `
+    SELECT id, dvla_verified
+    FROM bookings
+    WHERE id IN (${placeholders})
+  `,
+    )
+      .bind(...ids)
+      .all();
+
+    for (const row of result.results || []) {
+      dvlaMap[row.id] = row.dvla_verified === 1;
+    }
+  }
+
+  /* ===============================
      LOAD ACTIVE RESERVATIONS
   ================================ */
 
@@ -2239,24 +2308,16 @@ async function handleListBookings(request, env) {
   }
 
   const transformedBookings = bookings.map((booking) => {
-    const extras = booking.extras || null;
+  return {
+    ...booking,
 
-    return {
-      ...booking,
+    extrasTotal: Number(booking.extrasTotal || 0),
+    extras: booking.extras || null,
 
-      // always safe number
-      extrasTotal: Number(booking.extrasTotal || 0),
-
-      // parsed object for frontend
-      extras,
-    };
-  });
-
-  return json({
-    bookings: transformedBookings,
-    reservations,
-  });
-}
+    // ✅ THIS IS THE CORRECT PLACE
+    dvlaVerified: dvlaMap[booking.id] || false,
+  };
+});
 
 async function handleBookingBySession(request, env) {
   const url = new URL(request.url);
