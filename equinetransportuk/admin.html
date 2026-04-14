@@ -1208,28 +1208,60 @@ Equine Transport UK`,
         return `
   <div class="stack">
 
-    <!-- FORM -->
-    <div class="stack">
-      <strong>Form</strong>
-      ${
-        complete
-          ? `
+   <!-- FORM -->
+<div class="stack">
+  <strong>Form</strong>
+
+  ${
+    complete
+      ? `
+        <button
+          class="btn ghost btn-small"
+          type="button"
+          data-view-form="${escapeHtml(bookingId)}"
+        >
+          View Form
+        </button>
+      `
+      : `
+        <div class="contact-actions">
+
+          ${
+            phone
+              ? `
             <button
-              class="btn ghost btn-small"
-              type="button"
-              data-view-form="${escapeHtml(bookingId)}"
+              class="btn ghost btn-small js-wa"
+              data-phone="${escapeHtml(phone)}"
+              data-type="form"
+              data-name="${escapeHtml(firstName)}"
+              data-id="${escapeHtml(bookingId)}"
+              data-formtype="${escapeHtml(requiredType)}"
             >
-              View Form
+              WhatsApp
             </button>
           `
-          : `
-            <div class="contact-actions">
-              ${formWhatsapp}
-              ${formEmail}
-            </div>
+              : ""
+          }
+
+          ${
+            email
+              ? `
+            <button
+              class="btn ghost btn-small resend-email-btn"
+              data-id="${escapeHtml(bookingId)}"
+              data-type="form"
+            >
+              Email
+            </button>
           `
-      }
-    </div>
+              : ""
+          }
+
+        </div>
+      `
+  }
+
+</div>
 
     <!-- DEPOSIT -->
     <div class="stack">
@@ -2023,6 +2055,40 @@ Equine Transport UK`;
           console.log("Opening WhatsApp:", url);
 
           window.open(url, "_blank");
+          return;
+        }
+
+        const emailBtn = e.target.closest(".resend-email-btn");
+
+        if (emailBtn) {
+          e.preventDefault();
+
+          const bookingId = emailBtn.dataset.id;
+          const type = emailBtn.dataset.type;
+
+          try {
+            const res = await fetch(`${API_BASE}/api/admin/resend-email`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ bookingId, type }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              alert(data.error || "Failed to send email");
+              return;
+            }
+
+            emailBtn.textContent = "Sent ✓";
+            emailBtn.classList.add("disabled");
+          } catch (err) {
+            console.error(err);
+            alert("Error sending email");
+          }
+
           return;
         }
 

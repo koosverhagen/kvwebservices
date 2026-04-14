@@ -605,6 +605,18 @@ export default {
       }
 
       /* ===============================
+   RESEND EMAIL (ADMIN)
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/resend-email"
+      ) {
+        const response = await handleResendEmail(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
          FALLBACK
       ================================ */
 
@@ -3388,5 +3400,120 @@ async function handleAdminFormView(request, env) {
     console.error("❌ ADMIN FORM VIEW ERROR:", err);
 
     return json({ error: "Failed to load form" }, 500);
+  }
+}
+
+async function handleResendEmail(request, env) {
+  try {
+    const body = await request.json();
+
+    const bookingId = String(body.bookingId || "").trim();
+    const type = String(body.type || "")
+      .trim()
+      .toLowerCase(); // form / deposit / outstanding
+
+    if (!bookingId || !type) {
+      return json({ error: "Missing bookingId or type" }, 400);
+    }
+
+    /* ===============================
+       FIND BOOKING IN KV
+    =============================== */
+
+    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+    let booking = null;
+
+    for (const key of list.keys) {
+      const data = await env.BOOKINGS_KV.get(key.name);
+      if (!data) continue;
+
+      try {
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed)) continue;
+
+        const found = parsed.find((b) => String(b.id) === bookingId);
+        if (found) {
+          booking = found;
+          break;
+        }
+      } catch {}
+    }
+
+    if (!booking) {
+      return json({ error: "Booking not found" }, 404);
+    }
+
+    if (!booking.customerEmail) {
+      return json({ error: "No customer email" }, 400);
+    }
+
+    /* ===============================
+       EMAIL TYPE LOGIC
+    =============================== */
+
+    let title = "Equine Transport UK – Update";
+    let subject = "Your Equine Transport UK update";
+
+    if (type === "form") {
+      title = "Equine Transport UK – Form Required";
+      subject = "Please complete your hire form";
+    }
+
+    if (type === "deposit") {
+      title = "Equine Transport UK – Deposit Payment";
+      subject = "Deposit required for your booking";
+    }
+
+    if (type === "outstanding") {
+      title = "Equine Transport UK – Outstanding Balance";
+      subject = "Outstanding balance for your booking";
+    }
+
+    /* ===============================
+       BUILD EMAIL (REUSE TEMPLATE)
+    =============================== */
+
+    const emailHtml = buildModernEmail({
+      title,
+      customerName: booking.customerName,
+      booking: {
+        id: booking.id,
+        vehicle: booking.vehicleSnapshot?.name,
+        from: booking.pickupAtLocal,
+        to: booking.dropoffAtLocal,
+        email: booking.customerEmail,
+        mobile: booking.customerMobile,
+        paid: booking.confirmationFee,
+        outstanding: booking.outstandingAmount,
+        total: booking.hireTotal,
+        formType: booking.requiredFormType,
+      },
+      formLink: booking.requiredFormLink,
+      depositLink: booking.depositLink,
+      outstandingLink: booking.outstandingLink,
+    });
+
+    /* ===============================
+       SEND EMAIL
+    =============================== */
+
+    await sendBookingEmail(env, {
+      to: booking.customerEmail,
+      subject,
+      html: emailHtml,
+    });
+
+    console.log("📧 RESEND EMAIL SENT:", bookingId, type);
+
+    return json({
+      success: true,
+      bookingId,
+      type,
+    });
+  } catch (err) {
+    console.error("❌ RESEND EMAIL ERROR:", err);
+
+    return json({ error: "Failed to resend email" }, 500);
   }
 }
