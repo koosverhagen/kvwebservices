@@ -3796,15 +3796,29 @@ async function handleResendEmail(request, env) {
     }
 
     /* ===============================
-       BUILD EMAIL (REUSE TEMPLATE)
-    =============================== */
+   BUILD EMAIL (REUSE TEMPLATE)
+=============================== */
 
+    // ✅ SAFETY CHECKS (ADD HERE)
+    if (!booking.requiredFormLink) {
+      console.warn("⚠️ Missing formLink for booking", bookingId);
+    }
+
+    if (!booking.depositLink) {
+      console.warn("⚠️ Missing depositLink for booking", bookingId);
+    }
+
+    if (!booking.outstandingLink) {
+      console.warn("⚠️ Missing outstandingLink for booking", bookingId);
+    }
+
+    // ✅ FIXED EMAIL BUILD
     const emailHtml = buildResendCardEmail({
       booking,
       type,
-      formLink,
-      depositLink,
-      outstandingLink,
+      formLink: booking.requiredFormLink,
+      depositLink: booking.depositLink,
+      outstandingLink: booking.outstandingLink,
     });
 
     /* ===============================
