@@ -1284,60 +1284,6 @@ Equine Transport UK`,
   `;
       }
 
-      async function loadDvlaForRow(el, bookingId) {
-        if (!bookingId || !el) return;
-
-        let res;
-
-        try {
-          res = await fetch(
-            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
-          );
-        } catch (err) {
-          el.innerHTML = `<div class="tiny">—</div>`;
-          return;
-        }
-
-        if (res.status === 404) {
-          el.innerHTML = `<div class="tiny">—</div>`;
-          return;
-        }
-
-        if (!res.ok) {
-          el.innerHTML = `<div class="tiny">—</div>`;
-          return;
-        }
-
-        try {
-          const data = await res.json();
-          const form = data.form || data;
-
-          const licence =
-            form?.drivingLicenceNumber ||
-            form?.licenceNumber ||
-            form?.payload?.drivingLicenceNumber ||
-            form?.payload?.licenceNumber ||
-            "";
-
-          const dvla =
-            form?.dvlaCheckCode ||
-            form?.dvlaCode ||
-            form?.payload?.dvlaCheckCode ||
-            form?.payload?.dvlaCode ||
-            "";
-
-          const last8 = licence
-            ? String(licence).replace(/\s+/g, "").slice(-8).toUpperCase()
-            : "";
-
-          const result = { last8, dvla };
-
-          renderDvla(el, result);
-        } catch (err) {
-          el.innerHTML = `<div class="tiny">—</div>`;
-        }
-      }
-
       function renderDvla(el, data) {
         if (!data || (!data.last8 && !data.dvla)) {
           el.innerHTML = `<div class="tiny">—</div>`;
@@ -1811,9 +1757,6 @@ ${renderSection("All Bookings", rest)}
               el.innerHTML = `<div class="tiny">—</div>`;
               return;
             }
-
-            // 🚀 load DVLA
-            loadDvlaForRow(el, id);
           });
 
           syncScroll();
