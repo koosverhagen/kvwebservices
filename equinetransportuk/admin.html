@@ -832,13 +832,6 @@
       const modalFields = document.getElementById("modal-form-fields");
       const modalSignature = document.getElementById("modal-signature");
 
-      const DVLA_CACHE = new Map();
-
-      // 🔥 persistent missing cache
-      const DVLA_MISSING = new Set(
-        JSON.parse(localStorage.getItem("dvla_missing") || "[]"),
-      );
-
       let allBookings = [];
       let filteredBookings = [];
 
@@ -1294,18 +1287,6 @@ Equine Transport UK`,
       async function loadDvlaForRow(el, bookingId) {
         if (!bookingId || !el) return;
 
-        // ✅ already loaded
-        if (DVLA_CACHE.has(bookingId)) {
-          renderDvla(el, DVLA_CACHE.get(bookingId));
-          return;
-        }
-
-        // 🔥 already known missing → skip fetch completely
-        if (DVLA_MISSING.has(bookingId)) {
-          el.innerHTML = `<div class="tiny">—</div>`;
-          return;
-        }
-
         let res;
 
         try {
@@ -1317,16 +1298,7 @@ Equine Transport UK`,
           return;
         }
 
-        // ✅ NO FORM → cache and STOP future calls
         if (res.status === 404) {
-          DVLA_MISSING.add(bookingId);
-
-          // 🔥 persist to localStorage
-          localStorage.setItem(
-            "dvla_missing",
-            JSON.stringify([...DVLA_MISSING]),
-          );
-
           el.innerHTML = `<div class="tiny">—</div>`;
           return;
         }
@@ -1360,8 +1332,6 @@ Equine Transport UK`,
 
           const result = { last8, dvla };
 
-          DVLA_CACHE.set(bookingId, result);
-
           renderDvla(el, result);
         } catch (err) {
           el.innerHTML = `<div class="tiny">—</div>`;
@@ -1375,8 +1345,8 @@ Equine Transport UK`,
         }
 
         const bookingId = el.closest(".dvla-cell")?.dataset.bookingId || "";
-        const verifiedKey = `dvla_verified_${bookingId}`;
-        const isVerified = localStorage.getItem(verifiedKey) === "1";
+        const booking = allBookings.find((b) => b.id === bookingId);
+        const isVerified = booking?.dvlaVerified === true;
 
         el.innerHTML = `
     <div class="stack">
@@ -2216,17 +2186,39 @@ Equine Transport UK`;
         if (target.closest("a, button")) return;
       });
 
-      document.addEventListener("change", (e) => {
+      document.addEventListener("change", async (e) => {
         const checkbox = e.target.closest(".js-dvla-verify");
         if (!checkbox) return;
 
         const bookingId = checkbox.dataset.id;
-        const key = `dvla_verified_${bookingId}`;
+        const verified = checkbox.checked;
 
-        if (checkbox.checked) {
-          localStorage.setItem(key, "1");
-        } else {
-          localStorage.removeItem(key);
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/dvla-verify`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId,
+              verified,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data?.error || "Failed");
+          }
+
+          // ✅ update local state instantly
+          const booking = allBookings.find((b) => b.id === bookingId);
+          if (booking) booking.dvlaVerified = verified;
+        } catch (err) {
+          console.error("❌ DVLA toggle failed:", err);
+          alert("Failed to update DVLA verification");
+
+          checkbox.checked = !verified; // revert UI
         }
       });
 
