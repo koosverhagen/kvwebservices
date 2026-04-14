@@ -498,6 +498,15 @@
         gap: 6px;
       }
 
+      .dvla-verify {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        margin-top: 6px;
+        cursor: pointer;
+      }
+
       .copy-btn {
         font-size: 11px;
         padding: 4px 8px;
@@ -1365,32 +1374,49 @@ Equine Transport UK`,
           return;
         }
 
+        const bookingId = el.closest(".dvla-cell")?.dataset.bookingId || "";
+        const verifiedKey = `dvla_verified_${bookingId}`;
+        const isVerified = localStorage.getItem(verifiedKey) === "1";
+
         el.innerHTML = `
     <div class="stack">
 
-      <!-- Licence (AUTO OPENS DVLA) -->
+      <!-- Licence -->
       <div class="dvla-row">
-        <span><strong>${escapeHtml(data.last8 || "—")}</strong></span>
+        <span class="tiny">Licence</span>
+        <strong>${escapeHtml(data.last8 || "—")}</strong>
         <button
           class="btn primary btn-small copy-licence"
           data-copy="${escapeHtml(data.last8 || "")}"
           title="Copy licence and open DVLA check"
         >
-          Copy Licence ↗
+          ↗
         </button>
       </div>
 
       <!-- DVLA Code -->
       <div class="dvla-row">
-        <span>${escapeHtml(data.dvla || "—")}</span>
+        <span class="tiny">Code</span>
+        <strong>${escapeHtml(data.dvla || "—")}</strong>
         <button
           class="btn ghost btn-small copy-btn"
           data-copy="${escapeHtml(data.dvla || "")}"
           title="Copy DVLA access code"
         >
-          Copy Code
+          Copy
         </button>
       </div>
+
+      <!-- ✅ VERIFIED CHECKBOX -->
+      <label class="dvla-verify">
+        <input 
+          type="checkbox" 
+          class="js-dvla-verify"
+          data-id="${bookingId}"
+          ${isVerified ? "checked" : ""}
+        />
+        Verified
+      </label>
 
     </div>
   `;
@@ -2188,6 +2214,20 @@ Equine Transport UK`;
   =============================== */
 
         if (target.closest("a, button")) return;
+      });
+
+      document.addEventListener("change", (e) => {
+        const checkbox = e.target.closest(".js-dvla-verify");
+        if (!checkbox) return;
+
+        const bookingId = checkbox.dataset.id;
+        const key = `dvla_verified_${bookingId}`;
+
+        if (checkbox.checked) {
+          localStorage.setItem(key, "1");
+        } else {
+          localStorage.removeItem(key);
+        }
       });
 
       const clearFiltersBtn = document.getElementById("clear-filters-btn");
