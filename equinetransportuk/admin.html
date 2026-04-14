@@ -1146,25 +1146,15 @@ Equine Transport UK`,
         const depositEmail =
           email && !depositDone
             ? `
-      <a
-        href="mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
-          `Dear ${firstName},
-
-Please complete your £200 security deposit for your booking.
-
-${depositLink}
-
-This is a card authorisation only.
-
-Kind regards,
-Koos & Avril,
-Equine Transport UK`,
-        )}"
-        class="btn ghost btn-small"
-      >
-        Email
-      </a>
-    `
+<button
+  class="btn ghost btn-small js-resend-email"
+  type="button"
+  data-id="${escapeHtml(bookingId)}"
+  data-type="deposit"
+>
+  Email
+</button>
+`
             : "";
 
         const outstandingWhatsapp =
@@ -1186,23 +1176,15 @@ Equine Transport UK`,
         const outstandingEmail =
           email && !outstandingDone
             ? `
-      <a
-        href="mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
-          `Dear ${firstName},
-
-Your outstanding balance is now ready to be paid.
-
-${outstandingLink}
-
-Kind regards,
-Koos & Avril,
-Equine Transport UK`,
-        )}"
-        class="btn ghost btn-small"
-      >
-        Email
-      </a>
-    `
+<button
+  class="btn ghost btn-small js-resend-email"
+  type="button"
+  data-id="${escapeHtml(bookingId)}"
+  data-type="outstanding"
+>
+  Email
+</button>
+`
             : "";
 
         return `
@@ -2058,35 +2040,61 @@ Equine Transport UK`;
           return;
         }
 
-        const emailBtn = e.target.closest(".resend-email-btn");
+        /* ===============================
+     📧 RESEND EMAIL (FIXED)
+  =============================== */
+
+        const emailBtn = target.closest(".resend-email-btn");
 
         if (emailBtn) {
           e.preventDefault();
+          e.stopPropagation();
+
+          // 🔒 prevent double click
+          if (emailBtn.classList.contains("disabled")) return;
 
           const bookingId = emailBtn.dataset.id;
           const type = emailBtn.dataset.type;
 
+          if (!bookingId || !type) {
+            console.warn("Missing bookingId/type", emailBtn);
+            return;
+          }
+
+          const originalText = emailBtn.textContent;
+
           try {
+            emailBtn.textContent = "Sending...";
+            emailBtn.disabled = true;
+
             const res = await fetch(`${API_BASE}/api/admin/resend-email`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ bookingId, type }),
+              body: JSON.stringify({
+                bookingId,
+                type, // 🔥 CRITICAL
+              }),
             });
 
             const data = await res.json();
 
             if (!res.ok) {
-              alert(data.error || "Failed to send email");
-              return;
+              throw new Error(data?.error || "Failed to send email");
             }
 
             emailBtn.textContent = "Sent ✓";
             emailBtn.classList.add("disabled");
           } catch (err) {
-            console.error(err);
-            alert("Error sending email");
+            console.error("❌ resend error:", err);
+
+            emailBtn.textContent = "Error";
+            emailBtn.disabled = false;
+
+            setTimeout(() => {
+              emailBtn.textContent = originalText;
+            }, 2000);
           }
 
           return;
