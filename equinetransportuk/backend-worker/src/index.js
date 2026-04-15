@@ -3590,6 +3590,32 @@ async function handleFormSubmit(request, env) {
 
     const cleaned = { ...data };
 
+    /* ===============================
+   DVLA EXTRACTION (NEW)
+=============================== */
+
+    function extractLicenceLast8(raw) {
+      if (!raw) return "";
+
+      return String(raw).replace(/\s+/g, "").toUpperCase().slice(-8);
+    }
+
+    const dvlaCode =
+      cleaned.dvlaCheckCode ||
+      cleaned.dvlaCode ||
+      cleaned.payload?.dvlaCheckCode ||
+      cleaned.payload?.dvlaCode ||
+      "";
+
+    const licenceRaw =
+      cleaned.drivingLicenceNumber ||
+      cleaned.licenceNumber ||
+      cleaned.payload?.drivingLicenceNumber ||
+      cleaned.payload?.licenceNumber ||
+      "";
+
+    const licenceLast8 = extractLicenceLast8(licenceRaw);
+
     cleaned.bookingId = bookingId;
     cleaned.bookingID = bookingId;
     cleaned.formType = formType;
@@ -3696,6 +3722,18 @@ async function handleFormSubmit(request, env) {
     booking.formSubmittedAt = now;
     booking.formRecordId = formId;
 
+    /* ===============================
+   SAVE DVLA INTO BOOKING (NEW)
+=============================== */
+
+    booking.dvlaLicenceLast8 = licenceLast8 || "";
+    booking.dvlaCode = dvlaCode || "";
+
+    // only set default if not already verified
+    if (booking.dvlaVerified !== true) {
+      booking.dvlaVerified = false;
+    }
+
     if (monthKeyUsed && monthData) {
       const updated = monthData.map((b) =>
         String(b.id) === bookingId ? booking : b,
@@ -3711,12 +3749,13 @@ async function handleFormSubmit(request, env) {
     try {
       await env.DB.prepare(
         `
-        UPDATE bookings
-        SET
-          form_completed = 1,
-          updated_at = ?
-        WHERE id = ?
-      `,
+  UPDATE bookings
+  SET
+    form_completed = 1,
+    dvla_verified = 0,
+    updated_at = ?
+  WHERE id = ?
+`,
       )
         .bind(now, bookingId)
         .run();
