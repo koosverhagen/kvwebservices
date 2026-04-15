@@ -720,16 +720,62 @@ export default {
           }
 
           const value = verified ? 1 : 0;
+          const now = new Date().toISOString();
+
+          /* ===============================
+       UPDATE D1
+    =============================== */
 
           await env.DB.prepare(
             `
       UPDATE bookings
-      SET dvla_verified = ?
+      SET dvla_verified = ?, updated_at = ?
       WHERE id = ?
     `,
           )
-            .bind(value, bookingId)
+            .bind(value, now, bookingId)
             .run();
+
+          /* ===============================
+       UPDATE KV (CRITICAL)
+    =============================== */
+
+          const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+          for (const key of list.keys) {
+            const raw = await env.BOOKINGS_KV.get(key.name);
+            if (!raw) continue;
+
+            let bookings;
+
+            try {
+              bookings = JSON.parse(raw);
+            } catch {
+              continue;
+            }
+
+            if (!Array.isArray(bookings)) continue;
+
+            let updated = false;
+
+            const nextBookings = bookings.map((b) => {
+              if (String(b.id) !== String(bookingId)) return b;
+
+              updated = true;
+
+              return {
+                ...b,
+                dvlaVerified: !!verified,
+                updatedAt: now,
+              };
+            });
+
+            if (updated) {
+              await env.BOOKINGS_KV.put(key.name, JSON.stringify(nextBookings));
+              console.log("✅ DVLA updated in KV:", bookingId, value);
+              break;
+            }
+          }
 
           console.log("✅ DVLA updated:", bookingId, value);
 
