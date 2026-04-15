@@ -3674,7 +3674,6 @@ async function handleFormSubmit(request, env) {
     const licenceLast8 = extractLicenceLast8(licenceRaw);
 
     cleaned.bookingId = bookingId;
-    cleaned.bookingID = bookingId;
     cleaned.formType = formType;
 
     const customerName =
