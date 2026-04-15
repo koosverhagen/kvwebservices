@@ -1274,12 +1274,66 @@ Equine Transport UK`,
       function dvlaCellHtml(booking) {
         const bookingId = booking.id || "";
 
+        // 🔒 only show if form complete
+        if (!isFormComplete(booking)) {
+          return `<div class="tiny">—</div>`;
+        }
+
+        const last8 = getLicenceLast8(booking);
+        const dvla = getDvlaCodeValue(booking);
+        const isVerified = booking?.dvlaVerified === true;
+
         return `
-    <div 
-      class="stack dvla-cell" 
-      data-booking-id="${escapeHtml(bookingId)}"
-    >
-      <div class="tiny">Loading…</div>
+    <div class="stack dvla-cell" data-booking-id="${escapeHtml(bookingId)}">
+
+      <!-- Licence -->
+      <div class="dvla-row">
+        <span class="tiny">Licence</span>
+        <strong>${escapeHtml(last8 || "—")}</strong>
+
+        ${
+          last8
+            ? `
+        <button
+          class="btn primary btn-small copy-licence"
+          data-copy="${escapeHtml(last8)}"
+          title="Copy licence and open DVLA check"
+        >
+          ↗
+        </button>`
+            : ""
+        }
+      </div>
+
+      <!-- DVLA Code -->
+      <div class="dvla-row">
+        <span class="tiny">Code</span>
+        <strong>${escapeHtml(dvla || "—")}</strong>
+
+        ${
+          dvla
+            ? `
+        <button
+          class="btn ghost btn-small copy-btn"
+          data-copy="${escapeHtml(dvla)}"
+        >
+          Copy
+        </button>`
+            : ""
+        }
+      </div>
+
+      <!-- VERIFY -->
+      <label class="dvla-verify">
+        <input 
+          type="checkbox" 
+          class="js-dvla-verify"
+          data-id="${bookingId}"
+          ${isVerified ? "checked" : ""}
+        />
+        ${isVerified ? "Verified" : "Mark verified"}
+      </label>
+
     </div>
   `;
       }
@@ -1733,31 +1787,6 @@ ${renderSection("All Bookings", rest)}
    🔥 FIXED DVLA LOADING (FINAL)
    (no index bug + grouping safe)
 =============================== */
-
-          document.querySelectorAll(".dvla-cell").forEach((el) => {
-            // ✅ get ID directly from DOM (no index guessing)
-            const id = el.dataset.bookingId;
-
-            // ❌ invalid id
-            if (!id || !id.startsWith("book_")) {
-              el.innerHTML = `<div class="tiny">—</div>`;
-              return;
-            }
-
-            // ✅ find correct booking
-            const booking = allBookings.find((b) => b.id === id);
-
-            if (!booking) {
-              el.innerHTML = `<div class="tiny">—</div>`;
-              return;
-            }
-
-            // 🔒 only show if form complete
-            if (!isFormComplete(booking)) {
-              el.innerHTML = `<div class="tiny">—</div>`;
-              return;
-            }
-          });
 
           syncScroll();
         }, 0);
