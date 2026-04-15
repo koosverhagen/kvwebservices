@@ -1029,8 +1029,8 @@ Equine Transport UK`,
         const payload = getFormPayload(booking);
 
         return (
+          booking?.dvlaCode || // ✅ NEW primary source
           booking?.dvlaCheckCode ||
-          booking?.dvlaCode ||
           payload?.dvlaCheckCode ||
           payload?.dvlaCode ||
           ""
@@ -1041,6 +1041,7 @@ Equine Transport UK`,
         const payload = getFormPayload(booking);
 
         return (
+          booking?.dvlaLicenceLast8 || // ✅ NEW primary source
           booking?.drivingLicenceNumber ||
           booking?.licenceNumber ||
           payload?.drivingLicenceNumber ||
@@ -1050,6 +1051,13 @@ Equine Transport UK`,
       }
 
       function getLicenceLast8(booking) {
+        // ✅ if backend already saved last 8, use it directly
+        if (booking?.dvlaLicenceLast8) {
+          return String(booking.dvlaLicenceLast8)
+            .replace(/\s+/g, "")
+            .toUpperCase();
+        }
+
         const raw = String(getLicenceValue(booking) || "")
           .replace(/\s+/g, "")
           .toUpperCase();
