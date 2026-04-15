@@ -3585,6 +3585,17 @@ async function handleFormSubmit(request, env) {
     const data = await request.json();
 
     const bookingId = String(data.bookingId || data.bookingID || "").trim();
+
+    /* ===============================
+   🔥 NORMALISE BOOKING ID (FIX)
+=============================== */
+
+    // ✅ force single field everywhere
+    data.bookingId = bookingId;
+
+    // ❌ remove legacy duplicate
+    delete data.bookingID;
+
     const formType = String(data.formType || "unknown")
       .trim()
       .toLowerCase();
