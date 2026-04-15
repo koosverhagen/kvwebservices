@@ -4,14 +4,11 @@
    Phase 3: Discount Engine (voucher codes)
    ====================================================== */
 
-
 const DEBUG = false;
-
 
 let IS_STRIPE_RETURN = false;
 
 let STRIPE_FLOW_COMPLETED = false;
-
 
 let activeSlideshow = null;
 
@@ -22,7 +19,6 @@ let BLOCK_AUTO_SCROLL = false;
 let LOCKED_VEHICLE = false;
 
 let LAST_AVAILABLE_VEHICLES = [];
-
 
 let AVAILABILITY_FLOW_LOCK = false;
 
@@ -71,31 +67,30 @@ currentDate.setDate(1);
 
 const BOOKING_BY_SESSION_PROMISES = new Map();
 
-
 let extrasRequestId = 0;
 
 let IS_RESETTING = false;
-
 
 const DAILY_AVAILABILITY_CACHE = new Map();
 const DAILY_AVAILABILITY_TTL = 60 * 1000;
 
 function goToStep(step) {
-
   currentStep = step;
 
-  document.querySelectorAll(".booking-step").forEach(el => {
+  document.querySelectorAll(".booking-step").forEach((el) => {
     el.classList.remove("active");
   });
 
   const stepEl = document.getElementById(`step-${step}`);
   if (stepEl) stepEl.classList.add("active");
 
-  document.querySelectorAll(".booking-steps .step").forEach(el => {
+  document.querySelectorAll(".booking-steps .step").forEach((el) => {
     el.classList.remove("active");
   });
 
-  const indicator = document.querySelector(`.booking-steps .step[data-step="${step}"]`);
+  const indicator = document.querySelector(
+    `.booking-steps .step[data-step="${step}"]`,
+  );
   if (indicator) indicator.classList.add("active");
 
   /* ===============================
@@ -105,7 +100,6 @@ function goToStep(step) {
   const summary = document.getElementById("checkout-summary");
 
   if (summary) {
-
     let target = null;
 
     if (step === 3) {
@@ -126,7 +120,6 @@ function goToStep(step) {
   =============================== */
 
   if (step === 3) {
-
     const pickupDate = pickupDateInput?.value;
     const vehicleId = selectedAvailability?.vehicle?.id;
     const duration = Number(durationDaysInput?.value || 0);
@@ -136,35 +129,30 @@ function goToStep(step) {
     =============================== */
 
     if (pickupDate && vehicleId) {
-
       setTimeout(() => {
+        // 1️⃣ normal availability logic
+        updateBookingDurationOptions(pickupDate, vehicleId);
 
-  // 1️⃣ normal availability logic
-  updateBookingDurationOptions(pickupDate, vehicleId);
+        // 2️⃣ 🔥 FORCE 7.5T RULE (FIXED TARGET)
+        const vehicle = vehicles.find((v) => v.id === vehicleId);
 
-  // 2️⃣ 🔥 FORCE 7.5T RULE (FIXED TARGET)
-  const vehicle = vehicles.find(v => v.id === vehicleId);
+        if (vehicle && !is35T(vehicle)) {
+          const select = document.getElementById("selected-duration"); // ✅ FIXED
 
-  if (vehicle && !is35T(vehicle)) {
+          if (select) {
+            const half = select.querySelector('option[value="0.5"]');
 
-    const select = document.getElementById("selected-duration"); // ✅ FIXED
+            if (half) {
+              half.disabled = true;
+              half.style.display = "none";
+            }
 
-    if (select) {
-
-      const half = select.querySelector('option[value="0.5"]');
-
-      if (half) {
-        half.disabled = true;
-        half.style.display = "none";
-      }
-
-      if (select.value === "0.5") {
-        select.value = "1";
-      }
-    }
-  }
-
-}, 0);
+            if (select.value === "0.5") {
+              select.value = "1";
+            }
+          }
+        }
+      }, 0);
     }
 
     /* ===============================
@@ -172,7 +160,6 @@ function goToStep(step) {
     =============================== */
 
     if (pickupDate && vehicleId && duration === 0.5) {
-
       setTimeout(() => {
         syncBookingPickupTimeOptions(pickupDate, vehicleId);
       }, 0);
@@ -195,37 +182,35 @@ function goToStep(step) {
     setTimeout(() => {
       stepEl?.scrollIntoView({
         behavior: "smooth",
-        block: "start"
+        block: "start",
       });
     }, 100);
   }
-
 }
 
 function startBooking(vehicleId) {
-
   PRESELECTED_VEHICLE = vehicleId;
   LOCKED_VEHICLE = true; // ✅ NEW
 
-  const vehicle = vehicles.find(v => v.id === vehicleId);
+  const vehicle = vehicles.find((v) => v.id === vehicleId);
 
   // 🔥 Force duration rules immediately
   updateDurationOptionsForVehicle(vehicle);
 
   // 🔥 force re-selection (prevents wrong auto check)
-if (durationDaysInput) {
-  durationDaysInput.value = "";
-}
+  if (durationDaysInput) {
+    durationDaysInput.value = "";
+  }
 
-// 🔥 NEW — clear pickup time as well
-if (pickupTimeInput) {
-  pickupTimeInput.value = "";
-}
+  // 🔥 NEW — clear pickup time as well
+  if (pickupTimeInput) {
+    pickupTimeInput.value = "";
+  }
 
-// 🔥 NEW — clear results (prevents false "not available")
-if (availabilityResults) {
-  availabilityResults.innerHTML = "";
-}
+  // 🔥 NEW — clear results (prevents false "not available")
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "";
+  }
   // 🔥 Remove half-day for 7.5T instantly
   enforceVehicleDurationRules(vehicle);
 
@@ -240,29 +225,29 @@ if (availabilityResults) {
 
   bookingSection?.scrollIntoView({
     behavior: "smooth",
-    block: "start"
+    block: "start",
   });
 
   goToStep(1);
 
   setTimeout(() => {
-  durationDaysInput?.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
-  durationDaysInput?.classList.add("duration-highlight");
+    durationDaysInput?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    durationDaysInput?.classList.add("duration-highlight");
 
-  setTimeout(() => {
-    durationDaysInput?.classList.remove("duration-highlight");
-  }, 1500);
-}, 200);
+    setTimeout(() => {
+      durationDaysInput?.classList.remove("duration-highlight");
+    }, 1500);
+  }, 200);
 
   // 🔥 Auto re-check availability if already filled
   const pickupDate = pickupDateInput?.value;
   const durationDays = Number(durationDaysInput?.value || 1);
 
-// ❌ DO NOT auto-submit when vehicle is preselected
-// user must choose duration first
+  // ❌ DO NOT auto-submit when vehicle is preselected
+  // user must choose duration first
 }
 
 /* ======================================================
@@ -329,7 +314,7 @@ function getRangeAvailabilityFromCache(dateStr, duration, vehicleId = "") {
   const cached = RANGE_AVAILABILITY_CACHE.get(key);
 
   if (!cached) return null;
-  if ((Date.now() - cached.ts) > RANGE_AVAILABILITY_TTL) {
+  if (Date.now() - cached.ts > RANGE_AVAILABILITY_TTL) {
     RANGE_AVAILABILITY_CACHE.delete(key);
     return null;
   }
@@ -341,7 +326,7 @@ function setRangeAvailabilityCache(dateStr, duration, vehicleId, value) {
   const key = buildRangeAvailabilityKey(dateStr, duration, vehicleId);
   RANGE_AVAILABILITY_CACHE.set(key, {
     value: !!value,
-    ts: Date.now()
+    ts: Date.now(),
   });
 }
 
@@ -366,23 +351,22 @@ async function prefetchAvailabilityWindow(startDateStr) {
 
         for (let duration = 1; duration <= 7; duration++) {
           jobs.push(
-            getVehicleAvailability(dateStr, duration, null, { prefetch: true })
-              .then((vehiclesData) => {
+            getVehicleAvailability(dateStr, duration, null, {
+              prefetch: true,
+            }).then((vehiclesData) => {
+              // ✅ ONLY cache per-vehicle truth
+              for (const v of vehiclesData) {
+                setRangeAvailabilityCache(
+                  dateStr,
+                  duration,
+                  v.vehicleId,
+                  !!v.available,
+                );
+              }
 
-                // ✅ ONLY cache per-vehicle truth
-                for (const v of vehiclesData) {
-                  setRangeAvailabilityCache(
-                    dateStr,
-                    duration,
-                    v.vehicleId,
-                    !!v.available
-                  );
-                }
-
-                // ❌ DO NOT cache "any vehicle" result
-                // (this caused impossible durations earlier)
-
-              })
+              // ❌ DO NOT cache "any vehicle" result
+              // (this caused impossible durations earlier)
+            }),
           );
         }
 
@@ -391,16 +375,15 @@ async function prefetchAvailabilityWindow(startDateStr) {
         =============================== */
 
         jobs.push(
-          getVehicleAvailability(dateStr, 0.5, "07:00", { prefetch: true })
+          getVehicleAvailability(dateStr, 0.5, "07:00", { prefetch: true }),
         );
 
         jobs.push(
-          getVehicleAvailability(dateStr, 0.5, "13:00", { prefetch: true })
+          getVehicleAvailability(dateStr, 0.5, "13:00", { prefetch: true }),
         );
       }
 
       await Promise.allSettled(jobs);
-
     } catch (err) {
       console.warn("Prefetch window failed:", err);
     }
@@ -419,48 +402,47 @@ async function prefetchAvailabilityWindow(startDateStr) {
    Calendar cache
 ================================ */
 
-
 // Duration price tables
 const RATE_35T_TOTALS = {
-  "0.5": 75,
-  "1": 105,
-  "2": 200,
-  "3": 300,
-  "4": 400,
-  "5": 500,
-  "6": 600,
-  "7": 700
+  0.5: 75,
+  1: 105,
+  2: 200,
+  3: 300,
+  4: 400,
+  5: 500,
+  6: 600,
+  7: 700,
 };
 
 const RATE_75_LIVING_TOTALS = {
-  "1": 175,
-  "2": 350,
-  "3": 525,
-  "4": 700,
-  "5": 875,
-  "6": 1050,
-  "7": 1225
+  1: 175,
+  2: 350,
+  3: 525,
+  4: 700,
+  5: 875,
+  6: 1050,
+  7: 1225,
 };
 
 const DURATION_HOURS_35T = {
-  "0.5": 6,
-  "1": 12,
-  "2": 24,
-  "3": 36,
-  "4": 48,
-  "5": 60,
-  "6": 72,
-  "7": 84
+  0.5: 6,
+  1: 12,
+  2: 24,
+  3: 36,
+  4: 48,
+  5: 60,
+  6: 72,
+  7: 84,
 };
 
 const DURATION_HOURS_75T = {
-  "1": 12,
-  "2": 24,
-  "3": 36,
-  "4": 48,
-  "5": 60,
-  "6": 72,
-  "7": 84
+  1: 12,
+  2: 24,
+  3: 36,
+  4: 48,
+  5: 60,
+  6: 72,
+  7: 84,
 };
 
 // Stripe / links (fallback)
@@ -468,8 +450,10 @@ const STRIPE_PAYMENT_LINK_35T = "";
 const STRIPE_PAYMENT_LINK_75T = "";
 const OUTSTANDING_PAYMENT_LINK = "";
 const DEPOSIT_PAYMENT_LINK = "";
-const FORM_LINK_A = "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/short-form.html";
-const FORM_LINK_B = "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/long-form.html";
+const FORM_LINK_A =
+  "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/short-form.html";
+const FORM_LINK_B =
+  "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/long-form.html";
 
 const BACKEND_API_BASE =
   location.hostname === "127.0.0.1" || location.hostname === "localhost"
@@ -488,7 +472,7 @@ const vehicles = [
     pricingModel: "35_duration_rules",
     summary:
       "Rear-facing 2-horse lorry with externally releasable safety breast bar, tack/changing room, horse/reverse cameras and ventilation.",
-    image: "images/lorry-ls23.webp"
+    image: "images/lorry-ls23.webp",
   },
   {
     id: "v35-2",
@@ -502,7 +486,7 @@ const vehicles = [
     pricingModel: "35_duration_rules",
     summary:
       "Back-facing 2-horse stallion layout with high partitions, no breast bar, horse/reverse cameras, roof vent and windows.",
-    image: "images/lorry-DL22.webp"
+    image: "images/lorry-DL22.webp",
   },
   {
     id: "v35-3",
@@ -516,7 +500,7 @@ const vehicles = [
     pricingModel: "35_duration_rules",
     summary:
       "Back-facing 2-horse lorry with adjustable breast bar, tack/changing room, horse/reverse cameras and roof ventilation.",
-    image: "images/lorry-ca21.webp"
+    image: "images/lorry-ca21.webp",
   },
   {
     id: "v75-1",
@@ -529,7 +513,7 @@ const vehicles = [
     pricingModel: "75_living_rules",
     summary:
       "High-end 3-horse 7.5T with living space, focused on comfort, reliability and practical long-day transport.",
-    image: "images/lorry-75-living.webp"
+    image: "images/lorry-75-living.webp",
   },
   {
     id: "v75-2",
@@ -542,8 +526,8 @@ const vehicles = [
     pricingModel: "75_no_living_rules",
     summary:
       "Practical 4-horse 7.5T with large tack area, built for functional multi-horse transport without living section.",
-    image: "images/lorry-75-noliving.webp"
-  }
+    image: "images/lorry-75-noliving.webp",
+  },
 ];
 
 window.vehicles = vehicles;
@@ -562,30 +546,26 @@ notesInput?.addEventListener("input", () => {
   updateCheckoutSummary();
 });
 
-
 /* ===============================
    INPUT CHANGE HANDLERS
 =============================== */
 
 durationDaysInput?.addEventListener("change", async () => {
-
   const pickupDate = pickupDateInput?.value;
   if (!pickupDate) return;
 
- await updateDurationOptions(pickupDate);
+  await updateDurationOptions(pickupDate);
 
-updatePickupTimeVisibility();
-updateEarlyPickupAvailability();
+  updatePickupTimeVisibility();
+  updateEarlyPickupAvailability();
 
-// 🔥 slight delay prevents double-trigger chain
-setTimeout(() => {
-  maybeAutoSubmitAvailability();
-}, 50);
-
+  // 🔥 slight delay prevents double-trigger chain
+  setTimeout(() => {
+    maybeAutoSubmitAvailability();
+  }, 50);
 });
 
 pickupTimeInput?.addEventListener("change", async () => {
-
   const pickupDate = pickupDateInput?.value;
   if (!pickupDate) return;
 
@@ -594,9 +574,9 @@ pickupTimeInput?.addEventListener("change", async () => {
   =============================== */
 
   // 🔥 only sync if half-day
-if (Number(durationDaysInput?.value) === 0.5) {
-  await syncPickupTimeOptions(pickupDate);
-}
+  if (Number(durationDaysInput?.value) === 0.5) {
+    await syncPickupTimeOptions(pickupDate);
+  }
 
   updateEarlyPickupAvailability();
 
@@ -607,13 +587,14 @@ if (Number(durationDaysInput?.value) === 0.5) {
   setTimeout(() => {
     maybeAutoSubmitAvailability();
   }, 50);
-
 });
 
 const availabilityResults = document.getElementById("availability-results");
 
 const bookingForm = document.getElementById("booking-form");
-const selectedLorryInput = document.getElementById("selected-lorry") || { value: "" };
+const selectedLorryInput = document.getElementById("selected-lorry") || {
+  value: "",
+};
 const selectedPickupInput = document.getElementById("selected-pickup");
 const selectedDurationInput = document.getElementById("selected-duration");
 const selectedBaseInput = document.getElementById("selected-base");
@@ -624,7 +605,9 @@ const customerMobileInput = document.getElementById("customer-mobile");
 const customerAddressInput = document.getElementById("customer-address");
 const customerDobInput = document.getElementById("customer-dob");
 
-const hiredWithin3MonthsInput = document.getElementById("hired-within-3-months");
+const hiredWithin3MonthsInput = document.getElementById(
+  "hired-within-3-months",
+);
 const dartfordEnabledInput = document.getElementById("dartford-enabled");
 const dartfordCountInput = document.getElementById("dartford-count");
 const earlyPickupEnabledInput = document.getElementById("early-pickup-enabled");
@@ -634,13 +617,13 @@ const earlyPickupCheckbox = document.getElementById("early-pickup-enabled");
    🔥 EXTRAS CHANGE → REPRICE
 =============================== */
 
-[dartfordEnabledInput, dartfordCountInput, earlyPickupEnabledInput]
-  .forEach(input => {
+[dartfordEnabledInput, dartfordCountInput, earlyPickupEnabledInput].forEach(
+  (input) => {
     input?.addEventListener("change", refreshPricingWithExtras);
-  });
+  },
+);
 
 async function refreshPricingWithExtras() {
-
   if (!selectedAvailability) return;
 
   const summary = document.getElementById("checkout-summary");
@@ -655,13 +638,12 @@ async function refreshPricingWithExtras() {
   const vehicle = selectedAvailability.vehicle;
 
   try {
-
     const updated = await buildAvailability(
       vehicle,
       selectedAvailability.pickupDate,
       selectedAvailability.durationDays,
       selectedAvailability.pickupTime,
-      getCurrentDiscountCode()
+      getCurrentDiscountCode(),
     );
 
     if (requestId !== extrasRequestId) return;
@@ -669,18 +651,13 @@ async function refreshPricingWithExtras() {
     selectedAvailability = updated;
 
     updateCheckoutSummary();
-
   } catch (err) {
-
     if (requestId === extrasRequestId) {
       console.warn("Pricing update failed:", err);
     }
-
   } finally {
-
     // ✨ END loading state
     summary?.classList.remove("loading");
-
   }
 }
 
@@ -700,20 +677,17 @@ const discountMessage = document.getElementById("discount-message");
 
 let selectedAvailability = null;
 
-
 /* ===============================
    Next available date button
 ================================ */
 
 availabilityResults?.addEventListener("click", async (e) => {
-
   /* ===============================
      NEXT AVAILABLE DATE
   =============================== */
 
   const nextBtn = e.target.closest(".next-date-btn");
   if (nextBtn) {
-
     const date = nextBtn.dataset.date;
     if (!date) return;
 
@@ -721,15 +695,14 @@ availabilityResults?.addEventListener("click", async (e) => {
     if (nextBtn.dataset.loading === "true") return;
     nextBtn.dataset.loading = "true";
 
-   try {
-  await selectDate(date);
+    try {
+      await selectDate(date);
 
-  // ✅ trigger availability AFTER state is correct
-  maybeAutoSubmitAvailability();
-
-} finally {
-  nextBtn.dataset.loading = "false";
-}
+      // ✅ trigger availability AFTER state is correct
+      maybeAutoSubmitAvailability();
+    } finally {
+      nextBtn.dataset.loading = "false";
+    }
 
     return;
   }
@@ -740,7 +713,6 @@ availabilityResults?.addEventListener("click", async (e) => {
 
   const chooseBtn = e.target.closest(".choose-lorry");
   if (chooseBtn) {
-
     const vehicleId = chooseBtn.dataset.vehicleId;
     if (!vehicleId) return;
 
@@ -755,14 +727,12 @@ availabilityResults?.addEventListener("click", async (e) => {
       chooseBtn.dataset.loading = "false";
     }
   }
-
 });
 /* ======================================================
    Helpers
 ====================================================== */
- 
-function ensureDateVisible(dateStr) {
 
+function ensureDateVisible(dateStr) {
   if (!dateStr) return;
 
   const [y, m] = dateStr.split("-");
@@ -773,25 +743,20 @@ function ensureDateVisible(dateStr) {
   const currentM = current.getMonth() + 1;
 
   if (Number(y) !== currentY || Number(m) !== currentM) {
-
-    window.__calendarState.currentDate =
-      new Date(Number(y), Number(m) - 1, 1); // ✅ use setter
-
+    window.__calendarState.currentDate = new Date(Number(y), Number(m) - 1, 1); // ✅ use setter
   }
 }
 
 async function updateBookingDurationOptions(dateStr, vehicleId) {
-
   const select = document.getElementById("selected-duration");
   if (!select || !dateStr || !vehicleId) return;
 
-  const vehicle = vehicles.find(v => v.id === vehicleId);
+  const vehicle = vehicles.find((v) => v.id === vehicleId);
   const is75T = vehicle && !is35T(vehicle);
 
   const options = Array.from(select.options);
 
   for (const opt of options) {
-
     const duration = Number(opt.value);
     if (!duration) continue;
 
@@ -803,30 +768,28 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
 
     if (is75T && duration === 0.5) {
       available = false;
-
     } else if (duration === 0.5) {
-
       const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-      const hasAM = amData.some(v =>
-        v.vehicleId === vehicleId &&
-        (v.available || v.availableSlots?.includes("am"))
+      const hasAM = amData.some(
+        (v) =>
+          v.vehicleId === vehicleId &&
+          (v.available || v.availableSlots?.includes("am")),
       );
 
-      const hasPM = pmData.some(v =>
-        v.vehicleId === vehicleId &&
-        (v.available || v.availableSlots?.includes("pm"))
+      const hasPM = pmData.some(
+        (v) =>
+          v.vehicleId === vehicleId &&
+          (v.available || v.availableSlots?.includes("pm")),
       );
 
       available = hasAM || hasPM;
-
     } else {
-
       available = await isContinuousRangeAvailable(
         dateStr,
         duration,
         vehicleId,
-        null
+        null,
       );
     }
 
@@ -850,7 +813,7 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
   const selected = Number(select.value);
 
   if (selected) {
-    const selectedOption = options.find(o => Number(o.value) === selected);
+    const selectedOption = options.find((o) => Number(o.value) === selected);
     if (selectedOption?.disabled) {
       select.value = is75T ? "1" : "";
     }
@@ -873,9 +836,7 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
   }
 }
 
-
 function safeRenderAvailability(html) {
-
   if (!availabilityResults) return;
 
   /* ===============================
@@ -915,16 +876,17 @@ let lastAvailabilityAutoSubmitKey = "";
 function buildAvailabilitySubmitKey() {
   const pickupDate = pickupDateInput?.value || "";
   const duration = String(durationDaysInput?.value || "");
- const pickupTime =
-  Number(durationDaysInput?.value || 0) === 0.5
-    ? (pickupTimeInput?.value || "")
-    : "";
+  const pickupTime =
+    Number(durationDaysInput?.value || 0) === 0.5
+      ? pickupTimeInput?.value || ""
+      : "";
 
-  return [pickupDate, duration, pickupTime, PRESELECTED_VEHICLE || ""].join("|");
+  return [pickupDate, duration, pickupTime, PRESELECTED_VEHICLE || ""].join(
+    "|",
+  );
 }
 
 function scheduleAvailabilityAutoSubmit(delay = 120) {
-
   if (IS_STRIPE_RETURN) return;
 
   if (!availabilityForm) return;
@@ -956,7 +918,6 @@ function resetAvailabilityAutoSubmitState() {
 }
 
 function maybeAutoSubmitAvailability() {
-
   if (AVAILABILITY_FLOW_LOCK) return;
   if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) return;
   if (!availabilityForm) return;
@@ -981,8 +942,12 @@ function maybeAutoSubmitAvailability() {
   }
 }
 
-async function getVehicleAvailability(dateStr, duration, pickupTime = null, opts = {}) {
-
+async function getVehicleAvailability(
+  dateStr,
+  duration,
+  pickupTime = null,
+  opts = {},
+) {
   const cacheKey = `${dateStr}|${duration}|${pickupTime || "any"}`;
 
   /* ===============================
@@ -991,7 +956,7 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null, opts
 
   const cached = VEHICLE_AVAILABILITY_CACHE.get(cacheKey);
 
-  if (cached && (Date.now() - cached.ts) < VEHICLE_AVAILABILITY_CACHE_TTL) {
+  if (cached && Date.now() - cached.ts < VEHICLE_AVAILABILITY_CACHE_TTL) {
     return cached.value;
   }
 
@@ -1008,9 +973,7 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null, opts
   =============================== */
 
   const promise = (async () => {
-
     try {
-
       const url = new URL(`${BACKEND_API_BASE}/api/vehicles/available`);
       url.searchParams.set("date", dateStr);
       url.searchParams.set("duration", duration);
@@ -1030,25 +993,21 @@ async function getVehicleAvailability(dateStr, duration, pickupTime = null, opts
 
       VEHICLE_AVAILABILITY_CACHE.set(cacheKey, {
         value: vehicles,
-        ts: Date.now()
+        ts: Date.now(),
       });
 
       return vehicles;
-
     } catch (err) {
-
       console.warn("Vehicle availability failed:", err);
 
       // 🔥 IMPORTANT: cache empty result briefly (prevents hammering API)
       VEHICLE_AVAILABILITY_CACHE.set(cacheKey, {
         value: [],
-        ts: Date.now()
+        ts: Date.now(),
       });
 
       return [];
-
     }
-
   })();
 
   VEHICLE_AVAILABILITY_PROMISES.set(cacheKey, promise);
@@ -1064,7 +1023,6 @@ const HALF_DAY_CACHE = new Map();
 const HALF_DAY_CACHE_TTL = 60 * 1000; // 60s
 
 async function getHalfDayAvailability(dateStr) {
-
   /* ===============================
      🔥 HARD BLOCK (CRITICAL FIX)
   =============================== */
@@ -1085,7 +1043,7 @@ async function getHalfDayAvailability(dateStr) {
 
   const cached = HALF_DAY_CACHE.get(dateStr);
 
-  if (cached && (now - cached.ts) < HALF_DAY_CACHE_TTL) {
+  if (cached && now - cached.ts < HALF_DAY_CACHE_TTL) {
     return cached.data;
   }
 
@@ -1094,10 +1052,9 @@ async function getHalfDayAvailability(dateStr) {
   =============================== */
 
   try {
-
     const [amData, pmData] = await Promise.all([
       getVehicleAvailability(dateStr, 0.5, "07:00"),
-      getVehicleAvailability(dateStr, 0.5, "13:00")
+      getVehicleAvailability(dateStr, 0.5, "13:00"),
     ]);
 
     /* ===============================
@@ -1116,38 +1073,35 @@ async function getHalfDayAvailability(dateStr) {
 
     HALF_DAY_CACHE.set(dateStr, {
       data: result,
-      ts: now
+      ts: now,
     });
 
     return result;
-
   } catch (err) {
-
     console.warn("Half-day availability failed:", err);
 
     return { amData: [], pmData: [] };
   }
 }
 
-
 function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
-
   const requestedSlot = pickupTime === "13:00" ? "pm" : "am";
 
   for (const booking of bookings) {
-
     if (booking.vehicleId !== vehicleId) continue;
 
     const bookingDates = getDatesBetween(
       new Date(booking.pickupAt),
-      new Date(booking.dropoffAt)
+      new Date(booking.dropoffAt),
     );
 
     if (!bookingDates.includes(dateStr)) continue;
 
     const bookedSlot =
       Number(booking.durationDays) === 0.5
-        ? (booking.pickupTime === "13:00" ? "pm" : "am")
+        ? booking.pickupTime === "13:00"
+          ? "pm"
+          : "am"
         : "full";
 
     if (bookedSlot === "full" || bookedSlot === requestedSlot) {
@@ -1158,17 +1112,13 @@ function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
   return true;
 }
 
-
 async function updateDurationOptions(dateStr) {
-
   if (!durationDaysInput || !dateStr) return;
 
   const thisRunId = ++durationOptionsRunId;
 
   const vehicleId =
-    PRESELECTED_VEHICLE ||
-    selectedAvailability?.vehicle?.id ||
-    null;
+    PRESELECTED_VEHICLE || selectedAvailability?.vehicle?.id || null;
 
   const pickupTime = pickupTimeInput?.value || "";
 
@@ -1193,8 +1143,7 @@ async function updateDurationOptions(dateStr) {
     console.warn("Background prefetch failed:", err);
   }
 
-    for (const opt of options) {
-
+  for (const opt of options) {
     if (thisRunId !== durationOptionsRunId) return;
 
     const duration = Number(opt.value);
@@ -1207,61 +1156,54 @@ async function updateDurationOptions(dateStr) {
     =============================== */
 
     if (duration === 0.5) {
-
       const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-      const filteredAM = (vehicleId
-        ? amData.filter(v => v.vehicleId === vehicleId)
-        : amData
-      ).filter(v => is35T(vehicles.find(x => x.id === v.vehicleId)));
+      const filteredAM = (
+        vehicleId ? amData.filter((v) => v.vehicleId === vehicleId) : amData
+      ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
 
-      const filteredPM = (vehicleId
-        ? pmData.filter(v => v.vehicleId === vehicleId)
-        : pmData
-      ).filter(v => is35T(vehicles.find(x => x.id === v.vehicleId)));
+      const filteredPM = (
+        vehicleId ? pmData.filter((v) => v.vehicleId === vehicleId) : pmData
+      ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
 
-      const hasAM = filteredAM.some(v =>
-        v.available || v.availableSlots?.includes("am")
+      const hasAM = filteredAM.some(
+        (v) => v.available || v.availableSlots?.includes("am"),
       );
 
-      const hasPM = filteredPM.some(v =>
-        v.available || v.availableSlots?.includes("pm")
+      const hasPM = filteredPM.some(
+        (v) => v.available || v.availableSlots?.includes("pm"),
       );
 
       available = hasAM || hasPM;
-
     } else {
-
       /* ===============================
          🔥 MULTI-DAY (CACHE FIRST)
       =============================== */
 
-      const cached = getRangeAvailabilityFromCache(dateStr, duration, vehicleId);
+      const cached = getRangeAvailabilityFromCache(
+        dateStr,
+        duration,
+        vehicleId,
+      );
 
       if (cached !== null) {
-
         available = cached;
-
       } else if (vehicleId) {
-
         available = await isContinuousRangeAvailable(
           dateStr,
           duration,
           vehicleId,
-          null
+          null,
         );
-
       } else {
-
         let hasValidVehicle = false;
 
         for (const v of vehicles) {
-
           const ok = await isContinuousRangeAvailable(
             dateStr,
             duration,
             v.id,
-            null
+            null,
           );
 
           if (ok) {
@@ -1285,7 +1227,7 @@ async function updateDurationOptions(dateStr) {
   const selected = Number(durationDaysInput.value);
 
   if (selected) {
-    const selectedOption = options.find(o => Number(o.value) === selected);
+    const selectedOption = options.find((o) => Number(o.value) === selected);
     if (selectedOption?.disabled) {
       durationDaysInput.value = "";
     }
@@ -1303,24 +1245,20 @@ async function updateDurationOptions(dateStr) {
 }
 
 async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
-
   const select = document.getElementById("booking-pickup-time");
   if (!select || !dateStr || !vehicleId) return;
 
   try {
-
     const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-    const amVehicle = amData.find(v => v.vehicleId === vehicleId);
-    const pmVehicle = pmData.find(v => v.vehicleId === vehicleId);
+    const amVehicle = amData.find((v) => v.vehicleId === vehicleId);
+    const pmVehicle = pmData.find((v) => v.vehicleId === vehicleId);
 
     const hasAM =
-      amVehicle?.available ||
-      (amVehicle?.availableSlots || []).includes("am");
+      amVehicle?.available || (amVehicle?.availableSlots || []).includes("am");
 
     const hasPM =
-      pmVehicle?.available ||
-      (pmVehicle?.availableSlots || []).includes("pm");
+      pmVehicle?.available || (pmVehicle?.availableSlots || []).includes("pm");
 
     const morningAvailable = !!hasAM;
     const afternoonAvailable = !!hasPM;
@@ -1350,21 +1288,19 @@ async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
     if (!morningAvailable && !afternoonAvailable) {
       select.value = "";
     }
-
   } catch (err) {
     console.warn("Booking pickup sync failed:", err);
   }
 }
 
-
 function getLondonHour(date) {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/London",
     hour: "2-digit",
-    hour12: false
+    hour12: false,
   }).formatToParts(date);
 
-  return Number(parts.find(p => p.type === "hour")?.value || 0);
+  return Number(parts.find((p) => p.type === "hour")?.value || 0);
 }
 
 function getLondonParts(date) {
@@ -1375,17 +1311,17 @@ function getLondonParts(date) {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   }).formatToParts(date);
 
-  const get = (type) => parts.find(p => p.type === type)?.value || "";
+  const get = (type) => parts.find((p) => p.type === type)?.value || "";
 
   return {
     year: Number(get("year")),
     month: Number(get("month")),
     day: Number(get("day")),
     hour: Number(get("hour")),
-    minute: Number(get("minute"))
+    minute: Number(get("minute")),
   };
 }
 
@@ -1412,61 +1348,57 @@ function endOfDayFromDateStr(dateStr) {
 ================================ */
 
 async function getRemainingHalfDaySlots(dateStr) {
-
   if (!dateStr) {
     return {
       morningAvailable: false,
-      afternoonAvailable: false
+      afternoonAvailable: false,
     };
   }
 
   try {
-
     const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-    const filteredAM = (PRESELECTED_VEHICLE
-  ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-  : amData
-).filter(v => {
-  const vehicle = vehicles.find(x => x.id === v.vehicleId);
-  return is35T(vehicle);
-});
+    const filteredAM = (
+      PRESELECTED_VEHICLE
+        ? amData.filter((v) => v.vehicleId === PRESELECTED_VEHICLE)
+        : amData
+    ).filter((v) => {
+      const vehicle = vehicles.find((x) => x.id === v.vehicleId);
+      return is35T(vehicle);
+    });
 
-const filteredPM = (PRESELECTED_VEHICLE
-  ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-  : pmData
-).filter(v => {
-  const vehicle = vehicles.find(x => x.id === v.vehicleId);
-  return is35T(vehicle);
-});
+    const filteredPM = (
+      PRESELECTED_VEHICLE
+        ? pmData.filter((v) => v.vehicleId === PRESELECTED_VEHICLE)
+        : pmData
+    ).filter((v) => {
+      const vehicle = vehicles.find((x) => x.id === v.vehicleId);
+      return is35T(vehicle);
+    });
 
-const morningAvailable = filteredAM.some(v =>
-  v.available || (v.availableSlots && v.availableSlots.includes("am"))
-);
+    const morningAvailable = filteredAM.some(
+      (v) =>
+        v.available || (v.availableSlots && v.availableSlots.includes("am")),
+    );
 
-const afternoonAvailable = filteredPM.some(v =>
-  v.available || (v.availableSlots && v.availableSlots.includes("pm"))
-);
+    const afternoonAvailable = filteredPM.some(
+      (v) =>
+        v.available || (v.availableSlots && v.availableSlots.includes("pm")),
+    );
     return { morningAvailable, afternoonAvailable };
-
   } catch (err) {
-
     console.warn("Half-day slot check failed:", err);
 
     return {
       morningAvailable: false,
-      afternoonAvailable: false
+      afternoonAvailable: false,
     };
-
   }
 }
 
 function updateEarlyPickupAvailability() {
-
   const duration = Number(
-    selectedDurationInput?.value ||
-    durationDaysInput?.value ||
-    1
+    selectedDurationInput?.value || durationDaysInput?.value || 1,
   );
 
   const bookingTime = document.getElementById("booking-pickup-time")?.value;
@@ -1477,9 +1409,9 @@ function updateEarlyPickupAvailability() {
     selectedAvailability?.pickupTime ||
     "07:00";
 
- if (DEBUG) {
-  console.log("EarlyPickupCheck:", { duration, pickupTime });
-}
+  if (DEBUG) {
+    console.log("EarlyPickupCheck:", { duration, pickupTime });
+  }
 
   const isMorning = pickupTime === "07:00";
 
@@ -1491,23 +1423,18 @@ function updateEarlyPickupAvailability() {
   const textSpan = label?.querySelector("span:last-child");
 
   if (!canUseEarlyPickup) {
-
     earlyPickupCheckbox.checked = false;
     earlyPickupCheckbox.disabled = true;
 
     if (textSpan) {
-      textSpan.innerText =
-        "Early pickup only available for morning bookings.";
+      textSpan.innerText = "Early pickup only available for morning bookings.";
     }
-
   } else {
-
     earlyPickupCheckbox.disabled = false;
 
     if (textSpan) {
       textSpan.innerText = "Early pickup (+£20)";
     }
-
   }
 }
 
@@ -1516,7 +1443,6 @@ function updateEarlyPickupAvailability() {
 ================================ */
 
 async function syncPickupTimeOptions(dateStr) {
-
   if (!pickupTimeInput || !durationDaysInput) return;
 
   /* ===============================
@@ -1533,7 +1459,9 @@ async function syncPickupTimeOptions(dateStr) {
   const duration = Number(durationDaysInput.value || 0);
 
   const morningOption = pickupTimeInput.querySelector('option[value="07:00"]');
-  const afternoonOption = pickupTimeInput.querySelector('option[value="13:00"]');
+  const afternoonOption = pickupTimeInput.querySelector(
+    'option[value="13:00"]',
+  );
 
   /* ===============================
      AUTO RESOLVE DATE
@@ -1549,7 +1477,6 @@ async function syncPickupTimeOptions(dateStr) {
   =============================== */
 
   if (duration !== 0.5) {
-
     if (morningOption) {
       morningOption.disabled = false;
       morningOption.style.color = "";
@@ -1576,33 +1503,36 @@ async function syncPickupTimeOptions(dateStr) {
   syncPickupTimeOptions._lastRequest = requestId;
 
   try {
-
     const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
     if (syncPickupTimeOptions._lastRequest !== requestId) return;
 
-    const filteredAM = (PRESELECTED_VEHICLE
-      ? amData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-      : amData
-    ).filter(v => {
-      const vehicle = vehicles.find(x => x.id === v.vehicleId);
+    const filteredAM = (
+      PRESELECTED_VEHICLE
+        ? amData.filter((v) => v.vehicleId === PRESELECTED_VEHICLE)
+        : amData
+    ).filter((v) => {
+      const vehicle = vehicles.find((x) => x.id === v.vehicleId);
       return is35T(vehicle);
     });
 
-    const filteredPM = (PRESELECTED_VEHICLE
-      ? pmData.filter(v => v.vehicleId === PRESELECTED_VEHICLE)
-      : pmData
-    ).filter(v => {
-      const vehicle = vehicles.find(x => x.id === v.vehicleId);
+    const filteredPM = (
+      PRESELECTED_VEHICLE
+        ? pmData.filter((v) => v.vehicleId === PRESELECTED_VEHICLE)
+        : pmData
+    ).filter((v) => {
+      const vehicle = vehicles.find((x) => x.id === v.vehicleId);
       return is35T(vehicle);
     });
 
-    const morningAvailable = filteredAM.some(v =>
-      v.available || (v.availableSlots && v.availableSlots.includes("am"))
+    const morningAvailable = filteredAM.some(
+      (v) =>
+        v.available || (v.availableSlots && v.availableSlots.includes("am")),
     );
 
-    const afternoonAvailable = filteredPM.some(v =>
-      v.available || (v.availableSlots && v.availableSlots.includes("pm"))
+    const afternoonAvailable = filteredPM.some(
+      (v) =>
+        v.available || (v.availableSlots && v.availableSlots.includes("pm")),
     );
 
     /* ===============================
@@ -1650,17 +1580,16 @@ async function syncPickupTimeOptions(dateStr) {
        🔥 ONLY UPDATE IF CHANGED
     =============================== */
 
-   if (pickupTimeInput.value !== nextValue) {
+    if (pickupTimeInput.value !== nextValue) {
+      // 🔥 prevent side-effects
+      pickupTimeInput._silentUpdate = true;
 
-  // 🔥 prevent side-effects
-  pickupTimeInput._silentUpdate = true;
+      pickupTimeInput.value = nextValue;
 
-  pickupTimeInput.value = nextValue;
-
-  setTimeout(() => {
-    pickupTimeInput._silentUpdate = false;
-  }, 0);
-}
+      setTimeout(() => {
+        pickupTimeInput._silentUpdate = false;
+      }, 0);
+    }
     /* ===============================
        🔇 DEBUG LOG (OPTIONAL)
     =============================== */
@@ -1669,12 +1598,10 @@ async function syncPickupTimeOptions(dateStr) {
       console.log("🕐 Half-day sync:", {
         date: dateStr,
         morningAvailable,
-        afternoonAvailable
+        afternoonAvailable,
       });
     }
-
   } catch (err) {
-
     console.warn("Pickup time sync failed:", err);
 
     if (morningOption) morningOption.disabled = true;
@@ -1687,7 +1614,6 @@ async function syncPickupTimeOptions(dateStr) {
 }
 
 function renderBookingConfirmation(booking) {
-
   const container = document.getElementById("booking-confirmation");
   if (!container) return;
 
@@ -1696,7 +1622,6 @@ function renderBookingConfirmation(booking) {
   =============================== */
 
   const formatDate = (value) => {
-
     if (!value) return "—";
 
     let d;
@@ -1704,7 +1629,6 @@ function renderBookingConfirmation(booking) {
     if (typeof value === "number") {
       d = new Date(value);
     } else if (typeof value === "string") {
-
       if (value.includes(" ") && !value.includes("T")) {
         value = value.replace(" ", "T");
       }
@@ -1726,7 +1650,7 @@ function renderBookingConfirmation(booking) {
       year: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
-      hour12: false
+      hour12: false,
     });
   };
 
@@ -1757,36 +1681,34 @@ function renderBookingConfirmation(booking) {
   =============================== */
 
   const vehicleName =
-    booking.vehicleSnapshot?.name ||
-    booking.vehicleId ||
-    "Vehicle";
+    booking.vehicleSnapshot?.name || booking.vehicleId || "Vehicle";
 
   const extras = booking.extras || {};
 
   const priceTotal = booking.hireTotal || 0;
-let paidNow = booking.confirmationFee || 0;
+  let paidNow = booking.confirmationFee || 0;
 
-// 🔥 IF FULLY PAID → EVERYTHING IS PAID
-if (booking.paymentStatus === "fully_paid") {
-  paidNow = priceTotal;
-}
+  // 🔥 IF FULLY PAID → EVERYTHING IS PAID
+  if (booking.paymentStatus === "fully_paid") {
+    paidNow = priceTotal;
+  }
 
-let remaining = booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
+  let remaining =
+    booking.outstandingAmount || Math.max(priceTotal - paidNow, 0);
 
-// 🔥 FORCE ZERO IF FULLY PAID
-if (booking.paymentStatus === "fully_paid") {
-  remaining = 0;
-}
+  // 🔥 FORCE ZERO IF FULLY PAID
+  if (booking.paymentStatus === "fully_paid") {
+    remaining = 0;
+  }
 
-// 🔥 FORCE ZERO IF FULLY PAID
-if (booking.paymentStatus === "fully_paid") {
-  remaining = 0;
-}
+  // 🔥 FORCE ZERO IF FULLY PAID
+  if (booking.paymentStatus === "fully_paid") {
+    remaining = 0;
+  }
 
   let extrasHtml = "";
 
   if (extras) {
-
     if (extras.earlyPickup) {
       extrasHtml += `
         <div class="payment-row">
@@ -1818,7 +1740,6 @@ if (booking.paymentStatus === "fully_paid") {
         </div>
       `;
     }
-
   }
 
   const shortRef = booking.id?.slice(-8);
@@ -1827,7 +1748,7 @@ if (booking.paymentStatus === "fully_paid") {
    RENDER
 =============================== */
 
-container.innerHTML = `
+  container.innerHTML = `
   <div class="confirmation-card apple">
 
     <div class="confirmation-header">
@@ -1857,13 +1778,17 @@ container.innerHTML = `
 
     <div class="payment-card">
 
-      ${extrasHtml ? `
+      ${
+        extrasHtml
+          ? `
         <div class="payment-row" style="font-weight:600; margin-bottom:6px;">
           Extras
         </div>
         ${extrasHtml}
         <div style="height:1px; background:#e5e7eb; margin:10px 0;"></div>
-      ` : ""}
+      `
+          : ""
+      }
 
       <div class="payment-row total">
         <span>Total hire</span>
@@ -1917,14 +1842,11 @@ container.innerHTML = `
 `;
 }
 
-
 function cleanIsoString(value) {
-
   if (!value || typeof value !== "string") return value;
 
   // 🔥 FIX DOUBLE TIME (your exact bug)
   if (value.includes("Z") && value.split("T").length > 2) {
-
     const firstPart = value.split("Z")[0]; // keep valid ISO
     return firstPart + "Z";
   }
@@ -1933,18 +1855,16 @@ function cleanIsoString(value) {
 }
 
 function normaliseBookingDates(booking) {
-
   if (!booking) return booking;
 
   return {
     ...booking,
     pickupAt: cleanIsoString(booking.pickupAt),
-    dropoffAt: cleanIsoString(booking.dropoffAt)
+    dropoffAt: cleanIsoString(booking.dropoffAt),
   };
 }
 
 async function handleStripeReturn() {
-
   IS_STRIPE_RETURN = true;
 
   const url = new URL(window.location.href);
@@ -1972,10 +1892,9 @@ async function handleStripeReturn() {
   =============================== */
 
   if (bookingId && (isDeposit || isOutstanding)) {
-
     console.log("💰 Payment success (non-checkout):", {
       bookingId,
-      type: isDeposit ? "deposit" : "outstanding"
+      type: isDeposit ? "deposit" : "outstanding",
     });
 
     goToStep(5);
@@ -1994,96 +1913,88 @@ async function handleStripeReturn() {
     }
 
     try {
+      let booking = null;
 
-  let booking = null;
-
-  /* ===============================
+      /* ===============================
      ⚡ FAST LOOKUP (PRIMARY)
   =============================== */
 
-  try {
+      try {
+        const res = await fetch(
+          `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-session?session_id=${bookingId}`,
+        );
 
-    const res = await fetch(
-      `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-session?session_id=${bookingId}`
-    );
+        const data = await res.json();
 
-    const data = await res.json();
+        if (data?.booking) {
+          booking = data.booking;
+        }
+      } catch (e) {
+        console.warn("⚠️ by-session lookup failed, fallback to list");
+      }
 
-    if (data?.booking) {
-      booking = data.booking;
-    }
-
-  } catch (e) {
-    console.warn("⚠️ by-session lookup failed, fallback to list");
-  }
-
-  /* ===============================
+      /* ===============================
      🔁 FALLBACK (LIMITED RANGE)
   =============================== */
 
-  if (!booking) {
+      if (!booking) {
+        const res = await fetch(
+          `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list?from=2025-01-01&to=2027-12-31`,
+        );
 
-    const res = await fetch(
-      `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/list?from=2025-01-01&to=2027-12-31`
-    );
+        const data = await res.json();
 
-    const data = await res.json();
+        booking = (data.bookings || []).find((b) => b.id === bookingId);
+      }
 
-    booking = (data.bookings || []).find(
-      b => b.id === bookingId
-    );
-  }
+      if (!booking) {
+        throw new Error("Booking not found");
+      }
 
-  if (!booking) {
-    throw new Error("Booking not found");
-  }
-
- /* ===============================
+      /* ===============================
    NORMALISE + STATUS (DEPOSIT / OUTSTANDING ONLY)
 =============================== */
 
-booking = normaliseBookingDates(booking);
+      booking = normaliseBookingDates(booking);
 
-// 🔥 ONLY HERE (deposit / outstanding flow)
-booking.paymentStatus = isDeposit
-  ? "deposit_paid"
-  : isOutstanding
-  ? "fully_paid"
-  : "confirmation_paid";
+      // 🔥 ONLY HERE (deposit / outstanding flow)
+      booking.paymentStatus = isDeposit
+        ? "deposit_paid"
+        : isOutstanding
+          ? "fully_paid"
+          : "confirmation_paid";
 
-/* ===============================
+      /* ===============================
    RENDER
 =============================== */
 
-renderBookingConfirmation(booking);
+      renderBookingConfirmation(booking);
 
-/* ===============================
+      /* ===============================
    CLEAN URL
 =============================== */
 
-window.history.replaceState(
-  {},
-  "",
-  window.location.pathname + "#booking"
-);
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + "#booking",
+      );
 
-/* ===============================
+      /* ===============================
    REFRESH CACHE
 =============================== */
 
-BOOKINGS_CACHE = null;
-BOOKINGS_CACHE_AT = 0;
+      BOOKINGS_CACHE = null;
+      BOOKINGS_CACHE_AT = 0;
 
-await getBookings(true);
+      await getBookings(true);
 
-STRIPE_FLOW_COMPLETED = true;
+      STRIPE_FLOW_COMPLETED = true;
+    } catch (err) {
+      console.error("💥 Payment return error:", err);
 
-} catch (err) {
-
-  console.error("💥 Payment return error:", err);
-
-  if (container) {
-    container.innerHTML = `
+      if (container) {
+        container.innerHTML = `
       <div class="confirmation-card pro">
         <h2>⏳ Payment received</h2>
         <div class="confirmation-note">
@@ -2095,42 +2006,40 @@ STRIPE_FLOW_COMPLETED = true;
         </button>
       </div>
     `;
+      }
+    } finally {
+      setTimeout(() => {
+        IS_STRIPE_RETURN = false;
+      }, 1000);
+    }
+
+    return;
   }
 
-} finally {
-  setTimeout(() => {
-    IS_STRIPE_RETURN = false;
-  }, 1000);
-}
-
-return;
-}
-
-/* ===============================
+  /* ===============================
    NORMAL STRIPE CHECKOUT FLOW
 =============================== */
 
-if (state !== "success" || !sessionId) {
-  IS_STRIPE_RETURN = false;
-  return;
-}
+  if (state !== "success" || !sessionId) {
+    IS_STRIPE_RETURN = false;
+    return;
+  }
 
-if (stripeReturnHandled) {
-  return stripeReturnPromise;
-}
+  if (stripeReturnHandled) {
+    return stripeReturnPromise;
+  }
 
-stripeReturnHandled = true;
+  stripeReturnHandled = true;
 
-stripeReturnPromise = (async () => {
+  stripeReturnPromise = (async () => {
+    console.log("🚀 handleStripeReturn", { sessionId });
 
-  console.log("🚀 handleStripeReturn", { sessionId });
+    goToStep(5);
 
-  goToStep(5);
+    const container = document.getElementById("booking-confirmation");
 
-  const container = document.getElementById("booking-confirmation");
-
-  if (container) {
-    container.innerHTML = `
+    if (container) {
+      container.innerHTML = `
       <div class="confirmation-card pro">
         <h2>✅ Payment received</h2>
         <div class="confirmation-note">
@@ -2138,28 +2047,25 @@ stripeReturnPromise = (async () => {
         </div>
       </div>
     `;
-  }
+    }
 
-  try {
+    try {
+      let booking = await fetchBookingWithRetry(sessionId);
 
-    let booking = await fetchBookingWithRetry(sessionId);
-
-    console.log("⚡ Stripe session result:", booking);
-
-    if (!booking || !booking.pickupAt) {
-
-      console.warn("⚠️ Booking not ready — retrying once");
-
-      await new Promise(r => setTimeout(r, 500));
-
-      booking = await fetchBookingWithRetry(sessionId, 2);
+      console.log("⚡ Stripe session result:", booking);
 
       if (!booking || !booking.pickupAt) {
+        console.warn("⚠️ Booking not ready — retrying once");
 
-        console.warn("⚠️ Booking still not ready after retry");
+        await new Promise((r) => setTimeout(r, 500));
 
-        if (container) {
-          container.innerHTML = `
+        booking = await fetchBookingWithRetry(sessionId, 2);
+
+        if (!booking || !booking.pickupAt) {
+          console.warn("⚠️ Booking still not ready after retry");
+
+          if (container) {
+            container.innerHTML = `
             <div class="confirmation-card pro">
               <h2>⏳ Payment received</h2>
               <div class="confirmation-note">
@@ -2168,44 +2074,42 @@ stripeReturnPromise = (async () => {
               </div>
             </div>
           `;
+          }
+
+          return;
         }
-
-        return;
       }
-    }
 
-    console.log("✅ FINAL BOOKING:", booking);
+      console.log("✅ FINAL BOOKING:", booking);
 
-    booking = normaliseBookingDates(booking);
+      booking = normaliseBookingDates(booking);
 
-    // ❌ NO paymentStatus here (IMPORTANT)
+      // ❌ NO paymentStatus here (IMPORTANT)
 
-    VEHICLE_AVAILABILITY_CACHE.clear();
-    VEHICLE_AVAILABILITY_PROMISES.clear();
+      VEHICLE_AVAILABILITY_CACHE.clear();
+      VEHICLE_AVAILABILITY_PROMISES.clear();
 
-    renderBookingConfirmation(booking);
+      renderBookingConfirmation(booking);
 
-    window.history.replaceState(
-      {},
-      "",
-      window.location.pathname + "#booking"
-    );
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + "#booking",
+      );
 
-    BOOKINGS_CACHE = null;
-    BOOKINGS_CACHE_AT = 0;
+      BOOKINGS_CACHE = null;
+      BOOKINGS_CACHE_AT = 0;
 
-    await getBookings(true);
+      await getBookings(true);
 
-    console.log("🎉 Stripe return complete");
+      console.log("🎉 Stripe return complete");
 
-    STRIPE_FLOW_COMPLETED = true;
+      STRIPE_FLOW_COMPLETED = true;
+    } catch (err) {
+      console.error("💥 Stripe return error:", err);
 
-  } catch (err) {
-
-    console.error("💥 Stripe return error:", err);
-
-    if (container) {
-      container.innerHTML = `
+      if (container) {
+        container.innerHTML = `
         <div class="confirmation-card pro">
           <h2>⏳ Payment received</h2>
           <div class="confirmation-note">
@@ -2217,26 +2121,20 @@ stripeReturnPromise = (async () => {
           </button>
         </div>
       `;
+      }
+    } finally {
+      setTimeout(() => {
+        IS_STRIPE_RETURN = false;
+        console.log("🔓 Stripe lock released");
+      }, 1500);
     }
+  })();
 
-  } finally {
-
-    setTimeout(() => {
-      IS_STRIPE_RETURN = false;
-      console.log("🔓 Stripe lock released");
-    }, 1500);
-  }
-
-})();
-
-return stripeReturnPromise;
+  return stripeReturnPromise;
 }
 
-
 async function findNextAvailableDate(startDate, durationDays, pickupTime) {
-
   for (let i = 1; i <= 14; i++) {
-
     const testDate = new Date(startDate);
     testDate.setDate(testDate.getDate() + i);
 
@@ -2247,9 +2145,10 @@ async function findNextAvailableDate(startDate, durationDays, pickupTime) {
 
     const dateString = `${year}-${month}-${day}`;
 
-    const vehiclesToCheck = LOCKED_VEHICLE && PRESELECTED_VEHICLE
-      ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
-      : vehicles;
+    const vehiclesToCheck =
+      LOCKED_VEHICLE && PRESELECTED_VEHICLE
+        ? vehicles.filter((v) => v.id === PRESELECTED_VEHICLE)
+        : vehicles;
 
     /* ===============================
        🔥 NEW: USE BACKEND AVAILABILITY
@@ -2258,12 +2157,11 @@ async function findNextAvailableDate(startDate, durationDays, pickupTime) {
     const vehiclesAvailability = await getVehicleAvailability(
       dateString,
       durationDays,
-      pickupTime
+      pickupTime,
     );
 
-    const results = vehiclesToCheck.map(vehicle => {
-
-      const v = vehiclesAvailability.find(x => x.vehicleId === vehicle.id);
+    const results = vehiclesToCheck.map((vehicle) => {
+      const v = vehiclesAvailability.find((x) => x.vehicleId === vehicle.id);
 
       if (!v) return false;
 
@@ -2274,56 +2172,46 @@ async function findNextAvailableDate(startDate, durationDays, pickupTime) {
 
       // 🔥 FULL DAY
       return v.available;
-
     });
 
-    if (results.some(r => r)) {
+    if (results.some((r) => r)) {
       return testDate;
     }
-
   }
 
   return null;
 }
 
-
-
 function getMaxAvailableDuration(startDate, bookings) {
-
   let maxDays = 0;
 
-  for (let d = 1; d <= 14; d++) { // max hire length
+  for (let d = 1; d <= 14; d++) {
+    // max hire length
 
     const end = new Date(startDate);
     end.setDate(end.getDate() + d - 1);
 
-    const possible = vehicles.some(vehicle => {
-
+    const possible = vehicles.some((vehicle) => {
       const vehicleBookings = bookings.filter(
-        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
+        (b) => b.vehicleId === vehicle.id && b.status !== "cancelled",
       );
 
-      const overlap = vehicleBookings.some(booking => {
-
+      const overlap = vehicleBookings.some((booking) => {
         const existingStart = new Date(booking.pickupAt);
         const existingEnd = new Date(booking.dropoffAt);
 
         return overlaps(startDate, end, existingStart, existingEnd);
-
       });
 
       return !overlap;
-
     });
 
     if (!possible) break;
 
     maxDays = d;
-
   }
 
   return maxDays;
-
 }
 
 function isMobile() {
@@ -2331,7 +2219,6 @@ function isMobile() {
 }
 
 function goBackToDates() {
-
   /* go back to Step 1 */
 
   goToStep(1);
@@ -2341,19 +2228,14 @@ function goBackToDates() {
   const calendar = document.getElementById("availability-calendar");
 
   if (calendar) {
-
     calendar.scrollIntoView({
       behavior: "smooth",
-      block: "start"
+      block: "start",
     });
-
   }
-
 }
 
-
 function resetBookingFlow() {
-
   console.log("🔄 HARD reset booking flow");
 
   resetAvailabilityAutoSubmitState();
@@ -2383,8 +2265,9 @@ function resetBookingFlow() {
      RESET CALENDAR (FINAL FIX)
   =============================== */
 
-  document.querySelectorAll(".cal-day")
-    .forEach(el => el.classList.remove("cal-selected", "active"));
+  document
+    .querySelectorAll(".cal-day")
+    .forEach((el) => el.classList.remove("cal-selected", "active"));
 
   // 🔥 THIS handles month + render (single source of truth)
   resetCalendarToToday();
@@ -2423,7 +2306,6 @@ function resetBookingFlow() {
   =============================== */
 
   if (!IS_STRIPE_RETURN) {
-
     if (availabilityResults) {
       availabilityResults.innerHTML = "";
     }
@@ -2483,7 +2365,6 @@ function resetBookingFlow() {
 }
 
 function resetCalendarToToday() {
-
   if (!window.renderCalendar || !window.__calendarState) {
     console.warn("⚠️ Calendar not ready");
     return;
@@ -2506,7 +2387,7 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 12000) {
   try {
     const response = await fetch(url, {
       ...options,
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     const data = await response.json().catch(() => ({}));
@@ -2537,7 +2418,30 @@ function generateNumericBookingId(existingIds = new Set()) {
 
 function buildFormUrl(baseUrl, bookingId) {
   if (!baseUrl) return "";
-  return `${baseUrl}?id=${encodeURIComponent(bookingId)}`;
+
+  const cleanBookingId = String(bookingId || "").trim();
+  if (!cleanBookingId) return baseUrl;
+
+  try {
+    const url = new URL(baseUrl, window.location.origin);
+
+    // 🔥 production-safe:
+    // remove any old/mistaken booking params first
+    url.searchParams.delete("id");
+    url.searchParams.delete("bookingID");
+    url.searchParams.delete("bookingId");
+
+    // ✅ single source of truth
+    url.searchParams.set("bookingId", cleanBookingId);
+
+    return url.toString();
+  } catch (err) {
+    console.warn("buildFormUrl fallback used:", err);
+
+    // fallback for any unusual relative URL parsing issue
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${separator}bookingId=${encodeURIComponent(cleanBookingId)}`;
+  }
 }
 
 function addDays(date, days) {
@@ -2569,7 +2473,6 @@ function getDatesBetween(startDate, endDate) {
 }
 
 function showToast(message = "") {
-
   let toast = document.getElementById("app-toast");
 
   // create if not exists
@@ -2621,21 +2524,22 @@ function asDate(dateString, timeString) {
 }
 
 async function getBookings(force = false) {
-
   if (!force && bookingsRequestPromise) {
     return bookingsRequestPromise;
   }
 
   const now = Date.now();
 
-  if (!force && BOOKINGS_CACHE && (now - BOOKINGS_CACHE_AT) < BOOKINGS_CACHE_TTL) {
+  if (
+    !force &&
+    BOOKINGS_CACHE &&
+    now - BOOKINGS_CACHE_AT < BOOKINGS_CACHE_TTL
+  ) {
     return BOOKINGS_CACHE;
   }
 
   bookingsRequestPromise = (async () => {
-
     try {
-
       const from = new Date();
       from.setMonth(from.getMonth() - 2);
 
@@ -2643,7 +2547,9 @@ async function getBookings(force = false) {
       to.setMonth(to.getMonth() + 3);
 
       const res = await fetch(
-        apiUrl(`/api/bookings/list?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
+        apiUrl(
+          `/api/bookings/list?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`,
+        ),
       );
 
       if (!res.ok) {
@@ -2672,22 +2578,16 @@ async function getBookings(force = false) {
       BOOKINGS_CACHE_AT = Date.now();
 
       if (DEBUG) {
-  console.log("📦 bookings loaded:", bookings.length);
-}
+        console.log("📦 bookings loaded:", bookings.length);
+      }
 
       return bookings;
-
     } catch (err) {
-
       console.warn("getBookings failed:", err);
       return BOOKINGS_CACHE || [];
-
     } finally {
-
       bookingsRequestPromise = null;
-
     }
-
   })();
 
   return bookingsRequestPromise;
@@ -2711,7 +2611,7 @@ function formatDateTime(value) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   });
 }
 
@@ -2723,11 +2623,9 @@ function formatTime(value) {
     timeZone: "Europe/London",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   });
 }
-
-
 
 function formatDateOnly(value) {
   if (!value) return "—";
@@ -2745,12 +2643,13 @@ function overlaps(aStart, aEnd, bStart, bEnd) {
 function is35T(vehicle) {
   return (
     String(vehicle?.id || "").startsWith("v35") ||
-    String(vehicle?.type || "").toLowerCase().includes("3.5")
+    String(vehicle?.type || "")
+      .toLowerCase()
+      .includes("3.5")
   );
 }
 
 function enforceVehicleDurationRules(vehicle) {
-
   if (!durationDaysInput) return;
 
   const halfDayOption = durationDaysInput.querySelector('option[value="0.5"]');
@@ -2767,16 +2666,14 @@ function enforceVehicleDurationRules(vehicle) {
     halfDayOption.disabled = false;
     halfDayOption.hidden = false;
   }
-
 }
 
 function filterVehiclesForDisplay(vehiclesList) {
-
   if (!LOCKED_VEHICLE || !PRESELECTED_VEHICLE) {
     return vehiclesList;
   }
 
-  return vehiclesList.filter(v => v.vehicle.id === PRESELECTED_VEHICLE);
+  return vehiclesList.filter((v) => v.vehicle.id === PRESELECTED_VEHICLE);
 }
 
 function getConfirmationFee(vehicle) {
@@ -2812,7 +2709,7 @@ function formatStepSearchDate(value) {
     weekday: "short",
     day: "numeric",
     month: "short",
-    year: "numeric"
+    year: "numeric",
   });
 }
 
@@ -2838,18 +2735,18 @@ function updateAvailabilitySearchSummary(items = []) {
 
   const chips = [
     `<span class="search-chip"><strong>Date:</strong> ${escapeHtml(formatStepSearchDate(pickupDate))}</span>`,
-    `<span class="search-chip"><strong>Duration:</strong> ${escapeHtml(formatDurationLabel(durationDays))}</span>`
+    `<span class="search-chip"><strong>Duration:</strong> ${escapeHtml(formatDurationLabel(durationDays))}</span>`,
   ];
 
   if (durationDays === 0.5) {
     chips.push(
-      `<span class="search-chip"><strong>Pickup:</strong> ${escapeHtml(formatPickupTimeLabel(pickupTime))}</span>`
+      `<span class="search-chip"><strong>Pickup:</strong> ${escapeHtml(formatPickupTimeLabel(pickupTime))}</span>`,
     );
   }
 
   if (items.length > 0) {
     chips.push(
-      `<span class="search-chip search-chip-accent"><strong>${items.length}</strong> ${items.length === 1 ? "lorry" : "lorries"} available</span>`
+      `<span class="search-chip search-chip-accent"><strong>${items.length}</strong> ${items.length === 1 ? "lorry" : "lorries"} available</span>`,
     );
   }
 
@@ -2864,7 +2761,7 @@ function scrollStep2IntoView() {
   setTimeout(() => {
     step2.scrollIntoView({
       behavior: "smooth",
-      block: "start"
+      block: "start",
     });
   }, 120);
 }
@@ -2876,7 +2773,10 @@ function isWeekendDate(date) {
 
 function getDurationHours(vehicle, durationDays) {
   const key = getDurationKey(durationDays);
-  const map = vehicle.pricingModel === "35_duration_rules" ? DURATION_HOURS_35T : DURATION_HOURS_75T;
+  const map =
+    vehicle.pricingModel === "35_duration_rules"
+      ? DURATION_HOURS_35T
+      : DURATION_HOURS_75T;
   const fallback = Number(durationDays || 1) * 24;
   return map[key] || fallback;
 }
@@ -2902,7 +2802,8 @@ function calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime) {
   }
 
   if (vehicle.pricingModel === "75_living_rules") {
-    let total = RATE_75_LIVING_TOTALS[durationKey] ?? (175 * Math.max(1, duration));
+    let total =
+      RATE_75_LIVING_TOTALS[durationKey] ?? 175 * Math.max(1, duration);
     if (isWeekendStart && duration === 1) total = Math.max(total, 200);
     if (isWeekendStart && duration === 2) total = Math.max(total, 400);
     return total;
@@ -2926,7 +2827,6 @@ function calculateEarlyPickupCharge(enabled) {
   return enabled ? EARLY_PICKUP_PRICE : 0;
 }
 
-
 function getReminderAt(pickupAtIso) {
   const reminderDate = new Date(pickupAtIso);
   reminderDate.setDate(reminderDate.getDate() - 1);
@@ -2942,141 +2842,154 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function getAvailabilityCacheKey(vehicleId, pickupDate, durationDays, pickupTime, discountCode = "") {
+function getAvailabilityCacheKey(
+  vehicleId,
+  pickupDate,
+  durationDays,
+  pickupTime,
+  discountCode = "",
+) {
   return `${vehicleId}|${pickupDate}|${durationDays}|${pickupTime}|${discountCode}`;
 }
-
 
 /* ======================================================
    Pricing API (server quote with local fallback)
 ====================================================== */
 
-async function fetchServerQuote(vehicle, durationDays, pickupDate, pickupTime, discountCode = "") {
-
+async function fetchServerQuote(
+  vehicle,
+  durationDays,
+  pickupDate,
+  pickupTime,
+  discountCode = "",
+) {
   // 🔒 Local development safeguard (prevents 405 spam on Live Server)
-if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
-  console.log("Skipping pricing API (localhost dev)");
+  if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
+    console.log("Skipping pricing API (localhost dev)");
 
-  const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
-
-  const extras = {
-  dartford: dartfordEnabledInput?.checked
-    ? Number(dartfordCountInput?.value || 0)
-    : 0,
-
-  earlyPickup:
-    earlyPickupEnabledInput?.checked &&
-    !earlyPickupEnabledInput?.disabled
-      ? 1
-      : 0
-};
-
-  console.log("🚚 EXTRAS SENT:", extras);
-
-  const extrasTotal =
-    (extras.dartford || 0) * 4.2 +
-    (extras.earlyPickup ? 20 : 0);
-
-  const total = fallbackBase + extrasTotal;
-
-  return {
-    baseCost: fallbackBase,
-    discountAmount: 0,
-    extrasTotal,
-    total
-  };
-
-
-
-}
-
-try {
-
-  /* ===============================
-     EXTRAS (🔥 NEW)
-  =============================== */
-
-
-  const extras = {
-  dartford: dartfordEnabledInput?.checked
-    ? Number(dartfordCountInput?.value || 0)
-    : 0,
-
-  earlyPickup:
-    earlyPickupEnabledInput?.checked &&
-    !earlyPickupEnabledInput?.disabled
-      ? 1
-      : 0
-};
-
-  const res = await fetch(apiUrl("/api/pricing/quote"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      vehicleId: vehicle.id,
+    const fallbackBase = calculateBaseCost(
+      vehicle,
       durationDays,
       pickupDate,
       pickupTime,
-      discountCode,
-      extras // 🔥 SEND TO BACKEND
-    })
-  });
+    );
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => null);
-    const message = errorData?.error || "Pricing API error";
-    throw new Error(message);
+    const extras = {
+      dartford: dartfordEnabledInput?.checked
+        ? Number(dartfordCountInput?.value || 0)
+        : 0,
+
+      earlyPickup:
+        earlyPickupEnabledInput?.checked && !earlyPickupEnabledInput?.disabled
+          ? 1
+          : 0,
+    };
+
+    console.log("🚚 EXTRAS SENT:", extras);
+
+    const extrasTotal =
+      (extras.dartford || 0) * 4.2 + (extras.earlyPickup ? 20 : 0);
+
+    const total = fallbackBase + extrasTotal;
+
+    return {
+      baseCost: fallbackBase,
+      discountAmount: 0,
+      extrasTotal,
+      total,
+    };
   }
 
-  const pricing = await res.json();
+  try {
+    /* ===============================
+     EXTRAS (🔥 NEW)
+  =============================== */
 
-  return {
-  baseCost: Number(pricing.baseCost ?? 0),
-  discountAmount: Number(pricing.discountAmount ?? 0),
-  extrasTotal: Number(pricing.extrasTotal ?? 0),
-  total: Number(pricing.total ?? 0)
-};
+    const extras = {
+      dartford: dartfordEnabledInput?.checked
+        ? Number(dartfordCountInput?.value || 0)
+        : 0,
 
-} catch (err) {
+      earlyPickup:
+        earlyPickupEnabledInput?.checked && !earlyPickupEnabledInput?.disabled
+          ? 1
+          : 0,
+    };
 
-  console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
+    const res = await fetch(apiUrl("/api/pricing/quote"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        vehicleId: vehicle.id,
+        durationDays,
+        pickupDate,
+        pickupTime,
+        discountCode,
+        extras, // 🔥 SEND TO BACKEND
+      }),
+    });
 
-  const fallbackBase = calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime);
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null);
+      const message = errorData?.error || "Pricing API error";
+      throw new Error(message);
+    }
 
-  const extras = {
-  dartford: dartfordEnabledInput?.checked
-    ? Number(dartfordCountInput?.value || 0)
-    : 0,
+    const pricing = await res.json();
 
-  earlyPickup:
-    earlyPickupEnabledInput?.checked &&
-    !earlyPickupEnabledInput?.disabled
-      ? 1
-      : 0
-};
+    return {
+      baseCost: Number(pricing.baseCost ?? 0),
+      discountAmount: Number(pricing.discountAmount ?? 0),
+      extrasTotal: Number(pricing.extrasTotal ?? 0),
+      total: Number(pricing.total ?? 0),
+    };
+  } catch (err) {
+    console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
 
-  const extrasTotal =
-    (extras.dartford || 0) * 4.2 +
-    (extras.earlyPickup ? 20 : 0);
+    const fallbackBase = calculateBaseCost(
+      vehicle,
+      durationDays,
+      pickupDate,
+      pickupTime,
+    );
 
-  const total = fallbackBase + extrasTotal;
+    const extras = {
+      dartford: dartfordEnabledInput?.checked
+        ? Number(dartfordCountInput?.value || 0)
+        : 0,
 
-  return {
-    baseCost: fallbackBase,
-    discountAmount: 0,
-    extrasTotal,
-    total
-  };
+      earlyPickup:
+        earlyPickupEnabledInput?.checked && !earlyPickupEnabledInput?.disabled
+          ? 1
+          : 0,
+    };
+
+    const extrasTotal =
+      (extras.dartford || 0) * 4.2 + (extras.earlyPickup ? 20 : 0);
+
+    const total = fallbackBase + extrasTotal;
+
+    return {
+      baseCost: fallbackBase,
+      discountAmount: 0,
+      extrasTotal,
+      total,
+    };
+  }
 }
-}
 
-async function buildAvailability(vehicle, pickupDate, durationDays, pickupTime, discountCode = "") {
-
+async function buildAvailability(
+  vehicle,
+  pickupDate,
+  durationDays,
+  pickupTime,
+  discountCode = "",
+) {
   /* ===============================
    🔥 BLOCK DURING STRIPE RETURN
 =============================== */
 
-const isStripeMode = IS_STRIPE_RETURN;
+  const isStripeMode = IS_STRIPE_RETURN;
 
   /* ===============================
      TIME RULES (FIXED)
@@ -3089,7 +3002,6 @@ const isStripeMode = IS_STRIPE_RETURN;
   const isHalfDay = is35T(vehicle) && Number(durationDays) === 0.5;
 
   if (isHalfDay) {
-
     // 🔥 DO NOT FORCE DEFAULT — respect user or resolved selection
     if (!HALF_DAY_PICKUP_TIMES_35T.includes(actualPickupTime)) {
       actualPickupTime = pickupTime || null;
@@ -3102,13 +3014,10 @@ const isStripeMode = IS_STRIPE_RETURN;
 
     dropoffTime = HALF_DAY_DROPOFF_TIMES_35T[actualPickupTime];
     durationHours = 6;
-
   } else {
-
     // full day always morning
     actualPickupTime = DEFAULT_PICKUP_TIME;
     dropoffTime = FULL_DAY_DROPOFF_TIME;
-
   }
 
   /* ===============================
@@ -3120,19 +3029,18 @@ const isStripeMode = IS_STRIPE_RETURN;
   let dropoffAt;
 
   if (isHalfDay) {
-
     dropoffAt = asDate(pickupDate, dropoffTime);
-
   } else {
-
-    const dropoffDate = addDays(pickupAt, Math.max(0, Number(durationDays) - 1));
+    const dropoffDate = addDays(
+      pickupAt,
+      Math.max(0, Number(durationDays) - 1),
+    );
 
     const year = dropoffDate.getFullYear();
     const month = String(dropoffDate.getMonth() + 1).padStart(2, "0");
     const day = String(dropoffDate.getDate()).padStart(2, "0");
 
     dropoffAt = asDate(`${year}-${month}-${day}`, dropoffTime);
-
   }
 
   /* ===============================
@@ -3144,7 +3052,7 @@ const isStripeMode = IS_STRIPE_RETURN;
     pickupDate,
     durationDays,
     actualPickupTime,
-    discountCode || ""
+    discountCode || "",
   );
 
   const cached = AVAILABILITY_CACHE.get(cacheKey);
@@ -3162,7 +3070,7 @@ const isStripeMode = IS_STRIPE_RETURN;
     durationDays,
     pickupDate,
     actualPickupTime,
-    discountCode
+    discountCode,
   );
 
   /* ===============================
@@ -3175,10 +3083,9 @@ const isStripeMode = IS_STRIPE_RETURN;
       : 0,
 
     earlyPickup:
-      earlyPickupEnabledInput?.checked &&
-      !earlyPickupEnabledInput?.disabled
+      earlyPickupEnabledInput?.checked && !earlyPickupEnabledInput?.disabled
         ? 1
-        : 0
+        : 0,
   };
 
   /* ===============================
@@ -3198,14 +3105,12 @@ const isStripeMode = IS_STRIPE_RETURN;
     baseCost: pricing.baseCost,
     discountAmount: pricing.discountAmount,
     extrasTotal: pricing.extrasTotal,
-    total: pricing.total
+    total: pricing.total,
   };
 
   /* ===============================
      🔥 FORCE UI SYNC (CRITICAL FIX)
   =============================== */
-
-
 
   /* ===============================
      CACHE STORE
@@ -3213,7 +3118,7 @@ const isStripeMode = IS_STRIPE_RETURN;
 
   AVAILABILITY_CACHE.set(cacheKey, {
     timestamp: Date.now(),
-    data: availabilityObject
+    data: availabilityObject,
   });
 
   return availabilityObject;
@@ -3223,12 +3128,10 @@ const isStripeMode = IS_STRIPE_RETURN;
    Availability checks + rendering
 ====================================================== */
 
-
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
-
   let vehiclesToCheck =
     LOCKED_VEHICLE && PRESELECTED_VEHICLE
-      ? vehicles.filter(v => v.id === PRESELECTED_VEHICLE)
+      ? vehicles.filter((v) => v.id === PRESELECTED_VEHICLE)
       : vehicles;
 
   if (!vehiclesToCheck.length) {
@@ -3242,16 +3145,14 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   =============================== */
 
   if (isHalfDay) {
-
     const { amData, pmData } = await getHalfDayAvailability(pickupDate);
 
     const results = await Promise.all(
       vehiclesToCheck.map(async (vehicle) => {
-
         if (!is35T(vehicle)) return null;
 
-        const amVehicle = amData.find(v => v.vehicleId === vehicle.id);
-        const pmVehicle = pmData.find(v => v.vehicleId === vehicle.id);
+        const amVehicle = amData.find((v) => v.vehicleId === vehicle.id);
+        const pmVehicle = pmData.find((v) => v.vehicleId === vehicle.id);
 
         const hasAM =
           amVehicle?.available ||
@@ -3276,16 +3177,15 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
           vehicle,
           pickupDate,
           0.5,
-          resolvedPickupTime
+          resolvedPickupTime,
         );
-
-      })
+      }),
     );
 
     const filtered = results.filter(Boolean);
 
-    LAST_AVAILABLE_VEHICLES = filtered.map(r => ({
-      vehicleId: r.vehicle.id
+    LAST_AVAILABLE_VEHICLES = filtered.map((r) => ({
+      vehicleId: r.vehicle.id,
     }));
 
     return filtered;
@@ -3298,16 +3198,15 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
     durationDays,
-    null // 🔥 KEY FIX
+    null, // 🔥 KEY FIX
   );
 
   LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
 
   const results = await Promise.all(
     vehiclesToCheck.map(async (vehicle) => {
-
       const apiVehicle = vehiclesAvailability.find(
-        v => v.vehicleId === vehicle.id
+        (v) => v.vehicleId === vehicle.id,
       );
 
       if (!apiVehicle?.available) return null;
@@ -3316,16 +3215,14 @@ async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
         vehicle,
         pickupDate,
         durationDays,
-        DEFAULT_PICKUP_TIME
+        DEFAULT_PICKUP_TIME,
       );
-
-    })
+    }),
   );
 
   return results.filter(Boolean);
 }
 function renderAvailabilityLoading() {
-
   if (!availabilityResults) return;
 
   /* ===============================
@@ -3360,8 +3257,9 @@ function renderAvailabilityLoading() {
   safeRenderAvailability(html);
 }
 
-function renderAvailabilityError(message = "Something went wrong. Please try again.") {
-
+function renderAvailabilityError(
+  message = "Something went wrong. Please try again.",
+) {
   if (!availabilityResults) return;
 
   /* ===============================
@@ -3386,7 +3284,6 @@ function renderAvailabilityError(message = "Something went wrong. Please try aga
 }
 
 async function renderAvailabilityResults(items) {
-
   /* ===============================
      🔥 BLOCK DURING STRIPE RETURN
   =============================== */
@@ -3396,7 +3293,10 @@ async function renderAvailabilityResults(items) {
     return;
   }
 
-  console.log("render items:", items.map(v => v.vehicle.name));
+  console.log(
+    "render items:",
+    items.map((v) => v.vehicle.name),
+  );
 
   items = filterVehiclesForDisplay(items);
 
@@ -3431,9 +3331,7 @@ async function renderAvailabilityResults(items) {
   =============================== */
 
   if (pricePreview) {
-
     if (items.length === 1) {
-
       const price = Number(items[0].total ?? items[0].baseCost ?? 0);
 
       pricePreview.innerHTML = `
@@ -3444,12 +3342,9 @@ async function renderAvailabilityResults(items) {
       `;
 
       pricePreview.style.display = "block";
-
     } else {
-
       pricePreview.innerHTML = "";
       pricePreview.style.display = "none";
-
     }
   }
 
@@ -3458,20 +3353,18 @@ async function renderAvailabilityResults(items) {
   =============================== */
 
   if (!items.length) {
-
     const nextDate = await findNextAvailableDate(
       new Date(pickupDate),
       duration,
-      pickupTime || DEFAULT_PICKUP_TIME
+      pickupTime || DEFAULT_PICKUP_TIME,
     );
 
     let suggestionHTML = "";
 
     if (nextDate) {
-
       const formatted = nextDate.toLocaleDateString(undefined, {
         day: "numeric",
-        month: "long"
+        month: "long",
       });
 
       const nextValue = nextDate.toISOString().slice(0, 10);
@@ -3505,7 +3398,7 @@ async function renderAvailabilityResults(items) {
     setTimeout(() => {
       availabilityResults?.scrollIntoView({
         behavior: "smooth",
-        block: "start"
+        block: "start",
       });
     }, 150);
 
@@ -3526,20 +3419,20 @@ async function renderAvailabilityResults(items) {
      MULTIPLE VEHICLES
   =============================== */
 
-  const html = items.map((item) => {
+  const html = items
+    .map((item) => {
+      const vehicle = item.vehicle;
+      const confirmationFee = getConfirmationFee(vehicle);
+      const displayPrice = Number(item.total ?? item.baseCost ?? 0);
 
-    const vehicle = item.vehicle;
-    const confirmationFee = getConfirmationFee(vehicle);
-    const displayPrice = Number(item.total ?? item.baseCost ?? 0);
+      const durationLabel = formatDurationLabel(item.durationDays);
 
-    const durationLabel = formatDurationLabel(item.durationDays);
+      const pickupLabel =
+        Number(item.durationDays) === 0.5
+          ? ` · ${formatPickupTimeLabel(item.pickupTime)}`
+          : "";
 
-    const pickupLabel =
-      Number(item.durationDays) === 0.5
-        ? ` · ${formatPickupTimeLabel(item.pickupTime)}`
-        : "";
-
-    return `
+      return `
       <article class="availability-item">
 
         <img
@@ -3589,8 +3482,8 @@ async function renderAvailabilityResults(items) {
 
       </article>
     `;
-
-  }).join("");
+    })
+    .join("");
 
   safeRenderAvailability(html);
 
@@ -3602,7 +3495,7 @@ async function renderAvailabilityResults(items) {
     "afterbegin",
     `<p class="muted">
       ${items.length} lorr${items.length > 1 ? "ies" : "y"} available
-    </p>`
+    </p>`,
   );
 
   /* ===============================
@@ -3614,7 +3507,7 @@ async function renderAvailabilityResults(items) {
   setTimeout(() => {
     document.getElementById("step-2")?.scrollIntoView({
       behavior: "smooth",
-      block: "start"
+      block: "start",
     });
   }, 120);
 }
@@ -3627,8 +3520,12 @@ bookingTimeInput?.addEventListener("change", () => {
 
 const bookingConfirmBtn = document.getElementById("booking-confirm-btn");
 
-async function isContinuousRangeAvailable(startDateStr, durationDays, vehicleId, pickupTime = null) {
-
+async function isContinuousRangeAvailable(
+  startDateStr,
+  durationDays,
+  vehicleId,
+  pickupTime = null,
+) {
   const duration = Number(durationDays);
 
   if (!startDateStr || !duration || !vehicleId) return false;
@@ -3638,9 +3535,12 @@ async function isContinuousRangeAvailable(startDateStr, durationDays, vehicleId,
   =============================== */
 
   if (duration === 0.5) {
-
-    const vehiclesData = await getVehicleAvailability(startDateStr, 0.5, pickupTime);
-    const match = vehiclesData.find(v => v.vehicleId === vehicleId);
+    const vehiclesData = await getVehicleAvailability(
+      startDateStr,
+      0.5,
+      pickupTime,
+    );
+    const match = vehiclesData.find((v) => v.vehicleId === vehicleId);
 
     if (!match) return false;
 
@@ -3652,14 +3552,18 @@ async function isContinuousRangeAvailable(startDateStr, durationDays, vehicleId,
       return !!(match.available || match.availableSlots?.includes("pm"));
     }
 
-    return !!(match.availableSlots?.length);
+    return !!match.availableSlots?.length;
   }
 
   /* ===============================
      🔥 CACHE-FIRST (CRITICAL)
   =============================== */
 
-  const cached = getRangeAvailabilityFromCache(startDateStr, duration, vehicleId);
+  const cached = getRangeAvailabilityFromCache(
+    startDateStr,
+    duration,
+    vehicleId,
+  );
 
   if (cached !== null) {
     return cached;
@@ -3669,9 +3573,13 @@ async function isContinuousRangeAvailable(startDateStr, durationDays, vehicleId,
      BACKEND CHECK
   =============================== */
 
-  const vehiclesData = await getVehicleAvailability(startDateStr, duration, null);
+  const vehiclesData = await getVehicleAvailability(
+    startDateStr,
+    duration,
+    null,
+  );
 
-  const match = vehiclesData.find(v => v.vehicleId === vehicleId);
+  const match = vehiclesData.find((v) => v.vehicleId === vehicleId);
 
   const result = !!match?.available;
 
@@ -3687,8 +3595,6 @@ async function isContinuousRangeAvailable(startDateStr, durationDays, vehicleId,
 /* ======================================================
    Checkout summary (discount-safe)
 ====================================================== */
-
-
 
 async function updateCheckoutSummary() {
   if (!checkoutSummary) return;
@@ -3714,7 +3620,7 @@ async function updateCheckoutSummary() {
   const vehicleId =
     selectedAvailability?.vehicle?.id ||
     selectedAvailability?.vehicleId ||
-    vehicles.find(v => v.name === selectedAvailability?.vehicle?.name)?.id ||
+    vehicles.find((v) => v.name === selectedAvailability?.vehicle?.name)?.id ||
     "";
 
   const confirmationFee = String(vehicleId).startsWith("v75")
@@ -3776,9 +3682,11 @@ async function updateCheckoutSummary() {
           <div class="summary-note">
             ${escapeHtml(formatDateOnly(selectedAvailability.pickupDate))} ·
             ${escapeHtml(formatDurationLabel(selectedAvailability.durationDays))}
-            ${Number(selectedAvailability.durationDays) === 0.5
-              ? ` · ${escapeHtml(formatPickupTimeLabel(selectedAvailability.pickupTime))}`
-              : ""}
+            ${
+              Number(selectedAvailability.durationDays) === 0.5
+                ? ` · ${escapeHtml(formatPickupTimeLabel(selectedAvailability.pickupTime))}`
+                : ""
+            }
           </div>
         </div>
       </div>
@@ -3857,34 +3765,29 @@ async function updateCheckoutSummary() {
 }
 
 function updateHalfDayPickup() {
-
-  const duration = Number(document.getElementById("selected-duration")?.value || 0);
+  const duration = Number(
+    document.getElementById("selected-duration")?.value || 0,
+  );
   const row = document.getElementById("pickup-time-row");
 
   if (!row) return;
 
   if (duration === 0.5) {
-
     row.style.display = "grid";
 
     /* highlight field so user notices it */
 
     row.classList.add("duration-highlight");
 
-    setTimeout(()=>{
+    setTimeout(() => {
       row.classList.remove("duration-highlight");
-    },2000);
-
+    }, 2000);
   } else {
-
     row.style.display = "none";
-
   }
-
 }
 
 async function updatePickupTimeVisibility() {
-
   if (BLOCK_AUTO_SCROLL) return;
 
   const duration = Number(durationDaysInput?.value || 0);
@@ -3893,7 +3796,6 @@ async function updatePickupTimeVisibility() {
   if (!group || !pickupTimeInput) return;
 
   if (duration === 0.5) {
-
     group.style.display = "block";
 
     // ✅ FORCE manual user choice (prevents auto-submit flow)
@@ -3906,12 +3808,11 @@ async function updatePickupTimeVisibility() {
     }
 
     setTimeout(() => {
-
       if (BLOCK_AUTO_SCROLL) return;
 
       group.scrollIntoView({
         behavior: "smooth",
-        block: "center"
+        block: "center",
       });
 
       // Highlight effect
@@ -3923,18 +3824,13 @@ async function updatePickupTimeVisibility() {
 
       // Auto focus
       pickupTimeInput.focus();
-
     }, 150);
-
   } else {
-
     group.style.display = "none";
 
     // ✅ Full-day default (keeps existing behaviour)
     pickupTimeInput.value = "07:00";
-
   }
-
 }
 
 /* ======================================================
@@ -3942,14 +3838,12 @@ async function updatePickupTimeVisibility() {
 ====================================================== */
 
 function autoCheckAvailability() {
-
   const pickupDate = pickupDateInput?.value;
   const duration = durationDaysInput?.value;
 
   if (!pickupDate || !duration) return;
 
   maybeAutoSubmitAvailability();
-
 }
 
 /* trigger when date changes */
@@ -3960,52 +3854,47 @@ pickupDateInput?.addEventListener("change", () => {
 
 /* trigger when duration changes */
 
-
-
 /* ======================================================
    PREVENT IMPOSSIBLE DURATIONS
 ====================================================== */
 
-function validateDurationSelection(){
-
+function validateDurationSelection() {
   const duration = Number(durationDaysInput?.value || 0);
   const selectedDate = pickupDateInput?.value;
 
-  if(!selectedDate || !duration) return true;
+  if (!selectedDate || !duration) return true;
 
-  if(!selectedAvailability) return true;
+  if (!selectedAvailability) return true;
 
   const maxDuration = selectedAvailability.max_duration_days;
 
-  if(maxDuration && duration > maxDuration){
-
-    alert(`This lorry is only available for ${maxDuration} day(s) from the selected date.`);
+  if (maxDuration && duration > maxDuration) {
+    alert(
+      `This lorry is only available for ${maxDuration} day(s) from the selected date.`,
+    );
 
     durationDaysInput.value = maxDuration;
 
     updateCheckoutSummary();
 
     return false;
-
   }
 
   return true;
-
 }
 
 /* ======================================================
    Fleet rendering
 ====================================================== */
 
-function getVehicleImagePrefix(vehicle){
-
+function getVehicleImagePrefix(vehicle) {
   const name = vehicle.name.toLowerCase();
 
-  if(name.includes("stallion")) return "3.5 T Stallion (DL22)";
-  if(name.includes("safety")) return "3.5T With Safety Bar (LS23)";
-  if(name.includes("breast")) return "3.5 T With Breast Bar (CA21)";
-  if(name.includes("3 horse")) return "7.5 T 3 Horses with Living";
-  if(name.includes("4 horse")) return "7.5 T 4 Horses No Living";
+  if (name.includes("stallion")) return "3.5 T Stallion (DL22)";
+  if (name.includes("safety")) return "3.5T With Safety Bar (LS23)";
+  if (name.includes("breast")) return "3.5 T With Breast Bar (CA21)";
+  if (name.includes("3 horse")) return "7.5 T 3 Horses with Living";
+  if (name.includes("4 horse")) return "7.5 T 4 Horses No Living";
 
   return null;
 }
@@ -4022,8 +3911,8 @@ function renderFleet() {
       vehicle.pricingModel === "75_no_living_rules"
         ? "no living"
         : vehicle.overnight
-        ? "living"
-        : "no living";
+          ? "living"
+          : "no living";
 
     /* ===============================
        Find images for this vehicle
@@ -4033,19 +3922,15 @@ function renderFleet() {
 
     let imageFiles = [];
 
-    if(prefix && window.fleetImages){
-
-      imageFiles = window.fleetImages.filter(img =>
-        img.startsWith(prefix)
-      );
-
+    if (prefix && window.fleetImages) {
+      imageFiles = window.fleetImages.filter((img) => img.startsWith(prefix));
     }
 
     if (!imageFiles.length)
       imageFiles = [vehicle.image.replace(/^images\//, "")];
 
     imageFiles = imageFiles.map((f) =>
-      f.startsWith("images/") ? f : "images/" + f
+      f.startsWith("images/") ? f : "images/" + f,
     );
 
     /* ===============================
@@ -4178,9 +4063,7 @@ function renderFleet() {
    Booking helpers (select from fleet / results)
 ====================================================== */
 
-
 async function fetchBookingWithRetry(sessionId, attempts = 5) {
-
   if (!sessionId) return null;
 
   if (BOOKING_BY_SESSION_PROMISES.has(sessionId)) {
@@ -4188,17 +4071,15 @@ async function fetchBookingWithRetry(sessionId, attempts = 5) {
   }
 
   const requestPromise = (async () => {
-
     for (let i = 0; i < attempts; i++) {
-
       try {
-
         const res = await fetch(
-          apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`)
+          apiUrl(
+            `/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`,
+          ),
         );
 
         if (res.ok) {
-
           const data = await res.json();
 
           console.log(`🔁 Retry ${i + 1}/${attempts}`, data);
@@ -4207,7 +4088,6 @@ async function fetchBookingWithRetry(sessionId, attempts = 5) {
             return data.booking;
           }
         }
-
       } catch (err) {
         console.warn(`Retry attempt ${i + 1} failed`, err);
       }
@@ -4217,17 +4097,15 @@ async function fetchBookingWithRetry(sessionId, attempts = 5) {
       =============================== */
 
       if (i < attempts - 1) {
-
-        const delay = Math.min(300 + (i * 400), 2500);
+        const delay = Math.min(300 + i * 400, 2500);
 
         console.log(`⏳ waiting ${delay}ms before retry`);
 
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
 
     return null;
-
   })();
 
   BOOKING_BY_SESSION_PROMISES.set(sessionId, requestPromise);
@@ -4239,24 +4117,21 @@ async function fetchBookingWithRetry(sessionId, attempts = 5) {
   }
 }
 
-function getVehicleMainImage(vehicle){
-
-  if(!vehicle) return "";
+function getVehicleMainImage(vehicle) {
+  if (!vehicle) return "";
 
   const map = {
     "v35-1": "images/3.5T With Safety Bar (LS23)1.webp",
     "v35-2": "images/3.5 T Stallion (DL22)1.webp",
     "v35-3": "images/3.5 T With Breast Bar (CA21)1.webp",
     "v75-1": "images/7.5 T 3 Horses with Living1.webp",
-    "v75-2": "images/7.5 T 4 Horses No Living1.webp"
+    "v75-2": "images/7.5 T 4 Horses No Living1.webp",
   };
 
   return map[vehicle.id] || "";
 }
 
-
 function changeLorry() {
-
   goToStep(2);
 
   const pickupDate = pickupDateInput?.value;
@@ -4272,11 +4147,9 @@ function changeLorry() {
   setTimeout(() => {
     availabilityForm?.dispatchEvent(new Event("submit", { cancelable: true }));
   }, 150);
-
 }
 
 function updateDurationOptionsForVehicle(vehicle) {
-
   const durationSelect = document.getElementById("duration-days");
   if (!durationSelect) return;
 
@@ -4284,24 +4157,19 @@ function updateDurationOptionsForVehicle(vehicle) {
   if (!halfDayOption) return;
 
   if (is35T(vehicle)) {
-
     // ✅ allow half day
     halfDayOption.hidden = false;
-
   } else {
-
     // ✅ hide for 7.5T (better than display none)
     halfDayOption.hidden = true;
 
     if (durationSelect.value === "0.5") {
       durationSelect.value = "";
     }
-
   }
 }
 
 function updateCalendarVehicleLabel() {
-
   const label = document.getElementById("calendar-vehicle-label");
   if (!label) return;
 
@@ -4311,11 +4179,10 @@ function updateCalendarVehicleLabel() {
     return;
   }
 
-  const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+  const vehicle = vehicles.find((v) => v.id === PRESELECTED_VEHICLE);
 
   label.textContent = `Booking: ${vehicle?.name || "Selected vehicle"}`;
   label.classList.remove("hidden");
-
 }
 
 function populateBookingDurationSelect(vehicle) {
@@ -4339,7 +4206,6 @@ function populateBookingDurationSelect(vehicle) {
 }
 
 async function bookFromVehicle(vehicleId) {
-
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   if (!vehicle) return;
 
@@ -4366,7 +4232,7 @@ async function bookFromVehicle(vehicleId) {
     defaultDate,
     durationDays,
     pickupTime,
-    code
+    code,
   );
 
   if (selectedBaseInput) {
@@ -4385,14 +4251,18 @@ async function bookFromVehicle(vehicleId) {
 }
 
 async function selectAvailability(vehicleId) {
-
   const pickupDate = pickupDateInput?.value;
   let pickupTime = pickupTimeInput?.value || null;
   const durationDays = Number(durationDaysInput?.value);
 
-  const vehicle = vehicles.find(item => item.id === vehicleId);
+  const vehicle = vehicles.find((item) => item.id === vehicleId);
 
-  if (!vehicle || !pickupDate || durationDays <= 0 || !supportsDuration(vehicle, durationDays)) {
+  if (
+    !vehicle ||
+    !pickupDate ||
+    durationDays <= 0 ||
+    !supportsDuration(vehicle, durationDays)
+  ) {
     return;
   }
 
@@ -4401,7 +4271,6 @@ async function selectAvailability(vehicleId) {
   =============================== */
 
   if (is35T(vehicle) && durationDays === 0.5) {
-
     if (!HALF_DAY_PICKUP_TIMES_35T.includes(pickupTime)) {
       pickupTime = null;
     }
@@ -4410,7 +4279,6 @@ async function selectAvailability(vehicleId) {
       console.log("⛔ waiting for valid pickup time");
       return;
     }
-
   } else {
     pickupTime = DEFAULT_PICKUP_TIME;
   }
@@ -4419,52 +4287,52 @@ async function selectAvailability(vehicleId) {
    FINAL SAFETY CHECK
 =============================== */
 
-const check = await getVehicleAvailability(
-  pickupDate,
-  durationDays,
-  durationDays === 0.5 ? pickupTime : null
-);
+  const check = await getVehicleAvailability(
+    pickupDate,
+    durationDays,
+    durationDays === 0.5 ? pickupTime : null,
+  );
 
-// 🔥 KEEP GLOBAL STATE IN SYNC
-LAST_AVAILABLE_VEHICLES = check;
+  // 🔥 KEEP GLOBAL STATE IN SYNC
+  LAST_AVAILABLE_VEHICLES = check;
 
-if (!check || !check.length) {
-  console.warn("⚠️ No availability response");
-  return;
-}
+  if (!check || !check.length) {
+    console.warn("⚠️ No availability response");
+    return;
+  }
 
-const apiVehicle = check.find(v => v.vehicleId === vehicleId);
+  const apiVehicle = check.find((v) => v.vehicleId === vehicleId);
 
-const valid =
-  durationDays === 0.5
-    ? Array.isArray(apiVehicle?.availableSlots) && apiVehicle.availableSlots.length > 0
-    : !!apiVehicle?.available;
+  const valid =
+    durationDays === 0.5
+      ? Array.isArray(apiVehicle?.availableSlots) &&
+        apiVehicle.availableSlots.length > 0
+      : !!apiVehicle?.available;
 
-if (!valid) {
+  if (!valid) {
+    console.warn("❌ Invalid duration (selectAvailability)");
 
-  console.warn("❌ Invalid duration (selectAvailability)");
-
-  safeRenderAvailability(`
+    safeRenderAvailability(`
     <div class="empty-note">
       ❌ This lorry is not available for that duration.<br>
       Please select a shorter hire period.
     </div>
   `);
 
-  // 🔥 HARD RESET (CRITICAL)
-  selectedAvailability = null;
-  window.pendingBooking = null;
+    // 🔥 HARD RESET (CRITICAL)
+    selectedAvailability = null;
+    window.pendingBooking = null;
 
-  if (durationDaysInput) durationDaysInput.value = "";
-  if (selectedDurationInput) selectedDurationInput.value = "";
-  if (selectedBaseInput) selectedBaseInput.value = "";
+    if (durationDaysInput) durationDaysInput.value = "";
+    if (selectedDurationInput) selectedDurationInput.value = "";
+    if (selectedBaseInput) selectedBaseInput.value = "";
 
-  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
 
-  updateCheckoutSummary();
+    updateCheckoutSummary();
 
-  return;
-}
+    return;
+  }
 
   /* ===============================
      BUILD AVAILABILITY
@@ -4477,7 +4345,7 @@ if (!valid) {
     pickupDate,
     durationDays,
     pickupTime,
-    code
+    code,
   );
 
   if (!selectedAvailability) return;
@@ -4516,19 +4384,17 @@ if (!valid) {
 
   checkoutSummary?.scrollIntoView({
     behavior: "smooth",
-    block: "nearest"
+    block: "nearest",
   });
 }
 
 async function checkBookingFormAvailability() {
+  const duration = Number(
+    selectedDurationInput?.value || durationDaysInput?.value || 0,
+  );
 
-const duration = Number(
-  selectedDurationInput?.value ||
-  durationDaysInput?.value ||
-  0
-);
-
-  if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput) return;
+  if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput)
+    return;
 
   const statusEl = document.getElementById("booking-availability-status");
 
@@ -4563,9 +4429,7 @@ const duration = Number(
   const bookingTime = document.getElementById("booking-pickup-time")?.value;
 
   const bookingPickupTime =
-    bookingTime ||
-    selectedAvailability.pickupTime ||
-    DEFAULT_PICKUP_TIME;
+    bookingTime || selectedAvailability.pickupTime || DEFAULT_PICKUP_TIME;
 
   const pickupTime =
     is35T(vehicle) && durationDays === 0.5
@@ -4576,31 +4440,26 @@ const duration = Number(
      AVAILABILITY CHECK
   =============================== */
 
-const vehiclesAvailability = await getVehicleAvailability(
-  pickupDate,
-  duration,
-  pickupTime
-);
+  const vehiclesAvailability = await getVehicleAvailability(
+    pickupDate,
+    duration,
+    pickupTime,
+  );
 
-// 🔥 ADD THIS HERE ONLY
-LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
+  // 🔥 ADD THIS HERE ONLY
+  LAST_AVAILABLE_VEHICLES = vehiclesAvailability;
 
+  const v = vehiclesAvailability.find((x) => x.vehicleId === vehicle.id);
 
+  let available = false;
 
-const v = vehiclesAvailability.find(
-  x => x.vehicleId === vehicle.id
-);
-
-let available = false;
-
-if (durationDays === 0.5) {
-  available = Array.isArray(v?.availableSlots) && v.availableSlots.length > 0;
-} else {
-  available = !!v?.available;
-}
+  if (durationDays === 0.5) {
+    available = Array.isArray(v?.availableSlots) && v.availableSlots.length > 0;
+  } else {
+    available = !!v?.available;
+  }
 
   if (available) {
-
     /* ===============================
        REBUILD AVAILABILITY (KEEP DISCOUNT)
     =============================== */
@@ -4612,7 +4471,7 @@ if (durationDays === 0.5) {
       pickupDate,
       durationDays,
       pickupTime,
-      code
+      code,
     );
 
     if (selectedBaseInput) {
@@ -4635,9 +4494,7 @@ if (durationDays === 0.5) {
     =============================== */
 
     updateEarlyPickupAvailability();
-
   } else {
-
     if (statusEl) {
       statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
       statusEl.className = "availability-status error full";
@@ -4650,8 +4507,6 @@ if (durationDays === 0.5) {
     updateEarlyPickupAvailability();
   }
 }
-
-
 
 /* ======================================================
    Voucher apply button
@@ -4680,7 +4535,7 @@ if (applyDiscountBtn) {
         selectedAvailability.pickupDate,
         selectedAvailability.durationDays,
         selectedAvailability.pickupTime,
-        code
+        code,
       );
 
       selectedAvailability = updated;
@@ -4699,7 +4554,8 @@ if (applyDiscountBtn) {
     } catch (err) {
       if (discountMessage) {
         discountMessage.hidden = false;
-        discountMessage.textContent = err?.message || "Invalid or expired voucher.";
+        discountMessage.textContent =
+          err?.message || "Invalid or expired voucher.";
         discountMessage.className = "voucher-message error tiny";
       }
     } finally {
@@ -4716,55 +4572,59 @@ if (applyDiscountBtn) {
 async function renderBookings() {
   if (!bookingList) return;
 
-  const bookings = (await getBookings()).sort((a, b) => new Date(a.pickupAt) - new Date(b.pickupAt));
+  const bookings = (await getBookings()).sort(
+    (a, b) => new Date(a.pickupAt) - new Date(b.pickupAt),
+  );
   if (!bookings.length) {
-    bookingList.innerHTML = '<div class="booking-item muted">No bookings yet. Your first booking will appear here.</div>';
+    bookingList.innerHTML =
+      '<div class="booking-item muted">No bookings yet. Your first booking will appear here.</div>';
     return;
   }
 
   bookingList.innerHTML = bookings
-  .map((booking) => {
-    const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
+    .map((booking) => {
+      const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
 
-    const extras = booking.extras || {};
+      const extras = booking.extras || {};
 
-    let notesLine = "";
+      let notesLine = "";
 
-if (booking.customerNotes) {
-  notesLine = `
+      if (booking.customerNotes) {
+        notesLine = `
     <div class="admin-notes">
       Notes: ${escapeHtml(booking.customerNotes)}
     </div>
   `;
-}
-
-    const earlyPickup = !!extras.earlyPickup;
-    const dartfordCount = Number(extras.dartford || 0);
-
-    let extrasLine = "";
-
-    if (earlyPickup || dartfordCount > 0) {
-
-      const parts = [];
-
-      if (earlyPickup) {
-        parts.push("Early pickup (£20)");
       }
 
-      if (dartfordCount > 0) {
-        parts.push(`Dartford x${dartfordCount} (£${(dartfordCount * 4.2).toFixed(2)})`);
-      }
+      const earlyPickup = !!extras.earlyPickup;
+      const dartfordCount = Number(extras.dartford || 0);
 
-      extrasLine = `
+      let extrasLine = "";
+
+      if (earlyPickup || dartfordCount > 0) {
+        const parts = [];
+
+        if (earlyPickup) {
+          parts.push("Early pickup (£20)");
+        }
+
+        if (dartfordCount > 0) {
+          parts.push(
+            `Dartford x${dartfordCount} (£${(dartfordCount * 4.2).toFixed(2)})`,
+          );
+        }
+
+        extrasLine = `
         <span class="muted">Extras: ${parts.join(" · ")}</span><br>
       `;
-    }
+      }
 
-    /* ===============================
+      /* ===============================
        CARD
     =============================== */
 
-    return `
+      return `
   <article class="booking-item">
     <strong>${escapeHtml(vehicle?.name || booking.vehicleId)}</strong><br>
 
@@ -4793,19 +4653,20 @@ if (booking.customerNotes) {
     </span>
   </article>
 `;
-  })
-  .join("");
+    })
+    .join("");
 }
 
 async function renderAdminBookings() {
   if (!adminBookings) return;
 
   const bookings = (await getBookings()).sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
   );
 
   if (!bookings.length) {
-    adminBookings.innerHTML = '<p class="empty-note">No bookings saved yet.</p>';
+    adminBookings.innerHTML =
+      '<p class="empty-note">No bookings saved yet.</p>';
     return;
   }
 
@@ -4815,8 +4676,7 @@ async function renderAdminBookings() {
 
       const notes = booking.customerNotes || "";
 
-      const isImportant =
-        /urgent|call|late|asap/i.test(notes);
+      const isImportant = /urgent|call|late|asap/i.test(notes);
 
       return `
         <tr>
@@ -4862,7 +4722,8 @@ async function renderAdminBookings() {
           >
             ${
               notes
-                ? escapeHtml(notes.slice(0, 40)) + (notes.length > 40 ? "…" : "")
+                ? escapeHtml(notes.slice(0, 40)) +
+                  (notes.length > 40 ? "…" : "")
                 : "—"
             }
           </td>
@@ -4876,7 +4737,7 @@ async function renderAdminBookings() {
             ${
               booking.requiredFormLink
                 ? `<a href="${escapeHtml(
-                    booking.requiredFormLink
+                    booking.requiredFormLink,
                   )}" target="_blank" rel="noopener">Open form</a>`
                 : "—"
             }
@@ -4936,20 +4797,18 @@ function downloadFile(content, filename, mimeType) {
 
 async function exportAdminCsv() {
   const bookings = (await getBookings()).sort(
-    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
   );
 
   const lines = [
-    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Created"
+    "Booking ID,Vehicle,Customer Name,Email,Mobile,Address,DOB,Pickup,Drop-off,Duration Days,Early Pickup,Dartford Crossings,Hire Total,Paid Now,Outstanding,Deposit,Required Form,Required Form Link,Status,Reminder At,Created",
   ];
 
   if (!bookings.length) {
     lines.push("No bookings saved,,,,,,,,,,,,,,,,,,,");
   } else {
     bookings.forEach((booking) => {
-      const vehicle = vehicles.find(
-        (item) => item.id === booking.vehicleId
-      );
+      const vehicle = vehicles.find((item) => item.id === booking.vehicleId);
 
       lines.push(
         [
@@ -4962,7 +4821,7 @@ async function exportAdminCsv() {
           booking.customerDob,
 
           // 🔥 FIXED DATE + TIME FORMAT
-         `${formatDateOnly(booking.pickupAt.slice(0, 10))} (${formatTime(booking.pickupAt)} → ${formatTime(booking.dropoffAt)})`,
+          `${formatDateOnly(booking.pickupAt.slice(0, 10))} (${formatTime(booking.pickupAt)} → ${formatTime(booking.dropoffAt)})`,
 
           booking.durationDays,
 
@@ -4980,10 +4839,10 @@ async function exportAdminCsv() {
           booking.status,
 
           formatDateTime(booking.reminderAt),
-          formatDateTime(booking.createdAt)
+          formatDateTime(booking.createdAt),
         ]
           .map(csvEscape)
-          .join(",")
+          .join(","),
       );
     });
   }
@@ -4993,13 +4852,13 @@ async function exportAdminCsv() {
   downloadFile(
     lines.join("\n"),
     `equine-bookings-${stamp}.csv`,
-    "text/csv;charset=utf-8"
+    "text/csv;charset=utf-8",
   );
 }
 
 async function exportAdminPdf() {
   const bookings = (await getBookings()).sort(
-    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
   );
 
   const stamp = new Date().toISOString().slice(0, 10);
@@ -5008,7 +4867,7 @@ async function exportAdminPdf() {
     ? bookings
         .map((booking) => {
           const vehicle = vehicles.find(
-            (item) => item.id === booking.vehicleId
+            (item) => item.id === booking.vehicleId,
           );
 
           const earlyPickup = booking.extras?.earlyPickup;
@@ -5138,16 +4997,13 @@ async function exportAdminPdf() {
   printWindow.print();
 }
 
-
 async function createStripeCheckoutSession(booking) {
+  if (checkoutLock) return null;
+  checkoutLock = true;
 
-if (checkoutLock) return null;
-checkoutLock = true;
-
-setButtonBusy(bookingSubmitBtn, true, "Starting secure checkout...");
+  setButtonBusy(bookingSubmitBtn, true, "Starting secure checkout...");
 
   try {
-
     /* ===============================
        HARD FRONTEND REVALIDATION
     =============================== */
@@ -5163,7 +5019,7 @@ setButtonBusy(bookingSubmitBtn, true, "Starting secure checkout...");
 
     const pickupTime =
       durationDays === 0.5
-        ? (selectedAvailability.pickupTime || pickupTimeInput?.value || null)
+        ? selectedAvailability.pickupTime || pickupTimeInput?.value || null
         : DEFAULT_PICKUP_TIME;
 
     if (!vehicle || !pickupDate || !durationDays) {
@@ -5174,18 +5030,18 @@ setButtonBusy(bookingSubmitBtn, true, "Starting secure checkout...");
     const liveAvailability = await getVehicleAvailability(
       pickupDate,
       durationDays,
-      durationDays === 0.5 ? pickupTime : null
+      durationDays === 0.5 ? pickupTime : null,
     );
 
-    const apiVehicle = liveAvailability.find(v => v.vehicleId === vehicle.id);
+    const apiVehicle = liveAvailability.find((v) => v.vehicleId === vehicle.id);
 
     const stillAvailable =
       durationDays === 0.5
-        ? Array.isArray(apiVehicle?.availableSlots) && apiVehicle.availableSlots.length > 0
+        ? Array.isArray(apiVehicle?.availableSlots) &&
+          apiVehicle.availableSlots.length > 0
         : !!apiVehicle?.available;
 
     if (!stillAvailable) {
-
       alert("This lorry is no longer available for the selected duration.");
 
       selectedAvailability = null;
@@ -5195,10 +5051,10 @@ setButtonBusy(bookingSubmitBtn, true, "Starting secure checkout...");
       if (selectedDurationInput) selectedDurationInput.value = "";
       if (selectedBaseInput) selectedBaseInput.value = "";
 
-     updateCheckoutSummary();
-resetAvailabilityAutoSubmitState();
-window.__lastDurationCheck = "";
-goToStep(2);
+      updateCheckoutSummary();
+      resetAvailabilityAutoSubmitState();
+      window.__lastDurationCheck = "";
+      goToStep(2);
 
       if (pickupDate) {
         await updateDurationOptions(pickupDate);
@@ -5218,62 +5074,62 @@ goToStep(2);
 
     const extras = {
       dartford: dartfordEnabled ? dartfordCount : 0,
-      earlyPickup: earlyPickupChecked ? 1 : 0
+      earlyPickup: earlyPickupChecked ? 1 : 0,
     };
 
     console.log("🚀 SENDING EXTRAS (FINAL):", extras);
 
-   /* ===============================
+    /* ===============================
    REQUEST (FIXED — NAME INCLUDED)
 =============================== */
 
-const notesInput = document.getElementById("customer-notes");
-const rawNotes = (notesInput?.value || "").trim();
+    const notesInput = document.getElementById("customer-notes");
+    const rawNotes = (notesInput?.value || "").trim();
 
-const customerNotes = rawNotes ? rawNotes.slice(0, 500) : null;
+    const customerNotes = rawNotes ? rawNotes.slice(0, 500) : null;
 
-/* ===============================
+    /* ===============================
    🔥 DEBUG (REMOVE LATER)
 =============================== */
-console.log("🧪 SENDING NAME:", customerNameInput?.value);
+    console.log("🧪 SENDING NAME:", customerNameInput?.value);
 
-const { response, data } = await fetchJsonWithTimeout(
-  apiUrl("/api/bookings/create-checkout-session"),
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    const { response, data } = await fetchJsonWithTimeout(
+      apiUrl("/api/bookings/create-checkout-session"),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
 
-    body: JSON.stringify({
-      vehicleId: vehicle.id,
-      vehicleName: vehicle.name,
+        body: JSON.stringify({
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.name,
 
-      pickupDate: booking.pickupAt,
-      pickupTime: booking.pickupTime,
-      durationDays: booking.durationDays,
+          pickupDate: booking.pickupAt,
+          pickupTime: booking.pickupTime,
+          durationDays: booking.durationDays,
 
-      // 🔥 CRITICAL FIX (THIS WAS MISSING)
-      customerName: (customerNameInput?.value || "").trim(),
+          // 🔥 CRITICAL FIX (THIS WAS MISSING)
+          customerName: (customerNameInput?.value || "").trim(),
 
-      customerEmail: booking.customerEmail,
-      customerMobile: booking.customerMobile,
+          customerEmail: booking.customerEmail,
+          customerMobile: booking.customerMobile,
 
-      bookingId: booking.id,
-      confirmationFee: booking.confirmationFee,
+          bookingId: booking.id,
+          confirmationFee: booking.confirmationFee,
 
-      extras,
+          extras,
 
-      // ✅ only include if exists
-      ...(customerNotes ? { customerNotes } : {})
-    })
-  },
-  15000
-);
+          // ✅ only include if exists
+          ...(customerNotes ? { customerNotes } : {}),
+        }),
+      },
+      15000,
+    );
 
     if (!response.ok) {
-
       if (response.status === 409) {
-
-        alert(data?.error || "This lorry is no longer available for those dates.");
+        alert(
+          data?.error || "This lorry is no longer available for those dates.",
+        );
 
         selectedAvailability = null;
         window.pendingBooking = null;
@@ -5306,21 +5162,19 @@ const { response, data } = await fetchJsonWithTimeout(
     }
 
     throw new Error("Stripe session URL missing");
-
   } catch (error) {
     console.warn("Stripe session error:", error);
     alert(error?.message || "Could not start checkout. Please try again.");
     return null;
   } finally {
-  setTimeout(() => {
-    checkoutLock = false;
-    setButtonBusy(bookingSubmitBtn, false);
-  }, 800);
-}
+    setTimeout(() => {
+      checkoutLock = false;
+      setButtonBusy(bookingSubmitBtn, false);
+    }, 800);
+  }
 }
 
 function resetBookingCustomerFields() {
-
   /* ===============================
      CLEAR CUSTOMER FIELDS
   =============================== */
@@ -5374,16 +5228,16 @@ function resetBookingCustomerFields() {
 }
 
 async function fetchStripeSession(sessionId) {
-
   try {
+    const { response: res, data } = await fetchJsonWithTimeout(
+      apiUrl(
+        `/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`,
+      ),
+      {},
+      12000,
+    );
 
-   const { response: res, data } = await fetchJsonWithTimeout(
-  apiUrl(`/api/bookings/by-session?session_id=${encodeURIComponent(sessionId)}`),
-  {},
-  12000
-);
-
-if (!res.ok) return null;
+    if (!res.ok) return null;
     /* ===============================
        ✅ CASE 1 — REAL BOOKING (KV)
     =============================== */
@@ -5397,7 +5251,6 @@ if (!res.ok) return null;
     =============================== */
 
     if (data?.session?.metadata) {
-
       console.log("⚡ Using Stripe metadata fallback");
 
       const m = data.session.metadata;
@@ -5415,13 +5268,9 @@ if (!res.ok) return null;
       const pickupDate = m.pickupDate || "";
       const pickupTime = m.pickupTime || "07:00";
 
-      const pickupAt = pickupDate
-        ? `${pickupDate}T${pickupTime}:00`
-        : null;
+      const pickupAt = pickupDate ? `${pickupDate}T${pickupTime}:00` : null;
 
-      const dropoffAt = pickupDate
-        ? `${pickupDate}T19:00:00`
-        : null;
+      const dropoffAt = pickupDate ? `${pickupDate}T19:00:00` : null;
 
       return {
         id: m.bookingId || sessionId,
@@ -5429,7 +5278,7 @@ if (!res.ok) return null;
         vehicleId: m.vehicleId,
 
         vehicleSnapshot: {
-          name: m.vehicleName
+          name: m.vehicleName,
         },
 
         pickupAt,
@@ -5444,159 +5293,130 @@ if (!res.ok) return null;
         confirmationFee: Number(m.confirmationFee || 0),
         outstandingAmount: Number(m.outstandingAmount || 0),
 
-        extras
+        extras,
       };
     }
 
     return null;
-
   } catch (err) {
-
     console.warn("fetchStripeSession failed:", err);
     return null;
-
   }
 }
-
-
 
 /* ======================================================
    Events
 ====================================================== */
 
 document.addEventListener("DOMContentLoaded", async () => {
-
-    await handleStripeReturn();
+  await handleStripeReturn();
 
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-/* ======================================================
+  /* ======================================================
    RETURNING CUSTOMER AUTO LOOKUP (FIXED + EARLY CREATE)
 ====================================================== */
 
-if (customerEmailInput) {
+  if (customerEmailInput) {
+    let lookupInFlight = false; // 🔒 prevent spam calls
 
-  let lookupInFlight = false; // 🔒 prevent spam calls
+    customerEmailInput.addEventListener("change", async () => {
+      const email = customerEmailInput.value.trim().toLowerCase();
+      if (!email || lookupInFlight) return;
 
-  customerEmailInput.addEventListener("change", async () => {
+      lookupInFlight = true;
 
-    const email = customerEmailInput.value.trim().toLowerCase();
-    if (!email || lookupInFlight) return;
+      try {
+        const res = await fetch(
+          apiUrl(`/api/customers/lookup?email=${encodeURIComponent(email)}`),
+        );
 
-    lookupInFlight = true;
+        const data = await res.json();
 
-    try {
+        console.log("Customer lookup response:", data);
 
-      const res = await fetch(
-        apiUrl(`/api/customers/lookup?email=${encodeURIComponent(email)}`)
-      );
+        const badge = document.getElementById("returning-customer-badge");
 
-      const data = await res.json();
-
-      console.log("Customer lookup response:", data);
-
-      const badge = document.getElementById("returning-customer-badge");
-
-      /* ===============================
+        /* ===============================
          NOT FOUND → CREATE CUSTOMER EARLY
       =============================== */
 
-      if (!data.found) {
+        if (!data.found) {
+          console.log("🆕 New customer → creating early");
 
-        console.log("🆕 New customer → creating early");
+          try {
+            await fetch(apiUrl(`/api/customers`), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                full_name: customerNameInput?.value || "",
+                email: email,
+                mobile: customerMobileInput?.value || "",
+              }),
+            });
+          } catch (err) {
+            console.warn("⚠️ Failed to create customer early:", err);
+          }
 
-        try {
+          window.RETURNING_CUSTOMER = false;
 
-          await fetch(apiUrl(`/api/customers`), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              full_name: customerNameInput?.value || "",
-              email: email,
-              mobile: customerMobileInput?.value || ""
-            })
-          });
+          if (badge) {
+            badge.classList.add("hidden");
+          }
 
-        } catch (err) {
-
-          console.warn("⚠️ Failed to create customer early:", err);
-
+          lookupInFlight = false;
+          return;
         }
 
-        window.RETURNING_CUSTOMER = false;
-
-        if (badge) {
-          badge.classList.add("hidden");
-        }
-
-        lookupInFlight = false;
-        return;
-
-      }
-
-      /* ===============================
+        /* ===============================
          FOUND → RETURNING CUSTOMER
       =============================== */
 
-      console.log("Returning customer detected:", data.customer);
+        console.log("Returning customer detected:", data.customer);
 
-      if (badge) {
+        if (badge) {
+          const hires = Number(data.customer.hire_count || 0);
 
-        const hires = Number(data.customer.hire_count || 0);
+          badge.textContent =
+            hires > 0
+              ? `✔ Returning customer — ${hires} previous hire${hires > 1 ? "s" : ""}`
+              : `✔ Returning customer`;
 
-        badge.textContent =
-          hires > 0
-            ? `✔ Returning customer — ${hires} previous hire${hires > 1 ? "s" : ""}`
-            : `✔ Returning customer`;
+          badge.classList.remove("hidden");
+        }
 
-        badge.classList.remove("hidden");
-
-      }
-
-/* ===============================
+        /* ===============================
    AUTO-FILL (FIXED)
 =============================== */
 
-if (data.found && data.customer) {
+        if (data.found && data.customer) {
+          console.log("👤 Returning customer detected:", data.customer);
 
-  console.log("👤 Returning customer detected:", data.customer);
+          if (customerNameInput && !customerNameInput.value) {
+            const name = (data.customer.full_name || "").trim();
 
-  if (customerNameInput && !customerNameInput.value) {
+            // 🔥 IGNORE PLACEHOLDER / BAD DATA
+            if (name && name.toLowerCase() !== "test" && name.length > 2) {
+              customerNameInput.value = name;
+            } else {
+              console.warn("⚠️ Ignoring invalid stored name:", name);
+            }
+          }
 
-    const name = (data.customer.full_name || "").trim();
+          if (customerMobileInput && !customerMobileInput.value) {
+            customerMobileInput.value = data.customer.mobile || "";
+          }
 
-    // 🔥 IGNORE PLACEHOLDER / BAD DATA
-    if (
-      name &&
-      name.toLowerCase() !== "test" &&
-      name.length > 2
-    ) {
-      customerNameInput.value = name;
-    } else {
-      console.warn("⚠️ Ignoring invalid stored name:", name);
-    }
+          window.RETURNING_CUSTOMER = true;
+        }
+      } catch (err) {
+        console.warn("Customer lookup failed:", err);
+      } finally {
+        lookupInFlight = false;
+      }
+    });
   }
-
-  if (customerMobileInput && !customerMobileInput.value) {
-    customerMobileInput.value = data.customer.mobile || "";
-  }
-
-  window.RETURNING_CUSTOMER = true;
-}
-    } catch (err) {
-
-      console.warn("Customer lookup failed:", err);
-
-    } finally {
-
-      lookupInFlight = false;
-
-    }
-
-  });
-
-}
 
   /* Step 1 logic */
   syncPickupTimeOptions();
@@ -5604,86 +5424,79 @@ if (data.found && data.customer) {
 
   updateEarlyPickupAvailability();
 
-if (pickupTimeInput) {
-  pickupTimeInput.addEventListener("change", async () => {
-
-    /* ===============================
+  if (pickupTimeInput) {
+    pickupTimeInput.addEventListener("change", async () => {
+      /* ===============================
        🔥 PREVENT INTERNAL LOOP
     =============================== */
-    if (pickupTimeInput._silentUpdate) return;
+      if (pickupTimeInput._silentUpdate) return;
 
-    const date = pickupDateInput?.value;
-    if (!date) return;
+      const date = pickupDateInput?.value;
+      if (!date) return;
 
-    /* ===============================
+      /* ===============================
        🔥 UPDATE DURATIONS
     =============================== */
 
-    await updateDurationOptions(date);
+      await updateDurationOptions(date);
 
-    /* ===============================
+      /* ===============================
        🔥 AUTO PICKUP TIME (SAFE)
     =============================== */
 
-    if (Number(durationDaysInput?.value) === 0.5) {
+      if (Number(durationDaysInput?.value) === 0.5) {
+        const { morningAvailable, afternoonAvailable } =
+          await getRemainingHalfDaySlots(date);
 
-      const { morningAvailable, afternoonAvailable } =
-        await getRemainingHalfDaySlots(date);
+        let nextValue = pickupTimeInput.value;
 
-      let nextValue = pickupTimeInput.value;
+        if (morningAvailable && !afternoonAvailable) {
+          nextValue = "07:00";
+        } else if (!morningAvailable && afternoonAvailable) {
+          nextValue = "13:00";
+        }
 
-      if (morningAvailable && !afternoonAvailable) {
-        nextValue = "07:00";
-      } else if (!morningAvailable && afternoonAvailable) {
-        nextValue = "13:00";
+        // 🔥 silent update (prevents loop)
+        if (pickupTimeInput.value !== nextValue) {
+          pickupTimeInput._silentUpdate = true;
+          pickupTimeInput.value = nextValue;
+
+          setTimeout(() => {
+            pickupTimeInput._silentUpdate = false;
+          }, 0);
+        }
       }
 
-      // 🔥 silent update (prevents loop)
-      if (pickupTimeInput.value !== nextValue) {
-        pickupTimeInput._silentUpdate = true;
-        pickupTimeInput.value = nextValue;
-
-        setTimeout(() => {
-          pickupTimeInput._silentUpdate = false;
-        }, 0);
-      }
-    }
-
-    /* ===============================
+      /* ===============================
        SYNC UI (NO SIDE EFFECTS)
     =============================== */
 
-    await syncPickupTimeOptions(date);
+      await syncPickupTimeOptions(date);
 
-    updateEarlyPickupAvailability();
+      updateEarlyPickupAvailability();
 
-    /* ===============================
+      /* ===============================
        🔥 SINGLE CONTROLLED TRIGGER
     =============================== */
 
-    maybeAutoSubmitAvailability();
-
-  });
-}
+      maybeAutoSubmitAvailability();
+    });
+  }
 
   /* Step 3 logic (use existing global selectedDurationInput) */
 
-if (selectedDurationInput) {
+  if (selectedDurationInput) {
+    selectedDurationInput.addEventListener("change", async () => {
+      updateHalfDayPickup();
 
-  selectedDurationInput.addEventListener("change", async () => {
+      const vehicle = selectedAvailability?.vehicle;
+      const date = selectedPickupInput?.value;
 
-    updateHalfDayPickup();
-
-    const vehicle = selectedAvailability?.vehicle;
-    const date = selectedPickupInput?.value;
-
-    if (vehicle && date) {
-      await syncBookingPickupTimeOptions(date, vehicle.id);
-    }
-
-  });
-
-}
+      if (vehicle && date) {
+        await syncBookingPickupTimeOptions(date, vehicle.id);
+      }
+    });
+  }
 
   updateHalfDayPickup();
 
@@ -5691,33 +5504,29 @@ if (selectedDurationInput) {
    SMART SUMMARY AUTO-UPDATE
 ====================================================== */
 
-function initSmartSummaryUpdates(){
+  function initSmartSummaryUpdates() {
+    const triggers = [
+      pickupDateInput,
+      durationDaysInput,
+      pickupTimeInput,
+      selectedLorryInput,
+      dartfordEnabledInput,
+      dartfordCountInput,
+      earlyPickupEnabledInput,
+      document.getElementById("discount-code"),
+    ];
+    triggers.forEach((el) => {
+      if (!el) return;
 
-  const triggers = [
-  pickupDateInput,
-  durationDaysInput,
-  pickupTimeInput,
-  selectedLorryInput,
-  dartfordEnabledInput,
-  dartfordCountInput,
-  earlyPickupEnabledInput,
-  document.getElementById("discount-code")
-];
-  triggers.forEach(el=>{
-    if(!el) return;
-
-    el.addEventListener("change", ()=>{
-      try{
-        updateCheckoutSummary();
-      }catch(e){
-        console.warn("Summary update failed:", e);
-      }
+      el.addEventListener("change", () => {
+        try {
+          updateCheckoutSummary();
+        } catch (e) {
+          console.warn("Summary update failed:", e);
+        }
+      });
     });
-
-  });
-
-}
-
+  }
 });
 
 /* ===============================
@@ -5735,7 +5544,6 @@ if (availabilityForm) {
     clearTimeout(availabilitySubmitTimeout);
 
     availabilitySubmitTimeout = setTimeout(async () => {
-
       const requestId = ++availabilityRequestId;
 
       /* ===============================
@@ -5750,8 +5558,8 @@ if (availabilityForm) {
 
       if (!pickupDate || Number.isNaN(durationDays) || durationDays <= 0) {
         safeRenderAvailability(
-  '<p class="empty-note">Enter a valid pickup date and duration.</p>'
-);
+          '<p class="empty-note">Enter a valid pickup date and duration.</p>',
+        );
         return;
       }
 
@@ -5760,12 +5568,11 @@ if (availabilityForm) {
       =============================== */
 
       if (durationDays === 0.5 && !pickupTime) {
-
         const group = document.getElementById("pickup-time-group");
 
         group?.scrollIntoView({
           behavior: "smooth",
-          block: "center"
+          block: "center",
         });
 
         group?.classList.add("duration-highlight");
@@ -5790,47 +5597,43 @@ if (availabilityForm) {
         return;
       }
 
-     const finalPickupTime =
-  durationDays === 0.5
-    ? pickupTime
-    : null;
+      const finalPickupTime = durationDays === 0.5 ? pickupTime : null;
 
       const submitBtn = availabilityForm.querySelector(
-  'button[type="submit"], input[type="submit"]'
-);
+        'button[type="submit"], input[type="submit"]',
+      );
 
-setButtonBusy(submitBtn, true, "Checking availability...");
+      setButtonBusy(submitBtn, true, "Checking availability...");
 
-renderAvailabilityLoading();
+      renderAvailabilityLoading();
       try {
-
-       /* ===============================
+        /* ===============================
    🔥 BLOCK DURING STRIPE RETURN
 =============================== */
 
-if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
-  console.log("⛔ Skipping availability (Stripe flow)");
-  return;
-}
+        if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
+          console.log("⛔ Skipping availability (Stripe flow)");
+          return;
+        }
 
-const availableLorries = await getAvailableLorries(
-  pickupDate,
-  durationDays,
-  finalPickupTime
-);
+        const availableLorries = await getAvailableLorries(
+          pickupDate,
+          durationDays,
+          finalPickupTime,
+        );
 
-/* ===============================
+        /* ===============================
    🔥 POST-AWAIT GUARD (CRITICAL)
 =============================== */
 
-if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
-  console.log("⛔ Ignoring result (Stripe flow changed)");
-  return;
-}
+        if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) {
+          console.log("⛔ Ignoring result (Stripe flow changed)");
+          return;
+        }
 
-if (DEBUG) {
-  console.log("🎯 FINAL UI DATA:", availableLorries);
-}
+        if (DEBUG) {
+          console.log("🎯 FINAL UI DATA:", availableLorries);
+        }
 
         /* ===============================
            CANCEL OUTDATED RESPONSE
@@ -5842,14 +5645,12 @@ if (DEBUG) {
         }
 
         renderAvailabilityResults(availableLorries);
-
       } catch (err) {
+        if (requestId !== availabilityRequestId) return;
 
-  if (requestId !== availabilityRequestId) return;
+        console.warn("Availability search failed:", err);
 
-  console.warn("Availability search failed:", err);
-
-  safeRenderAvailability(`
+        safeRenderAvailability(`
     <div class="availability-error">
       Couldn’t check availability right now.
 
@@ -5861,20 +5662,17 @@ if (DEBUG) {
     </div>
   `);
 
-  document.querySelector(".retry-availability-btn")?.addEventListener("click", () => {
-    maybeAutoSubmitAvailability();
-  });
-
-} finally {
-
-  if (requestId === availabilityRequestId) {
-  setButtonBusy(submitBtn, false);
-}
-
-}
-
+        document
+          .querySelector(".retry-availability-btn")
+          ?.addEventListener("click", () => {
+            maybeAutoSubmitAvailability();
+          });
+      } finally {
+        if (requestId === availabilityRequestId) {
+          setButtonBusy(submitBtn, false);
+        }
+      }
     }, 120);
-
   });
 }
 
@@ -5947,8 +5745,7 @@ if (bookingForm) {
     =============================== */
 
     const vehicleId =
-      selectedAvailability.vehicle?.id ||
-      selectedAvailability.vehicleId;
+      selectedAvailability.vehicle?.id || selectedAvailability.vehicleId;
 
     /* ===============================
        PICKUP TIME
@@ -5957,44 +5754,43 @@ if (bookingForm) {
     const bookingPickupTime =
       document.getElementById("booking-pickup-time")?.value || "07:00";
 
-   const vehiclesAvailability = await getVehicleAvailability(
-  selectedAvailability.pickupDate,
-  selectedAvailability.durationDays,
-  bookingPickupTime
-);
+    const vehiclesAvailability = await getVehicleAvailability(
+      selectedAvailability.pickupDate,
+      selectedAvailability.durationDays,
+      bookingPickupTime,
+    );
 
-const v = vehiclesAvailability.find(
-  x => x.vehicleId === vehicleId
-);
+    const v = vehiclesAvailability.find((x) => x.vehicleId === vehicleId);
 
-let stillAvailable = false;
+    let stillAvailable = false;
 
-if (selectedAvailability.durationDays === 0.5) {
-  stillAvailable = v?.availableSlots?.length > 0;
-} else {
-  stillAvailable = !!v?.available;
-}
+    if (selectedAvailability.durationDays === 0.5) {
+      stillAvailable = v?.availableSlots?.length > 0;
+    } else {
+      stillAvailable = !!v?.available;
+    }
 
-if (!stillAvailable) {
-  alert("That lorry is no longer available for the selected dates. Please search again.");
-  return;
-}
+    if (!stillAvailable) {
+      alert(
+        "That lorry is no longer available for the selected dates. Please search again.",
+      );
+      return;
+    }
 
     /* ===============================
        EXTRAS
     =============================== */
 
     const dartfordCrossings = dartfordEnabledInput?.checked
-  ? Number(dartfordCountInput?.value || 0)
-  : 0;
+      ? Number(dartfordCountInput?.value || 0)
+      : 0;
 
     const earlyPickup = earlyPickupEnabledInput?.checked || false;
 
     const baseCost = Number(selectedAvailability.baseCost || 0);
     const discountAmount = Number(selectedAvailability.discountAmount || 0);
-   
 
-   const hireTotal = Number(selectedAvailability.total || 0);
+    const hireTotal = Number(selectedAvailability.total || 0);
 
     /* ===============================
        CONFIRMATION FEE (🔥 FIXED)
@@ -6002,18 +5798,18 @@ if (!stillAvailable) {
 
     let confirmationFee = 75;
 
-if (vehicleId && vehicleId.startsWith("v75")) {
-  confirmationFee = 100;
+    if (vehicleId && vehicleId.startsWith("v75")) {
+      confirmationFee = 100;
 
-  console.log("💰 SUMMARY confirmationFee:", confirmationFee);
-}
+      console.log("💰 SUMMARY confirmationFee:", confirmationFee);
+    }
     const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
     /* ===============================
        BOOKING ID
     =============================== */
 
-    const existingIds = new Set((await getBookings()).map(b => String(b.id)));
+    const existingIds = new Set((await getBookings()).map((b) => String(b.id)));
     const bookingId = generateNumericBookingId(existingIds);
 
     /* ===============================
@@ -6032,90 +5828,89 @@ if (vehicleId && vehicleId.startsWith("v75")) {
        PICKUP / DROPOFF TIMES
     =============================== */
 
-   let pickupAt = new Date(selectedAvailability.pickupDate);
-let dropoffAt = new Date(selectedAvailability.pickupDate);
+    let pickupAt = new Date(selectedAvailability.pickupDate);
+    let dropoffAt = new Date(selectedAvailability.pickupDate);
 
-if (selectedAvailability.durationDays === 0.5) {
+    if (selectedAvailability.durationDays === 0.5) {
+      const [h, m] = (bookingPickupTime || "07:00").split(":");
 
-  const [h, m] = (bookingPickupTime || "07:00").split(":");
+      pickupAt.setHours(Number(h), Number(m), 0, 0);
 
-  pickupAt.setHours(Number(h), Number(m), 0, 0);
+      if (bookingPickupTime === "13:00") {
+        dropoffAt.setHours(19, 0, 0, 0);
+      } else {
+        dropoffAt.setHours(13, 0, 0, 0);
+      }
+    } else {
+      // full day(s)
+      pickupAt.setHours(7, 0, 0, 0);
 
-  if (bookingPickupTime === "13:00") {
-    dropoffAt.setHours(19, 0, 0, 0);
-  } else {
-    dropoffAt.setHours(13, 0, 0, 0);
-  }
-
-} else {
-
-  // full day(s)
-  pickupAt.setHours(7, 0, 0, 0);
-
-  dropoffAt = new Date(pickupAt);
-  dropoffAt.setDate(dropoffAt.getDate() + Number(selectedAvailability.durationDays));
-  dropoffAt.setHours(7, 0, 0, 0);
-}
+      dropoffAt = new Date(pickupAt);
+      dropoffAt.setDate(
+        dropoffAt.getDate() + Number(selectedAvailability.durationDays),
+      );
+      dropoffAt.setHours(7, 0, 0, 0);
+    }
 
     /* ===============================
    BOOKING OBJECT
 =============================== */
 
-const booking = {
-  id: bookingId,
+    const booking = {
+      id: bookingId,
 
-  vehicleId: vehicleId,
+      vehicleId: vehicleId,
 
-  vehicleSnapshot: {
-    id: vehicleId,
-    name: selectedAvailability.vehicle?.name || "",
-    type: selectedAvailability.vehicle?.type || ""
-  },
+      vehicleSnapshot: {
+        id: vehicleId,
+        name: selectedAvailability.vehicle?.name || "",
+        type: selectedAvailability.vehicle?.type || "",
+      },
 
-  pickupAt: pickupAt.toISOString(),
-  dropoffAt: dropoffAt.toISOString(),
+      pickupAt: pickupAt.toISOString(),
+      dropoffAt: dropoffAt.toISOString(),
 
-  durationDays: selectedAvailability.durationDays,
-  durationHours: selectedAvailability.durationHours,
-  pickupTime: bookingPickupTime,
+      durationDays: selectedAvailability.durationDays,
+      durationHours: selectedAvailability.durationHours,
+      pickupTime: bookingPickupTime,
 
-  customerName: (customerNameInput?.value || "").trim(),
-  customerEmail: customerEmailInput?.value || "",
-  customerMobile: customerMobileInput?.value || "",
-  customerAddress: customerAddressInput?.value || "",
-  customerDob: customerDobInput?.value || "",
+      customerName: (customerNameInput?.value || "").trim(),
+      customerEmail: customerEmailInput?.value || "",
+      customerMobile: customerMobileInput?.value || "",
+      customerAddress: customerAddressInput?.value || "",
+      customerDob: customerDobInput?.value || "",
 
-  /* 🔥 CLEAN EXTRAS (single source of truth) */
-  extras: {
-    dartford: dartfordCrossings,
-    earlyPickup: earlyPickup ? 1 : 0
-  },
+      /* 🔥 CLEAN EXTRAS (single source of truth) */
+      extras: {
+        dartford: dartfordCrossings,
+        earlyPickup: earlyPickup ? 1 : 0,
+      },
 
-  /* 🔥 SERVER-DRIVEN TOTALS */
-  baseCost,
-  discountAmount,
-  extrasTotal: Number(selectedAvailability.extrasTotal || 0),
-  hireTotal,
-  confirmationFee,
-  outstandingAmount,
+      /* 🔥 SERVER-DRIVEN TOTALS */
+      baseCost,
+      discountAmount,
+      extrasTotal: Number(selectedAvailability.extrasTotal || 0),
+      hireTotal,
+      confirmationFee,
+      outstandingAmount,
 
-  depositAmount: SECURITY_DEPOSIT_AMOUNT,
+      depositAmount: SECURITY_DEPOSIT_AMOUNT,
 
-  status: "pending_confirmation_payment",
+      status: "pending_confirmation_payment",
 
-  reminderAt: getReminderAt(pickupAt.toISOString()),
+      reminderAt: getReminderAt(pickupAt.toISOString()),
 
-  outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
-  depositLink: DEPOSIT_PAYMENT_LINK,
+      outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
+      depositLink: DEPOSIT_PAYMENT_LINK,
 
-  formLinkA: shortFormLink,
-  formLinkB: longFormLink,
-  requiredFormType,
-  requiredFormLink,
-  hiredWithinLast3Months,
+      formLinkA: shortFormLink,
+      formLinkB: longFormLink,
+      requiredFormType,
+      requiredFormLink,
+      hiredWithinLast3Months,
 
-  createdAt: new Date().toISOString()
-};
+      createdAt: new Date().toISOString(),
+    };
 
     /* ===============================
        STORE + REFRESH
@@ -6141,7 +5936,6 @@ const booking = {
   });
 }
 
-
 /* ======================================================
    CONFIRM BUTTON → STRIPE
 ====================================================== */
@@ -6150,7 +5944,6 @@ const confirmBtn = document.getElementById("booking-confirm-btn");
 
 if (confirmBtn) {
   confirmBtn.addEventListener("click", async () => {
-
     const booking = window.pendingBooking;
 
     if (!booking) {
@@ -6170,11 +5963,10 @@ if (confirmBtn) {
       pickupDate,
       duration,
       vehicleId,
-      null
+      null,
     );
 
     if (!stillValid) {
-
       alert("This lorry is no longer available for that duration.");
 
       selectedAvailability = null;
@@ -6199,7 +5991,6 @@ if (confirmBtn) {
     resetBookingCustomerFields();
 
     window.location.href = checkoutUrl;
-
   });
 }
 
@@ -6208,7 +5999,6 @@ if (confirmBtn) {
 ====================================================== */
 
 function getConfirmationFeeFromId(vehicleId) {
-
   const id = String(vehicleId || "").toLowerCase();
 
   console.log("💰 fee check for:", id);
@@ -6226,21 +6016,16 @@ exportAdminCsvBtn?.addEventListener("click", exportAdminCsv);
 exportAdminPdfBtn?.addEventListener("click", exportAdminPdf);
 
 clearAdminBtn?.addEventListener("click", async () => {
-
   if (!confirm("Clear all saved demo bookings?")) return;
 
   try {
-
     await fetch(apiUrl("/api/bookings/clear"), {
-      method: "POST"
+      method: "POST",
     });
-
   } catch (err) {
-
     console.warn("Backend clear failed, falling back to local storage");
 
     localStorage.removeItem(STORAGE_BOOKINGS);
-
   }
 
   BOOKINGS_CACHE = null;
@@ -6251,7 +6036,6 @@ clearAdminBtn?.addEventListener("click", async () => {
   renderBookings();
   renderAdminBookings();
   updateCheckoutSummary();
-
 });
 // Expose images for slideshow matching your filenames
 window.fleetImages = window.fleetImages || [
@@ -6285,12 +6069,11 @@ window.fleetImages = window.fleetImages || [
   "7.5 T 4 Horses No Living1.webp",
   "7.5 T 4 Horses No Living2.webp",
   "7.5 T 4 Horses No Living3.webp",
-  "7.5 T 4 Horses No Living4.webp"
+  "7.5 T 4 Horses No Living4.webp",
 ];
 
 // Initial render
 (async () => {
-
   if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
 
   renderFleet();
@@ -6301,7 +6084,6 @@ window.fleetImages = window.fleetImages || [
   renderAdminBookings();
 
   updateCheckoutSummary();
-
 })();
 
 /* ======================================================
@@ -6310,7 +6092,6 @@ window.fleetImages = window.fleetImages || [
 
 let bookingVersion = 0;
 
-
 /* ======================================================
    Calendar Preview Helpers
 ====================================================== */
@@ -6318,19 +6099,16 @@ let bookingVersion = 0;
 const vehiclePreview = document.getElementById("vehicle-preview");
 
 function clearPreview() {
-
   document
     .querySelectorAll(".cal-preview")
-    .forEach(el => el.classList.remove("cal-preview"));
+    .forEach((el) => el.classList.remove("cal-preview"));
 
   if (vehiclePreview) {
     vehiclePreview.classList.add("hidden");
   }
-
 }
 
 function previewRental(startDate) {
-
   const duration = Number(document.getElementById("duration-days")?.value || 1);
 
   const end = new Date(startDate);
@@ -6338,58 +6116,50 @@ function previewRental(startDate) {
 
   const cells = document.querySelectorAll("#cal-grid .cal-day");
 
-  cells.forEach(cell => {
-
+  cells.forEach((cell) => {
     const day = Number(cell.textContent);
     if (!day) return;
 
     const cellDate = new Date(
       startDate.getFullYear(),
       startDate.getMonth(),
-      day
+      day,
     );
 
     if (cellDate >= startDate && cellDate <= end) {
       cell.classList.add("cal-preview");
     }
-
   });
-
 }
 
-function movePreview(e){
-
+function movePreview(e) {
   if (!vehiclePreview) return;
 
   vehiclePreview.style.left = e.pageX + "px";
   vehiclePreview.style.top = e.pageY + "px";
-
 }
 
 async function showVehiclePreview(date, event) {
-
   // 🔥 ALWAYS RESET BOTH PREVIEW TYPES FIRST
-const mobilePanel = document.getElementById("mobile-preview");
-const desktopPanel = document.getElementById("vehicle-preview");
+  const mobilePanel = document.getElementById("mobile-preview");
+  const desktopPanel = document.getElementById("vehicle-preview");
 
-if (mobilePanel) mobilePanel.classList.add("hidden");
-if (desktopPanel) desktopPanel.classList.add("hidden");
+  if (mobilePanel) mobilePanel.classList.add("hidden");
+  if (desktopPanel) desktopPanel.classList.add("hidden");
 
-  const bookings = BOOKINGS_CACHE || await getBookings(false);
+  const bookings = BOOKINGS_CACHE || (await getBookings(false));
 
   const dateStart = new Date(date);
-  dateStart.setHours(0,0,0,0);
+  dateStart.setHours(0, 0, 0, 0);
 
   const dateEnd = new Date(dateStart);
   dateEnd.setDate(dateEnd.getDate() + 1);
 
-  const booked = bookings.filter(b => {
-
+  const booked = bookings.filter((b) => {
     const start = new Date(b.pickupAt);
     const end = new Date(b.dropoffAt);
 
     return start < dateEnd && end > dateStart;
-
   });
 
   /* build preview html FIRST */
@@ -6400,17 +6170,13 @@ if (desktopPanel) desktopPanel.classList.add("hidden");
      AVAILABILITY (BASED ON BOOKINGS — SINGLE SOURCE)
   ====================================================== */
 
-  const availability = vehicles.map(vehicle => {
-
-    const vehicleBookings = booked.filter(
-      b => b.vehicleId === vehicle.id
-    );
+  const availability = vehicles.map((vehicle) => {
+    const vehicleBookings = booked.filter((b) => b.vehicleId === vehicle.id);
 
     let morningBooked = false;
     let afternoonBooked = false;
 
-    vehicleBookings.forEach(b => {
-
+    vehicleBookings.forEach((b) => {
       const start = new Date(b.pickupAt);
       const end = new Date(b.dropoffAt);
 
@@ -6419,7 +6185,6 @@ if (desktopPanel) desktopPanel.classList.add("hidden");
 
       if (startHour < 13) morningBooked = true;
       if (endHour > 13) afternoonBooked = true;
-
     });
 
     const is35 = is35T(vehicle);
@@ -6434,45 +6199,36 @@ if (desktopPanel) desktopPanel.classList.add("hidden");
       vehicle,
       morningAvailable,
       afternoonAvailable,
-      fullDayAvailable
+      fullDayAvailable,
     };
-
   });
 
-  const availableVehicles = availability.filter(a =>
-    a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable
+  const availableVehicles = availability.filter(
+    (a) => a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable,
   );
 
- /* ======================================================
+  /* ======================================================
    STATUS LABEL (SIMPLIFIED)
 ====================================================== */
 
-const totalAvailable = availableVehicles.length;
+  const totalAvailable = availableVehicles.length;
 
-if (totalAvailable > 0) {
-
-  html += `<div class="preview-status preview-status-good">Available</div>`;
-
-} else {
-
-  html += `<div class="preview-status preview-status-none">Not available</div>`;
-
-}
+  if (totalAvailable > 0) {
+    html += `<div class="preview-status preview-status-good">Available</div>`;
+  } else {
+    html += `<div class="preview-status preview-status-none">Not available</div>`;
+  }
 
   /* ======================================================
      VEHICLE LIST
   ====================================================== */
 
   if (!availableVehicles.length) {
-
     html += `<div class="muted tiny">Fully booked</div>`;
-
   } else {
-
     html += `<div class="muted tiny">Available vehicles (${availableVehicles.length})</div>`;
 
-    availableVehicles.forEach(a => {
-
+    availableVehicles.forEach((a) => {
       const vehicle = a.vehicle;
       const img = getVehicleMainImage(vehicle);
 
@@ -6507,105 +6263,94 @@ if (totalAvailable > 0) {
         </div>
       `;
     });
-
   }
 
- /* ======================================================
+  /* ======================================================
    MOBILE VERSION
 ====================================================== */
 
-if (isMobile()) {
+  if (isMobile()) {
+    const panel = document.getElementById("mobile-preview");
+    if (!panel) return;
 
-  const panel = document.getElementById("mobile-preview");
-  if (!panel) return;
+    const dateKey = formatDayKey(dateStart);
 
-  const dateKey = formatDayKey(dateStart);
+    // 🔥 prevent duplicate render / flicker
+    if (panel.dataset.date === dateKey) return;
+    panel.dataset.date = dateKey;
 
-  // 🔥 prevent duplicate render / flicker
-  if (panel.dataset.date === dateKey) return;
-  panel.dataset.date = dateKey;
+    panel.innerHTML = html;
+    panel.classList.remove("hidden");
 
-  panel.innerHTML = html;
-  panel.classList.remove("hidden");
+    panel.querySelectorAll(".preview-select").forEach((el) => {
+      el.addEventListener("click", async () => {
+        const vehicleId = el.dataset.vehicleId;
+        const slot = (el.dataset.slot || "").toLowerCase();
 
-  panel.querySelectorAll(".preview-select").forEach(el => {
+        const vehicle = vehicles.find((v) => v.id === vehicleId);
+        if (!vehicle) return;
 
-    el.addEventListener("click", async () => {
+        PRESELECTED_VEHICLE = vehicleId;
+        LOCKED_VEHICLE = true;
 
-      const vehicleId = el.dataset.vehicleId;
-      const slot = (el.dataset.slot || "").toLowerCase();
+        updateCalendarVehicleLabel();
 
-      const vehicle = vehicles.find(v => v.id === vehicleId);
-      if (!vehicle) return;
+        if (pickupDateInput) {
+          pickupDateInput.value = dateKey;
+        }
 
-      PRESELECTED_VEHICLE = vehicleId;
-      LOCKED_VEHICLE = true;
+        if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
+        if (selectedBaseInput) selectedBaseInput.value = "";
 
-      updateCalendarVehicleLabel();
+        selectedAvailability = null;
 
-      if (pickupDateInput) {
-        pickupDateInput.value = dateKey;
-      }
+        updateDurationOptionsForVehicle(vehicle);
+        enforceVehicleDurationRules(vehicle);
 
-      if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
-      if (selectedBaseInput) selectedBaseInput.value = "";
-
-      selectedAvailability = null;
-
-      updateDurationOptionsForVehicle(vehicle);
-      enforceVehicleDurationRules(vehicle);
-
-      /* ===============================
+        /* ===============================
          🔥 FIXED DURATION LOGIC
       =============================== */
 
-      if (durationDaysInput) {
-
-        if (!is35T(vehicle)) {
-          // 🚛 7.5T → FULL DAY ONLY
-          durationDaysInput.value = "1";
-          pickupTimeInput.value = "07:00";
-
-        } else if (slot.includes("morning") || slot.includes("afternoon")) {
-
-          durationDaysInput.value = "0.5";
-          pickupTimeInput.value = slot.includes("afternoon") ? "13:00" : "07:00";
-
-        } else {
-
-          durationDaysInput.value = "1";
-          pickupTimeInput.value = "07:00";
-
+        if (durationDaysInput) {
+          if (!is35T(vehicle)) {
+            // 🚛 7.5T → FULL DAY ONLY
+            durationDaysInput.value = "1";
+            pickupTimeInput.value = "07:00";
+          } else if (slot.includes("morning") || slot.includes("afternoon")) {
+            durationDaysInput.value = "0.5";
+            pickupTimeInput.value = slot.includes("afternoon")
+              ? "13:00"
+              : "07:00";
+          } else {
+            durationDaysInput.value = "1";
+            pickupTimeInput.value = "07:00";
+          }
         }
-      }
 
-      await syncPickupTimeOptions(dateKey);
-      updatePickupTimeVisibility();
-      updateCheckoutSummary();
+        await syncPickupTimeOptions(dateKey);
+        updatePickupTimeVisibility();
+        updateCheckoutSummary();
 
-      panel.classList.add("hidden");
+        panel.classList.add("hidden");
 
-      goToStep(1);
-
-      setTimeout(() => {
-        durationDaysInput?.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
-        durationDaysInput?.classList.add("duration-highlight");
+        goToStep(1);
 
         setTimeout(() => {
-          durationDaysInput?.classList.remove("duration-highlight");
-        }, 1800);
+          durationDaysInput?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          durationDaysInput?.classList.add("duration-highlight");
 
-      }, 150);
-
+          setTimeout(() => {
+            durationDaysInput?.classList.remove("duration-highlight");
+          }, 1800);
+        }, 150);
+      });
     });
 
-  });
-
-  return;
-}
+    return;
+  }
 
   /* ======================================================
      DESKTOP VERSION
@@ -6618,7 +6363,6 @@ if (isMobile()) {
   vehiclePreview.classList.remove("hidden");
 
   if (event) movePreview(event);
-
 }
 
 /* ======================================================
@@ -6626,598 +6370,579 @@ if (isMobile()) {
 ====================================================== */
 
 (function () {
+  const calGrid = document.getElementById("cal-grid");
+  const calTitle = document.getElementById("cal-title");
+  const calWrap = document.getElementById("availability-calendar");
 
- const calGrid = document.getElementById("cal-grid");
-const calTitle = document.getElementById("cal-title");
-const calWrap = document.getElementById("availability-calendar");
+  if (!calGrid || !calTitle || !calWrap) return;
 
-if (!calGrid || !calTitle || !calWrap) return;
+  // use global currentDate (do NOT redeclare)
 
-// use global currentDate (do NOT redeclare)
-
-/* ===============================
+  /* ===============================
    🔥 EXPOSE CALENDAR STATE (NEW)
 =============================== */
 
-window.__calendarState = {
-  get currentDate() {
-    return new Date(currentDate);
-  },
-  set currentDate(val) {
-    if (!val) return;
+  window.__calendarState = {
+    get currentDate() {
+      return new Date(currentDate);
+    },
+    set currentDate(val) {
+      if (!val) return;
 
-    const d = new Date(val);
-    if (isNaN(d.getTime())) return; // guard invalid dates
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return; // guard invalid dates
 
-    d.setDate(1);
-    currentDate = d;
-  }
-};
-/* ===============================
+      d.setDate(1);
+      currentDate = d;
+    },
+  };
+  /* ===============================
    🔥 EXPOSE MONTH SETTER (UPDATED)
 =============================== */
 
-window.setCalendarMonth = function(date) {
+  window.setCalendarMonth = function (date) {
+    window.__calendarState.currentDate = date; // ✅ USE SETTER
 
-  window.__calendarState.currentDate = date; // ✅ USE SETTER
-
-  if (typeof renderCalendar === "function") {
-    renderCalendar();
-  }
-};
+    if (typeof renderCalendar === "function") {
+      renderCalendar();
+    }
+  };
 
   /* ======================================================
      Check availability for a specific calendar day
   ====================================================== */
- 
+
   function checkDayLocalAvailability(dateObj, bookings) {
     let availableVehicles = 0;
 
     vehicles
-  .filter(v => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
-  .forEach(vehicle => {
+      .filter((v) => !PRESELECTED_VEHICLE || v.id === PRESELECTED_VEHICLE)
+      .forEach((vehicle) => {
+        const vehicleBookings = bookings.filter(
+          (b) => b.vehicleId === vehicle.id && b.status !== "cancelled",
+        );
 
-      const vehicleBookings = bookings.filter(
-        b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-      );
+        const pickupAt = new Date(dateObj);
+        pickupAt.setHours(0, 0, 0, 0);
 
-      const pickupAt = new Date(dateObj);
-      pickupAt.setHours(0,0,0,0);
+        const dropoffAt = new Date(dateObj);
+        dropoffAt.setHours(23, 59, 59, 999);
 
-      const dropoffAt = new Date(dateObj);
-      dropoffAt.setHours(23,59,59,999);
+        const overlapsExisting = vehicleBookings.some((booking) => {
+          const existingStart = new Date(booking.pickupAt);
+          const existingEnd = new Date(booking.dropoffAt);
 
-      const overlapsExisting = vehicleBookings.some(booking => {
+          return overlaps(pickupAt, dropoffAt, existingStart, existingEnd);
+        });
 
-        const existingStart = new Date(booking.pickupAt);
-        const existingEnd = new Date(booking.dropoffAt);
-
-        return overlaps(pickupAt, dropoffAt, existingStart, existingEnd);
-
+        if (!overlapsExisting) {
+          availableVehicles++;
+        }
       });
-
-      if (!overlapsExisting) {
-        availableVehicles++;
-      }
-
-    });
-
-    
 
     const totalVehicles = PRESELECTED_VEHICLE ? 1 : vehicles.length;
 
-/* ===============================
+    /* ===============================
    SIMPLIFIED AVAILABILITY (FINAL)
 =============================== */
 
-if (availableVehicles === 0) {
-  return "unavailable";
-}
+    if (availableVehicles === 0) {
+      return "unavailable";
+    }
 
-return "available";
+    return "available";
   }
 
   /* ======================================================
      Check if rental can start
   ====================================================== */
 
- function canStartRental(startDate, bookings) {
+  function canStartRental(startDate, bookings) {
+    const durationInput = document.getElementById("duration-days");
+    const durationDays = Number(durationInput?.value || 1);
 
-  const durationInput = document.getElementById("duration-days");
-  const durationDays = Number(durationInput?.value || 1);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + durationDays - 1);
 
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + durationDays - 1);
+    /* check vehicle by vehicle */
 
-  /* check vehicle by vehicle */
+    return vehicles.some((vehicle) => {
+      const vehicleBookings = bookings.filter(
+        (b) => b.vehicleId === vehicle.id && b.status !== "cancelled",
+      );
 
-  return vehicles.some(vehicle => {
+      const overlapsExisting = vehicleBookings.some((booking) => {
+        const existingStart = new Date(booking.pickupAt);
+        const existingEnd = new Date(booking.dropoffAt);
 
-    const vehicleBookings = bookings.filter(
-      b => b.vehicleId === vehicle.id && b.status !== "cancelled"
-    );
+        return overlaps(startDate, endDate, existingStart, existingEnd);
+      });
 
-    const overlapsExisting = vehicleBookings.some(booking => {
+      /* vehicle available */
 
-      const existingStart = new Date(booking.pickupAt);
-      const existingEnd = new Date(booking.dropoffAt);
-
-      return overlaps(startDate, endDate, existingStart, existingEnd);
-
+      return !overlapsExisting;
     });
-
-    /* vehicle available */
-
-    return !overlapsExisting;
-
-  });
-
-}
-/* ======================================================
+  }
+  /* ======================================================
    Render Booking Bars (multi-day visual)
 ====================================================== */
 
-function renderBookingBars(year, month, bookings) {
+  function renderBookingBars(year, month, bookings) {
+    const cells = Array.from(document.querySelectorAll("#cal-grid .cal-day"));
 
-  const cells = Array.from(document.querySelectorAll("#cal-grid .cal-day"));
+    bookings.forEach((booking) => {
+      const start = new Date(booking.pickupAt);
+      const end = new Date(booking.dropoffAt);
 
-  bookings.forEach(booking => {
+      if (start.getFullYear() !== year || start.getMonth() !== month) return;
 
-    const start = new Date(booking.pickupAt);
-    const end = new Date(booking.dropoffAt);
+      const day = start.getDate();
+      const cell = cells.find((c) => Number(c.textContent) === day);
 
-    if (
-      start.getFullYear() !== year ||
-      start.getMonth() !== month
-    ) return;
+      if (!cell) return;
+      cell.classList.add("cal-booked");
 
-    const day = start.getDate();
-    const cell = cells.find(c => Number(c.textContent) === day);
+      const startHour = getLondonParts(start).hour;
+      const endHour = getLondonParts(end).hour;
 
-    if (!cell) return;
-    cell.classList.add("cal-booked");
+      cell.classList.remove(
+        "cal-booking-morning",
+        "cal-booking-afternoon",
+        "cal-booking-full",
+      );
 
-const startHour = getLondonParts(start).hour;
-const endHour = getLondonParts(end).hour;
-
-    cell.classList.remove(
-      "cal-booking-morning",
-      "cal-booking-afternoon",
-      "cal-booking-full"
-    );
-
-    if (startHour === 7 && endHour === 13) {
-      cell.classList.add("cal-booking-morning");
-    } else if (startHour === 13 && endHour === 19) {
-      cell.classList.add("cal-booking-afternoon");
-    } else {
-      cell.classList.add("cal-booking-full");
-    }
-
-  });
-
-}
-
-async function renderCalendar() {
-
-  window.renderCalendar = renderCalendar;
-
-  // if a render is already running, queue one more pass
-  if (calendarRenderPromise) {
-    pendingCalendarRender = true;
-    return calendarRenderPromise;
+      if (startHour === 7 && endHour === 13) {
+        cell.classList.add("cal-booking-morning");
+      } else if (startHour === 13 && endHour === 19) {
+        cell.classList.add("cal-booking-afternoon");
+      } else {
+        cell.classList.add("cal-booking-full");
+      }
+    });
   }
 
-  calendarRenderPromise = (async () => {
-    try {
-      do {
-        pendingCalendarRender = false;
-        await renderCalendarInternal();
-      } while (pendingCalendarRender);
+  async function renderCalendar() {
+    window.renderCalendar = renderCalendar;
 
-      /* ===============================
+    // if a render is already running, queue one more pass
+    if (calendarRenderPromise) {
+      pendingCalendarRender = true;
+      return calendarRenderPromise;
+    }
+
+    calendarRenderPromise = (async () => {
+      try {
+        do {
+          pendingCalendarRender = false;
+          await renderCalendarInternal();
+        } while (pendingCalendarRender);
+
+        /* ===============================
          PREFETCH CURRENT VISIBLE MONTH
       =============================== */
 
-      try {
-        const visibleMonthStart = new Date(currentDate);
-        visibleMonthStart.setDate(1);
+        try {
+          const visibleMonthStart = new Date(currentDate);
+          visibleMonthStart.setDate(1);
 
-        const year = visibleMonthStart.getFullYear();
-        const month = String(visibleMonthStart.getMonth() + 1).padStart(2, "0");
-        const day = "01";
+          const year = visibleMonthStart.getFullYear();
+          const month = String(visibleMonthStart.getMonth() + 1).padStart(
+            2,
+            "0",
+          );
+          const day = "01";
 
-        const monthStartStr = `${year}-${month}-${day}`;
+          const monthStartStr = `${year}-${month}-${day}`;
 
-        prefetchAvailabilityWindow(monthStartStr);
-
+          prefetchAvailabilityWindow(monthStartStr);
+        } catch (err) {
+          console.warn("Calendar month prefetch failed:", err);
+        }
       } catch (err) {
-        console.warn("Calendar month prefetch failed:", err);
+        console.error("Calendar render failed:", err);
+      } finally {
+        calendarRenderPromise = null;
+
+        // ✅ ALWAYS UNLOCK (CRITICAL FIX)
+        const calWrap = document.getElementById("availability-calendar");
+        const calGrid = document.getElementById("cal-grid");
+
+        if (calWrap) calWrap.dataset.rendering = "false";
+        if (calGrid) calGrid.dataset.rendering = "false";
       }
+    })();
 
-    } catch (err) {
-      console.error("Calendar render failed:", err);
-    } finally {
-  calendarRenderPromise = null;
+    return calendarRenderPromise;
+  }
 
-  // ✅ ALWAYS UNLOCK (CRITICAL FIX)
-  const calWrap = document.getElementById("availability-calendar");
-  const calGrid = document.getElementById("cal-grid");
+  async function renderCalendarInternal() {
+    ensureDateVisible(window.SELECTED_DATE);
 
-  if (calWrap) calWrap.dataset.rendering = "false";
-  if (calGrid) calGrid.dataset.rendering = "false";
-}
-  })();
+    calGrid.dataset.rendering = "true";
+    calWrap.dataset.rendering = "true";
 
-  return calendarRenderPromise;
-}
+    // 🔥 CRITICAL FIX — CLEAR GRID BEFORE RENDER
+    calGrid.innerHTML = "";
 
-async function renderCalendarInternal() {
-
-  ensureDateVisible(window.SELECTED_DATE);
-
-  calGrid.dataset.rendering = "true";
-  calWrap.dataset.rendering = "true";
-
-  // 🔥 CRITICAL FIX — CLEAR GRID BEFORE RENDER
-calGrid.innerHTML = "";
-
-/* ===============================
+    /* ===============================
    LOAD BOOKINGS (DEDUPED + CACHED)
 =============================== */
 
-const bookings = BOOKINGS_CACHE || await getBookings(false);
+    const bookings = BOOKINGS_CACHE || (await getBookings(false));
 
-if (DEBUG) {
-  console.log("Calendar bookings:", bookings);
-}
+    if (DEBUG) {
+      console.log("Calendar bookings:", bookings);
+    }
 
-/* ===============================
+    /* ===============================
    CALENDAR HEADER
 =============================== */
 
-const year = currentDate.getFullYear();
-const month = currentDate.getMonth();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
 
-const monthNames = [
-"January","February","March","April","May","June",
-"July","August","September","October","November","December"
-];
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
 
-calTitle.textContent = `${monthNames[month]} ${year}`;
+    calTitle.textContent = `${monthNames[month]} ${year}`;
 
-const fragment = document.createDocumentFragment();
+    const fragment = document.createDocumentFragment();
 
-/* ===============================
+    /* ===============================
    SELECTED DATE RESTORE
 =============================== */
 
-const selectedDateValue = window.SELECTED_DATE;
-let selectedTimestamp = null;
+    const selectedDateValue = window.SELECTED_DATE;
+    let selectedTimestamp = null;
 
-if (selectedDateValue) {
-  const selectedDate = new Date(selectedDateValue);
-  selectedDate.setHours(0,0,0,0);
-  selectedTimestamp = selectedDate.getTime();
-}
+    if (selectedDateValue) {
+      const selectedDate = new Date(selectedDateValue);
+      selectedDate.setHours(0, 0, 0, 0);
+      selectedTimestamp = selectedDate.getTime();
+    }
 
-/* ===============================
+    /* ===============================
    MONTH SETUP
 =============================== */
 
-const firstDay = new Date(year, month, 1);
-const lastDay = new Date(year, month + 1, 0);
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
 
-let startOffset = firstDay.getDay();
-startOffset = startOffset === 0 ? 6 : startOffset - 1;
+    let startOffset = firstDay.getDay();
+    startOffset = startOffset === 0 ? 6 : startOffset - 1;
 
-for (let i = 0; i < startOffset; i++) {
-  calGrid.appendChild(document.createElement("div"));
-}
+    for (let i = 0; i < startOffset; i++) {
+      calGrid.appendChild(document.createElement("div"));
+    }
 
-const today = new Date();
-today.setHours(0,0,0,0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-/* ===============================
+    /* ===============================
    DAY LOOP
 =============================== */
 
-for (let day = 1; day <= lastDay.getDate(); day++) {
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+      const dayDate = new Date(year, month, day);
+      dayDate.setHours(0, 0, 0, 0);
 
-  const dayDate = new Date(year, month, day);
-  dayDate.setHours(0,0,0,0);
+      const dayEl = document.createElement("div");
+      dayEl.className = "cal-day";
+      dayEl.textContent = day;
 
-  const dayEl = document.createElement("div");
-  dayEl.className = "cal-day";
-  dayEl.textContent = day;
+      // 🔥 REQUIRED for prefetch
+      dayEl.dataset.date = formatDayKey(dayDate);
 
-  // 🔥 REQUIRED for prefetch
-  dayEl.dataset.date = formatDayKey(dayDate);
-
-  /* ===============================
+      /* ===============================
      RESTORE SELECTED DATE
   =============================== */
 
-  if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
-    dayEl.classList.add("cal-selected");
-  }
+      if (selectedTimestamp && dayDate.getTime() === selectedTimestamp) {
+        dayEl.classList.add("cal-selected");
+      }
 
-  /* today marker */
+      /* today marker */
 
-  if (dayDate.getTime() === today.getTime()) {
-    dayEl.classList.add("cal-today");
-  }
+      if (dayDate.getTime() === today.getTime()) {
+        dayEl.classList.add("cal-today");
+      }
 
-  /* weekend shading */
+      /* weekend shading */
 
-  const weekday = dayDate.getDay();
-  if (weekday === 0 || weekday === 6) {
-    dayEl.classList.add("cal-weekend");
-  }
+      const weekday = dayDate.getDay();
+      if (weekday === 0 || weekday === 6) {
+        dayEl.classList.add("cal-weekend");
+      }
 
-  /* ===============================
+      /* ===============================
      PAST DATES
   =============================== */
 
-  if (dayDate < today) {
-    dayEl.classList.add("cal-unavailable","cal-past");
-    fragment.appendChild(dayEl);
-    continue;
-  }
+      if (dayDate < today) {
+        dayEl.classList.add("cal-unavailable", "cal-past");
+        fragment.appendChild(dayEl);
+        continue;
+      }
 
-  /* ===============================
+      /* ===============================
      AVAILABILITY CHECK
   =============================== */
 
-  // remove unused dayKey
+      // remove unused dayKey
 
-  const status = checkDayLocalAvailability(dayDate, bookings);
-  const validStart = canStartRental(dayDate, bookings);
+      const status = checkDayLocalAvailability(dayDate, bookings);
+      const validStart = canStartRental(dayDate, bookings);
 
-  renderAvailabilityDots(dayEl, bookings, dayDate);
+      renderAvailabilityDots(dayEl, bookings, dayDate);
 
-  /* ===============================
+      /* ===============================
      STATUS COLOURING
   =============================== */
 
-  if (status === "available") {
-    dayEl.classList.add("cal-available");
-  } else {
-    dayEl.classList.add("cal-unavailable");
-  }
+      if (status === "available") {
+        dayEl.classList.add("cal-available");
+      } else {
+        dayEl.classList.add("cal-unavailable");
+      }
 
-  if (!validStart) {
-    dayEl.classList.remove("cal-available");
-    dayEl.classList.add("cal-unavailable","cal-no-start");
-  }
+      if (!validStart) {
+        dayEl.classList.remove("cal-available");
+        dayEl.classList.add("cal-unavailable", "cal-no-start");
+      }
 
-  /* ===============================
+      /* ===============================
      🔥 TOUCHSTART PREFETCH (NEW)
   =============================== */
 
-  dayEl.addEventListener("touchstart", () => {
+      dayEl.addEventListener(
+        "touchstart",
+        () => {
+          if (IS_RESETTING) return;
 
-    if (IS_RESETTING) return;
+          const dateStr = dayEl.dataset.date;
+          if (!dateStr) return;
 
-    const dateStr = dayEl.dataset.date;
-    if (!dateStr) return;
+          // Prefetch this date + next 2 days
+          prefetchAvailabilityWindow(dateStr);
+          prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+          prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 2));
+        },
+        { passive: true },
+      );
 
-    // Prefetch this date + next 2 days
-    prefetchAvailabilityWindow(dateStr);
-    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
-    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 2));
-
-  }, { passive: true });
-
-  /* ===============================
+      /* ===============================
      PREVIEW + HOVER PREFETCH
   =============================== */
 
-   dayEl.addEventListener("mouseenter", (e) => {
+      dayEl.addEventListener("mouseenter", (e) => {
+        if (IS_RESETTING) return;
 
-    if (IS_RESETTING) return;
+        const dateStr = dayEl.dataset.date;
 
-    const dateStr = dayEl.dataset.date;
+        if (dateStr) {
+          prefetchAvailabilityWindow(dateStr);
+        }
 
-    if (dateStr) {
-      prefetchAvailabilityWindow(dateStr);
-    }
+        clearTimeout(hoverPreviewTimer);
 
-    clearTimeout(hoverPreviewTimer);
+        hoverPreviewTimer = setTimeout(() => {
+          clearPreview();
+          previewRental(dayDate);
+          showVehiclePreview(dayDate, e);
+        }, 60);
+      });
 
-    hoverPreviewTimer = setTimeout(() => {
-      clearPreview();
-      previewRental(dayDate);
-      showVehiclePreview(dayDate, e);
-    }, 60);
+      if (!isMobile()) {
+        dayEl.addEventListener("mousemove", movePreview);
+      }
 
-  });
+      dayEl.addEventListener("mouseleave", () => {
+        clearTimeout(hoverPreviewTimer);
+        clearPreview();
+      });
 
-  if (!isMobile()) {
-    dayEl.addEventListener("mousemove", movePreview);
-  }
-
-  dayEl.addEventListener("mouseleave", () => {
-    clearTimeout(hoverPreviewTimer);
-    clearPreview();
-  });
-
-  /* ===============================
+      /* ===============================
      SINGLE DAY SELECTION HANDLER
   =============================== */
 
-  if (validStart || PRESELECTED_VEHICLE) {
+      if (validStart || PRESELECTED_VEHICLE) {
+        let selecting = false;
 
-    let selecting = false;
+        const handleDaySelect = async (e) => {
+          // 🔥 HARD GUARDS (VERY IMPORTANT)
+          if (selecting) return;
+          if (IS_RESETTING) return;
+          if (calGrid.dataset.rendering === "true") return;
+          if (calWrap.dataset.rendering === "true") return; // 👈 ADD HERE
 
-    const handleDaySelect = async (e) => {
+          selecting = true;
 
-  // 🔥 HARD GUARDS (VERY IMPORTANT)
-  if (selecting) return;
-  if (IS_RESETTING) return;
-  if (calGrid.dataset.rendering === "true") return;
-  if (calWrap.dataset.rendering === "true") return; // 👈 ADD HERE
+          try {
+            const dateStr = dayEl.dataset.date;
+            if (!dateStr) return;
 
-  selecting = true;
+            prefetchAvailabilityWindow(dateStr);
+            prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
 
-  try {
-    const dateStr = dayEl.dataset.date;
-    if (!dateStr) return;
+            clearPreview();
 
-    prefetchAvailabilityWindow(dateStr);
-    prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
+            await selectDate(dateStr);
 
-    clearPreview();
+            if (isMobile()) {
+              previewRental(dayDate);
+              await showVehiclePreview(dayDate, e);
+            }
+          } finally {
+            selecting = false;
+          }
+        };
 
-    await selectDate(dateStr);
+        dayEl.addEventListener("click", handleDaySelect);
+      }
 
-    if (isMobile()) {
-      previewRental(dayDate);
-      await showVehiclePreview(dayDate, e);
+      fragment.appendChild(dayEl);
     }
 
-  } finally {
-    selecting = false;
-  }
-};
-
-    dayEl.addEventListener("click", handleDaySelect);
-  }
-
-  fragment.appendChild(dayEl);
-}
-
-/* ===============================
+    /* ===============================
    UNLOCK
 =============================== */
 
-calGrid.appendChild(fragment);
+    calGrid.appendChild(fragment);
 
-restoreSelectedDate();
-}
-/* ======================================================
+    restoreSelectedDate();
+  }
+  /* ======================================================
    Select date
 ====================================================== */
 
-async function selectDate(dateStr) {
-
-  /* ===============================
+  async function selectDate(dateStr) {
+    /* ===============================
      🔥 BLOCK DURING RESET (CRITICAL)
   =============================== */
 
-  if (IS_RESETTING) {
-    console.log("⛔ blocked during reset");
-    return;
-  }
+    if (IS_RESETTING) {
+      console.log("⛔ blocked during reset");
+      return;
+    }
 
-  const warningBox = document.getElementById("preselected-warning");
-  if (warningBox) {
-    warningBox.innerHTML = "";
-    warningBox.style.display = "none";
-  }
+    const warningBox = document.getElementById("preselected-warning");
+    if (warningBox) {
+      warningBox.innerHTML = "";
+      warningBox.style.display = "none";
+    }
 
-  BLOCK_AUTO_SCROLL = false;
+    BLOCK_AUTO_SCROLL = false;
 
-  const pickupInput = document.getElementById("pickup-date");
-  const durationInput = document.getElementById("duration-days");
-  const pickupTimeInput = document.getElementById("pickup-time");
+    const pickupInput = document.getElementById("pickup-date");
+    const durationInput = document.getElementById("duration-days");
+    const pickupTimeInput = document.getElementById("pickup-time");
 
-  if (!pickupInput || !durationInput || !dateStr) return;
+    if (!pickupInput || !durationInput || !dateStr) return;
 
-  /* ===============================
+    /* ===============================
      🔥 PREVENT GHOST RE-SELECTION
   =============================== */
 
-if (
-  window.SELECTED_DATE === dateStr &&
-  pickupInput.value === dateStr &&
-  !PRESELECTED_VEHICLE
-) {
-  console.log("⛔ Same date already selected — skip");
-  return;
-}
+    if (
+      window.SELECTED_DATE === dateStr &&
+      pickupInput.value === dateStr &&
+      !PRESELECTED_VEHICLE
+    ) {
+      console.log("⛔ Same date already selected — skip");
+      return;
+    }
     pickupInput.value = dateStr;
-  window.SELECTED_DATE = dateStr;
+    window.SELECTED_DATE = dateStr;
 
-  resetAvailabilityAutoSubmitState();
-  window.__lastDurationCheck = "";
+    resetAvailabilityAutoSubmitState();
+    window.__lastDurationCheck = "";
 
-  const dayDate = new Date(`${dateStr}T12:00:00`);
+    const dayDate = new Date(`${dateStr}T12:00:00`);
 
     /* ===============================
      RESET STATE EARLY
   =============================== */
 
-  selectedAvailability = null;
+    selectedAvailability = null;
 
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "";
-  }
+    if (availabilityResults) {
+      availabilityResults.innerHTML = "";
+    }
 
-  if (!LOCKED_VEHICLE) {
-    if (selectedLorryInput) selectedLorryInput.value = "";
-  }
+    if (!LOCKED_VEHICLE) {
+      if (selectedLorryInput) selectedLorryInput.value = "";
+    }
 
-  if (selectedBaseInput) selectedBaseInput.value = "";
+    if (selectedBaseInput) selectedBaseInput.value = "";
 
-  if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
+    if (bookingSubmitBtn) bookingSubmitBtn.disabled = true;
 
-  durationInput.value = "";
+    durationInput.value = "";
 
-  if (pickupTimeInput) {
-    pickupTimeInput.value = "";
-  }
+    if (pickupTimeInput) {
+      pickupTimeInput.value = "";
+    }
 
-  updateCheckoutSummary();
+    updateCheckoutSummary();
 
-  /* ===============================
+    /* ===============================
      PRESELECTED LORRY CHECK
   =============================== */
 
-  if (PRESELECTED_VEHICLE) {
+    if (PRESELECTED_VEHICLE) {
+      const bookings = BOOKINGS_CACHE || (await getBookings(false));
 
-    const bookings = BOOKINGS_CACHE || await getBookings(false);
+      const vehicleBookings = bookings.filter(
+        (b) => b.vehicleId === PRESELECTED_VEHICLE && b.status !== "cancelled",
+      );
 
-    const vehicleBookings = bookings.filter(
-      b => b.vehicleId === PRESELECTED_VEHICLE && b.status !== "cancelled"
-    );
+      const dayStart = new Date(dayDate);
+      dayStart.setHours(0, 0, 0, 0);
 
-    const dayStart = new Date(dayDate);
-    dayStart.setHours(0,0,0,0);
+      const dayEnd = new Date(dayDate);
+      dayEnd.setHours(23, 59, 59, 999);
 
-    const dayEnd = new Date(dayDate);
-    dayEnd.setHours(23,59,59,999);
+      let morningBlocked = false;
+      let afternoonBlocked = false;
 
-    let morningBlocked = false;
-    let afternoonBlocked = false;
+      vehicleBookings.forEach((b) => {
+        const start = new Date(b.pickupAt);
+        const end = new Date(b.dropoffAt);
 
-    vehicleBookings.forEach(b => {
-      const start = new Date(b.pickupAt);
-      const end = new Date(b.dropoffAt);
+        if (start <= dayEnd && end >= dayStart) {
+          const startHour = getLondonHour(start);
+          const endHour = getLondonHour(end);
 
-      if (start <= dayEnd && end >= dayStart) {
-        const startHour = getLondonHour(start);
-        const endHour = getLondonHour(end);
-
-        if (Number(b.durationDays) === 0.5) {
-          if (b.pickupTime === "07:00") morningBlocked = true;
-          if (b.pickupTime === "13:00") afternoonBlocked = true;
-        } else {
-          if (startHour < 13) morningBlocked = true;
-          if (endHour > 13) afternoonBlocked = true;
+          if (Number(b.durationDays) === 0.5) {
+            if (b.pickupTime === "07:00") morningBlocked = true;
+            if (b.pickupTime === "13:00") afternoonBlocked = true;
+          } else {
+            if (startHour < 13) morningBlocked = true;
+            if (endHour > 13) afternoonBlocked = true;
+          }
         }
-      }
-    });
+      });
 
-    const isBlocked = morningBlocked && afternoonBlocked;
+      const isBlocked = morningBlocked && afternoonBlocked;
 
-    if (isBlocked && warningBox) {
+      if (isBlocked && warningBox) {
+        BLOCK_AUTO_SCROLL = true;
 
-      BLOCK_AUTO_SCROLL = true;
+        const vehicle = vehicles.find((v) => v.id === PRESELECTED_VEHICLE);
 
-      const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
-
-      warningBox.innerHTML = `
+        warningBox.innerHTML = `
         <div class="availability-warning">
           Sorry, <strong>${escapeHtml(vehicle?.name)}</strong>
           is not available on this date.
@@ -7234,383 +6959,351 @@ if (
         </div>
       `;
 
-      warningBox.style.display = "block";
+        warningBox.style.display = "block";
 
-      goToStep(1);
+        goToStep(1);
 
-      setTimeout(() => {
-        warningBox.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
-      }, 60);
+        setTimeout(() => {
+          warningBox.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 60);
 
-      warningBox.querySelector(".change-date-btn")?.addEventListener("click", () => {
-        BLOCK_AUTO_SCROLL = false;
-        LOCKED_VEHICLE = true;
+        warningBox
+          .querySelector(".change-date-btn")
+          ?.addEventListener("click", () => {
+            BLOCK_AUTO_SCROLL = false;
+            LOCKED_VEHICLE = true;
 
-        document.getElementById("availability-calendar")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      });
+            document.getElementById("availability-calendar")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          });
 
-      warningBox.querySelector(".change-lorry-btn")?.addEventListener("click", () => {
-        BLOCK_AUTO_SCROLL = false;
-        LOCKED_VEHICLE = false;
-        PRESELECTED_VEHICLE = null;
+        warningBox
+          .querySelector(".change-lorry-btn")
+          ?.addEventListener("click", () => {
+            BLOCK_AUTO_SCROLL = false;
+            LOCKED_VEHICLE = false;
+            PRESELECTED_VEHICLE = null;
 
-        goToStep(2);
-      });
+            goToStep(2);
+          });
 
-      return;
+        return;
+      }
     }
-  }
 
-  await updateDurationOptions(dateStr);
-  // 🔥 prevent duplicate chain triggers
-window.__lastDurationCheck = null;
-  await syncPickupTimeOptions(dateStr);
+    await updateDurationOptions(dateStr);
+    // 🔥 prevent duplicate chain triggers
+    window.__lastDurationCheck = null;
+    await syncPickupTimeOptions(dateStr);
 
- // ===============================
-// 🔥 PREDICTIVE PREFETCH (UPGRADED)
-// ===============================
+    // ===============================
+    // 🔥 PREDICTIVE PREFETCH (UPGRADED)
+    // ===============================
 
-prefetchAvailabilityWindow(dateStr);
+    prefetchAvailabilityWindow(dateStr);
 
-for (let i = 1; i <= 3; i++) {
-  prefetchAvailabilityWindow(addDaysToDateStr(dateStr, i));
-}
-  /* ===============================
+    for (let i = 1; i <= 3; i++) {
+      prefetchAvailabilityWindow(addDaysToDateStr(dateStr, i));
+    }
+    /* ===============================
      AUTO PICKUP TIME
   =============================== */
 
-  if (Number(durationInput.value) === 0.5) {
+    if (Number(durationInput.value) === 0.5) {
+      const { morningAvailable, afternoonAvailable } =
+        await getRemainingHalfDaySlots(dateStr);
 
-    const { morningAvailable, afternoonAvailable } =
-      await getRemainingHalfDaySlots(dateStr);
-
-    if (morningAvailable && !afternoonAvailable) {
-      pickupTimeInput.value = "07:00";
-    } else if (!morningAvailable && afternoonAvailable) {
-      pickupTimeInput.value = "13:00";
+      if (morningAvailable && !afternoonAvailable) {
+        pickupTimeInput.value = "07:00";
+      } else if (!morningAvailable && afternoonAvailable) {
+        pickupTimeInput.value = "13:00";
+      }
     }
-  }
 
-  /* ===============================
+    /* ===============================
      VEHICLE LOCK RULES
   =============================== */
 
-  if (LOCKED_VEHICLE && PRESELECTED_VEHICLE) {
-    const vehicle = vehicles.find(v => v.id === PRESELECTED_VEHICLE);
+    if (LOCKED_VEHICLE && PRESELECTED_VEHICLE) {
+      const vehicle = vehicles.find((v) => v.id === PRESELECTED_VEHICLE);
 
-    updateDurationOptionsForVehicle(vehicle);
-    enforceVehicleDurationRules(vehicle);
-  }
+      updateDurationOptionsForVehicle(vehicle);
+      enforceVehicleDurationRules(vehicle);
+    }
 
-
-  /* ===============================
+    /* ===============================
      🔥 CALENDAR HIGHLIGHT (SAFE)
   =============================== */
 
-document.querySelectorAll(".cal-day.cal-selected")
-  .forEach(el => el.classList.remove("cal-selected"));
-
-document.querySelectorAll(".cal-day").forEach(el => {
-  if (el.dataset.date === dateStr) {
-    el.classList.add("cal-selected");
-  }
-});
-
-  /* ===============================
-     SCROLL
-  =============================== */
-
-  setTimeout(() => {
-
-    if (BLOCK_AUTO_SCROLL) return;
-
-    if (!isMobile()) {
-
-      const y =
-        durationInput.getBoundingClientRect().top +
-        window.pageYOffset -
-        120;
-
-      window.scrollTo({
-        top: y,
-        behavior: "smooth"
-      });
-    }
-
-    durationInput.classList.add("duration-highlight");
-
-    durationInput.addEventListener("change", () => {
-      durationInput.classList.remove("duration-highlight");
-    }, { once: true });
-
-  }, 200);
-}
-
-
-
-/* 🔥 expose globally */
-window.updateDurationOptions = updateDurationOptions;
-
-function onCalendarDayClick(date){
-
-  pickupDateInput.value = date;
-
-  updateCheckoutSummary();
-
-  const durationGroup = document.getElementById("duration-group");
-
-  if(durationGroup){
-    durationGroup.scrollIntoView({
-      behavior:"smooth",
-      block:"center"
-    });
-  }
-
-}
-
-/* ======================================================
-   Month Navigation
-====================================================== */
-
-async function changeMonth(direction) {
-
-  if (calendarNavLock) return;
-  calendarNavLock = true;
-
-  try {
-    const nextDate = new Date(currentDate);
-    nextDate.setMonth(nextDate.getMonth() + direction);
-
-    window.__calendarState.currentDate = nextDate; // ✅ USE SETTER
-
-    await renderCalendar();
-
-  } finally {
-    calendarNavLock = false;
-  }
-}
-
-calWrap.addEventListener("click", (e) => {
-
-  const nav = e.target.closest("[data-cal-nav]");
-  if (!nav) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  const direction = nav.dataset.calNav === "next" ? 1 : -1;
-  changeMonth(direction);
-
-});
-
-/* ======================================================
-   Live Booking Updates
-====================================================== */
-
-
-async function watchBookingUpdates() {
-
-  // 🚫 prevent overlapping calls
-  if (BOOKING_WATCH_IN_PROGRESS) return;
-
-  BOOKING_WATCH_IN_PROGRESS = true;
-
-  try {
-
-    const controller = new AbortController();
-
-    // ⏱ timeout safety (5s)
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    const res = await fetch(`${BACKEND_API_BASE}/api/bookings/version`, {
-      signal: controller.signal
-    });
-
-    clearTimeout(timeout);
-
-    if (!res.ok) {
-      console.warn("Booking watcher HTTP error:", res.status);
-      return;
-    }
-
-    let data;
-
-    try {
-      data = await res.json();
-    } catch {
-      console.warn("Booking watcher JSON parse failed");
-      return;
-    }
-
-    if (!data?.version) return;
-
-    // 🧠 first run → just store
-    if (BOOKINGS_VERSION === null) {
-      BOOKINGS_VERSION = data.version;
-      return;
-    }
-
-    // ⚡ no change → do nothing
-    if (data.version === BOOKINGS_VERSION) return;
-
-    console.log("🔄 New booking detected → refreshing UI");
-
-    BOOKINGS_VERSION = data.version;
-
-    // 🔥 clear cache
-    BOOKINGS_CACHE = null;
-
-    // 🔁 refetch bookings (deduped)
-    await getBookings(true);
-
-    // 🎯 render once (clean)
-    renderBookings?.();
-    renderAdminBookings?.();
-    renderCalendar?.();
-
-  } catch (err) {
-
-    if (err.name === "AbortError") {
-      console.warn("Booking watcher timeout");
-    } else {
-      console.warn("Booking watcher failed:", err);
-    }
-
-  } finally {
-
-    BOOKING_WATCH_IN_PROGRESS = false;
-
-  }
-
-}
-
-
-
-function renderAvailabilityDots(dayEl, bookings, dayDate) {
-
-  const wrap = document.createElement("div");
-  wrap.className = "cal-lines";
-
-  vehicles.forEach(vehicle => {
-
-    const line = document.createElement("div");
-    line.className = "cal-line";
-
-    const dayStart = new Date(dayDate);
-    dayStart.setHours(0, 0, 0, 0);
-
-    const dayEnd = new Date(dayDate);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const vehicleBookings = bookings.filter(b => {
-      if (b.vehicleId !== vehicle.id) return false;
-      if (b.status === "cancelled") return false;
-
-      const start = new Date(b.pickupAt);
-      const end = new Date(b.dropoffAt);
-
-      return start <= dayEnd && end >= dayStart;
-    });
-
-    let hasMorning = false;
-    let hasAfternoon = false;
-    let hasFullDay = false;
-
-    vehicleBookings.forEach(b => {
-      const start = new Date(b.pickupAt);
-      const end = new Date(b.dropoffAt);
-
-      const sameDay =
-        start.getFullYear() === dayDate.getFullYear() &&
-        start.getMonth() === dayDate.getMonth() &&
-        start.getDate() === dayDate.getDate() &&
-        end.getFullYear() === dayDate.getFullYear() &&
-        end.getMonth() === dayDate.getMonth() &&
-        end.getDate() === dayDate.getDate();
-
-      const startHour = getLondonParts(start).hour;
-      const endHour = getLondonParts(end).hour;
-
-      if (sameDay && startHour === 7 && endHour === 13) {
-        hasMorning = true;
-      } else if (sameDay && startHour === 13 && endHour === 19) {
-        hasAfternoon = true;
-      } else {
-        hasFullDay = true;
+    document
+      .querySelectorAll(".cal-day.cal-selected")
+      .forEach((el) => el.classList.remove("cal-selected"));
+
+    document.querySelectorAll(".cal-day").forEach((el) => {
+      if (el.dataset.date === dateStr) {
+        el.classList.add("cal-selected");
       }
     });
 
- if (hasMorning && hasAfternoon) {
-  line.classList.add("booked-am", "booked-pm");
-}
-else if (hasMorning) {
-  line.classList.add("booked-am");
-}
-else if (hasAfternoon) {
-  line.classList.add("booked-pm");
-}
-else if (hasFullDay) {
-  line.classList.add("booked-full");
-}
+    /* ===============================
+     SCROLL
+  =============================== */
 
-    wrap.appendChild(line);
+    setTimeout(() => {
+      if (BLOCK_AUTO_SCROLL) return;
 
+      if (!isMobile()) {
+        const y =
+          durationInput.getBoundingClientRect().top + window.pageYOffset - 120;
+
+        window.scrollTo({
+          top: y,
+          behavior: "smooth",
+        });
+      }
+
+      durationInput.classList.add("duration-highlight");
+
+      durationInput.addEventListener(
+        "change",
+        () => {
+          durationInput.classList.remove("duration-highlight");
+        },
+        { once: true },
+      );
+    }, 200);
+  }
+
+  /* 🔥 expose globally */
+  window.updateDurationOptions = updateDurationOptions;
+
+  function onCalendarDayClick(date) {
+    pickupDateInput.value = date;
+
+    updateCheckoutSummary();
+
+    const durationGroup = document.getElementById("duration-group");
+
+    if (durationGroup) {
+      durationGroup.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }
+
+  /* ======================================================
+   Month Navigation
+====================================================== */
+
+  async function changeMonth(direction) {
+    if (calendarNavLock) return;
+    calendarNavLock = true;
+
+    try {
+      const nextDate = new Date(currentDate);
+      nextDate.setMonth(nextDate.getMonth() + direction);
+
+      window.__calendarState.currentDate = nextDate; // ✅ USE SETTER
+
+      await renderCalendar();
+    } finally {
+      calendarNavLock = false;
+    }
+  }
+
+  calWrap.addEventListener("click", (e) => {
+    const nav = e.target.closest("[data-cal-nav]");
+    if (!nav) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const direction = nav.dataset.calNav === "next" ? 1 : -1;
+    changeMonth(direction);
   });
 
-  dayEl.appendChild(wrap);
+  /* ======================================================
+   Live Booking Updates
+====================================================== */
 
-}
+  async function watchBookingUpdates() {
+    // 🚫 prevent overlapping calls
+    if (BOOKING_WATCH_IN_PROGRESS) return;
 
-function restoreSelectedDate() {
+    BOOKING_WATCH_IN_PROGRESS = true;
 
-  if (!window.SELECTED_DATE) return;
+    try {
+      const controller = new AbortController();
 
-  const el = document.querySelector(
-    `.cal-day[data-date="${window.SELECTED_DATE}"]`
-  );
+      // ⏱ timeout safety (5s)
+      const timeout = setTimeout(() => controller.abort(), 5000);
 
-  if (el) {
-    el.classList.add("cal-selected");
+      const res = await fetch(`${BACKEND_API_BASE}/api/bookings/version`, {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        console.warn("Booking watcher HTTP error:", res.status);
+        return;
+      }
+
+      let data;
+
+      try {
+        data = await res.json();
+      } catch {
+        console.warn("Booking watcher JSON parse failed");
+        return;
+      }
+
+      if (!data?.version) return;
+
+      // 🧠 first run → just store
+      if (BOOKINGS_VERSION === null) {
+        BOOKINGS_VERSION = data.version;
+        return;
+      }
+
+      // ⚡ no change → do nothing
+      if (data.version === BOOKINGS_VERSION) return;
+
+      console.log("🔄 New booking detected → refreshing UI");
+
+      BOOKINGS_VERSION = data.version;
+
+      // 🔥 clear cache
+      BOOKINGS_CACHE = null;
+
+      // 🔁 refetch bookings (deduped)
+      await getBookings(true);
+
+      // 🎯 render once (clean)
+      renderBookings?.();
+      renderAdminBookings?.();
+      renderCalendar?.();
+    } catch (err) {
+      if (err.name === "AbortError") {
+        console.warn("Booking watcher timeout");
+      } else {
+        console.warn("Booking watcher failed:", err);
+      }
+    } finally {
+      BOOKING_WATCH_IN_PROGRESS = false;
+    }
   }
-}
 
-/* ======================================================
+  function renderAvailabilityDots(dayEl, bookings, dayDate) {
+    const wrap = document.createElement("div");
+    wrap.className = "cal-lines";
+
+    vehicles.forEach((vehicle) => {
+      const line = document.createElement("div");
+      line.className = "cal-line";
+
+      const dayStart = new Date(dayDate);
+      dayStart.setHours(0, 0, 0, 0);
+
+      const dayEnd = new Date(dayDate);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const vehicleBookings = bookings.filter((b) => {
+        if (b.vehicleId !== vehicle.id) return false;
+        if (b.status === "cancelled") return false;
+
+        const start = new Date(b.pickupAt);
+        const end = new Date(b.dropoffAt);
+
+        return start <= dayEnd && end >= dayStart;
+      });
+
+      let hasMorning = false;
+      let hasAfternoon = false;
+      let hasFullDay = false;
+
+      vehicleBookings.forEach((b) => {
+        const start = new Date(b.pickupAt);
+        const end = new Date(b.dropoffAt);
+
+        const sameDay =
+          start.getFullYear() === dayDate.getFullYear() &&
+          start.getMonth() === dayDate.getMonth() &&
+          start.getDate() === dayDate.getDate() &&
+          end.getFullYear() === dayDate.getFullYear() &&
+          end.getMonth() === dayDate.getMonth() &&
+          end.getDate() === dayDate.getDate();
+
+        const startHour = getLondonParts(start).hour;
+        const endHour = getLondonParts(end).hour;
+
+        if (sameDay && startHour === 7 && endHour === 13) {
+          hasMorning = true;
+        } else if (sameDay && startHour === 13 && endHour === 19) {
+          hasAfternoon = true;
+        } else {
+          hasFullDay = true;
+        }
+      });
+
+      if (hasMorning && hasAfternoon) {
+        line.classList.add("booked-am", "booked-pm");
+      } else if (hasMorning) {
+        line.classList.add("booked-am");
+      } else if (hasAfternoon) {
+        line.classList.add("booked-pm");
+      } else if (hasFullDay) {
+        line.classList.add("booked-full");
+      }
+
+      wrap.appendChild(line);
+    });
+
+    dayEl.appendChild(wrap);
+  }
+
+  function restoreSelectedDate() {
+    if (!window.SELECTED_DATE) return;
+
+    const el = document.querySelector(
+      `.cal-day[data-date="${window.SELECTED_DATE}"]`,
+    );
+
+    if (el) {
+      el.classList.add("cal-selected");
+    }
+  }
+
+  /* ======================================================
    Initial render
 ====================================================== */
 
-renderCalendar();
+  renderCalendar();
 
-const durationInput = document.getElementById("duration-days");
+  const durationInput = document.getElementById("duration-days");
 
-if (durationInput) {
+  if (durationInput) {
+    durationInput.addEventListener("change", () => {
+      renderCalendar();
 
-  durationInput.addEventListener("change", () => {
+      const pickupInput = document.getElementById("pickup-date");
 
-    renderCalendar();
+      /* only run search if date already selected */
 
-    const pickupInput = document.getElementById("pickup-date");
+      if (pickupInput?.value) {
+        // 🔥 USE SAFE SUBMIT (NOT direct submit)
+        maybeAutoSubmitAvailability();
+      }
+    });
+  }
+  //* start live booking watcher */
 
-    /* only run search if date already selected */
-
-    if (pickupInput?.value) {
-
-      // 🔥 USE SAFE SUBMIT (NOT direct submit)
-      maybeAutoSubmitAvailability();
-
-    }
-
-  });
-
-}
-//* start live booking watcher */
-
-watchBookingUpdates(); // run once immediately
-setInterval(watchBookingUpdates, 10000); // every 10 seconds
+  watchBookingUpdates(); // run once immediately
+  setInterval(watchBookingUpdates, 10000); // every 10 seconds
 })();
-
