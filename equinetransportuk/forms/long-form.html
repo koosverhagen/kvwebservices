@@ -1039,6 +1039,24 @@
    SUCCESS CARD
 ========================================== */
 
+        function getPaymentStatus(booking) {
+          if (!booking) return null;
+
+          if (booking.paymentStatus === "fully_paid") {
+            return { text: "Paid in full", color: "#137a3d" };
+          }
+
+          if (booking.paymentStatus === "deposit_paid") {
+            return { text: "Deposit paid", color: "#1f6feb" };
+          }
+
+          if (booking.paymentStatus === "confirmation_paid") {
+            return { text: "Deposit required", color: "#b45309" };
+          }
+
+          return { text: "Payment pending", color: "#b42318" };
+        }
+
         function renderSuccessCard(data) {
           const container = document.getElementById("formSuccess");
           const form = document.getElementById("longForm");
@@ -1435,35 +1453,26 @@ ${
                 `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
               );
 
-              const outBooking = await resBooking.json();
-              if (outBooking?.booking) {
-                booking = outBooking.booking;
+              // ✅ Only parse JSON if response is OK
+              if (resBooking.ok) {
+                const outBooking = await resBooking.json();
+
+                if (outBooking?.booking) {
+                  booking = outBooking.booking;
+                  console.log("✅ booking loaded");
+                } else {
+                  console.log("⚠️ booking not found in response");
+                }
+              } else {
+                // 🔥 Handle 404 / 500 cleanly
+                console.log("⚠️ booking fetch failed:", resBooking.status);
               }
             } catch (e) {
-              console.log("⚠️ booking fetch failed", e);
+              console.log("⚠️ booking fetch error:", e);
             }
-
             /* ===============================
    PAYMENT STATUS FORMATTER
 =============================== */
-
-            function getPaymentStatus(booking) {
-              if (!booking) return null;
-
-              if (booking.paymentStatus === "fully_paid") {
-                return { text: "Paid in full", color: "#137a3d" };
-              }
-
-              if (booking.paymentStatus === "deposit_paid") {
-                return { text: "Deposit paid", color: "#1f6feb" };
-              }
-
-              if (booking.paymentStatus === "confirmation_paid") {
-                return { text: "Deposit required", color: "#b45309" };
-              }
-
-              return { text: "Payment pending", color: "#b42318" };
-            }
 
             // render with enriched data
             renderSuccessCard({
