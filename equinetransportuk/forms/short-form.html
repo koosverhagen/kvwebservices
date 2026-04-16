@@ -289,7 +289,7 @@
 
   <body>
     <div class="wrap">
-      <div class="header-card">
+      <div class="header-card" id="formHeader">
         <h1 class="brand-title">
           Millens Self Drive Hire Horsebox Insurance Proposal
           <span style="opacity: 0.7">Short Form</span>
@@ -545,10 +545,12 @@
       function renderSuccessCard(data) {
         const container = document.getElementById("formSuccess");
         const form = document.getElementById("shortForm");
+        const header = document.getElementById("formHeader");
 
         if (!container || !form) return;
 
         form.style.display = "none";
+        if (header) header.style.display = "none";
         container.style.display = "block";
 
         const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
