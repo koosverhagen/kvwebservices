@@ -2058,7 +2058,7 @@ async function handleStripeWebhook(request, env) {
           ? `${SITE_BASE}/forms/short-form.html`
           : `${SITE_BASE}/forms/long-form.html`;
 
-      const formLink = `${formBase}?bookingId=${encodeURIComponent(bookingId)}`;
+      const formLink = `${formBase}?bookingId=${encodeURIComponent(bookingId)}&vehicleName=${encodeURIComponent(booking.vehicleSnapshot?.name || "")}`;
 
       booking.requiredFormType = requiredFormType;
       booking.requiredFormLink = formLink;
