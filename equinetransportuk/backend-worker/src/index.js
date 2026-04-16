@@ -1360,14 +1360,14 @@ async function handleStripeWebhook(request, env) {
 
   let event;
 
-  console.log("📩 STRIPE EVENT TYPE:", event?.type);
-
   try {
     event = await stripe.webhooks.constructEventAsync(
       payload,
       sig,
       env.STRIPE_WEBHOOK_SECRET,
     );
+
+    console.log("📩 STRIPE EVENT TYPE:", event?.type);
   } catch (err) {
     console.log("❌ Webhook verification failed:", err.message);
     return new Response(
@@ -3877,6 +3877,7 @@ async function handleFormSubmit(request, env) {
       bookingId,
       formType,
       formId,
+      booking, // ✅ ADD THIS
     });
   } catch (err) {
     console.error("❌ FORM ERROR:", err);
