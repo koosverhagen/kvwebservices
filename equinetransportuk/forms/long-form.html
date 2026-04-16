@@ -528,13 +528,17 @@
 
           <div class="divider"></div>
 
-          <div>
-            <label for="overnightParking"
-              >Overnight Parking Arrangement (if hiring more than one
-              day)</label
-            >
+          <div id="overnightParkingWrap">
+            <label for="overnightParking">
+              Overnight Parking Arrangement
+              <span style="font-weight: 400; color: #6b7280"
+                >(if applicable)</span
+              >
+            </label>
+
             <select id="overnightParking" name="overnightParking" required>
               <option value="" selected disabled>Select an option</option>
+              <option value="na">Not applicable (same day hire)</option>
               <option value="third_party_yard">A third party yard</option>
               <option value="own_premises">Your own premises</option>
               <option value="on_road">Parking on the road</option>
@@ -940,283 +944,615 @@
     <!-- ONLY SHOWING UPDATED SCRIPT BLOCK (everything else stays the same) -->
 
     <script>
-      /* ==========================================
+      document.addEventListener("DOMContentLoaded", () => {
+        /* ==========================================
    BOOKING ID + DEFAULT DATE
 ========================================== */
 
-      const params = new URLSearchParams(location.search);
-      const bookingId =
-        params.get("bookingId") || params.get("bookingID") || "";
+        const params = new URLSearchParams(location.search);
+        const bookingId =
+          params.get("bookingId") || params.get("bookingID") || "";
 
-      document.getElementById("bookingIdPill").textContent = bookingId || "—";
+        document.getElementById("bookingIdPill").textContent = bookingId || "—";
 
-      const today = new Date().toISOString().slice(0, 10);
-      document.getElementById("signedDate").value = today;
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById("signedDate").value = today;
 
-      /* ==========================================
-   DVLA AUTO CLEAN (REMOVE SPACES)
-========================================== */
+        /* ===============================
+   OVERNIGHT PARKING (DYNAMIC)
+=============================== */
 
-      const dvlaInput = document.getElementById("dvlaCheckCode");
+        const hireFromDate = document.getElementById("hireFromDate");
+        const hireUntilDate = document.getElementById("hireUntilDate");
+        const overnightWrap = document.getElementById("overnightParkingWrap");
+        const overnightSelect = document.getElementById("overnightParking");
 
-      if (dvlaInput) {
-        dvlaInput.addEventListener("input", (e) => {
-          let value = e.target.value;
-
-          // remove ALL spaces
-          value = value.replace(/\s+/g, "");
-
-          // max 8 chars
-          if (value.length > 8) {
-            value = value.slice(0, 8);
+        function updateOvernightVisibility() {
+          if (!hireFromDate?.value || !hireUntilDate?.value) {
+            // not enough data → show field
+            overnightWrap.style.display = "block";
+            overnightSelect.required = true;
+            return;
           }
 
-          e.target.value = value;
-        });
-      }
+          const from = new Date(hireFromDate.value);
+          const until = new Date(hireUntilDate.value);
 
-      /* ==========================================
+          const diffDays = (until - from) / (1000 * 60 * 60 * 24);
+
+          if (diffDays < 1) {
+            // 🔥 SAME DAY → HIDE
+            overnightWrap.style.display = "none";
+            overnightSelect.required = false;
+            overnightSelect.value = "na";
+          } else {
+            // 🔥 MULTI DAY → SHOW
+            overnightWrap.style.display = "block";
+            overnightSelect.required = true;
+
+            // reset if previously auto-set
+            if (overnightSelect.value === "na") {
+              overnightSelect.value = "";
+            }
+          }
+        }
+
+        // listen for changes
+        hireFromDate?.addEventListener("change", updateOvernightVisibility);
+        hireUntilDate?.addEventListener("change", updateOvernightVisibility);
+
+        // run once on load (important for prefilled data)
+        updateOvernightVisibility();
+
+        /* ===============================
+   DVLA AUTO CLEAN (FINAL FIX)
+=============================== */
+
+        const dvlaInput = document.getElementById("dvlaCheckCode");
+
+        function cleanDVLA(value) {
+          return value.replace(/\s+/g, "").slice(0, 8);
+        }
+
+        if (dvlaInput) {
+          dvlaInput.addEventListener("input", (e) => {
+            e.target.value = cleanDVLA(e.target.value);
+          });
+
+          dvlaInput.addEventListener("paste", (e) => {
+            setTimeout(() => {
+              dvlaInput.value = cleanDVLA(dvlaInput.value);
+            }, 0);
+          });
+
+          // 🔥 critical for iOS autofill
+          dvlaInput.addEventListener("change", () => {
+            dvlaInput.value = cleanDVLA(dvlaInput.value);
+          });
+
+          dvlaInput.addEventListener("blur", () => {
+            dvlaInput.value = cleanDVLA(dvlaInput.value);
+          });
+        }
+
+        /* ==========================================
    SUCCESS CARD
 ========================================== */
 
-      function renderSuccessCard(data) {
-        const container = document.getElementById("formSuccess");
-        const form = document.getElementById("longForm");
-        const header = document.getElementById("formHeader");
+        function renderSuccessCard(data) {
+          const container = document.getElementById("formSuccess");
+          const form = document.getElementById("longForm");
+          const header = document.getElementById("formHeader");
 
-        if (!container || !form) return;
+          if (!container || !form) return;
 
-        form.style.display = "none";
-        if (header) header.style.display = "none";
+          form.style.display = "none";
+          if (header) header.style.display = "none";
 
-        container.style.display = "block";
+          container.style.display = "block";
 
-        const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
+          const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
+          const vehicle =
+            data.booking?.vehicleSnapshot?.name || data.vehicleName || "—";
+          const payment = getPaymentStatus(data.booking);
+          const calendarLink = createCalendarLink(data.booking);
+          container.innerHTML = `
+  <div style="
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:22px;
+    padding:26px 22px;
+    box-shadow:0 30px 70px rgba(15,23,42,.12);
+    text-align:center;
+    animation:fadeIn .4s ease;
+  ">
 
-        container.innerHTML = `
-    <div style="
-      background:#fff;
-      border:1px solid #e5e7eb;
-      border-radius:20px;
-      padding:22px;
-      box-shadow:0 20px 50px rgba(15,23,42,.12);
-      text-align:center;
-    ">
+    <div style="font-size:44px;margin-bottom:10px;">✅</div>
 
-      <div style="font-size:42px;margin-bottom:10px;">✅</div>
+    <h2 style="margin:0 0 6px;font-size:22px;">
+      Form submitted successfully
+    </h2>
 
-      <h2 style="margin:0 0 8px;font-size:20px;">
-        Form submitted successfully
-      </h2>
+    <p style="margin:0 0 20px;color:#6b7280;font-size:14px;">
+      Thank you ${name || ""}. Your details have been received.
+    </p>
 
-      <p style="margin:0 0 16px;color:#6b7280;font-size:14px;">
-        Thank you ${name || ""}. Your details have been received.
-      </p>
+   <!-- BOOKING SUMMARY -->
+<div style="
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:18px;
+  text-align:left;
+">
+
+  <!-- Booking ID -->
+  <div style="margin-bottom:12px;">
+    <div style="font-size:12px;color:#6b7280;">🆔 Booking ID</div>
+    <div style="font-weight:700;">
+      ${data.booking?.id || data.bookingId || bookingId}
+    </div>
+  </div>
+
+  <!-- Vehicle (backend first) -->
+  <div style="margin-bottom:12px;">
+    <div style="font-size:12px;color:#6b7280;">🚚 Vehicle</div>
+    <div style="font-weight:600;">
+      ${data.booking?.vehicleSnapshot?.name || data.vehicleName || "—"}
+    </div>
+  </div>
+
+  <!-- Hire From -->
+  <div style="margin-bottom:12px;">
+    <div style="font-size:12px;color:#6b7280;">📅 Hire From</div>
+    <div style="font-weight:600;">
+      ${formatDateTime(data.hireFrom || data.booking?.pickupAt)}
+    </div>
+  </div>
+
+  <!-- Hire Until -->
+  <div style="margin-bottom:12px;">
+    <div style="font-size:12px;color:#6b7280;">📅 Hire Until</div>
+    <div style="font-weight:600;">
+      ${formatDateTime(data.hireUntil || data.booking?.dropoffAt)}
+    </div>
+  </div>
+
+ <!-- Payment Section -->
+${
+  data.booking
+    ? `
+  <div style="
+    margin-top:14px;
+    padding-top:12px;
+    border-top:1px dashed #e5e7eb;
+  ">
+
+    <!-- Deposit -->
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;color:#6b7280;">💳 Deposit</div>
 
       <div style="
-        background:#f8fafc;
-        border:1px solid #e5e7eb;
-        border-radius:14px;
-        padding:14px;
-        margin-bottom:18px;
-        text-align:left;
+        font-weight:700;
+        color:${
+          data.booking.paymentStatus === "deposit_paid" ||
+          data.booking.paymentStatus === "fully_paid"
+            ? "#137a3d"
+            : "#b45309"
+        };
       ">
+        ${
+          data.booking.paymentStatus === "deposit_paid" ||
+          data.booking.paymentStatus === "fully_paid"
+            ? "Paid"
+            : "Required"
+        }
+        ${
+          data.booking.depositAmount
+            ? ` • ${formatGBP(data.booking.depositAmount)}`
+            : ""
+        }
+      </div>
 
-        <div style="margin-bottom:6px;">
-          <strong>Booking ID:</strong><br>
-          ${data.bookingId}
+      ${
+        data.booking.paymentStatus !== "deposit_paid" &&
+        data.booking.paymentStatus !== "fully_paid"
+          ? `
+      <div style="margin-top:6px;font-size:12px;color:#6b7280;">
+        Payment link has been sent in your confirmation email.
+      </div>
+      `
+          : ""
+      }
+    </div>
+
+    <!-- Outstanding -->
+    <div>
+      <div style="font-size:12px;color:#6b7280;">💰 Outstanding</div>
+
+      <div style="
+        font-weight:700;
+        color:${
+          data.booking.paymentStatus === "fully_paid" ? "#137a3d" : "#b42318"
+        };
+      ">
+        ${data.booking.paymentStatus === "fully_paid" ? "Paid" : "Remaining"}
+        ${
+          data.booking.outstandingAmount
+            ? ` • ${formatGBP(data.booking.outstandingAmount)}`
+            : data.booking.hireTotal
+              ? ` • ${formatGBP(data.booking.hireTotal)}`
+              : ""
+        }
+      </div>
+
+      ${
+        data.booking.paymentStatus !== "fully_paid"
+          ? `
+      <div style="margin-top:6px;font-size:12px;color:#6b7280;">
+        Payment link has been sent in your confirmation email.
+      </div>
+      `
+          : ""
+      }
+    </div>
+
+  </div>
+  `
+    : ""
+}
+    <!-- WHAT HAPPENS NEXT -->
+    <div style="
+      text-align:left;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:20px;
+    ">
+
+      <div style="
+        font-weight:700;
+        margin-bottom:10px;
+        font-size:14px;
+      ">
+        What happens next
+      </div>
+
+      <div style="font-size:13px;color:#374151;line-height:1.5;">
+
+        <div style="margin-bottom:8px;">
+          ✅ Your form has been securely saved
         </div>
 
-        <div style="margin-bottom:6px;">
-          <strong>Hire From:</strong><br>
-          ${data.hireFrom || "—"}
+        <div style="margin-bottom:8px;">
+          📧 You will receive a confirmation email shortly
+        </div>
+
+        <div style="margin-bottom:8px;">
+          🔐 If required, complete your deposit before collection
         </div>
 
         <div>
-          <strong>Hire Until:</strong><br>
-          ${data.hireUntil || "—"}
+          🚚 Your vehicle will be prepared for your hire date
         </div>
 
       </div>
 
-      <a href="/equinetransportuk/index.html" class="btn primary full">
-        Back to Homepage
-      </a>
-
     </div>
-  `;
-      }
 
-      /* ==========================================
+    <a href="/equinetransportuk/index.html" style="
+      display:inline-block;
+      width:100%;
+      background:#1f6feb;
+      color:#fff;
+      text-decoration:none;
+      padding:14px;
+      border-radius:14px;
+      font-weight:700;
+      font-size:16px;
+    ">
+      Back to Homepage
+    </a>
+
+  </div>
+
+  <style>
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(10px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+  </style>
+`;
+        }
+
+        /* ==========================================
    SIGNATURE PAD (UNCHANGED)
 ========================================== */
 
-      const canvas = document.getElementById("signaturePad");
-      const ctx = canvas.getContext("2d");
-      const clearBtn = document.getElementById("clearSignature");
-      const signatureInput = document.getElementById("signatureData");
+        const canvas = document.getElementById("signaturePad");
+        const ctx = canvas.getContext("2d");
+        const clearBtn = document.getElementById("clearSignature");
+        const signatureInput = document.getElementById("signatureData");
 
-      let drawing = false;
+        let drawing = false;
 
-      function setupCanvas() {
-        const ratio = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
+        function setupCanvas() {
+          const ratio = window.devicePixelRatio || 1;
+          const rect = canvas.getBoundingClientRect();
 
-        canvas.width = Math.round(rect.width * ratio);
-        canvas.height = Math.round(rect.height * ratio);
+          canvas.width = Math.round(rect.width * ratio);
+          canvas.height = Math.round(rect.height * ratio);
 
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.strokeStyle = "#111";
-        ctx.lineWidth = 2;
-      }
+          ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.strokeStyle = "#111";
+          ctx.lineWidth = 2;
+        }
 
-      function getPoint(e) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
-        };
-      }
+        function getPoint(e) {
+          const rect = canvas.getBoundingClientRect();
+          return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          };
+        }
 
-      requestAnimationFrame(setupCanvas);
-      window.addEventListener("resize", () =>
-        requestAnimationFrame(setupCanvas),
-      );
+        requestAnimationFrame(setupCanvas);
+        window.addEventListener("resize", () =>
+          requestAnimationFrame(setupCanvas),
+        );
 
-      function pointerDown(e) {
-        drawing = true;
-        canvas.setPointerCapture(e.pointerId);
-        const p = getPoint(e);
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-      }
+        function pointerDown(e) {
+          drawing = true;
+          canvas.setPointerCapture(e.pointerId);
+          const p = getPoint(e);
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+        }
 
-      function pointerMove(e) {
-        if (!drawing) return;
-        const p = getPoint(e);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-      }
+        function pointerMove(e) {
+          if (!drawing) return;
+          const p = getPoint(e);
+          ctx.lineTo(p.x, p.y);
+          ctx.stroke();
+        }
 
-      function pointerUp(e) {
-        if (!drawing) return;
-        drawing = false;
-        try {
-          canvas.releasePointerCapture(e.pointerId);
-        } catch {}
-        signatureInput.value = canvas.toDataURL("image/png");
-      }
+        function pointerUp(e) {
+          if (!drawing) return;
+          drawing = false;
+          try {
+            canvas.releasePointerCapture(e.pointerId);
+          } catch {}
+          signatureInput.value = canvas.toDataURL("image/png");
+        }
 
-      canvas.addEventListener("pointerdown", pointerDown);
-      canvas.addEventListener("pointermove", pointerMove);
-      canvas.addEventListener("pointerup", pointerUp);
-      canvas.addEventListener("pointercancel", pointerUp);
+        canvas.addEventListener("pointerdown", pointerDown);
+        canvas.addEventListener("pointermove", pointerMove);
+        canvas.addEventListener("pointerup", pointerUp);
+        canvas.addEventListener("pointercancel", pointerUp);
 
-      clearBtn.addEventListener("click", () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        signatureInput.value = "";
-      });
+        clearBtn.addEventListener("click", () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          signatureInput.value = "";
+        });
 
-      /* ==========================================
+        /* ==========================================
    FORM SUBMIT
 ========================================== */
 
-      const form = document.getElementById("longForm");
-      const statusEl = document.getElementById("status");
+        const form = document.getElementById("longForm");
+        const statusEl = document.getElementById("status");
 
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
 
-        if (!form.checkValidity()) {
-          const firstInvalid = form.querySelector(":invalid");
+          if (!form.checkValidity()) {
+            const firstInvalid = form.querySelector(":invalid");
 
-          if (firstInvalid) {
-            firstInvalid.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
-            firstInvalid.focus({ preventScroll: true });
+            if (firstInvalid) {
+              firstInvalid.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+              firstInvalid.focus({ preventScroll: true });
+            }
+
+            statusEl.className = "status err";
+            statusEl.textContent = "Please complete all required fields.";
+            return;
           }
 
-          statusEl.className = "status err";
-          statusEl.textContent = "Please complete all required fields.";
-          return;
-        }
+          if (!form.confirmTrue.checked) {
+            statusEl.className = "status err";
+            statusEl.textContent =
+              "You must confirm the declaration before submitting.";
+            return;
+          }
 
-        if (!form.confirmTrue.checked) {
-          statusEl.className = "status err";
-          statusEl.textContent =
-            "You must confirm the declaration before submitting.";
-          return;
-        }
+          if (!signatureInput.value) {
+            statusEl.className = "status err";
+            statusEl.textContent = "Please provide your signature.";
+            return;
+          }
 
-        if (!signatureInput.value) {
-          statusEl.className = "status err";
-          statusEl.textContent = "Please provide your signature.";
-          return;
-        }
+          if (form.dvlaCheckCode.value.trim().length !== 8) {
+            statusEl.className = "status err";
+            statusEl.textContent =
+              "DVLA check code must be exactly 8 characters.";
+            return;
+          }
 
-        if (form.dvlaCheckCode.value.trim().length !== 8) {
-          statusEl.className = "status err";
-          statusEl.textContent =
-            "DVLA check code must be exactly 8 characters.";
-          return;
-        }
+          if (!bookingId) {
+            statusEl.className = "status err";
+            statusEl.textContent = "Missing booking ID in link.";
+            return;
+          }
 
-        if (!bookingId) {
-          statusEl.className = "status err";
-          statusEl.textContent = "Missing booking ID in link.";
-          return;
-        }
+          const submitBtn = form.querySelector("button[type='submit']");
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Submitting...";
 
-        const submitBtn = form.querySelector("button[type='submit']");
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Submitting...";
+          const data = Object.fromEntries(new FormData(form).entries());
 
-        const data = Object.fromEntries(new FormData(form).entries());
+          // optional (only if exists in URL later)
+          data.vehicleName = params.get("vehicleName") || "";
 
-        data.hireFrom = `${data.hireFromDate}T${data.hireFromTime}`;
-        data.hireUntil = `${data.hireUntilDate}T${data.hireUntilTime}`;
+          data.hireFrom = `${data.hireFromDate}T${data.hireFromTime}`;
+          data.hireUntil = `${data.hireUntilDate}T${data.hireUntilTime}`;
 
-        delete data.hireFromDate;
-        delete data.hireFromTime;
-        delete data.hireUntilDate;
-        delete data.hireUntilTime;
+          delete data.hireFromDate;
+          delete data.hireFromTime;
+          delete data.hireUntilDate;
+          delete data.hireUntilTime;
 
-        data.bookingId = bookingId;
-        data.formType = "long";
+          data.bookingId = bookingId;
+          data.formType = "long";
 
-        try {
-          const res = await fetch(
-            "https://equine-bookings-api.kverhagen.workers.dev/api/form-submit",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
-            },
-          );
+          try {
+            const res = await fetch(
+              "https://equine-bookings-api.kverhagen.workers.dev/api/form-submit",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              },
+            );
 
-          const out = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(out.error || "Submit failed");
+            const out = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(out.error || "Submit failed");
 
-          statusEl.textContent = "";
+            statusEl.textContent = "";
 
-          // 🔥 SHOW SUCCESS CARD
-          renderSuccessCard(data);
+            // 🔥 SHOW SUCCESS CARD
+            // 🔥 fetch booking details (source of truth)
+            let booking = null;
 
-          submitBtn.textContent = "Submitted";
-        } catch (err) {
-          statusEl.className = "status err";
-          statusEl.textContent = err.message || "Submit failed.";
+            try {
+              const resBooking = await fetch(
+                `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
+              );
 
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Submit Long Form";
-        }
+              const outBooking = await resBooking.json();
+              if (outBooking?.booking) {
+                booking = outBooking.booking;
+              }
+            } catch (e) {
+              console.log("⚠️ booking fetch failed", e);
+            }
+
+            /* ===============================
+   PAYMENT STATUS FORMATTER
+=============================== */
+
+            function getPaymentStatus(booking) {
+              if (!booking) return null;
+
+              if (booking.paymentStatus === "fully_paid") {
+                return { text: "Paid in full", color: "#137a3d" };
+              }
+
+              if (booking.paymentStatus === "deposit_paid") {
+                return { text: "Deposit paid", color: "#1f6feb" };
+              }
+
+              if (booking.paymentStatus === "confirmation_paid") {
+                return { text: "Deposit required", color: "#b45309" };
+              }
+
+              return { text: "Payment pending", color: "#b42318" };
+            }
+
+            // render with enriched data
+            renderSuccessCard({
+              ...data,
+              booking,
+            });
+
+            submitBtn.textContent = "Submitted";
+          } catch (err) {
+            statusEl.className = "status err";
+            statusEl.textContent = err.message || "Submit failed.";
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Submit Long Form";
+          }
+        });
       });
     </script>
     <script>
+      /* ===============================
+   DATE FORMATTER (UK)
+=============================== */
+
+      function formatDateTime(value) {
+        if (!value) return "—";
+
+        let d;
+
+        if (typeof value === "string") {
+          // 🔥 Fix common bug (missing T)
+          if (value.includes(" ") && !value.includes("T")) {
+            value = value.replace(" ", "T");
+          }
+
+          d = new Date(value);
+        } else if (value instanceof Date) {
+          d = value;
+        }
+
+        if (!d || isNaN(d.getTime())) return "—";
+
+        const formatted = d.toLocaleString("en-GB", {
+          timeZone: "Europe/London",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        // remove comma → "20/04/2026 07:00"
+        return formatted.replace(",", "");
+      }
+
+      function formatGBP(amount) {
+        if (amount === undefined || amount === null) return "—";
+
+        return new Intl.NumberFormat("en-GB", {
+          style: "currency",
+          currency: "GBP",
+          minimumFractionDigits: 0,
+        }).format(amount);
+      }
+
+      /* ===============================
+   CALENDAR LINK (GOOGLE/APPLE)
+=============================== */
+
+      function createCalendarLink(booking) {
+        if (!booking?.pickupAt || !booking?.dropoffAt) return "#";
+
+        const start =
+          new Date(booking.pickupAt)
+            .toISOString()
+            .replace(/[-:]/g, "")
+            .split(".")[0] + "Z";
+        const end =
+          new Date(booking.dropoffAt)
+            .toISOString()
+            .replace(/[-:]/g, "")
+            .split(".")[0] + "Z";
+
+        const title = encodeURIComponent("Horsebox Hire");
+        const details = encodeURIComponent(`Booking ID: ${booking.id}`);
+        const location = encodeURIComponent("Equine Transport UK");
+
+        return `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
+      }
+
       function initAddressAutocomplete() {
         const addressInput = document.getElementById("address");
         if (!addressInput) return;
