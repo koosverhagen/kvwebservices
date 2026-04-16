@@ -1269,60 +1269,234 @@
           if (out.success && out.booking) {
             const b = out.booking;
 
+            const formatDate = (val) => {
+              if (!val) return "—";
+              const d = new Date(val);
+              return d.toLocaleString("en-GB", {
+                timeZone: "Europe/London",
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              });
+            };
+
             document.body.innerHTML = `
     <div style="
-      max-width:640px;
-      margin:80px auto;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#f5f7fa;
       padding:20px;
       font-family:Arial,sans-serif;
     ">
 
       <div style="
+        width:100%;
+        max-width:760px;
         background:#ffffff;
-        border-radius:16px;
-        padding:32px;
-        box-shadow:0 12px 30px rgba(0,0,0,0.08);
-        text-align:center;
+        border-radius:20px;
+        padding:40px 30px;
+        box-shadow:0 20px 50px rgba(0,0,0,0.08);
       ">
 
-        <h2 style="
-          margin:0 0 20px;
-          color:#137a3d;
-          font-size:24px;
-        ">
-          ✅ Form submitted successfully
-        </h2>
+        <!-- LOGO (CENTERED ✅) -->
+        <div style="text-align:center;margin-bottom:20px;">
+          <img src="/equinetransportuk/images/logo.png"
+               style="max-width:220px;width:100%;height:auto;">
+        </div>
 
+        <!-- TITLE -->
+        <div style="text-align:center;margin-bottom:25px;">
+          <div style="font-size:42px;">✅</div>
+          <h2 style="margin:10px 0 5px;font-size:26px;">
+            Form submitted successfully
+          </h2>
+          <p style="color:#6b7280;margin:0;">
+            Thank you ${b.customerName || ""}. Your details have been received.
+          </p>
+        </div>
+
+        <!-- BOOKING INFO -->
         <div style="
           background:#f8fafc;
           border:1px solid #e5e7eb;
-          border-radius:12px;
-          padding:18px;
-          text-align:left;
-          margin-bottom:20px;
+          border-radius:16px;
+          padding:22px;
+          margin-bottom:25px;
         ">
-          <p><strong>Booking reference:</strong> #${b.id.slice(-8)}</p>
-          <p><strong>Lorry:</strong> ${b.vehicleSnapshot?.name || ""}</p>
-          <p><strong>From:</strong> ${b.pickupAtLocal}</p>
-          <p><strong>To:</strong> ${b.dropoffAtLocal}</p>
+
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <strong>Booking ID</strong>
+            <span>${b.id}</span>
+          </div>
+
+          <div style="text-align:center;margin:15px 0;">
+            <div style="color:#6b7280;">Vehicle</div>
+            <div style="font-size:22px;font-weight:600;">
+              ${b.vehicleSnapshot?.name || ""}
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;margin-top:15px;">
+            <div>
+              <div style="color:#6b7280;">Pickup</div>
+              <div style="font-weight:600;">
+                ${formatDate(b.pickupAt)}
+              </div>
+            </div>
+
+            <div style="text-align:right;">
+              <div style="color:#6b7280;">Return</div>
+              <div style="font-weight:600;">
+                ${formatDate(b.dropoffAt)}
+              </div>
+            </div>
+          </div>
+
         </div>
 
+        <!-- WHAT NEXT -->
+        <div style="
+          background:#f8fafc;
+          border:1px solid #e5e7eb;
+          border-radius:16px;
+          padding:20px;
+          margin-bottom:20px;
+        ">
+          <h3 style="margin-top:0;">What happens next</h3>
+
+          <p>✅ Your form has been securely saved</p>
+          <p>📧 All booking and payment links are in your confirmation email</p>
+          <p>💳 Use the deposit link in your email (if required)</p>
+          <p>💰 Outstanding balance can be paid using the link in your email</p>
+          <p>🚛 Your vehicle will be prepared for your hire date</p>
+        </div>
+
+<!-- RESEND LINKS -->
+<button id="resend-links-btn"
+  style="
+    display:block;
+    width:100%;
+    margin-bottom:14px;
+    padding:16px;
+    background:#0f172a;
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    font-weight:600;
+    font-size:18px;
+    cursor:pointer;
+  ">
+  Resend links
+</button>
+
+<div id="resend-status" style="
+  text-align:center;
+  font-size:14px;
+  color:#6b7280;
+  margin-bottom:16px;
+"></div>
+
+        <!-- BUTTON -->
         <a href="/equinetransportuk/index.html"
            style="
-             display:inline-block;
-             padding:14px 22px;
+             display:block;
+             width:100%;
+             text-align:center;
+             padding:16px;
              background:#1f6feb;
              color:#fff;
-             border-radius:10px;
+             border-radius:12px;
              text-decoration:none;
              font-weight:600;
+             font-size:18px;
            ">
-          Back to Homepage
+          Back to homepage
         </a>
 
       </div>
+
+<div id="resend-popup" style="
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%) scale(0.95);
+  background:rgba(0,0,0,0.85);
+  backdrop-filter: blur(6px);
+  color:#fff;
+  padding:18px 26px;
+  border-radius:14px;
+  font-size:16px;
+  font-weight:500;
+  opacity:0;
+  pointer-events:none;
+  transition:all 0.25s ease;
+  box-shadow:0 20px 50px rgba(0,0,0,0.25);
+  z-index:9999;
+">
+  ✅ Links sent successfully
+</div>
+
     </div>
   `;
+          }
+
+          const resendBtn = document.getElementById("resend-links-btn");
+          const resendStatus = document.getElementById("resend-status");
+
+          if (resendBtn) {
+            resendBtn.addEventListener("click", async () => {
+              resendBtn.disabled = true;
+              resendBtn.innerHTML = "Sending… ⏳";
+              resendBtn.style.opacity = "0.7";
+
+              try {
+                const res = await fetch(
+                  "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/resend-links",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      bookingId: b.id,
+                    }),
+                  },
+                );
+
+                const out = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                  throw new Error(out.error || "Failed to resend");
+                }
+
+                // ✅ SUCCESS STATE
+                resendBtn.innerHTML = "✅ Links sent";
+                resendBtn.style.background = "#137a3d";
+
+                const popup = document.getElementById("resend-popup");
+
+                if (popup) {
+                  popup.style.opacity = "1";
+                  popup.style.transform = "translate(-50%, -50%) scale(1)";
+
+                  setTimeout(() => {
+                    popup.style.opacity = "0";
+                    popup.style.transform = "translate(-50%, -50%) scale(0.95)";
+                  }, 2500);
+                }
+              } catch (err) {
+                console.error(err);
+
+                resendBtn.disabled = false;
+                resendBtn.innerHTML = "Try again";
+                resendBtn.style.opacity = "1";
+
+                resendStatus.innerHTML = "⚠️ Failed to send email";
+              }
+            });
           }
 
           /* ===============================
