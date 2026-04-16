@@ -248,11 +248,6 @@
         cursor: pointer;
       }
 
-      .invalid {
-        border-color: #dc2626 !important;
-        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
-      }
-
       .status {
         margin-top: 12px;
         font-size: 14px;
@@ -284,7 +279,50 @@
         box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
         background: #fff;
       }
+
+      body.loading .wrap {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      .wrap {
+        transition: all 0.35s ease;
+      }
+
+      .error-shake {
+        animation: shake 0.3s ease;
+      }
+
+      @keyframes shake {
+        0% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-4px);
+        }
+        50% {
+          transform: translateX(4px);
+        }
+        75% {
+          transform: translateX(-4px);
+        }
+        100% {
+          transform: translateX(0);
+        }
+      }
+
+      .field-error {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #dc2626;
+        font-weight: 600;
+      }
+
+      .field-error.hidden {
+        display: none;
+      }
     </style>
+    <link rel="icon" href="images/favicon.png" />
   </head>
 
   <body>
@@ -306,6 +344,23 @@
           hire questionnaire, and I can still agree to the declaration in my
           long questionnaire.
         </p>
+      </div>
+
+      <div
+        id="errorBanner"
+        style="
+          display: none;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #991b1b;
+          padding: 12px 14px;
+          border-radius: 12px;
+          margin-bottom: 12px;
+          font-size: 14px;
+          font-weight: 600;
+        "
+      >
+        ⚠️ Please check your details and try again
       </div>
 
       <form id="shortForm" novalidate>
@@ -467,6 +522,8 @@
     </div>
 
     <script>
+      document.body.classList.add("loading");
+
       const params = new URLSearchParams(location.search);
       // ✅ single source of truth
       const bookingId =
@@ -509,7 +566,8 @@
                 booking.customerName?.split(" ").slice(1).join(" ") || "",
             });
 
-            return; // 🔥 STOP HERE (important)
+            document.body.classList.remove("loading");
+            return;
           }
 
           /* ===============================
@@ -565,6 +623,7 @@
         } catch (err) {
           console.log("⚠️ Prefill failed:", err);
         }
+        document.body.classList.remove("loading");
       }
 
       prefillFromBooking();
@@ -615,6 +674,11 @@
         if (!drawing) return;
         drawing = false;
         signatureInput.value = canvas.toDataURL();
+
+        // ✅ clear signature error
+        const sigWrap = canvas.parentNode;
+        const err = sigWrap.querySelector(".field-error");
+        if (err) err.remove();
       }
 
       canvas.addEventListener("mousedown", start);
@@ -634,6 +698,89 @@
 
       const form = document.getElementById("shortForm");
       const statusEl = document.getElementById("status");
+
+      const errorBanner = document.getElementById("errorBanner");
+
+      function showErrorBanner(message) {
+        if (!errorBanner) return;
+
+        errorBanner.textContent = message;
+        errorBanner.style.display = "block";
+
+        errorBanner.style.opacity = "0";
+        errorBanner.style.transform = "translateY(-6px)";
+
+        setTimeout(() => {
+          errorBanner.style.opacity = "1";
+          errorBanner.style.transform = "translateY(0)";
+        }, 10);
+      }
+
+      function hideErrorBanner() {
+        if (!errorBanner) return;
+        errorBanner.style.display = "none";
+      }
+
+      function scrollToFirstError() {
+        const firstInvalid = document.querySelector(".invalid");
+        if (!firstInvalid) return;
+
+        const y =
+          firstInvalid.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top: y, behavior: "smooth" });
+
+        firstInvalid.classList.add("error-shake");
+        setTimeout(() => firstInvalid.classList.remove("error-shake"), 300);
+      }
+
+      /* ===============================
+   CLEAR ERRORS ON INPUT (ADD HERE)
+=============================== */
+
+      form.querySelectorAll("input, select, textarea").forEach((el) => {
+        el.addEventListener("input", () => {
+          clearFieldError(el); // 🔥 important
+
+          if (
+            !form.querySelector(":invalid") &&
+            !form.querySelector(".invalid")
+          ) {
+            hideErrorBanner();
+          }
+        });
+      });
+
+      function setFieldError(el, message) {
+        if (!el) return;
+
+        el.classList.add("invalid");
+
+        const wrapper = el.closest("div") || el.parentNode;
+
+        let errorEl = wrapper.querySelector(".field-error");
+
+        if (!errorEl) {
+          errorEl = document.createElement("div");
+          errorEl.className = "field-error";
+          wrapper.appendChild(errorEl);
+        }
+
+        errorEl.textContent = message;
+      }
+
+      function clearFieldError(el) {
+        if (!el) return;
+
+        el.classList.remove("invalid");
+
+        const wrapper = el.closest("div") || el.parentNode;
+        const errorEl = wrapper.querySelector(".field-error");
+
+        if (errorEl) {
+          errorEl.textContent = "";
+          errorEl.classList.add("hidden");
+        }
+      }
 
       function formatDateTime(value) {
         if (!value) return "—";
@@ -673,6 +820,14 @@
         form.style.display = "none";
         if (header) header.style.display = "none";
         container.style.display = "block";
+        container.style.opacity = "0";
+        container.style.transform = "translateY(20px)";
+        container.style.transition = "all 0.35s ease";
+
+        setTimeout(() => {
+          container.style.opacity = "1";
+          container.style.transform = "translateY(0)";
+        }, 50);
 
         const booking = data.booking || {};
         const alreadyDone = booking?.formCompleted === true;
@@ -942,17 +1097,51 @@
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
+        // 🔄 clear previous errors
         form
           .querySelectorAll(".invalid")
           .forEach((el) => el.classList.remove("invalid"));
+        form.querySelectorAll(".field-error").forEach((el) => el.remove());
+
+        hideErrorBanner();
+
+        /* ===============================
+     BASIC VALIDATION
+  =============================== */
 
         if (!form.checkValidity()) {
-          form.reportValidity();
-          form
-            .querySelectorAll(":invalid")
-            .forEach((el) => el.classList.add("invalid"));
+          const invalidFields = form.querySelectorAll(":invalid");
+
+          invalidFields.forEach((el) => {
+            let message = "This field is required";
+
+            if (el.name === "email") {
+              message = "Please enter a valid email address";
+            }
+
+            if (el.name === "mobile") {
+              message = "Please enter your mobile number";
+            }
+
+            if (el.name === "licenceNumber") {
+              message = "Enter your 16-digit licence number";
+            }
+
+            if (el.name === "dvlaCode") {
+              message = "Enter your 8-digit DVLA code";
+            }
+
+            setFieldError(el, message);
+          });
+
+          showErrorBanner("Please complete all required fields.");
+          scrollToFirstError();
           return;
         }
+
+        /* ===============================
+     DATE VALIDATION
+  =============================== */
 
         const fromDate = document.getElementById("hireFromDate").value;
         const fromTime = document.getElementById("hireFromTime").value;
@@ -960,8 +1149,37 @@
         const untilTime = document.getElementById("hireUntilTime").value;
 
         if (!fromDate || !fromTime || !untilDate || !untilTime) {
-          statusEl.className = "status err";
-          statusEl.textContent = "Please select hire dates and times.";
+          showErrorBanner("Please select valid hire dates and times.");
+
+          if (!fromDate) {
+            setFieldError(
+              document.getElementById("hireFromDate"),
+              "Select a pickup date",
+            );
+          }
+
+          if (!fromTime) {
+            setFieldError(
+              document.getElementById("hireFromTime"),
+              "Select a time",
+            );
+          }
+
+          if (!untilDate) {
+            setFieldError(
+              document.getElementById("hireUntilDate"),
+              "Select a return date",
+            );
+          }
+
+          if (!untilTime) {
+            setFieldError(
+              document.getElementById("hireUntilTime"),
+              "Select a time",
+            );
+          }
+
+          scrollToFirstError();
           return;
         }
 
@@ -969,37 +1187,67 @@
         const hireUntilISO = `${untilDate}T${untilTime}`;
 
         if (new Date(hireUntilISO) <= new Date(hireFromISO)) {
-          statusEl.className = "status err";
-          statusEl.textContent = "Hire Until must be after Hire From.";
+          showErrorBanner("Return time must be after pickup time.");
+
+          setFieldError(
+            document.getElementById("hireUntilTime"),
+            "Must be after pickup",
+          );
+
+          scrollToFirstError();
           return;
         }
 
         document.getElementById("hireFrom").value = hireFromISO;
         document.getElementById("hireUntil").value = hireUntilISO;
 
+        /* ===============================
+     SIGNATURE VALIDATION
+  =============================== */
+
         if (!signatureInput.value) {
-          statusEl.className = "status err";
-          statusEl.textContent = "Please sign before submitting.";
+          showErrorBanner("Please provide your signature.");
+
+          const sigWrap = document.querySelector(".signature-wrap");
+
+          let err = sigWrap.querySelector(".field-error");
+          if (!err) {
+            err = document.createElement("div");
+            err.className = "field-error";
+            sigWrap.appendChild(err);
+          }
+
+          err.textContent = "Signature is required";
+
+          canvas.classList.add("error-shake");
+          setTimeout(() => canvas.classList.remove("error-shake"), 300);
+
           return;
         }
 
+        /* ===============================
+     BOOKING ID CHECK
+  =============================== */
+
         if (!bookingId) {
-          statusEl.className = "status err";
-          statusEl.textContent = "Missing booking ID in link.";
+          showErrorBanner(
+            "Missing booking reference. Please use your email link.",
+          );
           return;
         }
+
+        /* ===============================
+     SUBMIT STATE
+  =============================== */
 
         const submitBtn = form.querySelector("button[type='submit']");
         submitBtn.disabled = true;
-        submitBtn.textContent = "Submitting...";
+        submitBtn.innerHTML = "Submitting… ⏳";
+        submitBtn.style.opacity = "0.7";
 
         const data = Object.fromEntries(new FormData(form).entries());
-
-        data.bookingId = bookingId; // ✅ ONLY THIS
+        data.bookingId = bookingId;
         data.formType = "short";
-
-        statusEl.className = "status";
-        statusEl.textContent = "Submitting...";
 
         try {
           const res = await fetch(
@@ -1014,10 +1262,10 @@
           const out = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(out.error || "Submit failed");
 
-          statusEl.className = "status ok";
-          statusEl.textContent = "";
+          /* ===============================
+       FETCH BOOKING (SOURCE OF TRUTH)
+    =============================== */
 
-          // 🔥 fetch booking (source of truth)
           let booking = null;
 
           try {
@@ -1029,28 +1277,53 @@
               const out = await resBooking.json();
               booking = out.booking;
               console.log("✅ booking loaded");
-            } else {
-              console.log("⚠️ booking fetch failed:", resBooking.status);
             }
           } catch (e) {
             console.log("⚠️ booking fetch error:", e);
           }
 
-          // 🔥 render success card with enriched data
+          /* ===============================
+       SUCCESS
+    =============================== */
+
           renderSuccessCard({
             ...data,
             booking,
           });
 
-          submitBtn.textContent = "Submitted";
+          submitBtn.innerHTML = "Submitted ✓";
         } catch (err) {
-          statusEl.className = "status err";
-          statusEl.textContent =
-            err.message || "Submit failed. Please try again.";
+          console.error("❌ Form submit error:", err);
+
+          const message = err?.message?.toLowerCase().includes("network")
+            ? "Connection issue. Please check your internet."
+            : err?.message || "Something went wrong. Please try again.";
+
+          showErrorBanner(message);
+
           submitBtn.disabled = false;
-          submitBtn.textContent = "Submit";
+          submitBtn.innerHTML = "Try again";
+          submitBtn.style.opacity = "1";
+
+          submitBtn.classList.add("error-shake");
+          setTimeout(() => {
+            submitBtn.classList.remove("error-shake");
+          }, 300);
         }
       });
+      let loadingCleared = false;
+
+      function clearLoading() {
+        if (loadingCleared) return;
+        loadingCleared = true;
+        document.body.classList.remove("loading");
+      }
+
+      // call inside prefill:
+      clearLoading();
+
+      // fallback safety:
+      setTimeout(clearLoading, 2000);
     </script>
   </body>
 </html>
