@@ -423,6 +423,7 @@
             <div>
               <label>DVLA Access Code (8 digits / case sensitive)</label>
               <input
+                id="dvlaCode"
                 name="dvlaCode"
                 required
                 placeholder="Driver’s DVLA access code"
@@ -593,6 +594,28 @@
 
     </div>
   `;
+      }
+
+      /* ===============================
+   DVLA CODE CLEAN (AUTO REMOVE SPACES)
+=============================== */
+
+      const dvlaInput = document.getElementById("dvlaCode");
+
+      if (dvlaInput) {
+        dvlaInput.addEventListener("input", (e) => {
+          let value = e.target.value;
+
+          // 🔥 remove ALL spaces
+          value = value.replace(/\s+/g, "");
+
+          // optional: trim to max 8 chars
+          if (value.length > 8) {
+            value = value.slice(0, 8);
+          }
+
+          e.target.value = value;
+        });
       }
 
       form.addEventListener("submit", async (e) => {

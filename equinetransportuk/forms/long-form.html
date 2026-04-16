@@ -347,7 +347,7 @@
 
   <body>
     <div class="wrap">
-      <div class="header-card">
+      <div class="header-card" id="formHeader">
         <h1 class="brand-title">
           Millens Self Drive Hire Horsebox Insurance Proposal
           <span style="opacity: 0.75">Long Form</span>
@@ -933,6 +933,8 @@
           <div id="status" class="status"></div>
         </section>
       </form>
+
+      <div id="formSuccess" style="display: none"></div>
     </div>
 
     <!-- ONLY SHOWING UPDATED SCRIPT BLOCK (everything else stays the same) -->
@@ -943,8 +945,6 @@
 ========================================== */
 
       const params = new URLSearchParams(location.search);
-
-      // ✅ single source of truth
       const bookingId =
         params.get("bookingId") || params.get("bookingID") || "";
 
@@ -954,7 +954,101 @@
       document.getElementById("signedDate").value = today;
 
       /* ==========================================
-   SIGNATURE PAD (UNCHANGED - STABLE)
+   DVLA AUTO CLEAN (REMOVE SPACES)
+========================================== */
+
+      const dvlaInput = document.getElementById("dvlaCheckCode");
+
+      if (dvlaInput) {
+        dvlaInput.addEventListener("input", (e) => {
+          let value = e.target.value;
+
+          // remove ALL spaces
+          value = value.replace(/\s+/g, "");
+
+          // max 8 chars
+          if (value.length > 8) {
+            value = value.slice(0, 8);
+          }
+
+          e.target.value = value;
+        });
+      }
+
+      /* ==========================================
+   SUCCESS CARD
+========================================== */
+
+      function renderSuccessCard(data) {
+        const container = document.getElementById("formSuccess");
+        const form = document.getElementById("longForm");
+        const header = document.getElementById("formHeader");
+
+        if (!container || !form) return;
+
+        form.style.display = "none";
+        if (header) header.style.display = "none";
+
+        container.style.display = "block";
+
+        const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
+
+        container.innerHTML = `
+    <div style="
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:20px;
+      padding:22px;
+      box-shadow:0 20px 50px rgba(15,23,42,.12);
+      text-align:center;
+    ">
+
+      <div style="font-size:42px;margin-bottom:10px;">✅</div>
+
+      <h2 style="margin:0 0 8px;font-size:20px;">
+        Form submitted successfully
+      </h2>
+
+      <p style="margin:0 0 16px;color:#6b7280;font-size:14px;">
+        Thank you ${name || ""}. Your details have been received.
+      </p>
+
+      <div style="
+        background:#f8fafc;
+        border:1px solid #e5e7eb;
+        border-radius:14px;
+        padding:14px;
+        margin-bottom:18px;
+        text-align:left;
+      ">
+
+        <div style="margin-bottom:6px;">
+          <strong>Booking ID:</strong><br>
+          ${data.bookingId}
+        </div>
+
+        <div style="margin-bottom:6px;">
+          <strong>Hire From:</strong><br>
+          ${data.hireFrom || "—"}
+        </div>
+
+        <div>
+          <strong>Hire Until:</strong><br>
+          ${data.hireUntil || "—"}
+        </div>
+
+      </div>
+
+      <a href="/equinetransportuk/index.html" class="btn primary full">
+        Back to Homepage
+      </a>
+
+    </div>
+  `;
+      }
+
+      /* ==========================================
+   SIGNATURE PAD (UNCHANGED)
 ========================================== */
 
       const canvas = document.getElementById("signaturePad");
@@ -1026,7 +1120,7 @@
       });
 
       /* ==========================================
-   FORM SUBMIT (UPDATED)
+   FORM SUBMIT
 ========================================== */
 
       const form = document.getElementById("longForm");
@@ -1043,7 +1137,6 @@
               behavior: "smooth",
               block: "center",
             });
-
             firstInvalid.focus({ preventScroll: true });
           }
 
@@ -1084,7 +1177,6 @@
 
         const data = Object.fromEntries(new FormData(form).entries());
 
-        // ✅ Combine dates (important for backend)
         data.hireFrom = `${data.hireFromDate}T${data.hireFromTime}`;
         data.hireUntil = `${data.hireUntilDate}T${data.hireUntilTime}`;
 
@@ -1093,9 +1185,7 @@
         delete data.hireUntilDate;
         delete data.hireUntilTime;
 
-        // ✅ send only one booking field
         data.bookingId = bookingId;
-
         data.formType = "long";
 
         try {
@@ -1111,9 +1201,10 @@
           const out = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(out.error || "Submit failed");
 
-          statusEl.className = "status ok";
-          statusEl.textContent =
-            "Thank you — your form has been submitted successfully.";
+          statusEl.textContent = "";
+
+          // 🔥 SHOW SUCCESS CARD
+          renderSuccessCard(data);
 
           submitBtn.textContent = "Submitted";
         } catch (err) {
