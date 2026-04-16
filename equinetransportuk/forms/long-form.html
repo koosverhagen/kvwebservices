@@ -1090,15 +1090,16 @@
 
    <!-- LOGO WATERMARK -->
   <img src="/equinetransportuk/images/logo.webp" style="
-    position:absolute;
-    right:-18px;
-    bottom:56px;
-    width:320px;
-    max-width:42%;
-    opacity:.08;
-    pointer-events:none;
-    user-select:none;
-  " />
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
+  width:420px;
+  max-width:80%;
+  opacity:0.05;
+  pointer-events:none;
+  user-select:none;
+" />
 
   <!-- SUCCESS ICON -->
   <div style="font-size:38px;margin-bottom:6px;">✅</div>
@@ -1275,58 +1276,58 @@
 
 </div>
 `;
-        }
 
-        const resendBtn = document.getElementById("resendLinksBtn");
+          const resendBtn = document.getElementById("resendLinksBtn");
 
-        if (resendBtn) {
-          resendBtn.addEventListener("click", async () => {
-            const popup = document.getElementById("linksSentPopup");
+          if (resendBtn) {
+            resendBtn.addEventListener("click", async () => {
+              const popup = document.getElementById("linksSentPopup");
 
-            resendBtn.disabled = true;
-            resendBtn.innerText = "Sending...";
+              resendBtn.disabled = true;
+              resendBtn.innerText = "Sending...";
 
-            try {
-              const res = await fetch(
-                "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/resend-links",
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
+              try {
+                const res = await fetch(
+                  "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/resend-links",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ bookingId }),
                   },
-                  body: JSON.stringify({ bookingId }),
-                },
-              );
+                );
 
-              const data = await res.json();
+                const data = await res.json();
 
-              if (data?.ok) {
-                // ✅ SHOW POPUP
-                if (popup) {
-                  popup.style.opacity = "1";
-                  popup.style.transform = "translateX(-50%) translateY(0)";
+                if (data?.ok) {
+                  // ✅ SHOW POPUP
+                  if (popup) {
+                    popup.style.opacity = "1";
+                    popup.style.transform = "translateX(-50%) translateY(0)";
 
-                  setTimeout(() => {
-                    popup.style.opacity = "0";
-                    popup.style.transform =
-                      "translateX(-50%) translateY(-10px)";
-                  }, 2500);
+                    setTimeout(() => {
+                      popup.style.opacity = "0";
+                      popup.style.transform =
+                        "translateX(-50%) translateY(-10px)";
+                    }, 2500);
+                  }
+
+                  resendBtn.innerText = "Sent ✓";
+                } else {
+                  resendBtn.innerText = "Failed";
                 }
-
-                resendBtn.innerText = "Sent ✓";
-              } else {
-                resendBtn.innerText = "Failed";
+              } catch (err) {
+                console.error(err);
+                resendBtn.innerText = "Error";
               }
-            } catch (err) {
-              console.error(err);
-              resendBtn.innerText = "Error";
-            }
 
-            setTimeout(() => {
-              resendBtn.disabled = false;
-              resendBtn.innerText = "Resend links";
-            }, 3000);
-          });
+              setTimeout(() => {
+                resendBtn.disabled = false;
+                resendBtn.innerText = "Resend links";
+              }, 3000);
+            });
+          }
         }
 
         /* ==========================================
