@@ -231,6 +231,41 @@ export default {
       }
 
       /* ===============================
+   BOOKING BY ID (NEW)
+=============================== */
+
+      if (request.method === "GET" && url.pathname === "/api/bookings/by-id") {
+        const bookingId = url.searchParams.get("bookingId");
+
+        if (!bookingId) {
+          return withCors(
+            json({ error: "Missing bookingId" }, 400),
+            corsHeaders,
+          );
+        }
+
+        try {
+          const booking = await findBookingById(env, bookingId);
+
+          if (!booking) {
+            return withCors(json({ found: false }), corsHeaders);
+          }
+
+          return withCors(
+            json({
+              found: true,
+              booking,
+            }),
+            corsHeaders,
+          );
+        } catch (err) {
+          console.error("❌ by-id error:", err);
+
+          return withCors(json({ error: "Server error" }, 500), corsHeaders);
+        }
+      }
+
+      /* ===============================
          AVAILABILITY API
       ================================ */
 
