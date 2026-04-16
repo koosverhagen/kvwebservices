@@ -1088,12 +1088,16 @@
   overflow:hidden;
 ">
 
-  <!-- LOGO (CENTERED FIX) -->
+   <!-- LOGO WATERMARK -->
   <img src="/equinetransportuk/images/logo.webp" style="
-    width:160px;
-    margin:0 auto 14px;
-    display:block;
-    opacity:.95;
+    position:absolute;
+    right:-18px;
+    bottom:56px;
+    width:320px;
+    max-width:42%;
+    opacity:.08;
+    pointer-events:none;
+    user-select:none;
   " />
 
   <!-- SUCCESS ICON -->
@@ -1207,62 +1211,67 @@
     ✔ All payment links sent via email
   </div>
 
-  <!-- CTA -->
+    <!-- CTA -->
   <div style="
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-">
-
-  <a href="mailto:" style="
-    display:inline-block;
-    width:100%;
-    background:#fff;
-    color:#111827;
-    text-decoration:none;
-    padding:14px;
-    border-radius:14px;
-    font-weight:700;
-    font-size:16px;
-    border:1px solid #d7dde6;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
   ">
-    Open email app
-  </a>
 
-  <button
-    type="button"
-    id="resendLinksBtn"
-    style="
+    <button
+      type="button"
+      id="resendLinksBtn"
+      style="
+        display:inline-block;
+        width:100%;
+        background:#111827;
+        color:#fff;
+        padding:14px;
+        border-radius:14px;
+        font-weight:700;
+        font-size:16px;
+        border:0;
+        cursor:pointer;
+      "
+    >
+      Resend links
+    </button>
+
+    <a href="/equinetransportuk/index.html" style="
       display:inline-block;
       width:100%;
-      background:#111827;
+      background:#1f6feb;
       color:#fff;
+      text-decoration:none;
       padding:14px;
       border-radius:14px;
       font-weight:700;
       font-size:16px;
-      border:0;
-      cursor:pointer;
-    "
-  >
-    Resend links
-  </button>
+    ">
+      Back to homepage
+</a>
 
-  <a href="/equinetransportuk/index.html" style="
-    display:inline-block;
-    width:100%;
-    background:#1f6feb;
+  </div>
+
+  <!-- SUCCESS POPUP -->
+  <div id="linksSentPopup" style="
+    position:absolute;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%) translateY(-10px);
+    background:#111827;
     color:#fff;
-    text-decoration:none;
-    padding:14px;
-    border-radius:14px;
-    font-weight:700;
-    font-size:16px;
+    padding:12px 18px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:600;
+    opacity:0;
+    pointer-events:none;
+    transition:all .25s ease;
+    box-shadow:0 10px 25px rgba(0,0,0,.25);
   ">
-    Back to homepage
-  </a>
-
-</div>
+    ✅ Links sent successfully
+  </div>
 
 </div>
 `;
@@ -1272,33 +1281,51 @@
 
         if (resendBtn) {
           resendBtn.addEventListener("click", async () => {
+            const popup = document.getElementById("linksSentPopup");
+
             resendBtn.disabled = true;
-            resendBtn.textContent = "Sending...";
+            resendBtn.innerText = "Sending...";
 
             try {
               const res = await fetch(
                 "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/resend-links",
                 {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    bookingId: data.booking?.id || data.bookingId || bookingId,
-                  }),
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ bookingId }),
                 },
               );
 
-              const out = await res.json().catch(() => ({}));
+              const data = await res.json();
 
-              if (!res.ok) {
-                throw new Error(out.error || "Failed to resend links");
+              if (data?.ok) {
+                // ✅ SHOW POPUP
+                if (popup) {
+                  popup.style.opacity = "1";
+                  popup.style.transform = "translateX(-50%) translateY(0)";
+
+                  setTimeout(() => {
+                    popup.style.opacity = "0";
+                    popup.style.transform =
+                      "translateX(-50%) translateY(-10px)";
+                  }, 2500);
+                }
+
+                resendBtn.innerText = "Sent ✓";
+              } else {
+                resendBtn.innerText = "Failed";
               }
-
-              resendBtn.textContent = "Links sent";
             } catch (err) {
-              resendBtn.disabled = false;
-              resendBtn.textContent = "Resend links";
-              alert(err.message || "Failed to resend links");
+              console.error(err);
+              resendBtn.innerText = "Error";
             }
+
+            setTimeout(() => {
+              resendBtn.disabled = false;
+              resendBtn.innerText = "Resend links";
+            }, 3000);
           });
         }
 
