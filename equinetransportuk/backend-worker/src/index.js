@@ -266,6 +266,18 @@ export default {
       }
 
       /* ===============================
+   RESEND LINKS (PUBLIC)
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/bookings/resend-links"
+      ) {
+        const response = await handlePublicResendLinks(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
          AVAILABILITY API
       ================================ */
 
@@ -4053,5 +4065,75 @@ async function handleResendEmail(request, env) {
     console.error("❌ RESEND EMAIL ERROR:", err);
 
     return json({ error: "Failed to resend email" }, 500);
+  }
+}
+
+async function handlePublicResendLinks(request, env) {
+  try {
+    const { bookingId } = await request.json();
+
+    if (!bookingId) {
+      return json({ error: "Missing bookingId" }, 400);
+    }
+
+    const booking = await findBookingById(env, bookingId);
+
+    if (!booking) {
+      return json({ error: "Booking not found" }, 404);
+    }
+
+    if (!booking.customerEmail) {
+      return json({ error: "No customer email found" }, 400);
+    }
+
+    // simple abuse protection
+    const resendKey = `resend_links:${bookingId}`;
+    const alreadySent = await env.BOOKINGS_KV.get(resendKey);
+
+    if (alreadySent) {
+      return json(
+        {
+          error:
+            "Links were already resent recently. Please wait a few minutes.",
+        },
+        429,
+      );
+    }
+
+    const emailHtml = buildModernEmail({
+      title: "Equine Transport UK – Booking Links",
+      customerName: booking.customerName,
+      booking: {
+        id: booking.id,
+        vehicle: booking.vehicleSnapshot?.name,
+        from: booking.pickupAtLocal,
+        to: booking.dropoffAtLocal,
+        email: booking.customerEmail,
+        mobile: booking.customerMobile,
+        paid: booking.confirmationFee,
+        outstanding: booking.outstandingAmount,
+        total: booking.hireTotal,
+        formType: booking.requiredFormType,
+        depositPaid: booking.depositPaid,
+      },
+      formLink: booking.requiredFormLink,
+      depositLink: booking.depositLink,
+      outstandingLink: booking.outstandingLink,
+    });
+
+    await sendBookingEmail(env, {
+      to: booking.customerEmail,
+      subject: "Your Equine Transport UK booking links",
+      html: emailHtml,
+    });
+
+    await env.BOOKINGS_KV.put(resendKey, "1", {
+      expirationTtl: 60 * 10, // 10 minutes
+    });
+
+    return json({ ok: true });
+  } catch (err) {
+    console.error("❌ PUBLIC RESEND LINKS ERROR:", err);
+    return json({ error: "Failed to resend links" }, 500);
   }
 }

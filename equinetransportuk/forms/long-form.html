@@ -1175,17 +1175,17 @@
         ✅ Your form has been securely saved
       </div>
 
-      <div style="margin-bottom:8px;">
-        📧 You will receive a confirmation email shortly
-      </div>
+     <div style="margin-bottom:8px;">
+  📧 All booking and payment links are in your confirmation email
+</div>
 
-      <div style="margin-bottom:8px;">
-        💳 Deposit instructions will be included in your email
-      </div>
+<div style="margin-bottom:8px;">
+  💳 Use the deposit link in your email (if required)
+</div>
 
-      <div style="margin-bottom:8px;">
-        💰 Outstanding balance payment link will also be provided
-      </div>
+<div style="margin-bottom:8px;">
+  💰 Outstanding balance can be paid using the link in your email
+</div>
 
       <div>
         🚚 Your vehicle will be prepared for your hire date
@@ -1208,6 +1208,46 @@
   </div>
 
   <!-- CTA -->
+  <div style="
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+">
+
+  <a href="mailto:" style="
+    display:inline-block;
+    width:100%;
+    background:#fff;
+    color:#111827;
+    text-decoration:none;
+    padding:14px;
+    border-radius:14px;
+    font-weight:700;
+    font-size:16px;
+    border:1px solid #d7dde6;
+  ">
+    Open email app
+  </a>
+
+  <button
+    type="button"
+    id="resendLinksBtn"
+    style="
+      display:inline-block;
+      width:100%;
+      background:#111827;
+      color:#fff;
+      padding:14px;
+      border-radius:14px;
+      font-weight:700;
+      font-size:16px;
+      border:0;
+      cursor:pointer;
+    "
+  >
+    Resend links
+  </button>
+
   <a href="/equinetransportuk/index.html" style="
     display:inline-block;
     width:100%;
@@ -1223,7 +1263,43 @@
   </a>
 
 </div>
+
+</div>
 `;
+        }
+
+        const resendBtn = document.getElementById("resendLinksBtn");
+
+        if (resendBtn) {
+          resendBtn.addEventListener("click", async () => {
+            resendBtn.disabled = true;
+            resendBtn.textContent = "Sending...";
+
+            try {
+              const res = await fetch(
+                "https://equine-bookings-api.kverhagen.workers.dev/api/bookings/resend-links",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    bookingId: data.booking?.id || data.bookingId || bookingId,
+                  }),
+                },
+              );
+
+              const out = await res.json().catch(() => ({}));
+
+              if (!res.ok) {
+                throw new Error(out.error || "Failed to resend links");
+              }
+
+              resendBtn.textContent = "Links sent";
+            } catch (err) {
+              resendBtn.disabled = false;
+              resendBtn.textContent = "Resend links";
+              alert(err.message || "Failed to resend links");
+            }
+          });
         }
 
         /* ==========================================
