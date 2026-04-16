@@ -597,24 +597,33 @@
       }
 
       /* ===============================
-   DVLA CODE CLEAN (AUTO REMOVE SPACES)
+   DVLA AUTO CLEAN (FINAL FIX)
 =============================== */
 
-      const dvlaInput = document.getElementById("dvlaCode");
+      const dvlaInput = document.getElementById("dvlaCheckCode");
+
+      function cleanDVLA(value) {
+        return value.replace(/\s+/g, "").slice(0, 8);
+      }
 
       if (dvlaInput) {
         dvlaInput.addEventListener("input", (e) => {
-          let value = e.target.value;
+          e.target.value = cleanDVLA(e.target.value);
+        });
 
-          // 🔥 remove ALL spaces
-          value = value.replace(/\s+/g, "");
+        dvlaInput.addEventListener("paste", (e) => {
+          setTimeout(() => {
+            dvlaInput.value = cleanDVLA(dvlaInput.value);
+          }, 0);
+        });
 
-          // optional: trim to max 8 chars
-          if (value.length > 8) {
-            value = value.slice(0, 8);
-          }
+        // 🔥 critical for iOS autofill
+        dvlaInput.addEventListener("change", () => {
+          dvlaInput.value = cleanDVLA(dvlaInput.value);
+        });
 
-          e.target.value = value;
+        dvlaInput.addEventListener("blur", () => {
+          dvlaInput.value = cleanDVLA(dvlaInput.value);
         });
       }
 
