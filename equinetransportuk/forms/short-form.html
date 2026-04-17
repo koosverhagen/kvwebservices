@@ -662,6 +662,7 @@
               lastName:
                 booking.customerName?.split(" ").slice(1).join(" ") || "",
               bookingId,
+              alreadyDone: true,
             });
 
             document.body.classList.remove("loading");
@@ -1206,7 +1207,7 @@
           console.error("❌ No valid booking for success card");
           return;
         }
-        const alreadyDone = true; // 🔥 always true after submit
+        const alreadyDone = data.alreadyDone === true;
         const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
 
         const vehicle =
@@ -1680,6 +1681,7 @@
             firstName: data.firstName,
             lastName: data.lastName,
             bookingId,
+            alreadyDone: false,
           });
           submitBtn.style.display = "none";
         } catch (err) {
