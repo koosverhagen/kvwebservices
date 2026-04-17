@@ -616,12 +616,24 @@
 
         try {
           let booking = await fetchBookingFast(bookingId);
+
+          console.log("📦 booking response (initial):", booking);
+
           if (!booking) {
-            console.log("⏳ Booking not ready, retrying...");
+            console.log("⏳ Booking not ready, waiting for KV sync...");
 
-            await new Promise((r) => setTimeout(r, 1200));
+            const delays = [800, 1200, 1800, 2500];
 
-            booking = await fetchBookingFast(bookingId);
+            for (const delay of delays) {
+              await new Promise((r) => setTimeout(r, delay));
+
+              booking = await fetchBookingFast(bookingId);
+
+              if (booking) {
+                console.log("✅ Booking became available");
+                break;
+              }
+            }
           }
 
           if (!booking) {
