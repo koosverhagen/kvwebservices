@@ -581,10 +581,13 @@
       document.body.classList.add("loading");
 
       const params = new URLSearchParams(location.search);
+
       // ✅ single source of truth
       const bookingId =
         params.get("bookingId") || params.get("bookingID") || "";
 
+      // 🔥 PREVENT UI OVERRIDE AFTER PREFILL
+      let prefillDone = false;
       async function fetchBookingFast(bookingId) {
         try {
           const res = await fetch(
@@ -922,9 +925,20 @@
      APPLY UI RULES
   =============================== */
 
+        /* ===============================
+   🔥 MARK PREFILL COMPLETE
+=============================== */
+
+        prefillDone = true;
+
+        /* ===============================
+   APPLY UI WITHOUT OVERRIDE
+=============================== */
+
         lockHireTimes();
 
         document.body.classList.remove("loading");
+        List.remove("loading");
       }
 
       function formatDateTime(value) {
@@ -994,6 +1008,40 @@
         const untilDate = untilDateEl.value || fromDate; // 🔥 FIX
 
         if (!fromDate || !fromTime) return;
+
+        /* ===============================
+   🔥 STOP OVERRIDING PREFILL
+=============================== */
+
+        if (prefillDone) {
+          // ✅ just show what booking already set (NO logic override)
+
+          if (fromDisplay) {
+            fromDisplay.style.display = "block";
+            fromDisplay.innerHTML = `
+      <div style="font-size:12px;color:#6b7280;">Pickup time</div>
+      <div style="font-size:16px;font-weight:700;">
+        ${fromTimeEl.value}
+      </div>
+    `;
+          }
+
+          if (untilDisplay) {
+            untilDisplay.style.display = "block";
+            untilDisplay.innerHTML = `
+      <div style="font-size:12px;color:#6b7280;">Return time</div>
+      <div style="font-size:16px;font-weight:700;">
+        ${untilTimeEl.value}
+      </div>
+    `;
+          }
+
+          // 🔒 keep selects hidden but DO NOT recalculate
+          fromTimeEl.style.display = "none";
+          untilTimeEl.style.display = "none";
+
+          return; // ⛔ STOP HERE
+        }
 
         const sameDay = fromDate === untilDate;
 
@@ -1173,6 +1221,7 @@
         }, 50);
 
         const booking = data.booking || {};
+        const hasBooking = !!booking && !!booking.pickupAt;
         const alreadyDone = true; // 🔥 always true after submit
         const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
 
@@ -1269,14 +1318,20 @@
     <div style="flex:1;">
       <div style="font-size:13px;color:#6b7280;">Pickup</div>
       <div style="font-weight:600;">
-        ${formatDateTime(data.hireFrom || booking?.pickupAtLocal || booking?.pickupAt)}
+        ${formatDateTime(
+          hasBooking
+            ? booking.pickupAtLocal || booking.pickupAt
+            : data.hireFrom,
+        )}
       </div>
     </div>
 
     <div style="flex:1;text-align:right;">
       <div style="font-size:13px;color:#6b7280;">Return</div>
       <div style="font-weight:600;">
-       ${formatDateTime(getCorrectReturnDateTime(booking, data.hireUntil))}
+       ${formatDateTime(
+         hasBooking ? getCorrectReturnDateTime(booking) : data.hireUntil,
+       )}
       </div>
     </div>
   </div>
