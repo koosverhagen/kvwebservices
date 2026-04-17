@@ -649,6 +649,29 @@
 
           console.log("✅ Prefill booking loaded");
 
+          /* ===============================
+   🚀 AUTO SUCCESS SCREEN
+=============================== */
+
+          if (booking.formCompleted) {
+            console.log("✅ Form already completed → skipping form");
+
+            renderSuccessCard({
+              booking,
+              firstName: booking.customerName?.split(" ")[0] || "",
+              lastName:
+                booking.customerName?.split(" ").slice(1).join(" ") || "",
+              bookingId,
+            });
+
+            document.body.classList.remove("loading");
+            return;
+          }
+
+          /* ===============================
+   NORMAL PREFILL
+=============================== */
+
           fillFormFromBooking(booking);
           return;
         } catch (err) {
