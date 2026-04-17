@@ -367,6 +367,19 @@
         <section class="section">
           <h2>Driver Information</h2>
 
+          <div
+            id="hireSummary"
+            style="
+              margin-bottom: 10px;
+              padding: 12px;
+              border-radius: 12px;
+              background: #f1f5f9;
+              font-weight: 700;
+              font-size: 14px;
+              display: none;
+            "
+          ></div>
+
           <div class="grid two">
             <div>
               <label>First Name of Hirer / Driver</label>
@@ -429,30 +442,73 @@
           </div>
 
           <div class="divider"></div>
-
           <div class="grid two">
+            <!-- ===============================
+       HIRE FROM
+  =============================== -->
             <div>
               <label>Hire From</label>
+
               <div class="date-time">
                 <input id="hireFromDate" type="date" required />
-                <select id="hireFromTime" required>
+
+                <!-- hidden real value (used for form submit) -->
+                <select id="hireFromTime" required style="display: none">
                   <option value="" disabled selected>Time</option>
                   <option value="07:00">07:00</option>
                   <option value="13:00">13:00</option>
                 </select>
               </div>
+
+              <!-- clean UI display -->
+              <div
+                id="hireFromTimeDisplay"
+                style="
+                  margin-top: 8px;
+                  padding: 12px;
+                  border-radius: 12px;
+                  background: #eef2ff;
+                  font-weight: 700;
+                  font-size: 15px;
+                  display: none;
+                "
+              >
+                <!-- filled by JS -->
+              </div>
             </div>
 
+            <!-- ===============================
+       HIRE UNTIL
+  =============================== -->
             <div>
               <label>Hire Until</label>
+
               <div class="date-time">
                 <input id="hireUntilDate" type="date" required />
-                <select id="hireUntilTime" required>
+
+                <!-- hidden real value -->
+                <select id="hireUntilTime" required style="display: none">
                   <option value="" disabled selected>Time</option>
                   <option value="07:00">07:00</option>
                   <option value="13:00">13:00</option>
                   <option value="19:00">19:00</option>
                 </select>
+              </div>
+
+              <!-- clean UI display -->
+              <div
+                id="hireUntilTimeDisplay"
+                style="
+                  margin-top: 8px;
+                  padding: 12px;
+                  border-radius: 12px;
+                  background: #eef2ff;
+                  font-weight: 700;
+                  font-size: 15px;
+                  display: none;
+                "
+              >
+                <!-- filled by JS -->
               </div>
             </div>
           </div>
@@ -597,28 +653,104 @@
           }
 
           /* ===============================
-       OPTIONAL: PREFILL DATES
-    =============================== */
+   OPTIONAL: PREFILL DATES (LOCKED)
+=============================== */
 
           if (booking.pickupAt && booking.dropoffAt) {
-            const fromDate = booking.pickupAt.slice(0, 10);
-            const fromTime = booking.pickupAt.slice(11, 16);
-            const untilDate = booking.dropoffAt.slice(0, 10);
-            const untilTime = booking.dropoffAt.slice(11, 16);
-
             const fromDateInput = document.getElementById("hireFromDate");
             const fromTimeInput = document.getElementById("hireFromTime");
             const untilDateInput = document.getElementById("hireUntilDate");
             const untilTimeInput = document.getElementById("hireUntilTime");
 
-            if (fromDateInput && !fromDateInput.value)
+            const formatLondonDate = (value) => {
+              const d = new Date(value);
+
+              const parts = new Intl.DateTimeFormat("en-CA", {
+                timeZone: "Europe/London",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+              }).formatToParts(d);
+
+              const get = (type) =>
+                parts.find((p) => p.type === type)?.value || "";
+
+              return `${get("year")}-${get("month")}-${get("day")}`;
+            };
+
+            const formatLondonTime = (value) => {
+              const d = new Date(value);
+
+              return d.toLocaleTimeString("en-GB", {
+                timeZone: "Europe/London",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              });
+            };
+
+            const nearestAllowedTime = (time, allowed) => {
+              if (allowed.includes(time)) return time;
+
+              if (
+                time >= "06:30" &&
+                time <= "07:30" &&
+                allowed.includes("07:00")
+              ) {
+                return "07:00";
+              }
+
+              if (
+                time >= "12:30" &&
+                time <= "13:30" &&
+                allowed.includes("13:00")
+              ) {
+                return "13:00";
+              }
+
+              if (
+                time >= "18:30" &&
+                time <= "19:30" &&
+                allowed.includes("19:00")
+              ) {
+                return "19:00";
+              }
+
+              return allowed[0] || "";
+            };
+
+            const fromDate = formatLondonDate(booking.pickupAt);
+            const rawFromTime = formatLondonTime(booking.pickupAt);
+
+            const untilDate = formatLondonDate(booking.dropoffAt);
+            const rawUntilTime = formatLondonTime(booking.dropoffAt);
+
+            const lockedFromTime = nearestAllowedTime(rawFromTime, [
+              "07:00",
+              "13:00",
+            ]);
+            const lockedUntilTime = nearestAllowedTime(rawUntilTime, [
+              "07:00",
+              "13:00",
+              "19:00",
+            ]);
+
+            if (fromDateInput && !fromDateInput.value) {
               fromDateInput.value = fromDate;
-            if (fromTimeInput && !fromTimeInput.value)
-              fromTimeInput.value = fromTime;
-            if (untilDateInput && !untilDateInput.value)
+            }
+
+            if (fromTimeInput && !fromTimeInput.value) {
+              fromTimeInput.value = lockedFromTime;
+            }
+
+            if (untilDateInput && !untilDateInput.value) {
               untilDateInput.value = untilDate;
-            if (untilTimeInput && !untilTimeInput.value)
-              untilTimeInput.value = untilTime;
+            }
+
+            if (untilTimeInput && !untilTimeInput.value) {
+              untilTimeInput.value = lockedUntilTime;
+            }
+            lockHireTimes(); // 🔥 APPLY UI RULES AFTER PREFILL
           }
         } catch (err) {
           console.log("⚠️ Prefill failed:", err);
@@ -627,6 +759,19 @@
       }
 
       prefillFromBooking();
+
+      // 🔒 keep times locked when user changes input
+      document
+        .getElementById("hireFromTime")
+        ?.addEventListener("change", lockHireTimes);
+
+      document
+        .getElementById("hireFromDate")
+        ?.addEventListener("change", lockHireTimes);
+
+      document
+        .getElementById("hireUntilDate")
+        ?.addEventListener("change", lockHireTimes);
 
       const canvas = document.getElementById("signaturePad");
       const ctx = canvas.getContext("2d");
@@ -808,6 +953,152 @@
           hour: "2-digit",
           minute: "2-digit",
         });
+      }
+
+      /* ===============================
+   🔒 LOCK TIME + DURATION LOGIC (FINAL)
+=============================== */
+
+      function lockHireTimes() {
+        const fromDisplay = document.getElementById("hireFromTimeDisplay");
+        const untilDisplay = document.getElementById("hireUntilTimeDisplay");
+
+        const fromDateEl = document.getElementById("hireFromDate");
+        const fromTimeEl = document.getElementById("hireFromTime");
+        const untilDateEl = document.getElementById("hireUntilDate");
+        const untilTimeEl = document.getElementById("hireUntilTime");
+
+        const hireSummary = document.getElementById("hireSummary");
+
+        if (!fromDateEl || !fromTimeEl || !untilDateEl || !untilTimeEl) return;
+
+        /* ===============================
+     🔄 HARD UI RESET (FIX FOR ISSUE 4)
+  =============================== */
+
+        fromTimeEl.style.display = "block";
+        untilTimeEl.style.display = "block";
+
+        fromTimeEl.disabled = false;
+        untilTimeEl.disabled = false;
+
+        if (fromDisplay) fromDisplay.style.display = "none";
+        if (untilDisplay) untilDisplay.style.display = "none";
+
+        /* ===============================
+     📥 VALUES
+  =============================== */
+
+        const fromDate = fromDateEl.value;
+        const fromTime = fromTimeEl.value;
+        const untilDate = untilDateEl.value || fromDate; // 🔥 FIX
+
+        if (!fromDate || !fromTime) return;
+
+        const sameDay = fromDate === untilDate;
+
+        /* ===============================
+     🧠 DETERMINE BOOKING TYPE
+  =============================== */
+
+        let bookingType = "multi";
+
+        if (sameDay && fromTime === "07:00") bookingType = "half-am";
+        else if (sameDay && fromTime === "13:00") bookingType = "half-pm";
+        else if (!sameDay && fromTime === "07:00") bookingType = "full";
+
+        console.log("📦 bookingType:", bookingType);
+
+        /* ===============================
+     🎯 CLEAN UX OUTPUT
+  =============================== */
+
+        const hireUntilBlock = document
+          .getElementById("hireUntilDate")
+          ?.closest(".date-time")?.parentNode;
+
+        if (hireSummary) hireSummary.style.display = "block";
+
+        if (bookingType === "half-am") {
+          if (hireSummary) {
+            hireSummary.innerHTML = "Half day (morning) • 07:00 → 13:00";
+          }
+          if (hireUntilBlock) hireUntilBlock.style.display = "none";
+        } else if (bookingType === "half-pm") {
+          if (hireSummary) {
+            hireSummary.innerHTML = "Half day (afternoon) • 13:00 → 19:00";
+          }
+          if (hireUntilBlock) hireUntilBlock.style.display = "none";
+        } else {
+          if (hireSummary) {
+            hireSummary.innerHTML = "Full / multi-day hire • 07:00 → 19:00";
+          }
+          if (hireUntilBlock) hireUntilBlock.style.display = "block";
+        }
+
+        /* ===============================
+     🎯 APPLY RULES
+  =============================== */
+
+        const fromOptions = fromTimeEl.querySelectorAll("option");
+
+        fromOptions.forEach((o) => (o.disabled = false));
+
+        if (bookingType === "half-am") {
+          fromTimeEl.value = "07:00";
+          untilDateEl.value = fromDate;
+          untilTimeEl.value = "13:00";
+          untilTimeEl.disabled = true;
+
+          fromOptions.forEach((o) => {
+            if (o.value && o.value !== "07:00") o.disabled = true;
+          });
+        } else if (bookingType === "half-pm") {
+          fromTimeEl.value = "13:00";
+          untilDateEl.value = fromDate;
+          untilTimeEl.value = "19:00";
+          untilTimeEl.disabled = true;
+
+          fromOptions.forEach((o) => {
+            if (o.value && o.value !== "13:00") o.disabled = true;
+          });
+        } else {
+          fromTimeEl.value = "07:00";
+          untilTimeEl.value = "19:00";
+          untilTimeEl.disabled = true;
+
+          fromOptions.forEach((o) => {
+            if (o.value && o.value !== "07:00") o.disabled = true;
+          });
+        }
+
+        /* ===============================
+     🎨 CLEAN UI DISPLAY
+  =============================== */
+
+        if (fromDisplay) {
+          fromDisplay.style.display = "block";
+          fromDisplay.innerHTML = `
+      <div style="font-size:12px;color:#6b7280;">Pickup time</div>
+      <div style="font-size:16px;font-weight:700;">
+        ${fromTimeEl.value}
+      </div>
+    `;
+        }
+
+        if (untilDisplay) {
+          untilDisplay.style.display = "block";
+          untilDisplay.innerHTML = `
+      <div style="font-size:12px;color:#6b7280;">Return time</div>
+      <div style="font-size:16px;font-weight:700;">
+        ${untilTimeEl.value}
+      </div>
+    `;
+        }
+
+        // hide real selects (keep values for submit)
+        fromTimeEl.style.display = "none";
+        untilTimeEl.style.display = "none";
       }
 
       function renderSuccessCard(data) {
@@ -1093,223 +1384,221 @@
           dvlaInput.value = cleanDVLA(dvlaInput.value);
         });
       }
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-      form.addEventListener("submit", async (e) =>
-        form.addEventListener("submit", async (e) => {
-          e.preventDefault();
+        // 🔄 clear previous errors
+        form
+          .querySelectorAll(".invalid")
+          .forEach((el) => el.classList.remove("invalid"));
+        form.querySelectorAll(".field-error").forEach((el) => el.remove());
 
-          // 🔄 clear previous errors
-          form
-            .querySelectorAll(".invalid")
-            .forEach((el) => el.classList.remove("invalid"));
-          form.querySelectorAll(".field-error").forEach((el) => el.remove());
+        hideErrorBanner();
 
-          hideErrorBanner();
-
-          /* ===============================
+        /* ===============================
      BASIC VALIDATION
   =============================== */
 
-          if (!form.checkValidity()) {
-            const invalidFields = form.querySelectorAll(":invalid");
+        if (!form.checkValidity()) {
+          const invalidFields = form.querySelectorAll(":invalid");
 
-            invalidFields.forEach((el) => {
-              let message = "This field is required";
+          invalidFields.forEach((el) => {
+            let message = "This field is required";
 
-              if (el.name === "email")
-                message = "Please enter a valid email address";
-              if (el.name === "mobile")
-                message = "Please enter your mobile number";
-              if (el.name === "licenceNumber")
-                message = "Enter your 16-digit licence number";
-              if (el.name === "dvlaCode")
-                message = "Enter your 8-digit DVLA code";
+            if (el.name === "email")
+              message = "Please enter a valid email address";
+            if (el.name === "mobile")
+              message = "Please enter your mobile number";
+            if (el.name === "licenceNumber")
+              message = "Enter your 16-digit licence number";
+            if (el.name === "dvlaCode")
+              message = "Enter your 8-digit DVLA code";
 
-              setFieldError(el, message);
-            });
+            setFieldError(el, message);
+          });
 
-            showErrorBanner("Please complete all required fields.");
-            scrollToFirstError();
-            return;
-          }
+          showErrorBanner("Please complete all required fields.");
+          scrollToFirstError();
+          return;
+        }
 
-          /* ===============================
+        /* ===============================
      DATE VALIDATION
   =============================== */
 
-          const fromDate = document.getElementById("hireFromDate").value;
-          const fromTime = document.getElementById("hireFromTime").value;
-          const untilDate = document.getElementById("hireUntilDate").value;
-          const untilTime = document.getElementById("hireUntilTime").value;
+        const fromDate = document.getElementById("hireFromDate").value;
+        const fromTime = document.getElementById("hireFromTime").value;
+        const untilDate = document.getElementById("hireUntilDate").value;
+        const untilTime = document.getElementById("hireUntilTime").value;
 
-          if (!fromDate || !fromTime || !untilDate || !untilTime) {
-            showErrorBanner("Please select valid hire dates and times.");
+        if (!fromDate || !fromTime || !untilDate || !untilTime) {
+          showErrorBanner("Please select valid hire dates and times.");
 
-            if (!fromDate)
-              setFieldError(
-                document.getElementById("hireFromDate"),
-                "Select a pickup date",
-              );
-            if (!fromTime)
-              setFieldError(
-                document.getElementById("hireFromTime"),
-                "Select a time",
-              );
-            if (!untilDate)
-              setFieldError(
-                document.getElementById("hireUntilDate"),
-                "Select a return date",
-              );
-            if (!untilTime)
-              setFieldError(
-                document.getElementById("hireUntilTime"),
-                "Select a time",
-              );
-
-            scrollToFirstError();
-            return;
-          }
-
-          const hireFromISO = `${fromDate}T${fromTime}`;
-          const hireUntilISO = `${untilDate}T${untilTime}`;
-
-          if (new Date(hireUntilISO) <= new Date(hireFromISO)) {
-            showErrorBanner("Return time must be after pickup time.");
+          if (!fromDate)
+            setFieldError(
+              document.getElementById("hireFromDate"),
+              "Select a pickup date",
+            );
+          if (!fromTime)
+            setFieldError(
+              document.getElementById("hireFromTime"),
+              "Select a time",
+            );
+          if (!untilDate)
+            setFieldError(
+              document.getElementById("hireUntilDate"),
+              "Select a return date",
+            );
+          if (!untilTime)
             setFieldError(
               document.getElementById("hireUntilTime"),
-              "Must be after pickup",
+              "Select a time",
             );
-            scrollToFirstError();
-            return;
-          }
 
-          document.getElementById("hireFrom").value = hireFromISO;
-          document.getElementById("hireUntil").value = hireUntilISO;
+          scrollToFirstError();
+          return;
+        }
 
-          /* ===============================
+        lockHireTimes(); // 🔒 enforce before submit
+
+        const hireFromISO = `${fromDate}T${fromTime}`;
+        const hireUntilISO = `${untilDate}T${untilTime}`;
+
+        if (new Date(hireUntilISO) <= new Date(hireFromISO)) {
+          showErrorBanner("Return time must be after pickup time.");
+          setFieldError(
+            document.getElementById("hireUntilTime"),
+            "Must be after pickup",
+          );
+          scrollToFirstError();
+          return;
+        }
+
+        document.getElementById("hireFrom").value = hireFromISO;
+        document.getElementById("hireUntil").value = hireUntilISO;
+
+        /* ===============================
      SIGNATURE VALIDATION
   =============================== */
 
-          if (!signatureInput.value) {
-            showErrorBanner("Please provide your signature.");
+        if (!signatureInput.value) {
+          showErrorBanner("Please provide your signature.");
 
-            const sigWrap = document.querySelector(".signature-wrap");
+          const sigWrap = document.querySelector(".signature-wrap");
 
-            let err = sigWrap.querySelector(".field-error");
-            if (!err) {
-              err = document.createElement("div");
-              err.className = "field-error";
-              sigWrap.appendChild(err);
-            }
-
-            err.textContent = "Signature is required";
-
-            canvas.classList.add("error-shake");
-            setTimeout(() => canvas.classList.remove("error-shake"), 300);
-
-            return;
+          let err = sigWrap.querySelector(".field-error");
+          if (!err) {
+            err = document.createElement("div");
+            err.className = "field-error";
+            sigWrap.appendChild(err);
           }
 
-          /* ===============================
+          err.textContent = "Signature is required";
+
+          canvas.classList.add("error-shake");
+          setTimeout(() => canvas.classList.remove("error-shake"), 300);
+
+          return;
+        }
+
+        /* ===============================
      BOOKING ID CHECK
   =============================== */
 
-          if (!bookingId) {
-            showErrorBanner(
-              "Missing booking reference. Please use your email link.",
-            );
-            return;
-          }
+        if (!bookingId) {
+          showErrorBanner(
+            "Missing booking reference. Please use your email link.",
+          );
+          return;
+        }
 
-          /* ===============================
+        /* ===============================
      SUBMIT STATE
   =============================== */
 
-          const submitBtn = form.querySelector("button[type='submit']");
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = "Submitting securely…";
-          submitBtn.style.opacity = "0.7";
+        const submitBtn = form.querySelector("button[type='submit']");
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "Submitting securely…";
+        submitBtn.style.opacity = "0.7";
 
-          const data = Object.fromEntries(new FormData(form).entries());
-          data.bookingId = bookingId;
-          data.formType = "short";
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.bookingId = bookingId;
+        data.formType = "short";
 
-          try {
-            const res = await fetch(
-              "https://equine-bookings-api.kverhagen.workers.dev/api/form-submit",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-              },
-            );
+        try {
+          const res = await fetch(
+            "https://equine-bookings-api.kverhagen.workers.dev/api/form-submit",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            },
+          );
 
-            const out = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(out.error || "Submit failed");
+          const out = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(out.error || "Submit failed");
 
-            /* ===============================
+          /* ===============================
        ✅ GET BOOKING (SOURCE OF TRUTH)
     =============================== */
 
-            let booking = out.booking || null;
+          let booking = out.booking || null;
 
-            if (!booking && bookingId) {
-              try {
-                const resBooking = await fetch(
-                  `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
-                );
+          if (!booking && bookingId) {
+            try {
+              const resBooking = await fetch(
+                `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
+              );
 
-                if (resBooking.ok) {
-                  const bOut = await resBooking.json();
-                  booking = bOut.booking;
-                }
-              } catch (e) {
-                console.log("⚠️ booking fetch fallback failed:", e);
+              if (resBooking.ok) {
+                const bOut = await resBooking.json();
+                booking = bOut.booking;
               }
+            } catch (e) {
+              console.log("⚠️ booking fetch fallback failed:", e);
             }
+          }
 
-            /* ===============================
+          /* ===============================
        SUCCESS UI (SINGLE SOURCE)
     =============================== */
 
-            renderSuccessCard({
-              ...data,
-              booking,
-              firstName: data.firstName,
-              lastName: data.lastName,
-            });
+          renderSuccessCard({
+            ...data,
+            booking,
+            firstName: data.firstName,
+            lastName: data.lastName,
+          });
 
-            submitBtn.innerHTML = "Submitted ✓";
-          } catch (err) {
-            console.error("❌ Form submit error:", err);
+          submitBtn.innerHTML = "Submitted ✓";
+        } catch (err) {
+          console.error("❌ Form submit error:", err);
 
-            const message = err?.message?.toLowerCase().includes("network")
-              ? "Connection issue. Please check your internet."
-              : err?.message || "Something went wrong. Please try again.";
+          const message = err?.message?.toLowerCase().includes("network")
+            ? "Connection issue. Please check your internet."
+            : err?.message || "Something went wrong. Please try again.";
 
-            showErrorBanner(message);
+          showErrorBanner(message);
 
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = "Try again";
-            submitBtn.style.opacity = "1";
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = "Try again";
+          submitBtn.style.opacity = "1";
 
-            submitBtn.classList.add("error-shake");
-            setTimeout(() => {
-              submitBtn.classList.remove("error-shake");
-            }, 300);
-          }
-        }),
-      );
+          submitBtn.classList.add("error-shake");
+          setTimeout(() => {
+            submitBtn.classList.remove("error-shake");
+          }, 300);
+        }
+      });
+
       let loadingCleared = false;
 
       function clearLoading() {
         if (loadingCleared) return;
         loadingCleared = true;
+        lockHireTimes(); // 🔒 apply booking rules
         document.body.classList.remove("loading");
       }
-
-      // call inside prefill:
-      clearLoading();
 
       // fallback safety:
       setTimeout(clearLoading, 2000);
