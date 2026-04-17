@@ -1093,7 +1093,6 @@
 
         function updateOvernightVisibility() {
           if (!hireFromDate?.value || !hireUntilDate?.value) {
-            // not enough data → show field
             overnightWrap.style.display = "block";
             overnightSelect.required = true;
             return;
@@ -1104,13 +1103,19 @@
 
           const diffDays = (until - from) / (1000 * 60 * 60 * 24);
 
-          if (diffDays < 1) {
-            // 🔥 SAME DAY → HIDE
+          console.log("📅 diffDays:", diffDays);
+
+          /* ===============================
+     🔥 RULES
+  =============================== */
+
+          if (diffDays <= 1) {
+            // ✅ HALF DAY + 1 DAY → HIDE
             overnightWrap.style.display = "none";
             overnightSelect.required = false;
             overnightSelect.value = "na";
           } else {
-            // 🔥 MULTI DAY → SHOW
+            // ✅ 2+ DAYS → SHOW
             overnightWrap.style.display = "block";
             overnightSelect.required = true;
 
@@ -1394,79 +1399,7 @@
   ✅ Links sent successfully
 </div>
 
-  <!-- TRUST -->
-  <div style="
-    text-align:left;
-    font-size:14px;
-    color:#374151;
-    margin-bottom:20px;
-  ">
-    ✔ Booking secured<br>
-    ✔ No hidden fees<br>
-    ✔ All payment links sent via email
-  </div>
-
-    <!-- CTA -->
-  <div style="
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-  ">
-
-    <button
-      type="button"
-      id="resendLinksBtn"
-      style="
-        display:inline-block;
-        width:100%;
-        background:#111827;
-        color:#fff;
-        padding:14px;
-        border-radius:14px;
-        font-weight:700;
-        font-size:16px;
-        border:0;
-        cursor:pointer;
-      "
-    >
-      Resend links
-    </button>
-
-    <a href="/equinetransportuk/index.html" style="
-      display:inline-block;
-      width:100%;
-      background:#1f6feb;
-      color:#fff;
-      text-decoration:none;
-      padding:14px;
-      border-radius:14px;
-      font-weight:700;
-      font-size:16px;
-    ">
-      Back to homepage
-</a>
-
-  </div>
-
-  <!-- SUCCESS POPUP -->
-  <div id="linksSentPopup" style="
-    position:absolute;
-    top:20px;
-    left:50%;
-    transform:translateX(-50%) translateY(-10px);
-    background:#111827;
-    color:#fff;
-    padding:12px 18px;
-    border-radius:999px;
-    font-size:14px;
-    font-weight:600;
-    opacity:0;
-    pointer-events:none;
-    transition:all .25s ease;
-    box-shadow:0 10px 25px rgba(0,0,0,.25);
-  ">
-    ✅ Links sent successfully
-  </div>
+ 
 
 </div>
 `;
