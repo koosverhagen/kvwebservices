@@ -1173,7 +1173,7 @@
         }, 50);
 
         const booking = data.booking || {};
-        const alreadyDone = booking?.formCompleted === true;
+        const alreadyDone = true; // 🔥 always true after submit
         const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
 
         const vehicle =
@@ -1591,12 +1591,12 @@
           if (!res.ok) throw new Error(out.error || "Submit failed");
 
           /* ===============================
-       ✅ GET BOOKING (SOURCE OF TRUTH)
-    =============================== */
+   ✅ ALWAYS HAVE BOOKING (FIX)
+=============================== */
 
-          let booking = null;
+          let booking = out.booking || null;
 
-          // always refetch fresh booking (source of truth)
+          // 🔥 try refresh (but don't depend on it)
           try {
             const resBooking = await fetch(
               `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
@@ -1604,15 +1604,12 @@
 
             if (resBooking.ok) {
               const bOut = await resBooking.json();
-              booking = bOut.booking;
+              if (bOut?.booking) {
+                booking = bOut.booking;
+              }
             }
           } catch (e) {
-            console.log("⚠️ booking fetch failed:", e);
-          }
-
-          // fallback if needed
-          if (!booking) {
-            booking = out.booking || null;
+            console.log("⚠️ booking refresh failed (safe to ignore)");
           }
 
           /* ===============================
@@ -1626,7 +1623,7 @@
             lastName: data.lastName,
           });
 
-          submitBtn.innerHTML = "Submitted ✓";
+          submitBtn.style.display = "none";
         } catch (err) {
           console.error("❌ Form submit error:", err);
 
