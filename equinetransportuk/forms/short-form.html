@@ -322,7 +322,7 @@
         display: none;
       }
     </style>
-    <link rel="icon" href="images/favicon.png" />
+    <link rel="icon" href="/equinetransportuk/images/favicon.png" />
   </head>
 
   <body>
@@ -585,6 +585,28 @@
       const bookingId =
         params.get("bookingId") || params.get("bookingID") || "";
 
+      async function fetchBookingWithRetry(bookingId, retries = 5) {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const res = await fetch(
+              `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
+            );
+
+            if (res.ok) {
+              const out = await res.json();
+              if (out?.booking) return out.booking;
+            }
+          } catch (err) {
+            console.log("⚠️ retry fetch error", err);
+          }
+
+          console.log(`⏳ Retry ${i + 1}/${retries}...`);
+          await new Promise((r) => setTimeout(r, 800));
+        }
+
+        return null;
+      }
+
       document.getElementById("bookingIdPill").textContent = bookingId || "—";
       document.getElementById("todayDate").value = new Date()
         .toISOString()
@@ -599,22 +621,10 @@
         }
 
         try {
-          const res = await fetch(
-            `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
-          );
-
-          if (!res.ok) {
-            console.log("⚠️ Booking fetch failed");
-            lockHireTimes();
-            document.body.classList.remove("loading");
-            return;
-          }
-
-          const out = await res.json();
-          const booking = out?.booking;
+          const booking = await fetchBookingWithRetry(bookingId);
 
           if (!booking) {
-            console.log("⚠️ No booking found");
+            console.log("⚠️ No booking found after retries");
             lockHireTimes();
             document.body.classList.remove("loading");
             return;
@@ -626,7 +636,7 @@
        🚀 NEW: SKIP FORM IF ALREADY DONE
     ===================================== */
 
-          if (booking.formCompleted) {
+          if (false && booking.formCompleted) {
             console.log("⏭️ Form already completed → skipping form");
 
             renderSuccessCard({
@@ -1108,14 +1118,20 @@
     `;
         }
 
-        if (untilDisplay && hireUntilBlock?.style.display !== "none") {
+        if (untilDisplay) {
           untilDisplay.style.display = "block";
+
+          let returnTime = untilTimeEl.value;
+
+          if (bookingType === "half-am") returnTime = "13:00";
+          if (bookingType === "half-pm") returnTime = "19:00";
+
           untilDisplay.innerHTML = `
-      <div style="font-size:12px;color:#6b7280;">Return time</div>
-      <div style="font-size:16px;font-weight:700;">
-        ${untilTimeEl.value}
-      </div>
-    `;
+    <div style="font-size:12px;color:#6b7280;">Return time</div>
+    <div style="font-size:16px;font-weight:700;">
+      ${returnTime}
+    </div>
+  `;
         }
 
         // hide real selects (keep values for submit)
