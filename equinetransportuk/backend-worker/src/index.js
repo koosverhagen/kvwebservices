@@ -3807,32 +3807,14 @@ async function handleFormSubmit(request, env) {
        FIND BOOKING IN KV
     =============================== */
 
-    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+    /* ===============================
+   🔥 FIND BOOKING (D1 + KV SAFE)
+=============================== */
 
-    let booking = null;
-    let monthKeyUsed = null;
-    let monthData = null;
-
-    for (const key of list.keys) {
-      const raw = await env.BOOKINGS_KV.get(key.name);
-      if (!raw) continue;
-
-      try {
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) continue;
-
-        const found = parsed.find((b) => String(b.id) === bookingId);
-
-        if (found) {
-          booking = found;
-          monthKeyUsed = key.name;
-          monthData = parsed;
-          break;
-        }
-      } catch {}
-    }
+    const booking = await findBookingById(env, bookingId);
 
     if (!booking) {
+      console.log("❌ FORM: booking not found", bookingId);
       return json({ error: "Booking not found" }, 404);
     }
 
@@ -3965,32 +3947,59 @@ async function handleFormSubmit(request, env) {
       .run();
 
     /* ===============================
-       UPDATE BOOKING IN KV
-    =============================== */
-
-    booking.formCompleted = true;
-    booking.formType = formType;
-    booking.formSubmittedAt = now;
-    booking.formRecordId = formId;
-
-    /* ===============================
-   SAVE DVLA INTO BOOKING (NEW)
+   UPDATE BOOKING IN KV (BULLETPROOF)
 =============================== */
 
-    booking.dvlaLicenceLast8 = licenceLast8 || "";
-    booking.dvlaCode = dvlaCode || "";
+    try {
+      let updated = false;
 
-    // only set default if not already verified
-    if (booking.dvlaVerified !== true) {
-      booking.dvlaVerified = false;
-    }
+      const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
-    if (monthKeyUsed && monthData) {
-      const updated = monthData.map((b) =>
-        String(b.id) === bookingId ? booking : b,
-      );
+      for (const key of list.keys) {
+        const raw = await env.BOOKINGS_KV.get(key.name);
+        if (!raw) continue;
 
-      await env.BOOKINGS_KV.put(monthKeyUsed, JSON.stringify(updated));
+        let parsed;
+
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          continue;
+        }
+
+        if (!Array.isArray(parsed)) continue;
+
+        const next = parsed.map((b) => {
+          if (String(b.id) !== String(bookingId)) return b;
+
+          updated = true;
+
+          return {
+            ...b,
+            formCompleted: true,
+            formType,
+            formSubmittedAt: now,
+            formRecordId: formId,
+            dvlaLicenceLast8: licenceLast8 || "",
+            dvlaCode: dvlaCode || "",
+            dvlaVerified: b.dvlaVerified === true ? true : false,
+          };
+        });
+
+        if (updated) {
+          await env.BOOKINGS_KV.put(key.name, JSON.stringify(next));
+          console.log("✅ KV updated (scan fallback):", bookingId);
+          break;
+        }
+      }
+
+      if (!updated) {
+        console.log(
+          "⚠️ KV booking not found (still OK, D1 is source of truth)",
+        );
+      }
+    } catch (err) {
+      console.log("⚠️ KV update failed:", err);
     }
 
     /* ===============================
