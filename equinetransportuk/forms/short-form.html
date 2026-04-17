@@ -585,26 +585,20 @@
       const bookingId =
         params.get("bookingId") || params.get("bookingID") || "";
 
-      async function fetchBookingWithRetry(bookingId, retries = 5) {
-        for (let i = 0; i < retries; i++) {
-          try {
-            const res = await fetch(
-              `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
-            );
+      async function fetchBookingFast(bookingId) {
+        try {
+          const res = await fetch(
+            `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
+          );
 
-            if (res.ok) {
-              const out = await res.json();
-              if (out?.booking) return out.booking;
-            }
-          } catch (err) {
-            console.log("⚠️ retry fetch error", err);
-          }
+          if (!res.ok) return null;
 
-          console.log(`⏳ Retry ${i + 1}/${retries}...`);
-          await new Promise((r) => setTimeout(r, 800));
+          const out = await res.json();
+          return out?.booking || null;
+        } catch (err) {
+          console.log("⚠️ fetch error", err);
+          return null;
         }
-
-        return null;
       }
 
       document.getElementById("bookingIdPill").textContent = bookingId || "—";
@@ -621,10 +615,18 @@
         }
 
         try {
-          const booking = await fetchBookingWithRetry(bookingId);
+          let booking = await fetchBookingFast(bookingId);
+          if (!booking) {
+            console.log("⏳ Booking not ready, retrying...");
+
+            await new Promise((r) => setTimeout(r, 1200));
+
+            booking = await fetchBookingFast(bookingId);
+          }
 
           if (!booking) {
-            console.log("⚠️ No booking found after retries");
+            console.log("⚠️ Booking still not found");
+
             lockHireTimes();
             document.body.classList.remove("loading");
             return;
@@ -632,152 +634,8 @@
 
           console.log("✅ Prefill booking loaded");
 
-          /* =====================================
-       🚀 NEW: SKIP FORM IF ALREADY DONE
-    ===================================== */
-
-          if (false && booking.formCompleted) {
-            console.log("⏭️ Form already completed → skipping form");
-
-            renderSuccessCard({
-              booking,
-              bookingId,
-              firstName: booking.customerName?.split(" ")[0] || "",
-              lastName:
-                booking.customerName?.split(" ").slice(1).join(" ") || "",
-            });
-
-            lockHireTimes(); // optional but safe
-            document.body.classList.remove("loading");
-            return;
-          }
-
-          /* ===============================
-       PREFILL FIELDS
-    =============================== */
-
-          if (booking.customerName) {
-            const parts = booking.customerName.split(" ");
-            const first = parts.shift();
-            const last = parts.join(" ");
-
-            const firstInput = document.querySelector('[name="firstName"]');
-            const lastInput = document.querySelector('[name="lastName"]');
-
-            if (firstInput && !firstInput.value) firstInput.value = first;
-            if (lastInput && !lastInput.value) lastInput.value = last;
-          }
-
-          const emailInput = document.querySelector('[name="email"]');
-          if (emailInput && !emailInput.value) {
-            emailInput.value = booking.customerEmail || "";
-          }
-
-          const mobileInput = document.querySelector('[name="mobile"]');
-          if (mobileInput && !mobileInput.value) {
-            mobileInput.value = booking.customerMobile || "";
-          }
-
-          /* ===============================
-   OPTIONAL: PREFILL DATES (LOCKED)
-=============================== */
-
-          if (booking.pickupAt && booking.dropoffAt) {
-            const fromDateInput = document.getElementById("hireFromDate");
-            const fromTimeInput = document.getElementById("hireFromTime");
-            const untilDateInput = document.getElementById("hireUntilDate");
-            const untilTimeInput = document.getElementById("hireUntilTime");
-
-            const formatLondonDate = (value) => {
-              const d = new Date(value);
-
-              const parts = new Intl.DateTimeFormat("en-CA", {
-                timeZone: "Europe/London",
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-              }).formatToParts(d);
-
-              const get = (type) =>
-                parts.find((p) => p.type === type)?.value || "";
-
-              return `${get("year")}-${get("month")}-${get("day")}`;
-            };
-
-            const formatLondonTime = (value) => {
-              const d = new Date(value);
-
-              return d.toLocaleTimeString("en-GB", {
-                timeZone: "Europe/London",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              });
-            };
-
-            const nearestAllowedTime = (time, allowed) => {
-              if (allowed.includes(time)) return time;
-
-              if (
-                time >= "06:30" &&
-                time <= "07:30" &&
-                allowed.includes("07:00")
-              ) {
-                return "07:00";
-              }
-
-              if (
-                time >= "12:30" &&
-                time <= "13:30" &&
-                allowed.includes("13:00")
-              ) {
-                return "13:00";
-              }
-
-              if (
-                time >= "18:30" &&
-                time <= "19:30" &&
-                allowed.includes("19:00")
-              ) {
-                return "19:00";
-              }
-
-              return allowed[0] || "";
-            };
-
-            const fromDate = formatLondonDate(booking.pickupAt);
-            const rawFromTime = formatLondonTime(booking.pickupAt);
-
-            const untilDate = formatLondonDate(booking.dropoffAt);
-            const rawUntilTime = formatLondonTime(booking.dropoffAt);
-
-            const lockedFromTime = nearestAllowedTime(rawFromTime, [
-              "07:00",
-              "13:00",
-            ]);
-            const lockedUntilTime = nearestAllowedTime(rawUntilTime, [
-              "07:00",
-              "13:00",
-              "19:00",
-            ]);
-
-            if (fromDateInput && !fromDateInput.value) {
-              fromDateInput.value = fromDate;
-            }
-
-            if (fromTimeInput && !fromTimeInput.value) {
-              fromTimeInput.value = lockedFromTime;
-            }
-
-            if (untilDateInput && !untilDateInput.value) {
-              untilDateInput.value = untilDate;
-            }
-
-            if (untilTimeInput && !untilTimeInput.value) {
-              untilTimeInput.value = lockedUntilTime;
-            }
-            lockHireTimes(); // 🔥 APPLY UI RULES AFTER PREFILL
-          }
+          fillFormFromBooking(booking);
+          return;
         } catch (err) {
           console.log("⚠️ Prefill failed:", err);
         }
@@ -957,6 +815,104 @@
           errorEl.textContent = "";
           errorEl.classList.add("hidden");
         }
+      }
+
+      function fillFormFromBooking(booking) {
+        if (!booking) return;
+
+        console.log("🧩 Filling form from booking...");
+
+        /* ===============================
+     NAME
+  =============================== */
+
+        if (booking.customerName) {
+          const parts = booking.customerName.split(" ");
+          const first = parts.shift();
+          const last = parts.join(" ");
+
+          const firstInput = document.querySelector('[name="firstName"]');
+          const lastInput = document.querySelector('[name="lastName"]');
+
+          if (firstInput && !firstInput.value) firstInput.value = first;
+          if (lastInput && !lastInput.value) lastInput.value = last;
+        }
+
+        /* ===============================
+     CONTACT
+  =============================== */
+
+        const emailInput = document.querySelector('[name="email"]');
+        if (emailInput && !emailInput.value) {
+          emailInput.value = booking.customerEmail || "";
+        }
+
+        const mobileInput = document.querySelector('[name="mobile"]');
+        if (mobileInput && !mobileInput.value) {
+          mobileInput.value = booking.customerMobile || "";
+        }
+
+        /* ===============================
+     DATES (LOCKED)
+  =============================== */
+
+        if (booking.pickupAt && booking.dropoffAt) {
+          const fromDateInput = document.getElementById("hireFromDate");
+          const fromTimeInput = document.getElementById("hireFromTime");
+          const untilDateInput = document.getElementById("hireUntilDate");
+          const untilTimeInput = document.getElementById("hireUntilTime");
+
+          const formatLondonDate = (value) => {
+            const d = new Date(value);
+
+            const parts = new Intl.DateTimeFormat("en-CA", {
+              timeZone: "Europe/London",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }).formatToParts(d);
+
+            const get = (type) =>
+              parts.find((p) => p.type === type)?.value || "";
+
+            return `${get("year")}-${get("month")}-${get("day")}`;
+          };
+
+          const formatLondonTime = (value) => {
+            const d = new Date(value);
+
+            return d.toLocaleTimeString("en-GB", {
+              timeZone: "Europe/London",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+          };
+
+          const fromDate = formatLondonDate(booking.pickupAt);
+          const fromTime = formatLondonTime(booking.pickupAt);
+
+          const untilDate = formatLondonDate(booking.dropoffAt);
+          const untilTime = formatLondonTime(booking.dropoffAt);
+
+          if (fromDateInput && !fromDateInput.value)
+            fromDateInput.value = fromDate;
+          if (fromTimeInput && !fromTimeInput.value)
+            fromTimeInput.value = fromTime;
+
+          if (untilDateInput && !untilDateInput.value)
+            untilDateInput.value = untilDate;
+          if (untilTimeInput && !untilTimeInput.value)
+            untilTimeInput.value = untilTime;
+        }
+
+        /* ===============================
+     APPLY UI RULES
+  =============================== */
+
+        lockHireTimes();
+
+        document.body.classList.remove("loading");
       }
 
       function formatDateTime(value) {
