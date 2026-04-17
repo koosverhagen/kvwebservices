@@ -953,10 +953,134 @@
         const bookingId =
           params.get("bookingId") || params.get("bookingID") || "";
 
+        let prefillDone = false;
+
+        async function fetchBookingFast(bookingId) {
+          try {
+            const res = await fetch(
+              `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
+            );
+
+            if (!res.ok) return null;
+
+            const out = await res.json();
+            return out?.booking || null;
+          } catch (err) {
+            console.log("⚠️ fetch error", err);
+            return null;
+          }
+        }
+
         document.getElementById("bookingIdPill").textContent = bookingId || "—";
 
         const today = new Date().toISOString().slice(0, 10);
         document.getElementById("signedDate").value = today;
+
+        async function prefillFromBooking() {
+          if (!bookingId) {
+            document.body.classList.remove("loading");
+            return;
+          }
+
+          try {
+            let booking = await fetchBookingFast(bookingId);
+
+            if (!booking) {
+              const delays = [800, 1200, 1800, 2500];
+
+              for (const delay of delays) {
+                await new Promise((r) => setTimeout(r, delay));
+                booking = await fetchBookingFast(bookingId);
+                if (booking) break;
+              }
+            }
+
+            if (!booking) {
+              document.body.classList.remove("loading");
+              return;
+            }
+
+            console.log("✅ Prefill booking loaded");
+
+            /* ===============================
+       🚀 AUTO SKIP
+    =============================== */
+
+            if (booking.formCompleted) {
+              renderSuccessCard({
+                booking,
+                firstName: booking.customerName?.split(" ")[0] || "",
+                lastName:
+                  booking.customerName?.split(" ").slice(1).join(" ") || "",
+                bookingId,
+                alreadyDone: true,
+              });
+
+              document.body.classList.remove("loading");
+              return;
+            }
+
+            /* ===============================
+       PREFILL
+    =============================== */
+
+            fillFormFromBooking(booking);
+          } catch (err) {
+            console.log("⚠️ Prefill failed:", err);
+          }
+
+          document.body.classList.remove("loading");
+        }
+
+        prefillFromBooking();
+
+        function fillFormFromBooking(booking) {
+          if (!booking) return;
+
+          /* NAME */
+          if (booking.customerName) {
+            const parts = booking.customerName.split(" ");
+            document.getElementById("firstName").value = parts.shift() || "";
+            document.getElementById("lastName").value = parts.join(" ") || "";
+          }
+
+          /* CONTACT */
+          document.getElementById("email").value = booking.customerEmail || "";
+          document.getElementById("mobile").value =
+            booking.customerMobile || "";
+
+          /* DATES */
+          if (booking.pickupAt && booking.dropoffAt) {
+            const formatDate = (v) =>
+              new Date(v).toLocaleDateString("en-CA", {
+                timeZone: "Europe/London",
+              });
+
+            const formatTime = (v) =>
+              new Date(v).toLocaleTimeString("en-GB", {
+                timeZone: "Europe/London",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              });
+
+            document.getElementById("hireFromDate").value = formatDate(
+              booking.pickupAt,
+            );
+            document.getElementById("hireUntilDate").value = formatDate(
+              booking.dropoffAt,
+            );
+
+            document.getElementById("hireFromTime").value = formatTime(
+              booking.pickupAt,
+            );
+            document.getElementById("hireUntilTime").value = formatTime(
+              booking.dropoffAt,
+            );
+          }
+
+          prefillDone = true;
+        }
 
         /* ===============================
    OVERNIGHT PARKING (DYNAMIC)
@@ -1069,6 +1193,8 @@
 
           container.style.display = "block";
 
+          const alreadyDone = data.alreadyDone === true;
+
           const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
           const vehicle =
             data.booking?.vehicleSnapshot?.name || data.vehicleName || "—";
@@ -1103,6 +1229,25 @@
 
   <!-- SUCCESS ICON -->
   <div style="font-size:38px;margin-bottom:6px;">✅</div>
+
+  ${
+    alreadyDone
+      ? `
+<div style="
+  background:#ecfeff;
+  border:1px solid #67e8f9;
+  color:#0f766e;
+  padding:10px 14px;
+  border-radius:12px;
+  font-size:13px;
+  font-weight:600;
+  margin-bottom:14px;
+">
+  ✔ You’ve already completed this form for this booking
+</div>
+`
+      : ""
+  }
 
   <!-- TITLE -->
   <h2 style="margin:0 0 6px;font-size:24px;font-weight:800;">
@@ -1161,44 +1306,93 @@
   </div>
 
   <!-- WHAT HAPPENS NEXT -->
-  <div style="
-    background:#f9fafb;
-    border:1px solid #e5e7eb;
-    border-radius:16px;
-    padding:18px;
-    margin-bottom:22px;
-    text-align:left;
-  ">
+<div style="
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  padding:18px;
+  margin-bottom:22px;
+  text-align:left;
+">
 
-    <div style="font-weight:700;margin-bottom:10px;">
-      What happens next
+  <div style="font-weight:700;margin-bottom:10px;">
+    What happens next
+  </div>
+
+  <div style="font-size:14px;color:#374151;line-height:1.6;">
+
+    <div style="margin-bottom:8px;">
+      ✅ Your form has been securely saved
     </div>
 
-    <div style="font-size:14px;color:#374151;line-height:1.6;">
+    <div style="margin-bottom:8px;">
+      📧 All booking and payment links are in your confirmation email
+    </div>
 
-      <div style="margin-bottom:8px;">
-        ✅ Your form has been securely saved
-      </div>
+    <div style="margin-bottom:8px;">
+      💳 Use the deposit link in your email (if required)
+    </div>
 
-     <div style="margin-bottom:8px;">
-  📧 All booking and payment links are in your confirmation email
-</div>
+    <div style="margin-bottom:8px;">
+      💰 Outstanding balance can be paid using the link in your email
+    </div>
 
-<div style="margin-bottom:8px;">
-  💳 Use the deposit link in your email (if required)
-</div>
-
-<div style="margin-bottom:8px;">
-  💰 Outstanding balance can be paid using the link in your email
-</div>
-
-      <div>
-        🚚 Your vehicle will be prepared for your hire date
-      </div>
-
+    <div>
+      🚚 Your vehicle will be prepared for your hire date
     </div>
 
   </div>
+
+</div>
+
+<!-- CTA BUTTONS -->
+<div style="display:flex;flex-direction:column;gap:12px;">
+
+  <button id="resendLinksBtn" style="
+    width:100%;
+    background:#111827;
+    color:#fff;
+    padding:14px;
+    border-radius:14px;
+    font-weight:700;
+    border:0;
+    cursor:pointer;
+  ">
+    Resend links
+  </button>
+
+  <a href="/equinetransportuk/index.html" style="
+    width:100%;
+    background:#1f6feb;
+    color:#fff;
+    text-decoration:none;
+    padding:14px;
+    border-radius:14px;
+    font-weight:700;
+  ">
+    Back to homepage
+  </a>
+
+</div>
+
+<!-- POPUP -->
+<div id="linksSentPopup" style="
+  position:absolute;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%) translateY(-10px);
+  background:#111827;
+  color:#fff;
+  padding:12px 18px;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:600;
+  opacity:0;
+  pointer-events:none;
+  transition:all .25s ease;
+">
+  ✅ Links sent successfully
+</div>
 
   <!-- TRUST -->
   <div style="
@@ -1294,14 +1488,15 @@
                     headers: {
                       "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ bookingId }),
+                    body: JSON.stringify({
+                      bookingId: data.bookingId || bookingId,
+                    }),
                   },
                 );
 
-                const data = await res.json();
+                const out = await res.json();
 
-                if (data?.ok) {
-                  // ✅ SHOW POPUP
+                if (out?.ok) {
                   if (popup) {
                     popup.style.opacity = "1";
                     popup.style.transform = "translateX(-50%) translateY(0)";
@@ -1523,6 +1718,8 @@
             renderSuccessCard({
               ...data,
               booking,
+              bookingId,
+              alreadyDone: false,
             });
 
             submitBtn.textContent = "Submitted";
