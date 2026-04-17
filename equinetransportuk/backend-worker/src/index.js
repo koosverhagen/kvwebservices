@@ -1323,6 +1323,154 @@ function getDatesBetween(start, end) {
 }
 
 async function findBookingById(env, bookingId) {
+  const safeBookingId = String(bookingId || "").trim();
+
+  if (!safeBookingId) return null;
+
+  /* ===============================
+     1) D1 FIRST (SOURCE OF TRUTH)
+  =============================== */
+
+  try {
+    const row = await env.DB.prepare(
+      `
+      SELECT
+        b.id,
+        b.customer_id,
+        b.vehicle_id,
+        b.pickup_at,
+        b.dropoff_at,
+        b.duration_days,
+        b.price_total,
+        b.paid_now,
+        b.status,
+        b.created_at,
+        b.updated_at,
+        b.form_completed,
+        b.dvla_verified,
+
+        c.full_name,
+        c.email,
+        c.mobile
+      FROM bookings b
+      LEFT JOIN customers c
+        ON c.id = b.customer_id
+      WHERE b.id = ?
+      LIMIT 1
+      `,
+    )
+      .bind(safeBookingId)
+      .first();
+
+    if (row) {
+      const booking = {
+        id: row.id,
+        customerId: row.customer_id,
+        vehicleId: row.vehicle_id,
+
+        vehicleSnapshot: {
+          id: row.vehicle_id,
+          name: "",
+          type: String(row.vehicle_id || "").startsWith("v35")
+            ? "3.5 tonne"
+            : "7.5 tonne",
+        },
+
+        pickupAt: row.pickup_at,
+        dropoffAt: row.dropoff_at,
+
+        pickupAtLocal: row.pickup_at
+          ? toLondonLocalISOString(new Date(row.pickup_at))
+          : null,
+        dropoffAtLocal: row.dropoff_at
+          ? toLondonLocalISOString(new Date(row.dropoff_at))
+          : null,
+
+        durationDays: Number(row.duration_days || 0),
+        pickupTime: row.pickup_at
+          ? toLondonLocalISOString(new Date(row.pickup_at)).slice(11, 16)
+          : "07:00",
+
+        customerName: row.full_name || "",
+        customerEmail: row.email || "",
+        customerMobile: row.mobile || "",
+
+        hireTotal: Number(row.price_total || 0),
+        priceTotal: Number(row.price_total || 0),
+        confirmationFee: Number(row.paid_now || 0),
+        paidNow: Number(row.paid_now || 0),
+        outstandingAmount: Math.max(
+          0,
+          Number(row.price_total || 0) - Number(row.paid_now || 0),
+        ),
+        outstanding: Math.max(
+          0,
+          Number(row.price_total || 0) - Number(row.paid_now || 0),
+        ),
+
+        formCompleted: row.form_completed === 1,
+        dvlaVerified: row.dvla_verified === 1,
+
+        status: row.status || "confirmed",
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+
+      /* ===============================
+         2) ENRICH FROM KV IF AVAILABLE
+      =============================== */
+
+      try {
+        const monthKey = `bookings:${String(booking.pickupAt || "").slice(0, 7)}`;
+        const monthData = await env.BOOKINGS_KV.get(monthKey);
+
+        if (monthData) {
+          const parsed = JSON.parse(monthData);
+
+          if (Array.isArray(parsed)) {
+            const kvBooking = parsed.find(
+              (b) => String(b.id) === String(safeBookingId),
+            );
+
+            if (kvBooking) {
+              return {
+                ...booking,
+                ...kvBooking,
+                id: booking.id,
+                customerId: booking.customerId,
+                vehicleId: booking.vehicleId,
+                pickupAt: booking.pickupAt,
+                dropoffAt: booking.dropoffAt,
+                pickupAtLocal: booking.pickupAtLocal,
+                dropoffAtLocal: booking.dropoffAtLocal,
+                durationDays: booking.durationDays,
+                pickupTime: kvBooking.pickupTime || booking.pickupTime,
+                customerName: kvBooking.customerName || booking.customerName,
+                customerEmail: kvBooking.customerEmail || booking.customerEmail,
+                customerMobile:
+                  kvBooking.customerMobile || booking.customerMobile,
+                formCompleted:
+                  kvBooking.formCompleted === true || booking.formCompleted,
+                dvlaVerified:
+                  kvBooking.dvlaVerified === true || booking.dvlaVerified,
+              };
+            }
+          }
+        }
+      } catch (err) {
+        console.log("⚠️ KV enrich failed:", err);
+      }
+
+      return booking;
+    }
+  } catch (err) {
+    console.log("⚠️ D1 findBookingById failed:", err);
+  }
+
+  /* ===============================
+     3) FALLBACK TO KV
+  =============================== */
+
   const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
   for (const key of list.keys) {
@@ -1333,7 +1481,7 @@ async function findBookingById(env, bookingId) {
       const parsed = JSON.parse(data);
 
       if (Array.isArray(parsed)) {
-        const found = parsed.find((b) => String(b.id) === String(bookingId));
+        const found = parsed.find((b) => String(b.id) === safeBookingId);
         if (found) return found;
       }
     } catch {}
