@@ -622,6 +622,7 @@
                 booking.customerName?.split(" ").slice(1).join(" ") || "",
             });
 
+            lockHireTimes(); // optional but safe
             document.body.classList.remove("loading");
             return;
           }
@@ -755,6 +756,12 @@
         } catch (err) {
           console.log("⚠️ Prefill failed:", err);
         }
+
+        /* ===============================
+   ✅ FINAL UI UNLOCK (ONLY HERE)
+=============================== */
+
+        lockHireTimes(); // 🔥 ALWAYS run after prefill attempt
         document.body.classList.remove("loading");
       }
 
@@ -1086,7 +1093,7 @@
     `;
         }
 
-        if (untilDisplay) {
+        if (untilDisplay && hireUntilBlock?.style.display !== "none") {
           untilDisplay.style.display = "block";
           untilDisplay.innerHTML = `
       <div style="font-size:12px;color:#6b7280;">Return time</div>
@@ -1599,9 +1606,6 @@
         lockHireTimes(); // 🔒 apply booking rules
         document.body.classList.remove("loading");
       }
-
-      // fallback safety:
-      setTimeout(clearLoading, 2000);
     </script>
   </body>
 </html>
