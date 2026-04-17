@@ -924,7 +924,6 @@
         /* ===============================
      APPLY UI RULES
   =============================== */
-
         /* ===============================
    🔥 MARK PREFILL COMPLETE
 =============================== */
@@ -938,7 +937,6 @@
         lockHireTimes();
 
         document.body.classList.remove("loading");
-        List.remove("loading");
       }
 
       function formatDateTime(value) {
@@ -1155,50 +1153,9 @@
         untilTimeEl.style.display = "none";
       }
 
-      function getCorrectReturnDateTime(booking, fallback) {
-        if (!booking) return fallback || "—";
-
-        const duration = Number(booking.durationDays);
-        const pickupTime = booking.pickupTime;
-
-        let baseDate;
-
-        if (booking.dropoffAt) {
-          baseDate = new Date(booking.dropoffAt);
-        } else if (fallback) {
-          baseDate = new Date(fallback);
-        } else {
-          return "—";
-        }
-
-        if (isNaN(baseDate.getTime())) return "—";
-
-        // 🔥 FIX HALF DAY TIMES
-        if (
-          duration === 0.5 &&
-          String(booking.vehicleId || "").startsWith("v35")
-        ) {
-          const forcedTime = pickupTime === "13:00" ? "19:00" : "13:00";
-
-          const dateStr = baseDate.toLocaleDateString("en-GB", {
-            timeZone: "Europe/London",
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
-
-          return `${dateStr}, ${forcedTime}`;
-        }
-
-        // ✅ fallback normal formatting
-        return baseDate.toLocaleString("en-GB", {
-          timeZone: "Europe/London",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+      function getCorrectReturnDateTime(booking) {
+        if (!booking?.dropoffAt) return "—";
+        return booking.dropoffAt; // ✅ always raw ISO
       }
 
       function renderSuccessCard(data) {
