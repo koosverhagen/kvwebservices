@@ -591,19 +591,34 @@
         .slice(0, 10);
 
       async function prefillFromBooking() {
-        if (!bookingId) return;
+        if (!bookingId) {
+          console.log("⚠️ No bookingId → showing empty form");
+          lockHireTimes();
+          document.body.classList.remove("loading");
+          return;
+        }
 
         try {
           const res = await fetch(
             `https://equine-bookings-api.kverhagen.workers.dev/api/bookings/by-id?bookingId=${bookingId}`,
           );
 
-          if (!res.ok) return;
+          if (!res.ok) {
+            console.log("⚠️ Booking fetch failed");
+            lockHireTimes();
+            document.body.classList.remove("loading");
+            return;
+          }
 
           const out = await res.json();
           const booking = out?.booking;
 
-          if (!booking) return;
+          if (!booking) {
+            console.log("⚠️ No booking found");
+            lockHireTimes();
+            document.body.classList.remove("loading");
+            return;
+          }
 
           console.log("✅ Prefill booking loaded");
 
