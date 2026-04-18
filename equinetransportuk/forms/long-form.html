@@ -482,6 +482,18 @@
               />
 
               <select id="hireFromTime" name="hireFromTime" required>
+                <div
+                  id="hireFromTimeDisplay"
+                  style="
+                    margin-top: 8px;
+                    padding: 12px;
+                    border-radius: 12px;
+                    background: #eef2ff;
+                    font-weight: 700;
+                    font-size: 15px;
+                    display: none;
+                  "
+                ></div>
                 <option value="" disabled selected>Select time</option>
                 <option value="07:00">07:00 (Morning)</option>
                 <option value="13:00">13:00 (Afternoon)</option>
@@ -498,6 +510,18 @@
               />
 
               <select id="hireUntilTime" name="hireUntilTime" required>
+                <div
+                  id="hireUntilTimeDisplay"
+                  style="
+                    margin-top: 8px;
+                    padding: 12px;
+                    border-radius: 12px;
+                    background: #eef2ff;
+                    font-weight: 700;
+                    font-size: 15px;
+                    display: none;
+                  "
+                ></div>
                 <option value="" disabled selected>Select time</option>
                 <option value="13:00">13:00 (Half Day)</option>
                 <option value="19:00">19:00 (Full Day)</option>
@@ -1082,6 +1106,8 @@
           prefillDone = true;
 
           updateOvernightVisibility();
+
+          lockHireTimes();
         }
 
         /* ===============================
@@ -1737,6 +1763,47 @@
         const location = encodeURIComponent("Equine Transport UK");
 
         return `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
+      }
+
+      function lockHireTimes() {
+        const fromTimeEl = document.getElementById("hireFromTime");
+        const untilTimeEl = document.getElementById("hireUntilTime");
+
+        const fromDisplay = document.getElementById("hireFromTimeDisplay");
+        const untilDisplay = document.getElementById("hireUntilTimeDisplay");
+
+        if (!fromTimeEl || !untilTimeEl) return;
+
+        /* ===============================
+     🔒 HIDE DROPDOWNS
+  =============================== */
+
+        fromTimeEl.style.display = "none";
+        untilTimeEl.style.display = "none";
+
+        /* ===============================
+     🎨 SHOW CLEAN DISPLAY
+  =============================== */
+
+        if (fromDisplay) {
+          fromDisplay.style.display = "block";
+          fromDisplay.innerHTML = `
+      <div style="font-size:12px;color:#6b7280;">Pickup time</div>
+      <div style="font-size:16px;font-weight:700;">
+        ${fromTimeEl.value}
+      </div>
+    `;
+        }
+
+        if (untilDisplay) {
+          untilDisplay.style.display = "block";
+          untilDisplay.innerHTML = `
+      <div style="font-size:12px;color:#6b7280;">Return time</div>
+      <div style="font-size:16px;font-weight:700;">
+        ${untilTimeEl.value}
+      </div>
+    `;
+        }
       }
 
       function initAddressAutocomplete() {
