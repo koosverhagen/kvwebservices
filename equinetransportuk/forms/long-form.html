@@ -896,6 +896,7 @@
 
           <!-- Driving Licence & Paperwork -->
           <h2>Driving Licence and Identification Paperwork</h2>
+
           <div class="small" style="margin-bottom: 12px; line-height: 1.5">
             <p>
               Please indicate what type of driving licence you have been issued
@@ -915,8 +916,10 @@
             </p>
           </div>
 
-          <!-- Licence Holder Type -->
-          <div class="grid two">
+          <!-- ===============================
+     LICENCE TYPE (GROUP)
+================================ -->
+          <div id="licenceGroup" class="grid two" style="margin-top: 10px">
             <label class="checkbox-line">
               <input type="checkbox" name="dvlaLicenceHolder" value="yes" />
               <span>DVLA Licence Holder</span>
@@ -928,11 +931,16 @@
             </label>
           </div>
 
+          <div id="licenceError" class="status err" style="display: none"></div>
+
           <div class="divider"></div>
 
+          <!-- ===============================
+     PROOF OF ADDRESS (GROUP)
+================================ -->
           <h3 style="margin-top: 0; font-size: 15px">Proof of Address</h3>
 
-          <div class="grid two">
+          <div id="addressGroup" class="grid two" style="margin-top: 10px">
             <label class="checkbox-line">
               <input type="checkbox" name="proofAddress1" value="yes" />
               <span>Proof of Address 1</span>
@@ -944,13 +952,23 @@
             </label>
           </div>
 
-          <div style="margin-top: 10px">
+          <div id="addressError" class="status err" style="display: none"></div>
+
+          <!-- ===============================
+     PHOTO ID (GROUP)
+================================ -->
+          <div id="photoGroup" style="margin-top: 10px">
             <label class="checkbox-line">
               <input type="checkbox" name="photoId" value="yes" />
               <span>Photo ID (Photocard Licence / Passport / etc.)</span>
             </label>
           </div>
 
+          <div id="photoError" class="status err" style="display: none"></div>
+
+          <!-- ===============================
+     DECLARATION
+================================ -->
           <div style="margin-top: 14px">
             <label class="checkbox-line">
               <input
@@ -1251,13 +1269,47 @@
    CHECKBOX GROUP VALIDATION
 =============================== */
 
-        function validateCheckboxGroup(names, message) {
+        function validateCheckboxGroup(names, message, containerSelector) {
           const inputs = names.flatMap((name) =>
             Array.from(document.querySelectorAll(`input[name="${name}"]`)),
           );
 
-          return inputs.some((i) => i.checked) || message;
+          const container = document.querySelector(containerSelector);
+
+          const isValid = inputs.some((i) => i.checked);
+
+          // 🔥 Visual highlight (like required fields)
+          if (!isValid && container) {
+            container.style.border = "1px solid #dc2626";
+            container.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.15)";
+            container.style.borderRadius = "12px";
+            container.style.padding = "10px";
+          } else if (container) {
+            container.style.border = "";
+            container.style.boxShadow = "";
+            container.style.padding = "";
+          }
+
+          return isValid || message;
         }
+
+        /* ===============================
+   🔥 AUTO CLEAR ERROR ON CHANGE
+=============================== */
+
+        document.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.addEventListener("change", () => {
+            ["#licenceGroup", "#addressGroup", "#photoGroup"].forEach((id) => {
+              const el = document.querySelector(id);
+              if (el) {
+                el.style.border = "";
+                el.style.boxShadow = "";
+                el.style.padding = "";
+              }
+            });
+          });
+        });
+
         /* ===============================
    DVLA AUTO CLEAN (FINAL FIX)
 =============================== */
@@ -1711,35 +1763,56 @@
    EXTRA VALIDATION
 =============================== */
 
-          // licence type (must pick one)
+          // licence type
           const licenceCheck = validateCheckboxGroup(
             ["dvlaLicenceHolder", "nonDvlaLicenceHolder"],
             "Please select licence type.",
+            "#licenceGroup",
           );
 
           if (licenceCheck !== true) {
             statusEl.className = "status err";
             statusEl.textContent = licenceCheck;
+
+            document.querySelector("#licenceGroup")?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+
             return;
           }
 
-          // proof of address (at least 1)
+          // proof of address
           const proofCheck = validateCheckboxGroup(
             ["proofAddress1", "proofAddress2"],
             "Please provide at least one proof of address.",
+            "#addressGroup",
           );
 
           if (proofCheck !== true) {
             statusEl.className = "status err";
             statusEl.textContent = proofCheck;
+
+            document.querySelector("#addressGroup")?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+
             return;
           }
 
-          // photo ID required
+          // photo ID
           const photoId = document.querySelector('input[name="photoId"]');
+
           if (!photoId?.checked) {
             statusEl.className = "status err";
             statusEl.textContent = "Photo ID is required.";
+
+            document.querySelector("#photoGroup")?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+
             return;
           }
 
