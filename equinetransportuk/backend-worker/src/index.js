@@ -1183,11 +1183,6 @@ async function handleCreateCheckoutSession(request, env) {
     return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
   }
 
-  function slotsConflict(a, b) {
-    if (a === "full" || b === "full") return true;
-    return a === b;
-  }
-
   const requestedSlot = getReservationSlot(durationDays, pickupTime);
 
   const pickupMonth = booking.pickupDate.slice(0, 7);
@@ -1542,11 +1537,6 @@ function getReservationSlot(durationDaysValue, pickupTimeValue) {
 function getConfirmedSlot(confirmedBooking) {
   if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
   return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
-}
-
-function slotsConflict(a, b) {
-  if (a === "full" || b === "full") return true;
-  return a === b;
 }
 
 function getMonthKeysBetween(startIso, endIso) {
