@@ -737,6 +737,18 @@ export default {
       }
 
       /* ===============================
+   BOOKING UPDATE (ADMIN)
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/booking-update"
+      ) {
+        const response = await handleAdminBookingUpdate(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    RESEND EMAIL (ADMIN)
 =============================== */
 
@@ -1488,6 +1500,414 @@ async function findBookingById(env, bookingId) {
   }
 
   return null;
+}
+
+/* ===============================
+   ADMIN BOOKING EDIT HELPERS
+================================ */
+
+function getVehicleTypeFromId(vehicleId) {
+  return String(vehicleId || "").startsWith("v35") ? "3.5 tonne" : "7.5 tonne";
+}
+
+function getVehicleNameFromId(vehicleId) {
+  const map = {
+    "v35-1": "3.5T Safety Bar Lorry",
+    "v35-2": "3.5T Stallion Lorry",
+    "v35-3": "3.5T Breast Bar Lorry",
+    "v75-1": "7.5T 3 Horse with Living",
+    "v75-2": "7.5T 4 Horses No Living",
+  };
+
+  return map[String(vehicleId || "").trim()] || String(vehicleId || "").trim();
+}
+
+function getExpectedConfirmationFee(vehicleId) {
+  const id = String(vehicleId || "").trim();
+  if (id.startsWith("v35")) return 75;
+  if (id.startsWith("v75")) return 100;
+  return 75;
+}
+
+function getHalfDayDropoffTime(pickupTime, vehicleId) {
+  if (!String(vehicleId || "").startsWith("v35")) return null;
+  return pickupTime === "13:00" ? "19:00" : "13:00";
+}
+
+function getReservationSlot(durationDaysValue, pickupTimeValue) {
+  if (Number(durationDaysValue) !== 0.5) return "full";
+  return pickupTimeValue === "13:00" ? "pm" : "am";
+}
+
+function getConfirmedSlot(confirmedBooking) {
+  if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
+  return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
+}
+
+function slotsConflict(a, b) {
+  if (a === "full" || b === "full") return true;
+  return a === b;
+}
+
+function getMonthKeysBetween(startIso, endIso) {
+  const out = [];
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+
+  const cursor = new Date(start);
+  cursor.setDate(1);
+  cursor.setHours(0, 0, 0, 0);
+
+  while (cursor <= end) {
+    out.push(cursor.toISOString().slice(0, 7));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return out;
+}
+
+async function isAdminBookingEditAvailable(
+  env,
+  { bookingId, vehicleId, pickupAt, dropoffAt, durationDays, pickupTime },
+) {
+  const requestedDates = getDatesBetween(
+    new Date(pickupAt),
+    new Date(dropoffAt),
+  );
+  const requestedSlot = getReservationSlot(durationDays, pickupTime);
+
+  const monthKeys = getMonthKeysBetween(pickupAt, dropoffAt);
+
+  for (const month of monthKeys) {
+    const raw = await env.BOOKINGS_KV.get(`bookings:${month}`);
+    if (!raw) continue;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      continue;
+    }
+
+    if (!Array.isArray(parsed)) continue;
+
+    for (const confirmed of parsed) {
+      if (!confirmed || String(confirmed.id) === String(bookingId)) continue;
+      if (String(confirmed.vehicleId) !== String(vehicleId)) continue;
+      if (String(confirmed.status || "").toLowerCase() === "cancelled")
+        continue;
+
+      const confirmedDates = getDatesBetween(
+        new Date(confirmed.pickupAt),
+        new Date(confirmed.dropoffAt),
+      );
+
+      const confirmedSlot = getConfirmedSlot(confirmed);
+
+      for (const d of confirmedDates) {
+        if (
+          requestedDates.includes(d) &&
+          slotsConflict(requestedSlot, confirmedSlot)
+        ) {
+          return {
+            ok: false,
+            conflictWith: confirmed.id,
+          };
+        }
+      }
+    }
+  }
+
+  return { ok: true };
+}
+
+async function moveBookingInKv(env, oldBooking, nextBooking) {
+  const oldMonthKey = `bookings:${String(oldBooking.pickupAt || "").slice(0, 7)}`;
+  const newMonthKey = `bookings:${String(nextBooking.pickupAt || "").slice(0, 7)}`;
+
+  let oldMonthBookings = [];
+  let newMonthBookings = [];
+
+  try {
+    const raw = await env.BOOKINGS_KV.get(oldMonthKey);
+    if (raw) {
+      oldMonthBookings = JSON.parse(raw);
+      if (!Array.isArray(oldMonthBookings)) oldMonthBookings = [];
+    }
+  } catch {
+    oldMonthBookings = [];
+  }
+
+  if (oldMonthKey === newMonthKey) {
+    const updatedMonthBookings = oldMonthBookings.map((b) =>
+      String(b.id) === String(nextBooking.id) ? nextBooking : b,
+    );
+
+    await env.BOOKINGS_KV.put(
+      newMonthKey,
+      JSON.stringify(updatedMonthBookings),
+    );
+    return;
+  }
+
+  try {
+    const raw = await env.BOOKINGS_KV.get(newMonthKey);
+    if (raw) {
+      newMonthBookings = JSON.parse(raw);
+      if (!Array.isArray(newMonthBookings)) newMonthBookings = [];
+    }
+  } catch {
+    newMonthBookings = [];
+  }
+
+  const cleanedOldMonthBookings = oldMonthBookings.filter(
+    (b) => String(b.id) !== String(nextBooking.id),
+  );
+
+  const cleanedNewMonthBookings = newMonthBookings.filter(
+    (b) => String(b.id) !== String(nextBooking.id),
+  );
+
+  cleanedNewMonthBookings.push(nextBooking);
+
+  await env.BOOKINGS_KV.put(
+    oldMonthKey,
+    JSON.stringify(cleanedOldMonthBookings),
+  );
+  await env.BOOKINGS_KV.put(
+    newMonthKey,
+    JSON.stringify(cleanedNewMonthBookings),
+  );
+}
+
+async function handleAdminBookingUpdate(request, env) {
+  try {
+    const body = await request.json();
+
+    const bookingId = String(body.bookingId || "").trim();
+    const vehicleId = String(body.vehicleId || "").trim();
+    const pickupDate = String(body.pickupDate || "").trim();
+    const pickupTime = String(body.pickupTime || "").trim();
+    const durationDays = Number(body.durationDays || 0);
+    const hireTotal = Number(body.hireTotal || 0);
+
+    if (!bookingId) {
+      return json({ error: "Missing bookingId" }, 400);
+    }
+
+    if (
+      !vehicleId ||
+      !pickupDate ||
+      !pickupTime ||
+      !durationDays ||
+      hireTotal <= 0
+    ) {
+      return json({ error: "Missing or invalid edit fields" }, 400);
+    }
+
+    if (durationDays === 0.5 && !String(vehicleId).startsWith("v35")) {
+      return json(
+        { error: "Half-day hire is only allowed for 3.5T vehicles" },
+        400,
+      );
+    }
+
+    if (durationDays !== 0.5 && pickupTime !== "07:00") {
+      return json(
+        {
+          error: "Full-day and multi-day hires must use 07:00 pickup time",
+        },
+        400,
+      );
+    }
+
+    if (durationDays === 0.5 && !["07:00", "13:00"].includes(pickupTime)) {
+      return json({ error: "Half-day pickup must be 07:00 or 13:00" }, 400);
+    }
+
+    const existing = await findBookingById(env, bookingId);
+
+    if (!existing) {
+      return json({ error: "Booking not found" }, 404);
+    }
+
+    if (String(existing.status || "").toLowerCase() === "cancelled") {
+      return json({ error: "Cancelled bookings cannot be edited here" }, 400);
+    }
+
+    if (existing.outstandingPaid === true) {
+      return json(
+        {
+          error:
+            "This booking already has outstanding payment marked as paid. Use refund/payment tools first before changing price.",
+        },
+        400,
+      );
+    }
+
+    let pickupAtDate = londonDateTimeToUtc(pickupDate, pickupTime);
+    let dropoffAtDate;
+
+    if (durationDays === 0.5) {
+      const dropoffTime = getHalfDayDropoffTime(pickupTime, vehicleId);
+      dropoffAtDate = londonDateTimeToUtc(pickupDate, dropoffTime);
+    } else {
+      const dropoffDate = new Date(pickupDate);
+      dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
+
+      const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
+      dropoffAtDate = londonDateTimeToUtc(dropoffDateStr, "19:00");
+    }
+
+    if (
+      Number.isNaN(pickupAtDate.getTime()) ||
+      Number.isNaN(dropoffAtDate.getTime())
+    ) {
+      return json({ error: "Invalid pickup/dropoff date" }, 400);
+    }
+
+    const pickupAt = pickupAtDate.toISOString();
+    const dropoffAt = dropoffAtDate.toISOString();
+
+    const availabilityCheck = await isAdminBookingEditAvailable(env, {
+      bookingId,
+      vehicleId,
+      pickupAt,
+      dropoffAt,
+      durationDays,
+      pickupTime,
+    });
+
+    if (!availabilityCheck.ok) {
+      return json(
+        {
+          error: "Vehicle already booked for the new dates/times",
+          conflictWith: availabilityCheck.conflictWith,
+        },
+        409,
+      );
+    }
+
+    const confirmationFee = Number(
+      existing.confirmationFee ||
+        existing.paidNow ||
+        getExpectedConfirmationFee(vehicleId),
+    );
+
+    const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+    const now = new Date().toISOString();
+
+    /* ===============================
+       UPDATE D1 FIRST
+    =============================== */
+
+    await env.DB.prepare(
+      `
+      UPDATE bookings
+      SET
+        vehicle_id = ?,
+        pickup_at = ?,
+        dropoff_at = ?,
+        duration_days = ?,
+        price_total = ?,
+        updated_at = ?
+      WHERE id = ?
+    `,
+    )
+      .bind(
+        vehicleId,
+        pickupAt,
+        dropoffAt,
+        durationDays,
+        hireTotal,
+        now,
+        bookingId,
+      )
+      .run();
+
+    /* ===============================
+       BUILD UPDATED BOOKING OBJECT
+    =============================== */
+
+    const nextBooking = {
+      ...existing,
+
+      vehicleId,
+      vehicleSnapshot: {
+        ...(existing.vehicleSnapshot || {}),
+        id: vehicleId,
+        name: getVehicleNameFromId(vehicleId),
+        type: getVehicleTypeFromId(vehicleId),
+      },
+
+      pickupAt,
+      dropoffAt,
+      pickupAtLocal: toLondonLocalISOString(new Date(pickupAt)),
+      dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
+
+      durationDays,
+      pickupTime,
+
+      hireTotal,
+      priceTotal: hireTotal,
+      priceTotalOverride: hireTotal,
+      confirmationFee,
+      paidNow: confirmationFee,
+      outstandingAmount,
+      outstanding: outstandingAmount,
+
+      updatedAt: now,
+      adminEdited: true,
+      adminEditedAt: now,
+    };
+
+    /* ===============================
+       UPDATE LINKS IF DATE/VEHICLE MOVED
+    =============================== */
+
+    const siteBase =
+      env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+      "https://kvwebservices.co.uk/equinetransportuk";
+
+    const vehicleName = nextBooking.vehicleSnapshot?.name || "";
+
+    const requiredFormType =
+      String(nextBooking.requiredFormType || "long").toLowerCase() === "short"
+        ? "short"
+        : "long";
+
+    const formBase =
+      requiredFormType === "short"
+        ? `${siteBase}/forms/short-form.html`
+        : `${siteBase}/forms/long-form.html`;
+
+    nextBooking.requiredFormLink = `${formBase}?bookingId=${encodeURIComponent(bookingId)}&vehicleName=${encodeURIComponent(vehicleName)}`;
+
+    nextBooking.depositLink = `${siteBase}/pay-deposit.html?bookingId=${encodeURIComponent(bookingId)}`;
+
+    nextBooking.outstandingLink = `${siteBase}/pay-outstanding.html?bookingId=${encodeURIComponent(bookingId)}`;
+
+    /* ===============================
+       MIRROR TO KV
+    =============================== */
+
+    await moveBookingInKv(env, existing, nextBooking);
+
+    return json({
+      ok: true,
+      booking: nextBooking,
+    });
+  } catch (err) {
+    console.error("❌ ADMIN BOOKING UPDATE ERROR:", err);
+
+    return json(
+      {
+        error: "Failed to update booking",
+        detail: err?.message || "Unknown error",
+      },
+      500,
+    );
+  }
 }
 
 /* ===============================
