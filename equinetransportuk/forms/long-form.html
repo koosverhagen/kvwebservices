@@ -857,7 +857,20 @@
                 <canvas id="signaturePad"></canvas>
 
                 <div class="signature-actions">
-                  <button type="button" id="clearSignature">Clear</button>
+                  <button
+                    type="button"
+                    id="clearSignature"
+                    class="btn ghost"
+                    style="
+                      margin-top: 10px;
+                      padding: 10px 14px;
+                      border-radius: 10px;
+                      font-size: 13px;
+                      font-weight: 600;
+                    "
+                  >
+                    Clear Signature
+                  </button>
                 </div>
               </div>
 
@@ -1163,6 +1176,88 @@
         // run once on load (important for prefilled data)
         updateOvernightVisibility();
 
+        /* ===============================
+   MEDICAL CONDITIONAL REQUIRED
+=============================== */
+
+        const medicalCondition = document.getElementById("medicalCondition");
+        const notifiedDvla = document.getElementById("notifiedDvla");
+        const issuedLicence = document.getElementById("issuedLicence");
+        const medicalDetails = document.getElementById("medicalDetails");
+
+        function updateMedicalRequirement() {
+          const needsDetails =
+            medicalCondition?.value === "yes" ||
+            notifiedDvla?.value === "yes" ||
+            issuedLicence?.value === "yes";
+
+          // required logic
+          medicalDetails.required = needsDetails;
+
+          // UX improvement (disable when not needed)
+          medicalDetails.disabled = !needsDetails;
+          medicalDetails.style.opacity = needsDetails ? "1" : "0.6";
+        }
+
+        [medicalCondition, notifiedDvla, issuedLicence].forEach((el) => {
+          el?.addEventListener("change", updateMedicalRequirement);
+        });
+
+        // run once
+        updateMedicalRequirement();
+
+        /* ===============================
+   INSURANCE CONDITIONAL REQUIRED
+=============================== */
+
+        const insuranceRefused = document.getElementById("insuranceRefused");
+        const insuranceCancelled =
+          document.getElementById("insuranceCancelled");
+        const restrictionsApplied = document.getElementById(
+          "restrictionsApplied",
+        );
+        const criminalConvictions = document.getElementById(
+          "criminalConvictions",
+        );
+        const insuranceDetails = document.getElementById("insuranceDetails");
+
+        function updateInsuranceRequirement() {
+          const needsDetails =
+            insuranceRefused?.value === "yes" ||
+            insuranceCancelled?.value === "yes" ||
+            restrictionsApplied?.value === "yes" ||
+            criminalConvictions?.value === "yes";
+
+          // required logic
+          insuranceDetails.required = needsDetails;
+
+          // UX improvement
+          insuranceDetails.disabled = !needsDetails;
+          insuranceDetails.style.opacity = needsDetails ? "1" : "0.6";
+        }
+
+        [
+          insuranceRefused,
+          insuranceCancelled,
+          restrictionsApplied,
+          criminalConvictions,
+        ].forEach((el) => {
+          el?.addEventListener("change", updateInsuranceRequirement);
+        });
+
+        // run once
+        updateInsuranceRequirement();
+        /* ===============================
+   CHECKBOX GROUP VALIDATION
+=============================== */
+
+        function validateCheckboxGroup(names, message) {
+          const inputs = names.flatMap((name) =>
+            Array.from(document.querySelectorAll(`input[name="${name}"]`)),
+          );
+
+          return inputs.some((i) => i.checked) || message;
+        }
         /* ===============================
    DVLA AUTO CLEAN (FINAL FIX)
 =============================== */
@@ -1609,6 +1704,42 @@
           if (!bookingId) {
             statusEl.className = "status err";
             statusEl.textContent = "Missing booking ID in link.";
+            return;
+          }
+
+          /* ===============================
+   EXTRA VALIDATION
+=============================== */
+
+          // licence type (must pick one)
+          const licenceCheck = validateCheckboxGroup(
+            ["dvlaLicenceHolder", "nonDvlaLicenceHolder"],
+            "Please select licence type.",
+          );
+
+          if (licenceCheck !== true) {
+            statusEl.className = "status err";
+            statusEl.textContent = licenceCheck;
+            return;
+          }
+
+          // proof of address (at least 1)
+          const proofCheck = validateCheckboxGroup(
+            ["proofAddress1", "proofAddress2"],
+            "Please provide at least one proof of address.",
+          );
+
+          if (proofCheck !== true) {
+            statusEl.className = "status err";
+            statusEl.textContent = proofCheck;
+            return;
+          }
+
+          // photo ID required
+          const photoId = document.querySelector('input[name="photoId"]');
+          if (!photoId?.checked) {
+            statusEl.className = "status err";
+            statusEl.textContent = "Photo ID is required.";
             return;
           }
 
