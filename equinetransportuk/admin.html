@@ -2679,9 +2679,16 @@ Equine Transport UK`;
           scrollTop.scrollLeft = listWrap.scrollLeft;
         };
       }
-
       // call after render
       setTimeout(syncScroll, 100);
+
+      /* ===============================
+   🚀 INIT (MISSING - CRITICAL)
+=============================== */
+
+      defaultRanges();
+      loadBookings();
+      updateClearButton();
     </script>
   </body>
 </html>
