@@ -2657,23 +2657,12 @@ Equine Transport UK`;
 
           const pickupAt = new Date(`${date}T${time}:00+01:00`).toISOString();
 
-          let dropoffDate = new Date(date);
-
-          if (durationDays === 0.5) {
-            // half-day logic
-            if (time === "07:00") {
-              dropoffDate.setHours(13, 0, 0, 0);
-            } else {
-              dropoffDate.setHours(19, 0, 0, 0);
-            }
-          } else {
-            dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
-            dropoffDate.setHours(19, 0, 0, 0);
-          }
-
-          const dropoffAt = new Date(
-            dropoffDate.toISOString().replace("Z", "+01:00"),
-          ).toISOString();
+          const dropoffAt = calculateDropoff(
+            pickupAt,
+            durationDays,
+            time,
+            vehicleId,
+          );
 
           /* ===============================
        🚀 FINAL PAYLOAD (MATCH BACKEND EXACTLY)
@@ -2681,19 +2670,22 @@ Equine Transport UK`;
 
           const payload = {
             bookingId,
-
             vehicleId,
-
-            // 🔥 CRITICAL FIX (snake_case)
             pickup_at: pickupAt,
             dropoff_at: dropoffAt,
-
             duration_days: durationDays,
             pickup_time: time,
             price_total: priceTotal,
-
-            updated_at: booking.updatedAt || null,
+            updated_at: booking.updatedAt || new Date().toISOString(), // (fixed)
           };
+
+          // 🔥 ADD EXACTLY HERE
+          console.log("EDIT PAYLOAD:", payload);
+          console.log("EXPECTED TIMES:", {
+            pickup_time: time,
+            pickup_at: payload.pickup_at,
+            dropoff_at: payload.dropoff_at,
+          });
 
           console.log("EDIT PAYLOAD:", payload); // ✅ KEEP FOR DEBUG
 
