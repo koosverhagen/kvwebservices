@@ -2608,7 +2608,7 @@ Equine Transport UK`;
         editSaveBtn.onclick = async () => {
           const bookingId = document.getElementById("edit-booking-id").value;
 
-          // 🔥 ALWAYS GET FRESH DATA RIGHT BEFORE SAVE
+          // always refresh latest booking first
           await loadBookings();
 
           const booking = allBookings.find((b) => b.id === bookingId);
@@ -2618,30 +2618,20 @@ Equine Transport UK`;
             return;
           }
 
-          /* ===============================
-       🔥 GET FORM VALUES
-    =============================== */
-
           const vehicleId = document.getElementById("edit-vehicle").value;
-          const date = document.getElementById("edit-date").value;
-          const time = document.getElementById("edit-time").value;
+          const pickupDate = document.getElementById("edit-date").value;
+          const pickupTime = document.getElementById("edit-time").value;
           const durationDays = Number(
             document.getElementById("edit-duration").value,
           );
-          const priceTotal = Number(
-            document.getElementById("edit-price").value,
-          );
+          const hireTotal = Number(document.getElementById("edit-price").value);
 
-          /* ===============================
-       ✅ VALIDATION
-    =============================== */
-
-          if (!priceTotal || isNaN(priceTotal)) {
-            alert("Invalid price");
+          if (!vehicleId) {
+            alert("Missing vehicle");
             return;
           }
 
-          if (!date || !time) {
+          if (!pickupDate || !pickupTime) {
             alert("Missing date or time");
             return;
           }
@@ -2651,43 +2641,24 @@ Equine Transport UK`;
             return;
           }
 
-          /* ===============================
-       🔥 BUILD BACKEND DATETIME
-    =============================== */
-
-          const pickupAt = new Date(`${date}T${time}:00+01:00`).toISOString();
-
-          const dropoffAt = calculateDropoff(
-            pickupAt,
-            durationDays,
-            time,
-            vehicleId,
-          );
-
-          /* ===============================
-       🚀 FINAL PAYLOAD (MATCH BACKEND EXACTLY)
-    =============================== */
+          if (!hireTotal || isNaN(hireTotal) || hireTotal <= 0) {
+            alert("Invalid price");
+            return;
+          }
 
           const payload = {
             bookingId,
             vehicleId,
-            pickup_at: pickupAt,
-            dropoff_at: dropoffAt,
-            duration_days: durationDays,
-            pickup_time: time,
-            price_total: priceTotal,
-            updated_at: booking.updatedAt || new Date().toISOString(), // (fixed)
+            pickupDate,
+            pickupTime,
+            durationDays,
+            hireTotal,
+
+            // optional; backend currently ignores this, but safe to keep
+            updatedAt: booking.updatedAt || null,
           };
 
-          // 🔥 ADD EXACTLY HERE
           console.log("EDIT PAYLOAD:", payload);
-          console.log("EXPECTED TIMES:", {
-            pickup_time: time,
-            pickup_at: payload.pickup_at,
-            dropoff_at: payload.dropoff_at,
-          });
-
-          console.log("EDIT PAYLOAD:", payload); // ✅ KEEP FOR DEBUG
 
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
@@ -2710,12 +2681,12 @@ Equine Transport UK`;
               throw new Error(data.error || "Update failed");
             }
 
-            // ✅ SUCCESS
             editModal.classList.add("hidden");
             await loadBookings();
+            alert("✅ Booking updated");
           } catch (err) {
             console.error(err);
-            alert("Update failed");
+            alert(err.message || "Update failed");
           }
         };
       }
