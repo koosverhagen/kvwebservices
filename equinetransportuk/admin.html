@@ -2733,7 +2733,7 @@ Equine Transport UK`;
         editSaveBtn.onclick = async () => {
           const bookingId = document.getElementById("edit-booking-id").value;
 
-          // always refresh latest booking first
+          // 🔥 ALWAYS GET FRESH DATA
           await loadBookings();
 
           const booking = allBookings.find((b) => b.id === bookingId);
@@ -2743,14 +2743,37 @@ Equine Transport UK`;
             return;
           }
 
+          /* ===============================
+       🔥 GET VALUES
+    =============================== */
+
           const vehicleId = document.getElementById("edit-vehicle").value;
           const pickupDate = document.getElementById("edit-date").value;
           const pickupTime = document.getElementById("edit-time").value;
           const durationDays = Number(
             document.getElementById("edit-duration").value,
           );
-          const hireTotal = Number(document.getElementById("edit-price").value);
+          const priceTotal = Number(
+            document.getElementById("edit-price").value,
+          );
 
+          /* ===============================
+       🚫 HARD SAVE PROTECTION
+    =============================== */
+
+          // 🚫 7.5T cannot be half-day
+          if (!String(vehicleId).startsWith("v35") && durationDays === 0.5) {
+            alert("7.5T lorries cannot be booked as half-day.");
+            return;
+          }
+
+          // 🚫 full-day must start 07:00
+          if (durationDays !== 0.5 && pickupTime !== "07:00") {
+            alert("Full-day bookings must start at 07:00.");
+            return;
+          }
+
+          // basic checks
           if (!vehicleId) {
             alert("Missing vehicle");
             return;
@@ -2766,29 +2789,66 @@ Equine Transport UK`;
             return;
           }
 
-          if (!hireTotal || isNaN(hireTotal) || hireTotal <= 0) {
+          if (!priceTotal || isNaN(priceTotal) || priceTotal <= 0) {
             alert("Invalid price");
             return;
           }
 
+          /* ===============================
+       🔥 BUILD ISO TIMES (CRITICAL)
+    =============================== */
+
+          const pickupAt = new Date(
+            `${pickupDate}T${pickupTime}:00`,
+          ).toISOString();
+
+          let dropoffDate = new Date(`${pickupDate}T${pickupTime}:00`);
+
+          if (durationDays === 0.5) {
+            // 3.5T half-day logic
+            if (pickupTime === "07:00") {
+              dropoffDate.setHours(13, 0, 0);
+            } else {
+              dropoffDate.setHours(19, 0, 0);
+            }
+          } else {
+            dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
+            dropoffDate.setHours(19, 0, 0);
+          }
+
+          const dropoffAt = dropoffDate.toISOString();
+
+          /* ===============================
+       🚀 FINAL PAYLOAD (MATCH BACKEND)
+    =============================== */
+
           const payload = {
             bookingId,
-            vehicleId,
-            pickupDate,
-            pickupTime,
-            durationDays,
-            hireTotal,
 
-            // optional; backend currently ignores this, but safe to keep
-            updatedAt: booking.updatedAt || null,
+            vehicleId,
+
+            pickupAt,
+            dropoffAt,
+
+            duration_days: durationDays,
+            pickup_time: pickupTime,
+            price_total: priceTotal,
+
+            updated_at: booking.updatedAt || null,
           };
 
           console.log("EDIT PAYLOAD:", payload);
 
+          /* ===============================
+       🚀 SEND
+    =============================== */
+
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+              },
               body: JSON.stringify(payload),
             });
 
@@ -2806,8 +2866,10 @@ Equine Transport UK`;
               throw new Error(data.error || "Update failed");
             }
 
+            // ✅ SUCCESS
             editModal.classList.add("hidden");
             await loadBookings();
+
             alert("✅ Booking updated");
           } catch (err) {
             console.error(err);
@@ -2815,7 +2877,6 @@ Equine Transport UK`;
           }
         };
       }
-
       const scrollTop = document.getElementById("scroll-top");
       const listWrap = document.querySelector(".list-wrap");
 
