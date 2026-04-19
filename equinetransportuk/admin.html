@@ -2114,6 +2114,25 @@ ${renderSection("All Bookings", rest)}
 
           editModal.classList.remove("hidden");
 
+          editModal.classList.remove("hidden");
+
+          /* ===============================
+   🔥 AUTO PRICE LISTENERS (ADD HERE)
+=============================== */
+
+          setTimeout(() => {
+            ["edit-vehicle", "edit-date", "edit-time", "edit-duration"].forEach(
+              (id) => {
+                const el = document.getElementById(id);
+
+                if (el && !el.dataset.listenerAttached) {
+                  el.addEventListener("change", updateAdminPrice);
+                  el.dataset.listenerAttached = "true";
+                }
+              },
+            );
+          }, 0);
+
           return;
         }
 
