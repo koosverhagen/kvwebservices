@@ -2603,11 +2603,30 @@ Equine Transport UK`;
             durationDays: Number(
               document.getElementById("edit-duration").value,
             ),
-            total: Number(document.getElementById("edit-price").value),
+            priceTotal: Number(document.getElementById("edit-price").value),
 
-            // 🔥 THIS IS THE CRITICAL PART
+            // 🔥 CRITICAL (conflict protection)
             updatedAt: booking.updatedAt || null,
           };
+
+          /* ===============================
+       ✅ VALIDATION (NEW - EXACT SPOT)
+    =============================== */
+
+          if (!payload.priceTotal || isNaN(payload.priceTotal)) {
+            alert("Invalid price");
+            return;
+          }
+
+          if (!payload.pickupDate || !payload.pickupTime) {
+            alert("Missing date or time");
+            return;
+          }
+
+          if (!payload.durationDays || isNaN(payload.durationDays)) {
+            alert("Invalid duration");
+            return;
+          }
 
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
@@ -2626,6 +2645,7 @@ Equine Transport UK`;
             }
 
             if (!res.ok) {
+              console.error("Backend error:", data);
               throw new Error(data.error || "Update failed");
             }
 
@@ -2638,9 +2658,6 @@ Equine Transport UK`;
           }
         };
       }
-
-      defaultRanges();
-      loadBookings();
 
       const scrollTop = document.getElementById("scroll-top");
       const listWrap = document.querySelector(".list-wrap");
