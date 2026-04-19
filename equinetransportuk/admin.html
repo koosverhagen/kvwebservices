@@ -2492,14 +2492,20 @@ Equine Transport UK`;
       rangeToInput.addEventListener("change", loadBookings);
 
       /* ===============================
-   ✏️ EDIT MODAL CLOSE HANDLERS
+   ✏️ EDIT MODAL CLOSE HANDLERS (SAFE)
 =============================== */
 
-      editCloseBtn.onclick = () => editModal.classList.add("hidden");
+      if (editCloseBtn) {
+        editCloseBtn.onclick = () => editModal.classList.add("hidden");
+      }
 
-      document.getElementById("edit-cancel").onclick = () => {
-        editModal.classList.add("hidden");
-      };
+      const editCancelBtn = document.getElementById("edit-cancel");
+
+      if (editCancelBtn) {
+        editCancelBtn.onclick = () => {
+          editModal.classList.add("hidden");
+        };
+      }
 
       document.getElementById("edit-save").onclick = async () => {
         const payload = {
