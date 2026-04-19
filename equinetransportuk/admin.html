@@ -2655,7 +2655,7 @@ Equine Transport UK`;
        🔥 BUILD BACKEND DATETIME
     =============================== */
 
-          const pickupAt = new Date(`${date}T${time}:00`).toISOString();
+          const pickupAt = new Date(`${date}T${time}:00+01:00`).toISOString();
 
           let dropoffDate = new Date(date);
 
@@ -2671,7 +2671,9 @@ Equine Transport UK`;
             dropoffDate.setHours(19, 0, 0, 0);
           }
 
-          const dropoffAt = dropoffDate.toISOString();
+          const dropoffAt = new Date(
+            dropoffDate.toISOString().replace("Z", "+01:00"),
+          ).toISOString();
 
           /* ===============================
        🚀 FINAL PAYLOAD (MATCH BACKEND EXACTLY)
