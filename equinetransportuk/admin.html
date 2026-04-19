@@ -2584,37 +2584,42 @@ Equine Transport UK`;
         editSaveBtn.onclick = async () => {
           const bookingId = document.getElementById("edit-booking-id").value;
 
+          // 🔥 ALWAYS GET FRESH DATA RIGHT BEFORE SAVE
+          await loadBookings();
+
           const booking = allBookings.find((b) => b.id === bookingId);
+
+          if (!booking) {
+            alert("Booking no longer exists");
+            return;
+          }
 
           const payload = {
             bookingId,
+
             vehicleId: document.getElementById("edit-vehicle").value,
             pickupDate: document.getElementById("edit-date").value,
             pickupTime: document.getElementById("edit-time").value,
             durationDays: Number(
               document.getElementById("edit-duration").value,
             ),
-            hireTotal: Number(document.getElementById("edit-price").value),
+            total: Number(document.getElementById("edit-price").value),
 
-            // 🔥 THIS IS THE IMPORTANT PART
-            updatedAt: booking?.updatedAt || null,
+            // 🔥 THIS IS THE CRITICAL PART
+            updatedAt: booking.updatedAt || null,
           };
 
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload),
             });
 
             const data = await res.json();
 
             if (res.status === 409) {
-              alert(
-                "⚠️ Booking was updated elsewhere. Reloading latest version...",
-              );
+              alert("⚠️ Booking changed elsewhere. Reloading...");
               await loadBookings();
               editModal.classList.add("hidden");
               return;
@@ -2624,11 +2629,9 @@ Equine Transport UK`;
               throw new Error(data.error || "Update failed");
             }
 
+            // ✅ SUCCESS
             editModal.classList.add("hidden");
-
-            alert("✅ Booking updated");
-
-            loadBookings();
+            await loadBookings();
           } catch (err) {
             console.error(err);
             alert("Update failed");
