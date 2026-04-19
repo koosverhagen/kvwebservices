@@ -2019,6 +2019,9 @@ ${renderSection("All Bookings", rest)}
         if (editBtn) {
           e.preventDefault();
 
+          // 🔥 FORCE FRESH DATA BEFORE EDIT
+          await loadBookings();
+
           const bookingId = editBtn.dataset.id;
 
           const booking = allBookings.find((b) => b.id === bookingId);
@@ -2607,6 +2610,15 @@ Equine Transport UK`;
             });
 
             const data = await res.json();
+
+            if (res.status === 409) {
+              alert(
+                "⚠️ Booking was updated elsewhere. Reloading latest version...",
+              );
+              await loadBookings();
+              editModal.classList.add("hidden");
+              return;
+            }
 
             if (!res.ok) {
               throw new Error(data.error || "Update failed");
