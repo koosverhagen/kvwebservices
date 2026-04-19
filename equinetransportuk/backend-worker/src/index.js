@@ -1717,6 +1717,24 @@ async function handleAdminBookingUpdate(request, env) {
 
     const existing = await findBookingById(env, bookingId);
 
+    /* ===============================
+   🔒 CONCURRENT EDIT PROTECTION (NEW)
+=============================== */
+
+    if (body.updatedAt && existing.updatedAt) {
+      const incoming = new Date(body.updatedAt).getTime();
+      const current = new Date(existing.updatedAt).getTime();
+
+      if (incoming < current) {
+        return json(
+          {
+            error: "This booking was updated by someone else. Please refresh.",
+          },
+          409,
+        );
+      }
+    }
+
     if (!existing) {
       return json({ error: "Booking not found" }, 404);
     }
