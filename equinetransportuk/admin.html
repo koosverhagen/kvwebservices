@@ -996,6 +996,47 @@ Equine Transport UK`,
         return end.toISOString();
       }
 
+      async function updateAdminPrice() {
+        const vehicleId = document.getElementById("edit-vehicle")?.value;
+        const pickupDate = document.getElementById("edit-date")?.value;
+        const pickupTime = document.getElementById("edit-time")?.value;
+        const durationDays = Number(
+          document.getElementById("edit-duration")?.value,
+        );
+
+        if (!vehicleId || !pickupDate || !pickupTime || !durationDays) return;
+
+        try {
+          const res = await fetch(`${API_BASE}/api/pricing/quote`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              vehicleId,
+              pickupDate,
+              pickupTime,
+              durationDays,
+              extras: {
+                dartford: 0,
+                earlyPickup: false,
+              },
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            console.warn("Pricing failed:", data);
+            return;
+          }
+
+          document.getElementById("edit-price").value = data.total.toFixed(2);
+        } catch (err) {
+          console.error("Pricing error:", err);
+        }
+      }
+
       function setStatus(message, mode = "loading") {
         topStatus.className = `status-bar ${mode}`;
         topStatus.innerHTML = message;
@@ -2721,6 +2762,23 @@ Equine Transport UK`;
       defaultRanges();
       loadBookings();
       updateClearButton();
+
+      /* ===============================
+   🔥 ADMIN PRICE AUTO UPDATE (FINAL)
+=============================== */
+
+      function attachAdminPriceListeners() {
+        ["edit-vehicle", "edit-date", "edit-time", "edit-duration"].forEach(
+          (id) => {
+            const el = document.getElementById(id);
+
+            if (el && !el.dataset.listenerAttached) {
+              el.addEventListener("change", updateAdminPrice);
+              el.dataset.listenerAttached = "true"; // prevent duplicates
+            }
+          },
+        );
+      }
     </script>
   </body>
 </html>
