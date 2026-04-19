@@ -2579,8 +2579,12 @@ Equine Transport UK`;
 
       if (editSaveBtn) {
         editSaveBtn.onclick = async () => {
+          const bookingId = document.getElementById("edit-booking-id").value;
+
+          const booking = allBookings.find((b) => b.id === bookingId);
+
           const payload = {
-            bookingId: document.getElementById("edit-booking-id").value,
+            bookingId,
             vehicleId: document.getElementById("edit-vehicle").value,
             pickupDate: document.getElementById("edit-date").value,
             pickupTime: document.getElementById("edit-time").value,
@@ -2588,6 +2592,9 @@ Equine Transport UK`;
               document.getElementById("edit-duration").value,
             ),
             hireTotal: Number(document.getElementById("edit-price").value),
+
+            // 🔥 THIS IS THE IMPORTANT PART
+            updatedAt: booking?.updatedAt || null,
           };
 
           try {
