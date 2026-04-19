@@ -972,6 +972,30 @@ Equine Transport UK`,
         rangeToInput.value = toDateInputValue(to);
       }
 
+      function calculateDropoff(pickupAt, durationDays, pickupTime, vehicleId) {
+        const start = new Date(pickupAt);
+
+        // HALF DAY (3.5T only)
+        if (durationDays === 0.5) {
+          const end = new Date(start);
+
+          if (pickupTime === "13:00") {
+            end.setHours(19, 0, 0, 0);
+          } else {
+            end.setHours(13, 0, 0, 0);
+          }
+
+          return end.toISOString();
+        }
+
+        // FULL DAYS
+        const end = new Date(start);
+        end.setDate(end.getDate() + durationDays - 1);
+        end.setHours(19, 0, 0, 0);
+
+        return end.toISOString();
+      }
+
       function setStatus(message, mode = "loading") {
         topStatus.className = `status-bar ${mode}`;
         topStatus.innerHTML = message;
@@ -2636,21 +2660,21 @@ Equine Transport UK`;
           let dropoffDate = new Date(date);
 
           if (durationDays === 0.5) {
-            // half-day logic (3.5T only)
+            // half-day logic
             if (time === "07:00") {
-              dropoffDate.setHours(13, 0, 0);
+              dropoffDate.setHours(13, 0, 0, 0);
             } else {
-              dropoffDate.setHours(19, 0, 0);
+              dropoffDate.setHours(19, 0, 0, 0);
             }
           } else {
             dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
-            dropoffDate.setHours(19, 0, 0);
+            dropoffDate.setHours(19, 0, 0, 0);
           }
 
           const dropoffAt = dropoffDate.toISOString();
 
           /* ===============================
-       🚀 FINAL PAYLOAD (MATCH BACKEND)
+       🚀 FINAL PAYLOAD (MATCH BACKEND EXACTLY)
     =============================== */
 
           const payload = {
@@ -2658,17 +2682,18 @@ Equine Transport UK`;
 
             vehicleId,
 
-            pickupAt,
-            dropoffAt,
+            // 🔥 CRITICAL FIX (snake_case)
+            pickup_at: pickupAt,
+            dropoff_at: dropoffAt,
 
-            // 🔥 FIXED FIELD NAMES
             duration_days: durationDays,
             pickup_time: time,
             price_total: priceTotal,
 
-            // 🔥 CRITICAL
             updated_at: booking.updatedAt || null,
           };
+
+          console.log("EDIT PAYLOAD:", payload); // ✅ KEEP FOR DEBUG
 
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
