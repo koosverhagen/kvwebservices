@@ -2594,39 +2594,77 @@ Equine Transport UK`;
             return;
           }
 
-          const payload = {
-            bookingId,
-
-            vehicleId: document.getElementById("edit-vehicle").value,
-            pickupDate: document.getElementById("edit-date").value,
-            pickupTime: document.getElementById("edit-time").value,
-            durationDays: Number(
-              document.getElementById("edit-duration").value,
-            ),
-            priceTotal: Number(document.getElementById("edit-price").value),
-
-            // 🔥 CRITICAL (conflict protection)
-            updatedAt: booking.updatedAt || null,
-          };
-
           /* ===============================
-       ✅ VALIDATION (NEW - EXACT SPOT)
+       🔥 GET FORM VALUES
     =============================== */
 
-          if (!payload.priceTotal || isNaN(payload.priceTotal)) {
+          const vehicleId = document.getElementById("edit-vehicle").value;
+          const date = document.getElementById("edit-date").value;
+          const time = document.getElementById("edit-time").value;
+          const durationDays = Number(
+            document.getElementById("edit-duration").value,
+          );
+          const priceTotal = Number(
+            document.getElementById("edit-price").value,
+          );
+
+          /* ===============================
+       ✅ VALIDATION
+    =============================== */
+
+          if (!priceTotal || isNaN(priceTotal)) {
             alert("Invalid price");
             return;
           }
 
-          if (!payload.pickupDate || !payload.pickupTime) {
+          if (!date || !time) {
             alert("Missing date or time");
             return;
           }
 
-          if (!payload.durationDays || isNaN(payload.durationDays)) {
+          if (!durationDays || isNaN(durationDays)) {
             alert("Invalid duration");
             return;
           }
+
+          /* ===============================
+       🔥 BUILD BACKEND DATETIME
+    =============================== */
+
+          const pickupAt = `${date}T${time}:00`;
+
+          let dropoffDate = new Date(date);
+
+          if (durationDays === 0.5) {
+            // half-day logic (3.5T only)
+            if (time === "07:00") {
+              dropoffDate.setHours(13, 0, 0);
+            } else {
+              dropoffDate.setHours(19, 0, 0);
+            }
+          } else {
+            dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
+            dropoffDate.setHours(19, 0, 0);
+          }
+
+          const dropoffAt = dropoffDate.toISOString();
+
+          /* ===============================
+       🚀 FINAL PAYLOAD (MATCH BACKEND)
+    =============================== */
+
+          const payload = {
+            bookingId,
+            vehicleId,
+            pickupAt,
+            dropoffAt,
+            durationDays,
+            pickupTime: time,
+            priceTotal,
+
+            // 🔥 CRITICAL (conflict protection)
+            updatedAt: booking.updatedAt || null,
+          };
 
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
