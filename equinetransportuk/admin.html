@@ -996,6 +996,46 @@ Equine Transport UK`,
         return end.toISOString();
       }
 
+      function enforceAdminVehicleDurationRules(vehicleId) {
+        const durationSelect = document.getElementById("edit-duration");
+        const timeSelect = document.getElementById("edit-time");
+
+        if (!durationSelect) return;
+
+        const halfDayOption = durationSelect.querySelector(
+          'option[value="0.5"]',
+        );
+        const is35 = String(vehicleId || "").startsWith("v35");
+
+        if (halfDayOption) {
+          if (is35) {
+            halfDayOption.disabled = false;
+            halfDayOption.style.display = "";
+          } else {
+            halfDayOption.disabled = true;
+            halfDayOption.style.display = "none";
+
+            if (durationSelect.value === "0.5") {
+              durationSelect.value = "1";
+            }
+          }
+        }
+
+        if (timeSelect) {
+          if (Number(durationSelect.value) === 0.5) {
+            timeSelect.innerHTML = `
+        <option value="07:00">07:00</option>
+        <option value="13:00">13:00</option>
+      `;
+          } else {
+            timeSelect.innerHTML = `
+        <option value="07:00">07:00</option>
+      `;
+            timeSelect.value = "07:00";
+          }
+        }
+      }
+
       async function updateAdminPrice() {
         const vehicleId = document.getElementById("edit-vehicle")?.value;
         const pickupDate = document.getElementById("edit-date")?.value;
@@ -2096,8 +2136,12 @@ ${renderSection("All Bookings", rest)}
             return;
           }
 
-          // fill modal
+          /* ===============================
+     🔥 FILL MODAL
+  =============================== */
+
           document.getElementById("edit-booking-id").value = booking.id;
+
           document.getElementById("edit-vehicle").value = booking.vehicleId;
 
           document.getElementById("edit-date").value =
@@ -2110,15 +2154,26 @@ ${renderSection("All Bookings", rest)}
             booking.durationDays,
           );
 
+          // 🔥 APPLY VEHICLE RULES (CRITICAL)
+          enforceAdminVehicleDurationRules(booking.vehicleId);
+
           document.getElementById("edit-price").value = booking.hireTotal || 0;
 
-          editModal.classList.remove("hidden");
+          /* ===============================
+     🔥 OPEN MODAL
+  =============================== */
 
           editModal.classList.remove("hidden");
 
           /* ===============================
-   🔥 AUTO PRICE LISTENERS (ADD HERE)
-=============================== */
+     🔥 FORCE PRICE CALC
+  =============================== */
+
+          updateAdminPrice();
+
+          /* ===============================
+     🔥 AUTO LISTENERS (FIXED)
+  =============================== */
 
           setTimeout(() => {
             ["edit-vehicle", "edit-date", "edit-time", "edit-duration"].forEach(
@@ -2126,7 +2181,17 @@ ${renderSection("All Bookings", rest)}
                 const el = document.getElementById(id);
 
                 if (el && !el.dataset.listenerAttached) {
-                  el.addEventListener("change", updateAdminPrice);
+                  el.addEventListener("change", () => {
+                    // 🔥 APPLY RULE WHEN VEHICLE OR DURATION CHANGES
+                    if (id === "edit-vehicle" || id === "edit-duration") {
+                      enforceAdminVehicleDurationRules(
+                        document.getElementById("edit-vehicle")?.value,
+                      );
+                    }
+
+                    updateAdminPrice();
+                  });
+
                   el.dataset.listenerAttached = "true";
                 }
               },
