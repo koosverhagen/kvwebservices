@@ -2893,9 +2893,6 @@ Equine Transport UK`;
           const durationDays = Number(
             document.getElementById("edit-duration").value,
           );
-          // 🔥 price is now DISPLAY ONLY (backend calculates final)
-          const hireTotal =
-            Number(document.getElementById("edit-price").value) || 0;
 
           const extras = {
             dartford: Number(
@@ -2924,8 +2921,9 @@ Equine Transport UK`;
             return;
           }
 
-          if (!hireTotal || isNaN(hireTotal) || hireTotal <= 0) {
-            alert("Invalid price");
+          // 🔥 price is UI only — do NOT block save
+          if (isNaN(hireTotal)) {
+            alert("Price calculation error");
             return;
           }
 
@@ -2946,6 +2944,21 @@ Equine Transport UK`;
             alert("Half-day pickup must be 07:00 or 13:00.");
             return;
           }
+
+          /* ===============================
+   🔥 ENSURE LATEST PRICE BEFORE SAVE
+=============================== */
+
+          await updateAdminPrice();
+
+          // 🔥 price is now DISPLAY ONLY (backend calculates final)
+          const hireTotal =
+            Number(document.getElementById("edit-price").value) || 0;
+
+          /* ===============================
+   🚀 FINAL PAYLOAD
+   ⚠️ price is UI only — backend recalculates total
+=============================== */
 
           const payload = {
             bookingId,
