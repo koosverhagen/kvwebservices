@@ -1814,7 +1814,11 @@ async function handleAdminBookingUpdate(request, env) {
       pickupDate,
     );
 
-    const finalTotal = Math.max(0, hireTotal);
+    // 🔥 ALWAYS REBUILD TOTAL FROM SERVER LOGIC
+    const finalTotal =
+      hireTotal > 0
+        ? hireTotal // admin override
+        : Math.max(0, baseCost + extrasTotal);
 
     const outstandingAmount = Math.max(0, finalTotal - confirmationFee);
     const now = new Date().toISOString();

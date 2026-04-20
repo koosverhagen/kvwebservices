@@ -2893,7 +2893,9 @@ Equine Transport UK`;
           const durationDays = Number(
             document.getElementById("edit-duration").value,
           );
-          const hireTotal = Number(document.getElementById("edit-price").value);
+          // 🔥 price is now DISPLAY ONLY (backend calculates final)
+          const hireTotal =
+            Number(document.getElementById("edit-price").value) || 0;
 
           const extras = {
             dartford: Number(
