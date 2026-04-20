@@ -864,6 +864,22 @@
               </select>
             </div>
 
+            <!-- ===============================
+   EXTRAS (NEW)
+=============================== -->
+
+            <div class="field">
+              <label>Dartford crossings</label>
+              <input type="number" id="edit-dartford" min="0" value="0" />
+            </div>
+
+            <div class="field">
+              <label>
+                <input type="checkbox" id="edit-early" />
+                Early pickup (£20)
+              </label>
+            </div>
+
             <div class="field">
               <label>Total (£)</label>
               <input type="number" id="edit-price" />
@@ -1058,8 +1074,11 @@ Equine Transport UK`,
               pickupTime,
               durationDays,
               extras: {
-                dartford: 0,
-                earlyPickup: false,
+                dartford: Number(
+                  document.getElementById("edit-dartford")?.value || 0,
+                ),
+                earlyPickup:
+                  document.getElementById("edit-early")?.checked || false,
               },
             }),
           });
@@ -2159,6 +2178,13 @@ ${renderSection("All Bookings", rest)}
 
           document.getElementById("edit-price").value = booking.hireTotal || 0;
 
+          // 🔥 LOAD EXTRAS INTO UI
+          document.getElementById("edit-dartford").value =
+            booking?.extras?.dartford || 0;
+
+          document.getElementById("edit-early").checked =
+            booking?.extras?.earlyPickup || false;
+
           /* ===============================
      🔥 OPEN MODAL
   =============================== */
@@ -2834,6 +2860,13 @@ Equine Transport UK`;
             pickup_time: pickupTime,
             price_total: priceTotal,
 
+            extras: {
+              dartford: Number(
+                document.getElementById("edit-dartford").value || 0,
+              ),
+              earlyPickup: document.getElementById("edit-early").checked,
+            },
+
             updated_at: booking.updatedAt || null,
           };
 
@@ -2913,16 +2946,21 @@ Equine Transport UK`;
 =============================== */
 
       function attachAdminPriceListeners() {
-        ["edit-vehicle", "edit-date", "edit-time", "edit-duration"].forEach(
-          (id) => {
-            const el = document.getElementById(id);
+        [
+          "edit-vehicle",
+          "edit-date",
+          "edit-time",
+          "edit-duration",
+          "edit-dartford",
+          "edit-early",
+        ].forEach((id) => {
+          const el = document.getElementById(id);
 
-            if (el && !el.dataset.listenerAttached) {
-              el.addEventListener("change", updateAdminPrice);
-              el.dataset.listenerAttached = "true"; // prevent duplicates
-            }
-          },
-        );
+          if (el && !el.dataset.listenerAttached) {
+            el.addEventListener("change", updateAdminPrice);
+            el.dataset.listenerAttached = "true"; // prevent duplicates
+          }
+        });
       }
     </script>
   </body>
