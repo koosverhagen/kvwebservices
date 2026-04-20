@@ -1744,10 +1744,11 @@ Equine Transport UK`;
       : waOutstanding
   }
 
-  <div class="tiny">
-    Paid now: ${formatMoney(booking.confirmationFee)}<br>
-    Outstanding: ${formatMoney(booking.outstandingAmount)}
-  </div>
+ <div class="tiny">
+  <div><strong>Total price: ${formatMoney(booking.hireTotal || booking.total || 0)}</strong></div>
+  <div style="margin-top:4px;">Paid now: ${formatMoney(booking.paidNow || booking.confirmationFee || 0)}</div>
+  <div>Outstanding: ${formatMoney(booking.outstandingAmount || 0)}</div>
+</div>
 
   ${renderExtrasSummary(booking)}
 `;
