@@ -1680,7 +1680,12 @@ async function handleAdminBookingUpdate(request, env) {
     const pickupTime = String(body.pickupTime || "").trim();
     const durationDays = Number(body.durationDays || 0);
     const hireTotal = Number(body.hireTotal || 0);
+    // 🔥 NEW — EXTRAS FROM ADMIN
+    const extras = body.extras || {};
 
+    const dartfordTotal = (extras.dartford || 0) * 4.2;
+    const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
+    const extrasTotal = dartfordTotal + earlyPickupTotal;
     if (!bookingId) {
       return json({ error: "Missing bookingId" }, 400);
     }
@@ -1802,7 +1807,16 @@ async function handleAdminBookingUpdate(request, env) {
         getExpectedConfirmationFee(vehicleId),
     );
 
-    const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
+    // 🔥 REBUILD TOTAL SAFELY
+    const baseCost = calculateServerBaseCost(
+      vehicleId,
+      durationDays,
+      pickupDate,
+    );
+
+    const finalTotal = Math.max(0, hireTotal);
+
+    const outstandingAmount = Math.max(0, finalTotal - confirmationFee);
     const now = new Date().toISOString();
 
     /* ===============================
@@ -1811,23 +1825,23 @@ async function handleAdminBookingUpdate(request, env) {
 
     await env.DB.prepare(
       `
-      UPDATE bookings
-      SET
-        vehicle_id = ?,
-        pickup_at = ?,
-        dropoff_at = ?,
-        duration_days = ?,
-        price_total = ?,
-        updated_at = ?
-      WHERE id = ?
-    `,
+  UPDATE bookings
+  SET
+    vehicle_id = ?,
+    pickup_at = ?,
+    dropoff_at = ?,
+    duration_days = ?,
+    price_total = ?,
+    updated_at = ?
+  WHERE id = ?
+`,
     )
       .bind(
         vehicleId,
         pickupAt,
         dropoffAt,
         durationDays,
-        hireTotal,
+        finalTotal, // ✅ FIXED (was hireTotal)
         now,
         bookingId,
       )
@@ -1856,9 +1870,9 @@ async function handleAdminBookingUpdate(request, env) {
       durationDays,
       pickupTime,
 
-      hireTotal,
-      priceTotal: hireTotal,
-      priceTotalOverride: hireTotal,
+      hireTotal: finalTotal,
+      priceTotal: finalTotal,
+      priceTotalOverride: finalTotal,
       confirmationFee,
       paidNow: confirmationFee,
       outstandingAmount,
@@ -1867,6 +1881,12 @@ async function handleAdminBookingUpdate(request, env) {
       updatedAt: now,
       adminEdited: true,
       adminEditedAt: now,
+
+      // 🔥 EXTRAS (NEW)
+      extras,
+      dartfordTotal,
+      earlyPickupTotal,
+      extrasTotal,
     };
 
     /* ===============================
