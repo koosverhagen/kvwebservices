@@ -1756,24 +1756,34 @@ Equine Transport UK`;
       function renderExtrasSummary(booking) {
         const extras = booking.extras || {};
 
-        const dartford = Number(extras.dartford || 0);
-        const early = extras.earlyPickup === true;
+        const dartfordCount = Number(extras.dartford || 0);
+        const earlyPickup = extras.earlyPickup === true;
 
-        if (!dartford && !early) return "";
+        const lines = [];
 
-        const parts = [];
-
-        if (dartford) {
-          parts.push(`Dartford (${dartford})`);
+        if (dartfordCount > 0) {
+          lines.push(
+            `Dartford (${dartfordCount}) — ${formatMoney(dartfordCount * 4.2)}`,
+          );
         }
 
-        if (early) {
-          parts.push("Early pickup");
+        if (earlyPickup) {
+          lines.push(`Early pickup — ${formatMoney(20)}`);
         }
+
+        if (!lines.length) return "";
+
+        const extrasTotal =
+          Number(booking.extrasTotal || 0) ||
+          dartfordCount * 4.2 + (earlyPickup ? 20 : 0);
 
         return `
     <div class="tiny" style="margin-top:6px;">
-      Extras: ${parts.join(" + ")}
+      <div><strong>Extras</strong></div>
+      <div style="margin-top:4px;">
+        ${lines.map((line) => `<div>${line}</div>`).join("")}
+        <div style="margin-top:4px;"><strong>Total extras: ${formatMoney(extrasTotal)}</strong></div>
+      </div>
     </div>
   `;
       }
@@ -2030,14 +2040,10 @@ Equine Transport UK`;
           const hireCell = hireCellHtml(booking);
 
           const paymentCell = `
-      <div class="stack">
-        ${paymentHtml(booking)}
-        <div class="tiny">
-          Paid now: ${formatMoney(booking.confirmationFee)}<br>
-          Outstanding: ${formatMoney(booking.outstandingAmount)}
-        </div>
-      </div>
-    `;
+  <div class="stack">
+    ${paymentHtml(booking)}
+  </div>
+`;
 
           const actionsCell = buildActionButtons(booking);
           const dvlaCell = dvlaCellHtml(booking);
