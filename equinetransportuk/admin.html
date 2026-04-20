@@ -826,6 +826,9 @@
           <div class="et-modal-body">
             <input type="hidden" id="edit-booking-id" />
 
+            <!-- ===============================
+             VEHICLE
+        =============================== -->
             <div class="field">
               <label>Vehicle</label>
               <select id="edit-vehicle">
@@ -837,11 +840,17 @@
               </select>
             </div>
 
+            <!-- ===============================
+             DATE
+        =============================== -->
             <div class="field">
               <label>Date</label>
               <input type="date" id="edit-date" />
             </div>
 
+            <!-- ===============================
+             PICKUP TIME
+        =============================== -->
             <div class="field">
               <label>Pickup Time</label>
               <select id="edit-time">
@@ -850,6 +859,9 @@
               </select>
             </div>
 
+            <!-- ===============================
+             DURATION
+        =============================== -->
             <div class="field">
               <label>Duration</label>
               <select id="edit-duration">
@@ -865,25 +877,47 @@
             </div>
 
             <!-- ===============================
-   EXTRAS (NEW)
-=============================== -->
+             EXTRAS (NEW)
+        =============================== -->
 
             <div class="field">
-              <label>Dartford crossings</label>
-              <input type="number" id="edit-dartford" min="0" value="0" />
+              <label>Dartford crossings (£4.20 each)</label>
+              <input
+                type="number"
+                id="edit-dartford"
+                min="0"
+                step="1"
+                value="0"
+              />
             </div>
 
-            <div class="field">
-              <label>
-                <input type="checkbox" id="edit-early" />
+            <div
+              class="field"
+              style="display: flex; align-items: center; gap: 8px"
+            >
+              <input type="checkbox" id="edit-early" />
+              <label for="edit-early" style="margin: 0">
                 Early pickup (£20)
               </label>
             </div>
 
+            <!-- ===============================
+             TOTAL (READ-ONLY)
+        =============================== -->
+
             <div class="field">
               <label>Total (£)</label>
-              <input type="number" id="edit-price" />
+              <input
+                type="number"
+                id="edit-price"
+                readonly
+                style="background: #f3f4f6; cursor: not-allowed"
+              />
             </div>
+
+            <!-- ===============================
+             ACTIONS
+        =============================== -->
 
             <div style="margin-top: 16px; display: flex; gap: 10px">
               <button class="btn primary" id="edit-save">Save</button>
@@ -2198,30 +2232,57 @@ ${renderSection("All Bookings", rest)}
           updateAdminPrice();
 
           /* ===============================
-     🔥 AUTO LISTENERS (FIXED)
-  =============================== */
+   🔥 AUTO LISTENERS (FINAL)
+=============================== */
 
           setTimeout(() => {
-            ["edit-vehicle", "edit-date", "edit-time", "edit-duration"].forEach(
-              (id) => {
-                const el = document.getElementById(id);
+            [
+              "edit-vehicle",
+              "edit-date",
+              "edit-time",
+              "edit-duration",
+              "edit-dartford", // ✅ NEW
+              "edit-early", // ✅ NEW
+            ].forEach((id) => {
+              const el = document.getElementById(id);
+              if (!el) return;
 
-                if (el && !el.dataset.listenerAttached) {
-                  el.addEventListener("change", () => {
-                    // 🔥 APPLY RULE WHEN VEHICLE OR DURATION CHANGES
-                    if (id === "edit-vehicle" || id === "edit-duration") {
-                      enforceAdminVehicleDurationRules(
-                        document.getElementById("edit-vehicle")?.value,
-                      );
-                    }
+              // 🔒 Prevent duplicate listeners
+              if (el.dataset.listenerAttached) return;
 
-                    updateAdminPrice();
-                  });
+              const handler = () => {
+                /* ===============================
+         🔥 VEHICLE RULE ENFORCEMENT
+      =============================== */
 
-                  el.dataset.listenerAttached = "true";
+                if (id === "edit-vehicle" || id === "edit-duration") {
+                  enforceAdminVehicleDurationRules(
+                    document.getElementById("edit-vehicle")?.value,
+                  );
                 }
-              },
-            );
+
+                /* ===============================
+         💰 LIVE PRICE UPDATE
+      =============================== */
+
+                updateAdminPrice();
+              };
+
+              // 🔥 Use input for number field (live typing)
+              if (id === "edit-dartford") {
+                el.addEventListener("input", handler);
+              } else {
+                el.addEventListener("change", handler);
+              }
+
+              el.dataset.listenerAttached = "true";
+            });
+
+            /* ===============================
+     🚀 FORCE INITIAL PRICE CALC
+  =============================== */
+
+            updateAdminPrice();
           }, 0);
 
           return;
@@ -2759,7 +2820,7 @@ Equine Transport UK`;
         editSaveBtn.onclick = async () => {
           const bookingId = document.getElementById("edit-booking-id").value;
 
-          // 🔥 ALWAYS GET FRESH DATA
+          // always refresh latest booking first
           await loadBookings();
 
           const booking = allBookings.find((b) => b.id === bookingId);
@@ -2769,37 +2830,26 @@ Equine Transport UK`;
             return;
           }
 
-          /* ===============================
-       🔥 GET VALUES
-    =============================== */
-
           const vehicleId = document.getElementById("edit-vehicle").value;
           const pickupDate = document.getElementById("edit-date").value;
           const pickupTime = document.getElementById("edit-time").value;
           const durationDays = Number(
             document.getElementById("edit-duration").value,
           );
-          const priceTotal = Number(
-            document.getElementById("edit-price").value,
-          );
+          const hireTotal = Number(document.getElementById("edit-price").value);
+
+          const extras = {
+            dartford: Number(
+              document.getElementById("edit-dartford")?.value || 0,
+            ),
+            earlyPickup:
+              document.getElementById("edit-early")?.checked || false,
+          };
 
           /* ===============================
-       🚫 HARD SAVE PROTECTION
+       HARD SAVE PROTECTION
     =============================== */
 
-          // 🚫 7.5T cannot be half-day
-          if (!String(vehicleId).startsWith("v35") && durationDays === 0.5) {
-            alert("7.5T lorries cannot be booked as half-day.");
-            return;
-          }
-
-          // 🚫 full-day must start 07:00
-          if (durationDays !== 0.5 && pickupTime !== "07:00") {
-            alert("Full-day bookings must start at 07:00.");
-            return;
-          }
-
-          // basic checks
           if (!vehicleId) {
             alert("Missing vehicle");
             return;
@@ -2815,73 +2865,46 @@ Equine Transport UK`;
             return;
           }
 
-          if (!priceTotal || isNaN(priceTotal) || priceTotal <= 0) {
+          if (!hireTotal || isNaN(hireTotal) || hireTotal <= 0) {
             alert("Invalid price");
             return;
           }
 
-          /* ===============================
-       🔥 BUILD ISO TIMES (CRITICAL)
-    =============================== */
-
-          const pickupAt = new Date(
-            `${pickupDate}T${pickupTime}:00`,
-          ).toISOString();
-
-          let dropoffDate = new Date(`${pickupDate}T${pickupTime}:00`);
-
-          if (durationDays === 0.5) {
-            // 3.5T half-day logic
-            if (pickupTime === "07:00") {
-              dropoffDate.setHours(13, 0, 0);
-            } else {
-              dropoffDate.setHours(19, 0, 0);
-            }
-          } else {
-            dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
-            dropoffDate.setHours(19, 0, 0);
+          if (!String(vehicleId).startsWith("v35") && durationDays === 0.5) {
+            alert("7.5T lorries cannot be booked as half-day.");
+            return;
           }
 
-          const dropoffAt = dropoffDate.toISOString();
+          if (durationDays !== 0.5 && pickupTime !== "07:00") {
+            alert("Full-day bookings must start at 07:00.");
+            return;
+          }
 
-          /* ===============================
-       🚀 FINAL PAYLOAD (MATCH BACKEND)
-    =============================== */
+          if (
+            durationDays === 0.5 &&
+            !["07:00", "13:00"].includes(pickupTime)
+          ) {
+            alert("Half-day pickup must be 07:00 or 13:00.");
+            return;
+          }
 
           const payload = {
             bookingId,
-
             vehicleId,
-
-            pickupAt,
-            dropoffAt,
-
-            duration_days: durationDays,
-            pickup_time: pickupTime,
-            price_total: priceTotal,
-
-            extras: {
-              dartford: Number(
-                document.getElementById("edit-dartford").value || 0,
-              ),
-              earlyPickup: document.getElementById("edit-early").checked,
-            },
-
-            updated_at: booking.updatedAt || null,
+            pickupDate,
+            pickupTime,
+            durationDays,
+            hireTotal,
+            extras,
+            updatedAt: booking.updatedAt || null,
           };
 
           console.log("EDIT PAYLOAD:", payload);
 
-          /* ===============================
-       🚀 SEND
-    =============================== */
-
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload),
             });
 
@@ -2899,10 +2922,8 @@ Equine Transport UK`;
               throw new Error(data.error || "Update failed");
             }
 
-            // ✅ SUCCESS
             editModal.classList.add("hidden");
             await loadBookings();
-
             alert("✅ Booking updated");
           } catch (err) {
             console.error(err);
