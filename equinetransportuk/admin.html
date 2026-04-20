@@ -2945,15 +2945,24 @@ Equine Transport UK`;
             return;
           }
 
-          /* ===============================
-   🔥 ENSURE LATEST PRICE BEFORE SAVE
-=============================== */
-
+          // ===============================
+          // 🔥 FORCE LATEST PRICE FIRST
+          // ===============================
           await updateAdminPrice();
 
-          // 🔥 price is now DISPLAY ONLY (backend calculates final)
+          // ===============================
+          // 🔥 NOW READ VALUE (CRITICAL)
+          // ===============================
           const hireTotal =
             Number(document.getElementById("edit-price").value) || 0;
+
+          // ===============================
+          // VALIDATION
+          // ===============================
+          if (!hireTotal || isNaN(hireTotal) || hireTotal <= 0) {
+            alert("Invalid price");
+            return;
+          }
 
           /* ===============================
    🚀 FINAL PAYLOAD
