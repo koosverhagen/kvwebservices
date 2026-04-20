@@ -2921,12 +2921,6 @@ Equine Transport UK`;
             return;
           }
 
-          // 🔥 price is UI only — do NOT block save
-          if (isNaN(hireTotal)) {
-            alert("Price calculation error");
-            return;
-          }
-
           if (!String(vehicleId).startsWith("v35") && durationDays === 0.5) {
             alert("7.5T lorries cannot be booked as half-day.");
             return;
@@ -2956,11 +2950,9 @@ Equine Transport UK`;
           const hireTotal =
             Number(document.getElementById("edit-price").value) || 0;
 
-          // ===============================
-          // VALIDATION
-          // ===============================
-          if (!hireTotal || isNaN(hireTotal) || hireTotal <= 0) {
-            alert("Invalid price");
+          // 🔥 price is UI only — validate AFTER reading it
+          if (isNaN(hireTotal) || hireTotal <= 0) {
+            alert("Price calculation error");
             return;
           }
 
