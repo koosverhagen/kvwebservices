@@ -881,24 +881,49 @@
         =============================== -->
 
             <div class="field">
-              <label>Dartford crossings (£4.20 each)</label>
-              <input
-                type="number"
-                id="edit-dartford"
-                min="0"
-                step="1"
-                value="0"
-              />
+              <label>Dartford crossings</label>
+
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  min-height: 46px;
+                "
+              >
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <input
+                    type="number"
+                    id="edit-dartford"
+                    min="0"
+                    step="1"
+                    value="0"
+                    style="max-width: 80px"
+                  />
+                  <span class="tiny">× £4.20</span>
+                </div>
+              </div>
             </div>
 
-            <div
-              class="field"
-              style="display: flex; align-items: center; gap: 8px"
-            >
-              <input type="checkbox" id="edit-early" />
-              <label for="edit-early" style="margin: 0">
-                Early pickup (£20)
-              </label>
+            <div class="field">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  min-height: 46px;
+                "
+              >
+                <label for="edit-early" style="margin: 0">
+                  Early pickup (£20)
+                </label>
+
+                <input
+                  type="checkbox"
+                  id="edit-early"
+                  style="transform: scale(0.85); cursor: pointer"
+                />
+              </div>
             </div>
 
             <!-- ===============================
@@ -1705,19 +1730,51 @@ Equine Transport UK`;
           : `<span class="pill warn">Outstanding open</span>`;
 
         return `
-    ${
-      confirmation
-        ? '<span class="pill ok">Confirmation paid</span>'
-        : '<span class="pill bad">Confirmation pending</span>'
-    }
+  ${
+    confirmation
+      ? '<span class="pill ok">Confirmation paid</span>'
+      : '<span class="pill bad">Confirmation pending</span>'
+  }
 
-    ${deposit ? '<span class="pill ok">Deposit secured</span>' : waDeposit}
+  ${deposit ? '<span class="pill ok">Deposit secured</span>' : waDeposit}
 
-    ${
-      outstanding
-        ? '<span class="pill ok">Outstanding paid</span>'
-        : waOutstanding
-    }
+  ${
+    outstanding
+      ? '<span class="pill ok">Outstanding paid</span>'
+      : waOutstanding
+  }
+
+  <div class="tiny">
+    Paid now: ${formatMoney(booking.confirmationFee)}<br>
+    Outstanding: ${formatMoney(booking.outstandingAmount)}
+  </div>
+
+  ${renderExtrasSummary(booking)}
+`;
+      }
+
+      function renderExtrasSummary(booking) {
+        const extras = booking.extras || {};
+
+        const dartford = Number(extras.dartford || 0);
+        const early = extras.earlyPickup === true;
+
+        if (!dartford && !early) return "";
+
+        const parts = [];
+
+        if (dartford) {
+          parts.push(`Dartford (${dartford})`);
+        }
+
+        if (early) {
+          parts.push("Early pickup");
+        }
+
+        return `
+    <div class="tiny" style="margin-top:6px;">
+      Extras: ${parts.join(" + ")}
+    </div>
   `;
       }
 
