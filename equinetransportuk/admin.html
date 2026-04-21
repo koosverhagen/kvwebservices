@@ -1190,7 +1190,9 @@ Equine Transport UK`,
 
           const data = await res.json();
 
-          const isAvailable = data?.vehicles?.some((v) => v.id === vehicleId);
+          const isAvailable = data?.vehicles?.some(
+            (v) => v.vehicleId === vehicleId && v.available === true,
+          );
 
           const saveBtn = document.getElementById("edit-save");
 
