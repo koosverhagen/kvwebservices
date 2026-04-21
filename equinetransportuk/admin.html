@@ -1000,6 +1000,7 @@
 
       let allBookings = [];
       let filteredBookings = [];
+      let IS_EDIT_INITIALISING = false;
 
       function buildContactButtons(booking) {
         const phone = booking.customerMobile || "";
@@ -1172,6 +1173,9 @@ Equine Transport UK`,
       }
 
       async function checkAdminAvailabilityLive() {
+        // 🔥 BLOCK DURING MODAL INIT (CRITICAL)
+        if (IS_EDIT_INITIALISING) return;
+
         const bookingId = document.getElementById("edit-booking-id")?.value;
 
         const vehicleId = document.getElementById("edit-vehicle")?.value;
@@ -2339,29 +2343,29 @@ ${renderSection("All Bookings", rest)}
             return;
           }
 
+          // 🔥 BLOCK LIVE CHECKS DURING INIT
+          IS_EDIT_INITIALISING = true;
+
           /* ===============================
-       🔥 FILL MODAL
-    =============================== */
+   🔥 FILL MODAL
+=============================== */
 
           document.getElementById("edit-booking-id").value = booking.id;
           document.getElementById("edit-vehicle").value = booking.vehicleId;
-
           document.getElementById("edit-date").value =
             booking.pickupAtLocal?.slice(0, 10);
-
           document.getElementById("edit-time").value =
             booking.pickupTime || "07:00";
-
           document.getElementById("edit-duration").value = String(
             booking.durationDays,
           );
 
-          // 🔥 APPLY VEHICLE RULES
+          // rules
           enforceAdminVehicleDurationRules(booking.vehicleId);
 
           document.getElementById("edit-price").value = booking.hireTotal || 0;
 
-          // 🔥 LOAD EXTRAS
+          // extras
           document.getElementById("edit-dartford").value =
             booking?.extras?.dartford || 0;
 
@@ -2369,13 +2373,18 @@ ${renderSection("All Bookings", rest)}
             booking?.extras?.earlyPickup || false;
 
           /* ===============================
-       🔥 OPEN MODAL
-    =============================== */
+   🔥 OPEN MODAL
+=============================== */
 
           editModal.classList.remove("hidden");
 
           // ✅ CLEAR ANY OLD ERROR
           clearEditError();
+
+          // 🔥 ALLOW LIVE CHECKS AFTER UI IS STABLE
+          setTimeout(() => {
+            IS_EDIT_INITIALISING = false;
+          }, 200);
 
           /* ===============================
        🔥 FORCE PRICE CALC ONLY
