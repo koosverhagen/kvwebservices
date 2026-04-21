@@ -2786,8 +2786,8 @@ ${renderSection("All Bookings", rest)}
           };
 
           /* ===============================
-   HARD SAVE PROTECTION
-=============================== */
+       HARD SAVE PROTECTION
+    =============================== */
 
           if (!vehicleId) {
             alert("Missing vehicle");
@@ -2809,10 +2809,6 @@ ${renderSection("All Bookings", rest)}
             return;
           }
 
-          /* ===============================
-   🔒 BLOCK SAVE IF INVALID (ADD HERE)
-=============================== */
-
           const saveBtn = document.getElementById("edit-save");
 
           if (saveBtn?.disabled) {
@@ -2820,9 +2816,15 @@ ${renderSection("All Bookings", rest)}
             return;
           }
 
-          /* ===============================
-   🚀 FINAL PAYLOAD
-=============================== */
+          // ✅ CRITICAL FIX — define hireTotal before payload
+          const hireTotal = Number(
+            document.getElementById("edit-price")?.value || 0,
+          );
+
+          if (!hireTotal || isNaN(hireTotal) || hireTotal <= 0) {
+            alert("Invalid price");
+            return;
+          }
 
           const payload = {
             bookingId,
@@ -2860,7 +2862,7 @@ ${renderSection("All Bookings", rest)}
 
             editModal.classList.add("hidden");
             await loadBookings();
-            alert("✅ Booking updated");
+            clearEditError();
           } catch (err) {
             console.error(err);
             alert(err.message || "Update failed");
