@@ -1171,6 +1171,43 @@ Equine Transport UK`,
         }
       }
 
+      async function checkAdminAvailabilityLive() {
+        const vehicleId = document.getElementById("edit-vehicle")?.value;
+        const pickupDate = document.getElementById("edit-date")?.value;
+        const pickupTime = document.getElementById("edit-time")?.value;
+        const durationDays = Number(
+          document.getElementById("edit-duration")?.value,
+        );
+
+        if (!vehicleId || !pickupDate || !pickupTime || !durationDays) return;
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/vehicles/available?date=${pickupDate}&duration=${durationDays}&pickupTime=${pickupTime}`,
+          );
+
+          const data = await res.json();
+
+          const isAvailable = data?.vehicles?.some((v) => v.id === vehicleId);
+
+          const saveBtn = document.getElementById("edit-save");
+
+          if (!isAvailable) {
+            showEditError(
+              "❌ Sorry — that lorry is not available for that date/time",
+            );
+
+            if (saveBtn) saveBtn.disabled = true;
+          } else {
+            clearEditError();
+
+            if (saveBtn) saveBtn.disabled = false;
+          }
+        } catch (err) {
+          console.warn("Availability check failed", err);
+        }
+      }
+
       function setStatus(message, mode = "loading") {
         topStatus.className = `status-bar ${mode}`;
         topStatus.innerHTML = message;
@@ -2341,6 +2378,7 @@ ${renderSection("All Bookings", rest)}
   =============================== */
 
           updateAdminPrice();
+          checkAdminAvailabilityLive(); // 🔥 ADD THIS LINE
 
           /* ===============================
      🔥 AUTO LISTENERS (UPDATED)
@@ -2380,6 +2418,7 @@ ${renderSection("All Bookings", rest)}
         =============================== */
 
                 updateAdminPrice();
+                checkAdminAvailabilityLive(); // 🔥 ADD THIS LINE
               };
 
               // 🔥 number field = live typing
@@ -2393,6 +2432,7 @@ ${renderSection("All Bookings", rest)}
             });
 
             updateAdminPrice();
+            checkAdminAvailabilityLive(); // 🔥 ADD THIS LINE
           }, 0);
 
           return;
@@ -2956,8 +2996,8 @@ Equine Transport UK`;
           };
 
           /* ===============================
-       HARD SAVE PROTECTION
-    =============================== */
+   HARD SAVE PROTECTION
+=============================== */
 
           if (!vehicleId) {
             alert("Missing vehicle");
@@ -2979,39 +3019,19 @@ Equine Transport UK`;
             return;
           }
 
-          if (durationDays !== 0.5 && pickupTime !== "07:00") {
-            alert("Full-day bookings must start at 07:00.");
-            return;
-          }
+          /* ===============================
+   🔒 BLOCK SAVE IF INVALID (ADD HERE)
+=============================== */
 
-          if (
-            durationDays === 0.5 &&
-            !["07:00", "13:00"].includes(pickupTime)
-          ) {
-            alert("Half-day pickup must be 07:00 or 13:00.");
-            return;
-          }
+          const saveBtn = document.getElementById("edit-save");
 
-          // ===============================
-          // 🔥 FORCE LATEST PRICE FIRST
-          // ===============================
-          await updateAdminPrice();
-
-          // ===============================
-          // 🔥 NOW READ VALUE (CRITICAL)
-          // ===============================
-          const hireTotal =
-            Number(document.getElementById("edit-price").value) || 0;
-
-          // 🔥 price is UI only — validate AFTER reading it
-          if (isNaN(hireTotal) || hireTotal <= 0) {
-            alert("Price calculation error");
+          if (saveBtn?.disabled) {
+            showEditError("❌ Fix availability before saving");
             return;
           }
 
           /* ===============================
    🚀 FINAL PAYLOAD
-   ⚠️ price is UI only — backend recalculates total
 =============================== */
 
           const payload = {
@@ -3037,12 +3057,9 @@ Equine Transport UK`;
             const data = await res.json();
 
             if (res.status === 409) {
-              console.warn("Conflict:", data);
-
-              alert(
-                "❌ Sorry — that lorry is already booked for that date/time. Please choose another vehicle or time.",
+              showEditError(
+                "❌ Sorry — that lorry is not available for that date/time",
               );
-
               return;
             }
 
