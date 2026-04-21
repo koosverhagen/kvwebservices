@@ -2384,7 +2384,7 @@ ${renderSection("All Bookings", rest)}
           // 🔥 ALLOW LIVE CHECKS AFTER UI IS STABLE
           setTimeout(() => {
             IS_EDIT_INITIALISING = false;
-          }, 200);
+          }, 800);
 
           /* ===============================
        🔥 FORCE PRICE CALC ONLY
@@ -2392,15 +2392,6 @@ ${renderSection("All Bookings", rest)}
     =============================== */
 
           updateAdminPrice();
-
-          /* ===============================
-       ⏳ DELAYED FIRST AVAILABILITY CHECK
-       (prevents false "self-conflict")
-    =============================== */
-
-          setTimeout(() => {
-            checkAdminAvailabilityLive();
-          }, 250);
 
           /* ===============================
        🔥 AUTO LISTENERS (FINAL)
