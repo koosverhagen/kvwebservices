@@ -824,6 +824,22 @@
           </div>
 
           <div class="et-modal-body">
+            <div
+              id="edit-error"
+              style="
+                display: none;
+                margin-bottom: 12px;
+                padding: 10px;
+                border-radius: 10px;
+                background: #fff1f2;
+                color: #b42318;
+                font-size: 13px;
+                font-weight: 600;
+              "
+            >
+              ⚠️ That lorry is not available for the selected date/time
+            </div>
+
             <input type="hidden" id="edit-booking-id" />
 
             <!-- ===============================
@@ -2181,6 +2197,36 @@ ${renderSection("All Bookings", rest)}
         openModal();
       }
 
+      function showEditError(message) {
+        const box = document.getElementById("edit-error");
+        if (!box) return;
+
+        box.textContent = message;
+        box.style.display = "block";
+
+        // highlight fields
+        ["edit-vehicle", "edit-date", "edit-time"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.style.border = "2px solid #b42318";
+            el.style.boxShadow = "0 0 0 2px rgba(180,35,24,0.15)";
+          }
+        });
+      }
+
+      function clearEditError() {
+        const box = document.getElementById("edit-error");
+        if (box) box.style.display = "none";
+
+        ["edit-vehicle", "edit-date", "edit-time"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.style.border = "";
+            el.style.boxShadow = "";
+          }
+        });
+      }
+
       function updateClearButton() {
         const hasFilters = searchInput.value || statusFilter.value !== "all";
 
@@ -2245,7 +2291,6 @@ ${renderSection("All Bookings", rest)}
           await loadBookings();
 
           const bookingId = editBtn.dataset.id;
-
           const booking = allBookings.find((b) => b.id === bookingId);
 
           if (!booking) {
@@ -2258,7 +2303,6 @@ ${renderSection("All Bookings", rest)}
   =============================== */
 
           document.getElementById("edit-booking-id").value = booking.id;
-
           document.getElementById("edit-vehicle").value = booking.vehicleId;
 
           document.getElementById("edit-date").value =
@@ -2271,12 +2315,12 @@ ${renderSection("All Bookings", rest)}
             booking.durationDays,
           );
 
-          // 🔥 APPLY VEHICLE RULES (CRITICAL)
+          // 🔥 APPLY VEHICLE RULES
           enforceAdminVehicleDurationRules(booking.vehicleId);
 
           document.getElementById("edit-price").value = booking.hireTotal || 0;
 
-          // 🔥 LOAD EXTRAS INTO UI
+          // 🔥 LOAD EXTRAS
           document.getElementById("edit-dartford").value =
             booking?.extras?.dartford || 0;
 
@@ -2289,6 +2333,9 @@ ${renderSection("All Bookings", rest)}
 
           editModal.classList.remove("hidden");
 
+          // ✅ CLEAR ANY OLD ERROR
+          clearEditError();
+
           /* ===============================
      🔥 FORCE PRICE CALC
   =============================== */
@@ -2296,8 +2343,8 @@ ${renderSection("All Bookings", rest)}
           updateAdminPrice();
 
           /* ===============================
-   🔥 AUTO LISTENERS (FINAL)
-=============================== */
+     🔥 AUTO LISTENERS (UPDATED)
+  =============================== */
 
           setTimeout(() => {
             [
@@ -2305,8 +2352,8 @@ ${renderSection("All Bookings", rest)}
               "edit-date",
               "edit-time",
               "edit-duration",
-              "edit-dartford", // ✅ NEW
-              "edit-early", // ✅ NEW
+              "edit-dartford",
+              "edit-early",
             ].forEach((id) => {
               const el = document.getElementById(id);
               if (!el) return;
@@ -2315,9 +2362,12 @@ ${renderSection("All Bookings", rest)}
               if (el.dataset.listenerAttached) return;
 
               const handler = () => {
+                // ✅ CLEAR ERROR WHEN USER CHANGES INPUT
+                clearEditError();
+
                 /* ===============================
-         🔥 VEHICLE RULE ENFORCEMENT
-      =============================== */
+           🔥 VEHICLE RULE ENFORCEMENT
+        =============================== */
 
                 if (id === "edit-vehicle" || id === "edit-duration") {
                   enforceAdminVehicleDurationRules(
@@ -2326,13 +2376,13 @@ ${renderSection("All Bookings", rest)}
                 }
 
                 /* ===============================
-         💰 LIVE PRICE UPDATE
-      =============================== */
+           💰 LIVE PRICE UPDATE
+        =============================== */
 
                 updateAdminPrice();
               };
 
-              // 🔥 Use input for number field (live typing)
+              // 🔥 number field = live typing
               if (id === "edit-dartford") {
                 el.addEventListener("input", handler);
               } else {
@@ -2341,10 +2391,6 @@ ${renderSection("All Bookings", rest)}
 
               el.dataset.listenerAttached = "true";
             });
-
-            /* ===============================
-     🚀 FORCE INITIAL PRICE CALC
-  =============================== */
 
             updateAdminPrice();
           }, 0);
@@ -2991,9 +3037,12 @@ Equine Transport UK`;
             const data = await res.json();
 
             if (res.status === 409) {
-              alert("⚠️ Booking changed elsewhere. Reloading...");
-              await loadBookings();
-              editModal.classList.add("hidden");
+              console.warn("Conflict:", data);
+
+              alert(
+                "❌ Sorry — that lorry is already booked for that date/time. Please choose another vehicle or time.",
+              );
+
               return;
             }
 
