@@ -1172,6 +1172,8 @@ Equine Transport UK`,
       }
 
       async function checkAdminAvailabilityLive() {
+        const bookingId = document.getElementById("edit-booking-id")?.value;
+
         const vehicleId = document.getElementById("edit-vehicle")?.value;
         const pickupDate = document.getElementById("edit-date")?.value;
         const pickupTime = document.getElementById("edit-time")?.value;
@@ -1183,7 +1185,7 @@ Equine Transport UK`,
 
         try {
           const res = await fetch(
-            `${API_BASE}/api/vehicles/available?date=${pickupDate}&duration=${durationDays}&pickupTime=${pickupTime}`,
+            `${API_BASE}/api/vehicles/available?date=${pickupDate}&duration=${durationDays}&pickupTime=${pickupTime}&ignoreBookingId=${bookingId}`,
           );
 
           const data = await res.json();
@@ -2316,8 +2318,8 @@ ${renderSection("All Bookings", rest)}
 
       document.addEventListener("click", async (e) => {
         /* ===============================
-   ✏️ EDIT BUTTON CLICK
-=============================== */
+     ✏️ EDIT BUTTON CLICK
+  =============================== */
 
         const editBtn = e.target.closest(".btn-edit");
 
@@ -2336,8 +2338,8 @@ ${renderSection("All Bookings", rest)}
           }
 
           /* ===============================
-     🔥 FILL MODAL
-  =============================== */
+       🔥 FILL MODAL
+    =============================== */
 
           document.getElementById("edit-booking-id").value = booking.id;
           document.getElementById("edit-vehicle").value = booking.vehicleId;
@@ -2365,8 +2367,8 @@ ${renderSection("All Bookings", rest)}
             booking?.extras?.earlyPickup || false;
 
           /* ===============================
-     🔥 OPEN MODAL
-  =============================== */
+       🔥 OPEN MODAL
+    =============================== */
 
           editModal.classList.remove("hidden");
 
@@ -2374,15 +2376,24 @@ ${renderSection("All Bookings", rest)}
           clearEditError();
 
           /* ===============================
-     🔥 FORCE PRICE CALC
-  =============================== */
+       🔥 FORCE PRICE CALC ONLY
+       ⚠️ DO NOT CHECK AVAILABILITY YET
+    =============================== */
 
           updateAdminPrice();
-          checkAdminAvailabilityLive(); // 🔥 ADD THIS LINE
 
           /* ===============================
-     🔥 AUTO LISTENERS (UPDATED)
-  =============================== */
+       ⏳ DELAYED FIRST AVAILABILITY CHECK
+       (prevents false "self-conflict")
+    =============================== */
+
+          setTimeout(() => {
+            checkAdminAvailabilityLive();
+          }, 250);
+
+          /* ===============================
+       🔥 AUTO LISTENERS (FINAL)
+    =============================== */
 
           setTimeout(() => {
             [
@@ -2396,16 +2407,15 @@ ${renderSection("All Bookings", rest)}
               const el = document.getElementById(id);
               if (!el) return;
 
-              // 🔒 Prevent duplicate listeners
               if (el.dataset.listenerAttached) return;
 
               const handler = () => {
-                // ✅ CLEAR ERROR WHEN USER CHANGES INPUT
+                // ✅ CLEAR ERROR ON CHANGE
                 clearEditError();
 
                 /* ===============================
-           🔥 VEHICLE RULE ENFORCEMENT
-        =============================== */
+             🔥 VEHICLE RULE ENFORCEMENT
+          =============================== */
 
                 if (id === "edit-vehicle" || id === "edit-duration") {
                   enforceAdminVehicleDurationRules(
@@ -2414,14 +2424,18 @@ ${renderSection("All Bookings", rest)}
                 }
 
                 /* ===============================
-           💰 LIVE PRICE UPDATE
-        =============================== */
+             💰 PRICE UPDATE
+          =============================== */
 
                 updateAdminPrice();
-                checkAdminAvailabilityLive(); // 🔥 ADD THIS LINE
+
+                /* ===============================
+             🚫 LIVE AVAILABILITY CHECK
+          =============================== */
+
+                checkAdminAvailabilityLive();
               };
 
-              // 🔥 number field = live typing
               if (id === "edit-dartford") {
                 el.addEventListener("input", handler);
               } else {
@@ -2431,8 +2445,8 @@ ${renderSection("All Bookings", rest)}
               el.dataset.listenerAttached = "true";
             });
 
+            // 🔥 final sync
             updateAdminPrice();
-            checkAdminAvailabilityLive(); // 🔥 ADD THIS LINE
           }, 0);
 
           return;
@@ -2443,232 +2457,6 @@ ${renderSection("All Bookings", rest)}
   =============================== */
 
         const target = e.target;
-
-        /* ===============================
-     ✅ WHATSAPP BUTTONS (PRIORITY)
-  =============================== */
-
-        const waBtn = target.closest(".js-wa");
-        if (waBtn) {
-          e.preventDefault();
-          e.stopPropagation();
-
-          const phone = waBtn.dataset.phone;
-          const type = waBtn.dataset.type;
-          const name = waBtn.dataset.name;
-          const id = waBtn.dataset.id;
-
-          if (!phone || !type) {
-            console.warn("WA button missing data", waBtn);
-            return;
-          }
-
-          const cleaned = normaliseUKPhone(phone);
-
-          if (!cleaned) {
-            console.warn("Invalid phone:", phone);
-            return;
-          }
-
-          const BASE = "https://kvwebservices.co.uk/equinetransportuk";
-
-          let text = "";
-
-          if (type === "form") {
-            const formType = waBtn.dataset.formtype || "long";
-            const formPath =
-              formType === "short"
-                ? "/forms/short-form.html"
-                : "/forms/long-form.html";
-
-            text = `Dear ${name},
-
-Please complete your ${formType.toUpperCase()} form for your booking.
-
-${BASE}${formPath}?bookingId=${id}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`;
-          }
-
-          if (type === "deposit") {
-            text = `Dear ${name},
-
-Please complete your £200 security deposit for your booking.
-
-${BASE}/pay-deposit.html?bookingId=${id}
-
-This is a card authorisation only.
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`;
-          }
-
-          if (type === "outstanding") {
-            text = `Dear ${name},
-
-Your outstanding balance is now ready to be paid.
-
-${BASE}/pay-outstanding.html?bookingId=${id}
-
-Kind regards,
-Koos & Avril
-Equine Transport UK`;
-          }
-
-          const url =
-            "https://wa.me/" + cleaned + "?text=" + encodeURIComponent(text);
-
-          console.log("Opening WhatsApp:", url);
-
-          window.open(url, "_blank");
-          return;
-        }
-
-        /* ===============================
-     📧 RESEND EMAIL (FIXED)
-  =============================== */
-
-        const emailBtn = target.closest(".resend-email-btn, .js-resend-email");
-
-        if (emailBtn) {
-          e.preventDefault();
-          e.stopPropagation();
-
-          // 🔒 prevent double click
-          if (emailBtn.classList.contains("disabled")) return;
-
-          const bookingId = emailBtn.dataset.id;
-          const type = emailBtn.dataset.type;
-
-          if (!bookingId || !type) {
-            console.warn("Missing bookingId/type", emailBtn);
-            return;
-          }
-
-          const originalText = emailBtn.textContent;
-
-          try {
-            emailBtn.textContent = "Sending...";
-            emailBtn.disabled = true;
-
-            const res = await fetch(`${API_BASE}/api/admin/resend-email`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                bookingId,
-                type, // 🔥 CRITICAL
-              }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-              throw new Error(data?.error || "Failed to send email");
-            }
-
-            emailBtn.textContent = "Sent ✓";
-            emailBtn.classList.add("disabled");
-          } catch (err) {
-            console.error("❌ resend error:", err);
-
-            emailBtn.textContent = "Error";
-            emailBtn.disabled = false;
-
-            setTimeout(() => {
-              emailBtn.textContent = originalText;
-            }, 2000);
-          }
-
-          return;
-        }
-
-        /* ===============================
-     🚗 COPY LICENCE + OPEN DVLA
-  =============================== */
-
-        const licenceBtn = target.closest(".copy-licence");
-        if (licenceBtn) {
-          e.preventDefault();
-
-          const text = licenceBtn.dataset.copy;
-          if (!text) return;
-
-          try {
-            await navigator.clipboard.writeText(text);
-
-            licenceBtn.textContent = "Opening… ✓";
-
-            window.open(
-              "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
-              "_blank",
-            );
-
-            setTimeout(() => {
-              licenceBtn.textContent = "Copy Licence ↗";
-            }, 1200);
-          } catch (err) {
-            console.warn("Licence copy failed", err);
-          }
-
-          return;
-        }
-
-        /* ===============================
-     📋 COPY DVLA CODE
-  =============================== */
-
-        const copyBtn = target.closest(".copy-btn");
-        if (copyBtn) {
-          e.preventDefault();
-
-          const text = copyBtn.dataset.copy;
-          if (!text) return;
-
-          try {
-            await navigator.clipboard.writeText(text);
-
-            copyBtn.textContent = "Copied ✓";
-
-            setTimeout(() => {
-              copyBtn.textContent = "Copy";
-            }, 1200);
-          } catch (err) {
-            console.warn("DVLA copy failed", err);
-          }
-
-          return;
-        }
-
-        /* ===============================
-     📋 COPY BOOKING ID
-  =============================== */
-
-        const el = target.closest(".booking-id");
-        if (el) {
-          const id = el.getAttribute("data-id");
-          if (!id) return;
-
-          try {
-            await navigator.clipboard.writeText(id);
-
-            el.textContent = "Copied ✓";
-            el.classList.add("copied");
-
-            setTimeout(() => {
-              el.textContent = "Ref: " + shortRef(id);
-              el.classList.remove("copied");
-            }, 1200);
-          } catch (err) {
-            console.warn("Copy failed", err);
-          }
-
-          return;
-        }
 
         /* ===============================
      🔒 IGNORE OTHER BUTTONS/LINKS
