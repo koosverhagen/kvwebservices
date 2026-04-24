@@ -2041,6 +2041,8 @@ Equine Transport UK`;
      GROUPING
   =============================== */
 
+        const mode = timeFilter?.value || "upcoming";
+
         const inProgress = [];
         const today = [];
         const tomorrow = [];
@@ -2070,13 +2072,43 @@ Equine Transport UK`;
           const dropoffTime = dropoff.getTime();
           const nowTime = Date.now();
 
-          // 🔴 IN PROGRESS
+          /* ===============================
+     MODE-SPECIFIC GROUPING (FIX)
+  =============================== */
+
+          // 🔴 IN PROGRESS MODE → ONLY SHOW IN PROGRESS
+          if (mode === "inprogress") {
+            if (pickupTime <= nowTime && dropoffTime >= nowTime) {
+              inProgress.push(booking);
+            }
+            return; // 🚫 STOP HERE
+          }
+
+          // 📜 PAST MODE → ONLY GROUP INTO WEEKS (NO FUTURE DAYS)
+          if (mode === "past") {
+            const weekStart = new Date(pickup);
+            weekStart.setDate(pickup.getDate() - pickup.getDay() + 1);
+
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+
+            const key = `${weekStart.toDateString()}_${weekEnd.toDateString()}`;
+
+            if (!byWeek[key]) byWeek[key] = [];
+            byWeek[key].push(booking);
+
+            return; // 🚫 STOP HERE
+          }
+
+          // ===============================
+          // ✅ DEFAULT (UPCOMING)
+          // ===============================
+
           if (pickupTime <= nowTime && dropoffTime >= nowTime) {
             inProgress.push(booking);
             return;
           }
 
-          // 🟡 TODAY
           if (
             pickupTime >= startOfToday.getTime() &&
             pickupTime < startOfTomorrow.getTime()
@@ -2085,7 +2117,6 @@ Equine Transport UK`;
             return;
           }
 
-          // 🟠 TOMORROW
           if (
             pickupTime >= startOfTomorrow.getTime() &&
             pickupTime < startOfDayAfter.getTime()
@@ -2094,7 +2125,6 @@ Equine Transport UK`;
             return;
           }
 
-          // 📅 NEXT 7 DAYS (GROUP PER DAY)
           const diffDays = Math.floor(
             (pickupTime - startOfToday.getTime()) / (1000 * 60 * 60 * 24),
           );
@@ -2106,9 +2136,8 @@ Equine Transport UK`;
             return;
           }
 
-          // 📆 AFTER → GROUP PER WEEK
           const weekStart = new Date(pickup);
-          weekStart.setDate(pickup.getDate() - pickup.getDay() + 1); // Monday
+          weekStart.setDate(pickup.getDate() - pickup.getDay() + 1);
 
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
@@ -2216,8 +2245,6 @@ Equine Transport UK`;
      RENDER TABLE
   =============================== */
 
-        const mode = timeFilter?.value || "upcoming";
-
         let restTitle = "All Bookings";
 
         if (mode === "past") {
@@ -2228,37 +2255,45 @@ Equine Transport UK`;
 
         let html = "";
 
-        // 🔴 IN PROGRESS
-        html += renderSection("🔴 In Progress", inProgress);
+        // 🔴 IN PROGRESS (ONLY FOR upcoming + inprogress)
+        if (mode !== "past") {
+          html += renderSection("🔴 In Progress", inProgress);
+        }
 
-        // 🟡 TODAY
-        html += renderSection("🟡 Today", today);
+        // 🟡 TODAY / 🟠 TOMORROW (ONLY upcoming)
+        if (mode === "upcoming") {
+          html += renderSection("🟡 Today", today);
+          html += renderSection("🟠 Tomorrow", tomorrow);
+        }
 
-        // 🟠 TOMORROW
-        html += renderSection("🟠 Tomorrow", tomorrow);
+        /* ===============================
+   📅 NEXT 7 DAYS (ONLY UPCOMING)
+=============================== */
 
-        // 📅 NEXT 7 DAYS (ALWAYS SHOW EVEN IF EMPTY)
-        for (let i = 2; i <= 7; i++) {
-          const d = new Date(startOfToday);
-          d.setDate(d.getDate() + i);
+        if (mode === "upcoming") {
+          for (let i = 2; i <= 7; i++) {
+            const d = new Date(startOfToday);
+            d.setDate(d.getDate() + i);
 
-          const key = d.toDateString();
-          const list = byDay[key] || [];
+            const key = d.toDateString();
+            const list = byDay[key] || [];
 
-          html += `
-    <tr class="section-header">
-      <td colspan="6">${formatDayHeader(key)}</td>
-    </tr>
-    ${
-      list.length
-        ? list.map(renderRow).join("")
-        : `
-      <tr>
-        <td colspan="6" class="tiny">No bookings</td>
+            html += `
+      <tr class="section-header">
+        <td colspan="6">${formatDayHeader(key)}</td>
       </tr>
-    `
-    }
-  `;
+      ${
+        list.length
+          ? list.map(renderRow).join("")
+          : `
+        <tr>
+          <td colspan="6" class="tiny">No bookings</td>
+        </td>
+      </tr>
+      `
+      }
+    `;
+          }
         }
 
         // 📆 WEEKS (ONLY IF BOOKINGS EXIST)
