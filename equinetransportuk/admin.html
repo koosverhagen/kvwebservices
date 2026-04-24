@@ -2087,10 +2087,15 @@ Equine Transport UK`;
           // 📜 PAST MODE → ONLY GROUP INTO WEEKS (NO FUTURE DAYS)
           if (mode === "past") {
             const weekStart = new Date(pickup);
-            weekStart.setDate(pickup.getDate() - pickup.getDay() + 1);
+            const day = weekStart.getDay(); // Sunday = 0
+            const diffToMonday = day === 0 ? -6 : 1 - day;
+
+            weekStart.setDate(weekStart.getDate() + diffToMonday);
+            weekStart.setHours(0, 0, 0, 0);
 
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekStart.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
 
             const key = `${weekStart.toDateString()}_${weekEnd.toDateString()}`;
 
@@ -2137,10 +2142,15 @@ Equine Transport UK`;
           }
 
           const weekStart = new Date(pickup);
-          weekStart.setDate(pickup.getDate() - pickup.getDay() + 1);
+          const day = weekStart.getDay(); // Sunday = 0
+          const diffToMonday = day === 0 ? -6 : 1 - day;
+
+          weekStart.setDate(weekStart.getDate() + diffToMonday);
+          weekStart.setHours(0, 0, 0, 0);
 
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
+          weekEnd.setHours(23, 59, 59, 999);
 
           const key = `${weekStart.toDateString()}_${weekEnd.toDateString()}`;
 
