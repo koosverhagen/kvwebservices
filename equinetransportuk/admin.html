@@ -725,6 +725,7 @@
               <label for="time-filter">Time</label>
               <select id="time-filter">
                 <option value="upcoming">Upcoming</option>
+                <option value="inprogress">In progress</option>
                 <option value="past">Past bookings</option>
               </select>
             </div>
@@ -1995,20 +1996,27 @@ Equine Transport UK`;
           .filter((b) => bookingMatchesSearch(b, search))
           .filter((b) => bookingMatchesFilter(b, filter))
 
-          // ✅ NEW — TIME FILTER
           .filter((b) => {
             const mode = timeFilter?.value || "upcoming";
 
-            const pickupTime = new Date(b.pickupAt).getTime();
+            const start = new Date(b.pickupAt).getTime();
+            const end = new Date(b.dropoffAt).getTime();
+            const now = nowTs;
 
-            if (!pickupTime || isNaN(pickupTime)) return true;
+            if (!start || isNaN(start)) return true;
 
-            if (mode === "past") {
-              return pickupTime < nowTs;
+            // 🔥 IN PROGRESS
+            if (mode === "inprogress") {
+              return end >= now && start <= now;
             }
 
-            // default = upcoming
-            return pickupTime >= nowTs;
+            // 🔥 PAST
+            if (mode === "past") {
+              return end < now;
+            }
+
+            // 🔥 UPCOMING (default)
+            return start >= now;
           });
 
         bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
