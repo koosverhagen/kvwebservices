@@ -722,6 +722,14 @@
             </div>
 
             <div class="field">
+              <label for="time-filter">Time</label>
+              <select id="time-filter">
+                <option value="upcoming">Upcoming</option>
+                <option value="past">Past bookings</option>
+              </select>
+            </div>
+
+            <div class="field">
               <label for="range-from">From</label>
               <input id="range-from" type="date" />
             </div>
@@ -982,6 +990,7 @@
       const statusFilter = document.getElementById("status-filter");
       const rangeFromInput = document.getElementById("range-from");
       const rangeToInput = document.getElementById("range-to");
+      const timeFilter = document.getElementById("time-filter");
 
       const modal = document.getElementById("form-modal");
       const modalClose = document.getElementById("modal-close");
@@ -1977,15 +1986,32 @@ Equine Transport UK`;
         startOfDayAfter.setDate(startOfDayAfter.getDate() + 1);
 
         /* ===============================
-     FILTER
-  =============================== */
+   FILTER
+=============================== */
+
+        const nowTs = Date.now();
 
         filteredBookings = allBookings
           .filter((b) => bookingMatchesSearch(b, search))
-          .filter((b) => bookingMatchesFilter(b, filter));
+          .filter((b) => bookingMatchesFilter(b, filter))
+
+          // ✅ NEW — TIME FILTER
+          .filter((b) => {
+            const mode = timeFilter?.value || "upcoming";
+
+            const pickupTime = new Date(b.pickupAt).getTime();
+
+            if (!pickupTime || isNaN(pickupTime)) return true;
+
+            if (mode === "past") {
+              return pickupTime < nowTs;
+            }
+
+            // default = upcoming
+            return pickupTime >= nowTs;
+          });
 
         bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
-
         /* ===============================
      EMPTY STATE
   =============================== */
@@ -2310,6 +2336,11 @@ ${renderSection("All Bookings", rest)}
       searchInput.addEventListener("input", updateClearButton);
       statusFilter.addEventListener("change", updateClearButton);
 
+      timeFilter.addEventListener("change", () => {
+        renderBookings();
+        updateClearButton();
+      });
+
       modalClose.addEventListener("click", closeModal);
       modalCloseBtn.addEventListener("click", closeModal);
 
@@ -2508,14 +2539,14 @@ ${renderSection("All Bookings", rest)}
       clearFiltersBtn.addEventListener("click", () => {
         searchInput.value = "";
         statusFilter.value = "all";
+        timeFilter.value = "upcoming"; // ✅ NEW
 
         defaultRanges();
 
         loadBookings();
 
-        updateClearButton(); // ✅ ADD THIS
+        updateClearButton();
       });
-
       async function loadBookings() {
         const from = rangeFromInput.value;
         const to = rangeToInput.value;
