@@ -2046,6 +2046,9 @@ Equine Transport UK`;
         const tomorrow = [];
         const rest = [];
 
+        const byDay = {}; // next 7 days
+        const byWeek = {}; // after that
+
         /* ===============================
    🔥 TIME-SAFE GROUPING (FINAL)
 =============================== */
@@ -2058,19 +2061,14 @@ Equine Transport UK`;
         const startOfDayAfterTime = startOfDayAfter.getTime();
 
         filteredBookings.forEach((booking) => {
-          const pickupTime = new Date(booking.pickupAt).getTime();
-          const dropoffTime = new Date(booking.dropoffAt).getTime();
+          const pickup = new Date(booking.pickupAt);
+          const dropoff = new Date(booking.dropoffAt);
 
-          // ❌ invalid dates → fallback
-          if (
-            !pickupTime ||
-            !dropoffTime ||
-            isNaN(pickupTime) ||
-            isNaN(dropoffTime)
-          ) {
-            rest.push(booking);
-            return;
-          }
+          if (isNaN(pickup) || isNaN(dropoff)) return;
+
+          const pickupTime = pickup.getTime();
+          const dropoffTime = dropoff.getTime();
+          const nowTime = Date.now();
 
           // 🔴 IN PROGRESS
           if (pickupTime <= nowTime && dropoffTime >= nowTime) {
@@ -2078,10 +2076,10 @@ Equine Transport UK`;
             return;
           }
 
-          // 🟡 TODAY (starts today but not yet started)
+          // 🟡 TODAY
           if (
-            pickupTime >= startOfTodayTime &&
-            pickupTime < startOfTomorrowTime
+            pickupTime >= startOfToday.getTime() &&
+            pickupTime < startOfTomorrow.getTime()
           ) {
             today.push(booking);
             return;
@@ -2089,17 +2087,37 @@ Equine Transport UK`;
 
           // 🟠 TOMORROW
           if (
-            pickupTime >= startOfTomorrowTime &&
-            pickupTime < startOfDayAfterTime
+            pickupTime >= startOfTomorrow.getTime() &&
+            pickupTime < startOfDayAfter.getTime()
           ) {
             tomorrow.push(booking);
             return;
           }
 
-          // ⚪ REST
-          rest.push(booking);
-        });
+          // 📅 NEXT 7 DAYS (GROUP PER DAY)
+          const diffDays = Math.floor(
+            (pickupTime - startOfToday.getTime()) / (1000 * 60 * 60 * 24),
+          );
 
+          if (diffDays >= 2 && diffDays <= 7) {
+            const key = pickup.toDateString();
+            if (!byDay[key]) byDay[key] = [];
+            byDay[key].push(booking);
+            return;
+          }
+
+          // 📆 AFTER → GROUP PER WEEK
+          const weekStart = new Date(pickup);
+          weekStart.setDate(pickup.getDate() - pickup.getDay() + 1); // Monday
+
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+
+          const key = `${weekStart.toDateString()}_${weekEnd.toDateString()}`;
+
+          if (!byWeek[key]) byWeek[key] = [];
+          byWeek[key].push(booking);
+        });
         /* ===============================
    SORTING
 =============================== */
@@ -2156,6 +2174,33 @@ Equine Transport UK`;
     `;
         }
 
+        function formatDayHeader(dateStr) {
+          const d = new Date(dateStr);
+
+          return d.toLocaleDateString("en-GB", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            year: "2-digit",
+          });
+        }
+
+        function formatWeekHeader(key) {
+          const [startStr, endStr] = key.split("_");
+
+          const start = new Date(startStr);
+          const end = new Date(endStr);
+
+          return `${start.toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+          })} – ${end.toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "2-digit",
+          })}`;
+        }
+
         function renderSection(title, list) {
           if (!list.length) return "";
 
@@ -2181,12 +2226,54 @@ Equine Transport UK`;
           restTitle = "📍 In Progress";
         }
 
-        bookingsBody.innerHTML = `
-  ${mode !== "past" ? renderSection("🔴 In Progress", inProgress) : ""}
-  ${mode !== "past" ? renderSection("🟡 Today", today) : ""}
-  ${mode !== "past" ? renderSection("🟠 Tomorrow", tomorrow) : ""}
-  ${renderSection(restTitle, rest)}
-`;
+        let html = "";
+
+        // 🔴 IN PROGRESS
+        html += renderSection("🔴 In Progress", inProgress);
+
+        // 🟡 TODAY
+        html += renderSection("🟡 Today", today);
+
+        // 🟠 TOMORROW
+        html += renderSection("🟠 Tomorrow", tomorrow);
+
+        // 📅 NEXT 7 DAYS (ALWAYS SHOW EVEN IF EMPTY)
+        for (let i = 2; i <= 7; i++) {
+          const d = new Date(startOfToday);
+          d.setDate(d.getDate() + i);
+
+          const key = d.toDateString();
+          const list = byDay[key] || [];
+
+          html += `
+    <tr class="section-header">
+      <td colspan="6">${formatDayHeader(key)}</td>
+    </tr>
+    ${
+      list.length
+        ? list.map(renderRow).join("")
+        : `
+      <tr>
+        <td colspan="6" class="tiny">No bookings</td>
+      </tr>
+    `
+    }
+  `;
+        }
+
+        // 📆 WEEKS (ONLY IF BOOKINGS EXIST)
+        Object.keys(byWeek)
+          .sort((a, b) => new Date(a.split("_")[0]) - new Date(b.split("_")[0]))
+          .forEach((key) => {
+            html += `
+      <tr class="section-header">
+        <td colspan="6">📆 ${formatWeekHeader(key)}</td>
+      </tr>
+      ${byWeek[key].map(renderRow).join("")}
+    `;
+          });
+
+        bookingsBody.innerHTML = html;
 
         /* ===============================
      🔥 DEBUG + DVLA LOAD (FIXED)
