@@ -2171,12 +2171,22 @@ Equine Transport UK`;
      RENDER TABLE
   =============================== */
 
+        const mode = timeFilter?.value || "upcoming";
+
+        let restTitle = "All Bookings";
+
+        if (mode === "past") {
+          restTitle = "📜 Past Bookings";
+        } else if (mode === "inprogress") {
+          restTitle = "📍 In Progress";
+        }
+
         bookingsBody.innerHTML = `
-${renderSection("🔴 In Progress", inProgress)}
-${renderSection("🟡 Today", today)}
-${renderSection("🟠 Tomorrow", tomorrow)}
-${renderSection("All Bookings", rest)}
-  `;
+  ${mode !== "past" ? renderSection("🔴 In Progress", inProgress) : ""}
+  ${mode !== "past" ? renderSection("🟡 Today", today) : ""}
+  ${mode !== "past" ? renderSection("🟠 Tomorrow", tomorrow) : ""}
+  ${renderSection(restTitle, rest)}
+`;
 
         /* ===============================
      🔥 DEBUG + DVLA LOAD (FIXED)
