@@ -1192,15 +1192,8 @@ Equine Transport UK`,
       }
 
       async function checkAdminAvailabilityLive() {
-        if (!vehicleId || !pickupDate || !pickupTime || !durationDays) {
-          return;
-        }
-
-        // 🔥 BLOCK DURING MODAL INIT (CRITICAL)
-        if (IS_EDIT_INITIALISING) return;
-
+        // 🔥 GET VALUES FIRST (FIX)
         const bookingId = document.getElementById("edit-booking-id")?.value;
-
         const vehicleId = document.getElementById("edit-vehicle")?.value;
         const pickupDate = document.getElementById("edit-date")?.value;
         const pickupTime = document.getElementById("edit-time")?.value;
@@ -1208,7 +1201,13 @@ Equine Transport UK`,
           document.getElementById("edit-duration")?.value,
         );
 
-        if (!vehicleId || !pickupDate || !pickupTime || !durationDays) return;
+        // 🔥 VALIDATION AFTER DECLARATION
+        if (!vehicleId || !pickupDate || !pickupTime || !durationDays) {
+          return;
+        }
+
+        // 🔥 BLOCK DURING INIT
+        if (IS_EDIT_INITIALISING) return;
 
         try {
           const res = await fetch(
