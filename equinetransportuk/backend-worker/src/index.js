@@ -1560,13 +1560,37 @@ async function isAdminBookingEditAvailable(
   env,
   { bookingId, vehicleId, pickupAt, dropoffAt, durationDays, pickupTime },
 ) {
+  /* ===============================
+     🔥 DATE NORMALISER (CRITICAL FIX)
+  =============================== */
+
+  function toDateOnlyString(d) {
+    if (!d) return null;
+
+    const date = new Date(d);
+
+    if (isNaN(date.getTime())) return null;
+
+    // ✅ ALWAYS compare YYYY-MM-DD only
+    return date.toISOString().slice(0, 10);
+  }
+
+  /* ===============================
+     NORMALISE REQUEST
+  =============================== */
+
   const requestedDates = getDatesBetween(
     new Date(pickupAt),
     new Date(dropoffAt),
-  );
+  ).map(toDateOnlyString);
+
   const requestedSlot = getReservationSlot(durationDays, pickupTime);
 
   const monthKeys = getMonthKeysBetween(pickupAt, dropoffAt);
+
+  /* ===============================
+     LOOP BOOKINGS
+  =============================== */
 
   for (const month of monthKeys) {
     const raw = await env.BOOKINGS_KV.get(`bookings:${month}`);
@@ -1582,19 +1606,39 @@ async function isAdminBookingEditAvailable(
     if (!Array.isArray(parsed)) continue;
 
     for (const confirmed of parsed) {
-      if (!confirmed || String(confirmed.id) === String(bookingId)) continue;
+      const confirmedId = String(confirmed?.id || "").trim();
+      const currentId = String(bookingId || "").trim();
+
+      if (!confirmedId) continue;
+
+      // 🔥 IGNORE SAME BOOKING (FIX)
+      if (confirmedId === currentId) continue;
+
+      // 🔥 VEHICLE FILTER
       if (String(confirmed.vehicleId) !== String(vehicleId)) continue;
+
+      // 🔥 SKIP CANCELLED
       if (String(confirmed.status || "").toLowerCase() === "cancelled")
         continue;
+
+      /* ===============================
+         NORMALISE CONFIRMED DATES
+      =============================== */
 
       const confirmedDates = getDatesBetween(
         new Date(confirmed.pickupAt),
         new Date(confirmed.dropoffAt),
-      );
+      ).map(toDateOnlyString);
 
       const confirmedSlot = getConfirmedSlot(confirmed);
 
+      /* ===============================
+         CONFLICT CHECK
+      =============================== */
+
       for (const d of confirmedDates) {
+        if (!d) continue;
+
         if (
           requestedDates.includes(d) &&
           slotsConflict(requestedSlot, confirmedSlot)
