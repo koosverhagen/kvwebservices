@@ -3627,8 +3627,26 @@ function getSlotFromBooking(booking) {
 }
 
 function slotsConflict(a, b) {
-  if (a === "full" || b === "full") return true;
-  return a === b;
+  // SAME SLOT → conflict
+  if (a === b) return true;
+
+  // HALF DAY CASES
+  if (a === "am" && b === "pm") return false;
+  if (a === "pm" && b === "am") return false;
+
+  // 🔥 FULL DAY LOGIC (FIXED)
+
+  // existing is PM → allow FULL (morning free)
+  if (a === "full" && b === "pm") return false;
+
+  // existing is AM → allow FULL (afternoon free)
+  if (a === "full" && b === "am") return false;
+
+  // existing FULL blocks everything
+  if (b === "full") return true;
+
+  // fallback safe
+  return true;
 }
 
 function json(payload, status = 200) {
