@@ -349,6 +349,15 @@
       }
 
       /* ===============================
+   RETURNS TODAY (OPERATIONAL)
+=============================== */
+
+      .returns-today {
+        border-left: 4px solid #0ea5e9;
+        background: #f0f9ff;
+      }
+
+      /* ===============================
    MODAL (FINAL FIX - STABLE)
 =============================== */
 
@@ -1397,11 +1406,16 @@ Equine Transport UK`,
 
       function hireCellHtml(booking) {
         return `
-    <div class="stack">
-      <div><strong>From:</strong> ${escapeHtml(formatDateTime(booking.pickupAt))}</div>
-      <div><strong>Until:</strong> ${escapeHtml(formatDateTime(booking.dropoffAt))}</div>
-    </div>
-  `;
+  <div class="stack">
+    <div><strong>From:</strong> ${escapeHtml(formatDateTime(booking.pickupAt))}</div>
+    <div><strong>Until:</strong> ${escapeHtml(formatDateTime(booking.dropoffAt))}</div>
+    ${
+      returnsToday
+        ? `<div class="tiny" style="color:#0284c7;font-weight:700;">↩ Returns today</div>`
+        : ""
+    }
+  </div>
+`;
       }
 
       function buildActionButtons(booking) {
@@ -2174,6 +2188,19 @@ Equine Transport UK`;
   =============================== */
 
         function renderRow(booking) {
+          const now = new Date();
+
+          const startOfToday = new Date(now);
+          startOfToday.setHours(0, 0, 0, 0);
+
+          const endOfToday = new Date(startOfToday);
+          endOfToday.setHours(23, 59, 59, 999);
+
+          const dropoff = new Date(booking.dropoffAt);
+
+          // ✅ RETURNS TODAY FLAG
+          const returnsToday = dropoff >= startOfToday && dropoff <= endOfToday;
+
           const customerCell = `
       <div class="customer-block">
         <div class="customer-name">
@@ -2202,7 +2229,10 @@ Equine Transport UK`;
           const dvlaCell = dvlaCellHtml(booking);
 
           return `
-      <tr class="${isUrgentBooking(booking) ? "urgent-booking" : ""}">
+  <tr class="
+    ${isUrgentBooking(booking) ? "urgent-booking" : ""}
+    ${returnsToday ? "returns-today" : ""}
+  ">
         <td data-label="Customer">${customerCell}</td>
         <td data-label="Vehicle">${vehicleCell}</td>
         <td data-label="Hire">${hireCell}</td>
@@ -2288,20 +2318,14 @@ Equine Transport UK`;
             const key = d.toDateString();
             const list = byDay[key] || [];
 
+            // ✅ SKIP EMPTY DAYS (CLEAN UI)
+            if (!list.length) continue;
+
             html += `
       <tr class="section-header">
         <td colspan="6">${formatDayHeader(key)}</td>
       </tr>
-      ${
-        list.length
-          ? list.map(renderRow).join("")
-          : `
-        <tr>
-          <td colspan="6" class="tiny">No bookings</td>
-        </td>
-      </tr>
-      `
-      }
+      ${list.map(renderRow).join("")}
     `;
           }
         }
