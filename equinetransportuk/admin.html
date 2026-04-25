@@ -1083,6 +1083,20 @@ Equine Transport UK`,
         rangeToInput.value = toDateInputValue(to);
       }
 
+      function extractPickupTimeFromISO(dateStr) {
+        if (!dateStr) return "07:00";
+
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return "07:00";
+
+        const hours = d.getHours();
+
+        // 🧠 Map to your system slots
+        if (hours >= 13) return "13:00";
+
+        return "07:00";
+      }
+
       function calculateDropoff(pickupAt, durationDays, pickupTime, vehicleId) {
         const start = new Date(pickupAt);
 
@@ -1133,15 +1147,23 @@ Equine Transport UK`,
         }
 
         if (timeSelect) {
+          const currentValue = timeSelect.value; // 🔥 preserve
+
           if (Number(durationSelect.value) === 0.5) {
             timeSelect.innerHTML = `
-        <option value="07:00">07:00</option>
-        <option value="13:00">13:00</option>
-      `;
+      <option value="07:00">07:00</option>
+      <option value="13:00">13:00</option>
+    `;
           } else {
             timeSelect.innerHTML = `
-        <option value="07:00">07:00</option>
-      `;
+      <option value="07:00">07:00</option>
+    `;
+          }
+
+          // 🔥 restore if still valid
+          if ([...timeSelect.options].some((o) => o.value === currentValue)) {
+            timeSelect.value = currentValue;
+          } else {
             timeSelect.value = "07:00";
           }
         }
@@ -2576,8 +2598,10 @@ Equine Transport UK`;
           document.getElementById("edit-vehicle").value = booking.vehicleId;
           document.getElementById("edit-date").value =
             booking.pickupAtLocal?.slice(0, 10);
-          document.getElementById("edit-time").value =
-            booking.pickupTime || "07:00";
+          const derivedPickupTime =
+            booking.pickupTime || extractPickupTimeFromISO(booking.pickupAt);
+
+          document.getElementById("edit-time").value = derivedPickupTime;
           document.getElementById("edit-duration").value = String(
             booking.durationDays,
           );
