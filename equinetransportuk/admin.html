@@ -1021,6 +1021,46 @@
       let filteredBookings = [];
       let IS_EDIT_INITIALISING = false;
 
+      /* ===============================
+   EDIT MODAL LIVE UPDATES
+=============================== */
+
+      document
+        .getElementById("edit-vehicle")
+        ?.addEventListener("change", () => {
+          if (IS_EDIT_INITIALISING) return;
+
+          enforceAdminVehicleDurationRules(
+            document.getElementById("edit-vehicle").value,
+          );
+
+          updateAdminPrice();
+        });
+
+      document
+        .getElementById("edit-duration")
+        ?.addEventListener("change", () => {
+          if (IS_EDIT_INITIALISING) return;
+
+          enforceAdminVehicleDurationRules(
+            document.getElementById("edit-vehicle").value,
+          );
+
+          updateAdminPrice();
+        });
+
+      document.getElementById("edit-time")?.addEventListener("change", () => {
+        if (IS_EDIT_INITIALISING) return;
+
+        updateAdminPrice();
+      });
+
+      document.getElementById("edit-date")?.addEventListener("change", () => {
+        if (IS_EDIT_INITIALISING) return;
+
+        updateAdminPrice();
+      });
+
       function buildContactButtons(booking) {
         const phone = booking.customerMobile || "";
         const email = booking.customerEmail || "";
@@ -2591,27 +2631,51 @@ Equine Transport UK`;
           IS_EDIT_INITIALISING = true;
 
           /* ===============================
-   🔥 FILL MODAL
-=============================== */
+       🔥 GET ELEMENTS
+    =============================== */
+
+          const vehicleEl = document.getElementById("edit-vehicle");
+          const dateEl = document.getElementById("edit-date");
+          const timeEl = document.getElementById("edit-time");
+          const durationEl = document.getElementById("edit-duration");
+
+          /* ===============================
+       🔥 SET BASE VALUES
+    =============================== */
 
           document.getElementById("edit-booking-id").value = booking.id;
-          document.getElementById("edit-vehicle").value = booking.vehicleId;
-          document.getElementById("edit-date").value =
-            booking.pickupAtLocal?.slice(0, 10);
+
+          vehicleEl.value = booking.vehicleId;
+          dateEl.value = booking.pickupAtLocal?.slice(0, 10);
+
+          /* ===============================
+       🔥 APPLY RULES FIRST (CRITICAL)
+    =============================== */
+
+          enforceAdminVehicleDurationRules(booking.vehicleId);
+
+          /* ===============================
+       🔥 NOW SET DEPENDENT VALUES
+    =============================== */
+
+          durationEl.value = String(booking.durationDays);
+
           const derivedPickupTime =
             booking.pickupTime || extractPickupTimeFromISO(booking.pickupAt);
 
-          document.getElementById("edit-time").value = derivedPickupTime;
-          document.getElementById("edit-duration").value = String(
-            booking.durationDays,
-          );
+          // ✅ only set if exists in dropdown
+          if ([...timeEl.options].some((o) => o.value === derivedPickupTime)) {
+            timeEl.value = derivedPickupTime;
+          } else {
+            timeEl.value = "07:00";
+          }
 
-          // rules
-          enforceAdminVehicleDurationRules(booking.vehicleId);
+          /* ===============================
+       🔥 OTHER FIELDS
+    =============================== */
 
           document.getElementById("edit-price").value = booking.hireTotal || 0;
 
-          // extras
           document.getElementById("edit-dartford").value =
             booking?.extras?.dartford || 0;
 
@@ -2619,28 +2683,29 @@ Equine Transport UK`;
             booking?.extras?.earlyPickup || false;
 
           /* ===============================
-   🔥 OPEN MODAL
-=============================== */
+       🔥 OPEN MODAL
+    =============================== */
 
           editModal.classList.remove("hidden");
 
-          // ✅ CLEAR ANY OLD ERROR
           clearEditError();
 
-          // 🔥 ALLOW LIVE CHECKS AFTER UI IS STABLE
+          /* ===============================
+       🔥 UNLOCK AFTER INIT
+    =============================== */
+
           setTimeout(() => {
             IS_EDIT_INITIALISING = false;
-          }, 800);
+          }, 300); // shorter + safer
 
           /* ===============================
-       🔥 FORCE PRICE CALC ONLY
-       ⚠️ DO NOT CHECK AVAILABILITY YET
+       🔥 INITIAL PRICE ONLY
     =============================== */
 
           updateAdminPrice();
 
           /* ===============================
-       🔥 AUTO LISTENERS (FINAL)
+       🔥 AUTO LISTENERS
     =============================== */
 
           setTimeout(() => {
@@ -2658,29 +2723,21 @@ Equine Transport UK`;
               if (el.dataset.listenerAttached) return;
 
               const handler = () => {
-                // ✅ CLEAR ERROR ON CHANGE
+                if (IS_EDIT_INITIALISING) return;
+
                 clearEditError();
 
-                /* ===============================
-             🔥 VEHICLE RULE ENFORCEMENT
-          =============================== */
-
+                /* 🔥 vehicle rules */
                 if (id === "edit-vehicle" || id === "edit-duration") {
                   enforceAdminVehicleDurationRules(
                     document.getElementById("edit-vehicle")?.value,
                   );
                 }
 
-                /* ===============================
-             💰 PRICE UPDATE
-          =============================== */
-
+                /* 💰 price */
                 updateAdminPrice();
 
-                /* ===============================
-             🚫 LIVE AVAILABILITY CHECK
-          =============================== */
-
+                /* 🚫 availability */
                 checkAdminAvailabilityLive();
               };
 
@@ -2693,7 +2750,6 @@ Equine Transport UK`;
               el.dataset.listenerAttached = "true";
             });
 
-            // 🔥 final sync
             updateAdminPrice();
           }, 0);
 
