@@ -1192,6 +1192,10 @@ Equine Transport UK`,
       }
 
       async function checkAdminAvailabilityLive() {
+        if (!vehicleId || !pickupDate || !pickupTime || !durationDays) {
+          return;
+        }
+
         // 🔥 BLOCK DURING MODAL INIT (CRITICAL)
         if (IS_EDIT_INITIALISING) return;
 
