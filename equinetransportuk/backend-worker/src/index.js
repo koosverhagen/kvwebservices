@@ -1561,18 +1561,16 @@ async function isAdminBookingEditAvailable(
   { bookingId, vehicleId, pickupAt, dropoffAt, durationDays, pickupTime },
 ) {
   /* ===============================
-     🔥 DATE NORMALISER (CRITICAL FIX)
+     DATE NORMALISER
   =============================== */
 
   function toDateOnlyString(d) {
     if (!d) return null;
 
     const date = new Date(d);
-
     if (isNaN(date.getTime())) return null;
 
-    // ✅ ALWAYS compare YYYY-MM-DD only
-    return date.toISOString().slice(0, 10);
+    return date.toISOString().slice(0, 10); // YYYY-MM-DD
   }
 
   /* ===============================
@@ -1587,6 +1585,8 @@ async function isAdminBookingEditAvailable(
   const requestedSlot = getReservationSlot(durationDays, pickupTime);
 
   const monthKeys = getMonthKeysBetween(pickupAt, dropoffAt);
+
+  const currentId = String(bookingId || "").trim();
 
   /* ===============================
      LOOP BOOKINGS
@@ -1607,11 +1607,10 @@ async function isAdminBookingEditAvailable(
 
     for (const confirmed of parsed) {
       const confirmedId = String(confirmed?.id || "").trim();
-      const currentId = String(bookingId || "").trim();
 
       if (!confirmedId) continue;
 
-      // 🔥 IGNORE SAME BOOKING (FIX)
+      // 🔥 IGNORE CURRENT BOOKING (ONLY ONCE, CLEAN)
       if (confirmedId === currentId) continue;
 
       // 🔥 VEHICLE FILTER
