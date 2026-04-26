@@ -3626,26 +3626,18 @@ function getSlotFromBooking(booking) {
 }
 
 function slotsConflict(a, b) {
-  // SAME SLOT → conflict
+  // full always conflicts with full
+  if (a === "full" && b === "full") return true;
+
+  // 🔥 NEW RULE (ADMIN FRIENDLY)
+  // allow expanding half-day → full-day if same booking edit
+  if (a === "full" && (b === "am" || b === "pm")) return false;
+  if (b === "full" && (a === "am" || a === "pm")) return false;
+
+  // half-day conflicts only if SAME slot
   if (a === b) return true;
 
-  // HALF DAY CASES
-  if (a === "am" && b === "pm") return false;
-  if (a === "pm" && b === "am") return false;
-
-  // 🔥 FULL DAY LOGIC (FIXED)
-
-  // existing is PM → allow FULL (morning free)
-  if (a === "full" && b === "pm") return false;
-
-  // existing is AM → allow FULL (afternoon free)
-  if (a === "full" && b === "am") return false;
-
-  // existing FULL blocks everything
-  if (b === "full") return true;
-
-  // fallback safe
-  return true;
+  return false;
 }
 
 function json(payload, status = 200) {
