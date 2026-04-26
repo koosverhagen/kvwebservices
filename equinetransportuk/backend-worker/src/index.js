@@ -1638,10 +1638,26 @@ async function isAdminBookingEditAvailable(
       for (const d of confirmedDates) {
         if (!d) continue;
 
+        // 🔥 ALLOW DATE OVERLAP IF IT IS SAME BOOKING RANGE SHRINK
+        const isSameBooking = String(confirmed.id) === String(bookingId);
+
+        // 🔥 NEW: detect shrinking edit
+        const confirmedStart = new Date(confirmed.pickupAt);
+        const confirmedEnd = new Date(confirmed.dropoffAt);
+        const requestedStart = new Date(pickupAt);
+        const requestedEnd = new Date(dropoffAt);
+
+        const isShrink =
+          requestedStart >= confirmedStart && requestedEnd <= confirmedEnd;
+
+        // 🔥 FINAL CHECK
         if (
           requestedDates.includes(d) &&
           slotsConflict(requestedSlot, confirmedSlot)
         ) {
+          // ✅ allow same booking shrink
+          if (isSameBooking && isShrink) continue;
+
           return {
             ok: false,
             conflictWith: confirmed.id,
