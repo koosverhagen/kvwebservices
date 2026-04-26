@@ -1068,7 +1068,7 @@ function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
 
 async function handleCreateCheckoutSession(request, env) {
   const booking = await request.json();
-
+  const ignoreBookingId = booking.ignoreBookingId || null;
   const customerNotes = String(booking.customerNotes || "").slice(0, 500);
 
   const vehicleName =
