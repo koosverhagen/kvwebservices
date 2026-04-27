@@ -2757,6 +2757,62 @@ Equine Transport UK`;
         }
 
         /* ===============================
+   DVLA OPEN + COPY
+=============================== */
+
+        const dvlaBtn = e.target.closest(".copy-licence");
+
+        if (dvlaBtn) {
+          e.preventDefault();
+
+          const licence = dvlaBtn.dataset.copy;
+
+          if (!licence) return;
+
+          try {
+            // ✅ copy licence
+            await navigator.clipboard.writeText(licence);
+
+            // ✨ UX FEEDBACK (ADD THIS)
+            const originalText = dvlaBtn.innerText;
+            dvlaBtn.innerText = "✓";
+
+            setTimeout(() => {
+              dvlaBtn.innerText = originalText || "↗";
+            }, 1200);
+
+            // ✅ open DVLA page
+            window.open("https://www.gov.uk/view-driving-licence", "_blank");
+          } catch (err) {
+            console.warn("DVLA action failed:", err);
+          }
+
+          return;
+        }
+
+        /* ===============================
+   GENERIC COPY BUTTON
+=============================== */
+
+        const copyBtn = e.target.closest(".copy-btn");
+
+        if (copyBtn) {
+          e.preventDefault();
+
+          const value = copyBtn.dataset.copy;
+
+          if (!value) return;
+
+          try {
+            await navigator.clipboard.writeText(value);
+          } catch (err) {
+            console.warn("Copy failed:", err);
+          }
+
+          return;
+        }
+
+        /* ===============================
      🎯 TARGET ELEMENT (STABLE)
   =============================== */
 
