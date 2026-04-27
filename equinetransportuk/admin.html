@@ -1314,6 +1314,42 @@ Equine Transport UK`,
           .replace(/'/g, "&#39;");
       }
 
+      function showCopySuccess(message = "Copied ✓") {
+        let el = document.getElementById("copy-toast");
+
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "copy-toast";
+
+          el.style.position = "fixed";
+          el.style.bottom = "20px";
+          el.style.left = "50%";
+          el.style.transform = "translateX(-50%)";
+          el.style.background = "#111";
+          el.style.color = "#fff";
+          el.style.padding = "10px 16px";
+          el.style.borderRadius = "10px";
+          el.style.fontSize = "13px";
+          el.style.fontWeight = "600";
+          el.style.boxShadow = "0 10px 25px rgba(0,0,0,0.2)";
+          el.style.zIndex = "999999";
+          el.style.opacity = "0";
+          el.style.transition = "all 0.25s ease";
+
+          document.body.appendChild(el);
+        }
+
+        el.textContent = message;
+
+        el.style.opacity = "1";
+        el.style.transform = "translateX(-50%) translateY(0)";
+
+        setTimeout(() => {
+          el.style.opacity = "0";
+          el.style.transform = "translateX(-50%) translateY(10px)";
+        }, 1500);
+      }
+
       function formatDateTime(value) {
         if (!value) return "—";
         const d = new Date(value);
@@ -2757,7 +2793,7 @@ Equine Transport UK`;
         }
 
         /* ===============================
-   DVLA OPEN + COPY
+   DVLA OPEN + COPY (UPGRADED)
 =============================== */
 
         const dvlaBtn = e.target.closest(".copy-licence");
@@ -2767,13 +2803,22 @@ Equine Transport UK`;
 
           const licence = dvlaBtn.dataset.copy;
 
+          // 🔥 get DVLA code from same row
+          const container = dvlaBtn.closest(".dvla-cell");
+          const codeEl = container?.querySelector(".copy-btn");
+          const dvlaCode = codeEl?.dataset.copy;
+
           if (!licence) return;
 
           try {
-            // ✅ copy licence
-            await navigator.clipboard.writeText(licence);
+            // ✅ copy BOTH licence + code (better UX)
+            const combined = dvlaCode ? `${licence} ${dvlaCode}` : licence;
+            await navigator.clipboard.writeText(combined);
 
-            // ✨ UX FEEDBACK (ADD THIS)
+            // ✅ popup feedback
+            showCopySuccess("Licence + code copied ✓");
+
+            // ✨ KEEP YOUR BUTTON UX
             const originalText = dvlaBtn.innerText;
             dvlaBtn.innerText = "✓";
 
@@ -2794,7 +2839,7 @@ Equine Transport UK`;
         }
 
         /* ===============================
-   GENERIC COPY BUTTON
+   GENERIC COPY BUTTON (UPGRADED)
 =============================== */
 
         const copyBtn = e.target.closest(".copy-btn");
@@ -2808,6 +2853,9 @@ Equine Transport UK`;
 
           try {
             await navigator.clipboard.writeText(value);
+
+            // ✅ popup feedback
+            showCopySuccess("Copied ✓");
           } catch (err) {
             console.warn("Copy failed:", err);
           }
