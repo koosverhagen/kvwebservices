@@ -1201,11 +1201,6 @@ async function handleCreateCheckoutSession(request, env) {
     for (const confirmed of confirmedBookings) {
       if (confirmed.vehicleId !== booking.vehicleId) continue;
 
-      // 🔥 CRITICAL FIX — IGNORE CURRENT BOOKING
-      if (ignoreBookingId && String(confirmed.id) === String(ignoreBookingId)) {
-        continue;
-      }
-
       const confirmedDates = getDatesBetween(
         new Date(confirmed.pickupAt),
         new Date(confirmed.dropoffAt),
@@ -1565,107 +1560,62 @@ async function isAdminBookingEditAvailable(
   env,
   { bookingId, vehicleId, pickupAt, dropoffAt, durationDays, pickupTime },
 ) {
-  /* ===============================
-     DATE NORMALISER
-  =============================== */
-
-  function toDateOnlyString(d) {
-    if (!d) return null;
-
-    const date = new Date(d);
-    if (isNaN(date.getTime())) return null;
-
-    return date.toISOString().slice(0, 10); // YYYY-MM-DD
-  }
-
-  /* ===============================
-     NORMALISE REQUEST
-  =============================== */
+  const currentId = String(bookingId || "").trim();
+  const requestedVehicleId = String(vehicleId || "").trim();
 
   const requestedDates = getDatesBetween(
     new Date(pickupAt),
     new Date(dropoffAt),
-  ).map(toDateOnlyString);
+  );
 
   const requestedSlot = getReservationSlot(durationDays, pickupTime);
-
   const monthKeys = getMonthKeysBetween(pickupAt, dropoffAt);
-
-  const currentId = String(bookingId || "").trim();
-
-  /* ===============================
-     LOOP BOOKINGS
-  =============================== */
 
   for (const month of monthKeys) {
     const raw = await env.BOOKINGS_KV.get(`bookings:${month}`);
     if (!raw) continue;
 
-    let parsed;
+    let bookings = [];
+
     try {
-      parsed = JSON.parse(raw);
+      bookings = JSON.parse(raw);
     } catch {
       continue;
     }
 
-    if (!Array.isArray(parsed)) continue;
+    if (!Array.isArray(bookings)) continue;
 
-    for (const confirmed of parsed) {
+    for (const confirmed of bookings) {
       const confirmedId = String(confirmed?.id || "").trim();
 
       if (!confirmedId) continue;
 
-      // 🔥 IGNORE CURRENT BOOKING (ONLY ONCE, CLEAN)
+      // ✅ ignore the booking currently being edited
       if (confirmedId === currentId) continue;
 
-      // 🔥 VEHICLE FILTER
-      if (String(confirmed.vehicleId) !== String(vehicleId)) continue;
+      // ✅ only same vehicle can conflict
+      if (String(confirmed.vehicleId || "") !== requestedVehicleId) continue;
 
-      // 🔥 SKIP CANCELLED
-      if (String(confirmed.status || "").toLowerCase() === "cancelled")
+      // ✅ cancelled bookings never block
+      if (String(confirmed.status || "").toLowerCase() === "cancelled") {
         continue;
-
-      /* ===============================
-         NORMALISE CONFIRMED DATES
-      =============================== */
+      }
 
       const confirmedDates = getDatesBetween(
         new Date(confirmed.pickupAt),
         new Date(confirmed.dropoffAt),
-      ).map(toDateOnlyString);
+      );
 
       const confirmedSlot = getConfirmedSlot(confirmed);
 
-      /* ===============================
-         CONFLICT CHECK
-      =============================== */
-
       for (const d of confirmedDates) {
-        if (!d) continue;
-
-        // 🔥 ALLOW DATE OVERLAP IF IT IS SAME BOOKING RANGE SHRINK
-        const isSameBooking = String(confirmed.id) === String(bookingId);
-
-        // 🔥 NEW: detect shrinking edit
-        const confirmedStart = new Date(confirmed.pickupAt);
-        const confirmedEnd = new Date(confirmed.dropoffAt);
-        const requestedStart = new Date(pickupAt);
-        const requestedEnd = new Date(dropoffAt);
-
-        const isShrink =
-          requestedStart >= confirmedStart && requestedEnd <= confirmedEnd;
-
-        // 🔥 FINAL CHECK
         if (
           requestedDates.includes(d) &&
           slotsConflict(requestedSlot, confirmedSlot)
         ) {
-          // ✅ allow same booking shrink
-          if (isSameBooking && isShrink) continue;
-
           return {
             ok: false,
-            conflictWith: confirmed.id,
+            conflictWith: confirmedId,
           };
         }
       }
@@ -3658,17 +3608,13 @@ function getSlotFromBooking(booking) {
 }
 
 function slotsConflict(a, b) {
-  // full always conflicts with full
-  if (a === "full" && b === "full") return true;
+  // full day blocks everything
+  if (a === "full" || b === "full") return true;
 
-  // 🔥 NEW RULE (ADMIN FRIENDLY)
-  // allow expanding half-day → full-day if same booking edit
-  if (a === "full" && (b === "am" || b === "pm")) return false;
-  if (b === "full" && (a === "am" || a === "pm")) return false;
-
-  // half-day conflicts only if SAME slot
+  // same half-day slot blocks
   if (a === b) return true;
 
+  // am + pm can share same day
   return false;
 }
 
