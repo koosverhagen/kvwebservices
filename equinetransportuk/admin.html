@@ -2863,21 +2863,26 @@ Equine Transport UK`;
           const combined = dvlaCode ? `${licence} ${dvlaCode}` : licence;
 
           try {
-            // ✅ COPY FIRST (must be inside user gesture for Safari)
-            await navigator.clipboard.writeText(combined);
-
-            // ✅ OPEN TAB IMMEDIATELY (Safari safe)
+            // ✅ OPEN FIRST (avoids popup blockers)
             const dvlaWindow = window.open(
               "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
               "_blank",
             );
+
+            // ⚠️ fallback if blocked
+            if (!dvlaWindow) {
+              alert("Please allow popups for DVLA check.");
+            }
+
+            // ✅ COPY (still inside click event → safe)
+            await navigator.clipboard.writeText(combined);
 
             // ✅ POPUP HELPER (tells admin what to do next)
             showCopyHelper(licence, dvlaCode);
 
             // ✨ BUTTON FEEDBACK
             const originalText = dvlaBtn.innerText;
-            dvlaBtn.innerText = "✓";
+            dvlaBtn.innerText = "Copied ✓";
 
             setTimeout(() => {
               dvlaBtn.innerText = originalText || "↗";
