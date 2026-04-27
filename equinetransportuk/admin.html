@@ -2920,6 +2920,58 @@ Equine Transport UK`;
         }
 
         /* ===============================
+   DVLA VERIFY TOGGLE (FINAL)
+=============================== */
+
+        document.addEventListener("change", async (e) => {
+          const checkbox = e.target.closest(".js-dvla-verify");
+          if (!checkbox) return;
+
+          const bookingId = checkbox.dataset.id;
+          const verified = checkbox.checked;
+
+          if (!bookingId) return;
+
+          try {
+            checkbox.disabled = true;
+
+            const res = await fetch(`${API_BASE}/api/admin/dvla-verify`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                bookingId,
+                verified,
+              }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              throw new Error(data?.error || "DVLA update failed");
+            }
+
+            // ✅ UPDATE LOCAL STATE (CRITICAL)
+            const booking = allBookings.find((b) => b.id === bookingId);
+            if (booking) {
+              booking.dvlaVerified = verified;
+            }
+
+            showCopySuccess(verified ? "DVLA verified ✓" : "DVLA unverified");
+          } catch (err) {
+            console.error("DVLA update error:", err);
+
+            // 🔥 revert checkbox on failure
+            checkbox.checked = !verified;
+
+            alert("Failed to update DVLA status");
+          } finally {
+            checkbox.disabled = false;
+          }
+        });
+
+        /* ===============================
      🎯 TARGET ELEMENT (STABLE)
   =============================== */
 
