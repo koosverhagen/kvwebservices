@@ -2781,15 +2781,17 @@ Equine Transport UK`;
        🔥 UNLOCK AFTER INIT
     =============================== */
 
-          setTimeout(() => {
-            IS_EDIT_INITIALISING = false;
-          }, 300); // shorter + safer
-
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              IS_EDIT_INITIALISING = false;
+            });
+          });
           /* ===============================
        🔥 INITIAL PRICE ONLY
     =============================== */
 
           updateAdminPrice();
+          checkAdminAvailabilityLive(); // ← ADD THIS
 
           /* ===============================
        🔥 AUTO LISTENERS
@@ -2807,7 +2809,7 @@ Equine Transport UK`;
               const el = document.getElementById(id);
               if (!el) return;
 
-              if (el.dataset.listenerAttached) return;
+              if (el.dataset.listenerAttached === "true") return;
 
               const handler = () => {
                 if (IS_EDIT_INITIALISING) return;
@@ -2825,7 +2827,11 @@ Equine Transport UK`;
                 updateAdminPrice();
 
                 /* 🚫 availability */
-                checkAdminAvailabilityLive();
+                clearTimeout(window._adminCheckTimer);
+
+                window._adminCheckTimer = setTimeout(() => {
+                  checkAdminAvailabilityLive();
+                }, 150);
               };
 
               if (id === "edit-dartford") {
@@ -2863,29 +2869,34 @@ Equine Transport UK`;
           const combined = dvlaCode ? `${licence} ${dvlaCode}` : licence;
 
           try {
-            // ✅ OPEN FIRST (avoids popup blockers)
+            // ✅ OPEN FIRST (popup-safe)
             const dvlaWindow = window.open(
               "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
               "_blank",
             );
 
-            // ⚠️ fallback if blocked
             if (!dvlaWindow) {
               alert("Please allow popups for DVLA check.");
+            } else {
+              // 🔥 force focus (important on iPad/Safari)
+              dvlaWindow.focus();
             }
 
-            // ✅ COPY (still inside click event → safe)
+            // ✅ COPY (still safe)
             await navigator.clipboard.writeText(combined);
 
-            // ✅ POPUP HELPER (tells admin what to do next)
+            // ✅ HELPER UI
             showCopyHelper(licence, dvlaCode);
 
             // ✨ BUTTON FEEDBACK
             const originalText = dvlaBtn.innerText;
-            dvlaBtn.innerText = "Copied ✓";
+
+            dvlaBtn.classList.add("success");
+            dvlaBtn.innerText = "✓";
 
             setTimeout(() => {
               dvlaBtn.innerText = originalText || "↗";
+              dvlaBtn.classList.remove("success");
             }, 1200);
           } catch (err) {
             console.warn("DVLA action failed:", err);
@@ -2919,69 +2930,8 @@ Equine Transport UK`;
           return;
         }
 
-        /* ===============================
-   DVLA VERIFY TOGGLE (FINAL)
-=============================== */
-
-        document.addEventListener("change", async (e) => {
-          const checkbox = e.target.closest(".js-dvla-verify");
-          if (!checkbox) return;
-
-          const bookingId = checkbox.dataset.id;
-          const verified = checkbox.checked;
-
-          if (!bookingId) return;
-
-          try {
-            checkbox.disabled = true;
-
-            const res = await fetch(`${API_BASE}/api/admin/dvla-verify`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                bookingId,
-                verified,
-              }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-              throw new Error(data?.error || "DVLA update failed");
-            }
-
-            // ✅ UPDATE LOCAL STATE (CRITICAL)
-            const booking = allBookings.find((b) => b.id === bookingId);
-            if (booking) {
-              booking.dvlaVerified = verified;
-            }
-
-            showCopySuccess(verified ? "DVLA verified ✓" : "DVLA unverified");
-          } catch (err) {
-            console.error("DVLA update error:", err);
-
-            // 🔥 revert checkbox on failure
-            checkbox.checked = !verified;
-
-            alert("Failed to update DVLA status");
-          } finally {
-            checkbox.disabled = false;
-          }
-        });
-
-        /* ===============================
-     🎯 TARGET ELEMENT (STABLE)
-  =============================== */
-
-        const target = e.target;
-
-        /* ===============================
-     🔒 IGNORE OTHER BUTTONS/LINKS
-  =============================== */
-
-        if (target.closest("a, button")) return;
+        // 🔒 FINAL FALLBACK (only ignore plain links)
+        if (e.target.tagName === "A") return;
       });
 
       document.addEventListener("change", async (e) => {
@@ -2991,7 +2941,11 @@ Equine Transport UK`;
         const bookingId = checkbox.dataset.id;
         const verified = checkbox.checked;
 
+        if (!bookingId) return;
+
         try {
+          checkbox.disabled = true;
+
           const res = await fetch(`${API_BASE}/api/admin/dvla-verify`, {
             method: "POST",
             headers: {
@@ -3009,14 +2963,20 @@ Equine Transport UK`;
             throw new Error(data?.error || "Failed");
           }
 
-          // ✅ update local state instantly
+          // ✅ update UI instantly
           const booking = allBookings.find((b) => b.id === bookingId);
           if (booking) booking.dvlaVerified = verified;
+
+          // ✅ UX feedback
+          showCopySuccess(verified ? "DVLA verified ✓" : "DVLA unverified");
         } catch (err) {
           console.error("❌ DVLA toggle failed:", err);
-          alert("Failed to update DVLA verification");
 
-          checkbox.checked = !verified; // revert UI
+          checkbox.checked = !verified; // revert
+
+          alert("Failed to update DVLA verification");
+        } finally {
+          checkbox.disabled = false;
         }
       });
 
