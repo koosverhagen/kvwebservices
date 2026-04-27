@@ -1350,6 +1350,57 @@ Equine Transport UK`,
         }, 1500);
       }
 
+      function showCopyHelper(licence, code) {
+        let el = document.getElementById("dvla-helper");
+
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "dvla-helper";
+
+          el.style.position = "fixed";
+          el.style.bottom = "20px";
+          el.style.left = "50%";
+          el.style.transform = "translateX(-50%)";
+          el.style.background = "#111";
+          el.style.color = "#fff";
+          el.style.padding = "14px 18px";
+          el.style.borderRadius = "12px";
+          el.style.fontSize = "13px";
+          el.style.lineHeight = "1.5";
+          el.style.boxShadow = "0 12px 30px rgba(0,0,0,0.25)";
+          el.style.zIndex = "999999";
+          el.style.maxWidth = "320px";
+          el.style.textAlign = "center";
+          el.style.opacity = "0";
+          el.style.transition = "all 0.25s ease";
+
+          document.body.appendChild(el);
+        }
+
+        el.innerHTML = `
+    <div style="font-weight:600; margin-bottom:6px;">
+      DVLA page opened
+    </div>
+    <div style="opacity:.85; font-size:12px;">
+      Paste licence & code:
+    </div>
+    <div style="margin-top:6px; font-family:monospace;">
+      ${licence}<br>${code || ""}
+    </div>
+    <div style="margin-top:8px; opacity:.7; font-size:11px;">
+      Press ⌘+V / long-press paste
+    </div>
+  `;
+
+        el.style.opacity = "1";
+        el.style.transform = "translateX(-50%) translateY(0)";
+
+        setTimeout(() => {
+          el.style.opacity = "0";
+          el.style.transform = "translateX(-50%) translateY(10px)";
+        }, 4000);
+      }
+
       function formatDateTime(value) {
         if (!value) return "—";
         const d = new Date(value);
@@ -2793,7 +2844,7 @@ Equine Transport UK`;
         }
 
         /* ===============================
-   DVLA OPEN + COPY (UPGRADED)
+   DVLA OPEN + COPY (PRO VERSION)
 =============================== */
 
         const dvlaBtn = e.target.closest(".copy-licence");
@@ -2803,34 +2854,34 @@ Equine Transport UK`;
 
           const licence = dvlaBtn.dataset.copy;
 
-          // 🔥 get DVLA code from same row
           const container = dvlaBtn.closest(".dvla-cell");
           const codeEl = container?.querySelector(".copy-btn");
           const dvlaCode = codeEl?.dataset.copy;
 
           if (!licence) return;
 
+          const combined = dvlaCode ? `${licence} ${dvlaCode}` : licence;
+
           try {
-            // ✅ copy BOTH licence + code (better UX)
-            const combined = dvlaCode ? `${licence} ${dvlaCode}` : licence;
+            // ✅ COPY FIRST (must be inside user gesture for Safari)
             await navigator.clipboard.writeText(combined);
 
-            // ✅ popup feedback
-            showCopySuccess("Licence + code copied ✓");
+            // ✅ OPEN TAB IMMEDIATELY (Safari safe)
+            const dvlaWindow = window.open(
+              "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
+              "_blank",
+            );
 
-            // ✨ KEEP YOUR BUTTON UX
+            // ✅ POPUP HELPER (tells admin what to do next)
+            showCopyHelper(licence, dvlaCode);
+
+            // ✨ BUTTON FEEDBACK
             const originalText = dvlaBtn.innerText;
             dvlaBtn.innerText = "✓";
 
             setTimeout(() => {
               dvlaBtn.innerText = originalText || "↗";
             }, 1200);
-
-            // ✅ open DVLA page
-            window.open(
-              "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
-              "_blank",
-            );
           } catch (err) {
             console.warn("DVLA action failed:", err);
           }
