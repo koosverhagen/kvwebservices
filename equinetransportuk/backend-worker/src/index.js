@@ -3554,7 +3554,6 @@ async function handleVehicleAvailability(request, env) {
 
 async function handleMonthAvailability(request, env) {
   const url = new URL(request.url);
-
   const month = url.searchParams.get("month");
 
   if (!month) {
@@ -3562,6 +3561,70 @@ async function handleMonthAvailability(request, env) {
   }
 
   const vehicles = ["v35-1", "v35-2", "v35-3", "v75-1", "v75-2"];
+
+  /* ===============================
+     🔥 LOAD BOOKINGS FROM KV (REAL SOURCE)
+  =============================== */
+
+  const key = `bookings:${month}`;
+  const raw = await env.BOOKINGS_KV.get(key);
+
+  let bookings = [];
+
+  try {
+    bookings = JSON.parse(raw || "[]");
+  } catch {
+    bookings = [];
+  }
+
+  /* ===============================
+     🔥 BUILD DAY MAP
+  =============================== */
+
+  const daysMap = {};
+
+  for (const b of bookings) {
+    if (!b.pickupAt || !b.vehicleId) continue;
+
+    const start = new Date(b.pickupAt);
+    const end = b.dropoffAt ? new Date(b.dropoffAt) : new Date(b.pickupAt);
+
+    const current = new Date(start);
+
+    while (current <= end) {
+      const dateStr = current.toISOString().slice(0, 10);
+
+      if (!daysMap[dateStr]) daysMap[dateStr] = {};
+
+      if (!daysMap[dateStr][b.vehicleId]) {
+        daysMap[dateStr][b.vehicleId] = {
+          full: false,
+          am: false,
+          pm: false,
+        };
+      }
+
+      /* ===============================
+         SLOT LOGIC
+      =============================== */
+
+      if (Number(b.durationDays) !== 0.5) {
+        daysMap[dateStr][b.vehicleId].full = true;
+      } else {
+        if (b.pickupTime === "13:00") {
+          daysMap[dateStr][b.vehicleId].pm = true;
+        } else {
+          daysMap[dateStr][b.vehicleId].am = true;
+        }
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+  }
+
+  /* ===============================
+     🔥 INCLUDE EMPTY DAYS
+  =============================== */
 
   const days = [];
 
@@ -3574,53 +3637,32 @@ async function handleMonthAvailability(request, env) {
   const current = new Date(start);
 
   while (current <= end) {
-    const date = current.toISOString().slice(0, 10);
+    const dateStr = current.toISOString().slice(0, 10);
 
-    const booked = new Set();
-    const reserved = new Set();
-
-    /* ===============================
-       CONFIRMED BOOKINGS (FAST INDEX)
-    ================================ */
-
-    const checks = vehicles.map((v) =>
-      env.BOOKINGS_KV.get(`booking:${v}:${date}`),
-    );
-
-    const results = await Promise.all(checks);
-
-    results.forEach((exists, i) => {
-      if (exists) booked.add(vehicles[i]);
-    });
-
-    /* ===============================
-       TEMP RESERVATIONS
-    ================================ */
-
-    const reservations = await env.BOOKINGS_KV.list({
-      prefix: "reservation:",
-    });
-
-    for (const key of reservations.keys) {
-      const parts = key.name.split(":");
-
-      if (parts.length < 3) continue;
-
-      if (parts[2] === date) {
-        reserved.add(parts[1]);
-      }
-    }
+    const vehicleData = daysMap[dateStr] || {};
 
     days.push({
-      date,
-      vehicles: vehicles.map((v) => ({
-        vehicleId: v,
-        available: !(booked.has(v) || reserved.has(v)),
-      })),
+      date: dateStr,
+      vehicles: vehicles.map((v) => {
+        const status = vehicleData[v] || {
+          full: false,
+          am: false,
+          pm: false,
+        };
+
+        return {
+          vehicleId: v,
+          full: status.full,
+          am: status.am,
+          pm: status.pm,
+        };
+      }),
     });
 
     current.setDate(current.getDate() + 1);
   }
+
+  console.log("📅 Month availability built:", days.length);
 
   return json({ days });
 }
