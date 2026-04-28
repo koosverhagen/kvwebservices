@@ -3789,16 +3789,40 @@ Equine Transport UK`;
         calGrid.innerHTML = "Loading…";
 
         try {
-          const res = await fetch(
-            `${API_BASE}/api/availability/month?month=${monthStr}`,
-          );
+          /* ===============================
+       🔥 LOAD AVAILABILITY + BLOCKS
+    =============================== */
 
-          const data = await res.json();
+          const [availabilityRes, blocksRes] = await Promise.all([
+            fetch(`${API_BASE}/api/availability/month?month=${monthStr}`),
+            fetch(`${API_BASE}/api/admin/blocks?month=${monthStr}`),
+          ]);
 
-          if (!res.ok) throw new Error();
+          const availabilityData = await availabilityRes.json();
+          const blocksData = await blocksRes.json();
 
-          renderCalendarDays(data.days || {});
-        } catch {
+          if (!availabilityRes.ok) throw new Error("availability failed");
+          if (!blocksRes.ok) throw new Error("blocks failed");
+
+          /* ===============================
+       🔥 MERGE DATA
+    =============================== */
+
+          const days = availabilityData.days || {};
+          const blocks = blocksData.blocks || {};
+
+          // attach blocks to each day
+          for (const date in days) {
+            days[date].blocks = blocks[date] || {};
+          }
+
+          /* ===============================
+       🔥 RENDER
+    =============================== */
+
+          renderCalendarDays(days);
+        } catch (err) {
+          console.error("❌ Calendar load failed:", err);
           calGrid.innerHTML = "Failed to load calendar";
         }
       }
@@ -3821,10 +3845,20 @@ Equine Transport UK`;
           const dayData = daysData[dateStr] || {};
           const vehicleFilter = calVehicle.value;
 
+          const blocks = dayData.blocks || {};
+
           let total = 0;
           let blocked = 0;
+          let hasBlock = false;
+          let blockNotes = [];
+
+          /* ===============================
+       🔥 COUNT BOOKINGS
+    =============================== */
 
           Object.entries(dayData).forEach(([vehicleId, status]) => {
+            if (vehicleId === "blocks") return; // 🔥 skip block container
+
             if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
 
             total++;
@@ -3834,18 +3868,61 @@ Equine Transport UK`;
             }
           });
 
+          /* ===============================
+       🔥 COUNT ADMIN BLOCKS
+    =============================== */
+
+          Object.entries(blocks).forEach(([vehicleId, block]) => {
+            if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
+
+            hasBlock = true;
+            blocked++; // treat block as fully unavailable
+            total++;
+
+            if (block.note) {
+              blockNotes.push(block.note);
+            } else if (block.reason) {
+              blockNotes.push(block.reason);
+            }
+          });
+
+          /* ===============================
+       🔥 DETERMINE STATE
+    =============================== */
+
           let cls = "free";
 
           if (blocked === total && total > 0) cls = "full";
           else if (blocked > 0) cls = "partial";
+
+          if (Object.keys(blocks).length > 0) {
+            cls = "full blocked"; // 🔥 admin override ALWAYS wins
+          }
+
+          if (hasBlock) cls += " blocked"; // 🔥 NEW
+
+          /* ===============================
+       🔥 CREATE ELEMENT
+    =============================== */
 
           const el = document.createElement("div");
           el.className = `cal-day ${cls}`;
 
           el.innerHTML = `
       <div class="cal-date">${d}</div>
-      <div class="cal-meta">${blocked}/${total} booked</div>
+      <div class="cal-meta">${blocked}/${total} unavailable</div>
+      ${
+        hasBlock
+          ? `<div class="cal-note">${blockNotes.slice(0, 1).join(", ")}</div>`
+          : ""
+      }
     `;
+
+          /* ===============================
+       🔥 CLICK HANDLER (NEXT STEP READY)
+    =============================== */
+
+          el.dataset.date = dateStr;
 
           calGrid.appendChild(el);
         }
