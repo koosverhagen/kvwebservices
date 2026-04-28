@@ -497,6 +497,86 @@
       }
 
       /* ===============================
+   ADMIN AVAILABILITY CHECKER
+=============================== */
+
+      .availability-toolbar {
+        display: grid;
+        grid-template-columns: 1fr 180px 180px auto;
+        gap: 12px;
+        margin-top: 14px;
+        align-items: end;
+      }
+
+      .availability-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .availability-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        background: #fff;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      }
+
+      .availability-card.available {
+        border-color: #16a34a;
+        background: #f0fdf4;
+      }
+
+      .availability-card.unavailable {
+        border-color: #dc2626;
+        background: #fff1f2;
+      }
+
+      .availability-card h4 {
+        margin: 0 0 8px;
+        font-size: 14px;
+      }
+
+      .availability-badge {
+        display: inline-flex;
+        padding: 4px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .availability-badge.ok {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .availability-badge.bad {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .availability-slots {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      @media (max-width: 768px) {
+        .availability-toolbar {
+          grid-template-columns: 1fr;
+        }
+
+        .availability-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .availability-card {
+          padding: 16px;
+        }
+      }
+
+      /* ===============================
    DVLA
 =============================== */
 
@@ -766,6 +846,60 @@
         </div>
       </section>
 
+      <!-- ===============================
+   AVAILABILITY CHECKER
+=============================== -->
+      <section class="section">
+        <div class="hero-card" style="margin-bottom: 18px">
+          <div class="section-head">
+            <h2>Availability checker</h2>
+            <div class="muted">Search availability across all 5 lorries.</div>
+          </div>
+
+          <div class="availability-toolbar">
+            <div class="field">
+              <label for="avail-date">Date</label>
+              <input id="avail-date" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="avail-duration">Duration</label>
+              <select id="avail-duration">
+                <option value="0.5">Half day</option>
+                <option value="1">1 day</option>
+                <option value="2">2 days</option>
+                <option value="3">3 days</option>
+                <option value="4">4 days</option>
+                <option value="5">5 days</option>
+                <option value="6">6 days</option>
+                <option value="7">7 days</option>
+              </select>
+            </div>
+
+            <div class="field" id="avail-time-wrap">
+              <label for="avail-time">Pickup time</label>
+              <select id="avail-time">
+                <option value="07:00">07:00 AM</option>
+                <option value="13:00">13:00 PM</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>&nbsp;</label>
+              <button class="btn primary" id="avail-search-btn" type="button">
+                Check availability
+              </button>
+            </div>
+          </div>
+
+          <div id="availability-status" class="tiny" style="margin-top: 12px">
+            Choose date and duration.
+          </div>
+
+          <div id="availability-results" class="availability-grid"></div>
+        </div>
+      </section>
+
       <section class="section">
         <div class="section-head">
           <h2>Bookings</h2>
@@ -1001,6 +1135,16 @@
       const rangeFromInput = document.getElementById("range-from");
       const rangeToInput = document.getElementById("range-to");
       const timeFilter = document.getElementById("time-filter");
+
+      const availDateInput = document.getElementById("avail-date");
+      const availDurationInput = document.getElementById("avail-duration");
+      const availTimeInput = document.getElementById("avail-time");
+      const availTimeWrap = document.getElementById("avail-time-wrap");
+      const availSearchBtn = document.getElementById("avail-search-btn");
+      const availabilityStatus = document.getElementById("availability-status");
+      const availabilityResults = document.getElementById(
+        "availability-results",
+      );
 
       const modal = document.getElementById("form-modal");
       const modalClose = document.getElementById("modal-close");
@@ -1431,6 +1575,97 @@ Equine Transport UK`,
         if (Array.isArray(data)) return data;
         if (Array.isArray(data?.bookings)) return data.bookings;
         return [];
+      }
+
+      const ADMIN_VEHICLES = [
+        { id: "v35-1", name: "3.5T Safety Bar" },
+        { id: "v35-2", name: "3.5T Stallion" },
+        { id: "v35-3", name: "3.5T Breast Bar" },
+        { id: "v75-1", name: "7.5T Living" },
+        { id: "v75-2", name: "7.5T No Living" },
+      ];
+
+      function updateAvailabilityTimeOptions() {
+        const duration = Number(availDurationInput?.value || 1);
+
+        if (!availTimeWrap || !availTimeInput) return;
+
+        if (duration === 0.5) {
+          availTimeWrap.style.display = "";
+          availTimeInput.innerHTML = `
+      <option value="07:00">07:00 AM</option>
+      <option value="13:00">13:00 PM</option>
+    `;
+        } else {
+          availTimeWrap.style.display = "";
+          availTimeInput.innerHTML = `
+      <option value="07:00">07:00 AM</option>
+    `;
+          availTimeInput.value = "07:00";
+        }
+      }
+
+      function renderAvailabilityResults(vehicles = []) {
+        if (!availabilityResults) return;
+
+        availabilityResults.innerHTML = ADMIN_VEHICLES.map((vehicle) => {
+          const found = vehicles.find((v) => v.vehicleId === vehicle.id);
+          const available = found?.available === true;
+
+          const slots = Array.isArray(found?.availableSlots)
+            ? found.availableSlots
+            : [];
+
+          return `
+      <div class="availability-card ${available ? "available" : "unavailable"}">
+        <h4>${escapeHtml(vehicle.name)}</h4>
+
+        <span class="availability-badge ${available ? "ok" : "bad"}">
+          ${available ? "Available" : "Not available"}
+        </span>
+
+        ${
+          slots.length
+            ? `<div class="availability-slots">Slots: ${slots.map((s) => s.toUpperCase()).join(", ")}</div>`
+            : `<div class="availability-slots">—</div>`
+        }
+      </div>
+    `;
+        }).join("");
+      }
+
+      async function checkAdminAvailabilitySearch() {
+        const date = availDateInput?.value;
+        const duration = Number(availDurationInput?.value || 1);
+        const pickupTime = availTimeInput?.value || "07:00";
+
+        if (!date) {
+          availabilityStatus.textContent = "Please choose a date.";
+          availabilityResults.innerHTML = "";
+          return;
+        }
+
+        availabilityStatus.textContent = "Checking availability…";
+        availabilityResults.innerHTML = "";
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/vehicles/available?date=${encodeURIComponent(date)}&duration=${encodeURIComponent(duration)}&pickupTime=${encodeURIComponent(pickupTime)}`,
+          );
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data?.error || "Availability check failed");
+          }
+
+          renderAvailabilityResults(data.vehicles || []);
+
+          availabilityStatus.textContent = `Availability for ${date}, ${duration === 0.5 ? "half day" : duration + " day(s)"}.`;
+        } catch (err) {
+          console.error("Availability search failed:", err);
+          availabilityStatus.textContent = "Could not check availability.";
+        }
       }
 
       function getVehicleName(booking) {
@@ -3214,6 +3449,32 @@ Equine Transport UK`;
       statusFilter.addEventListener("change", renderBookings);
       rangeFromInput.addEventListener("change", loadBookings);
       rangeToInput.addEventListener("change", loadBookings);
+
+      if (availDateInput) {
+        availDateInput.value = toDateInputValue(new Date());
+      }
+
+      if (availDurationInput) {
+        availDurationInput.addEventListener("change", () => {
+          updateAvailabilityTimeOptions();
+          checkAdminAvailabilitySearch();
+        });
+      }
+
+      if (availTimeInput) {
+        availTimeInput.addEventListener("change", checkAdminAvailabilitySearch);
+      }
+
+      if (availDateInput) {
+        availDateInput.addEventListener("change", checkAdminAvailabilitySearch);
+      }
+
+      if (availSearchBtn) {
+        availSearchBtn.addEventListener("click", checkAdminAvailabilitySearch);
+      }
+
+      updateAvailabilityTimeOptions();
+      checkAdminAvailabilitySearch();
 
       /* ===============================
    ✏️ EDIT MODAL CLOSE HANDLERS (SAFE)
