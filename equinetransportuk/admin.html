@@ -624,6 +624,23 @@
         background: #dcfce7;
       }
 
+      .cal-day.blocked {
+        background: #fde2e2;
+        border-color: #dc2626;
+        cursor: pointer;
+      }
+
+      .cal-day:hover {
+        transform: translateY(-1px);
+      }
+
+      .cal-note {
+        font-size: 11px;
+        margin-top: 4px;
+        color: #7f1d1d;
+        white-space: normal;
+      }
+
       .cal-date {
         font-weight: 700;
         font-size: 11px;
@@ -913,60 +930,6 @@
       </section>
 
       <!-- ===============================
-   AVAILABILITY CHECKER
-=============================== -->
-      <section class="section">
-        <div class="hero-card" style="margin-bottom: 18px">
-          <div class="section-head">
-            <h2>Availability checker</h2>
-            <div class="muted">Search availability across all 5 lorries.</div>
-          </div>
-
-          <div class="availability-toolbar">
-            <div class="field">
-              <label for="avail-date">Date</label>
-              <input id="avail-date" type="date" />
-            </div>
-
-            <div class="field">
-              <label for="avail-duration">Duration</label>
-              <select id="avail-duration">
-                <option value="0.5">Half day</option>
-                <option value="1">1 day</option>
-                <option value="2">2 days</option>
-                <option value="3">3 days</option>
-                <option value="4">4 days</option>
-                <option value="5">5 days</option>
-                <option value="6">6 days</option>
-                <option value="7">7 days</option>
-              </select>
-            </div>
-
-            <div class="field" id="avail-time-wrap">
-              <label for="avail-time">Pickup time</label>
-              <select id="avail-time">
-                <option value="07:00">07:00 AM</option>
-                <option value="13:00">13:00 PM</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>&nbsp;</label>
-              <button class="btn primary" id="avail-search-btn" type="button">
-                Check availability
-              </button>
-            </div>
-          </div>
-
-          <div id="availability-status" class="tiny" style="margin-top: 12px">
-            Choose date and duration.
-          </div>
-
-          <div id="availability-results" class="availability-grid"></div>
-        </div>
-      </section>
-
-      <!-- ===============================
    AVAILABILITY CALENDAR (NEW)
 =============================== -->
       <section class="section">
@@ -1218,6 +1181,61 @@
       </div>
     </div>
 
+    <!-- ===============================
+   BLOCK DATE MODAL
+=============================== -->
+    <div id="block-modal" class="et-modal hidden">
+      <div class="et-modal-backdrop"></div>
+
+      <div class="et-modal-center">
+        <div class="et-modal-card" style="max-width: 420px">
+          <div class="et-modal-header">
+            <h3>Block availability</h3>
+            <button id="block-close" class="modal-close">✕</button>
+          </div>
+
+          <div class="et-modal-body">
+            <input type="hidden" id="block-date" />
+
+            <div class="field">
+              <label>Date</label>
+              <input id="block-date-display" type="text" readonly />
+            </div>
+
+            <div class="field">
+              <label>Vehicle</label>
+              <select id="block-vehicle">
+                <option value="v35-1">3.5T Safety Bar</option>
+                <option value="v35-2">3.5T Stallion</option>
+                <option value="v35-3">3.5T Breast Bar</option>
+                <option value="v75-1">7.5T Living</option>
+                <option value="v75-2">7.5T No Living</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Reason</label>
+              <select id="block-reason">
+                <option value="service">Service</option>
+                <option value="breakdown">Breakdown</option>
+                <option value="own_use">Own use</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Note</label>
+              <input id="block-note" placeholder="Optional note..." />
+            </div>
+
+            <div style="margin-top: 16px; display: flex; gap: 10px">
+              <button class="btn primary" id="block-save">Save block</button>
+              <button class="btn ghost" id="block-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
 
@@ -1232,6 +1250,16 @@
       const calPrev = document.getElementById("cal-prev");
       const calNext = document.getElementById("cal-next");
       const calVehicle = document.getElementById("cal-vehicle");
+
+      const blockModal = document.getElementById("block-modal");
+      const blockDateInput = document.getElementById("block-date");
+      const blockDateDisplay = document.getElementById("block-date-display");
+      const blockVehicleInput = document.getElementById("block-vehicle");
+      const blockReasonInput = document.getElementById("block-reason");
+      const blockNoteInput = document.getElementById("block-note");
+      const blockSaveBtn = document.getElementById("block-save");
+      const blockCloseBtn = document.getElementById("block-close");
+      const blockCancelBtn = document.getElementById("block-cancel");
 
       const bookingsBody = document.getElementById("bookings-body");
       const refreshBtn = document.getElementById("refresh-btn");
@@ -3836,7 +3864,6 @@ Equine Transport UK`;
 
         const year = CAL_DATE.getFullYear();
         const month = CAL_DATE.getMonth();
-
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
         for (let d = 1; d <= daysInMonth; d++) {
@@ -3844,89 +3871,130 @@ Equine Transport UK`;
 
           const dayData = daysData[dateStr] || {};
           const vehicleFilter = calVehicle.value;
-
           const blocks = dayData.blocks || {};
 
           let total = 0;
-          let blocked = 0;
+          let unavailable = 0;
           let hasBlock = false;
           let blockNotes = [];
 
-          /* ===============================
-       🔥 COUNT BOOKINGS
-    =============================== */
-
           Object.entries(dayData).forEach(([vehicleId, status]) => {
-            if (vehicleId === "blocks") return; // 🔥 skip block container
-
+            if (vehicleId === "blocks") return;
             if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
 
             total++;
 
             if (status.full || (status.am && status.pm)) {
-              blocked++;
+              unavailable++;
             }
           });
-
-          /* ===============================
-       🔥 COUNT ADMIN BLOCKS
-    =============================== */
 
           Object.entries(blocks).forEach(([vehicleId, block]) => {
             if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
 
             hasBlock = true;
-            blocked++; // treat block as fully unavailable
             total++;
+            unavailable++;
 
-            if (block.note) {
-              blockNotes.push(block.note);
-            } else if (block.reason) {
-              blockNotes.push(block.reason);
-            }
+            blockNotes.push(block.note || block.reason || "Blocked");
           });
-
-          /* ===============================
-       🔥 DETERMINE STATE
-    =============================== */
 
           let cls = "free";
 
-          if (blocked === total && total > 0) cls = "full";
-          else if (blocked > 0) cls = "partial";
+          if (unavailable === total && total > 0) cls = "full";
+          else if (unavailable > 0) cls = "partial";
 
-          if (Object.keys(blocks).length > 0) {
-            cls = "full blocked"; // 🔥 admin override ALWAYS wins
-          }
-
-          if (hasBlock) cls += " blocked"; // 🔥 NEW
-
-          /* ===============================
-       🔥 CREATE ELEMENT
-    =============================== */
+          if (hasBlock) cls += " blocked";
 
           const el = document.createElement("div");
           el.className = `cal-day ${cls}`;
+          el.dataset.date = dateStr;
 
           el.innerHTML = `
       <div class="cal-date">${d}</div>
-      <div class="cal-meta">${blocked}/${total} unavailable</div>
+      <div class="cal-meta">${unavailable}/${total} unavailable</div>
       ${
         hasBlock
-          ? `<div class="cal-note">${blockNotes.slice(0, 1).join(", ")}</div>`
+          ? `<div class="cal-note">${escapeHtml(blockNotes[0] || "Blocked")}</div>`
           : ""
       }
     `;
 
-          /* ===============================
-       🔥 CLICK HANDLER (NEXT STEP READY)
-    =============================== */
-
-          el.dataset.date = dateStr;
+          el.addEventListener("click", () => {
+            openBlockModal(dateStr);
+          });
 
           calGrid.appendChild(el);
         }
       }
+
+      function openBlockModal(dateStr) {
+        if (!blockModal) return;
+
+        blockDateInput.value = dateStr;
+        blockDateDisplay.value = dateStr;
+
+        if (calVehicle?.value && calVehicle.value !== "all") {
+          blockVehicleInput.value = calVehicle.value;
+        }
+
+        blockReasonInput.value = "service";
+        blockNoteInput.value = "";
+
+        blockModal.classList.remove("hidden");
+      }
+
+      function closeBlockModal() {
+        blockModal?.classList.add("hidden");
+      }
+
+      blockCloseBtn?.addEventListener("click", closeBlockModal);
+      blockCancelBtn?.addEventListener("click", closeBlockModal);
+
+      blockSaveBtn?.addEventListener("click", async () => {
+        const date = blockDateInput.value;
+        const vehicleId = blockVehicleInput.value;
+        const reason = blockReasonInput.value;
+        const note = blockNoteInput.value.trim();
+
+        if (!date || !vehicleId) {
+          alert("Missing date or vehicle.");
+          return;
+        }
+
+        try {
+          blockSaveBtn.disabled = true;
+          blockSaveBtn.textContent = "Saving...";
+
+          const res = await fetch(`${API_BASE}/api/admin/block-date`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              date,
+              vehicleId,
+              reason,
+              note,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data?.error || "Failed to save block");
+          }
+
+          closeBlockModal();
+          await loadAdminCalendar();
+        } catch (err) {
+          console.error("Block save failed:", err);
+          alert(err.message || "Failed to save block");
+        } finally {
+          blockSaveBtn.disabled = false;
+          blockSaveBtn.textContent = "Save block";
+        }
+      });
 
       /* ===============================
    CONTROLS
