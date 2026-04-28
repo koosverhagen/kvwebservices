@@ -850,8 +850,97 @@ export default {
       }
 
       /* ===============================
-         FALLBACK
-      ================================ */
+   ADMIN BLOCK AVAILABILITY (NEW)
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/block-date"
+      ) {
+        try {
+          const { date, vehicleId, reason, note } = await request.json();
+
+          if (!date || !vehicleId) {
+            return withCors(
+              json({ error: "Missing date or vehicleId" }, 400),
+              corsHeaders,
+            );
+          }
+
+          const key = `block:${date}:${vehicleId}`;
+
+          const payload = {
+            date,
+            vehicleId,
+            reason: reason || "blocked",
+            note: note || "",
+            createdAt: new Date().toISOString(),
+          };
+
+          await env.BOOKINGS_KV.put(key, JSON.stringify(payload));
+
+          console.log("🚫 Block saved:", key);
+
+          return withCors(json({ ok: true }), corsHeaders);
+        } catch (err) {
+          console.error("❌ block-date error:", err);
+
+          return withCors(
+            json({ error: "Failed to save block" }, 500),
+            corsHeaders,
+          );
+        }
+      }
+
+      /* ===============================
+   GET BLOCKS FOR MONTH (NEW)
+=============================== */
+
+      if (request.method === "GET" && url.pathname === "/api/admin/blocks") {
+        try {
+          const month = url.searchParams.get("month");
+
+          if (!month) {
+            return withCors(json({ error: "Missing month" }, 400), corsHeaders);
+          }
+
+          const list = await env.BOOKINGS_KV.list({
+            prefix: `block:${month}`,
+          });
+
+          const result = {};
+
+          for (const key of list.keys) {
+            const raw = await env.BOOKINGS_KV.get(key.name);
+            if (!raw) continue;
+
+            try {
+              const parsed = JSON.parse(raw);
+
+              if (!result[parsed.date]) {
+                result[parsed.date] = {};
+              }
+
+              result[parsed.date][parsed.vehicleId] = parsed;
+            } catch {}
+          }
+
+          console.log("📅 Blocks loaded:", Object.keys(result).length);
+
+          return withCors(json({ blocks: result }), corsHeaders);
+        } catch (err) {
+          console.error("❌ blocks fetch error:", err);
+
+          return withCors(
+            json({ error: "Failed to load blocks" }, 500),
+            corsHeaders,
+          );
+        }
+      }
+
+      /* ===============================
+   FALLBACK
+=============================== */
 
       return withCors(json({ error: "Not found" }, 404), corsHeaders);
     } catch (error) {
