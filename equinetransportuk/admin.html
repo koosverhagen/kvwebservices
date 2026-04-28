@@ -3587,32 +3587,6 @@ Equine Transport UK`;
       rangeFromInput.addEventListener("change", loadBookings);
       rangeToInput.addEventListener("change", loadBookings);
 
-      if (availDateInput) {
-        availDateInput.value = toDateInputValue(new Date());
-      }
-
-      if (availDurationInput) {
-        availDurationInput.addEventListener("change", () => {
-          updateAvailabilityTimeOptions();
-          checkAdminAvailabilitySearch();
-        });
-      }
-
-      if (availTimeInput) {
-        availTimeInput.addEventListener("change", checkAdminAvailabilitySearch);
-      }
-
-      if (availDateInput) {
-        availDateInput.addEventListener("change", checkAdminAvailabilitySearch);
-      }
-
-      if (availSearchBtn) {
-        availSearchBtn.addEventListener("click", checkAdminAvailabilitySearch);
-      }
-
-      updateAvailabilityTimeOptions();
-      checkAdminAvailabilitySearch();
-
       /* ===============================
    ✏️ EDIT MODAL CLOSE HANDLERS (SAFE)
 =============================== */
@@ -3806,7 +3780,6 @@ Equine Transport UK`;
 
         const year = CAL_DATE.getFullYear();
         const month = CAL_DATE.getMonth() + 1;
-
         const monthStr = `${year}-${String(month).padStart(2, "0")}`;
 
         calTitle.textContent = CAL_DATE.toLocaleString("en-GB", {
@@ -3817,10 +3790,6 @@ Equine Transport UK`;
         calGrid.innerHTML = "Loading…";
 
         try {
-          /* ===============================
-       🔥 LOAD AVAILABILITY + BLOCKS
-    =============================== */
-
           const [availabilityRes, blocksRes] = await Promise.all([
             fetch(`${API_BASE}/api/availability/month?month=${monthStr}`),
             fetch(`${API_BASE}/api/admin/blocks?month=${monthStr}`),
@@ -3832,23 +3801,24 @@ Equine Transport UK`;
           if (!availabilityRes.ok) throw new Error("availability failed");
           if (!blocksRes.ok) throw new Error("blocks failed");
 
-          /* ===============================
-       🔥 MERGE DATA
-    =============================== */
-
-          const days = availabilityData.days || {};
+          const daysMap = {};
           const blocks = blocksData.blocks || {};
 
-          // attach blocks to each day
-          for (const date in days) {
-            days[date].blocks = blocks[date] || {};
-          }
+          (availabilityData.days || []).forEach((day) => {
+            daysMap[day.date] = {};
 
-          /* ===============================
-       🔥 RENDER
-    =============================== */
+            (day.vehicles || []).forEach((v) => {
+              daysMap[day.date][v.vehicleId] = {
+                full: v.full === true,
+                am: v.am === true,
+                pm: v.pm === true,
+              };
+            });
 
-          renderCalendarDays(days);
+            daysMap[day.date].blocks = blocks[day.date] || {};
+          });
+
+          renderCalendarDays(daysMap);
         } catch (err) {
           console.error("❌ Calendar load failed:", err);
           calGrid.innerHTML = "Failed to load calendar";
