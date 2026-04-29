@@ -596,66 +596,130 @@
         margin-top: 10px;
       }
 
+      .calendar-weekdays,
       .calendar-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 6px;
-        margin-top: 12px;
+      }
+
+      .calendar-weekdays {
+        margin-top: 14px;
+      }
+
+      .cal-weekday {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--muted);
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .calendar-grid {
+        margin-top: 6px;
       }
 
       .cal-day {
         border: 1px solid var(--line);
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 8px;
-        min-height: 70px;
+        min-height: 96px;
         font-size: 12px;
-        background: #fff;
-      }
-
-      .cal-day.full {
-        background: #fee2e2;
-      }
-
-      .cal-day.partial {
-        background: #fff4e5;
-      }
-
-      .cal-day.free {
         background: #dcfce7;
-      }
-
-      .cal-day.blocked {
-        background: #fde2e2;
-        border-color: #dc2626;
         cursor: pointer;
+        transition: 0.15s ease;
       }
 
       .cal-day:hover {
         transform: translateY(-1px);
       }
 
-      .cal-note {
-        font-size: 11px;
-        margin-top: 4px;
-        color: #7f1d1d;
-        white-space: normal;
+      .cal-day.partial {
+        background: #fff4e5;
+      }
+
+      .cal-day.full {
+        background: #fee2e2;
+      }
+
+      .cal-day.weekend {
+        background: #f8fafc;
+      }
+
+      .cal-day.weekend.partial {
+        background: #ffedd5;
+      }
+
+      .cal-day.weekend.full,
+      .cal-day.past {
+        background: #fee2e2;
+      }
+
+      .cal-day.today {
+        border: 3px solid #1f6feb;
+      }
+
+      .cal-day.blocked {
+        border-color: #dc2626;
       }
 
       .cal-date {
-        font-weight: 700;
-        font-size: 11px;
-        margin-bottom: 4px;
+        font-weight: 800;
+        font-size: 12px;
+        margin-bottom: 6px;
       }
 
       .cal-meta {
         font-size: 10px;
         color: var(--muted);
+        margin-top: 6px;
+      }
+
+      .cal-slots {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .cal-slot {
+        border-radius: 8px;
+        padding: 6px 4px;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 800;
+        background: #bbf7d0;
+        color: #166534;
+      }
+
+      .cal-slot.busy {
+        background: #fecaca;
+        color: #991b1b;
+      }
+
+      .cal-slot.partial {
+        background: #fed7aa;
+        color: #9a3412;
+      }
+
+      .cal-note {
+        font-size: 11px;
+        margin-top: 6px;
+        color: #7f1d1d;
+        white-space: normal;
       }
 
       /* MOBILE */
       @media (max-width: 768px) {
+        .calendar-weekdays {
+          display: none;
+        }
+
         .calendar-grid {
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: 1fr;
+        }
+
+        .cal-day {
+          min-height: 110px;
         }
       }
 
@@ -956,6 +1020,16 @@
             </select>
           </div>
 
+          <div class="calendar-weekdays">
+            <div class="cal-weekday">Mon</div>
+            <div class="cal-weekday">Tue</div>
+            <div class="cal-weekday">Wed</div>
+            <div class="cal-weekday">Thu</div>
+            <div class="cal-weekday">Fri</div>
+            <div class="cal-weekday">Sat</div>
+            <div class="cal-weekday">Sun</div>
+          </div>
+
           <div id="calendar-grid" class="calendar-grid"></div>
         </div>
       </section>
@@ -1223,6 +1297,28 @@
             </div>
 
             <div class="field">
+              <label>Unavailable period</label>
+              <select id="block-slot">
+                <option value="full">Full day</option>
+                <option value="am">Morning only</option>
+                <option value="pm">Afternoon only</option>
+                <option value="range">Custom time range</option>
+              </select>
+            </div>
+
+            <div id="block-time-range" style="display: none">
+              <div class="field">
+                <label>From</label>
+                <input id="block-from-time" type="time" value="07:00" />
+              </div>
+
+              <div class="field">
+                <label>Until</label>
+                <input id="block-until-time" type="time" value="19:00" />
+              </div>
+            </div>
+
+            <div class="field">
               <label>Note</label>
               <input id="block-note" placeholder="Optional note..." />
             </div>
@@ -1257,6 +1353,10 @@
       const blockVehicleInput = document.getElementById("block-vehicle");
       const blockReasonInput = document.getElementById("block-reason");
       const blockNoteInput = document.getElementById("block-note");
+      const blockSlotInput = document.getElementById("block-slot");
+      const blockTimeRange = document.getElementById("block-time-range");
+      const blockFromTimeInput = document.getElementById("block-from-time");
+      const blockUntilTimeInput = document.getElementById("block-until-time");
       const blockSaveBtn = document.getElementById("block-save");
       const blockCloseBtn = document.getElementById("block-close");
       const blockCancelBtn = document.getElementById("block-cancel");
@@ -3836,16 +3936,31 @@ Equine Transport UK`;
         const month = CAL_DATE.getMonth();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+        const todayStr = toDateInputValue(new Date());
+
+        // Monday alignment
+        const firstDay = new Date(year, month, 1);
+        const jsDay = firstDay.getDay(); // Sun = 0
+        const mondayOffset = jsDay === 0 ? 6 : jsDay - 1;
+
+        for (let i = 0; i < mondayOffset; i++) {
+          const blank = document.createElement("div");
+          blank.className = "cal-day";
+          blank.style.visibility = "hidden";
+          calGrid.appendChild(blank);
+        }
+
         for (let d = 1; d <= daysInMonth; d++) {
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          const dayObj = new Date(`${dateStr}T00:00:00`);
 
           const dayData = daysData[dateStr] || {};
           const vehicleFilter = calVehicle.value;
           const blocks = dayData.blocks || {};
 
           let total = 0;
-          let unavailable = 0;
-          let hasBlock = false;
+          let amBusy = 0;
+          let pmBusy = 0;
           let blockNotes = [];
 
           Object.entries(dayData).forEach(([vehicleId, status]) => {
@@ -3854,38 +3969,77 @@ Equine Transport UK`;
 
             total++;
 
-            if (status.full || (status.am && status.pm)) {
-              unavailable++;
-            }
+            if (status.full || status.am) amBusy++;
+            if (status.full || status.pm) pmBusy++;
           });
 
           Object.entries(blocks).forEach(([vehicleId, block]) => {
             if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
 
-            hasBlock = true;
             total++;
-            unavailable++;
+
+            const slot = block.slot || "full";
+
+            if (slot === "full") {
+              amBusy++;
+              pmBusy++;
+            }
+
+            if (slot === "am") amBusy++;
+            if (slot === "pm") pmBusy++;
+
+            if (slot === "range") {
+              const from = block.fromTime || "07:00";
+              const until = block.untilTime || "19:00";
+
+              if (from < "13:00" && until > "07:00") amBusy++;
+              if (from < "19:00" && until > "13:00") pmBusy++;
+            }
 
             blockNotes.push(block.note || block.reason || "Blocked");
           });
 
+          const amFull = total > 0 && amBusy >= total;
+          const pmFull = total > 0 && pmBusy >= total;
+
           let cls = "free";
 
-          if (unavailable === total && total > 0) cls = "full";
-          else if (unavailable > 0) cls = "partial";
+          if (amFull && pmFull) cls = "full";
+          else if (amBusy > 0 || pmBusy > 0) cls = "partial";
 
-          if (hasBlock) cls += " blocked";
+          if (Object.keys(blocks).length) cls += " blocked";
+
+          const dayOfWeek = dayObj.getDay();
+          if (dayOfWeek === 0 || dayOfWeek === 6) cls += " weekend";
+          if (dateStr === todayStr) cls += " today";
+          if (dateStr < todayStr) cls += " past";
 
           const el = document.createElement("div");
           el.className = `cal-day ${cls}`;
           el.dataset.date = dateStr;
 
           el.innerHTML = `
-      <div class="cal-date">${d}</div>
-      <div class="cal-meta">${unavailable}/${total} unavailable</div>
+      <div class="cal-date">
+        ${dayObj.toLocaleDateString("en-GB", {
+          weekday: "short",
+          day: "2-digit",
+        })}
+      </div>
+
+      <div class="cal-slots">
+        <div class="cal-slot ${amBusy ? (amFull ? "busy" : "partial") : ""}">
+          AM ${amBusy}/${total}
+        </div>
+        <div class="cal-slot ${pmBusy ? (pmFull ? "busy" : "partial") : ""}">
+          PM ${pmBusy}/${total}
+        </div>
+      </div>
+
+      <div class="cal-meta">${Math.max(amBusy, pmBusy)}/${total} unavailable</div>
+
       ${
-        hasBlock
-          ? `<div class="cal-note">${escapeHtml(blockNotes[0] || "Blocked")}</div>`
+        blockNotes.length
+          ? `<div class="cal-note">${escapeHtml(blockNotes[0])}</div>`
           : ""
       }
     `;
@@ -3911,8 +4065,20 @@ Equine Transport UK`;
         blockReasonInput.value = "service";
         blockNoteInput.value = "";
 
+        blockSlotInput.value = "full";
+        blockTimeRange.style.display = "none";
+        blockFromTimeInput.value = "07:00";
+        blockUntilTimeInput.value = "19:00";
+
         blockModal.classList.remove("hidden");
       }
+
+      blockSlotInput?.addEventListener("change", () => {
+        if (!blockTimeRange) return;
+
+        blockTimeRange.style.display =
+          blockSlotInput.value === "range" ? "" : "none";
+      });
 
       function closeBlockModal() {
         blockModal?.classList.add("hidden");
@@ -3926,6 +4092,10 @@ Equine Transport UK`;
         const vehicleId = blockVehicleInput.value;
         const reason = blockReasonInput.value;
         const note = blockNoteInput.value.trim();
+
+        const slot = blockSlotInput.value;
+        const fromTime = blockFromTimeInput.value;
+        const untilTime = blockUntilTimeInput.value;
 
         if (!date || !vehicleId) {
           alert("Missing date or vehicle.");
@@ -3946,6 +4116,9 @@ Equine Transport UK`;
               vehicleId,
               reason,
               note,
+              slot,
+              fromTime: slot === "range" ? fromTime : "",
+              untilTime: slot === "range" ? untilTime : "",
             }),
           });
 

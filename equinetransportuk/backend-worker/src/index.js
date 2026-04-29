@@ -858,7 +858,15 @@ export default {
         url.pathname === "/api/admin/block-date"
       ) {
         try {
-          const { date, vehicleId, reason, note } = await request.json();
+          const {
+            date,
+            vehicleId,
+            reason,
+            note,
+            slot = "full",
+            fromTime = "",
+            untilTime = "",
+          } = await request.json();
 
           if (!date || !vehicleId) {
             return withCors(
@@ -874,9 +882,11 @@ export default {
             vehicleId,
             reason: reason || "blocked",
             note: note || "",
+            slot: slot || "full",
+            fromTime: slot === "range" ? fromTime : "",
+            untilTime: slot === "range" ? untilTime : "",
             createdAt: new Date().toISOString(),
           };
-
           await env.BOOKINGS_KV.put(key, JSON.stringify(payload));
 
           console.log("🚫 Block saved:", key);
