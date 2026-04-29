@@ -850,7 +850,7 @@ export default {
       }
 
       /* ===============================
-   ADMIN BLOCK AVAILABILITY (NEW)
+   ADMIN BLOCK AVAILABILITY (FINAL)
 =============================== */
 
       if (
@@ -860,6 +860,8 @@ export default {
         try {
           const {
             date,
+            dateFrom,
+            dateUntil,
             vehicleId,
             reason,
             note,
@@ -868,17 +870,60 @@ export default {
             untilTime = "",
           } = await request.json();
 
-          if (!date || !vehicleId) {
+          if (!vehicleId) {
             return withCors(
-              json({ error: "Missing date or vehicleId" }, 400),
+              json({ error: "Missing vehicleId" }, 400),
               corsHeaders,
             );
           }
 
-          const key = `block:${date}:${vehicleId}`;
+          /* ===============================
+       🔥 NORMALISE DATES
+    =============================== */
 
-          const payload = {
-            date,
+          const start = dateFrom || date;
+          const end = dateUntil || date;
+
+          if (!start) {
+            return withCors(json({ error: "Missing date" }, 400), corsHeaders);
+          }
+
+          const startDate = new Date(start);
+          const endDate = new Date(end);
+
+          if (isNaN(startDate) || isNaN(endDate)) {
+            return withCors(
+              json({ error: "Invalid date format" }, 400),
+              corsHeaders,
+            );
+          }
+
+          if (endDate < startDate) {
+            return withCors(
+              json({ error: "End date before start date" }, 400),
+              corsHeaders,
+            );
+          }
+
+          /* ===============================
+       🔥 BUILD DATE RANGE
+    =============================== */
+
+          const dates = [];
+          const current = new Date(startDate);
+
+          while (current <= endDate) {
+            dates.push(current.toISOString().slice(0, 10));
+            current.setDate(current.getDate() + 1);
+          }
+
+          /* ===============================
+       🔥 SAVE EACH DAY
+    =============================== */
+
+          const payloadBase = {
+            dateFrom: start,
+            dateUntil: end,
             vehicleId,
             reason: reason || "blocked",
             note: note || "",
@@ -887,11 +932,27 @@ export default {
             untilTime: slot === "range" ? untilTime : "",
             createdAt: new Date().toISOString(),
           };
-          await env.BOOKINGS_KV.put(key, JSON.stringify(payload));
 
-          console.log("🚫 Block saved:", key);
+          for (const d of dates) {
+            const key = `block:${d}:${vehicleId}`;
 
-          return withCors(json({ ok: true }), corsHeaders);
+            const payload = {
+              ...payloadBase,
+              date: d, // 🔥 important: actual day
+            };
+
+            await env.BOOKINGS_KV.put(key, JSON.stringify(payload));
+          }
+
+          console.log("🚫 Block saved range:", start, "→", end, vehicleId);
+
+          return withCors(
+            json({
+              ok: true,
+              daysBlocked: dates.length,
+            }),
+            corsHeaders,
+          );
         } catch (err) {
           console.error("❌ block-date error:", err);
 
@@ -901,9 +962,8 @@ export default {
           );
         }
       }
-
       /* ===============================
-   GET BLOCKS FOR MONTH (NEW)
+   GET BLOCKS FOR MONTH (FIXED)
 =============================== */
 
       if (request.method === "GET" && url.pathname === "/api/admin/blocks") {
@@ -914,13 +974,23 @@ export default {
             return withCors(json({ error: "Missing month" }, 400), corsHeaders);
           }
 
+          /* ===============================
+       🔥 LOAD ALL BLOCK KEYS
+    =============================== */
+
           const list = await env.BOOKINGS_KV.list({
-            prefix: `block:${month}`,
+            prefix: "block:",
           });
 
           const result = {};
 
           for (const key of list.keys) {
+            // key format: block:YYYY-MM-DD:vehicleId
+            const parts = key.name.split(":");
+            const date = parts[1];
+
+            if (!date || !date.startsWith(month)) continue;
+
             const raw = await env.BOOKINGS_KV.get(key.name);
             if (!raw) continue;
 
@@ -3573,18 +3643,56 @@ async function handleMonthAvailability(request, env) {
   const vehicles = ["v35-1", "v35-2", "v35-3", "v75-1", "v75-2"];
 
   /* ===============================
-     🔥 LOAD BOOKINGS FROM KV (REAL SOURCE)
+     🔥 LOAD RELEVANT MONTH KEYS (FIX)
   =============================== */
 
-  const key = `bookings:${month}`;
-  const raw = await env.BOOKINGS_KV.get(key);
+  const monthDate = new Date(month + "-01");
+
+  const prevMonth = new Date(monthDate);
+  prevMonth.setMonth(prevMonth.getMonth() - 1);
+
+  const nextMonth = new Date(monthDate);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+  const monthKeys = [
+    `bookings:${month}`,
+    `bookings:${prevMonth.toISOString().slice(0, 7)}`,
+    `bookings:${nextMonth.toISOString().slice(0, 7)}`,
+  ];
 
   let bookings = [];
 
-  try {
-    bookings = JSON.parse(raw || "[]");
-  } catch {
-    bookings = [];
+  for (const key of monthKeys) {
+    const raw = await env.BOOKINGS_KV.get(key);
+
+    try {
+      const parsed = JSON.parse(raw || "[]");
+      if (Array.isArray(parsed)) bookings.push(...parsed);
+    } catch {}
+  }
+
+  /* ===============================
+     🔥 LOAD BLOCKS (NEW)
+  =============================== */
+
+  const blockList = await env.BOOKINGS_KV.list({
+    prefix: "block:",
+  });
+
+  const blocks = [];
+
+  for (const key of blockList.keys) {
+    const parts = key.name.split(":");
+    const date = parts[1];
+
+    if (!date || !date.startsWith(month)) continue;
+
+    const raw = await env.BOOKINGS_KV.get(key.name);
+    if (!raw) continue;
+
+    try {
+      blocks.push(JSON.parse(raw));
+    } catch {}
   }
 
   /* ===============================
@@ -3593,8 +3701,11 @@ async function handleMonthAvailability(request, env) {
 
   const daysMap = {};
 
+  /* ===== BOOKINGS ===== */
+
   for (const b of bookings) {
     if (!b.pickupAt || !b.vehicleId) continue;
+    if (String(b.status).toLowerCase() === "cancelled") continue;
 
     const start = new Date(b.pickupAt);
     const end = b.dropoffAt ? new Date(b.dropoffAt) : new Date(b.pickupAt);
@@ -3604,6 +3715,11 @@ async function handleMonthAvailability(request, env) {
     while (current <= end) {
       const dateStr = current.toISOString().slice(0, 10);
 
+      if (!dateStr.startsWith(month)) {
+        current.setDate(current.getDate() + 1);
+        continue;
+      }
+
       if (!daysMap[dateStr]) daysMap[dateStr] = {};
 
       if (!daysMap[dateStr][b.vehicleId]) {
@@ -3611,12 +3727,10 @@ async function handleMonthAvailability(request, env) {
           full: false,
           am: false,
           pm: false,
+          source: "booking", // 🔥 track source
+          bookingId: b.id,
         };
       }
-
-      /* ===============================
-         SLOT LOGIC
-      =============================== */
 
       if (Number(b.durationDays) !== 0.5) {
         daysMap[dateStr][b.vehicleId].full = true;
@@ -3632,15 +3746,48 @@ async function handleMonthAvailability(request, env) {
     }
   }
 
+  /* ===== BLOCKS ===== */
+
+  for (const block of blocks) {
+    if (!block.date || !block.vehicleId) continue;
+
+    if (!daysMap[block.date]) daysMap[block.date] = {};
+
+    if (!daysMap[block.date][block.vehicleId]) {
+      daysMap[block.date][block.vehicleId] = {
+        full: false,
+        am: false,
+        pm: false,
+      };
+    }
+
+    const entry = daysMap[block.date][block.vehicleId];
+
+    entry.source = "block"; // 🔥 override
+    entry.reason = block.reason || "";
+    entry.note = block.note || "";
+
+    if (block.slot === "full") {
+      entry.full = true;
+      entry.am = true;
+      entry.pm = true;
+    } else if (block.slot === "am") {
+      entry.am = true;
+    } else if (block.slot === "pm") {
+      entry.pm = true;
+    } else if (block.slot === "range") {
+      entry.full = true; // treat as full visually
+    }
+  }
+
   /* ===============================
-     🔥 INCLUDE EMPTY DAYS
+     🔥 BUILD FINAL DAYS ARRAY
   =============================== */
 
   const days = [];
 
   const start = new Date(month + "-01");
   const end = new Date(start);
-
   end.setMonth(end.getMonth() + 1);
   end.setDate(0);
 
@@ -3665,6 +3812,10 @@ async function handleMonthAvailability(request, env) {
           full: status.full,
           am: status.am,
           pm: status.pm,
+          source: status.source || null, // 🔥 NEW
+          bookingId: status.bookingId || null,
+          reason: status.reason || null,
+          note: status.note || null,
         };
       }),
     });
