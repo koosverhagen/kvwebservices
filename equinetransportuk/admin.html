@@ -960,6 +960,8 @@
             <div class="field">
               <label for="time-filter">Time</label>
               <select id="time-filter">
+                <option value="all" selected>All bookings</option>
+                <!-- ✅ DEFAULT -->
                 <option value="upcoming">Upcoming</option>
                 <option value="inprogress">In progress</option>
                 <option value="past">Past bookings</option>
@@ -2660,26 +2662,44 @@ Equine Transport UK`;
           .filter((b) => bookingMatchesFilter(b, filter))
 
           .filter((b) => {
-            const mode = timeFilter?.value || "upcoming";
+            const mode = timeFilter?.value || "all"; // 🔥 default = ALL
 
             const start = new Date(b.pickupAt).getTime();
-            const end = new Date(b.dropoffAt).getTime();
+            const end = b.dropoffAt ? new Date(b.dropoffAt).getTime() : start;
+
             const now = nowTs;
 
             if (!start || isNaN(start)) return true;
 
-            // 🔥 IN PROGRESS
-            if (mode === "inprogress") {
-              return end >= now && start <= now;
+            /* ===============================
+     🔥 ALL BOOKINGS (NEW)
+  =============================== */
+            if (mode === "all") {
+              return true;
             }
 
-            // 🔥 PAST
+            /* ===============================
+     🔥 IN PROGRESS
+  =============================== */
+            if (mode === "inprogress") {
+              return start <= now && end >= now;
+            }
+
+            /* ===============================
+     🔥 PAST
+  =============================== */
             if (mode === "past") {
               return end < now;
             }
 
-            // 🔥 UPCOMING (default)
-            return start >= now;
+            /* ===============================
+     🔥 UPCOMING
+  =============================== */
+            if (mode === "upcoming") {
+              return start > now;
+            }
+
+            return true;
           });
 
         bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
