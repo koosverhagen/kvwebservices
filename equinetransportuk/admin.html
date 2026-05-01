@@ -3544,6 +3544,14 @@ Equine Transport UK`;
 
           renderBookings();
 
+          // 🔥 SAFE calendar refresh (prevents double-render race)
+          if (
+            typeof loadAdminCalendar === "function" &&
+            window.__calendarReady
+          ) {
+            loadAdminCalendar();
+          }
+
           lastLoaded.textContent = `Last loaded: ${new Date().toLocaleString(
             "en-GB",
             {
@@ -4320,10 +4328,27 @@ ${
       });
 
       /* ===============================
-   INIT
+   INIT (FINAL)
 =============================== */
 
-      loadAdminCalendar();
+      async function initAdmin() {
+        try {
+          window.__calendarReady = false;
+
+          defaultRanges();
+          updateClearButton();
+
+          await loadBookings();
+
+          window.__calendarReady = true;
+
+          await loadAdminCalendar();
+        } catch (err) {
+          console.error("Init failed:", err);
+        }
+      }
+
+      initAdmin();
     </script>
   </body>
 </html>
