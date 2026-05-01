@@ -4111,8 +4111,18 @@ ${
       function getBookingsForDate(dateStr) {
         if (!window.ALL_BOOKINGS) return [];
 
+        const selectedVehicle = calVehicle?.value || "";
+
         return window.ALL_BOOKINGS.filter((b) => {
           if (!b.pickupAt) return false;
+
+          // 🔥 CRITICAL FIX: only show bookings for selected lorry
+          if (
+            selectedVehicle &&
+            String(b.vehicleId) !== String(selectedVehicle)
+          ) {
+            return false;
+          }
 
           const start = new Date(b.pickupAt);
           const end = b.dropoffAt
@@ -4285,7 +4295,9 @@ ${
         loadAdminCalendar();
       });
 
-      calVehicle?.addEventListener("change", loadAdminCalendar);
+      calVehicle?.addEventListener("change", () => {
+        loadAdminCalendar();
+      });
 
       /* ===============================
    INIT
