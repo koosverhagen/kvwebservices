@@ -3476,6 +3476,7 @@ Equine Transport UK`;
 
         updateClearButton();
       });
+
       async function loadBookings() {
         const from = rangeFromInput.value;
         const to = rangeToInput.value;
@@ -3491,10 +3492,10 @@ Equine Transport UK`;
         );
 
         bookingsBody.innerHTML = `
-        <tr>
-          <td colspan="6" class="empty-state">Loading bookings...</td>
-        </tr>
-      `;
+    <tr>
+      <td colspan="6" class="empty-state">Loading bookings...</td>
+    </tr>
+  `;
 
         try {
           const res = await fetch(
@@ -3517,7 +3518,10 @@ Equine Transport UK`;
           allBookings = normaliseBookingsResponse(data);
 
           console.log("ALL BOOKINGS:", allBookings);
-          window.ALL_BOOKINGS = bookings || [];
+
+          // ✅ FIXED LINE
+          window.ALL_BOOKINGS = allBookings || [];
+
           renderBookings();
 
           lastLoaded.textContent = `Last loaded: ${new Date().toLocaleString(
@@ -3536,15 +3540,17 @@ Equine Transport UK`;
           setStatus(`Bookings loaded successfully.`, "loading");
         } catch (err) {
           console.error("Failed to load bookings:", err);
+
           setStatus(
             escapeHtml(err.message || "Failed to load bookings."),
             "error",
           );
+
           bookingsBody.innerHTML = `
-  <tr>
-    <td colspan="6" class="empty-state">Failed to load bookings.</td>
-  </tr>
-`;
+      <tr>
+        <td colspan="6" class="empty-state">Failed to load bookings.</td>
+      </tr>
+    `;
         }
       }
 
