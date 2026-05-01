@@ -3965,48 +3965,60 @@ Equine Transport UK`;
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
           const dayObj = new Date(`${dateStr}T00:00:00`);
 
-          // 🔥 NEW STRUCTURE
-          const dayEntry = daysData.find((x) => x.date === dateStr) || {
-            vehicles: [],
-          };
+          const dayData = daysData[dateStr] || {};
+          const blocks = dayData.blocks || {};
 
-          const vehicleFilter = calVehicle.value || "v35-1";
+          const vehicleFilter = calVehicle.value || "all";
 
           let total = 0;
           let amBusy = 0;
           let pmBusy = 0;
 
           let blockNotes = [];
-          let bookingId = null;
           let hasBlock = false;
 
           /* ===============================
-       🔥 LOOP VEHICLES
+       🔥 BOOKINGS
     =============================== */
 
-          (dayEntry.vehicles || []).forEach((v) => {
-            if (vehicleFilter !== "all" && v.vehicleId !== vehicleFilter)
-              return;
+          Object.entries(dayData).forEach(([vehicleId, status]) => {
+            if (vehicleId === "blocks") return;
+            if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
 
             total++;
 
-            const isFull = v.full;
-            const isAm = v.am;
-            const isPm = v.pm;
+            if (status.full || status.am) amBusy++;
+            if (status.full || status.pm) pmBusy++;
+          });
 
-            if (isFull || isAm) amBusy++;
-            if (isFull || isPm) pmBusy++;
+          /* ===============================
+       🔥 BLOCKS
+    =============================== */
 
-            if (v.source === "block") {
-              hasBlock = true;
-              if (v.note || v.reason) {
-                blockNotes.push(v.note || v.reason);
-              }
+          Object.entries(blocks).forEach(([vehicleId, block]) => {
+            if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
+
+            total++;
+            hasBlock = true;
+
+            const slot = block.slot || "full";
+
+            if (slot === "full") {
+              amBusy++;
+              pmBusy++;
+            }
+            if (slot === "am") amBusy++;
+            if (slot === "pm") pmBusy++;
+
+            if (slot === "range") {
+              const from = block.fromTime || "07:00";
+              const until = block.untilTime || "19:00";
+
+              if (from < "13:00" && until > "07:00") amBusy++;
+              if (from < "19:00" && until > "13:00") pmBusy++;
             }
 
-            if (v.source === "booking") {
-              bookingId = v.bookingId;
-            }
+            blockNotes.push(block.note || block.reason || "Blocked");
           });
 
           const amFull = total > 0 && amBusy >= total;
@@ -4059,14 +4071,14 @@ Equine Transport UK`;
     `;
 
           /* ===============================
-       🔥 CLICK BEHAVIOUR (SMART)
+       🔥 CLICK (SAFE)
     =============================== */
 
           el.addEventListener("click", () => {
-            if (bookings.length) {
-              openBookingFromCalendar(bookings[0].id);
-            } else {
+            if (Object.keys(blocks).length) {
               openBlockModal(dateStr);
+            } else {
+              openBlockModal(dateStr); // (next step: bookings modal)
             }
           });
 
