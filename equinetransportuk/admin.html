@@ -3517,7 +3517,7 @@ Equine Transport UK`;
           allBookings = normaliseBookingsResponse(data);
 
           console.log("ALL BOOKINGS:", allBookings);
-
+          window.ALL_BOOKINGS = bookings || [];
           renderBookings();
 
           lastLoaded.textContent = `Last loaded: ${new Date().toLocaleString(
@@ -3966,6 +3966,7 @@ Equine Transport UK`;
           const dayObj = new Date(`${dateStr}T00:00:00`);
 
           const dayData = daysData[dateStr] || {};
+          const bookingsForDay = getBookingsForDate(dateStr);
           const blocks = dayData.blocks || {};
 
           const vehicleFilter = calVehicle.value || "all";
@@ -4059,15 +4060,28 @@ Equine Transport UK`;
         <div class="cal-slot ${pmBusy ? (pmFull ? "busy" : "partial") : ""}">
           PM ${pmBusy}/${total}
         </div>
-      </div>
+         </div>
 
-      <div class="cal-meta">${Math.max(amBusy, pmBusy)}/${total} unavailable</div>
+      <div class="cal-meta">
+  ${Math.max(amBusy, pmBusy)}/${total} unavailable
+</div>
 
-      ${
-        blockNotes.length
-          ? `<div class="cal-note">${escapeHtml(blockNotes[0])}</div>`
-          : ""
-      }
+${
+  bookingsForDay.length
+    ? `<div class="cal-note">
+        ${escapeHtml(bookingsForDay[0].customerName || "Booking")}
+      </div>`
+    : ""
+}
+
+
+
+
+  ${
+    blockNotes.length
+      ? `<div class="cal-note">${escapeHtml(blockNotes[0])}</div>`
+      : ""
+  }
     `;
 
           /* ===============================
@@ -4075,15 +4089,40 @@ Equine Transport UK`;
     =============================== */
 
           el.addEventListener("click", () => {
-            if (Object.keys(blocks).length) {
-              openBlockModal(dateStr);
+            const bookings = getBookingsForDate(dateStr);
+
+            if (bookings.length) {
+              openEditBooking(bookings[0]); // 🔥 open first booking
             } else {
-              openBlockModal(dateStr); // (next step: bookings modal)
+              openBlockModal(dateStr);
             }
           });
 
           calGrid.appendChild(el);
         }
+      }
+
+      function getBookingsForDate(dateStr) {
+        if (!window.ALL_BOOKINGS) return [];
+
+        return window.ALL_BOOKINGS.filter((b) => {
+          if (!b.pickupAt) return false;
+
+          const start = new Date(b.pickupAt);
+          const end = b.dropoffAt
+            ? new Date(b.dropoffAt)
+            : new Date(b.pickupAt);
+
+          let current = new Date(start);
+
+          while (current <= end) {
+            const d = current.toISOString().slice(0, 10);
+            if (d === dateStr) return true;
+            current.setDate(current.getDate() + 1);
+          }
+
+          return false;
+        });
       }
 
       async function openBookingFromCalendar(bookingId) {
@@ -4134,6 +4173,34 @@ Equine Transport UK`;
         blockTimeRange.style.display =
           blockSlotInput.value === "range" ? "" : "none";
       });
+
+      function openEditBooking(booking) {
+        if (!booking) return;
+
+        document.getElementById("edit-booking-id").value = booking.id;
+
+        document.getElementById("edit-vehicle").value = booking.vehicleId;
+
+        document.getElementById("edit-date").value =
+          booking.pickupAt?.slice(0, 10) || "";
+
+        document.getElementById("edit-time").value =
+          booking.pickupTime || "07:00";
+
+        document.getElementById("edit-duration").value =
+          booking.durationDays || 1;
+
+        document.getElementById("edit-dartford").value =
+          booking.extras?.dartford || 0;
+
+        document.getElementById("edit-early").checked =
+          !!booking.extras?.earlyPickup;
+
+        document.getElementById("edit-price").value =
+          booking.hireTotal || booking.total || 0;
+
+        document.getElementById("edit-modal").classList.remove("hidden");
+      }
 
       function closeBlockModal() {
         blockModal?.classList.add("hidden");
