@@ -850,6 +850,115 @@ export default {
       }
 
       /* ===============================
+   💳 ADMIN ADD PAYMENT
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/add-payment"
+      ) {
+        try {
+          const { bookingId, amount } = await request.json();
+
+          if (!bookingId || !amount || amount <= 0) {
+            return withCors(json({ error: "Invalid input" }, 400), corsHeaders);
+          }
+
+          const booking = await findBookingById(env, bookingId);
+          if (!booking) {
+            return withCors(
+              json({ error: "Booking not found" }, 404),
+              corsHeaders,
+            );
+          }
+
+          const newPaid = (booking.paidNow || 0) + Number(amount);
+          const outstanding = Math.max(0, (booking.hireTotal || 0) - newPaid);
+
+          booking.paidNow = newPaid;
+          booking.outstandingAmount = outstanding;
+          booking.outstanding = outstanding;
+          booking.outstandingPaid = outstanding === 0;
+
+          booking.updatedAt = new Date().toISOString();
+
+          await moveBookingInKv(env, booking, booking);
+
+          return withCors(json({ ok: true, booking }), corsHeaders);
+        } catch (err) {
+          return withCors(json({ error: "Payment failed" }, 500), corsHeaders);
+        }
+      }
+
+      /* ===============================
+   💸 ADMIN REFUND
+=============================== */
+
+      if (request.method === "POST" && url.pathname === "/api/admin/refund") {
+        try {
+          const { bookingId, amount } = await request.json();
+
+          if (!bookingId || !amount || amount <= 0) {
+            return withCors(json({ error: "Invalid input" }, 400), corsHeaders);
+          }
+
+          const booking = await findBookingById(env, bookingId);
+          if (!booking) {
+            return withCors(
+              json({ error: "Booking not found" }, 404),
+              corsHeaders,
+            );
+          }
+
+          const newPaid = Math.max(0, (booking.paidNow || 0) - amount);
+          const outstanding = Math.max(0, (booking.hireTotal || 0) - newPaid);
+
+          booking.paidNow = newPaid;
+          booking.outstandingAmount = outstanding;
+          booking.outstanding = outstanding;
+
+          booking.updatedAt = new Date().toISOString();
+
+          await moveBookingInKv(env, booking, booking);
+
+          return withCors(json({ ok: true, booking }), corsHeaders);
+        } catch {
+          return withCors(json({ error: "Refund failed" }, 500), corsHeaders);
+        }
+      }
+
+      /* ===============================
+   ❌ ADMIN CANCEL BOOKING
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/cancel-booking"
+      ) {
+        try {
+          const { bookingId } = await request.json();
+
+          const booking = await findBookingById(env, bookingId);
+          if (!booking) {
+            return withCors(
+              json({ error: "Booking not found" }, 404),
+              corsHeaders,
+            );
+          }
+
+          booking.status = "cancelled";
+          booking.cancelledAt = new Date().toISOString();
+          booking.updatedAt = booking.cancelledAt;
+
+          await moveBookingInKv(env, booking, booking);
+
+          return withCors(json({ ok: true }), corsHeaders);
+        } catch {
+          return withCors(json({ error: "Cancel failed" }, 500), corsHeaders);
+        }
+      }
+
+      /* ===============================
    ADMIN BLOCK AVAILABILITY (FINAL)
 =============================== */
 
@@ -1878,36 +1987,73 @@ async function handleAdminBookingUpdate(request, env) {
     }
 
     /* ===============================
-       🔥 ACTION HANDLING (NEW)
-    =============================== */
+   🔥 ACTION HANDLING (FIXED)
+=============================== */
 
     if (action) {
       const now = new Date().toISOString();
 
       let updated = { ...existing };
 
+      const hireTotal = Number(updated.hireTotal || 0);
+      const alreadyPaid = Number(updated.paidNow || 0);
+
+      /* ===============================
+     ❌ CANCEL
+  =============================== */
       if (action === "cancel") {
         updated.status = "cancelled";
+        updated.cancelledAt = now;
       }
 
+      /* ===============================
+     💳 MANUAL PAYMENT
+  =============================== */
       if (action === "manual_payment") {
+        if (!manualPayment || manualPayment <= 0) {
+          return json({ error: "Invalid payment amount" }, 400);
+        }
+
+        const newPaid = alreadyPaid + manualPayment;
+        const outstanding = Math.max(0, hireTotal - newPaid);
+
+        updated.paidNow = newPaid;
+        updated.outstandingAmount = outstanding;
+        updated.outstanding = outstanding;
+        updated.outstandingPaid = outstanding === 0;
+
+        // optional audit
         updated.manualPayments =
           (Number(updated.manualPayments) || 0) + manualPayment;
-
-        updated.outstandingAmount = Math.max(
-          0,
-          (Number(updated.outstandingAmount) || 0) - manualPayment,
-        );
       }
 
+      /* ===============================
+     💸 REFUND
+  =============================== */
       if (action === "refund") {
+        if (!refundAmount || refundAmount <= 0) {
+          return json({ error: "Invalid refund amount" }, 400);
+        }
+
+        const newPaid = Math.max(0, alreadyPaid - refundAmount);
+        const outstanding = Math.max(0, hireTotal - newPaid);
+
+        updated.paidNow = newPaid;
+        updated.outstandingAmount = outstanding;
+        updated.outstanding = outstanding;
+        updated.outstandingPaid = false;
+
+        // optional audit
         updated.refundAmount =
           (Number(updated.refundAmount) || 0) + refundAmount;
       }
 
       updated.updatedAt = now;
+      updated.adminEdited = true;
 
       await moveBookingInKv(env, existing, updated);
+
+      console.log("✅ ADMIN ACTION:", action, bookingId);
 
       return json({
         ok: true,
