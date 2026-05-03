@@ -2465,7 +2465,7 @@ Equine Transport UK`,
       function paymentHtml(booking) {
         const confirmation = isConfirmationPaid(booking);
         const deposit = isDepositPaid(booking);
-        const outstanding = isOutstandingPaid(booking);
+        const outstandingPaid = isOutstandingPaid(booking);
 
         const firstName = getFirstName(getCustomerName(booking));
         const id = booking.id || "";
@@ -2525,29 +2525,48 @@ Equine Transport UK`;
     </button>`
           : `<span class="pill warn">Outstanding open</span>`;
 
+        /* ===============================
+     🔥 FIXED PAYMENT CALCULATION
+  =============================== */
+
+        const total = Number(booking.hireTotal || booking.total || 0);
+
+        const paid = Number(
+          booking.paidNow ??
+            booking.manualPayments ??
+            booking.confirmationFee ??
+            0,
+        );
+
+        const outstandingAmount = Math.max(0, total - paid);
+
+        /* ===============================
+     OUTPUT
+  =============================== */
+
         return `
-  ${
-    confirmation
-      ? '<span class="pill ok">Confirmation paid</span>'
-      : '<span class="pill bad">Confirmation pending</span>'
-  }
+    ${
+      confirmation
+        ? '<span class="pill ok">Confirmation paid</span>'
+        : '<span class="pill bad">Confirmation pending</span>'
+    }
 
-  ${deposit ? '<span class="pill ok">Deposit secured</span>' : waDeposit}
+    ${deposit ? '<span class="pill ok">Deposit secured</span>' : waDeposit}
 
-  ${
-    outstanding
-      ? '<span class="pill ok">Outstanding paid</span>'
-      : waOutstanding
-  }
+    ${
+      outstandingPaid
+        ? '<span class="pill ok">Outstanding paid</span>'
+        : waOutstanding
+    }
 
- <div class="tiny">
-  <div><strong>Total price: ${formatMoney(booking.hireTotal || booking.total || 0)}</strong></div>
-  <div style="margin-top:4px;">Paid now: ${formatMoney(booking.paidNow || booking.confirmationFee || 0)}</div>
-  <div>Outstanding: ${formatMoney(booking.outstandingAmount || 0)}</div>
-</div>
+    <div class="tiny">
+      <div><strong>Total price: ${formatMoney(total)}</strong></div>
+      <div style="margin-top:4px;">Paid now: ${formatMoney(paid)}</div>
+      <div>Outstanding: ${formatMoney(outstandingAmount)}</div>
+    </div>
 
-  ${renderExtrasSummary(booking)}
-`;
+    ${renderExtrasSummary(booking)}
+  `;
       }
 
       function renderExtrasSummary(booking) {
