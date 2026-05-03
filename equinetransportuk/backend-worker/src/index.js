@@ -2010,40 +2010,51 @@ async function handleAdminBookingUpdate(request, env) {
      💳 MANUAL PAYMENT
   =============================== */
       if (action === "manual_payment") {
-        if (!manualPayment || manualPayment <= 0) {
-          return json({ error: "Invalid payment amount" }, 400);
-        }
+        const existingManual = Number(updated.manualPayments || 0);
+        const basePaid = Number(
+          updated.confirmationFee || updated.paidNow || 0,
+        );
 
-        const newPaid = alreadyPaid + manualPayment;
-        const outstanding = Math.max(0, hireTotal - newPaid);
+        const newManual = existingManual + manualPayment;
 
-        updated.paidNow = newPaid;
+        updated.manualPayments = newManual;
+
+        const totalPaid = basePaid + newManual;
+
+        updated.paidNow = totalPaid;
+
+        const total = Number(updated.hireTotal || 0);
+
+        const outstanding = Math.max(0, total - totalPaid);
+
         updated.outstandingAmount = outstanding;
         updated.outstanding = outstanding;
         updated.outstandingPaid = outstanding === 0;
-
-        // optional audit
-        updated.manualPayments =
-          (Number(updated.manualPayments) || 0) + manualPayment;
       }
 
       /* ===============================
      💸 REFUND
   =============================== */
       if (action === "refund") {
-        if (!refundAmount || refundAmount <= 0) {
-          return json({ error: "Invalid refund amount" }, 400);
-        }
+        const existingManual = Number(updated.manualPayments || 0);
+        const basePaid = Number(updated.confirmationFee || 0);
 
-        const newPaid = Math.max(0, alreadyPaid - refundAmount);
-        const outstanding = Math.max(0, hireTotal - newPaid);
+        const newManual = Math.max(0, existingManual - refundAmount);
 
-        updated.paidNow = newPaid;
+        updated.manualPayments = newManual;
+
+        const totalPaid = basePaid + newManual;
+
+        updated.paidNow = totalPaid;
+
+        const total = Number(updated.hireTotal || 0);
+
+        const outstanding = Math.max(0, total - totalPaid);
+
         updated.outstandingAmount = outstanding;
         updated.outstanding = outstanding;
-        updated.outstandingPaid = false;
+        updated.outstandingPaid = outstanding === 0;
 
-        // optional audit
         updated.refundAmount =
           (Number(updated.refundAmount) || 0) + refundAmount;
       }
