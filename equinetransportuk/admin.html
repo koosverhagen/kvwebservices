@@ -900,6 +900,25 @@
         border-radius: 10px;
         background: #fff;
       }
+
+      .cancelled-booking {
+        opacity: 0.5;
+        background: #f3f4f6;
+      }
+
+      .cancelled-booking td {
+        text-decoration: line-through;
+      }
+
+      .badge-cancelled {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 11px;
+        margin-left: 6px;
+        font-weight: 600;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -1332,6 +1351,36 @@
             <div class="field">
               <label>Note</label>
               <input id="block-note" placeholder="Optional note..." />
+            </div>
+
+            <hr style="margin: 16px 0" />
+
+            <div class="field">
+              <label>Manual payment (£)</label>
+              <input
+                type="number"
+                id="edit-manual-payment"
+                placeholder="e.g. 150"
+              />
+            </div>
+
+            <div class="field">
+              <label>Refund (£)</label>
+              <input type="number" id="edit-refund" placeholder="e.g. 50" />
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px">
+              <button class="btn ghost" id="edit-add-payment">
+                Add Payment
+              </button>
+              <button class="btn ghost" id="edit-refund-btn">Refund</button>
+              <button
+                class="btn ghost"
+                id="edit-cancel-booking"
+                style="color: #b42318"
+              >
+                Cancel Booking
+              </button>
             </div>
 
             <div style="margin-top: 16px; display: flex; gap: 10px">
@@ -2870,14 +2919,18 @@ Equine Transport UK`;
           // ✅ RETURNS TODAY FLAG
           const returnsToday = dropoff >= startOfToday && dropoff <= endOfToday;
 
+          const isCancelled =
+            String(booking.status || "").toLowerCase() === "cancelled";
+
           const customerCell = `
-      <div class="customer-block">
-        <div class="customer-name">
-          ${escapeHtml(getCustomerName(booking))}
-        </div>
-        ${buildContactButtons(booking)}
-      </div>
-    `;
+  <div class="customer-block">
+    <div class="customer-name">
+      ${escapeHtml(getCustomerName(booking))}
+      ${isCancelled ? '<span class="badge-cancelled">Cancelled</span>' : ""}
+    </div>
+    ${buildContactButtons(booking)}
+  </div>
+`;
 
           const vehicleCell = `
       <div>
@@ -2898,10 +2951,11 @@ Equine Transport UK`;
           const dvlaCell = dvlaCellHtml(booking);
 
           return `
-  <tr class="
-    ${isUrgentBooking(booking) ? "urgent-booking" : ""}
-    ${returnsToday ? "returns-today" : ""}
-  ">
+<tr class="
+  ${isUrgentBooking(booking) ? "urgent-booking" : ""}
+  ${returnsToday ? "returns-today" : ""}
+  ${isCancelled ? "cancelled-booking" : ""}
+">
         <td data-label="Customer">${customerCell}</td>
         <td data-label="Vehicle">${vehicleCell}</td>
         <td data-label="Hire">${hireCell}</td>
@@ -3733,7 +3787,7 @@ Equine Transport UK`;
       rangeToInput.addEventListener("change", loadBookings);
 
       /* ===============================
-   ✏️ EDIT MODAL CLOSE HANDLERS (SAFE)
+   ✏️ EDIT MODAL CLOSE HANDLERS (FINAL)
 =============================== */
 
       if (editCloseBtn) {
@@ -3750,11 +3804,14 @@ Equine Transport UK`;
 
       const editSaveBtn = document.getElementById("edit-save");
 
+      /* ===============================
+   💾 SAVE BOOKING (UNCHANGED CORE)
+=============================== */
+
       if (editSaveBtn) {
         editSaveBtn.onclick = async () => {
           const bookingId = document.getElementById("edit-booking-id").value;
 
-          // always refresh latest booking first
           await loadBookings();
 
           const booking = allBookings.find((b) => b.id === bookingId);
@@ -3779,28 +3836,13 @@ Equine Transport UK`;
               document.getElementById("edit-early")?.checked || false,
           };
 
-          /* ===============================
-       HARD SAVE PROTECTION
-    =============================== */
-
-          if (!vehicleId) {
-            alert("Missing vehicle");
-            return;
-          }
-
-          if (!pickupDate || !pickupTime) {
-            alert("Missing date or time");
-            return;
-          }
-
-          if (!durationDays || isNaN(durationDays)) {
-            alert("Invalid duration");
-            return;
-          }
+          if (!vehicleId) return alert("Missing vehicle");
+          if (!pickupDate || !pickupTime) return alert("Missing date or time");
+          if (!durationDays || isNaN(durationDays))
+            return alert("Invalid duration");
 
           if (!String(vehicleId).startsWith("v35") && durationDays === 0.5) {
-            alert("7.5T lorries cannot be booked as half-day.");
-            return;
+            return alert("7.5T lorries cannot be booked as half-day.");
           }
 
           const saveBtn = document.getElementById("edit-save");
@@ -3810,14 +3852,12 @@ Equine Transport UK`;
             return;
           }
 
-          // ✅ CRITICAL FIX — define hireTotal before payload
           const hireTotal = Number(
             document.getElementById("edit-price")?.value || 0,
           );
 
-          if (!hireTotal || isNaN(hireTotal) || hireTotal <= 0) {
-            alert("Invalid price");
-            return;
+          if (!hireTotal || hireTotal <= 0) {
+            return alert("Invalid price");
           }
 
           const payload = {
@@ -3830,8 +3870,6 @@ Equine Transport UK`;
             extras,
             updatedAt: booking.updatedAt || null,
           };
-
-          console.log("EDIT PAYLOAD:", payload);
 
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
@@ -3850,7 +3888,6 @@ Equine Transport UK`;
             }
 
             if (!res.ok) {
-              console.error("Backend error:", data);
               throw new Error(data.error || "Update failed");
             }
 
@@ -3863,6 +3900,106 @@ Equine Transport UK`;
           }
         };
       }
+
+      /* ===============================
+   💷 ADD MANUAL PAYMENT (NEW)
+=============================== */
+
+      document
+        .getElementById("edit-add-payment")
+        ?.addEventListener("click", async () => {
+          const bookingId = document.getElementById("edit-booking-id").value;
+
+          const amount = Number(
+            document.getElementById("edit-manual-payment")?.value || 0,
+          );
+
+          if (!amount) return alert("Enter payment amount");
+
+          try {
+            await fetch(`${API_BASE}/api/admin/booking-update`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                bookingId,
+                action: "manual_payment",
+                manualPayment: amount,
+              }),
+            });
+
+            showCopySuccess(`£${amount} payment added`);
+            await loadBookings();
+          } catch (err) {
+            console.error(err);
+            alert("Failed to add payment");
+          }
+        });
+
+      /* ===============================
+   💸 REFUND (NEW)
+=============================== */
+
+      document
+        .getElementById("edit-refund-btn")
+        ?.addEventListener("click", async () => {
+          const bookingId = document.getElementById("edit-booking-id").value;
+
+          const amount = Number(
+            document.getElementById("edit-refund")?.value || 0,
+          );
+
+          if (!amount) return alert("Enter refund amount");
+
+          if (!confirm(`Refund £${amount}?`)) return;
+
+          try {
+            await fetch(`${API_BASE}/api/admin/booking-update`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                bookingId,
+                action: "refund",
+                refundAmount: amount,
+              }),
+            });
+
+            showCopySuccess(`£${amount} refunded`);
+            await loadBookings();
+          } catch (err) {
+            console.error(err);
+            alert("Refund failed");
+          }
+        });
+
+      /* ===============================
+   ❌ CANCEL BOOKING (NEW)
+=============================== */
+
+      document
+        .getElementById("edit-cancel-booking")
+        ?.addEventListener("click", async () => {
+          const bookingId = document.getElementById("edit-booking-id").value;
+
+          if (!confirm("Cancel this booking?")) return;
+
+          try {
+            await fetch(`${API_BASE}/api/admin/booking-update`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                bookingId,
+                action: "cancel",
+              }),
+            });
+
+            showCopySuccess("Booking cancelled");
+            editModal.classList.add("hidden");
+            await loadBookings();
+          } catch (err) {
+            console.error(err);
+            alert("Cancel failed");
+          }
+        });
       const scrollTop = document.getElementById("scroll-top");
       const listWrap = document.querySelector(".list-wrap");
 

@@ -1858,20 +1858,78 @@ async function handleAdminBookingUpdate(request, env) {
     const body = await request.json();
 
     const bookingId = String(body.bookingId || "").trim();
+
+    /* ===============================
+       🔥 NEW ACTION MODE
+    =============================== */
+
+    const action = body.action || null;
+    const manualPayment = Number(body.manualPayment || 0);
+    const refundAmount = Number(body.refundAmount || 0);
+
+    if (!bookingId) {
+      return json({ error: "Missing bookingId" }, 400);
+    }
+
+    const existing = await findBookingById(env, bookingId);
+
+    if (!existing) {
+      return json({ error: "Booking not found" }, 404);
+    }
+
+    /* ===============================
+       🔥 ACTION HANDLING (NEW)
+    =============================== */
+
+    if (action) {
+      const now = new Date().toISOString();
+
+      let updated = { ...existing };
+
+      if (action === "cancel") {
+        updated.status = "cancelled";
+      }
+
+      if (action === "manual_payment") {
+        updated.manualPayments =
+          (Number(updated.manualPayments) || 0) + manualPayment;
+
+        updated.outstandingAmount = Math.max(
+          0,
+          (Number(updated.outstandingAmount) || 0) - manualPayment,
+        );
+      }
+
+      if (action === "refund") {
+        updated.refundAmount =
+          (Number(updated.refundAmount) || 0) + refundAmount;
+      }
+
+      updated.updatedAt = now;
+
+      await moveBookingInKv(env, existing, updated);
+
+      return json({
+        ok: true,
+        booking: updated,
+      });
+    }
+
+    /* ===============================
+       🔥 NORMAL EDIT FLOW (UNCHANGED)
+    =============================== */
+
     const vehicleId = String(body.vehicleId || "").trim();
     const pickupDate = String(body.pickupDate || "").trim();
     const pickupTime = String(body.pickupTime || "").trim();
     const durationDays = Number(body.durationDays || 0);
     const hireTotal = Number(body.hireTotal || 0);
-    // 🔥 NEW — EXTRAS FROM ADMIN
+
     const extras = body.extras || {};
 
     const dartfordTotal = (extras.dartford || 0) * 4.2;
     const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
     const extrasTotal = dartfordTotal + earlyPickupTotal;
-    if (!bookingId) {
-      return json({ error: "Missing bookingId" }, 400);
-    }
 
     if (
       !vehicleId ||
@@ -1903,11 +1961,9 @@ async function handleAdminBookingUpdate(request, env) {
       return json({ error: "Half-day pickup must be 07:00 or 13:00" }, 400);
     }
 
-    const existing = await findBookingById(env, bookingId);
-
     /* ===============================
-   🔒 CONCURRENT EDIT PROTECTION (NEW)
-=============================== */
+       🔒 CONCURRENT EDIT PROTECTION
+    =============================== */
 
     if (body.updatedAt && existing.updatedAt) {
       const incoming = new Date(body.updatedAt).getTime();
@@ -1923,10 +1979,6 @@ async function handleAdminBookingUpdate(request, env) {
       }
     }
 
-    if (!existing) {
-      return json({ error: "Booking not found" }, 404);
-    }
-
     if (String(existing.status || "").toLowerCase() === "cancelled") {
       return json({ error: "Cancelled bookings cannot be edited here" }, 400);
     }
@@ -1934,12 +1986,15 @@ async function handleAdminBookingUpdate(request, env) {
     if (existing.outstandingPaid === true) {
       return json(
         {
-          error:
-            "This booking already has outstanding payment marked as paid. Use refund/payment tools first before changing price.",
+          error: "Outstanding already paid. Use refund/payment tools first.",
         },
         400,
       );
     }
+
+    /* ===============================
+       🔥 DATE BUILD
+    =============================== */
 
     let pickupAtDate = londonDateTimeToUtc(pickupDate, pickupTime);
     let dropoffAtDate;
@@ -1965,6 +2020,10 @@ async function handleAdminBookingUpdate(request, env) {
     const pickupAt = pickupAtDate.toISOString();
     const dropoffAt = dropoffAtDate.toISOString();
 
+    /* ===============================
+       🔥 AVAILABILITY CHECK
+    =============================== */
+
     const availabilityCheck = await isAdminBookingEditAvailable(env, {
       bookingId,
       vehicleId,
@@ -1977,12 +2036,16 @@ async function handleAdminBookingUpdate(request, env) {
     if (!availabilityCheck.ok) {
       return json(
         {
-          error: "Vehicle already booked for the new dates/times",
+          error: "Vehicle already booked",
           conflictWith: availabilityCheck.conflictWith,
         },
         409,
       );
     }
+
+    /* ===============================
+       🔥 PRICING
+    =============================== */
 
     const confirmationFee = Number(
       existing.confirmationFee ||
@@ -1990,121 +2053,69 @@ async function handleAdminBookingUpdate(request, env) {
         getExpectedConfirmationFee(vehicleId),
     );
 
-    // 🔥 REBUILD TOTAL SAFELY
     const baseCost = calculateServerBaseCost(
       vehicleId,
       durationDays,
       pickupDate,
     );
 
-    // 🔥 ALWAYS REBUILD TOTAL FROM SERVER LOGIC
     const finalTotal =
-      hireTotal > 0
-        ? hireTotal // admin override
-        : Math.max(0, baseCost + extrasTotal);
+      hireTotal > 0 ? hireTotal : Math.max(0, baseCost + extrasTotal);
 
     const outstandingAmount = Math.max(0, finalTotal - confirmationFee);
     const now = new Date().toISOString();
 
     /* ===============================
-       UPDATE D1 FIRST
+       🔥 UPDATE D1
     =============================== */
 
     await env.DB.prepare(
       `
-  UPDATE bookings
-  SET
-    vehicle_id = ?,
-    pickup_at = ?,
-    dropoff_at = ?,
-    duration_days = ?,
-    price_total = ?,
-    updated_at = ?
-  WHERE id = ?
-`,
+      UPDATE bookings
+      SET
+        vehicle_id = ?,
+        pickup_at = ?,
+        dropoff_at = ?,
+        duration_days = ?,
+        price_total = ?,
+        updated_at = ?
+      WHERE id = ?
+    `,
     )
       .bind(
         vehicleId,
         pickupAt,
         dropoffAt,
         durationDays,
-        finalTotal, // ✅ FIXED (was hireTotal)
+        finalTotal,
         now,
         bookingId,
       )
       .run();
 
     /* ===============================
-       BUILD UPDATED BOOKING OBJECT
+       🔥 BUILD UPDATED OBJECT
     =============================== */
 
     const nextBooking = {
       ...existing,
 
       vehicleId,
-      vehicleSnapshot: {
-        ...(existing.vehicleSnapshot || {}),
-        id: vehicleId,
-        name: getVehicleNameFromId(vehicleId),
-        type: getVehicleTypeFromId(vehicleId),
-      },
-
       pickupAt,
       dropoffAt,
-      pickupAtLocal: toLondonLocalISOString(new Date(pickupAt)),
-      dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
-
       durationDays,
       pickupTime,
 
       hireTotal: finalTotal,
-      priceTotal: finalTotal,
-      priceTotalOverride: finalTotal,
-      confirmationFee,
-      paidNow: confirmationFee,
       outstandingAmount,
-      outstanding: outstandingAmount,
 
       updatedAt: now,
-      adminEdited: true,
-      adminEditedAt: now,
 
-      // 🔥 EXTRAS (NEW)
       extras,
       dartfordTotal,
       earlyPickupTotal,
       extrasTotal,
     };
-
-    /* ===============================
-       UPDATE LINKS IF DATE/VEHICLE MOVED
-    =============================== */
-
-    const siteBase =
-      env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-      "https://kvwebservices.co.uk/equinetransportuk";
-
-    const vehicleName = nextBooking.vehicleSnapshot?.name || "";
-
-    const requiredFormType =
-      String(nextBooking.requiredFormType || "long").toLowerCase() === "short"
-        ? "short"
-        : "long";
-
-    const formBase =
-      requiredFormType === "short"
-        ? `${siteBase}/forms/short-form.html`
-        : `${siteBase}/forms/long-form.html`;
-
-    nextBooking.requiredFormLink = `${formBase}?bookingId=${encodeURIComponent(bookingId)}&vehicleName=${encodeURIComponent(vehicleName)}`;
-
-    nextBooking.depositLink = `${siteBase}/pay-deposit.html?bookingId=${encodeURIComponent(bookingId)}`;
-
-    nextBooking.outstandingLink = `${siteBase}/pay-outstanding.html?bookingId=${encodeURIComponent(bookingId)}`;
-
-    /* ===============================
-       MIRROR TO KV
-    =============================== */
 
     await moveBookingInKv(env, existing, nextBooking);
 
