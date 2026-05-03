@@ -2140,7 +2140,14 @@ async function handleAdminBookingUpdate(request, env) {
       return json({ error: "Cancelled bookings cannot be edited here" }, 400);
     }
 
-    if (existing.outstandingPaid === true) {
+    const isEditChange =
+      body.vehicleId ||
+      body.pickupDate ||
+      body.pickupTime ||
+      body.durationDays ||
+      body.hireTotal;
+
+    if (existing.outstandingPaid === true && isEditChange) {
       return json(
         {
           error: "Outstanding already paid. Use refund/payment tools first.",

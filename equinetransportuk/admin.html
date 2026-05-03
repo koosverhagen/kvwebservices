@@ -3866,6 +3866,32 @@ Equine Transport UK`;
               document.getElementById("edit-early")?.checked || false,
           };
 
+          const hireTotal = Number(
+            document.getElementById("edit-price")?.value || 0,
+          );
+
+          /* ===============================
+     🔥 DETECT NO CHANGES
+  =============================== */
+
+          const noChanges =
+            vehicleId === booking.vehicleId &&
+            pickupDate === (booking.pickupAtLocal || "").slice(0, 10) &&
+            pickupTime === booking.pickupTime &&
+            durationDays === Number(booking.durationDays) &&
+            hireTotal === Number(booking.hireTotal || 0) &&
+            extras.dartford === Number(booking.extras?.dartford || 0) &&
+            extras.earlyPickup === Boolean(booking.extras?.earlyPickup);
+
+          if (noChanges) {
+            editModal.classList.add("hidden");
+            return;
+          }
+
+          /* ===============================
+     VALIDATION (ONLY IF CHANGED)
+  =============================== */
+
           if (!vehicleId) return alert("Missing vehicle");
           if (!pickupDate || !pickupTime) return alert("Missing date or time");
           if (!durationDays || isNaN(durationDays))
@@ -3881,10 +3907,6 @@ Equine Transport UK`;
             showEditError("❌ Fix availability before saving");
             return;
           }
-
-          const hireTotal = Number(
-            document.getElementById("edit-price")?.value || 0,
-          );
 
           if (!hireTotal || hireTotal <= 0) {
             return alert("Invalid price");
@@ -3959,6 +3981,7 @@ Equine Transport UK`;
 
             showCopySuccess(`£${amount} payment added`);
             await loadBookings();
+            document.getElementById("edit-manual-payment").value = ""; // 🔥 FIX
           } catch (err) {
             console.error(err);
             alert("Failed to add payment");
@@ -3995,6 +4018,7 @@ Equine Transport UK`;
 
             showCopySuccess(`£${amount} refunded`);
             await loadBookings();
+            document.getElementById("edit-refund").value = "";
           } catch (err) {
             console.error(err);
             alert("Refund failed");
