@@ -912,30 +912,6 @@ export default {
           }
 
           /* ===============================
-   🧾 GET AUDIT LOG (ADD HERE)
-=============================== */
-          if (request.method === "GET" && url.pathname === "/api/admin/audit") {
-            const bookingId = url.searchParams.get("bookingId");
-
-            if (!bookingId) {
-              return withCors(
-                json({ error: "Missing bookingId" }, 400),
-                corsHeaders,
-              );
-            }
-
-            const auditKey = `audit:${bookingId}`;
-
-            let audit = [];
-
-            try {
-              audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
-            } catch {}
-
-            return withCors(json({ audit }), corsHeaders);
-          }
-
-          /* ===============================
        🔒 CANCEL SAFETY (IMPORTANT)
     =============================== */
 
@@ -1066,16 +1042,6 @@ export default {
       }
 
       /* ===============================
-   PREVENT DOUBLE REFUNDS
-=============================== */
-
-      booking.refundedTotal = (booking.refundedTotal || 0) + amount;
-
-      if (booking.refundedTotal >= (booking.paidNow || 0)) {
-        booking.fullyRefunded = true;
-      }
-
-      /* ===============================
    ❌ ADMIN CANCEL BOOKING
 =============================== */
 
@@ -1104,6 +1070,30 @@ export default {
         } catch {
           return withCors(json({ error: "Cancel failed" }, 500), corsHeaders);
         }
+      }
+
+      /* ===============================
+   🧾 GET AUDIT LOG
+=============================== */
+      if (request.method === "GET" && url.pathname === "/api/admin/audit") {
+        const bookingId = url.searchParams.get("bookingId");
+
+        if (!bookingId) {
+          return withCors(
+            json({ error: "Missing bookingId" }, 400),
+            corsHeaders,
+          );
+        }
+
+        const auditKey = `audit:${bookingId}`;
+
+        let audit = [];
+
+        try {
+          audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+        } catch {}
+
+        return withCors(json({ audit }), corsHeaders);
       }
 
       /* ===============================
