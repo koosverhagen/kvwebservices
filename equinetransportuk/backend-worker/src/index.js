@@ -927,8 +927,44 @@ export default {
     =============================== */
 
           if (!booking.paymentIntentId) {
+            console.log("⚠️ Manual payment refund (no Stripe)");
+
+            // 🔄 Just update booking (no Stripe call)
+
+            const newPaid = Math.max(0, (booking.paidNow || 0) - amount);
+            const outstanding = Math.max(0, (booking.hireTotal || 0) - newPaid);
+
+            booking.paidNow = newPaid;
+            booking.outstandingAmount = outstanding;
+            booking.outstanding = outstanding;
+
+            booking.refundedTotal =
+              (booking.refundedTotal || 0) + Number(amount);
+
+            if (booking.refundedTotal >= (booking.paidNow || 0)) {
+              booking.fullyRefunded = true;
+            }
+
+            booking.updatedAt = new Date().toISOString();
+
+            await moveBookingInKv(env, booking, booking);
+
+            // 🧾 audit log
+            try {
+              const auditKey = `audit:${booking.id}`;
+              let audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+
+              audit.unshift({
+                type: "refund_manual",
+                amount: Number(amount),
+                at: new Date().toISOString(),
+              });
+
+              await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+            } catch {}
+
             return withCors(
-              json({ error: "No Stripe payment linked to this booking" }, 400),
+              json({ ok: true, booking, mode: "manual" }),
               corsHeaders,
             );
           }
