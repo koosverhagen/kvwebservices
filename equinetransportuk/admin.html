@@ -4018,7 +4018,7 @@ Equine Transport UK`,
         });
 
       /* ===============================
-   💸 REFUND (NEW)
+   💸 REFUND (FIXED)
 =============================== */
 
       document
@@ -4030,26 +4030,48 @@ Equine Transport UK`,
             document.getElementById("edit-refund")?.value || 0,
           );
 
-          if (!amount) return alert("Enter refund amount");
+          if (!amount || amount <= 0) {
+            return alert("Enter valid refund amount");
+          }
 
           if (!confirm(`Refund £${amount}?`)) return;
 
           try {
-            await fetch(`${API_BASE}/api/admin/booking-update`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                bookingId,
-                action: "refund",
-                refundAmount: amount,
-              }),
-            });
+            console.log("💸 Sending refund:", bookingId, amount);
+
+            const res = await fetch(
+              `${API_BASE}/api/admin/refund`, // ✅ FIXED ENDPOINT
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  bookingId,
+                  amount, // ✅ FIXED PARAM NAME
+                }),
+              },
+            );
+
+            const data = await res.json();
+
+            console.log("💸 Refund response:", data);
+
+            if (!res.ok) {
+              alert(data.error || "Refund failed");
+              return;
+            }
 
             showCopySuccess(`£${amount} refunded`);
+
+            // 🔥 refresh UI
             await loadBookings();
+
+            // 🔥 reload audit
+            loadAuditLog(bookingId);
+
+            // 🔥 clear input
             document.getElementById("edit-refund").value = "";
           } catch (err) {
-            console.error(err);
+            console.error("❌ Refund error:", err);
             alert("Refund failed");
           }
         });
