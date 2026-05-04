@@ -4552,20 +4552,11 @@ ${
         document.getElementById("edit-modal").classList.remove("hidden");
       }
 
-      const refundInput = document.getElementById("edit-refund");
-      const refundRemainingEl = document.getElementById("refund-remaining");
-      const refundFullBtn = document.getElementById("edit-refund-full");
-
       /* ===============================
    🔥 UPDATE REMAINING DISPLAY
 =============================== */
-
       function updateRefundUI(booking) {
         if (!booking) return;
-
-        /* ===============================
-     🔥 GET ELEMENTS (FIX)
-  =============================== */
 
         const refundRemainingEl = document.getElementById("refund-remaining");
         const refundFullBtn = document.getElementById("edit-refund-full");
@@ -4574,20 +4565,12 @@ ${
         const refunded = Number(booking.refundedTotal || 0);
         const remaining = Math.max(0, paid - refunded);
 
-        /* ===============================
-     💸 TEXT
-  =============================== */
-
         if (refundRemainingEl) {
           refundRemainingEl.textContent =
             remaining > 0
               ? `Remaining refundable: £${remaining.toFixed(2)}`
               : `Nothing left to refund`;
         }
-
-        /* ===============================
-     🔒 BUTTON STATE
-  =============================== */
 
         if (refundFullBtn) {
           refundFullBtn.disabled = remaining <= 0;
