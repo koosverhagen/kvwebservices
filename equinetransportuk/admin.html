@@ -1298,15 +1298,6 @@
                 <div id="refund-remaining" class="tiny" style="margin-top: 6px">
                   —
                 </div>
-
-                <!-- 🔥 NEW: full refund button -->
-                <button
-                  class="btn ghost btn-small"
-                  id="edit-refund-full"
-                  style="margin-top: 8px"
-                >
-                  Refund full amount
-                </button>
               </div>
 
               <button class="btn ghost" id="edit-refund-btn">Refund</button>
@@ -4546,20 +4537,6 @@ ${
         updateRefundUI(booking);
 
         /* ===============================
-     ⚡ REFUND FULL BUTTON
-  =============================== */
-
-        if (refundFullBtn) {
-          refundFullBtn.onclick = () => {
-            const paid = Number(booking.paidNow || 0);
-            const refunded = Number(booking.refundedTotal || 0);
-            const remaining = Math.max(0, paid - refunded);
-
-            refundInput.value = remaining.toFixed(2);
-          };
-        }
-
-        /* ===============================
      🧾 LOAD AUDIT LOG (STEP 6)
   =============================== */
 
@@ -4581,7 +4558,6 @@ ${
         if (!booking) return;
 
         const refundRemainingEl = document.getElementById("refund-remaining");
-        const refundFullBtn = document.getElementById("edit-refund-full");
 
         const paid = Number(booking.paidNow || 0);
         const refunded = Number(booking.refundedTotal || 0);
@@ -4592,10 +4568,6 @@ ${
             remaining > 0
               ? `Remaining refundable: £${remaining.toFixed(2)}`
               : `Nothing left to refund`;
-        }
-
-        if (refundFullBtn) {
-          refundFullBtn.disabled = remaining <= 0;
         }
       }
 
