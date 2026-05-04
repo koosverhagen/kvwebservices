@@ -891,7 +891,7 @@ export default {
       }
 
       /* ===============================
-   💸 ADMIN REFUND
+   💸 ADMIN REFUND (FINAL)
 =============================== */
 
       if (request.method === "POST" && url.pathname === "/api/admin/refund") {
@@ -903,12 +903,89 @@ export default {
           }
 
           const booking = await findBookingById(env, bookingId);
+
           if (!booking) {
             return withCors(
               json({ error: "Booking not found" }, 404),
               corsHeaders,
             );
           }
+
+          /* ===============================
+       🔥 STRIPE REFUND (FINAL)
+    =============================== */
+
+          if (!booking.paymentIntentId) {
+            return withCors(
+              json({ error: "No Stripe payment linked to this booking" }, 400),
+              corsHeaders,
+            );
+          }
+
+          const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+
+          try {
+            const paymentIntent = await stripe.paymentIntents.retrieve(
+              booking.paymentIntentId,
+            );
+
+            /* ===============================
+         HANDLE DEPOSIT (MANUAL CAPTURE)
+      =============================== */
+
+            if (paymentIntent.capture_method === "manual") {
+              if (paymentIntent.status === "requires_capture") {
+                // 👉 Not captured → cancel instead of refund
+                await stripe.paymentIntents.cancel(booking.paymentIntentId);
+
+                console.log("↩️ Deposit cancelled (not captured)");
+              } else if (paymentIntent.status === "succeeded") {
+                // 👉 Already captured → refund
+                await stripe.refunds.create({
+                  payment_intent: booking.paymentIntentId,
+                  amount: Math.round(amount * 100),
+                });
+
+                console.log("💸 Captured deposit refunded");
+              } else {
+                throw new Error(
+                  "Unsupported PaymentIntent state: " + paymentIntent.status,
+                );
+              }
+            } else {
+              /* ===============================
+           NORMAL CHECKOUT REFUND
+        =============================== */
+
+              await stripe.refunds.create({
+                payment_intent: booking.paymentIntentId,
+                amount: Math.round(amount * 100),
+              });
+
+              console.log("💸 Standard payment refunded");
+            }
+          } catch (err) {
+            console.error("❌ Stripe refund failed:", err);
+
+            return withCors(
+              json({ error: "Stripe refund failed", detail: err.message }, 500),
+              corsHeaders,
+            );
+          }
+
+          /* ===============================
+       🔒 PREVENT DOUBLE REFUNDS
+    =============================== */
+
+          booking.refundedTotal = (booking.refundedTotal || 0) + Number(amount);
+
+          if (booking.refundedTotal >= (booking.paidNow || 0)) {
+            booking.fullyRefunded = true;
+          }
+
+          /* ===============================
+       🔄 UPDATE BOOKING FINANCIALS
+    =============================== */
 
           const newPaid = Math.max(0, (booking.paidNow || 0) - amount);
           const outstanding = Math.max(0, (booking.hireTotal || 0) - newPaid);
@@ -922,9 +999,24 @@ export default {
           await moveBookingInKv(env, booking, booking);
 
           return withCors(json({ ok: true, booking }), corsHeaders);
-        } catch {
-          return withCors(json({ error: "Refund failed" }, 500), corsHeaders);
+        } catch (err) {
+          console.error("❌ Refund route crash:", err);
+
+          return withCors(
+            json({ error: "Refund failed", detail: err.message }, 500),
+            corsHeaders,
+          );
         }
+      }
+
+      /* ===============================
+   PREVENT DOUBLE REFUNDS
+=============================== */
+
+      booking.refundedTotal = (booking.refundedTotal || 0) + amount;
+
+      if (booking.refundedTotal >= (booking.paidNow || 0)) {
+        booking.fullyRefunded = true;
       }
 
       /* ===============================
@@ -2497,6 +2589,11 @@ async function handleStripeWebhook(request, env) {
 
       const session = event.data.object;
 
+      const paymentIntentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id || null;
+
       // 🔥 ADD THIS BLOCK HERE (EXACT SPOT)
       if (!session.metadata?.bookingId) {
         console.log("❌ Missing bookingId in metadata");
@@ -2762,6 +2859,8 @@ async function handleStripeWebhook(request, env) {
 
       const booking = {
         id: session.metadata.bookingId,
+
+        paymentIntentId,
 
         vehicleId: session.metadata.vehicleId,
 

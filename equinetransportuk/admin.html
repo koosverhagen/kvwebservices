@@ -4434,6 +4434,20 @@ ${
         document.getElementById("edit-price").value =
           booking.hireTotal || booking.total || 0;
 
+        /* ===============================
+     🔒 REFUND BUTTON STATE (NEW)
+  =============================== */
+
+        const refundBtn = document.getElementById("edit-refund-btn");
+
+        if (booking.fullyRefunded) {
+          refundBtn.disabled = true;
+          refundBtn.textContent = "Fully refunded";
+        } else {
+          refundBtn.disabled = false;
+          refundBtn.textContent = "Refund";
+        }
+
         document.getElementById("edit-modal").classList.remove("hidden");
       }
 
