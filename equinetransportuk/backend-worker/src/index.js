@@ -912,6 +912,25 @@ export default {
           }
 
           /* ===============================
+       🔒 PREVENT OVER-REFUND
+    =============================== */
+
+          const paid = Number(booking.paidNow || 0);
+          const refunded = Number(booking.refundedTotal || 0);
+          const remaining = Math.max(0, paid - refunded);
+
+          if (amount > remaining) {
+            return withCors(
+              json(
+                {
+                  error: `Max refundable is £${remaining.toFixed(2)}`,
+                },
+                400,
+              ),
+              corsHeaders,
+            );
+          }
+          /* ===============================
        🔒 CANCEL SAFETY (IMPORTANT)
     =============================== */
 
