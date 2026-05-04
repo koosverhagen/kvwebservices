@@ -912,6 +912,41 @@ export default {
           }
 
           /* ===============================
+   🧾 GET AUDIT LOG (ADD HERE)
+=============================== */
+          if (request.method === "GET" && url.pathname === "/api/admin/audit") {
+            const bookingId = url.searchParams.get("bookingId");
+
+            if (!bookingId) {
+              return withCors(
+                json({ error: "Missing bookingId" }, 400),
+                corsHeaders,
+              );
+            }
+
+            const auditKey = `audit:${bookingId}`;
+
+            let audit = [];
+
+            try {
+              audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+            } catch {}
+
+            return withCors(json({ audit }), corsHeaders);
+          }
+
+          /* ===============================
+       🔒 CANCEL SAFETY (IMPORTANT)
+    =============================== */
+
+          if (booking.status === "cancelled" || booking.cancelled === true) {
+            return withCors(
+              json({ error: "Cannot refund a cancelled booking" }, 400),
+              corsHeaders,
+            );
+          }
+
+          /* ===============================
        🔥 STRIPE REFUND (FINAL)
     =============================== */
 
@@ -935,12 +970,9 @@ export default {
 
             if (paymentIntent.capture_method === "manual") {
               if (paymentIntent.status === "requires_capture") {
-                // 👉 Not captured → cancel instead of refund
                 await stripe.paymentIntents.cancel(booking.paymentIntentId);
-
                 console.log("↩️ Deposit cancelled (not captured)");
               } else if (paymentIntent.status === "succeeded") {
-                // 👉 Already captured → refund
                 await stripe.refunds.create({
                   payment_intent: booking.paymentIntentId,
                   amount: Math.round(amount * 100),
@@ -974,13 +1006,27 @@ export default {
           }
 
           /* ===============================
-       🔒 PREVENT DOUBLE REFUNDS
+       🧾 AUDIT LOG (NEW)
     =============================== */
 
-          booking.refundedTotal = (booking.refundedTotal || 0) + Number(amount);
+          try {
+            const auditKey = `audit:${booking.id}`;
 
-          if (booking.refundedTotal >= (booking.paidNow || 0)) {
-            booking.fullyRefunded = true;
+            let audit = [];
+
+            try {
+              audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+            } catch {}
+
+            audit.unshift({
+              type: "refund",
+              amount: Number(amount),
+              at: new Date().toISOString(),
+            });
+
+            await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+          } catch (err) {
+            console.warn("⚠️ Audit log failed (non-blocking):", err);
           }
 
           /* ===============================
@@ -993,6 +1039,16 @@ export default {
           booking.paidNow = newPaid;
           booking.outstandingAmount = outstanding;
           booking.outstanding = outstanding;
+
+          /* ===============================
+       🔒 REFUND TRACKING (IMPORTANT)
+    =============================== */
+
+          booking.refundedTotal = (booking.refundedTotal || 0) + Number(amount);
+
+          if (booking.refundedTotal >= (booking.paidNow || 0)) {
+            booking.fullyRefunded = true;
+          }
 
           booking.updatedAt = new Date().toISOString();
 
@@ -2091,23 +2147,48 @@ async function handleAdminBookingUpdate(request, env) {
       const alreadyPaid = Number(updated.paidNow || 0);
 
       /* ===============================
-     ❌ CANCEL
-  =============================== */
+   ❌ CANCEL
+=============================== */
       if (action === "cancel") {
         updated.status = "cancelled";
         updated.cancelledAt = now;
+
+        /* ===============================
+     🧾 AUDIT LOG (NEW)
+  =============================== */
+
+        try {
+          const auditKey = `audit:${updated.id}`;
+
+          let audit = [];
+
+          try {
+            audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+          } catch {}
+
+          audit.unshift({
+            type: "cancel",
+            at: new Date().toISOString(),
+          });
+
+          await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+        } catch (err) {
+          console.warn("⚠️ Audit log failed (non-blocking):", err);
+        }
       }
 
       /* ===============================
-     💳 MANUAL PAYMENT
-  =============================== */
+   💳 MANUAL PAYMENT
+=============================== */
       if (action === "manual_payment") {
         const existingManual = Number(updated.manualPayments || 0);
         const basePaid = Number(
           updated.confirmationFee || updated.paidNow || 0,
         );
 
-        const newManual = existingManual + manualPayment;
+        const paymentAmount = Number(manualPayment || 0);
+
+        const newManual = existingManual + paymentAmount;
 
         updated.manualPayments = newManual;
 
@@ -2122,8 +2203,31 @@ async function handleAdminBookingUpdate(request, env) {
         updated.outstandingAmount = outstanding;
         updated.outstanding = outstanding;
         updated.outstandingPaid = outstanding === 0;
-      }
 
+        /* ===============================
+     🧾 AUDIT LOG (NEW)
+  =============================== */
+
+        try {
+          const auditKey = `audit:${updated.id}`;
+
+          let audit = [];
+
+          try {
+            audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+          } catch {}
+
+          audit.unshift({
+            type: "payment",
+            amount: paymentAmount,
+            at: new Date().toISOString(),
+          });
+
+          await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+        } catch (err) {
+          console.warn("⚠️ Audit log failed (non-blocking):", err);
+        }
+      }
       /* ===============================
      💸 REFUND
   =============================== */

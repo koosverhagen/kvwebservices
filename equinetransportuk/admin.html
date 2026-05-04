@@ -1291,7 +1291,22 @@
               <!-- 💸 REFUND -->
               <div class="field">
                 <label>Refund (£)</label>
+
                 <input type="number" id="edit-refund" placeholder="e.g. 50" />
+
+                <!-- 🔥 NEW: remaining display -->
+                <div id="refund-remaining" class="tiny" style="margin-top: 6px">
+                  —
+                </div>
+
+                <!-- 🔥 NEW: full refund button -->
+                <button
+                  class="btn ghost btn-small"
+                  id="edit-refund-full"
+                  style="margin-top: 8px"
+                >
+                  Refund full amount
+                </button>
               </div>
 
               <button class="btn ghost" id="edit-refund-btn">Refund</button>
@@ -1309,6 +1324,17 @@
               <div style="display: flex; gap: 10px">
                 <button class="btn primary" id="edit-save">Save</button>
                 <button class="btn ghost" id="edit-cancel">Close</button>
+              </div>
+
+              <!-- ===============================
+   🧾 AUDIT LOG (NEW)
+=============================== -->
+              <div
+                id="audit-log"
+                class="tiny"
+                style="margin-top: 16px; line-height: 1.5"
+              >
+                Loading history...
               </div>
             </div>
           </div>
@@ -1511,8 +1537,20 @@
 
       document.getElementById("edit-date")?.addEventListener("change", () => {
         if (IS_EDIT_INITIALISING) return;
-
         updateAdminPrice();
+      });
+
+      /* ===============================
+   💸 LIVE REFUND UI UPDATE (NEW)
+=============================== */
+
+      document.getElementById("edit-refund")?.addEventListener("input", () => {
+        const bookingId = document.getElementById("edit-booking-id").value;
+        const booking = allBookings.find((b) => b.id === bookingId);
+
+        if (booking) {
+          updateRefundUI(booking);
+        }
       });
 
       function buildContactButtons(booking) {
@@ -2477,28 +2515,6 @@ Equine Transport UK`,
         const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
         const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
 
-        const msgDeposit = `Dear ${firstName},
-
-Please complete your £200 security deposit for your booking.
-
-${depositLink}
-
-This is a card authorisation only.
-
-Kind regards,  
-Koos & Avril  
-Equine Transport UK`;
-
-        const msgOutstanding = `Dear ${firstName},
-
-Your outstanding balance is now ready to be paid.
-
-${outstandingLink}
-
-Kind regards,  
-Koos & Avril  
-Equine Transport UK`;
-
         const waDeposit = phone
           ? `<button 
       class="pill action warn js-wa"
@@ -2526,7 +2542,7 @@ Equine Transport UK`;
           : `<span class="pill warn">Outstanding open</span>`;
 
         /* ===============================
-     🔥 FIXED PAYMENT CALCULATION
+     💰 PAYMENT CALCULATION (UPDATED)
   =============================== */
 
         const total = Number(booking.hireTotal || booking.total || 0);
@@ -2537,6 +2553,8 @@ Equine Transport UK`;
             booking.confirmationFee ??
             0,
         );
+
+        const refunded = Number(booking.refundedTotal || 0);
 
         const outstandingAmount = Math.max(0, total - paid);
 
@@ -2559,10 +2577,21 @@ Equine Transport UK`;
         : waOutstanding
     }
 
+    ${
+      booking.fullyRefunded
+        ? '<span class="pill bad">Fully refunded</span>'
+        : ""
+    }
+
     <div class="tiny">
       <div><strong>Total price: ${formatMoney(total)}</strong></div>
       <div style="margin-top:4px;">Paid now: ${formatMoney(paid)}</div>
       <div>Outstanding: ${formatMoney(outstandingAmount)}</div>
+      ${
+        refunded > 0
+          ? `<div style="color:#b42318;">Refunded: ${formatMoney(refunded)}</div>`
+          : ""
+      }
     </div>
 
     ${renderExtrasSummary(booking)}
@@ -4435,20 +4464,174 @@ ${
           booking.hireTotal || booking.total || 0;
 
         /* ===============================
-     🔒 REFUND BUTTON STATE (NEW)
+     🔒 REFUND / CANCEL STATE
   =============================== */
 
         const refundBtn = document.getElementById("edit-refund-btn");
+        const refundFullBtn = document.getElementById("edit-refund-full");
+        const refundInput = document.getElementById("edit-refund");
 
-        if (booking.fullyRefunded) {
-          refundBtn.disabled = true;
-          refundBtn.textContent = "Fully refunded";
+        const isCancelled =
+          booking.status === "cancelled" || booking.cancelled === true;
+
+        if (isCancelled) {
+          if (refundBtn) {
+            refundBtn.disabled = true;
+            refundBtn.textContent = "Cancelled";
+          }
+
+          if (refundFullBtn) {
+            refundFullBtn.disabled = true;
+          }
+
+          if (refundInput) {
+            refundInput.disabled = true;
+            refundInput.value = "";
+            refundInput.placeholder = "Refund disabled (cancelled)";
+          }
+        } else if (booking.fullyRefunded) {
+          if (refundBtn) {
+            refundBtn.disabled = true;
+            refundBtn.textContent = "Fully refunded";
+          }
+
+          if (refundFullBtn) {
+            refundFullBtn.disabled = true;
+          }
+
+          if (refundInput) {
+            refundInput.disabled = false;
+          }
         } else {
-          refundBtn.disabled = false;
-          refundBtn.textContent = "Refund";
+          if (refundBtn) {
+            refundBtn.disabled = false;
+            refundBtn.textContent = "Refund";
+          }
+
+          if (refundFullBtn) {
+            refundFullBtn.disabled = false;
+          }
+
+          if (refundInput) {
+            refundInput.disabled = false;
+          }
         }
 
+        /* ===============================
+     💸 UPDATE REFUND UI
+  =============================== */
+
+        updateRefundUI(booking);
+
+        /* ===============================
+     ⚡ REFUND FULL BUTTON
+  =============================== */
+
+        if (refundFullBtn) {
+          refundFullBtn.onclick = () => {
+            const paid = Number(booking.paidNow || 0);
+            const refunded = Number(booking.refundedTotal || 0);
+            const remaining = Math.max(0, paid - refunded);
+
+            refundInput.value = remaining.toFixed(2);
+          };
+        }
+
+        /* ===============================
+     🧾 LOAD AUDIT LOG (STEP 6)
+  =============================== */
+
+        loadAuditLog(booking.id);
+
+        /* ===============================
+     SHOW MODAL
+  =============================== */
+
         document.getElementById("edit-modal").classList.remove("hidden");
+      }
+
+      const refundInput = document.getElementById("edit-refund");
+      const refundRemainingEl = document.getElementById("refund-remaining");
+      const refundFullBtn = document.getElementById("edit-refund-full");
+
+      /* ===============================
+   🔥 UPDATE REMAINING DISPLAY
+=============================== */
+
+      function updateRefundUI(booking) {
+        if (!booking) return;
+
+        /* ===============================
+     🔥 GET ELEMENTS (FIX)
+  =============================== */
+
+        const refundRemainingEl = document.getElementById("refund-remaining");
+        const refundFullBtn = document.getElementById("edit-refund-full");
+
+        const paid = Number(booking.paidNow || 0);
+        const refunded = Number(booking.refundedTotal || 0);
+        const remaining = Math.max(0, paid - refunded);
+
+        /* ===============================
+     💸 TEXT
+  =============================== */
+
+        if (refundRemainingEl) {
+          refundRemainingEl.textContent =
+            remaining > 0
+              ? `Remaining refundable: £${remaining.toFixed(2)}`
+              : `Nothing left to refund`;
+        }
+
+        /* ===============================
+     🔒 BUTTON STATE
+  =============================== */
+
+        if (refundFullBtn) {
+          refundFullBtn.disabled = remaining <= 0;
+        }
+      }
+
+      async function loadAuditLog(bookingId) {
+        const el = document.getElementById("audit-log");
+        if (!el) return;
+
+        el.textContent = "Loading history...";
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/audit?bookingId=${bookingId}`,
+          );
+
+          const data = await res.json();
+
+          if (!data.audit || !data.audit.length) {
+            el.textContent = "No history yet.";
+            return;
+          }
+
+          el.innerHTML = data.audit
+            .map((a) => {
+              const date = new Date(a.at).toLocaleString("en-GB");
+
+              if (a.type === "refund") {
+                return `💸 Refunded £${a.amount} — ${date}`;
+              }
+
+              if (a.type === "payment") {
+                return `💳 Payment £${a.amount} — ${date}`;
+              }
+
+              if (a.type === "cancel") {
+                return `❌ Booking cancelled — ${date}`;
+              }
+
+              return `• ${a.type} — ${date}`;
+            })
+            .join("<br>");
+        } catch (err) {
+          el.textContent = "Failed to load history.";
+        }
       }
 
       function closeBlockModal() {
