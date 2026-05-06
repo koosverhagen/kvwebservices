@@ -1524,6 +1524,73 @@
       let SELECTED_CUSTOMER = null;
 
       /* ===============================
+   👤 CREATE CUSTOMER (STEP 9)
+=============================== */
+
+      document
+        .getElementById("create-customer-btn")
+        ?.addEventListener("click", async () => {
+          const full_name = prompt("Full name:");
+          const email = prompt("Email:");
+          const mobile = prompt("Mobile:");
+
+          if (!full_name || !email || !mobile) {
+            alert("Required fields missing");
+            return;
+          }
+
+          try {
+            const res = await fetch(`${API_BASE}/api/customers`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                full_name,
+                email,
+                mobile,
+              }),
+            });
+
+            const data = await res.json();
+
+            if (!data?.customer) {
+              throw new Error("Invalid response");
+            }
+
+            /* ===============================
+         🔥 SET SELECTED CUSTOMER
+      =============================== */
+
+            SELECTED_CUSTOMER = {
+              id: data.customer.id,
+              name: data.customer.full_name,
+            };
+
+            /* ===============================
+         🔥 UPDATE INPUT FIELD
+      =============================== */
+
+            const input = document.getElementById("edit-customer-search");
+            if (input) {
+              input.value = data.customer.full_name;
+            }
+
+            /* ===============================
+         🔥 FEEDBACK
+      =============================== */
+
+            const results = document.getElementById("customer-results");
+            if (results) {
+              results.innerHTML = "✅ New customer created";
+            }
+          } catch (err) {
+            console.error(err);
+            alert("Failed to create customer");
+          }
+        });
+
+      /* ===============================
    EDIT MODAL LIVE UPDATES
 =============================== */
 
@@ -3985,15 +4052,20 @@ Equine Transport UK`,
     =============================== */
 
           const payload = {
-            bookingId: isNew ? null : bookingId, // 🔥 NEW
+            bookingId: isNew ? null : bookingId,
             vehicleId,
             pickupDate,
             pickupTime,
             durationDays,
             hireTotal,
             extras,
-            customerId, // 🔥 NEW
-            isNew, // 🔥 NEW
+
+            /* ===============================
+     👤 CUSTOMER ASSIGN (FIXED)
+  =============================== */
+            customerId: SELECTED_CUSTOMER?.id || booking?.customerId || null,
+
+            isNew,
             updatedAt: booking?.updatedAt || null,
           };
 
