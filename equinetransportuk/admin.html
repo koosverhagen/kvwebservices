@@ -1149,6 +1149,35 @@
             <input type="hidden" id="edit-booking-id" />
 
             <!-- ===============================
+👤 CUSTOMER (NEW)
+=============================== -->
+            <div class="field">
+              <label>Customer</label>
+
+              <input
+                type="text"
+                id="edit-customer-search"
+                placeholder="Search customer (name, email, mobile)"
+              />
+
+              <div
+                id="customer-results"
+                class="tiny"
+                style="margin-top: 6px; max-height: 120px; overflow: auto"
+              >
+                Start typing to search…
+              </div>
+
+              <button
+                class="btn ghost btn-small"
+                id="create-customer-btn"
+                style="margin-top: 6px"
+              >
+                + New customer
+              </button>
+            </div>
+
+            <!-- ===============================
              VEHICLE
         =============================== -->
             <div class="field">
@@ -1491,6 +1520,8 @@
       let allBookings = [];
       let filteredBookings = [];
       let IS_EDIT_INITIALISING = false;
+
+      let SELECTED_CUSTOMER = null;
 
       /* ===============================
    EDIT MODAL LIVE UPDATES
@@ -3862,11 +3893,14 @@ Equine Transport UK`,
         editSaveBtn.onclick = async () => {
           const bookingId = document.getElementById("edit-booking-id").value;
 
+          // 🔥 NEW: detect new booking
+          const isNew = !bookingId;
+
           await loadBookings();
 
-          const booking = allBookings.find((b) => b.id === bookingId);
+          let booking = allBookings.find((b) => b.id === bookingId);
 
-          if (!booking) {
+          if (!isNew && !booking) {
             alert("Booking no longer exists");
             return;
           }
@@ -3891,26 +3925,40 @@ Equine Transport UK`,
           );
 
           /* ===============================
-     🔥 DETECT NO CHANGES
-  =============================== */
+       👤 CUSTOMER (NEW)
+    =============================== */
 
-          const noChanges =
-            vehicleId === booking.vehicleId &&
-            pickupDate === (booking.pickupAtLocal || "").slice(0, 10) &&
-            pickupTime === booking.pickupTime &&
-            durationDays === Number(booking.durationDays) &&
-            hireTotal === Number(booking.hireTotal || 0) &&
-            extras.dartford === Number(booking.extras?.dartford || 0) &&
-            extras.earlyPickup === Boolean(booking.extras?.earlyPickup);
+          const customerId =
+            SELECTED_CUSTOMER?.id || booking?.customerId || null;
 
-          if (noChanges) {
-            editModal.classList.add("hidden");
-            return;
+          if (!customerId) {
+            return alert("Please select or create a customer");
           }
 
           /* ===============================
-     VALIDATION (ONLY IF CHANGED)
-  =============================== */
+       🔥 DETECT NO CHANGES (ONLY EDIT MODE)
+    =============================== */
+
+          if (!isNew) {
+            const noChanges =
+              vehicleId === booking.vehicleId &&
+              pickupDate === (booking.pickupAtLocal || "").slice(0, 10) &&
+              pickupTime === booking.pickupTime &&
+              durationDays === Number(booking.durationDays) &&
+              hireTotal === Number(booking.hireTotal || 0) &&
+              extras.dartford === Number(booking.extras?.dartford || 0) &&
+              extras.earlyPickup === Boolean(booking.extras?.earlyPickup) &&
+              customerId === booking.customerId; // 🔥 NEW
+
+            if (noChanges) {
+              editModal.classList.add("hidden");
+              return;
+            }
+          }
+
+          /* ===============================
+       VALIDATION
+    =============================== */
 
           if (!vehicleId) return alert("Missing vehicle");
           if (!pickupDate || !pickupTime) return alert("Missing date or time");
@@ -3932,15 +3980,21 @@ Equine Transport UK`,
             return alert("Invalid price");
           }
 
+          /* ===============================
+       📦 BUILD PAYLOAD
+    =============================== */
+
           const payload = {
-            bookingId,
+            bookingId: isNew ? null : bookingId, // 🔥 NEW
             vehicleId,
             pickupDate,
             pickupTime,
             durationDays,
             hireTotal,
             extras,
-            updatedAt: booking.updatedAt || null,
+            customerId, // 🔥 NEW
+            isNew, // 🔥 NEW
+            updatedAt: booking?.updatedAt || null,
           };
 
           try {
@@ -3963,7 +4017,18 @@ Equine Transport UK`,
               throw new Error(data.error || "Update failed");
             }
 
+            /* ===============================
+         🎉 SUCCESS UX (IMPROVED)
+      =============================== */
+
             editModal.classList.add("hidden");
+
+            if (isNew) {
+              showCopySuccess("✅ Booking created");
+            } else {
+              showCopySuccess("✅ Booking updated");
+            }
+
             await loadBookings();
             clearEditError();
           } catch (err) {
@@ -4065,6 +4130,69 @@ Equine Transport UK`,
             console.error("❌ Refund error:", err);
             alert("Refund failed");
           }
+        });
+
+      document
+        .getElementById("edit-customer-search")
+        ?.addEventListener("input", async (e) => {
+          const q = e.target.value.trim();
+
+          const resultsEl = document.getElementById("customer-results");
+          if (!resultsEl) return;
+
+          if (q.length < 2) {
+            resultsEl.innerHTML = "Type at least 2 characters…";
+            return;
+          }
+
+          try {
+            const res = await fetch(
+              `${API_BASE}/api/customers/lookup?q=${encodeURIComponent(q)}`,
+            );
+            const data = await res.json();
+
+            if (!data.customers?.length) {
+              resultsEl.innerHTML = "No customers found";
+              return;
+            }
+
+            resultsEl.innerHTML = data.customers
+              .map(
+                (c) => `
+      <div 
+        class="customer-option"
+        data-id="${c.id}"
+        style="padding:6px; cursor:pointer; border-bottom:1px solid #eee;"
+      >
+        <strong>${c.full_name}</strong><br>
+        <span class="tiny">${c.email} • ${c.mobile}</span>
+      </div>
+    `,
+              )
+              .join("");
+          } catch (err) {
+            console.error(err);
+            resultsEl.innerHTML = "Search failed";
+          }
+        });
+
+      document
+        .getElementById("customer-results")
+        ?.addEventListener("click", (e) => {
+          const el = e.target.closest(".customer-option");
+          if (!el) return;
+
+          SELECTED_CUSTOMER = {
+            id: el.dataset.id,
+            name: el.querySelector("strong").textContent,
+          };
+
+          document.getElementById("edit-customer-search").value =
+            SELECTED_CUSTOMER.name;
+
+          document.getElementById("customer-results").innerHTML = `
+    ✅ Selected: ${SELECTED_CUSTOMER.name}
+  `;
         });
 
       /* ===============================
@@ -4358,11 +4486,40 @@ ${
           el.addEventListener("click", () => {
             const bookings = getBookingsForDate(dateStr);
 
+            /* ===============================
+     📅 EXISTING BOOKING
+  =============================== */
+
             if (bookings.length) {
-              openEditBooking(bookings[0]); // 🔥 open first booking
-            } else {
-              openBlockModal(dateStr);
+              openEditBooking(bookings[0]);
+              return;
             }
+
+            /* ===============================
+     ➕ NEW BOOKING (STEP 6)
+  =============================== */
+
+            const vehicleId = calVehicle.value;
+
+            if (!vehicleId || vehicleId === "all") {
+              alert("Select a vehicle first");
+              return;
+            }
+
+            openEditBooking({
+              id: null, // 🔥 NEW booking
+              vehicleId,
+              pickupAt: `${dateStr}T07:00:00`,
+              pickupTime: "07:00",
+              durationDays: 1,
+              extras: {
+                dartford: 0,
+                earlyPickup: false,
+              },
+              hireTotal: 0,
+              customerId: null,
+              customerName: "",
+            });
           });
 
           calGrid.appendChild(el);
@@ -4454,9 +4611,15 @@ ${
       function openEditBooking(booking) {
         if (!booking) return;
 
-        document.getElementById("edit-booking-id").value = booking.id;
+        /* ===============================
+     🆕 NEW vs EXISTING
+  =============================== */
 
-        document.getElementById("edit-vehicle").value = booking.vehicleId;
+        const isNew = !booking.id;
+
+        document.getElementById("edit-booking-id").value = booking.id || "";
+
+        document.getElementById("edit-vehicle").value = booking.vehicleId || "";
 
         document.getElementById("edit-date").value =
           booking.pickupAt?.slice(0, 10) || "";
@@ -4477,72 +4640,108 @@ ${
           booking.hireTotal || booking.total || 0;
 
         /* ===============================
+     👤 CUSTOMER (STEP 7 NEW)
+  =============================== */
+
+        const searchInput = document.getElementById("edit-customer-search");
+        const resultsEl = document.getElementById("customer-results");
+
+        if (isNew) {
+          // 👉 New booking
+          SELECTED_CUSTOMER = null;
+
+          if (searchInput) searchInput.value = "";
+          if (resultsEl) resultsEl.innerHTML = "Select or create customer";
+        } else {
+          // 👉 Existing booking
+          SELECTED_CUSTOMER = {
+            id: booking.customerId || null,
+            name: booking.customerName || "",
+          };
+
+          if (searchInput) {
+            searchInput.value = booking.customerName || "";
+          }
+
+          if (resultsEl) {
+            resultsEl.innerHTML = booking.customerName
+              ? `✅ Selected: ${booking.customerName}`
+              : "No customer assigned";
+          }
+        }
+
+        /* ===============================
      🔒 REFUND / CANCEL STATE
   =============================== */
 
         const refundBtn = document.getElementById("edit-refund-btn");
-        const refundFullBtn = document.getElementById("edit-refund-full");
         const refundInput = document.getElementById("edit-refund");
 
         const isCancelled =
           booking.status === "cancelled" || booking.cancelled === true;
 
-        if (isCancelled) {
-          if (refundBtn) {
-            refundBtn.disabled = true;
-            refundBtn.textContent = "Cancelled";
+        if (!isNew) {
+          if (isCancelled) {
+            if (refundBtn) {
+              refundBtn.disabled = true;
+              refundBtn.textContent = "Cancelled";
+            }
+
+            if (refundInput) {
+              refundInput.disabled = true;
+              refundInput.value = "";
+              refundInput.placeholder = "Refund disabled (cancelled)";
+            }
+          } else if (booking.fullyRefunded) {
+            if (refundBtn) {
+              refundBtn.disabled = true;
+              refundBtn.textContent = "Fully refunded";
+            }
+
+            if (refundInput) {
+              refundInput.disabled = false;
+            }
+          } else {
+            if (refundBtn) {
+              refundBtn.disabled = false;
+              refundBtn.textContent = "Refund";
+            }
+
+            if (refundInput) {
+              refundInput.disabled = false;
+            }
           }
 
-          if (refundFullBtn) {
-            refundFullBtn.disabled = true;
+          /* ===============================
+       💸 UPDATE REFUND UI
+    =============================== */
+
+          updateRefundUI(booking);
+
+          /* ===============================
+       🧾 LOAD AUDIT LOG
+    =============================== */
+
+          console.log("🧾 loading audit for", booking.id);
+          loadAuditLog(booking.id);
+        } else {
+          // 👉 NEW BOOKING → disable refund section
+          if (refundBtn) {
+            refundBtn.disabled = true;
+            refundBtn.textContent = "New booking";
           }
 
           if (refundInput) {
             refundInput.disabled = true;
             refundInput.value = "";
-            refundInput.placeholder = "Refund disabled (cancelled)";
-          }
-        } else if (booking.fullyRefunded) {
-          if (refundBtn) {
-            refundBtn.disabled = true;
-            refundBtn.textContent = "Fully refunded";
+            refundInput.placeholder = "Refund not available";
           }
 
-          if (refundFullBtn) {
-            refundFullBtn.disabled = true;
-          }
-
-          if (refundInput) {
-            refundInput.disabled = false;
-          }
-        } else {
-          if (refundBtn) {
-            refundBtn.disabled = false;
-            refundBtn.textContent = "Refund";
-          }
-
-          if (refundFullBtn) {
-            refundFullBtn.disabled = false;
-          }
-
-          if (refundInput) {
-            refundInput.disabled = false;
+          const auditEl = document.getElementById("audit-log");
+          if (auditEl) {
+            auditEl.textContent = "No history (new booking)";
           }
         }
-
-        /* ===============================
-     💸 UPDATE REFUND UI
-  =============================== */
-
-        updateRefundUI(booking);
-
-        /* ===============================
-     🧾 LOAD AUDIT LOG (STEP 6)
-  =============================== */
-
-        console.log("🧾 loading audit for", booking.id);
-
-        loadAuditLog(booking.id);
 
         /* ===============================
      SHOW MODAL
@@ -4550,7 +4749,6 @@ ${
 
         document.getElementById("edit-modal").classList.remove("hidden");
       }
-
       /* ===============================
    🔥 UPDATE REMAINING DISPLAY
 =============================== */
