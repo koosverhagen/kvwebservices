@@ -2325,6 +2325,12 @@ async function handleAdminBookingUpdate(request, env) {
 
     const extras = body.extras || {};
 
+    /* ===============================
+   👤 CUSTOMER (NEW)
+=============================== */
+
+    const customerId = String(body.customerId || "").trim();
+
     const dartfordTotal = (extras.dartford || 0) * 4.2;
     const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
     const extrasTotal = dartfordTotal + earlyPickupTotal;
@@ -2476,16 +2482,17 @@ async function handleAdminBookingUpdate(request, env) {
 
     await env.DB.prepare(
       `
-      UPDATE bookings
-      SET
-        vehicle_id = ?,
-        pickup_at = ?,
-        dropoff_at = ?,
-        duration_days = ?,
-        price_total = ?,
-        updated_at = ?
-      WHERE id = ?
-    `,
+  UPDATE bookings
+  SET
+    vehicle_id = ?,
+    pickup_at = ?,
+    dropoff_at = ?,
+    duration_days = ?,
+    price_total = ?,
+    customer_id = ?,  -- 🔥 NEW
+    updated_at = ?
+  WHERE id = ?
+`,
     )
       .bind(
         vehicleId,
@@ -2493,6 +2500,7 @@ async function handleAdminBookingUpdate(request, env) {
         dropoffAt,
         durationDays,
         finalTotal,
+        customerId || null, // 🔥 NEW
         now,
         bookingId,
       )
@@ -2513,6 +2521,8 @@ async function handleAdminBookingUpdate(request, env) {
 
       hireTotal: finalTotal,
       outstandingAmount,
+
+      customerId: customerId || existing.customerId || null, // 🔥 NEW
 
       updatedAt: now,
 
