@@ -5009,8 +5009,18 @@ ${
           customerResults.innerHTML = "Searching...";
 
           try {
+            // 🔥 DETECT TYPE
+            const isEmail = q.includes("@");
+            const isMobile = /^\d{5,}/.test(q);
+
+            if (!isEmail && !isMobile) {
+              customerResults.innerHTML = "⚠️ Search by email or mobile only";
+              SELECTED_CUSTOMER = null;
+              return;
+            }
+
             const res = await fetch(
-              `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(q)}&mobile=${encodeURIComponent(q)}`,
+              `${API_BASE}/api/customers/lookup?email=${isEmail ? encodeURIComponent(q) : ""}&mobile=${isMobile ? encodeURIComponent(q) : ""}`,
             );
 
             const data = await res.json();
@@ -5024,12 +5034,11 @@ ${
             const c = data.customer;
 
             customerResults.innerHTML = `
-        <div class="pill ok" style="cursor:pointer;">
-          ${c.full_name} (${c.email || c.mobile})
-        </div>
-      `;
+      <div class="pill ok" style="cursor:pointer;">
+        ${c.full_name} (${c.email || c.mobile})
+      </div>
+    `;
 
-            // 🔥 CRITICAL
             customerResults.onclick = () => {
               SELECTED_CUSTOMER = {
                 id: c.id,
