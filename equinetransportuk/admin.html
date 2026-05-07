@@ -3970,12 +3970,12 @@ Equine Transport UK`,
 
       if (editSaveBtn) {
         editSaveBtn.onclick = async () => {
+          console.log("💾 BEFORE SAVE SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
+
           const bookingId = document.getElementById("edit-booking-id").value;
 
           // 🔥 NEW: detect new booking
           const isNew = !bookingId;
-
-          await loadBookings();
 
           let booking = allBookings.find((b) => b.id === bookingId);
 
@@ -4077,7 +4077,7 @@ Equine Transport UK`,
             /* ===============================
      👤 CUSTOMER ASSIGN (FIXED)
   =============================== */
-            customerId: SELECTED_CUSTOMER?.id || booking?.customerId || null,
+            customerId,
 
             isNew,
             updatedAt: booking?.updatedAt || null,
@@ -4751,9 +4751,14 @@ ${
 
           if (resultsEl) {
             resultsEl.innerHTML = booking.customerName
-              ? `✅ Selected: ${booking.customerName}`
-              : "No customer assigned";
+              ? `<span class="pill ok">👤 ${booking.customerName}</span>`
+              : `<span class="pill warn">No customer assigned</span>`;
           }
+
+          /* ===============================
+   🔍 DEBUG (CRITICAL)
+=============================== */
+          console.log("👤 INIT SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
         }
 
         /* ===============================
