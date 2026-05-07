@@ -1531,11 +1531,15 @@
         .getElementById("create-customer-btn")
         ?.addEventListener("click", async () => {
           const full_name = prompt("Full name:");
-          const email = prompt("Email:");
-          const mobile = prompt("Mobile:");
+          const email = prompt("Email (optional):");
+          const mobile = prompt("Mobile (optional):");
 
-          if (!full_name || !email || !mobile) {
-            alert("Required fields missing");
+          /* ===============================
+       VALIDATION (MATCH BACKEND)
+    =============================== */
+
+          if (!full_name || (!email && !mobile)) {
+            alert("Name + email OR mobile required");
             return;
           }
 
@@ -1547,25 +1551,29 @@
               },
               body: JSON.stringify({
                 full_name,
-                email,
-                mobile,
+                email: email || null,
+                mobile: mobile || null,
               }),
             });
 
             const data = await res.json();
 
-            if (!data?.customer) {
-              throw new Error("Invalid response");
+            if (!res.ok || !data?.customer) {
+              throw new Error(data.error || "Invalid response");
             }
 
+            const customer = data.customer;
+
             /* ===============================
-         🔥 SET SELECTED CUSTOMER
+         🔥 SET SELECTED CUSTOMER (CRITICAL)
       =============================== */
 
             SELECTED_CUSTOMER = {
-              id: data.customer.id,
-              name: data.customer.full_name,
+              id: customer.id,
+              name: customer.full_name,
             };
+
+            console.log("✅ Selected customer:", SELECTED_CUSTOMER);
 
             /* ===============================
          🔥 UPDATE INPUT FIELD
@@ -1573,20 +1581,24 @@
 
             const input = document.getElementById("edit-customer-search");
             if (input) {
-              input.value = data.customer.full_name;
+              input.value = customer.full_name;
             }
 
             /* ===============================
-         🔥 FEEDBACK
+         🔥 FEEDBACK (BETTER UI)
       =============================== */
 
             const results = document.getElementById("customer-results");
             if (results) {
-              results.innerHTML = "✅ New customer created";
+              results.innerHTML = `
+          <div class="pill ok">
+            ${data.mode === "existing" ? "👤 Existing" : "✅ New"} customer selected
+          </div>
+        `;
             }
           } catch (err) {
-            console.error(err);
-            alert("Failed to create customer");
+            console.error("❌ Customer create failed:", err);
+            alert(err.message || "Failed to create customer");
           }
         });
 
@@ -4046,6 +4058,8 @@ Equine Transport UK`,
           if (!hireTotal || hireTotal <= 0) {
             return alert("Invalid price");
           }
+
+          console.log("👤 SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
 
           /* ===============================
        📦 BUILD PAYLOAD
