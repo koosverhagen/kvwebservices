@@ -1524,6 +1524,75 @@
       let SELECTED_CUSTOMER = null;
 
       /* ===============================
+   👤 CUSTOMER SEARCH (NEW)
+=============================== */
+
+      document
+        .getElementById("edit-customer-search")
+        ?.addEventListener("input", async (e) => {
+          const query = e.target.value.trim();
+
+          const resultsEl = document.getElementById("customer-results");
+
+          // reset selection
+          SELECTED_CUSTOMER = null;
+
+          if (!query || query.length < 3) {
+            if (resultsEl) {
+              resultsEl.innerHTML = "Type at least 3 characters...";
+            }
+            return;
+          }
+
+          if (resultsEl) resultsEl.innerHTML = "Searching...";
+
+          try {
+            const res = await fetch(
+              `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(query)}&mobile=${encodeURIComponent(query)}`,
+            );
+
+            const data = await res.json();
+
+            if (!data.found) {
+              resultsEl.innerHTML = "❌ No customer found";
+              return;
+            }
+
+            const c = data.customer;
+
+            resultsEl.innerHTML = `
+        <div class="pill action ok js-select-customer"
+             style="cursor:pointer; margin-top:4px;"
+             data-id="${c.id}"
+             data-name="${c.full_name}">
+          👤 ${c.full_name} (${c.email || c.mobile || ""})
+        </div>
+      `;
+
+            document
+              .querySelector(".js-select-customer")
+              ?.addEventListener("click", () => {
+                SELECTED_CUSTOMER = {
+                  id: c.id,
+                  name: c.full_name,
+                };
+
+                console.log("✅ SELECTED:", SELECTED_CUSTOMER);
+
+                document.getElementById("edit-customer-search").value =
+                  c.full_name;
+
+                resultsEl.innerHTML = `
+            <span class="pill ok">👤 ${c.full_name}</span>
+          `;
+              });
+          } catch (err) {
+            console.error(err);
+            resultsEl.innerHTML = "⚠️ Search failed";
+          }
+        });
+
+      /* ===============================
    👤 CREATE CUSTOMER (STEP 9)
 =============================== */
 
