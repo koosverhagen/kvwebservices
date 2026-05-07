@@ -1548,8 +1548,10 @@
 
           try {
             const res = await fetch(
-              `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(query)}&mobile=${encodeURIComponent(query)}`,
+              `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(query.toLowerCase())}&mobile=${encodeURIComponent(query)}`,
             );
+
+            console.log("🔎 searching:", query);
 
             const data = await res.json();
 
