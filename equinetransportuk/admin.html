@@ -4986,6 +4986,65 @@ ${
       }
 
       initAdmin();
+
+      /* ===============================
+   🔍 CUSTOMER SEARCH (NEW)
+=============================== */
+
+      const customerSearchInput = document.getElementById(
+        "edit-customer-search",
+      );
+      const customerResults = document.getElementById("customer-results");
+
+      if (customerSearchInput) {
+        customerSearchInput.addEventListener("input", async () => {
+          const q = customerSearchInput.value.trim();
+
+          if (q.length < 2) {
+            customerResults.innerHTML = "Type at least 2 characters...";
+            SELECTED_CUSTOMER = null;
+            return;
+          }
+
+          customerResults.innerHTML = "Searching...";
+
+          try {
+            const res = await fetch(
+              `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(q)}&mobile=${encodeURIComponent(q)}`,
+            );
+
+            const data = await res.json();
+
+            if (!data.found) {
+              customerResults.innerHTML = "No customer found";
+              SELECTED_CUSTOMER = null;
+              return;
+            }
+
+            const c = data.customer;
+
+            customerResults.innerHTML = `
+        <div class="pill ok" style="cursor:pointer;">
+          ${c.full_name} (${c.email || c.mobile})
+        </div>
+      `;
+
+            // 🔥 CRITICAL
+            customerResults.onclick = () => {
+              SELECTED_CUSTOMER = {
+                id: c.id,
+                name: c.full_name,
+              };
+
+              customerSearchInput.value = c.full_name;
+              customerResults.innerHTML = "✅ Selected";
+            };
+          } catch (err) {
+            console.error(err);
+            customerResults.innerHTML = "Search failed";
+          }
+        });
+      }
     </script>
   </body>
 </html>
