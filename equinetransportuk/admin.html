@@ -4294,39 +4294,71 @@ Equine Transport UK`,
         ?.addEventListener("input", async (e) => {
           const q = e.target.value.trim();
 
-          const resultsEl = document.getElementById("customer-results");
-          if (!resultsEl) return;
+          console.log("🔎 searching:", q);
 
-          if (q.length < 2) {
-            resultsEl.innerHTML = "Type at least 2 characters…";
+          const resultsEl = document.getElementById("customer-results");
+
+          if (!q || q.length < 3) {
+            resultsEl.innerHTML = "";
             return;
           }
 
           try {
-            const res = await fetch(
-              `${API_BASE}/api/customers/lookup?q=${encodeURIComponent(q)}`,
-            );
-            const data = await res.json();
+            let url = "";
 
-            if (!data.customers?.length) {
-              resultsEl.innerHTML = "No customers found";
+            /* ===============================
+         🔥 SMART DETECTION
+      =============================== */
+
+            if (q.includes("@")) {
+              // 👉 EMAIL SEARCH
+              url = `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(q)}`;
+            } else if (/^\d+$/.test(q)) {
+              // 👉 MOBILE SEARCH
+              url = `${API_BASE}/api/customers/lookup?mobile=${encodeURIComponent(q)}`;
+            } else {
+              // 👉 NOT SUPPORTED YET (name search comes later)
+              resultsEl.innerHTML = "Type full email or mobile";
               return;
             }
 
-            resultsEl.innerHTML = data.customers
-              .map(
-                (c) => `
-      <div 
-        class="customer-option"
-        data-id="${c.id}"
-        style="padding:6px; cursor:pointer; border-bottom:1px solid #eee;"
-      >
-        <strong>${c.full_name}</strong><br>
-        <span class="tiny">${c.email} • ${c.mobile}</span>
-      </div>
-    `,
-              )
-              .join("");
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (!data.found) {
+              resultsEl.innerHTML = "No customer found";
+              return;
+            }
+
+            const c = data.customer;
+
+            /* ===============================
+         🔥 DISPLAY RESULT
+      =============================== */
+
+            resultsEl.innerHTML = `
+        <div class="customer-result" style="cursor:pointer;padding:6px 0;">
+          👤 ${c.full_name} (${c.email || c.mobile})
+        </div>
+      `;
+
+            /* ===============================
+         🔥 CLICK SELECT
+      =============================== */
+
+            resultsEl.querySelector(".customer-result").onclick = () => {
+              SELECTED_CUSTOMER = {
+                id: c.id,
+                name: c.full_name,
+              };
+
+              document.getElementById("edit-customer-search").value =
+                c.full_name;
+
+              resultsEl.innerHTML = `✅ Selected: ${c.full_name}`;
+
+              console.log("👤 SELECTED CUSTOMER:", SELECTED_CUSTOMER);
+            };
           } catch (err) {
             console.error(err);
             resultsEl.innerHTML = "Search failed";
