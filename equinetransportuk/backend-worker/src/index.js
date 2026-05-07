@@ -2387,12 +2387,16 @@ async function handleAdminBookingUpdate(request, env) {
       return json({ error: "Cancelled bookings cannot be edited here" }, 400);
     }
 
+    /* ===============================
+   🔥 REAL CHANGE DETECTION (FIXED)
+=============================== */
+
     const isEditChange =
-      body.vehicleId ||
-      body.pickupDate ||
-      body.pickupTime ||
-      body.durationDays ||
-      body.hireTotal;
+      vehicleId !== existing.vehicleId ||
+      pickupDate !== (existing.pickupAtLocal || "").slice(0, 10) ||
+      pickupTime !== existing.pickupTime ||
+      durationDays !== Number(existing.durationDays) ||
+      hireTotal !== Number(existing.hireTotal || 0);
 
     if (existing.outstandingPaid === true && isEditChange) {
       return json(
@@ -2507,6 +2511,28 @@ async function handleAdminBookingUpdate(request, env) {
       .run();
 
     /* ===============================
+   👤 LOAD CUSTOMER NAME (CRITICAL)
+=============================== */
+
+    let customerName = existing.customerName;
+
+    if (customerId) {
+      try {
+        const customer = await env.DB.prepare(
+          "SELECT full_name FROM customers WHERE id = ?",
+        )
+          .bind(customerId)
+          .first();
+
+        if (customer?.full_name) {
+          customerName = customer.full_name;
+        }
+      } catch (err) {
+        console.warn("⚠️ Customer lookup failed:", err);
+      }
+    }
+
+    /* ===============================
        🔥 BUILD UPDATED OBJECT
     =============================== */
 
@@ -2522,7 +2548,8 @@ async function handleAdminBookingUpdate(request, env) {
       hireTotal: finalTotal,
       outstandingAmount,
 
-      customerId: customerId || existing.customerId || null, // 🔥 NEW
+      customerId: customerId || existing.customerId || null,
+      customerName,
 
       updatedAt: now,
 
