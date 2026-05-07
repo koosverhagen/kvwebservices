@@ -4320,27 +4320,41 @@ async function handleClearBookings(env) {
 }
 
 async function findCustomerByEmailOrMobile(env, email, mobile) {
-  if (email) {
+  try {
+    /* ===============================
+       🔥 CLEAN INPUT
+    =============================== */
+
+    const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+    const cleanMobile = mobile ? String(mobile).trim() : null;
+
+    console.log("🔎 LOOKUP INPUT:", { cleanEmail, cleanMobile });
+
+    /* ===============================
+       🔥 SINGLE QUERY (FIXED)
+    =============================== */
+
     const result = await env.DB.prepare(
-      "SELECT * FROM customers WHERE email = ? LIMIT 1",
+      `
+      SELECT *
+      FROM customers
+      WHERE
+        (email IS NOT NULL AND LOWER(email) = ?)
+        OR
+        (mobile IS NOT NULL AND mobile = ?)
+      LIMIT 1
+    `,
     )
-      .bind(email)
+      .bind(cleanEmail || "", cleanMobile || "")
       .first();
 
-    if (result) return result;
+    console.log("🔎 LOOKUP RESULT:", result);
+
+    return result || null;
+  } catch (err) {
+    console.error("❌ CUSTOMER LOOKUP FAILED:", err);
+    return null;
   }
-
-  if (mobile) {
-    const result = await env.DB.prepare(
-      "SELECT * FROM customers WHERE mobile = ? LIMIT 1",
-    )
-      .bind(mobile)
-      .first();
-
-    if (result) return result;
-  }
-
-  return null;
 }
 
 /* ===============================
