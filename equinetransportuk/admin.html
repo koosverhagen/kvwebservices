@@ -1523,75 +1523,88 @@
 
       let SELECTED_CUSTOMER = null;
 
+      let customerSearchTimeout = null;
+
       /* ===============================
    👤 CUSTOMER SEARCH (NEW)
 =============================== */
 
       document
         .getElementById("edit-customer-search")
-        ?.addEventListener("input", async (e) => {
+        ?.addEventListener("input", (e) => {
           const query = e.target.value.trim();
-
           const resultsEl = document.getElementById("customer-results");
 
-          // reset selection
+          // 🔥 debounce (prevents spam + lag)
+          if (window.customerSearchTimeout) {
+            clearTimeout(window.customerSearchTimeout);
+          }
+
+          // 🔥 reset selected customer
           SELECTED_CUSTOMER = null;
 
-          if (!query || query.length < 3) {
-            if (resultsEl) {
-              resultsEl.innerHTML = "Type at least 3 characters...";
-            }
+          // 🔥 short input guard
+          if (!query || query.length < 2) {
+            resultsEl.innerHTML = "Type at least 2 characters...";
             return;
           }
 
-          if (resultsEl) resultsEl.innerHTML = "Searching...";
+          resultsEl.innerHTML = "Searching...";
 
-          try {
-            const res = await fetch(
-              `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(query.toLowerCase())}&mobile=${encodeURIComponent(query)}`,
-            );
+          window.customerSearchTimeout = setTimeout(async () => {
+            try {
+              console.log("🔎 searching:", query);
 
-            console.log("🔎 searching:", query);
+              const res = await fetch(
+                `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(query.toLowerCase())}&mobile=${encodeURIComponent(query)}`,
+              );
 
-            const data = await res.json();
+              const data = await res.json();
 
-            if (!data.found) {
-              resultsEl.innerHTML = "❌ No customer found";
-              return;
+              if (!data.found) {
+                resultsEl.innerHTML = "❌ No customer found";
+                return;
+              }
+
+              const c = data.customer;
+
+              // 🔥 cleaner dropdown UI (not pill)
+              resultsEl.innerHTML = `
+          <div class="customer-result"
+               style="
+                 padding:10px;
+                 border-radius:10px;
+                 cursor:pointer;
+                 border:1px solid #e5e7eb;
+                 background:#fff;
+               ">
+            <div style="font-weight:700;">👤 ${c.full_name}</div>
+            <div class="tiny">${c.email || c.mobile || ""}</div>
+          </div>
+        `;
+
+              resultsEl
+                .querySelector(".customer-result")
+                ?.addEventListener("click", () => {
+                  SELECTED_CUSTOMER = {
+                    id: c.id,
+                    name: c.full_name,
+                  };
+
+                  console.log("✅ SELECTED:", SELECTED_CUSTOMER);
+
+                  document.getElementById("edit-customer-search").value =
+                    c.full_name;
+
+                  resultsEl.innerHTML = `
+              <span class="pill ok">👤 ${c.full_name}</span>
+            `;
+                });
+            } catch (err) {
+              console.error(err);
+              resultsEl.innerHTML = "⚠️ Search failed";
             }
-
-            const c = data.customer;
-
-            resultsEl.innerHTML = `
-        <div class="pill action ok js-select-customer"
-             style="cursor:pointer; margin-top:4px;"
-             data-id="${c.id}"
-             data-name="${c.full_name}">
-          👤 ${c.full_name} (${c.email || c.mobile || ""})
-        </div>
-      `;
-
-            document
-              .querySelector(".js-select-customer")
-              ?.addEventListener("click", () => {
-                SELECTED_CUSTOMER = {
-                  id: c.id,
-                  name: c.full_name,
-                };
-
-                console.log("✅ SELECTED:", SELECTED_CUSTOMER);
-
-                document.getElementById("edit-customer-search").value =
-                  c.full_name;
-
-                resultsEl.innerHTML = `
-            <span class="pill ok">👤 ${c.full_name}</span>
-          `;
-              });
-          } catch (err) {
-            console.error(err);
-            resultsEl.innerHTML = "⚠️ Search failed";
-          }
+          }, 250); // 🔥 debounce delay
         });
 
       /* ===============================
