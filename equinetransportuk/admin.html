@@ -1524,6 +1524,7 @@
       let SELECTED_CUSTOMER = null;
 
       let customerSearchTimeout = null;
+      let lastCustomerQuery = "";
 
       /* ===============================
    👤 CUSTOMER SEARCH (NEW)
@@ -1535,15 +1536,15 @@
           const query = e.target.value.trim();
           const resultsEl = document.getElementById("customer-results");
 
-          // 🔥 debounce (prevents spam + lag)
-          if (window.customerSearchTimeout) {
-            clearTimeout(window.customerSearchTimeout);
-          }
+          // 🔥 debounce
+          if (customerSearchTimeout) clearTimeout(customerSearchTimeout);
 
-          // 🔥 reset selected customer
+          // 🔥 store latest query
+          lastCustomerQuery = query;
+
+          // reset selection
           SELECTED_CUSTOMER = null;
 
-          // 🔥 short input guard
           if (!query || query.length < 2) {
             resultsEl.innerHTML = "Type at least 2 characters...";
             return;
@@ -1551,7 +1552,7 @@
 
           resultsEl.innerHTML = "Searching...";
 
-          window.customerSearchTimeout = setTimeout(async () => {
+          customerSearchTimeout = setTimeout(async () => {
             try {
               console.log("🔎 searching:", query);
 
@@ -1561,6 +1562,12 @@
 
               const data = await res.json();
 
+              // 🔥 CRITICAL FIX → ignore outdated responses
+              if (query !== lastCustomerQuery) {
+                console.log("⏭️ Ignored outdated result:", query);
+                return;
+              }
+
               if (!data.found) {
                 resultsEl.innerHTML = "❌ No customer found";
                 return;
@@ -1568,7 +1575,6 @@
 
               const c = data.customer;
 
-              // 🔥 cleaner dropdown UI (not pill)
               resultsEl.innerHTML = `
           <div class="customer-result"
                style="
@@ -1591,8 +1597,6 @@
                     name: c.full_name,
                   };
 
-                  console.log("✅ SELECTED:", SELECTED_CUSTOMER);
-
                   document.getElementById("edit-customer-search").value =
                     c.full_name;
 
@@ -1602,11 +1606,14 @@
                 });
             } catch (err) {
               console.error(err);
+
+              // also ignore outdated errors
+              if (query !== lastCustomerQuery) return;
+
               resultsEl.innerHTML = "⚠️ Search failed";
             }
-          }, 250); // 🔥 debounce delay
+          }, 250);
         });
-
       /* ===============================
    👤 CREATE CUSTOMER (STEP 9)
 =============================== */
