@@ -671,6 +671,46 @@ export default {
       }
 
       /* ===============================
+   🔥 CUSTOMER SEARCH (NEW)
+=============================== */
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/customers/search"
+      ) {
+        try {
+          const q = url.searchParams.get("q")?.trim().toLowerCase();
+
+          if (!q || q.length < 2) {
+            return withCors(json({ results: [] }), corsHeaders);
+          }
+
+          const results = await env.DB.prepare(
+            `
+      SELECT id, full_name, email, mobile
+      FROM customers
+      WHERE
+        LOWER(full_name) LIKE ?
+        OR LOWER(email) LIKE ?
+        OR mobile LIKE ?
+      ORDER BY full_name ASC
+      LIMIT 10
+      `,
+          )
+            .bind(`%${q}%`, `%${q}%`, `%${q}%`)
+            .all();
+
+          return withCors(
+            json({ results: results.results || [] }),
+            corsHeaders,
+          );
+        } catch (err) {
+          console.error("❌ CUSTOMER SEARCH ERROR:", err);
+          return withCors(json({ results: [] }), corsHeaders);
+        }
+      }
+
+      /* ===============================
          CUSTOMER BOOKING HISTORY (SAFE)
       ================================ */
 
