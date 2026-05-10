@@ -1523,6 +1523,9 @@
 
       let SELECTED_CUSTOMER = null;
 
+      let customerSearchController = null;
+      let lastSearchQuery = "";
+
       let customerSearchTimeout = null;
       let lastCustomerQuery = "";
 
@@ -1539,7 +1542,7 @@
           // 🔥 debounce
           if (customerSearchTimeout) clearTimeout(customerSearchTimeout);
 
-          // 🔥 store latest query
+          // 🔥 track latest query
           lastCustomerQuery = query;
 
           // reset selection
@@ -1557,25 +1560,27 @@
               console.log("🔎 searching:", query);
 
               const res = await fetch(
-                `${API_BASE}/api/customers/lookup?email=${encodeURIComponent(query.toLowerCase())}&mobile=${encodeURIComponent(query)}`,
+                `${API_BASE}/api/customers/search?q=${encodeURIComponent(query)}`,
               );
 
               const data = await res.json();
 
-              // 🔥 CRITICAL FIX → ignore outdated responses
+              // 🔥 IGNORE OLD RESPONSES
               if (query !== lastCustomerQuery) {
                 console.log("⏭️ Ignored outdated result:", query);
                 return;
               }
 
-              if (!data.found) {
+              const results = data.results || [];
+
+              if (!results.length) {
                 resultsEl.innerHTML = "❌ No customer found";
                 return;
               }
 
-              const c = data.customer;
-
-              resultsEl.innerHTML = `
+              resultsEl.innerHTML = results
+                .map(
+                  (c) => `
           <div class="customer-result"
                style="
                  padding:10px;
@@ -1583,31 +1588,35 @@
                  cursor:pointer;
                  border:1px solid #e5e7eb;
                  background:#fff;
-               ">
+                 margin-top:4px;
+               "
+               data-id="${c.id}"
+               data-name="${c.full_name}">
             <div style="font-weight:700;">👤 ${c.full_name}</div>
             <div class="tiny">${c.email || c.mobile || ""}</div>
           </div>
-        `;
+        `,
+                )
+                .join("");
 
-              resultsEl
-                .querySelector(".customer-result")
-                ?.addEventListener("click", () => {
+              document.querySelectorAll(".customer-result").forEach((el) => {
+                el.addEventListener("click", () => {
                   SELECTED_CUSTOMER = {
-                    id: c.id,
-                    name: c.full_name,
+                    id: el.dataset.id,
+                    name: el.dataset.name,
                   };
 
                   document.getElementById("edit-customer-search").value =
-                    c.full_name;
+                    el.dataset.name;
 
                   resultsEl.innerHTML = `
-              <span class="pill ok">👤 ${c.full_name}</span>
+              <span class="pill ok">👤 ${el.dataset.name}</span>
             `;
                 });
+              });
             } catch (err) {
               console.error(err);
 
-              // also ignore outdated errors
               if (query !== lastCustomerQuery) return;
 
               resultsEl.innerHTML = "⚠️ Search failed";
