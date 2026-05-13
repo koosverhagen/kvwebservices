@@ -2377,19 +2377,12 @@ Equine Transport UK`,
         const email = booking.customerEmail || "";
         const firstName = getFirstName(getCustomerName(booking));
 
-        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
-
-        const formPath =
-          requiredType === "short"
-            ? "/forms/short-form.html"
-            : "/forms/long-form.html";
-
-        const formLink = `${BASE}${formPath}?bookingId=${bookingId}`;
-        const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
-        const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
-
         const depositDone = isDepositPaid(booking);
         const outstandingDone = isOutstandingPaid(booking);
+
+        /* ===============================
+     WHATSAPP BUTTONS
+  =============================== */
 
         const formWhatsapp = phone
           ? `
@@ -2401,34 +2394,11 @@ Equine Transport UK`,
         data-name="${escapeHtml(firstName)}"
         data-id="${escapeHtml(bookingId)}"
         data-formtype="${escapeHtml(requiredType)}"
-        ${complete ? 'style="display:none;"' : ""}
       >
         WhatsApp
       </button>
     `
           : "";
-
-        const formEmail =
-          email && !complete
-            ? `
-      <a
-        href="mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
-          `Dear ${firstName},
-
-Please complete your ${requiredType.toUpperCase()} form for your booking.
-
-${formLink}
-
-Kind regards,
-Koos & Avril,
-Equine Transport UK`,
-        )}"
-        class="btn ghost btn-small"
-      >
-        Email
-      </a>
-    `
-            : "";
 
         const depositWhatsapp =
           phone && !depositDone
@@ -2444,20 +2414,6 @@ Equine Transport UK`,
         WhatsApp
       </button>
     `
-            : "";
-
-        const depositEmail =
-          email && !depositDone
-            ? `
-<button
-  class="btn ghost btn-small js-resend-email"
-  type="button"
-  data-id="${escapeHtml(bookingId)}"
-  data-type="deposit"
->
-  Email
-</button>
-`
             : "";
 
         const outstandingWhatsapp =
@@ -2476,24 +2432,56 @@ Equine Transport UK`,
     `
             : "";
 
+        /* ===============================
+     EMAIL BUTTONS
+  =============================== */
+
+        const formEmail =
+          email && !complete
+            ? `
+      <button
+        class="btn ghost btn-small js-resend-email"
+        type="button"
+        data-id="${escapeHtml(bookingId)}"
+        data-type="form"
+      >
+        Email
+      </button>
+    `
+            : "";
+
+        const depositEmail =
+          email && !depositDone
+            ? `
+      <button
+        class="btn ghost btn-small js-resend-email"
+        type="button"
+        data-id="${escapeHtml(bookingId)}"
+        data-type="deposit"
+      >
+        Email
+      </button>
+    `
+            : "";
+
         const outstandingEmail =
           email && !outstandingDone
             ? `
-<button
-  class="btn ghost btn-small js-resend-email"
-  type="button"
-  data-id="${escapeHtml(bookingId)}"
-  data-type="outstanding"
->
-  Email
-</button>
-`
+      <button
+        class="btn ghost btn-small js-resend-email"
+        type="button"
+        data-id="${escapeHtml(bookingId)}"
+        data-type="outstanding"
+      >
+        Email
+      </button>
+    `
             : "";
 
         return `
- <div class="stack">
+<div class="stack">
 
-  <!-- ✏️ EDIT BUTTON -->
+  <!-- ✏️ EDIT -->
   <button 
     class="btn ghost btn-small btn-edit"
     data-id="${escapeHtml(booking.id)}"
@@ -2501,82 +2489,63 @@ Equine Transport UK`,
     ✏️ Edit
   </button>
 
-   <!-- FORM -->
-<div class="stack">
-  <strong>Form</strong>
+  <!-- FORM -->
+  <div class="stack">
+    <strong>Form</strong>
 
-  ${
-    complete
-      ? `
-        <button
-          class="btn ghost btn-small"
-          type="button"
-          data-view-form="${escapeHtml(bookingId)}"
-        >
-          View Form
-        </button>
-      `
-      : `
-        <div class="contact-actions">
+    ${
+      complete
+        ? `
+          <button
+            class="btn ghost btn-small"
+            type="button"
+            data-view-form="${escapeHtml(bookingId)}"
+          >
+            View Form
+          </button>
+        `
+        : `
+          <div class="contact-actions">
+            ${formWhatsapp}
+            ${formEmail}
+          </div>
+        `
+    }
+  </div>
 
-          ${
-            phone
-              ? `
-            <button
-              class="btn ghost btn-small js-wa"
-              data-phone="${escapeHtml(phone)}"
-              data-type="form"
-              data-name="${escapeHtml(firstName)}"
-              data-id="${escapeHtml(bookingId)}"
-              data-formtype="${escapeHtml(requiredType)}"
-            >
-              WhatsApp
-            </button>
-          `
-              : ""
-          }
+  <!-- DEPOSIT -->
+  <div class="stack">
+    <strong>Deposit</strong>
 
-          ${
-            email
-              ? `
-            <button
-              class="btn ghost btn-small resend-email-btn"
-              data-id="${escapeHtml(bookingId)}"
-              data-type="form"
-            >
-              Email
-            </button>
-          `
-              : ""
-          }
+    ${
+      depositDone
+        ? `<span class="pill done">Done</span>`
+        : `
+          <div class="contact-actions">
+            ${depositWhatsapp}
+            ${depositEmail}
+          </div>
+        `
+    }
+  </div>
 
-        </div>
-      `
-  }
+  <!-- OUTSTANDING -->
+  <div class="stack">
+    <strong>Outstanding</strong>
+
+    ${
+      outstandingDone
+        ? `<span class="pill done">Done</span>`
+        : `
+          <div class="contact-actions">
+            ${outstandingWhatsapp}
+            ${outstandingEmail}
+          </div>
+        `
+    }
+  </div>
 
 </div>
-
-    <!-- DEPOSIT -->
-    <div class="stack">
-      <strong>Deposit</strong>
-      ${
-        depositDone
-          ? `<span class="pill done">Done</span>`
-          : `<div class="contact-actions">${depositWhatsapp}${depositEmail}</div>`
-      }
-    </div>
-
-    <!-- OUTSTANDING -->
-    <div class="stack">
-      <strong>Outstanding</strong>
-      ${
-        outstandingDone
-          ? `<span class="pill done">Done</span>`
-          : `<div class="contact-actions">${outstandingWhatsapp}${outstandingEmail}</div>`
-      }
-    </div>
-
-  </div>
 `;
       }
 
@@ -3742,6 +3711,138 @@ Equine Transport UK`,
             showCopySuccess("Copied ✓");
           } catch (err) {
             console.warn("Copy failed:", err);
+          }
+
+          return;
+        }
+
+        /* ===============================
+   📲 WHATSAPP ACTIONS
+=============================== */
+
+        const waBtn = e.target.closest(".js-wa");
+
+        if (waBtn) {
+          e.preventDefault();
+
+          const phone = String(waBtn.dataset.phone || "").replace(/\s+/g, "");
+
+          const bookingId = waBtn.dataset.id || "";
+          const type = waBtn.dataset.type || "";
+          const name = waBtn.dataset.name || "Customer";
+          const formType = waBtn.dataset.formtype || "long";
+
+          const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+
+          const formLink = `${BASE}/forms/${formType}-form.html?bookingId=${bookingId}`;
+
+          const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
+
+          const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
+
+          let message = "";
+
+          /* ===============================
+     FORM
+  =============================== */
+
+          if (type === "form") {
+            message = `Dear ${name},
+
+Please complete your ${formType.toUpperCase()} form before your hire:
+
+${formLink}
+
+Kind regards,
+Koos & Avril
+Equine Transport UK`;
+          }
+
+          /* ===============================
+     DEPOSIT
+  =============================== */
+
+          if (type === "deposit") {
+            message = `Dear ${name},
+
+Please secure your £200 deposit here:
+
+${depositLink}
+
+Kind regards,
+Koos & Avril
+Equine Transport UK`;
+          }
+
+          /* ===============================
+     OUTSTANDING
+  =============================== */
+
+          if (type === "outstanding") {
+            message = `Dear ${name},
+
+Your outstanding balance can be paid here:
+
+${outstandingLink}
+
+Kind regards,
+Koos & Avril
+Equine Transport UK`;
+          }
+
+          const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+          window.open(whatsappUrl, "_blank");
+
+          return;
+        }
+
+        /* ===============================
+   📧 EMAIL ACTIONS
+=============================== */
+
+        const emailBtn = e.target.closest(".js-resend-email");
+
+        if (emailBtn) {
+          e.preventDefault();
+
+          const bookingId = emailBtn.dataset.id;
+          const type = emailBtn.dataset.type;
+
+          emailBtn.disabled = true;
+          emailBtn.textContent = "Sending...";
+
+          try {
+            const res = await fetch(`${API_BASE}/api/admin/resend-email`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                bookingId,
+                type,
+              }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              throw new Error(data.error || "Failed to resend");
+            }
+
+            emailBtn.textContent = "Sent ✓";
+
+            setTimeout(() => {
+              emailBtn.disabled = false;
+              emailBtn.textContent = "Email";
+            }, 2000);
+          } catch (err) {
+            console.error(err);
+
+            alert(err.message || "Failed to resend");
+
+            emailBtn.disabled = false;
+            emailBtn.textContent = "Email";
           }
 
           return;
