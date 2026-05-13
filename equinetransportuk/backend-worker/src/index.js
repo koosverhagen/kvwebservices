@@ -1137,6 +1137,168 @@ export default {
       }
 
       /* ===============================
+   💳 ADMIN CAPTURE DEPOSIT
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/capture-deposit"
+      ) {
+        try {
+          const { bookingId, amount } = await request.json();
+
+          if (!bookingId) {
+            return withCors(
+              json({ error: "Missing bookingId" }, 400),
+              corsHeaders,
+            );
+          }
+
+          /* ===============================
+       FIND BOOKING
+    =============================== */
+
+          const booking = await findBookingById(env, bookingId);
+
+          if (!booking) {
+            return withCors(
+              json({ error: "Booking not found" }, 404),
+              corsHeaders,
+            );
+          }
+
+          if (!booking.paymentIntentId) {
+            return withCors(
+              json({ error: "No Stripe deposit found" }, 400),
+              corsHeaders,
+            );
+          }
+
+          /* ===============================
+       LOAD STRIPE PAYMENT INTENT
+    =============================== */
+
+          const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+
+          const paymentIntent = await stripe.paymentIntents.retrieve(
+            booking.paymentIntentId,
+          );
+
+          /* ===============================
+       VALIDATE STATUS
+    =============================== */
+
+          if (paymentIntent.capture_method !== "manual") {
+            return withCors(
+              json({ error: "This is not a manual-capture deposit" }, 400),
+              corsHeaders,
+            );
+          }
+
+          if (paymentIntent.status !== "requires_capture") {
+            return withCors(
+              json(
+                {
+                  error: `Deposit cannot be captured (${paymentIntent.status})`,
+                },
+                400,
+              ),
+              corsHeaders,
+            );
+          }
+
+          /* ===============================
+       FULL OR PARTIAL CAPTURE
+    =============================== */
+
+          let captureAmount = null;
+
+          if (amount && Number(amount) > 0) {
+            captureAmount = Math.round(Number(amount) * 100);
+          }
+
+          const captured = await stripe.paymentIntents.capture(
+            booking.paymentIntentId,
+            captureAmount
+              ? {
+                  amount_to_capture: captureAmount,
+                }
+              : {},
+          );
+
+          console.log("💳 Deposit captured:", captured.id);
+
+          /* ===============================
+       UPDATE BOOKING
+    =============================== */
+
+          const capturedPounds = captureAmount ? Number(amount) : 200;
+
+          booking.depositPaid = true;
+
+          booking.paidNow = Number(booking.paidNow || 0) + capturedPounds;
+
+          booking.outstandingAmount = Math.max(
+            0,
+            Number(booking.hireTotal || 0) - booking.paidNow,
+          );
+
+          booking.outstanding = booking.outstandingAmount;
+
+          booking.updatedAt = new Date().toISOString();
+
+          /* ===============================
+       AUDIT LOG
+    =============================== */
+
+          try {
+            const auditKey = `audit:${booking.id}`;
+
+            let audit = [];
+
+            try {
+              audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+            } catch {}
+
+            audit.unshift({
+              type: "deposit_capture",
+              amount: capturedPounds,
+              at: new Date().toISOString(),
+            });
+
+            await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+          } catch {}
+
+          /* ===============================
+       SAVE BOOKING
+    =============================== */
+
+          await moveBookingInKv(env, booking, booking);
+
+          return withCors(
+            json({
+              ok: true,
+              booking,
+            }),
+            corsHeaders,
+          );
+        } catch (err) {
+          console.error("❌ Capture failed:", err);
+
+          return withCors(
+            json(
+              {
+                error: "Deposit capture failed",
+                detail: err.message,
+              },
+              500,
+            ),
+            corsHeaders,
+          );
+        }
+      }
+
+      /* ===============================
    ❌ ADMIN CANCEL BOOKING
 =============================== */
 
