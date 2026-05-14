@@ -405,6 +405,16 @@ export default {
           },
         });
 
+        /* ===============================
+   SAVE DEPOSIT PAYMENT INTENT
+=============================== */
+
+        booking.depositPaymentIntentId = paymentIntent.id;
+
+        booking.updatedAt = new Date().toISOString();
+
+        await moveBookingInKv(env, booking, booking);
+
         return withCors(
           json({
             clientSecret: paymentIntent.client_secret,
