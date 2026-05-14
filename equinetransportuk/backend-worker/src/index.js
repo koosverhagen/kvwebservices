@@ -1167,7 +1167,10 @@ export default {
             );
           }
 
-          if (!booking.paymentIntentId) {
+          const paymentIntentId =
+            booking.depositPaymentIntentId || booking.paymentIntentId;
+
+          if (!paymentIntentId) {
             return withCors(
               json({ error: "No Stripe deposit found" }, 400),
               corsHeaders,
@@ -1180,9 +1183,8 @@ export default {
 
           const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
-          const paymentIntent = await stripe.paymentIntents.retrieve(
-            booking.paymentIntentId,
-          );
+          const paymentIntent =
+            await stripe.paymentIntents.retrieve(paymentIntentId);
 
           /* ===============================
        VALIDATE STATUS
@@ -1218,7 +1220,7 @@ export default {
           }
 
           const captured = await stripe.paymentIntents.capture(
-            booking.paymentIntentId,
+            paymentIntentId,
             captureAmount
               ? {
                   amount_to_capture: captureAmount,
