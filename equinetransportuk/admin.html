@@ -1349,6 +1349,14 @@
                   Capture Full
                 </button>
 
+                <button
+                  class="btn ghost"
+                  id="cancel-deposit-btn"
+                  style="border-color: #b42318; color: #b42318"
+                >
+                  Cancel Deposit
+                </button>
+
                 <button class="btn ghost" id="partial-capture-btn">
                   Partial Capture
                 </button>
@@ -4469,6 +4477,61 @@ Equine Transport UK`;
             partialCaptureBtn.innerText = "Partial Capture";
           };
         }
+      }
+
+      /* ===============================
+   ↩️ CANCEL DEPOSIT
+=============================== */
+
+      const cancelDepositBtn = document.getElementById("cancel-deposit-btn");
+
+      if (cancelDepositBtn) {
+        cancelDepositBtn.onclick = async () => {
+          const bookingId = document.getElementById("edit-booking-id").value;
+
+          if (!bookingId) {
+            alert("Missing booking");
+            return;
+          }
+
+          if (!confirm("Cancel deposit hold?")) {
+            return;
+          }
+
+          cancelDepositBtn.disabled = true;
+
+          try {
+            const res = await fetch(`${API_BASE}/api/admin/cancel-deposit`, {
+              method: "POST",
+
+              headers: {
+                "Content-Type": "application/json",
+              },
+
+              body: JSON.stringify({
+                bookingId,
+              }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              throw new Error(data.error || "Cancel failed");
+            }
+
+            alert("✅ Deposit cancelled");
+
+            editModal.classList.add("hidden");
+
+            await loadBookings();
+          } catch (err) {
+            console.error(err);
+
+            alert(err.message || "Cancel failed");
+          }
+
+          cancelDepositBtn.disabled = false;
+        };
       }
 
       /* ===============================
