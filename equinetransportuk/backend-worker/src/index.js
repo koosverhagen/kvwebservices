@@ -1311,6 +1311,121 @@ export default {
       }
 
       /* ===============================
+   ↩️ ADMIN CANCEL DEPOSIT
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/cancel-deposit"
+      ) {
+        try {
+          const { bookingId } = await request.json();
+
+          if (!bookingId) {
+            return withCors(
+              json({ error: "Missing bookingId" }, 400),
+              corsHeaders,
+            );
+          }
+
+          const booking = await findBookingById(env, bookingId);
+
+          if (!booking) {
+            return withCors(
+              json({ error: "Booking not found" }, 404),
+              corsHeaders,
+            );
+          }
+
+          const paymentIntentId = booking.depositPaymentIntentId;
+
+          if (!paymentIntentId) {
+            return withCors(
+              json({ error: "No deposit hold found" }, 400),
+              corsHeaders,
+            );
+          }
+
+          const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+
+          const paymentIntent =
+            await stripe.paymentIntents.retrieve(paymentIntentId);
+
+          if (paymentIntent.capture_method !== "manual") {
+            return withCors(
+              json(
+                {
+                  error: "This is not a deposit hold",
+                },
+                400,
+              ),
+              corsHeaders,
+            );
+          }
+
+          if (paymentIntent.status !== "requires_capture") {
+            return withCors(
+              json(
+                {
+                  error: "Deposit already captured or cancelled",
+                },
+                400,
+              ),
+              corsHeaders,
+            );
+          }
+
+          await stripe.paymentIntents.cancel(paymentIntentId);
+
+          console.log("↩️ Deposit cancelled");
+
+          booking.depositCancelled = true;
+          booking.depositPaid = false;
+
+          booking.updatedAt = new Date().toISOString();
+
+          await moveBookingInKv(env, booking, booking);
+
+          try {
+            const auditKey = `audit:${booking.id}`;
+
+            let audit = [];
+
+            try {
+              audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+            } catch {}
+
+            audit.unshift({
+              type: "deposit_cancelled",
+              at: new Date().toISOString(),
+            });
+
+            await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+          } catch {}
+
+          return withCors(
+            json({
+              ok: true,
+            }),
+            corsHeaders,
+          );
+        } catch (err) {
+          console.error("❌ Deposit cancel failed:", err);
+
+          return withCors(
+            json(
+              {
+                error: "Deposit cancel failed",
+                detail: err.message,
+              },
+              500,
+            ),
+            corsHeaders,
+          );
+        }
+      }
+
+      /* ===============================
    ❌ ADMIN CANCEL BOOKING
 =============================== */
 
