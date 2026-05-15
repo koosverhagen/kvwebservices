@@ -346,28 +346,42 @@ export default {
         }
 
         // ===============================
-        // FIND BOOKING
+        // FIND BOOKING (WITH RETRY)
         // ===============================
-
-        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
         let booking = null;
 
-        for (const key of list.keys) {
-          const data = await env.BOOKINGS_KV.get(key.name);
-          if (!data) continue;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const list = await env.BOOKINGS_KV.list({
+            prefix: "bookings:",
+          });
 
-          try {
-            const parsed = JSON.parse(data);
+          for (const key of list.keys) {
+            const data = await env.BOOKINGS_KV.get(key.name);
 
-            if (Array.isArray(parsed)) {
-              const found = parsed.find((b) => b.id === bookingId);
-              if (found) {
-                booking = found;
-                break;
+            if (!data) continue;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (Array.isArray(parsed)) {
+                const found = parsed.find(
+                  (b) => String(b.id) === String(bookingId),
+                );
+
+                if (found) {
+                  booking = found;
+                  break;
+                }
               }
-            }
-          } catch {}
+            } catch {}
+          }
+
+          if (booking) break;
+
+          console.log(`⏳ Deposit booking retry ${attempt + 1}/5`);
+
+          await new Promise((r) => setTimeout(r, 800));
         }
 
         if (!booking) {
