@@ -1331,6 +1331,29 @@
 
               <button class="btn ghost" id="edit-refund-btn">Refund</button>
 
+              <!-- 💳 CAPTURE DEPOSIT -->
+              <div class="field">
+                <label>Capture deposit (£)</label>
+
+                <input
+                  type="number"
+                  id="capture-amount"
+                  placeholder="Leave empty for full £200"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+
+              <div style="display: flex; gap: 10px">
+                <button class="btn primary" id="capture-deposit-btn">
+                  Capture Full
+                </button>
+
+                <button class="btn ghost" id="partial-capture-btn">
+                  Partial Capture
+                </button>
+              </div>
+
               <!-- ❌ CANCEL BOOKING -->
               <button
                 class="btn"
@@ -4323,6 +4346,129 @@ Equine Transport UK`;
             alert(err.message || "Update failed");
           }
         };
+
+        /* ===============================
+   💳 FULL DEPOSIT CAPTURE
+=============================== */
+
+        const captureDepositBtn = document.getElementById(
+          "capture-deposit-btn",
+        );
+
+        if (captureDepositBtn) {
+          captureDepositBtn.onclick = async () => {
+            const bookingId = document.getElementById("edit-booking-id").value;
+
+            if (!bookingId) {
+              alert("Missing booking");
+              return;
+            }
+
+            if (!confirm("Capture full £200 deposit?")) {
+              return;
+            }
+
+            captureDepositBtn.disabled = true;
+            captureDepositBtn.innerText = "Capturing...";
+
+            try {
+              const res = await fetch(`${API_BASE}/api/admin/capture-deposit`, {
+                method: "POST",
+
+                headers: {
+                  "Content-Type": "application/json",
+                },
+
+                body: JSON.stringify({
+                  bookingId,
+                }),
+              });
+
+              const data = await res.json();
+
+              if (!res.ok) {
+                throw new Error(data.error || "Capture failed");
+              }
+
+              alert("✅ Deposit captured");
+
+              editModal.classList.add("hidden");
+
+              await loadBookings();
+            } catch (err) {
+              console.error(err);
+
+              alert(err.message || "Capture failed");
+            }
+
+            captureDepositBtn.disabled = false;
+            captureDepositBtn.innerText = "Capture Full";
+          };
+        }
+
+        /* ===============================
+   💳 PARTIAL DEPOSIT CAPTURE
+=============================== */
+
+        const partialCaptureBtn = document.getElementById(
+          "partial-capture-btn",
+        );
+
+        const captureAmountInput = document.getElementById("capture-amount");
+
+        if (partialCaptureBtn) {
+          partialCaptureBtn.onclick = async () => {
+            const bookingId = document.getElementById("edit-booking-id").value;
+
+            const amount = Number(captureAmountInput.value);
+
+            if (!amount || amount <= 0) {
+              alert("Enter amount");
+              return;
+            }
+
+            if (!confirm(`Capture £${amount.toFixed(2)} ?`)) {
+              return;
+            }
+
+            partialCaptureBtn.disabled = true;
+            partialCaptureBtn.innerText = "Capturing...";
+
+            try {
+              const res = await fetch(`${API_BASE}/api/admin/capture-deposit`, {
+                method: "POST",
+
+                headers: {
+                  "Content-Type": "application/json",
+                },
+
+                body: JSON.stringify({
+                  bookingId,
+                  amount,
+                }),
+              });
+
+              const data = await res.json();
+
+              if (!res.ok) {
+                throw new Error(data.error || "Capture failed");
+              }
+
+              alert(`✅ £${amount.toFixed(2)} captured`);
+
+              editModal.classList.add("hidden");
+
+              await loadBookings();
+            } catch (err) {
+              console.error(err);
+
+              alert(err.message || "Capture failed");
+            }
+
+            partialCaptureBtn.disabled = false;
+            partialCaptureBtn.innerText = "Partial Capture";
+          };
+        }
       }
 
       /* ===============================
@@ -4989,6 +5135,15 @@ ${
   =============================== */
 
         const refundBtn = document.getElementById("edit-refund-btn");
+        const captureDepositBtn = document.getElementById(
+          "capture-deposit-btn",
+        );
+
+        const partialCaptureBtn = document.getElementById(
+          "partial-capture-btn",
+        );
+
+        const captureAmountInput = document.getElementById("capture-amount");
         const refundInput = document.getElementById("edit-refund");
 
         const isCancelled =
