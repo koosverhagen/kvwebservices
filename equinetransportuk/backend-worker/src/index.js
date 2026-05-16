@@ -3044,6 +3044,12 @@ async function handleAdminBookingUpdate(request, env) {
     }
 
     /* ===============================
+   🔥 SAVE BOOKING FIRST
+=============================== */
+
+    await moveBookingInKv(env, existing, nextBooking);
+
+    /* ===============================
    🧾 AUDIT: VEHICLE CHANGED
 =============================== */
 
@@ -3088,12 +3094,6 @@ async function handleAdminBookingUpdate(request, env) {
         console.warn("⚠️ Vehicle audit failed:", err);
       }
     }
-
-    /* ===============================
-   🔥 SAVE BOOKING
-=============================== */
-
-    await moveBookingInKv(env, existing, nextBooking);
 
     return json({
       ok: true,
