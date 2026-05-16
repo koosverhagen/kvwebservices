@@ -3013,6 +3013,12 @@ async function handleAdminBookingUpdate(request, env) {
    🧾 AUDIT: VEHICLE CHANGED
 =============================== */
 
+    console.log("🚚 VEHICLE CHANGED?", {
+      from: existing.vehicleId,
+      to: vehicleId,
+      changed: vehicleChanged,
+    });
+
     if (vehicleChanged) {
       try {
         const auditKey = `audit:${bookingId}`;
@@ -3027,7 +3033,9 @@ async function handleAdminBookingUpdate(request, env) {
           type: "vehicle_changed",
 
           fromVehicle:
-            existing.vehicleSnapshot?.name || existing.vehicleId || "Unknown",
+            VEHICLES.find((v) => v.id === existing.vehicleId)?.name ||
+            existing.vehicleId ||
+            "Unknown",
 
           toVehicle:
             VEHICLES.find((v) => v.id === vehicleId)?.name || vehicleId,
