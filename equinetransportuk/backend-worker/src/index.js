@@ -2774,6 +2774,22 @@ async function handleAdminBookingUpdate(request, env) {
 
     const extrasChanged = oldDartford !== newDartford || oldEarly !== newEarly;
 
+    /* ===============================
+   🚚 VEHICLE CHANGE DETECTION
+=============================== */
+
+    const originalVehicleId = String(existing.vehicleId || "").trim();
+
+    const nextVehicleId = String(vehicleId || "").trim();
+
+    const vehicleChanged = originalVehicleId !== nextVehicleId;
+
+    console.log("🚚 VEHICLE CHECK", {
+      originalVehicleId,
+      nextVehicleId,
+      vehicleChanged,
+    });
+
     const isEditChange =
       vehicleId !== existing.vehicleId ||
       pickupDate !== (existing.pickupAtLocal || "").slice(0, 10) ||
@@ -3018,8 +3034,10 @@ async function handleAdminBookingUpdate(request, env) {
    🧾 AUDIT: VEHICLE CHANGED
 =============================== */
 
-    if (String(originalVehicleId) !== String(vehicleId)) {
+    if (vehicleChanged) {
       try {
+        console.log("🚚 WRITING VEHICLE AUDIT");
+
         const auditKey = `audit:${bookingId}`;
 
         let audit = [];
@@ -3028,24 +3046,39 @@ async function handleAdminBookingUpdate(request, env) {
           audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
         } catch {}
 
+        const fromVehicleName =
+          VEHICLES.find((v) => v.id === originalVehicleId)?.name ||
+          originalVehicleId ||
+          "Unknown";
+
+        const toVehicleName =
+          VEHICLES.find((v) => v.id === nextVehicleId)?.name ||
+          nextVehicleId ||
+          "Unknown";
+
         audit.unshift({
           type: "vehicle_changed",
 
-          fromVehicle: originalVehicleName,
-
-          toVehicle:
-            VEHICLES.find((v) => v.id === vehicleId)?.name || vehicleId,
+          fromVehicle: fromVehicleName,
+          toVehicle: toVehicleName,
 
           at: new Date().toISOString(),
         });
 
         await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
 
-        console.log("✅ VEHICLE AUDIT SAVED");
+        console.log("✅ VEHICLE AUDIT WRITTEN", {
+          fromVehicleName,
+          toVehicleName,
+        });
       } catch (err) {
         console.warn("⚠️ Vehicle audit failed:", err);
       }
     }
+
+    /* ===============================
+   🔥 SAVE BOOKING
+=============================== */
 
     await moveBookingInKv(env, existing, nextBooking);
 
