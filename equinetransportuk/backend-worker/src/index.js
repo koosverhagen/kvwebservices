@@ -2912,13 +2912,6 @@ async function handleAdminBookingUpdate(request, env) {
     }
 
     /* ===============================
-   🚚 VEHICLE CHANGE DETECTION
-=============================== */
-
-    const vehicleChanged =
-      String(existing.vehicleId || "") !== String(vehicleId || "");
-
-    /* ===============================
        🔥 BUILD UPDATED OBJECT
     =============================== */
 
