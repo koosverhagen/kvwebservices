@@ -5437,6 +5437,10 @@ ${
                 return `↩️ Deposit cancelled — ${date}`;
               }
 
+              if (a.type === "vehicle_changed") {
+                return `🚚 Vehicle changed: ${a.fromVehicle} → ${a.toVehicle} — ${date}`;
+              }
+
               if (a.type === "extras_changed") {
                 return `
     🧾 Extras changed —
