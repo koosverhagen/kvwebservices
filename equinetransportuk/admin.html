@@ -5438,7 +5438,12 @@ ${
               }
 
               if (a.type === "vehicle_changed") {
-                return `🚚 Vehicle changed: ${a.fromVehicle} → ${a.toVehicle} — ${date}`;
+                return `
+    🚚 Lorry changed<br>
+    From: <strong>${a.fromVehicle || "Unknown"}</strong><br>
+    To: <strong>${a.toVehicle || "Unknown"}</strong><br>
+    ${date}
+  `;
               }
 
               if (a.type === "extras_changed") {
