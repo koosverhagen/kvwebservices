@@ -2766,6 +2766,9 @@ async function handleAdminBookingUpdate(request, env) {
 
     const extrasChanged = oldDartford !== newDartford || oldEarly !== newEarly;
 
+    const vehicleChanged =
+      String(vehicleId) !== String(existing.vehicleId || "");
+
     const isEditChange =
       vehicleId !== existing.vehicleId ||
       pickupDate !== (existing.pickupAtLocal || "").slice(0, 10) ||
