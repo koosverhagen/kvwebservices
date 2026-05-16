@@ -5429,6 +5429,14 @@ ${
                 return `👤 Customer changed: ${a.fromCustomerName || "Unknown"} → ${a.toCustomerName || "Unknown"} — ${date}`;
               }
 
+              if (a.type === "deposit_capture") {
+                return `💳 Deposit captured £${Number(a.amount || 0).toFixed(2)} — ${date}`;
+              }
+
+              if (a.type === "deposit_cancelled") {
+                return `↩️ Deposit cancelled — ${date}`;
+              }
+
               return `• ${a.type} — ${date}`;
             })
             .join("<br>");
