@@ -2539,6 +2539,14 @@ async function handleAdminBookingUpdate(request, env) {
     }
 
     /* ===============================
+   👤 TRACK ORIGINAL CUSTOMER
+=============================== */
+
+    const originalCustomerId = existing.customerId || null;
+
+    const originalCustomerName = existing.customerName || "Unknown";
+
+    /* ===============================
    🔥 ACTION HANDLING (FIXED)
 =============================== */
 
