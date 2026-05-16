@@ -2554,6 +2554,8 @@ async function handleAdminBookingUpdate(request, env) {
 
     const originalCustomerName = existing.customerName || "Unknown";
 
+    const originalVehicleId = String(existing.vehicleId || "").trim();
+
     /* ===============================
    🔥 ACTION HANDLING (FIXED)
 =============================== */
