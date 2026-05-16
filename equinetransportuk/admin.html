@@ -5404,6 +5404,10 @@ ${
                 return `❌ Booking cancelled — ${date}`;
               }
 
+              if (a.type === "customer_changed") {
+                return `👤 Customer changed: ${a.fromCustomerName || "Unknown"} → ${a.toCustomerName || "Unknown"} — ${date}`;
+              }
+
               return `• ${a.type} — ${date}`;
             })
             .join("<br>");
