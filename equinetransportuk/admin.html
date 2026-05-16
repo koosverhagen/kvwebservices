@@ -4288,6 +4288,9 @@ Equine Transport UK`;
           }
 
           const vehicleId = document.getElementById("edit-vehicle").value;
+          console.log("🚚 SAVING VEHICLE:", vehicleId);
+
+          console.log("🚚 ORIGINAL VEHICLE:", selectedBooking?.vehicleId);
           const pickupDate = document.getElementById("edit-date").value;
           const pickupTime = document.getElementById("edit-time").value;
           const durationDays = Number(
@@ -4380,11 +4383,26 @@ Equine Transport UK`;
             /* ===============================
      👤 CUSTOMER ASSIGN (FIXED)
   =============================== */
+
             customerId,
 
             isNew,
             updatedAt: booking?.updatedAt || null,
           };
+
+          /* ===============================
+       🚚 DEBUG VEHICLE SAVE
+    =============================== */
+
+          console.log("🚚 SAVING VEHICLE:", vehicleId);
+
+          console.log("🚚 ORIGINAL VEHICLE:", booking?.vehicleId);
+
+          console.log("🚚 FINAL SAVE PAYLOAD", {
+            bookingId,
+            vehicleId,
+            originalVehicle: booking?.vehicleId,
+          });
 
           try {
             const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
@@ -4394,6 +4412,8 @@ Equine Transport UK`;
             });
 
             const data = await res.json();
+
+            console.log("🚚 UPDATE RESPONSE:", data);
 
             if (res.status === 409) {
               showEditError(
@@ -4405,7 +4425,6 @@ Equine Transport UK`;
             if (!res.ok) {
               throw new Error(data.error || "Update failed");
             }
-
             /* ===============================
          🎉 SUCCESS UX (IMPROVED)
       =============================== */
