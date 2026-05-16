@@ -2534,14 +2534,6 @@ async function handleAdminBookingUpdate(request, env) {
 
     const existing = await findBookingById(env, bookingId);
 
-    const originalVehicleId = existing.vehicleId || null;
-
-    const originalVehicleName =
-      existing.vehicleSnapshot?.name ||
-      VEHICLES.find((v) => v.id === existing.vehicleId)?.name ||
-      existing.vehicleId ||
-      "Unknown";
-
     if (!existing) {
       return json({ error: "Booking not found" }, 404);
     }
@@ -2554,7 +2546,19 @@ async function handleAdminBookingUpdate(request, env) {
 
     const originalCustomerName = existing.customerName || "Unknown";
 
+    /* ===============================
+   🚚 TRACK ORIGINAL VEHICLE
+=============================== */
+
     const originalVehicleId = String(existing.vehicleId || "").trim();
+
+    const originalVehicleName =
+      existing.vehicleSnapshot?.name ||
+      VEHICLES.find((v) => v.id === originalVehicleId)?.name ||
+      originalVehicleId ||
+      "Unknown";
+
+    const nextCustomerId = String(body.customerId || "").trim();
 
     /* ===============================
    🔥 ACTION HANDLING (FIXED)
@@ -2571,13 +2575,10 @@ async function handleAdminBookingUpdate(request, env) {
       /* ===============================
    ❌ CANCEL
 =============================== */
+
       if (action === "cancel") {
         updated.status = "cancelled";
         updated.cancelledAt = now;
-
-        /* ===============================
-     🧾 AUDIT LOG (NEW)
-  =============================== */
 
         try {
           const auditKey = `audit:${updated.id}`;
@@ -2602,8 +2603,10 @@ async function handleAdminBookingUpdate(request, env) {
       /* ===============================
    💳 MANUAL PAYMENT
 =============================== */
+
       if (action === "manual_payment") {
         const existingManual = Number(updated.manualPayments || 0);
+
         const basePaid = Number(
           updated.confirmationFee || updated.paidNow || 0,
         );
@@ -2626,10 +2629,6 @@ async function handleAdminBookingUpdate(request, env) {
         updated.outstanding = outstanding;
         updated.outstandingPaid = outstanding === 0;
 
-        /* ===============================
-     🧾 AUDIT LOG (NEW)
-  =============================== */
-
         try {
           const auditKey = `audit:${updated.id}`;
 
@@ -2650,9 +2649,11 @@ async function handleAdminBookingUpdate(request, env) {
           console.warn("⚠️ Audit log failed (non-blocking):", err);
         }
       }
+
       /* ===============================
      💸 REFUND
   =============================== */
+
       if (action === "refund") {
         const existingManual = Number(updated.manualPayments || 0);
         const basePaid = Number(updated.confirmationFee || 0);
@@ -2691,25 +2692,31 @@ async function handleAdminBookingUpdate(request, env) {
     }
 
     /* ===============================
-       🔥 NORMAL EDIT FLOW (UNCHANGED)
+       🔥 NORMAL EDIT FLOW
     =============================== */
 
     const vehicleId = String(body.vehicleId || "").trim();
+
     const pickupDate = String(body.pickupDate || "").trim();
+
     const pickupTime = String(body.pickupTime || "").trim();
+
     const durationDays = Number(body.durationDays || 0);
+
     const hireTotal = Number(body.hireTotal || 0);
 
     const extras = body.extras || {};
 
     /* ===============================
-   👤 CUSTOMER (NEW)
+   👤 CUSTOMER
 =============================== */
 
     const customerId = String(body.customerId || "").trim();
 
     const dartfordTotal = (extras.dartford || 0) * 4.2;
+
     const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
+
     const extrasTotal = dartfordTotal + earlyPickupTotal;
 
     if (
@@ -2748,6 +2755,7 @@ async function handleAdminBookingUpdate(request, env) {
 
     if (body.updatedAt && existing.updatedAt) {
       const incoming = new Date(body.updatedAt).getTime();
+
       const current = new Date(existing.updatedAt).getTime();
 
       if (incoming < current) {
@@ -2765,25 +2773,22 @@ async function handleAdminBookingUpdate(request, env) {
     }
 
     /* ===============================
-   🔥 REAL CHANGE DETECTION (FIXED)
+   🔥 CHANGE DETECTION
 =============================== */
 
     const oldDartford = Number(existing.extras?.dartford || 0);
+
     const newDartford = Number(extras.dartford || 0);
 
     const oldEarly = Boolean(existing.extras?.earlyPickup);
+
     const newEarly = Boolean(extras.earlyPickup);
 
     const extrasChanged = oldDartford !== newDartford || oldEarly !== newEarly;
 
-    /* ===============================
-   🚚 VEHICLE CHANGE DETECTION
-=============================== */
-
     const nextVehicleId = String(vehicleId || "").trim();
 
-    const vehicleChanged =
-      String(originalVehicleId || "").trim() !== nextVehicleId;
+    const vehicleChanged = originalVehicleId !== nextVehicleId;
 
     console.log("🚚 VEHICLE CHECK", {
       originalVehicleId,
@@ -2813,16 +2818,20 @@ async function handleAdminBookingUpdate(request, env) {
     =============================== */
 
     let pickupAtDate = londonDateTimeToUtc(pickupDate, pickupTime);
+
     let dropoffAtDate;
 
     if (durationDays === 0.5) {
       const dropoffTime = getHalfDayDropoffTime(pickupTime, vehicleId);
+
       dropoffAtDate = londonDateTimeToUtc(pickupDate, dropoffTime);
     } else {
       const dropoffDate = new Date(pickupDate);
+
       dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
 
       const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
+
       dropoffAtDate = londonDateTimeToUtc(dropoffDateStr, "19:00");
     }
 
@@ -2834,6 +2843,7 @@ async function handleAdminBookingUpdate(request, env) {
     }
 
     const pickupAt = pickupAtDate.toISOString();
+
     const dropoffAt = dropoffAtDate.toISOString();
 
     /* ===============================
@@ -2879,6 +2889,7 @@ async function handleAdminBookingUpdate(request, env) {
       hireTotal > 0 ? hireTotal : Math.max(0, baseCost + extrasTotal);
 
     const outstandingAmount = Math.max(0, finalTotal - confirmationFee);
+
     const now = new Date().toISOString();
 
     /* ===============================
@@ -2887,17 +2898,17 @@ async function handleAdminBookingUpdate(request, env) {
 
     await env.DB.prepare(
       `
-  UPDATE bookings
-  SET
-    vehicle_id = ?,
-    pickup_at = ?,
-    dropoff_at = ?,
-    duration_days = ?,
-    price_total = ?,
-    customer_id = ?,  -- 🔥 NEW
-    updated_at = ?
-  WHERE id = ?
-`,
+      UPDATE bookings
+      SET
+        vehicle_id = ?,
+        pickup_at = ?,
+        dropoff_at = ?,
+        duration_days = ?,
+        price_total = ?,
+        customer_id = ?,
+        updated_at = ?
+      WHERE id = ?
+    `,
     )
       .bind(
         vehicleId,
@@ -2905,14 +2916,14 @@ async function handleAdminBookingUpdate(request, env) {
         dropoffAt,
         durationDays,
         finalTotal,
-        customerId || null, // 🔥 NEW
+        customerId || null,
         now,
         bookingId,
       )
       .run();
 
     /* ===============================
-   👤 LOAD CUSTOMER NAME (CRITICAL)
+   👤 LOAD CUSTOMER NAME
 =============================== */
 
     let customerName = existing.customerName;
@@ -2957,6 +2968,7 @@ async function handleAdminBookingUpdate(request, env) {
       outstandingAmount,
 
       customerId: customerId || existing.customerId || null,
+
       customerName,
 
       updatedAt: now,
@@ -3049,7 +3061,7 @@ async function handleAdminBookingUpdate(request, env) {
 
         const fromVehicleName =
           VEHICLES.find((v) => v.id === originalVehicleId)?.name ||
-          originalVehicleId ||
+          originalVehicleName ||
           "Unknown";
 
         const toVehicleName =
