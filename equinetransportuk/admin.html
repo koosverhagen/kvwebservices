@@ -2718,32 +2718,32 @@ Equine Transport UK`,
 
         const waDeposit = phone
           ? `<button 
-      class="pill action warn js-wa"
-      data-phone="${phone}"
-      data-type="deposit"
-      data-name="${firstName}"
-      data-id="${id}"
-      title="Send deposit to ${escapeHtml(formatUKDisplay(phone))}"
-    >
-      Deposit not secured
-    </button>`
+        class="pill action warn js-wa"
+        data-phone="${phone}"
+        data-type="deposit"
+        data-name="${firstName}"
+        data-id="${id}"
+        title="Send deposit to ${escapeHtml(formatUKDisplay(phone))}"
+      >
+        Deposit not secured
+      </button>`
           : `<span class="pill warn">Deposit not secured</span>`;
 
         const waOutstanding = phone
           ? `<button 
-      class="pill action warn js-wa"
-      data-phone="${phone}"
-      data-type="outstanding"
-      data-name="${firstName}"
-      data-id="${id}"
-      title="Send payment link to ${escapeHtml(formatUKDisplay(phone))}"
-    >
-      Outstanding open
-    </button>`
+        class="pill action warn js-wa"
+        data-phone="${phone}"
+        data-type="outstanding"
+        data-name="${firstName}"
+        data-id="${id}"
+        title="Send payment link to ${escapeHtml(formatUKDisplay(phone))}"
+      >
+        Outstanding open
+      </button>`
           : `<span class="pill warn">Outstanding open</span>`;
 
         /* ===============================
-     💰 PAYMENT CALCULATION (UPDATED)
+     💰 HIRE PAYMENT CALCULATION
   =============================== */
 
         const total = Number(booking.hireTotal || booking.total || 0);
@@ -2758,6 +2758,12 @@ Equine Transport UK`,
         const refunded = Number(booking.refundedTotal || 0);
 
         const outstandingAmount = Math.max(0, total - paid);
+
+        /* ===============================
+     🔒 DEPOSIT SYSTEM
+  =============================== */
+
+        const depositCaptured = Number(booking.depositCapturedAmount || 0);
 
         /* ===============================
      OUTPUT
@@ -2784,13 +2790,66 @@ Equine Transport UK`,
         : ""
     }
 
+    <!-- ===============================
+         🔒 DEPOSIT STATUS
+    =============================== -->
+
+    ${
+      booking.depositPaid
+        ? `
+          <div class="pill ok">
+            £200 on hold
+          </div>
+        `
+        : ""
+    }
+
+    ${
+      depositCaptured > 0
+        ? `
+          <div class="pill warn">
+            Captured: £${depositCaptured.toFixed(2)}
+          </div>
+        `
+        : ""
+    }
+
+    ${
+      booking.depositCancelled
+        ? `
+          <div class="pill neutral">
+            Deposit cancelled
+          </div>
+        `
+        : ""
+    }
+
+    <!-- ===============================
+         💰 HIRE PAYMENTS
+    =============================== -->
+
     <div class="tiny">
-      <div><strong>Total price: ${formatMoney(total)}</strong></div>
-      <div style="margin-top:4px;">Paid now: ${formatMoney(paid)}</div>
-      <div>Outstanding: ${formatMoney(outstandingAmount)}</div>
+      <div>
+        <strong>
+          Total price: ${formatMoney(total)}
+        </strong>
+      </div>
+
+      <div style="margin-top:4px;">
+        Paid now: ${formatMoney(paid)}
+      </div>
+
+      <div>
+        Outstanding: ${formatMoney(outstandingAmount)}
+      </div>
+
       ${
         refunded > 0
-          ? `<div style="color:#b42318;">Refunded: ${formatMoney(refunded)}</div>`
+          ? `
+            <div style="color:#b42318;">
+              Refunded: ${formatMoney(refunded)}
+            </div>
+          `
           : ""
       }
     </div>
@@ -2798,7 +2857,6 @@ Equine Transport UK`,
     ${renderExtrasSummary(booking)}
   `;
       }
-
       function renderExtrasSummary(booking) {
         const extras = booking.extras || {};
 

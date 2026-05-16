@@ -1260,19 +1260,31 @@ export default {
 
           const capturedPounds = captureAmount ? Number(amount) : 200;
 
+          /* ===============================
+   🔒 DEPOSIT SYSTEM (SEPARATE)
+================================ */
+
           booking.depositPaid = true;
 
-          booking.paidNow = Number(booking.paidNow || 0) + capturedPounds;
+          booking.depositCapturedAmount = capturedPounds;
 
-          booking.outstandingAmount = Math.max(
-            0,
-            Number(booking.hireTotal || 0) - booking.paidNow,
-          );
+          booking.depositCapturedAt = new Date().toISOString();
 
-          booking.outstanding = booking.outstandingAmount;
+          /* ===============================
+   🚫 DO NOT TOUCH HIRE PAYMENTS
+================================ */
+
+          /*
+DO NOT update:
+- paidNow
+- outstandingAmount
+- outstanding
+
+Deposit is NOT booking revenue.
+It is only a security hold.
+*/
 
           booking.updatedAt = new Date().toISOString();
-
           /* ===============================
        AUDIT LOG
     =============================== */
@@ -1392,9 +1404,13 @@ export default {
           await stripe.paymentIntents.cancel(paymentIntentId);
 
           console.log("↩️ Deposit cancelled");
-
           booking.depositCancelled = true;
+
           booking.depositPaid = false;
+
+          booking.depositCapturedAmount = 0;
+
+          booking.depositCancelledAt = new Date().toISOString();
 
           booking.updatedAt = new Date().toISOString();
 
