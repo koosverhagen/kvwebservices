@@ -2909,6 +2909,13 @@ async function handleAdminBookingUpdate(request, env) {
     }
 
     /* ===============================
+   🚚 VEHICLE CHANGE DETECTION
+=============================== */
+
+    const vehicleChanged =
+      String(existing.vehicleId || "") !== String(vehicleId || "");
+
+    /* ===============================
        🔥 BUILD UPDATED OBJECT
     =============================== */
 
@@ -2996,6 +3003,38 @@ async function handleAdminBookingUpdate(request, env) {
         await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
       } catch (err) {
         console.warn("⚠️ Extras audit failed:", err);
+      }
+    }
+
+    /* ===============================
+   🧾 AUDIT: VEHICLE CHANGED
+=============================== */
+
+    if (vehicleChanged) {
+      try {
+        const auditKey = `audit:${bookingId}`;
+
+        let audit = [];
+
+        try {
+          audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+        } catch {}
+
+        audit.unshift({
+          type: "vehicle_changed",
+
+          fromVehicle:
+            existing.vehicleSnapshot?.name || existing.vehicleId || "Unknown",
+
+          toVehicle:
+            VEHICLES.find((v) => v.id === vehicleId)?.name || vehicleId,
+
+          at: new Date().toISOString(),
+        });
+
+        await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+      } catch (err) {
+        console.warn("⚠️ Vehicle audit failed:", err);
       }
     }
 
