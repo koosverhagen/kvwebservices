@@ -2534,6 +2534,14 @@ async function handleAdminBookingUpdate(request, env) {
 
     const existing = await findBookingById(env, bookingId);
 
+    const originalVehicleId = existing.vehicleId || null;
+
+    const originalVehicleName =
+      existing.vehicleSnapshot?.name ||
+      VEHICLES.find((v) => v.id === existing.vehicleId)?.name ||
+      existing.vehicleId ||
+      "Unknown";
+
     if (!existing) {
       return json({ error: "Booking not found" }, 404);
     }
@@ -2765,9 +2773,6 @@ async function handleAdminBookingUpdate(request, env) {
     const newEarly = Boolean(extras.earlyPickup);
 
     const extrasChanged = oldDartford !== newDartford || oldEarly !== newEarly;
-
-    const vehicleChanged =
-      String(vehicleId) !== String(existing.vehicleId || "");
 
     const isEditChange =
       vehicleId !== existing.vehicleId ||
@@ -3013,13 +3018,7 @@ async function handleAdminBookingUpdate(request, env) {
    🧾 AUDIT: VEHICLE CHANGED
 =============================== */
 
-    console.log("🚚 VEHICLE CHANGED?", {
-      from: existing.vehicleId,
-      to: vehicleId,
-      changed: vehicleChanged,
-    });
-
-    if (vehicleChanged) {
+    if (String(originalVehicleId) !== String(vehicleId)) {
       try {
         const auditKey = `audit:${bookingId}`;
 
@@ -3032,10 +3031,7 @@ async function handleAdminBookingUpdate(request, env) {
         audit.unshift({
           type: "vehicle_changed",
 
-          fromVehicle:
-            VEHICLES.find((v) => v.id === existing.vehicleId)?.name ||
-            existing.vehicleId ||
-            "Unknown",
+          fromVehicle: originalVehicleName,
 
           toVehicle:
             VEHICLES.find((v) => v.id === vehicleId)?.name || vehicleId,
@@ -3044,6 +3040,8 @@ async function handleAdminBookingUpdate(request, env) {
         });
 
         await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+
+        console.log("✅ VEHICLE AUDIT SAVED");
       } catch (err) {
         console.warn("⚠️ Vehicle audit failed:", err);
       }
