@@ -2923,6 +2923,13 @@ async function handleAdminBookingUpdate(request, env) {
       ...existing,
 
       vehicleId,
+
+      vehicleSnapshot: {
+        id: vehicleId,
+        name: getVehicleNameFromId(vehicleId),
+        type: getVehicleTypeFromId(vehicleId),
+      },
+
       pickupAt,
       dropoffAt,
       durationDays,
