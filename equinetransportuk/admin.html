@@ -5437,6 +5437,15 @@ ${
                 return `↩️ Deposit cancelled — ${date}`;
               }
 
+              if (a.type === "extras_changed") {
+                return `
+    🧾 Extras changed —
+    Dartford: ${a.fromDartford} → ${a.toDartford},
+    Early pickup: ${a.fromEarlyPickup ? "Yes" : "No"} → ${a.toEarlyPickup ? "Yes" : "No"}
+    — ${date}
+  `;
+              }
+
               return `• ${a.type} — ${date}`;
             })
             .join("<br>");

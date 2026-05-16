@@ -2758,12 +2758,21 @@ async function handleAdminBookingUpdate(request, env) {
    🔥 REAL CHANGE DETECTION (FIXED)
 =============================== */
 
+    const oldDartford = Number(existing.extras?.dartford || 0);
+    const newDartford = Number(extras.dartford || 0);
+
+    const oldEarly = Boolean(existing.extras?.earlyPickup);
+    const newEarly = Boolean(extras.earlyPickup);
+
+    const extrasChanged = oldDartford !== newDartford || oldEarly !== newEarly;
+
     const isEditChange =
       vehicleId !== existing.vehicleId ||
       pickupDate !== (existing.pickupAtLocal || "").slice(0, 10) ||
       pickupTime !== existing.pickupTime ||
       durationDays !== Number(existing.durationDays) ||
-      hireTotal !== Number(existing.hireTotal || 0);
+      hireTotal !== Number(existing.hireTotal || 0) ||
+      extrasChanged;
 
     if (existing.outstandingPaid === true && isEditChange) {
       return json(
@@ -2955,6 +2964,38 @@ async function handleAdminBookingUpdate(request, env) {
         await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
       } catch (err) {
         console.warn("⚠️ Customer audit failed:", err);
+      }
+    }
+
+    /* ===============================
+   🧾 AUDIT: EXTRAS CHANGED
+=============================== */
+
+    if (extrasChanged) {
+      try {
+        const auditKey = `audit:${bookingId}`;
+
+        let audit = [];
+
+        try {
+          audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+        } catch {}
+
+        audit.unshift({
+          type: "extras_changed",
+
+          fromDartford: oldDartford,
+          toDartford: newDartford,
+
+          fromEarlyPickup: oldEarly,
+          toEarlyPickup: newEarly,
+
+          at: new Date().toISOString(),
+        });
+
+        await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+      } catch (err) {
+        console.warn("⚠️ Extras audit failed:", err);
       }
     }
 
