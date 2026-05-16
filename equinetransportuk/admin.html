@@ -1554,6 +1554,9 @@
 
       let SELECTED_CUSTOMER = null;
 
+      let ORIGINAL_CUSTOMER_ID = null;
+      let ORIGINAL_CUSTOMER_NAME = null;
+
       let customerSearchController = null;
       let lastSearchQuery = "";
 
@@ -1705,6 +1708,14 @@
             };
 
             console.log("✅ Selected customer:", SELECTED_CUSTOMER);
+
+            /* ===============================
+   🔥 STORE ORIGINAL CUSTOMER
+=============================== */
+
+            window.ORIGINAL_CUSTOMER_ID = customer.id;
+
+            window.ORIGINAL_CUSTOMER_NAME = customer.full_name;
 
             /* ===============================
          🔥 UPDATE INPUT FIELD

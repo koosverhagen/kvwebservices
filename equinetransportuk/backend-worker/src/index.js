@@ -2926,6 +2926,38 @@ async function handleAdminBookingUpdate(request, env) {
       extrasTotal,
     };
 
+    /* ===============================
+   👤 CUSTOMER CHANGE AUDIT
+=============================== */
+
+    if (customerId && customerId !== originalCustomerId) {
+      try {
+        const auditKey = `audit:${existing.id}`;
+
+        let audit = [];
+
+        try {
+          audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+        } catch {}
+
+        audit.unshift({
+          type: "customer_changed",
+
+          fromCustomerId: originalCustomerId,
+          fromCustomerName: originalCustomerName,
+
+          toCustomerId: customerId,
+          toCustomerName: customerName,
+
+          at: new Date().toISOString(),
+        });
+
+        await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+      } catch (err) {
+        console.warn("⚠️ Customer audit failed:", err);
+      }
+    }
+
     await moveBookingInKv(env, existing, nextBooking);
 
     return json({
