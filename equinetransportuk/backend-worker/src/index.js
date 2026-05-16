@@ -2786,12 +2786,18 @@ async function handleAdminBookingUpdate(request, env) {
 
     const extrasChanged = oldDartford !== newDartford || oldEarly !== newEarly;
 
-    const nextVehicleId = String(vehicleId || "").trim();
+    const nextVehicleId = String(body.vehicleId || "").trim();
 
-    const vehicleChanged = originalVehicleId !== nextVehicleId;
+    /* ===============================
+   🔥 FORCE VEHICLE CHANGE CHECK
+=============================== */
+
+    const previousVehicleId = String(existing.vehicleId || "").trim();
+
+    const vehicleChanged = previousVehicleId !== nextVehicleId;
 
     console.log("🚚 VEHICLE CHECK", {
-      originalVehicleId,
+      previousVehicleId,
       nextVehicleId,
       vehicleChanged,
     });
