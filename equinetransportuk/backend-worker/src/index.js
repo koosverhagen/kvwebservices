@@ -2778,11 +2778,10 @@ async function handleAdminBookingUpdate(request, env) {
    🚚 VEHICLE CHANGE DETECTION
 =============================== */
 
-    const originalVehicleId = String(existing.vehicleId || "").trim();
-
     const nextVehicleId = String(vehicleId || "").trim();
 
-    const vehicleChanged = originalVehicleId !== nextVehicleId;
+    const vehicleChanged =
+      String(originalVehicleId || "").trim() !== nextVehicleId;
 
     console.log("🚚 VEHICLE CHECK", {
       originalVehicleId,
