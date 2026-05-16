@@ -5372,16 +5372,35 @@ ${
 
       async function loadAuditLog(bookingId) {
         const el = document.getElementById("audit-log");
+
         if (!el) return;
 
         el.textContent = "Loading history...";
 
         try {
+          console.log("🧾 Loading audit:", bookingId);
+
           const res = await fetch(
             `${API_BASE}/api/admin/audit?bookingId=${bookingId}`,
           );
 
-          const data = await res.json();
+          console.log("🧾 Audit response status:", res.status);
+
+          const text = await res.text();
+
+          console.log("🧾 Raw audit response:", text);
+
+          let data = {};
+
+          try {
+            data = JSON.parse(text);
+          } catch (parseErr) {
+            console.error("❌ Audit JSON parse failed:", parseErr);
+
+            el.textContent = "Audit JSON parse failed";
+
+            return;
+          }
 
           if (!data.audit || !data.audit.length) {
             el.textContent = "No history yet.";
@@ -5412,6 +5431,8 @@ ${
             })
             .join("<br>");
         } catch (err) {
+          console.error("❌ Audit load failed:", err);
+
           el.textContent = "Failed to load history.";
         }
       }
