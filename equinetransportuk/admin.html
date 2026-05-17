@@ -3828,6 +3828,8 @@ Equine Transport UK`,
 
         bookingsBody.innerHTML = html;
 
+        renderMobileCards(filteredBookings);
+
         /* ===============================
      🔥 DEBUG + DVLA LOAD (FIXED)
   =============================== */
@@ -3848,6 +3850,112 @@ Equine Transport UK`,
 
           syncScroll();
         }, 0);
+      }
+
+      /* =====================================
+   MOBILE BOOKING CARDS
+===================================== */
+
+      function renderMobileCards(bookings = []) {
+        if (!mobileBookings) return;
+
+        mobileBookings.innerHTML = "";
+
+        bookings.forEach((booking) => {
+          const mobileCard = document.createElement("div");
+
+          const paymentStatus = booking.paymentStatus || "";
+
+          mobileCard.className =
+            "mobile-booking-card " +
+            (paymentStatus.includes("fully")
+              ? ""
+              : paymentStatus.includes("deposit")
+                ? "deposit"
+                : "unpaid");
+
+          const pickupDate = formatDateTime(booking.pickupAt);
+
+          const dropoffDate = formatDateTime(booking.dropoffAt);
+
+          const customerName = getCustomerName(booking) || "Customer";
+
+          const vehicleName = getVehicleName(booking);
+
+          const ref = shortRef(booking.id);
+
+          mobileCard.innerHTML = `
+
+      <div class="mobile-booking-top">
+
+        <div>
+
+          <div class="mobile-booking-name">
+            ${escapeHtml(customerName)}
+          </div>
+
+          <div class="mobile-booking-ref">
+            ${escapeHtml(ref)}
+            ·
+            ${escapeHtml(vehicleName)}
+          </div>
+
+        </div>
+
+        <div>
+          ${
+            booking.formCompleted
+              ? '<span class="pill ok">Form</span>'
+              : '<span class="pill warn">Pending</span>'
+          }
+        </div>
+
+      </div>
+
+      <div class="mobile-booking-datetime">
+
+        <div class="mobile-chip">
+          📅 ${escapeHtml(pickupDate)}
+        </div>
+
+        <div class="mobile-chip">
+          ↩️ ${escapeHtml(dropoffDate)}
+        </div>
+
+      </div>
+
+      <div class="mobile-booking-actions">
+
+        <a
+          class="mobile-action-btn call"
+          href="tel:${escapeHtml(booking.customerMobile || "")}"
+        >
+          📞 Call
+        </a>
+
+        <a
+          class="mobile-action-btn email"
+          href="mailto:${escapeHtml(booking.customerEmail || "")}"
+        >
+          ✉️ Email
+        </a>
+
+      </div>
+
+      <div class="mobile-expand">
+
+        <button
+          onclick="openEditBooking('${booking.id}')"
+        >
+          Open booking
+        </button>
+
+      </div>
+
+    `;
+
+          mobileBookings.appendChild(mobileCard);
+        });
       }
 
       function makeDetailBox(label, value) {
