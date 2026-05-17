@@ -1092,6 +1092,7 @@
         .mobile-tab.active {
           color: #111827;
           transform: translateY(-1px);
+          background: rgba(37, 99, 235, 0.08);
         }
 
         .mobile-tab span {
@@ -1308,7 +1309,7 @@
       }
 
       .mobile-action-btn {
-        min-height: 48px;
+        min-height: 56px;
 
         border-radius: 16px;
 
@@ -1316,7 +1317,15 @@
 
         font-weight: 800;
 
-        font-size: 15px;
+        font-size: 16px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: 8px;
+
+        text-decoration: none;
       }
 
       .mobile-action-btn.call {
@@ -3990,8 +3999,8 @@ Equine Transport UK`,
         <div>
           ${
             booking.formCompleted
-              ? '<span class="pill ok">Form</span>'
-              : '<span class="pill warn">Pending</span>'
+              ? '<span class="pill ok">Form Complete</span>'
+              : '<span class="pill warn">Form Pending</span>'
           }
         </div>
 
@@ -4210,12 +4219,88 @@ Equine Transport UK`,
    MOBILE ACCORDION
 ===================================== */
 
-      function toggleMobileBooking(id) {
-        const el = document.getElementById(`mobile-extra-${id}`);
+      function toggleMobileBooking(bookingId) {
+        const extra = document.getElementById(`mobile-extra-${bookingId}`);
+
+        if (!extra) return;
+
+        const expandWrap = extra.parentElement.querySelector(".mobile-expand");
+
+        const isOpen = extra.classList.contains("open");
+
+        if (isOpen) {
+          extra.classList.remove("open");
+
+          if (expandWrap) {
+            expandWrap.style.display = "flex";
+          }
+        } else {
+          extra.classList.add("open");
+
+          if (expandWrap) {
+            expandWrap.style.display = "none";
+          }
+        }
+      }
+
+      /* =====================================
+   MOBILE TABBAR NAVIGATION
+===================================== */
+
+      function scrollToBookings() {
+        window.scrollTo({
+          top: document.body.scrollTop,
+          behavior: "smooth",
+        });
+
+        setActiveMobileTab(0);
+      }
+
+      function scrollToCalendar() {
+        const el = document.querySelector(".calendar-grid");
 
         if (!el) return;
 
-        el.classList.toggle("open");
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        setActiveMobileTab(1);
+      }
+
+      function scrollToCustomers() {
+        const el =
+          document.querySelector(".bookings-table") ||
+          document.querySelector(".mobile-bookings");
+
+        if (!el) return;
+
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        setActiveMobileTab(2);
+      }
+
+      function scrollToFleet() {
+        const el = document.querySelector("#cal-vehicle");
+
+        if (!el) return;
+
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        setActiveMobileTab(3);
+      }
+
+      function setActiveMobileTab(index) {
+        document.querySelectorAll(".mobile-tab").forEach((tab, i) => {
+          tab.classList.toggle("active", i === index);
+        });
       }
 
       function makeDetailBox(label, value) {
@@ -6487,22 +6572,22 @@ ${
 ===================================== -->
 
     <nav class="mobile-tabbar">
-      <button class="mobile-tab active" data-tab="bookings">
+      <button class="mobile-tab active" onclick="scrollToBookings()">
         <span>📋</span>
         <small>Bookings</small>
       </button>
 
-      <button class="mobile-tab" data-tab="calendar">
+      <button class="mobile-tab" onclick="scrollToCalendar()">
         <span>📅</span>
         <small>Calendar</small>
       </button>
 
-      <button class="mobile-tab" data-tab="customers">
+      <button class="mobile-tab" onclick="scrollToCustomers()">
         <span>👥</span>
         <small>Customers</small>
       </button>
 
-      <button class="mobile-tab" data-tab="availability">
+      <button class="mobile-tab" onclick="scrollToFleet()">
         <span>🚚</span>
         <small>Fleet</small>
       </button>
