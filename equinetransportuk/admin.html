@@ -4086,11 +4086,18 @@ Equine Transport UK`,
 
   </div>
 
-  <div class="mobile-link-actions">
+ <div class="mobile-link-actions">
+
+  <button
+  class="mobile-link-btn"
+  onclick="openMobileForm('${booking.id}')"
+>
+  📝 View Form
+</button>
 
     <button
       class="mobile-link-btn"
-      onclick="handleMobileResend('${booking.id}','form',this)"
+      onclick="handle MobileResend('${booking.id}','form',this)"
     >
       📄 Form
     </button>
@@ -4187,6 +4194,37 @@ Equine Transport UK`,
             btn.innerHTML = original;
           }, 2500);
         }
+      }
+
+      /* =====================================
+   MOBILE VIEW FORM
+===================================== */
+
+      function openMobileForm(bookingId) {
+        /*
+    Reuse existing desktop logic
+  */
+
+        const btn = document.querySelector(
+          `.js-view-form[data-booking-id="${bookingId}"]`,
+        );
+
+        if (btn) {
+          btn.click();
+          return;
+        }
+
+        /*
+    Fallback:
+    direct function call
+  */
+
+        if (typeof openFormViewer === "function") {
+          openFormViewer(bookingId);
+          return;
+        }
+
+        console.warn("No form viewer handler found");
       }
 
       /* =====================================
