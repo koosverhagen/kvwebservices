@@ -1349,6 +1349,91 @@
 
         color: #64748b;
       }
+
+      /* =========================================
+   MOBILE EXPANDED PANEL
+========================================= */
+
+      .mobile-booking-extra {
+        display: none;
+
+        border-top: 1px solid #e2e8f0;
+
+        padding-top: 14px;
+
+        margin-top: 6px;
+
+        flex-direction: column;
+
+        gap: 12px;
+      }
+
+      .mobile-booking-extra.open {
+        display: flex;
+      }
+
+      .mobile-info-grid {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 10px;
+      }
+
+      .mobile-info-box {
+        background: #f8fafc;
+
+        border: 1px solid #e2e8f0;
+
+        border-radius: 16px;
+
+        padding: 12px;
+      }
+
+      .mobile-info-label {
+        font-size: 11px;
+        font-weight: 700;
+
+        color: #64748b;
+
+        margin-bottom: 4px;
+      }
+
+      .mobile-info-value {
+        font-size: 14px;
+        font-weight: 800;
+
+        line-height: 1.3;
+      }
+
+      .mobile-link-actions {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 10px;
+      }
+
+      .mobile-link-btn {
+        min-height: 44px;
+
+        border-radius: 14px;
+
+        border: none;
+
+        font-weight: 700;
+
+        font-size: 13px;
+
+        background: #eff6ff;
+
+        color: #1d4ed8;
+      }
+
+      .mobile-edit-btn {
+        background: #111827;
+        color: white;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -3944,18 +4029,113 @@ Equine Transport UK`,
 
       <div class="mobile-expand">
 
-        <button
-          onclick="openEditBooking('${booking.id}')"
-        >
-          Open booking
-        </button>
+  <button
+    onclick="toggleMobileBooking('${booking.id}')"
+  >
+    View details
+  </button>
 
+</div>
+
+<div
+  id="mobile-extra-${booking.id}"
+  class="mobile-booking-extra"
+>
+
+  <div class="mobile-info-grid">
+
+    <div class="mobile-info-box">
+      <div class="mobile-info-label">
+        Payment
       </div>
+
+      <div class="mobile-info-value">
+        ${escapeHtml(booking.paymentStatus || "Pending")}
+      </div>
+    </div>
+
+    <div class="mobile-info-box">
+      <div class="mobile-info-label">
+        Paid now
+      </div>
+
+      <div class="mobile-info-value">
+        £${Number(booking.paidNow || 0).toFixed(2)}
+      </div>
+    </div>
+
+    <div class="mobile-info-box">
+      <div class="mobile-info-label">
+        Outstanding
+      </div>
+
+      <div class="mobile-info-value">
+        £${Number(booking.outstandingAmount || 0).toFixed(2)}
+      </div>
+    </div>
+
+    <div class="mobile-info-box">
+      <div class="mobile-info-label">
+        DVLA
+      </div>
+
+      <div class="mobile-info-value">
+        ${booking.dvlaVerified ? "Verified" : "Pending"}
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mobile-link-actions">
+
+    <button
+      class="mobile-link-btn"
+      onclick="resendFormLink('${booking.id}')"
+    >
+      📄 Form
+    </button>
+
+    <button
+      class="mobile-link-btn"
+      onclick="resendDepositLink('${booking.id}')"
+    >
+      💳 Deposit
+    </button>
+
+    <button
+      class="mobile-link-btn"
+      onclick="resendOutstandingLink('${booking.id}')"
+    >
+      💰 Balance
+    </button>
+
+    <button
+      class="mobile-link-btn mobile-edit-btn"
+      onclick="openEditBooking('${booking.id}')"
+    >
+      ✏️ Edit
+    </button>
+
+  </div>
+
+</div>
 
     `;
 
           mobileBookings.appendChild(mobileCard);
         });
+      }
+
+      /* =====================================
+   MOBILE ACCORDION
+===================================== */
+
+      function toggleMobileBooking(id) {
+        const el = document.getElementById(`mobile-extra-${id}`);
+
+        if (!el) return;
+
+        el.classList.toggle("open");
       }
 
       function makeDetailBox(label, value) {
