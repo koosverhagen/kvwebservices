@@ -716,10 +716,21 @@
 
         .calendar-grid {
           grid-template-columns: 1fr;
+          gap: 10px;
         }
 
+        /* 🔥 REMOVE EMPTY PLACEHOLDER CELLS */
+        .cal-day:empty {
+          display: none;
+        }
+
+        /* 🔥 MOBILE CARD STYLE */
         .cal-day {
-          min-height: 110px;
+          min-height: auto !important;
+
+          padding: 14px;
+
+          border-radius: 20px;
         }
       }
 
