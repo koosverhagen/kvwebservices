@@ -2792,7 +2792,16 @@ async function handleAdminBookingUpdate(request, env) {
    🔥 FORCE VEHICLE CHANGE CHECK
 =============================== */
 
-    const previousVehicleId = String(existing.vehicleId || "").trim();
+    const previousVehicleId = String(
+      body.originalVehicleId || existing.vehicleId || "",
+    ).trim();
+
+    const previousVehicleName = String(
+      body.originalVehicleName ||
+        existing.vehicleSnapshot?.name ||
+        previousVehicleId ||
+        "Unknown",
+    ).trim();
 
     const vehicleChanged = previousVehicleId !== nextVehicleId;
 
@@ -3076,9 +3085,9 @@ async function handleAdminBookingUpdate(request, env) {
         } catch {}
 
         const fromVehicleName =
-          existing.vehicleSnapshot?.name ||
-          VEHICLES.find((v) => v.id === existing.vehicleId)?.name ||
-          existing.vehicleId ||
+          previousVehicleName ||
+          VEHICLES.find((v) => v.id === previousVehicleId)?.name ||
+          previousVehicleId ||
           "Unknown";
 
         const toVehicleName =
@@ -3089,7 +3098,7 @@ async function handleAdminBookingUpdate(request, env) {
         audit.unshift({
           type: "vehicle_changed",
 
-          fromVehicleId: existing.vehicleId,
+          fromVehicleId: previousVehicleId,
           toVehicleId: nextVehicleId,
 
           fromVehicle: fromVehicleName,

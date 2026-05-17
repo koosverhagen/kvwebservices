@@ -4370,10 +4370,12 @@ Equine Transport UK`;
           /* ===============================
        📦 BUILD PAYLOAD
     =============================== */
-
           const payload = {
             bookingId: isNew ? null : bookingId,
             vehicleId,
+            originalVehicleId: booking?.vehicleId || "",
+            originalVehicleName:
+              booking?.vehicleSnapshot?.name || booking?.vehicleId || "",
             pickupDate,
             pickupTime,
             durationDays,
