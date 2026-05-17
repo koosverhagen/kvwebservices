@@ -3059,6 +3059,10 @@ async function handleAdminBookingUpdate(request, env) {
    🧾 AUDIT: VEHICLE CHANGED
 =============================== */
 
+    /* ===============================
+   🧾 AUDIT: VEHICLE CHANGED
+=============================== */
+
     if (vehicleChanged) {
       try {
         console.log("🚚 WRITING VEHICLE AUDIT");
@@ -3072,8 +3076,9 @@ async function handleAdminBookingUpdate(request, env) {
         } catch {}
 
         const fromVehicleName =
-          VEHICLES.find((v) => v.id === originalVehicleId)?.name ||
-          originalVehicleName ||
+          existing.vehicleSnapshot?.name ||
+          VEHICLES.find((v) => v.id === existing.vehicleId)?.name ||
+          existing.vehicleId ||
           "Unknown";
 
         const toVehicleName =
@@ -3083,6 +3088,9 @@ async function handleAdminBookingUpdate(request, env) {
 
         audit.unshift({
           type: "vehicle_changed",
+
+          fromVehicleId: existing.vehicleId,
+          toVehicleId: nextVehicleId,
 
           fromVehicle: fromVehicleName,
           toVehicle: toVehicleName,
@@ -3097,7 +3105,7 @@ async function handleAdminBookingUpdate(request, env) {
           toVehicleName,
         });
       } catch (err) {
-        console.warn("⚠️ Vehicle audit failed:", err);
+        console.error("❌ VEHICLE AUDIT FAILED:", err);
       }
     }
 
