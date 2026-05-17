@@ -4201,30 +4201,9 @@ Equine Transport UK`,
 ===================================== */
 
       function openMobileForm(bookingId) {
-        /*
-    Reuse existing desktop logic
-  */
+        if (!bookingId) return;
 
-        const btn = document.querySelector(
-          `.js-view-form[data-booking-id="${bookingId}"]`,
-        );
-
-        if (btn) {
-          btn.click();
-          return;
-        }
-
-        /*
-    Fallback:
-    direct function call
-  */
-
-        if (typeof openFormViewer === "function") {
-          openFormViewer(bookingId);
-          return;
-        }
-
-        console.warn("No form viewer handler found");
+        loadForm(bookingId);
       }
 
       /* =====================================
