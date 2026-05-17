@@ -1170,6 +1170,185 @@
           margin-top: 0 !important;
         }
       }
+
+      /* =========================================
+   MOBILE BOOKINGS CARDS
+========================================= */
+
+      .mobile-bookings {
+        display: none;
+      }
+
+      @media (max-width: 768px) {
+        .bookings-table {
+          display: none !important;
+        }
+
+        .table-scroll-top {
+          display: none !important;
+        }
+
+        .mobile-bookings {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+
+          padding: 0 14px 110px;
+        }
+      }
+
+      /* =========================================
+   IOS BOOKING CARD
+========================================= */
+
+      .mobile-booking-card {
+        background: rgba(255, 255, 255, 0.92);
+
+        border-radius: 24px;
+
+        padding: 16px;
+
+        backdrop-filter: blur(20px);
+
+        border: 1px solid rgba(255, 255, 255, 0.7);
+
+        box-shadow: 0 6px 30px rgba(15, 23, 42, 0.08);
+
+        display: flex;
+        flex-direction: column;
+
+        gap: 14px;
+
+        overflow: hidden;
+
+        position: relative;
+      }
+
+      /* LEFT STATUS STRIPE */
+
+      .mobile-booking-card::before {
+        content: "";
+
+        position: absolute;
+
+        left: 0;
+        top: 0;
+        bottom: 0;
+
+        width: 4px;
+
+        background: #22c55e;
+      }
+
+      .mobile-booking-card.unpaid::before {
+        background: #ef4444;
+      }
+
+      .mobile-booking-card.deposit::before {
+        background: #f59e0b;
+      }
+
+      /* HEADER */
+
+      .mobile-booking-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+
+        gap: 12px;
+      }
+
+      .mobile-booking-name {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.6px;
+      }
+
+      .mobile-booking-ref {
+        color: #64748b;
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      /* DATE/TIME */
+
+      .mobile-booking-datetime {
+        display: flex;
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+        font-size: 13px;
+        font-weight: 700;
+
+        color: #475569;
+      }
+
+      .mobile-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        padding: 8px 12px;
+
+        border-radius: 999px;
+
+        background: #f8fafc;
+
+        border: 1px solid #e2e8f0;
+      }
+
+      /* ACTIONS */
+
+      .mobile-booking-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .mobile-action-btn {
+        min-height: 48px;
+
+        border-radius: 16px;
+
+        border: none;
+
+        font-weight: 800;
+
+        font-size: 15px;
+      }
+
+      .mobile-action-btn.call {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .mobile-action-btn.email {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+
+      /* EXPAND */
+
+      .mobile-expand {
+        border-top: 1px solid #e2e8f0;
+
+        padding-top: 12px;
+
+        display: flex;
+        justify-content: center;
+      }
+
+      .mobile-expand button {
+        border: none;
+        background: transparent;
+
+        font-size: 13px;
+        font-weight: 800;
+
+        color: #64748b;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -1331,6 +1510,7 @@
               </tr>
             </tbody>
           </table>
+          <div id="mobile-bookings" class="mobile-bookings"></div>
         </div>
       </section>
     </main>
@@ -1763,6 +1943,7 @@
       const blockCancelBtn = document.getElementById("block-cancel");
 
       const bookingsBody = document.getElementById("bookings-body");
+      const mobileBookings = document.getElementById("mobile-bookings");
       const refreshBtn = document.getElementById("refresh-btn");
       const topStatus = document.getElementById("top-status");
       const bookingCount = document.getElementById("booking-count");
