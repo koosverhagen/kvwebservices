@@ -5434,51 +5434,74 @@ ${
             .map((a) => {
               const date = new Date(a.at).toLocaleString("en-GB");
 
+              /* 💸 Refund */
               if (a.type === "refund") {
                 return `💸 Refunded £${a.amount} — ${date}`;
               }
 
+              /* 💳 Payment */
               if (a.type === "payment") {
                 return `💳 Payment £${a.amount} — ${date}`;
               }
 
+              /* ❌ Cancel */
               if (a.type === "cancel") {
                 return `❌ Booking cancelled — ${date}`;
               }
 
+              /* 👤 Customer */
               if (a.type === "customer_changed") {
-                return `👤 Customer changed: ${a.fromCustomerName || "Unknown"} → ${a.toCustomerName || "Unknown"} — ${date}`;
+                return `
+            👤 Customer changed<br>
+            From: <strong>${a.fromCustomerName || "Unknown"}</strong><br>
+            To: <strong>${a.toCustomerName || "Unknown"}</strong><br>
+            ${date}
+          `;
               }
 
+              /* 💳 Deposit capture */
               if (a.type === "deposit_capture") {
                 return `💳 Deposit captured £${Number(a.amount || 0).toFixed(2)} — ${date}`;
               }
 
+              /* ↩️ Deposit cancelled */
               if (a.type === "deposit_cancelled") {
                 return `↩️ Deposit cancelled — ${date}`;
               }
 
+              /* 🚚 Vehicle changed */
               if (a.type === "vehicle_changed") {
                 return `
-    🚚 Lorry changed<br>
-    From: <strong>${a.fromVehicle || "Unknown"}</strong><br>
-    To: <strong>${a.toVehicle || "Unknown"}</strong><br>
-    ${date}
-  `;
+            🚚 Lorry changed<br>
+            From: <strong>${a.fromVehicle || "Unknown"}</strong><br>
+            To: <strong>${a.toVehicle || "Unknown"}</strong><br>
+            ${date}
+          `;
               }
 
+              /* ⏱️ Duration changed */
+              if (a.type === "duration_changed") {
+                return `
+            ⏱️ Duration changed<br>
+            From: <strong>${a.fromDuration} day(s)</strong><br>
+            To: <strong>${a.toDuration} day(s)</strong><br>
+            ${date}
+          `;
+              }
+
+              /* 🧾 Extras */
               if (a.type === "extras_changed") {
                 return `
-    🧾 Extras changed —
-    Dartford: ${a.fromDartford} → ${a.toDartford},
-    Early pickup: ${a.fromEarlyPickup ? "Yes" : "No"} → ${a.toEarlyPickup ? "Yes" : "No"}
-    — ${date}
-  `;
+            🧾 Extras changed<br>
+            Dartford: <strong>${a.fromDartford}</strong> → <strong>${a.toDartford}</strong><br>
+            Early pickup: <strong>${a.fromEarlyPickup ? "Yes" : "No"}</strong> → <strong>${a.toEarlyPickup ? "Yes" : "No"}</strong><br>
+            ${date}
+          `;
               }
 
               return `• ${a.type} — ${date}`;
             })
-            .join("<br>");
+            .join("<br><br>");
         } catch (err) {
           console.error("❌ Audit load failed:", err);
 

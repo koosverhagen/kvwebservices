@@ -3065,57 +3065,60 @@ async function handleAdminBookingUpdate(request, env) {
     await moveBookingInKv(env, existing, nextBooking);
 
     /* ===============================
-   🧾 AUDIT: VEHICLE CHANGED
+   🧾 AUDIT: VEHICLE + DURATION CHANGED
 =============================== */
 
-    /* ===============================
-   🧾 AUDIT: VEHICLE CHANGED
-=============================== */
+    try {
+      const auditKey = `audit:${bookingId}`;
 
-    if (vehicleChanged) {
+      let audit = [];
+
       try {
-        console.log("🚚 WRITING VEHICLE AUDIT");
+        audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+      } catch {
+        audit = [];
+      }
 
-        const auditKey = `audit:${bookingId}`;
-
-        let audit = [];
-
-        try {
-          audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
-        } catch {}
-
+      /* 🚚 Vehicle changed */
+      if (String(existing.vehicleId || "") !== String(vehicleId || "")) {
         const fromVehicleName =
-          previousVehicleName ||
-          VEHICLES.find((v) => v.id === previousVehicleId)?.name ||
-          previousVehicleId ||
+          existing.vehicleSnapshot?.name ||
+          VEHICLES.find((v) => v.id === existing.vehicleId)?.name ||
+          existing.vehicleId ||
           "Unknown";
 
         const toVehicleName =
-          VEHICLES.find((v) => v.id === nextVehicleId)?.name ||
-          nextVehicleId ||
+          VEHICLES.find((v) => v.id === vehicleId)?.name ||
+          vehicleId ||
           "Unknown";
 
         audit.unshift({
           type: "vehicle_changed",
-
-          fromVehicleId: previousVehicleId,
-          toVehicleId: nextVehicleId,
-
+          fromVehicleId: existing.vehicleId,
+          toVehicleId: vehicleId,
           fromVehicle: fromVehicleName,
           toVehicle: toVehicleName,
-
           at: new Date().toISOString(),
         });
 
-        await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
-
-        console.log("✅ VEHICLE AUDIT WRITTEN", {
-          fromVehicleName,
-          toVehicleName,
-        });
-      } catch (err) {
-        console.error("❌ VEHICLE AUDIT FAILED:", err);
+        console.log("✅ VEHICLE AUDIT ADDED");
       }
+
+      /* ⏱️ Duration changed */
+      if (Number(existing.durationDays) !== Number(durationDays)) {
+        audit.unshift({
+          type: "duration_changed",
+          fromDuration: Number(existing.durationDays),
+          toDuration: Number(durationDays),
+          at: new Date().toISOString(),
+        });
+
+        console.log("✅ DURATION AUDIT ADDED");
+      }
+
+      await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+    } catch (err) {
+      console.error("❌ AUDIT FAILED:", err);
     }
 
     return json({
