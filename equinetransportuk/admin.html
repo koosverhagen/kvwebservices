@@ -4127,6 +4127,91 @@ Equine Transport UK`,
       }
 
       /* =====================================
+   MOBILE RESEND HELPERS
+===================================== */
+
+      async function resendFormLink(bookingId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/bookings/resend-links`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId,
+              type: "form",
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || "Failed");
+          }
+
+          showCopySuccess("📄 Form link sent");
+        } catch (err) {
+          console.error(err);
+
+          alert("Could not send form link");
+        }
+      }
+
+      async function resendDepositLink(bookingId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/bookings/resend-links`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId,
+              type: "deposit",
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || "Failed");
+          }
+
+          showCopySuccess("💳 Deposit link sent");
+        } catch (err) {
+          console.error(err);
+
+          alert("Could not send deposit link");
+        }
+      }
+
+      async function resendOutstandingLink(bookingId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/bookings/resend-links`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId,
+              type: "outstanding",
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || "Failed");
+          }
+
+          showCopySuccess("💰 Balance link sent");
+        } catch (err) {
+          console.error(err);
+
+          alert("Could not send balance link");
+        }
+      }
+
+      /* =====================================
    MOBILE ACCORDION
 ===================================== */
 
