@@ -4090,21 +4090,21 @@ Equine Transport UK`,
 
     <button
       class="mobile-link-btn"
-      onclick="resendFormLink('${booking.id}')"
+      onclick="handleMobileResend('${booking.id}','form',this)"
     >
       📄 Form
     </button>
 
     <button
       class="mobile-link-btn"
-      onclick="resendDepositLink('${booking.id}')"
+      onclick="handleMobileResend('${booking.id}','deposit',this)"
     >
       💳 Deposit
     </button>
 
     <button
       class="mobile-link-btn"
-      onclick="resendOutstandingLink('${booking.id}')"
+      onclick="handleMobileResend('${booking.id}','outstanding',this)"
     >
       💰 Balance
     </button>
@@ -4127,10 +4127,17 @@ Equine Transport UK`,
       }
 
       /* =====================================
-   MOBILE RESEND HELPERS
+   MOBILE RESEND
 ===================================== */
 
-      async function resendFormLink(bookingId) {
+      async function handleMobileResend(bookingId, type, btn) {
+        if (!btn) return;
+
+        const original = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = "Sending...";
+
         try {
           const res = await fetch(`${API_BASE}/api/bookings/resend-links`, {
             method: "POST",
@@ -4139,75 +4146,46 @@ Equine Transport UK`,
             },
             body: JSON.stringify({
               bookingId,
-              type: "form",
+              type,
             }),
           });
 
           const data = await res.json();
 
-          if (!res.ok) {
-            throw new Error(data.error || "Failed");
+          /* ===============================
+       RATE LIMIT
+    =============================== */
+
+          if (res.status === 429) {
+            btn.innerHTML = "Recently sent";
+
+            setTimeout(() => {
+              btn.disabled = false;
+              btn.innerHTML = original;
+            }, 4000);
+
+            return;
           }
-
-          showCopySuccess("📄 Form link sent");
-        } catch (err) {
-          console.error(err);
-
-          alert("Could not send form link");
-        }
-      }
-
-      async function resendDepositLink(bookingId) {
-        try {
-          const res = await fetch(`${API_BASE}/api/bookings/resend-links`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              bookingId,
-              type: "deposit",
-            }),
-          });
-
-          const data = await res.json();
 
           if (!res.ok) {
             throw new Error(data.error || "Failed");
           }
 
-          showCopySuccess("💳 Deposit link sent");
+          btn.innerHTML = "Sent ✓";
+
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = original;
+          }, 2500);
         } catch (err) {
           console.error(err);
 
-          alert("Could not send deposit link");
-        }
-      }
+          btn.innerHTML = "Failed";
 
-      async function resendOutstandingLink(bookingId) {
-        try {
-          const res = await fetch(`${API_BASE}/api/bookings/resend-links`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              bookingId,
-              type: "outstanding",
-            }),
-          });
-
-          const data = await res.json();
-
-          if (!res.ok) {
-            throw new Error(data.error || "Failed");
-          }
-
-          showCopySuccess("💰 Balance link sent");
-        } catch (err) {
-          console.error(err);
-
-          alert("Could not send balance link");
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = original;
+          }, 2500);
         }
       }
 
