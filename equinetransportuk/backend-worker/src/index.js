@@ -3080,32 +3080,37 @@ async function handleAdminBookingUpdate(request, env) {
       }
 
       /* ===============================
-     🚚 LORRY CHANGED
-  =============================== */
+   🚚 LORRY CHANGED
+=============================== */
 
       const oldVehicleId = String(
         body.originalVehicleId || existing.vehicleId || "",
       ).trim();
+
       const newVehicleId = String(vehicleId || "").trim();
+
+      console.log("🚚 VEHICLE CHECK:", {
+        oldVehicleId,
+        newVehicleId,
+      });
 
       if (oldVehicleId && newVehicleId && oldVehicleId !== newVehicleId) {
         const fromVehicleName =
           body.originalVehicleName ||
-          VEHICLES.find((v) => v.id === oldVehicleId)?.name ||
-          oldVehicleId ||
+          getVehicleNameFromId(oldVehicleId) ||
           "Unknown";
 
-        const toVehicleName =
-          VEHICLES.find((v) => v.id === newVehicleId)?.name ||
-          newVehicleId ||
-          "Unknown";
+        const toVehicleName = getVehicleNameFromId(newVehicleId) || "Unknown";
 
         audit.unshift({
           type: "vehicle_changed",
+
           fromVehicleId: oldVehicleId,
           toVehicleId: newVehicleId,
+
           fromVehicle: fromVehicleName,
           toVehicle: toVehicleName,
+
           at: new Date().toISOString(),
         });
 
