@@ -3065,7 +3065,7 @@ async function handleAdminBookingUpdate(request, env) {
     await moveBookingInKv(env, existing, nextBooking);
 
     /* ===============================
-   🧾 AUDIT: VEHICLE + DURATION CHANGED
+   🧾 AUDIT: FINAL EDIT CHANGES
 =============================== */
 
     try {
@@ -3079,32 +3079,46 @@ async function handleAdminBookingUpdate(request, env) {
         audit = [];
       }
 
-      /* 🚚 Vehicle changed */
-      if (String(existing.vehicleId || "") !== String(vehicleId || "")) {
+      /* ===============================
+     🚚 LORRY CHANGED
+  =============================== */
+
+      const oldVehicleId = String(
+        body.originalVehicleId || existing.vehicleId || "",
+      ).trim();
+      const newVehicleId = String(vehicleId || "").trim();
+
+      if (oldVehicleId && newVehicleId && oldVehicleId !== newVehicleId) {
         const fromVehicleName =
-          existing.vehicleSnapshot?.name ||
-          VEHICLES.find((v) => v.id === existing.vehicleId)?.name ||
-          existing.vehicleId ||
+          body.originalVehicleName ||
+          VEHICLES.find((v) => v.id === oldVehicleId)?.name ||
+          oldVehicleId ||
           "Unknown";
 
         const toVehicleName =
-          VEHICLES.find((v) => v.id === vehicleId)?.name ||
-          vehicleId ||
+          VEHICLES.find((v) => v.id === newVehicleId)?.name ||
+          newVehicleId ||
           "Unknown";
 
         audit.unshift({
           type: "vehicle_changed",
-          fromVehicleId: existing.vehicleId,
-          toVehicleId: vehicleId,
+          fromVehicleId: oldVehicleId,
+          toVehicleId: newVehicleId,
           fromVehicle: fromVehicleName,
           toVehicle: toVehicleName,
           at: new Date().toISOString(),
         });
 
-        console.log("✅ VEHICLE AUDIT ADDED");
+        console.log("✅ VEHICLE AUDIT ADDED", {
+          fromVehicleName,
+          toVehicleName,
+        });
       }
 
-      /* ⏱️ Duration changed */
+      /* ===============================
+     ⏱️ DURATION CHANGED
+  =============================== */
+
       if (Number(existing.durationDays) !== Number(durationDays)) {
         audit.unshift({
           type: "duration_changed",
@@ -3118,7 +3132,7 @@ async function handleAdminBookingUpdate(request, env) {
 
       await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
     } catch (err) {
-      console.error("❌ AUDIT FAILED:", err);
+      console.error("❌ FINAL EDIT AUDIT FAILED:", err);
     }
 
     return json({
