@@ -723,6 +723,30 @@
         }
       }
 
+      /* =========================================
+   MOBILE CALENDAR HEIGHT FIX
+========================================= */
+
+      @media (max-width: 768px) {
+        .calendar-grid {
+          min-height: auto !important;
+          height: auto !important;
+
+          margin-top: 0 !important;
+          padding-top: 0 !important;
+
+          align-content: start;
+        }
+
+        .availability-grid {
+          margin-top: 6px !important;
+        }
+
+        .availability-card:first-child {
+          margin-top: 0 !important;
+        }
+      }
+
       /* ===============================
    DVLA
 =============================== */
