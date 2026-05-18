@@ -1564,6 +1564,35 @@
 
         transform: translateY(-1px);
       }
+
+      .mobile-menu-item {
+        appearance: none;
+        -webkit-appearance: none;
+
+        width: 100%;
+
+        min-height: 50px;
+
+        border: none;
+
+        background: #fff;
+
+        border-radius: 16px;
+
+        display: flex;
+        align-items: center;
+
+        padding: 0 14px;
+
+        font-size: 14px;
+        font-weight: 700;
+
+        color: #111827;
+
+        text-decoration: none;
+
+        cursor: pointer;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -1605,6 +1634,36 @@
         </button>
       </div>
     </header>
+
+    <!-- =====================================
+   MOBILE MENU PANEL
+===================================== -->
+
+    <div class="mobile-menu-panel hidden" id="mobile-menu-panel">
+      <button
+        class="mobile-menu-item"
+        onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+      >
+        📋 Bookings
+      </button>
+
+      <button
+        class="mobile-menu-item"
+        onclick="
+          document
+            .querySelector('.calendar-grid')
+            ?.scrollIntoView({ behavior: 'smooth' })
+        "
+      >
+        📅 Calendar
+      </button>
+
+      <button class="mobile-menu-item" onclick="loadBookings()">
+        🔄 Refresh bookings
+      </button>
+
+      <a class="mobile-menu-item" href="index.html"> 🏠 Homepage </a>
+    </div>
 
     <main class="container">
       <section class="hero">
