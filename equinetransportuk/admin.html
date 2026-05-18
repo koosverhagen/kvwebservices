@@ -72,29 +72,21 @@
       }
 
       .header-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        display: grid;
 
-        min-height: 68px;
+        grid-template-columns: auto 1fr auto;
 
-        gap: 16px;
-      }
-
-      .header-center {
-        flex: 1;
-
-        display: flex;
-        justify-content: center;
         align-items: center;
 
-        min-width: 0;
+        gap: 18px;
 
-        padding: 0 12px;
+        min-height: 78px;
+
+        padding: 0 18px;
       }
 
       .admin-header-title {
-        font-size: 17px;
+        font-size: 15px;
         font-weight: 800;
 
         letter-spacing: -0.4px;
@@ -103,11 +95,22 @@
 
         text-align: center;
 
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        line-height: 1.1;
 
-        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .admin-header-title span {
+        font-size: 12px;
+
+        font-weight: 700;
+
+        color: #64748b;
+
+        margin-top: 2px;
       }
 
       .hamburger-btn {
@@ -1109,19 +1112,21 @@
 ========================================= */
 
       .app-brand {
-        flex-shrink: 0;
-
         display: flex;
         align-items: center;
-        justify-content: center;
+
+        flex-shrink: 0;
+
+        text-decoration: none;
       }
 
       .app-logo {
-        width: 74px;
-        height: 74px;
+        width: 72px;
+        height: 72px;
+
         object-fit: contain;
-        border: none;
-        background: transparent;
+
+        display: block;
       }
 
       /* =========================================
@@ -1138,6 +1143,22 @@
           width: 100%;
         }
 
+        .header-inner {
+          min-height: 74px;
+
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+
+        .app-logo {
+          width: 58px;
+          height: 58px;
+        }
+
+        .admin-header-title {
+          font-size: 15px;
+        }
+
         .hero {
           padding-top: 10px;
         }
@@ -1149,10 +1170,6 @@
           border-right: none;
 
           box-shadow: none;
-        }
-
-        .admin-header-title {
-          font-size: 15px;
         }
       }
       /* =========================================
@@ -1691,8 +1708,7 @@
   <body>
     <header class="site-header">
       <div class="container header-inner">
-        <!-- LEFT -->
-        <a class="brand app-brand" href="index.html">
+        <a class="app-brand" href="index.html">
           <img
             class="app-logo"
             src="images/logo.png"
@@ -1700,9 +1716,11 @@
           />
         </a>
 
-        <!-- CENTER -->
         <div class="header-center">
-          <div class="admin-header-title">Equine Transport UK Admin Panel</div>
+          <div class="admin-header-title">
+            Equine Transport UK
+            <span>Admin</span>
+          </div>
         </div>
 
         <!-- RIGHT -->
