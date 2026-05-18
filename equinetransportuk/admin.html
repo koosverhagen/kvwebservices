@@ -106,30 +106,48 @@
       .hamburger-btn {
         margin-left: auto;
 
-        width: 44px;
-        height: 44px;
+        width: 46px;
+        height: 46px;
 
-        border-radius: 14px;
-
-        border: 1px solid var(--line);
-
-        background: #fff;
-
-        font-size: 24px;
-        line-height: 1;
+        border: none;
+        background: transparent;
 
         display: flex;
+        flex-direction: column;
+
         align-items: center;
         justify-content: center;
 
+        gap: 5px;
+
+        padding: 0;
+
         cursor: pointer;
-
-        transition: 0.15s ease;
       }
 
-      .hamburger-btn:hover {
-        background: #f8fafc;
+      .hamburger-btn span {
+        width: 24px;
+        height: 2.5px;
+
+        border-radius: 999px;
+
+        background: #111827;
+
+        transition: all 0.2s ease;
       }
+
+      .hamburger-btn.active span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+      }
+
+      .hamburger-btn.active span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .hamburger-btn.active span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+      }
+
       /* ===============================
    BUTTONS
 =============================== */
@@ -1470,17 +1488,17 @@
       .mobile-menu-panel {
         position: fixed;
 
-        top: 78px;
+        top: 74px;
         right: 14px;
 
-        width: 220px;
+        width: 240px;
 
-        background: rgba(255, 255, 255, 0.96);
+        background: rgba(255, 255, 255, 0.92);
 
         backdrop-filter: blur(30px);
         -webkit-backdrop-filter: blur(30px);
 
-        border-radius: 24px;
+        border-radius: 26px;
 
         border: 1px solid rgba(255, 255, 255, 0.7);
 
@@ -1494,23 +1512,34 @@
         gap: 8px;
 
         z-index: 999999;
+
+        opacity: 1;
+        transform: translateY(0) scale(1);
+
+        transition:
+          opacity 0.18s ease,
+          transform 0.18s ease;
       }
 
       .mobile-menu-panel.hidden {
-        display: none;
+        opacity: 0;
+
+        pointer-events: none;
+
+        transform: translateY(-10px) scale(0.96);
       }
 
       .mobile-menu-panel a,
       .mobile-menu-panel button {
         width: 100%;
 
-        min-height: 46px;
+        min-height: 48px;
 
         border: none;
 
         background: #fff;
 
-        border-radius: 14px;
+        border-radius: 16px;
 
         display: flex;
         align-items: center;
@@ -1525,11 +1554,15 @@
         color: #111827;
 
         cursor: pointer;
+
+        transition: 0.15s ease;
       }
 
       .mobile-menu-panel button:hover,
       .mobile-menu-panel a:hover {
         background: #f8fafc;
+
+        transform: translateY(-1px);
       }
     </style>
 
@@ -1560,8 +1593,15 @@
         </div>
 
         <!-- RIGHT -->
-        <button class="hamburger-btn" id="mobile-menu-btn" type="button">
-          ☰
+        <button
+          class="hamburger-btn"
+          id="mobile-menu-btn"
+          type="button"
+          aria-label="Open menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
       </div>
     </header>
@@ -4409,7 +4449,13 @@ Equine Transport UK`,
       const mobileMenuPanel = document.getElementById("mobile-menu-panel");
 
       if (mobileMenuBtn && mobileMenuPanel) {
-        mobileMenuBtn.addEventListener("click", () => {
+        mobileMenuPanel.classList.add("hidden");
+
+        mobileMenuBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+
+          mobileMenuBtn.classList.toggle("active");
+
           mobileMenuPanel.classList.toggle("hidden");
         });
 
@@ -4420,6 +4466,8 @@ Equine Transport UK`,
 
           if (!insideMenu && !insideBtn) {
             mobileMenuPanel.classList.add("hidden");
+
+            mobileMenuBtn.classList.remove("active");
           }
         });
       }
