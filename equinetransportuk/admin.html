@@ -82,31 +82,32 @@
       }
 
       .header-center {
-        position: absolute;
+        flex: 1;
 
-        left: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
 
-        translate: -50% 0;
+        min-width: 0;
 
-        z-index: 1;
+        padding: 0 12px;
       }
 
       .admin-header-title {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 800;
 
-        letter-spacing: -0.3px;
+        letter-spacing: -0.4px;
 
         color: #111827;
 
-        white-space: nowrap;
+        text-align: center;
 
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
 
-        max-width: 58vw;
-
-        text-align: center;
+        width: 100%;
       }
 
       .hamburger-btn {
@@ -138,7 +139,7 @@
       }
 
       .hamburger-btn {
-        margin-left: auto;
+        flex-shrink: 0;
 
         width: 46px;
         height: 46px;
@@ -1108,7 +1109,11 @@
 ========================================= */
 
       .app-brand {
-        gap: 14px;
+        flex-shrink: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .app-logo {
