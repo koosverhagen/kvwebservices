@@ -80,6 +80,56 @@
 
         padding: 10px 14px;
       }
+
+      .header-center {
+        position: absolute;
+
+        left: 50%;
+
+        transform: translateX(-50%);
+      }
+
+      .refresh-btn-ios {
+        min-height: 42px;
+
+        padding: 0 18px;
+
+        border-radius: 14px;
+
+        font-size: 14px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .hamburger-btn {
+        margin-left: auto;
+
+        width: 44px;
+        height: 44px;
+
+        border-radius: 14px;
+
+        border: 1px solid var(--line);
+
+        background: #fff;
+
+        font-size: 24px;
+        line-height: 1;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        cursor: pointer;
+
+        transition: 0.15s ease;
+      }
+
+      .hamburger-btn:hover {
+        background: #f8fafc;
+      }
       /* ===============================
    BUTTONS
 =============================== */
@@ -1412,6 +1462,75 @@
         background: #111827;
         color: white;
       }
+
+      /* =========================================
+   IOS MENU PANEL
+========================================= */
+
+      .mobile-menu-panel {
+        position: fixed;
+
+        top: 78px;
+        right: 14px;
+
+        width: 220px;
+
+        background: rgba(255, 255, 255, 0.96);
+
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+
+        border-radius: 24px;
+
+        border: 1px solid rgba(255, 255, 255, 0.7);
+
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+
+        padding: 10px;
+
+        display: flex;
+        flex-direction: column;
+
+        gap: 8px;
+
+        z-index: 999999;
+      }
+
+      .mobile-menu-panel.hidden {
+        display: none;
+      }
+
+      .mobile-menu-panel a,
+      .mobile-menu-panel button {
+        width: 100%;
+
+        min-height: 46px;
+
+        border: none;
+
+        background: #fff;
+
+        border-radius: 14px;
+
+        display: flex;
+        align-items: center;
+
+        padding: 0 14px;
+
+        font-size: 14px;
+        font-weight: 700;
+
+        text-decoration: none;
+
+        color: #111827;
+
+        cursor: pointer;
+      }
+
+      .mobile-menu-panel button:hover,
+      .mobile-menu-panel a:hover {
+        background: #f8fafc;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -1420,6 +1539,7 @@
   <body>
     <header class="site-header">
       <div class="container header-inner">
+        <!-- LEFT -->
         <a class="brand app-brand" href="index.html">
           <img
             class="app-logo"
@@ -1428,8 +1548,20 @@
           />
         </a>
 
-        <button class="btn primary" id="refresh-btn" type="button">
-          Refresh
+        <!-- CENTER -->
+        <div class="header-center">
+          <button
+            class="btn primary refresh-btn-ios"
+            id="refresh-btn"
+            type="button"
+          >
+            Refresh
+          </button>
+        </div>
+
+        <!-- RIGHT -->
+        <button class="hamburger-btn" id="mobile-menu-btn" type="button">
+          ☰
         </button>
       </div>
     </header>
@@ -4268,6 +4400,30 @@ Equine Transport UK`,
         });
       }
 
+      /* =====================================
+   MOBILE MENU
+===================================== */
+
+      const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+
+      const mobileMenuPanel = document.getElementById("mobile-menu-panel");
+
+      if (mobileMenuBtn && mobileMenuPanel) {
+        mobileMenuBtn.addEventListener("click", () => {
+          mobileMenuPanel.classList.toggle("hidden");
+        });
+
+        document.addEventListener("click", (e) => {
+          const insideMenu = mobileMenuPanel.contains(e.target);
+
+          const insideBtn = mobileMenuBtn.contains(e.target);
+
+          if (!insideMenu && !insideBtn) {
+            mobileMenuPanel.classList.add("hidden");
+          }
+        });
+      }
+
       function makeDetailBox(label, value) {
         return `
         <div class="detail-box">
@@ -6531,6 +6687,22 @@ ${
         });
       }
     </script>
+
+    <!-- =====================================
+     MOBILE MENU
+===================================== -->
+
+    <div class="mobile-menu-panel hidden" id="mobile-menu-panel">
+      <a href="index.html"> 🏠 Homepage </a>
+
+      <button onclick="scrollToBookings()">📋 Bookings</button>
+
+      <button onclick="scrollToCalendar()">📅 Calendar</button>
+
+      <button onclick="scrollToFleet()">🚚 Fleet</button>
+
+      <button onclick="loadBookings()">🔄 Refresh</button>
+    </div>
 
     <!-- =====================================
      MOBILE TAB BAR
