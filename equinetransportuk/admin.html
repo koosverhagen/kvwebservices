@@ -69,25 +69,17 @@
       }
 
       .header-inner {
-        min-height: 72px;
         display: flex;
+
         align-items: center;
         justify-content: space-between;
-      }
 
-      .brand {
-        display: flex;
-        align-items: center;
         gap: 12px;
-        font-weight: 800;
-      }
 
-      .brand-logo {
-        width: 52px;
-        height: 32px;
-        object-fit: contain;
-      }
+        min-height: 68px;
 
+        padding: 10px 14px;
+      }
       /* ===============================
    BUTTONS
 =============================== */
@@ -970,23 +962,6 @@
         background: transparent;
       }
 
-      .brand-text {
-        display: flex;
-        flex-direction: column;
-        line-height: 1.05;
-      }
-
-      .brand-text strong {
-        font-size: 18px;
-        letter-spacing: -0.3px;
-      }
-
-      .brand-text span {
-        font-size: 12px;
-        color: var(--muted);
-        font-weight: 600;
-      }
-
       /* =========================================
    MOBILE APP HEADER
 ========================================= */
@@ -1005,11 +980,6 @@
           border-bottom: 1px solid rgba(0, 0, 0, 0.06);
         }
 
-        .header-inner {
-          min-height: 82px;
-          padding: 0 16px;
-        }
-
         .container {
           width: 100%;
         }
@@ -1020,8 +990,10 @@
 
         .hero-card {
           border-radius: 0;
+
           border-left: none;
           border-right: none;
+
           box-shadow: none;
         }
       }
@@ -1448,21 +1420,17 @@
   <body>
     <header class="site-header">
       <div class="container header-inner">
-        <a class="brand" href="index.html">
+        <a class="brand app-brand" href="index.html">
           <img
-            class="brand-logo"
+            class="app-logo"
             src="images/logo.png"
-            alt="Equine Transport UK logo"
+            alt="Equine Transport UK"
           />
-          <span>Equine Transport UK Admin</span>
         </a>
 
-        <div class="header-actions">
-          <a class="btn ghost" href="index.html">← Back to site</a>
-          <button class="btn primary" id="refresh-btn" type="button">
-            Refresh bookings
-          </button>
-        </div>
+        <button class="btn primary" id="refresh-btn" type="button">
+          Refresh
+        </button>
       </div>
     </header>
 
