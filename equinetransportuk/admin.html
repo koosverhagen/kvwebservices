@@ -5151,12 +5151,16 @@ Equine Transport UK`;
 
       clearFiltersBtn.addEventListener("click", () => {
         searchInput.value = "";
+
         statusFilter.value = "all";
-        timeFilter.value = "upcoming"; // ✅ NEW
+
+        timeFilter.value = "upcoming";
 
         defaultRanges();
 
         loadBookings();
+
+        renderBookings();
 
         updateClearButton();
       });
@@ -6852,22 +6856,6 @@ ${
         });
       }
     </script>
-
-    <!-- =====================================
-     MOBILE MENU
-===================================== -->
-
-    <div class="mobile-menu-panel hidden" id="mobile-menu-panel">
-      <a href="index.html"> 🏠 Homepage </a>
-
-      <button onclick="scrollToBookings()">📋 Bookings</button>
-
-      <button onclick="scrollToCalendar()">📅 Calendar</button>
-
-      <button onclick="scrollToFleet()">🚚 Fleet</button>
-
-      <button onclick="loadBookings()">🔄 Refresh</button>
-    </div>
 
     <!-- =====================================
      MOBILE TAB BAR
