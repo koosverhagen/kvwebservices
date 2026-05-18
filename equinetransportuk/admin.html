@@ -1719,9 +1719,26 @@
 
             <div class="field">
               <label>&nbsp;</label>
-              <button class="btn ghost" id="clear-filters-btn" type="button">
-                Clear filters
-              </button>
+
+              <div style="display: flex; gap: 10px">
+                <button
+                  class="btn primary"
+                  id="apply-filters-btn"
+                  type="button"
+                  style="flex: 1"
+                >
+                  Search
+                </button>
+
+                <button
+                  class="btn ghost"
+                  id="clear-filters-btn"
+                  type="button"
+                  style="flex: 1"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2244,6 +2261,7 @@
       const rangeFromInput = document.getElementById("range-from");
       const rangeToInput = document.getElementById("range-to");
       const timeFilter = document.getElementById("time-filter");
+      const applyFiltersBtn = document.getElementById("apply-filters-btn");
 
       const availDateInput = document.getElementById("avail-date");
       const availDurationInput = document.getElementById("avail-duration");
@@ -5357,8 +5375,32 @@ Equine Transport UK`;
       });
 
       refreshBtn.addEventListener("click", loadBookings);
-      searchInput.addEventListener("input", renderBookings);
-      statusFilter.addEventListener("change", renderBookings);
+
+      /* =====================================
+   APPLY FILTERS (MOBILE APP STYLE)
+===================================== */
+
+      applyFiltersBtn?.addEventListener("click", () => {
+        renderBookings();
+
+        setTimeout(() => {
+          const firstBooking =
+            document.querySelector(".mobile-booking-card") ||
+            document.querySelector(".bookings-table tbody tr");
+
+          if (firstBooking) {
+            firstBooking.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }, 80);
+      });
+
+      /* =====================================
+   DATE FILTERS
+===================================== */
+
       rangeFromInput.addEventListener("change", loadBookings);
       rangeToInput.addEventListener("change", loadBookings);
 
