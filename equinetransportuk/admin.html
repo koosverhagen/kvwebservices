@@ -91,6 +91,24 @@
         z-index: 1;
       }
 
+      .admin-header-title {
+        font-size: 18px;
+        font-weight: 800;
+
+        letter-spacing: -0.3px;
+
+        color: #111827;
+
+        white-space: nowrap;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        max-width: 58vw;
+
+        text-align: center;
+      }
+
       .hamburger-btn {
         position: relative;
         z-index: 1000001;
@@ -1135,6 +1153,10 @@
 
           box-shadow: none;
         }
+
+        .admin-header-title {
+          font-size: 15px;
+        }
       }
       /* =========================================
    MOBILE TAB BAR
@@ -1683,13 +1705,7 @@
 
         <!-- CENTER -->
         <div class="header-center">
-          <button
-            class="btn primary refresh-btn-ios"
-            id="refresh-btn"
-            type="button"
-          >
-            Refresh
-          </button>
+          <div class="admin-header-title">Equine Transport UK Admin Panel</div>
         </div>
 
         <!-- RIGHT -->
