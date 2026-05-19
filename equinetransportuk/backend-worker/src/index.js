@@ -1076,50 +1076,71 @@ export default {
             );
           }
 
+          /* ===============================
+   🔥 MULTI PAYMENT SUPPORT
+=============================== */
+
+          const originalPaid =
+            Number(booking.paidNow || 0) -
+            Number(booking.outstandingAmountPaid || 0);
+
+          const outstandingPaidAmount = Number(
+            booking.outstandingAmountPaid || 0,
+          );
+
+          console.log("💰 originalPaid:", originalPaid);
+          console.log("💰 outstandingPaidAmount:", outstandingPaidAmount);
+
           const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
           try {
-            const paymentIntent = await stripe.paymentIntents.retrieve(
-              booking.paymentIntentId,
-            );
+            let remainingRefund = Number(amount);
 
             /* ===============================
-         HANDLE DEPOSIT (MANUAL CAPTURE)
-      =============================== */
+     1️⃣ REFUND OUTSTANDING PAYMENT
+  =============================== */
 
-            if (paymentIntent.capture_method === "manual") {
-              if (paymentIntent.status === "requires_capture") {
-                await stripe.paymentIntents.cancel(booking.paymentIntentId);
-                console.log("↩️ Deposit cancelled (not captured)");
-              } else if (paymentIntent.status === "succeeded") {
+            if (remainingRefund > 0 && outstandingPaidAmount > 0) {
+              const outstandingRefund = Math.min(
+                remainingRefund,
+                outstandingPaidAmount,
+              );
+
+              if (booking.outstandingSessionPaymentIntentId) {
                 await stripe.refunds.create({
-                  payment_intent: booking.paymentIntentId,
-                  amount: Math.round(amount * 100),
+                  payment_intent: booking.outstandingSessionPaymentIntentId,
+                  amount: Math.round(outstandingRefund * 100),
                 });
 
-                console.log("💸 Captured deposit refunded");
-              } else {
-                throw new Error(
-                  "Unsupported PaymentIntent state: " + paymentIntent.status,
-                );
+                console.log("💸 Outstanding refunded:", outstandingRefund);
               }
-            } else {
-              /* ===============================
-           NORMAL CHECKOUT REFUND
-        =============================== */
 
+              remainingRefund -= outstandingRefund;
+            }
+
+            /* ===============================
+     2️⃣ REFUND ORIGINAL PAYMENT
+  =============================== */
+
+            if (remainingRefund > 0) {
               await stripe.refunds.create({
                 payment_intent: booking.paymentIntentId,
-                amount: Math.round(amount * 100),
+                amount: Math.round(remainingRefund * 100),
               });
 
-              console.log("💸 Standard payment refunded");
+              console.log("💸 Original payment refunded:", remainingRefund);
             }
           } catch (err) {
             console.error("❌ Stripe refund failed:", err);
 
             return withCors(
-              json({ error: "Stripe refund failed", detail: err.message }, 500),
+              json(
+                {
+                  error: "Stripe refund failed",
+                  detail: err.message,
+                },
+                500,
+              ),
               corsHeaders,
             );
           }
@@ -3453,6 +3474,10 @@ async function handleStripeWebhook(request, env) {
               }
 
               if (paymentType === "outstanding") {
+                /* ===============================
+     ✅ OUTSTANDING FULLY PAID
+  =============================== */
+
                 b.outstandingPaid = true;
 
                 b.outstandingAmount = 0;
@@ -3463,17 +3488,23 @@ async function handleStripeWebhook(request, env) {
      🔥 SAVE SECOND PAYMENT INTENT
   =============================== */
 
-                b.outstandingPaymentIntentId = paymentIntentId;
+                b.outstandingSessionPaymentIntentId = paymentIntentId;
 
                 /* ===============================
-     🔥 SAVE OUTSTANDING AMOUNT
+     🔥 SAVE OUTSTANDING PAYMENT VALUE
   =============================== */
 
                 b.outstandingAmountPaid =
                   Number(session.amount_total || 0) / 100;
+
+                console.log("💰 Outstanding payment stored:", {
+                  paymentIntent: b.outstandingSessionPaymentIntentId,
+                  amount: b.outstandingAmountPaid,
+                });
               }
 
               b.updatedAt = new Date().toISOString();
+
               updated = true;
             }
           }
