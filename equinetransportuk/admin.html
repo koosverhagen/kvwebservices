@@ -4221,10 +4221,35 @@
         }
 
         function formatWeekHeader(key) {
+          /* ===============================
+     🔥 ALL BOOKINGS = MONTH HEADER
+  =============================== */
+
+          if (mode === "all" && !key.includes("_")) {
+            const d = new Date(key);
+
+            if (isNaN(d.getTime())) {
+              return "All bookings";
+            }
+
+            return d.toLocaleDateString("en-GB", {
+              month: "long",
+              year: "numeric",
+            });
+          }
+
+          /* ===============================
+     📆 NORMAL WEEK HEADER
+  =============================== */
+
           const [startStr, endStr] = key.split("_");
 
           const start = new Date(startStr);
           const end = new Date(endStr);
+
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return "Bookings";
+          }
 
           return `${start.toLocaleDateString("en-GB", {
             day: "numeric",
