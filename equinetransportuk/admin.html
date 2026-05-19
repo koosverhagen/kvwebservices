@@ -5530,13 +5530,22 @@
       bookingsBody.addEventListener("click", (event) => {
         const btn = event.target.closest("[data-view-form]");
         if (!btn) return;
+
         loadForm(btn.getAttribute("data-view-form"));
       });
 
       refreshBtn?.addEventListener("click", loadBookings);
 
+      /* ===============================
+   🔍 SEARCH / FILTERS
+=============================== */
+
       applyFiltersBtn?.addEventListener("click", () => {
         renderBookings();
+
+        /* ===============================
+     🔥 AUTO SCROLL TO RESULTS
+  =============================== */
 
         setTimeout(() => {
           const firstBooking =
@@ -5552,8 +5561,39 @@
         }, 80);
       });
 
-      rangeFromInput?.addEventListener("change", loadBookings);
-      rangeToInput?.addEventListener("change", loadBookings);
+      rangeFromInput?.addEventListener("change", () => {
+        loadBookings();
+
+        setTimeout(() => {
+          const firstBooking =
+            document.querySelector(".mobile-booking-card") ||
+            document.querySelector(".bookings-table tbody tr");
+
+          if (firstBooking) {
+            firstBooking.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }, 120);
+      });
+
+      rangeToInput?.addEventListener("change", () => {
+        loadBookings();
+
+        setTimeout(() => {
+          const firstBooking =
+            document.querySelector(".mobile-booking-card") ||
+            document.querySelector(".bookings-table tbody tr");
+
+          if (firstBooking) {
+            firstBooking.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }, 120);
+      });
 
       /* ===============================
          ✏️ EDIT MODAL CLOSE HANDLERS (FINAL)
