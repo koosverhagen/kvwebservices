@@ -987,18 +987,20 @@ export default {
             booking.manualPayments || booking.manualPaymentsTotal || 0,
           );
 
-          const outstandingPaid =
-            booking.outstandingPaid === true ||
-            booking.outstandingPaid === "true";
-
           /* ===============================
    🔥 TRUE PAID
 =============================== */
 
-          const paid = outstandingPaid
-            ? total
-            : Number(booking.paidNow || booking.confirmationFee || 0) +
-              manualPaid;
+          let paid = Number(booking.paidNow || 0) + manualPaid;
+
+          /* ===============================
+   🔥 FALLBACK:
+   FULLY PAID BOOKINGS
+=============================== */
+
+          if (Number(booking.outstandingAmount || 0) <= 0) {
+            paid = total;
+          }
 
           /* ===============================
    🔥 TRUE REMAINING
