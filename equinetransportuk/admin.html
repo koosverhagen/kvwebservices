@@ -5565,15 +5565,29 @@ Equine Transport UK`;
           );
 
           /* ===============================
-       👤 CUSTOMER (NEW)
-    =============================== */
+   👤 CUSTOMER (FIXED)
+=============================== */
+
+          const customerSearchValue =
+            document.getElementById("edit-customer-search")?.value?.trim() ||
+            "";
+
+          const customerChanged = customerSearchValue.length > 0;
 
           const customerId =
             SELECTED_CUSTOMER?.id || booking?.customerId || null;
 
-          if (!customerId) {
-            return alert("Please select or create a customer");
+          /* =====================================
+   ONLY VALIDATE IF USER IS CHANGING CUSTOMER
+===================================== */
+
+          if (customerChanged && !SELECTED_CUSTOMER) {
+            return alert("Please select a valid customer");
           }
+
+          console.log("👤 customerChanged:", customerChanged);
+          console.log("👤 SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
+          console.log("👤 FINAL customerId:", customerId);
 
           /* ===============================
        🔥 DETECT NO CHANGES (ONLY EDIT MODE)
