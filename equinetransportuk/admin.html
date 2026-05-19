@@ -2601,6 +2601,8 @@
             document.getElementById("edit-vehicle").value,
           );
 
+          checkAdminAvailabilityLive();
+
           updateAdminPrice();
         });
 
@@ -2742,6 +2744,7 @@ Equine Transport UK`,
 
       function enforceAdminVehicleDurationRules(vehicleId) {
         const durationSelect = document.getElementById("edit-duration");
+
         const timeSelect = document.getElementById("edit-time");
 
         if (!durationSelect) return;
@@ -2749,7 +2752,12 @@ Equine Transport UK`,
         const halfDayOption = durationSelect.querySelector(
           'option[value="0.5"]',
         );
+
         const is35 = String(vehicleId || "").startsWith("v35");
+
+        /* =====================================
+     HALF DAY RULES
+  ===================================== */
 
         if (halfDayOption) {
           if (is35) {
@@ -2765,26 +2773,49 @@ Equine Transport UK`,
           }
         }
 
-        if (timeSelect) {
-          const currentValue = timeSelect.value; // 🔥 preserve
+        /* =====================================
+     TIME RULES
+  ===================================== */
 
-          if (Number(durationSelect.value) === 0.5) {
+        if (timeSelect) {
+          const currentValue = timeSelect.value || "07:00";
+
+          const isHalfDay = Number(durationSelect.value) === 0.5;
+
+          /* 🔥 rebuild options safely */
+
+          if (isHalfDay) {
             timeSelect.innerHTML = `
-      <option value="07:00">07:00</option>
-      <option value="13:00">13:00</option>
-    `;
+        <option value="07:00">07:00</option>
+        <option value="13:00">13:00</option>
+      `;
           } else {
             timeSelect.innerHTML = `
-      <option value="07:00">07:00</option>
-    `;
+        <option value="07:00">07:00</option>
+      `;
           }
 
-          // 🔥 restore if still valid
-          if ([...timeSelect.options].some((o) => o.value === currentValue)) {
+          /* =====================================
+       RESTORE VALID VALUE
+    ===================================== */
+
+          const hasCurrent = [...timeSelect.options].some(
+            (o) => o.value === currentValue,
+          );
+
+          if (hasCurrent) {
             timeSelect.value = currentValue;
           } else {
             timeSelect.value = "07:00";
           }
+
+          /* =====================================
+       🔥 FORCE STATE SYNC
+    ===================================== */
+
+          timeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+          console.log("⏰ Admin time rebuilt:", timeSelect.value);
         }
       }
 
@@ -4828,7 +4859,9 @@ Equine Transport UK`,
           await loadBookings();
 
           const bookingId = editBtn.dataset.id;
-          const booking = allBookings.find((b) => b.id === bookingId);
+          const booking = allBookings.find(
+            (b) => String(b.id) === String(bookingId),
+          );
 
           if (!booking) {
             alert("Booking not found");
@@ -4946,17 +4979,18 @@ Equine Transport UK`,
                   );
                 }
 
-                /* 💰 price */
-                updateAdminPrice();
+                /* =====================================
+     DEBOUNCED LIVE CHECK
+  ===================================== */
 
-                /* 🚫 availability */
                 clearTimeout(window._adminCheckTimer);
 
                 window._adminCheckTimer = setTimeout(() => {
                   checkAdminAvailabilityLive();
+
+                  updateAdminPrice();
                 }, 150);
               };
-
               if (id === "edit-dartford") {
                 el.addEventListener("input", handler);
               } else {
@@ -5528,6 +5562,23 @@ Equine Transport UK`;
 
       if (editSaveBtn) {
         editSaveBtn.onclick = async () => {
+          if (IS_EDIT_INITIALISING) {
+            console.warn("⛔ Edit modal still initialising");
+            return;
+          }
+
+          const vehicleSelect = document.getElementById("edit-vehicle");
+
+          if (!vehicleSelect) {
+            alert("Vehicle selector missing");
+            return;
+          }
+
+          if (!vehicleSelect.value) {
+            alert("Please select a vehicle");
+            vehicleSelect.focus();
+            return;
+          }
           console.log("💾 BEFORE SAVE SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
 
           const bookingId = document.getElementById("edit-booking-id").value;
@@ -5565,15 +5616,29 @@ Equine Transport UK`;
           );
 
           /* ===============================
-       👤 CUSTOMER (NEW)
-    =============================== */
+   👤 CUSTOMER (FIXED)
+=============================== */
+
+          const customerSearchValue =
+            document.getElementById("edit-customer-search")?.value?.trim() ||
+            "";
+
+          const customerChanged = customerSearchValue.length > 0;
 
           const customerId =
             SELECTED_CUSTOMER?.id || booking?.customerId || null;
 
-          if (!customerId) {
-            return alert("Please select or create a customer");
+          /* =====================================
+   ONLY VALIDATE IF USER IS CHANGING CUSTOMER
+===================================== */
+
+          if (customerChanged && !SELECTED_CUSTOMER) {
+            return alert("Please select a valid customer");
           }
+
+          console.log("👤 customerChanged:", customerChanged);
+          console.log("👤 SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
+          console.log("👤 FINAL customerId:", customerId);
 
           /* ===============================
        🔥 DETECT NO CHANGES (ONLY EDIT MODE)
