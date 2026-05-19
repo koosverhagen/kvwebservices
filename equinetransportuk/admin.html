@@ -6722,16 +6722,47 @@
         document.getElementById("edit-modal").classList.remove("hidden");
       }
       /* ===============================
-         🔥 UPDATE REMAINING DISPLAY
-      =============================== */
+   🔥 UPDATE REMAINING DISPLAY
+=============================== */
+
       function updateRefundUI(booking) {
         if (!booking) return;
 
         const refundRemainingEl = document.getElementById("refund-remaining");
 
-        const paid = Number(booking.paidNow || 0);
+        /* ===============================
+     💰 TRUE TOTALS
+  =============================== */
+
+        const total = Number(booking.hireTotal || booking.total || 0);
+
         const refunded = Number(booking.refundedTotal || 0);
+
+        const manualPaid = Number(
+          booking.manualPayments || booking.manualPaymentsTotal || 0,
+        );
+
+        const outstandingPaid =
+          booking.outstandingPaid === true ||
+          booking.outstandingPaid === "true";
+
+        /* ===============================
+     🔥 TRUE PAID
+  =============================== */
+
+        const paid = outstandingPaid
+          ? total
+          : Number(booking.paidNow || 0) + manualPaid;
+
+        /* ===============================
+     🔥 REMAINING
+  =============================== */
+
         const remaining = Math.max(0, paid - refunded);
+
+        /* ===============================
+     UI
+  =============================== */
 
         if (refundRemainingEl) {
           refundRemainingEl.textContent =
