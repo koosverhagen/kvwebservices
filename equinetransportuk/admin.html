@@ -2326,8 +2326,8 @@
       const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
 
       /* ===============================
-   ADMIN CALENDAR STATE
-=============================== */
+         ADMIN CALENDAR STATE
+      =============================== */
 
       let CAL_DATE = new Date();
 
@@ -2386,8 +2386,8 @@
       const modalSignature = document.getElementById("modal-signature");
 
       /* ===============================
-   EDIT MODAL ELEMENTS
-=============================== */
+         EDIT MODAL ELEMENTS
+      =============================== */
 
       const editModal = document.getElementById("edit-modal");
       const editCloseBtn = document.getElementById("edit-close-btn");
@@ -2408,8 +2408,8 @@
       let lastCustomerQuery = "";
 
       /* ===============================
-   👤 CUSTOMER SEARCH (NEW)
-=============================== */
+         👤 CUSTOMER SEARCH (NEW)
+      =============================== */
 
       document
         .getElementById("edit-customer-search")
@@ -2459,21 +2459,21 @@
               resultsEl.innerHTML = results
                 .map(
                   (c) => `
-          <div class="customer-result"
-               style="
-                 padding:10px;
-                 border-radius:10px;
-                 cursor:pointer;
-                 border:1px solid #e5e7eb;
-                 background:#fff;
-                 margin-top:4px;
-               "
-               data-id="${c.id}"
-               data-name="${c.full_name}">
-            <div style="font-weight:700;">👤 ${c.full_name}</div>
-            <div class="tiny">${c.email || c.mobile || ""}</div>
-          </div>
-        `,
+                <div class="customer-result"
+                     style="
+                       padding:10px;
+                       border-radius:10px;
+                       cursor:pointer;
+                       border:1px solid #e5e7eb;
+                       background:#fff;
+                       margin-top:4px;
+                     "
+                     data-id="${c.id}"
+                     data-name="${c.full_name}">
+                  <div style="font-weight:700;">👤 ${c.full_name}</div>
+                  <div class="tiny">${c.email || c.mobile || ""}</div>
+                </div>
+              `,
                 )
                 .join("");
 
@@ -2488,8 +2488,8 @@
                     el.dataset.name;
 
                   resultsEl.innerHTML = `
-              <span class="pill ok">👤 ${el.dataset.name}</span>
-            `;
+                    <span class="pill ok">👤 ${el.dataset.name}</span>
+                  `;
                 });
               });
             } catch (err) {
@@ -2502,8 +2502,8 @@
           }, 250);
         });
       /* ===============================
-   👤 CREATE CUSTOMER (STEP 9)
-=============================== */
+         👤 CREATE CUSTOMER (STEP 9)
+      =============================== */
 
       document
         .getElementById("create-customer-btn")
@@ -2513,8 +2513,8 @@
           const mobile = prompt("Mobile (optional):");
 
           /* ===============================
-       VALIDATION (MATCH BACKEND)
-    =============================== */
+             VALIDATION (MATCH BACKEND)
+          =============================== */
 
           if (!full_name || (!email && !mobile)) {
             alert("Name + email OR mobile required");
@@ -2543,8 +2543,8 @@
             const customer = data.customer;
 
             /* ===============================
-         🔥 SET SELECTED CUSTOMER (CRITICAL)
-      =============================== */
+               🔥 SET SELECTED CUSTOMER (CRITICAL)
+            =============================== */
 
             SELECTED_CUSTOMER = {
               id: customer.id,
@@ -2554,16 +2554,16 @@
             console.log("✅ Selected customer:", SELECTED_CUSTOMER);
 
             /* ===============================
-   🔥 STORE ORIGINAL CUSTOMER
-=============================== */
+         🔥 STORE ORIGINAL CUSTOMER
+      =============================== */
 
             window.ORIGINAL_CUSTOMER_ID = customer.id;
 
             window.ORIGINAL_CUSTOMER_NAME = customer.full_name;
 
             /* ===============================
-         🔥 UPDATE INPUT FIELD
-      =============================== */
+               🔥 UPDATE INPUT FIELD
+            =============================== */
 
             const input = document.getElementById("edit-customer-search");
             if (input) {
@@ -2571,16 +2571,16 @@
             }
 
             /* ===============================
-         🔥 FEEDBACK (BETTER UI)
-      =============================== */
+               🔥 FEEDBACK (BETTER UI)
+            =============================== */
 
             const results = document.getElementById("customer-results");
             if (results) {
               results.innerHTML = `
-          <div class="pill ok">
-            ${data.mode === "existing" ? "👤 Existing" : "✅ New"} customer selected
-          </div>
-        `;
+                <div class="pill ok">
+                  ${data.mode === "existing" ? "👤 Existing" : "✅ New"} customer selected
+                </div>
+              `;
             }
           } catch (err) {
             console.error("❌ Customer create failed:", err);
@@ -2589,8 +2589,8 @@
         });
 
       /* ===============================
-   EDIT MODAL LIVE UPDATES
-=============================== */
+         EDIT MODAL LIVE UPDATES
+      =============================== */
 
       document
         .getElementById("edit-vehicle")
@@ -2630,8 +2630,8 @@
       });
 
       /* ===============================
-   💸 LIVE REFUND UI UPDATE (NEW)
-=============================== */
+         💸 LIVE REFUND UI UPDATE (NEW)
+      =============================== */
 
       document.getElementById("edit-refund")?.addEventListener("input", () => {
         const bookingId = document.getElementById("edit-booking-id").value;
@@ -2651,38 +2651,38 @@
           ? `mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
               `Dear ${name},
 
-Kind regards,
-Koos & Avril,
-Equine Transport UK`,
+      Kind regards,
+      Koos & Avril,
+      Equine Transport UK`,
             )}`
           : "";
 
         const phoneBtn = phone
           ? `<a
-         href="tel:${escapeHtml(phone)}"
-         class="contact-btn contact-call"
-         title="Call ${escapeHtml(formatUKDisplay(phone))}"
-       >
-         <span>📞</span>Call
-       </a>`
+               href="tel:${escapeHtml(phone)}"
+               class="contact-btn contact-call"
+               title="Call ${escapeHtml(formatUKDisplay(phone))}"
+             >
+               <span>📞</span>Call
+             </a>`
           : `<span class="tiny">—</span>`;
 
         const emailBtn = email
           ? `<a
-         href="${emailHref}"
-         class="contact-btn contact-email"
-         title="Email ${escapeHtml(email)}"
-       >
-         <span>✉️</span>Email
-       </a>`
+               href="${emailHref}"
+               class="contact-btn contact-email"
+               title="Email ${escapeHtml(email)}"
+             >
+               <span>✉️</span>Email
+             </a>`
           : `<span class="tiny">—</span>`;
 
         return `
-    <div class="contact-actions">
-      ${phoneBtn}
-      ${emailBtn}
-    </div>
-  `;
+          <div class="contact-actions">
+            ${phoneBtn}
+            ${emailBtn}
+          </div>
+        `;
       }
 
       function pad(n) {
@@ -2756,8 +2756,8 @@ Equine Transport UK`,
         const is35 = String(vehicleId || "").startsWith("v35");
 
         /* =====================================
-     HALF DAY RULES
-  ===================================== */
+           HALF DAY RULES
+        ===================================== */
 
         if (halfDayOption) {
           if (is35) {
@@ -2774,8 +2774,8 @@ Equine Transport UK`,
         }
 
         /* =====================================
-     TIME RULES
-  ===================================== */
+           TIME RULES
+        ===================================== */
 
         if (timeSelect) {
           const currentValue = timeSelect.value || "07:00";
@@ -2786,18 +2786,18 @@ Equine Transport UK`,
 
           if (isHalfDay) {
             timeSelect.innerHTML = `
-        <option value="07:00">07:00</option>
-        <option value="13:00">13:00</option>
-      `;
+              <option value="07:00">07:00</option>
+              <option value="13:00">13:00</option>
+            `;
           } else {
             timeSelect.innerHTML = `
-        <option value="07:00">07:00</option>
-      `;
+              <option value="07:00">07:00</option>
+            `;
           }
 
           /* =====================================
-       RESTORE VALID VALUE
-    ===================================== */
+             RESTORE VALID VALUE
+          ===================================== */
 
           const hasCurrent = [...timeSelect.options].some(
             (o) => o.value === currentValue,
@@ -2810,8 +2810,8 @@ Equine Transport UK`,
           }
 
           /* =====================================
-       🔥 FORCE STATE SYNC
-    ===================================== */
+             🔥 FORCE STATE SYNC
+          ===================================== */
 
           timeSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
@@ -2988,19 +2988,19 @@ Equine Transport UK`,
         }
 
         el.innerHTML = `
-    <div style="font-weight:600; margin-bottom:6px;">
-      DVLA page opened
-    </div>
-    <div style="opacity:.85; font-size:12px;">
-      Paste licence & code:
-    </div>
-    <div style="margin-top:6px; font-family:monospace;">
-      ${licence}<br>${code || ""}
-    </div>
-    <div style="margin-top:8px; opacity:.7; font-size:11px;">
-      Press ⌘+V / long-press paste
-    </div>
-  `;
+          <div style="font-weight:600; margin-bottom:6px;">
+            DVLA page opened
+          </div>
+          <div style="opacity:.85; font-size:12px;">
+            Paste licence & code:
+          </div>
+          <div style="margin-top:6px; font-family:monospace;">
+            ${licence}<br>${code || ""}
+          </div>
+          <div style="margin-top:8px; opacity:.7; font-size:11px;">
+            Press ⌘+V / long-press paste
+          </div>
+        `;
 
         el.style.opacity = "1";
         el.style.transform = "translateX(-50%) translateY(0)";
@@ -3059,14 +3059,14 @@ Equine Transport UK`,
         if (duration === 0.5) {
           availTimeWrap.style.display = "";
           availTimeInput.innerHTML = `
-      <option value="07:00">07:00 AM</option>
-      <option value="13:00">13:00 PM</option>
-    `;
+            <option value="07:00">07:00 AM</option>
+            <option value="13:00">13:00 PM</option>
+          `;
         } else {
           availTimeWrap.style.display = "";
           availTimeInput.innerHTML = `
-      <option value="07:00">07:00 AM</option>
-    `;
+            <option value="07:00">07:00 AM</option>
+          `;
           availTimeInput.value = "07:00";
         }
       }
@@ -3083,20 +3083,20 @@ Equine Transport UK`,
             : [];
 
           return `
-      <div class="availability-card ${available ? "available" : "unavailable"}">
-        <h4>${escapeHtml(vehicle.name)}</h4>
+            <div class="availability-card ${available ? "available" : "unavailable"}">
+              <h4>${escapeHtml(vehicle.name)}</h4>
 
-        <span class="availability-badge ${available ? "ok" : "bad"}">
-          ${available ? "Available" : "Not available"}
-        </span>
+              <span class="availability-badge ${available ? "ok" : "bad"}">
+                ${available ? "Available" : "Not available"}
+              </span>
 
-        ${
-          slots.length
-            ? `<div class="availability-slots">Slots: ${slots.map((s) => s.toUpperCase()).join(", ")}</div>`
-            : `<div class="availability-slots">—</div>`
-        }
-      </div>
-    `;
+              ${
+                slots.length
+                  ? `<div class="availability-slots">Slots: ${slots.map((s) => s.toUpperCase()).join(", ")}</div>`
+                  : `<div class="availability-slots">—</div>`
+              }
+            </div>
+          `;
         }).join("");
       }
 
@@ -3272,17 +3272,17 @@ Equine Transport UK`,
         const returnsToday = dropoff >= startOfToday && dropoff <= endOfToday;
 
         return `
-    <div class="stack">
-      <div><strong>From:</strong> ${escapeHtml(formatDateTime(booking.pickupAt))}</div>
-      <div><strong>Until:</strong> ${escapeHtml(formatDateTime(booking.dropoffAt))}</div>
+          <div class="stack">
+            <div><strong>From:</strong> ${escapeHtml(formatDateTime(booking.pickupAt))}</div>
+            <div><strong>Until:</strong> ${escapeHtml(formatDateTime(booking.dropoffAt))}</div>
 
-      ${
-        returnsToday
-          ? `<div class="tiny" style="color:#0284c7;font-weight:700;">↩ Returns today</div>`
-          : ""
-      }
-    </div>
-  `;
+            ${
+              returnsToday
+                ? `<div class="tiny" style="color:#0284c7;font-weight:700;">↩ Returns today</div>`
+                : ""
+            }
+          </div>
+        `;
       }
 
       function buildActionButtons(booking) {
@@ -3298,172 +3298,172 @@ Equine Transport UK`,
         const outstandingDone = isOutstandingPaid(booking);
 
         /* ===============================
-     WHATSAPP BUTTONS
-  =============================== */
+           WHATSAPP BUTTONS
+        =============================== */
 
         const formWhatsapp = phone
           ? `
-      <button
-        class="btn ghost btn-small js-wa"
-        type="button"
-        data-phone="${escapeHtml(phone)}"
-        data-type="form"
-        data-name="${escapeHtml(firstName)}"
-        data-id="${escapeHtml(bookingId)}"
-        data-formtype="${escapeHtml(requiredType)}"
-      >
-        WhatsApp
-      </button>
-    `
+            <button
+              class="btn ghost btn-small js-wa"
+              type="button"
+              data-phone="${escapeHtml(phone)}"
+              data-type="form"
+              data-name="${escapeHtml(firstName)}"
+              data-id="${escapeHtml(bookingId)}"
+              data-formtype="${escapeHtml(requiredType)}"
+            >
+              WhatsApp
+            </button>
+          `
           : "";
 
         const depositWhatsapp =
           phone && !depositDone
             ? `
-      <button
-        class="btn ghost btn-small js-wa"
-        type="button"
-        data-phone="${escapeHtml(phone)}"
-        data-type="deposit"
-        data-name="${escapeHtml(firstName)}"
-        data-id="${escapeHtml(bookingId)}"
-      >
-        WhatsApp
-      </button>
-    `
+            <button
+              class="btn ghost btn-small js-wa"
+              type="button"
+              data-phone="${escapeHtml(phone)}"
+              data-type="deposit"
+              data-name="${escapeHtml(firstName)}"
+              data-id="${escapeHtml(bookingId)}"
+            >
+              WhatsApp
+            </button>
+          `
             : "";
 
         const outstandingWhatsapp =
           phone && !outstandingDone
             ? `
-      <button
-        class="btn ghost btn-small js-wa"
-        type="button"
-        data-phone="${escapeHtml(phone)}"
-        data-type="outstanding"
-        data-name="${escapeHtml(firstName)}"
-        data-id="${escapeHtml(bookingId)}"
-      >
-        WhatsApp
-      </button>
-    `
+            <button
+              class="btn ghost btn-small js-wa"
+              type="button"
+              data-phone="${escapeHtml(phone)}"
+              data-type="outstanding"
+              data-name="${escapeHtml(firstName)}"
+              data-id="${escapeHtml(bookingId)}"
+            >
+              WhatsApp
+            </button>
+          `
             : "";
 
         /* ===============================
-     EMAIL BUTTONS
-  =============================== */
+           EMAIL BUTTONS
+        =============================== */
 
         const formEmail =
           email && !complete
             ? `
-      <button
-        class="btn ghost btn-small js-resend-email"
-        type="button"
-        data-id="${escapeHtml(bookingId)}"
-        data-type="form"
-      >
-        Email
-      </button>
-    `
+            <button
+              class="btn ghost btn-small js-resend-email"
+              type="button"
+              data-id="${escapeHtml(bookingId)}"
+              data-type="form"
+            >
+              Email
+            </button>
+          `
             : "";
 
         const depositEmail =
           email && !depositDone
             ? `
-      <button
-        class="btn ghost btn-small js-resend-email"
-        type="button"
-        data-id="${escapeHtml(bookingId)}"
-        data-type="deposit"
-      >
-        Email
-      </button>
-    `
+            <button
+              class="btn ghost btn-small js-resend-email"
+              type="button"
+              data-id="${escapeHtml(bookingId)}"
+              data-type="deposit"
+            >
+              Email
+            </button>
+          `
             : "";
 
         const outstandingEmail =
           email && !outstandingDone
             ? `
-      <button
-        class="btn ghost btn-small js-resend-email"
-        type="button"
-        data-id="${escapeHtml(bookingId)}"
-        data-type="outstanding"
-      >
-        Email
-      </button>
-    `
+            <button
+              class="btn ghost btn-small js-resend-email"
+              type="button"
+              data-id="${escapeHtml(bookingId)}"
+              data-type="outstanding"
+            >
+              Email
+            </button>
+          `
             : "";
 
         return `
-<div class="stack">
+      <div class="stack">
 
-  <!-- ✏️ EDIT -->
-  <button 
-    class="btn ghost btn-small btn-edit"
-    data-id="${escapeHtml(booking.id)}"
-  >
-    ✏️ Edit
-  </button>
+        <!-- ✏️ EDIT -->
+        <button
+          class="btn ghost btn-small btn-edit"
+          data-id="${escapeHtml(booking.id)}"
+        >
+          ✏️ Edit
+        </button>
 
-  <!-- FORM -->
-  <div class="stack">
-    <strong>Form</strong>
+        <!-- FORM -->
+        <div class="stack">
+          <strong>Form</strong>
 
-    ${
-      complete
-        ? `
-          <button
-            class="btn ghost btn-small"
-            type="button"
-            data-view-form="${escapeHtml(bookingId)}"
-          >
-            View Form
-          </button>
-        `
-        : `
-          <div class="contact-actions">
-            ${formWhatsapp}
-            ${formEmail}
-          </div>
-        `
-    }
-  </div>
+          ${
+            complete
+              ? `
+                <button
+                  class="btn ghost btn-small"
+                  type="button"
+                  data-view-form="${escapeHtml(bookingId)}"
+                >
+                  View Form
+                </button>
+              `
+              : `
+                <div class="contact-actions">
+                  ${formWhatsapp}
+                  ${formEmail}
+                </div>
+              `
+          }
+        </div>
 
-  <!-- DEPOSIT -->
-  <div class="stack">
-    <strong>Deposit</strong>
+        <!-- DEPOSIT -->
+        <div class="stack">
+          <strong>Deposit</strong>
 
-    ${
-      depositDone
-        ? `<span class="pill done">Done</span>`
-        : `
-          <div class="contact-actions">
-            ${depositWhatsapp}
-            ${depositEmail}
-          </div>
-        `
-    }
-  </div>
+          ${
+            depositDone
+              ? `<span class="pill done">Done</span>`
+              : `
+                <div class="contact-actions">
+                  ${depositWhatsapp}
+                  ${depositEmail}
+                </div>
+              `
+          }
+        </div>
 
-  <!-- OUTSTANDING -->
-  <div class="stack">
-    <strong>Outstanding</strong>
+        <!-- OUTSTANDING -->
+        <div class="stack">
+          <strong>Outstanding</strong>
 
-    ${
-      outstandingDone
-        ? `<span class="pill done">Done</span>`
-        : `
-          <div class="contact-actions">
-            ${outstandingWhatsapp}
-            ${outstandingEmail}
-          </div>
-        `
-    }
-  </div>
+          ${
+            outstandingDone
+              ? `<span class="pill done">Done</span>`
+              : `
+                <div class="contact-actions">
+                  ${outstandingWhatsapp}
+                  ${outstandingEmail}
+                </div>
+              `
+          }
+        </div>
 
-</div>
-`;
+      </div>
+      `;
       }
 
       function dvlaCellHtml(booking) {
@@ -3479,58 +3479,58 @@ Equine Transport UK`,
         const isVerified = booking?.dvlaVerified === true;
 
         return `
-    <div class="stack dvla-cell" data-booking-id="${escapeHtml(bookingId)}">
+          <div class="stack dvla-cell" data-booking-id="${escapeHtml(bookingId)}">
 
-      <!-- Licence -->
-      <div class="dvla-row">
-        <span class="tiny">Licence</span>
-        <strong>${escapeHtml(last8 || "—")}</strong>
+            <!-- Licence -->
+            <div class="dvla-row">
+              <span class="tiny">Licence</span>
+              <strong>${escapeHtml(last8 || "—")}</strong>
 
-        ${
-          last8
-            ? `
-        <button
-          class="btn primary btn-small copy-licence"
-          data-copy="${escapeHtml(last8)}"
-          title="Copy licence and open DVLA check"
-        >
-          ↗
-        </button>`
-            : ""
-        }
-      </div>
+              ${
+                last8
+                  ? `
+              <button
+                class="btn primary btn-small copy-licence"
+                data-copy="${escapeHtml(last8)}"
+                title="Copy licence and open DVLA check"
+              >
+                ↗
+              </button>`
+                  : ""
+              }
+            </div>
 
-      <!-- DVLA Code -->
-      <div class="dvla-row">
-        <span class="tiny">Code</span>
-        <strong>${escapeHtml(dvla || "—")}</strong>
+            <!-- DVLA Code -->
+            <div class="dvla-row">
+              <span class="tiny">Code</span>
+              <strong>${escapeHtml(dvla || "—")}</strong>
 
-        ${
-          dvla
-            ? `
-        <button
-          class="btn ghost btn-small copy-btn"
-          data-copy="${escapeHtml(dvla)}"
-        >
-          Copy
-        </button>`
-            : ""
-        }
-      </div>
+              ${
+                dvla
+                  ? `
+              <button
+                class="btn ghost btn-small copy-btn"
+                data-copy="${escapeHtml(dvla)}"
+              >
+                Copy
+              </button>`
+                  : ""
+              }
+            </div>
 
-      <!-- VERIFY -->
-      <label class="dvla-verify">
-        <input 
-          type="checkbox" 
-          class="js-dvla-verify"
-          data-id="${bookingId}"
-          ${isVerified ? "checked" : ""}
-        />
-        ${isVerified ? "Verified" : "Mark verified"}
-      </label>
+            <!-- VERIFY -->
+            <label class="dvla-verify">
+              <input
+                type="checkbox"
+                class="js-dvla-verify"
+                data-id="${bookingId}"
+                ${isVerified ? "checked" : ""}
+              />
+              ${isVerified ? "Verified" : "Mark verified"}
+            </label>
 
-    </div>
-  `;
+          </div>
+        `;
       }
 
       function renderDvla(el, data) {
@@ -3544,47 +3544,47 @@ Equine Transport UK`,
         const isVerified = booking?.dvlaVerified === true;
 
         el.innerHTML = `
-    <div class="stack">
+          <div class="stack">
 
-      <!-- Licence -->
-      <div class="dvla-row">
-        <span class="tiny">Licence</span>
-        <strong>${escapeHtml(data.last8 || "—")}</strong>
-        <button
-          class="btn primary btn-small copy-licence"
-          data-copy="${escapeHtml(data.last8 || "")}"
-          title="Copy licence and open DVLA check"
-        >
-          ↗
-        </button>
-      </div>
+            <!-- Licence -->
+            <div class="dvla-row">
+              <span class="tiny">Licence</span>
+              <strong>${escapeHtml(data.last8 || "—")}</strong>
+              <button
+                class="btn primary btn-small copy-licence"
+                data-copy="${escapeHtml(data.last8 || "")}"
+                title="Copy licence and open DVLA check"
+              >
+                ↗
+              </button>
+            </div>
 
-      <!-- DVLA Code -->
-      <div class="dvla-row">
-        <span class="tiny">Code</span>
-        <strong>${escapeHtml(data.dvla || "—")}</strong>
-        <button
-          class="btn ghost btn-small copy-btn"
-          data-copy="${escapeHtml(data.dvla || "")}"
-          title="Copy DVLA access code"
-        >
-          Copy
-        </button>
-      </div>
+            <!-- DVLA Code -->
+            <div class="dvla-row">
+              <span class="tiny">Code</span>
+              <strong>${escapeHtml(data.dvla || "—")}</strong>
+              <button
+                class="btn ghost btn-small copy-btn"
+                data-copy="${escapeHtml(data.dvla || "")}"
+                title="Copy DVLA access code"
+              >
+                Copy
+              </button>
+            </div>
 
-      <!-- ✅ VERIFIED CHECKBOX -->
-      <label class="dvla-verify">
-        <input 
-          type="checkbox" 
-          class="js-dvla-verify"
-          data-id="${bookingId}"
-          ${isVerified ? "checked" : ""}
-        />
-        Verified
-      </label>
+            <!-- ✅ VERIFIED CHECKBOX -->
+            <label class="dvla-verify">
+              <input
+                type="checkbox"
+                class="js-dvla-verify"
+                data-id="${bookingId}"
+                ${isVerified ? "checked" : ""}
+              />
+              Verified
+            </label>
 
-    </div>
-  `;
+          </div>
+        `;
       }
 
       function paymentHtml(booking) {
@@ -3603,145 +3603,162 @@ Equine Transport UK`,
         const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
 
         const waDeposit = phone
-          ? `<button 
-        class="pill action warn js-wa"
-        data-phone="${phone}"
-        data-type="deposit"
-        data-name="${firstName}"
-        data-id="${id}"
-        title="Send deposit to ${escapeHtml(formatUKDisplay(phone))}"
-      >
-        Deposit not secured
-      </button>`
+          ? `<button
+              class="pill action warn js-wa"
+              data-phone="${phone}"
+              data-type="deposit"
+              data-name="${firstName}"
+              data-id="${id}"
+              title="Send deposit to ${escapeHtml(formatUKDisplay(phone))}"
+            >
+              Deposit not secured
+            </button>`
           : `<span class="pill warn">Deposit not secured</span>`;
 
         const waOutstanding = phone
-          ? `<button 
-        class="pill action warn js-wa"
-        data-phone="${phone}"
-        data-type="outstanding"
-        data-name="${firstName}"
-        data-id="${id}"
-        title="Send payment link to ${escapeHtml(formatUKDisplay(phone))}"
-      >
-        Outstanding open
-      </button>`
+          ? `<button
+              class="pill action warn js-wa"
+              data-phone="${phone}"
+              data-type="outstanding"
+              data-name="${firstName}"
+              data-id="${id}"
+              title="Send payment link to ${escapeHtml(formatUKDisplay(phone))}"
+            >
+              Outstanding open
+            </button>`
           : `<span class="pill warn">Outstanding open</span>`;
 
         /* ===============================
-     💰 HIRE PAYMENT CALCULATION
-  =============================== */
+         💰 HIRE PAYMENT CALCULATION
+      =============================== */
 
         const total = Number(booking.hireTotal || booking.total || 0);
 
-        const paid = Number(
-          booking.paidNow ??
-            booking.manualPayments ??
-            booking.confirmationFee ??
-            0,
-        );
-
         const refunded = Number(booking.refundedTotal || 0);
 
-        const outstandingAmount = Math.max(0, total - paid);
+        /* ===============================
+         🔥 BASE PAID
+      =============================== */
+
+        const basePaid = Number(
+          booking.paidNow || booking.confirmationFee || 0,
+        );
+
+        const manualPaid = Number(
+          booking.manualPayments || booking.manualPaymentsTotal || 0,
+        );
 
         /* ===============================
-     🔒 DEPOSIT SYSTEM
-  =============================== */
+         🔥 TRUE PAID
+      =============================== */
+
+        const paid = outstandingPaid ? total : basePaid + manualPaid;
+
+        /* ===============================
+         🔥 TRUE OUTSTANDING
+      =============================== */
+
+        const outstandingAmount = outstandingPaid
+          ? 0
+          : Math.max(0, total - paid);
+
+        /* ===============================
+           🔒 DEPOSIT SYSTEM
+        =============================== */
 
         const depositCaptured = Number(booking.depositCapturedAmount || 0);
 
         /* ===============================
-     OUTPUT
-  =============================== */
+           OUTPUT
+        =============================== */
 
         return `
-    ${
-      confirmation
-        ? '<span class="pill ok">Confirmation paid</span>'
-        : '<span class="pill bad">Confirmation pending</span>'
-    }
+          ${
+            confirmation
+              ? '<span class="pill ok">Confirmation paid</span>'
+              : '<span class="pill bad">Confirmation pending</span>'
+          }
 
-    ${deposit ? '<span class="pill ok">Deposit secured</span>' : waDeposit}
+          ${deposit ? '<span class="pill ok">Deposit secured</span>' : waDeposit}
 
-    ${
-      outstandingPaid
-        ? '<span class="pill ok">Outstanding paid</span>'
-        : waOutstanding
-    }
+          ${
+            outstandingPaid
+              ? '<span class="pill ok">Outstanding paid</span>'
+              : waOutstanding
+          }
 
-    ${
-      booking.fullyRefunded
-        ? '<span class="pill bad">Fully refunded</span>'
-        : ""
-    }
+          ${
+            booking.fullyRefunded
+              ? '<span class="pill bad">Fully refunded</span>'
+              : ""
+          }
 
-    <!-- ===============================
-         🔒 DEPOSIT STATUS
-    =============================== -->
+          <!-- ===============================
+               🔒 DEPOSIT STATUS
+          =============================== -->
 
-    ${
-      booking.depositPaid
-        ? `
-          <div class="pill ok">
-            £200 on hold
-          </div>
-        `
-        : ""
-    }
+          ${
+            booking.depositPaid
+              ? `
+                <div class="pill ok">
+                  £200 on hold
+                </div>
+              `
+              : ""
+          }
 
-    ${
-      depositCaptured > 0
-        ? `
-          <div class="pill warn">
-            Captured: £${depositCaptured.toFixed(2)}
-          </div>
-        `
-        : ""
-    }
+          ${
+            depositCaptured > 0
+              ? `
+                <div class="pill warn">
+                  Captured: £${depositCaptured.toFixed(2)}
+                </div>
+              `
+              : ""
+          }
 
-    ${
-      booking.depositCancelled
-        ? `
-          <div class="pill neutral">
-            Deposit cancelled
-          </div>
-        `
-        : ""
-    }
+          ${
+            booking.depositCancelled
+              ? `
+                <div class="pill neutral">
+                  Deposit cancelled
+                </div>
+              `
+              : ""
+          }
 
-    <!-- ===============================
-         💰 HIRE PAYMENTS
-    =============================== -->
+          <!-- ===============================
+               💰 HIRE PAYMENTS
+          =============================== -->
 
-    <div class="tiny">
-      <div>
-        <strong>
-          Total price: ${formatMoney(total)}
-        </strong>
-      </div>
-
-      <div style="margin-top:4px;">
-        Paid now: ${formatMoney(paid)}
-      </div>
-
-      <div>
-        Outstanding: ${formatMoney(outstandingAmount)}
-      </div>
-
-      ${
-        refunded > 0
-          ? `
-            <div style="color:#b42318;">
-              Refunded: ${formatMoney(refunded)}
+          <div class="tiny">
+            <div>
+              <strong>
+                Total price: ${formatMoney(total)}
+              </strong>
             </div>
-          `
-          : ""
-      }
-    </div>
 
-    ${renderExtrasSummary(booking)}
-  `;
+            <div style="margin-top:4px;">
+              Paid now: ${formatMoney(paid)}
+            </div>
+
+            <div>
+              Outstanding: ${formatMoney(outstandingAmount)}
+            </div>
+
+            ${
+              refunded > 0
+                ? `
+                  <div style="color:#b42318;">
+                    Refunded: ${formatMoney(refunded)}
+                  </div>
+                `
+                : ""
+            }
+          </div>
+
+          ${renderExtrasSummary(booking)}
+        `;
       }
       function renderExtrasSummary(booking) {
         const extras = booking.extras || {};
@@ -3768,14 +3785,14 @@ Equine Transport UK`,
           dartfordCount * 4.2 + (earlyPickup ? 20 : 0);
 
         return `
-    <div class="tiny" style="margin-top:6px;">
-      <div><strong>Extras</strong></div>
-      <div style="margin-top:4px;">
-        ${lines.map((line) => `<div>${line}</div>`).join("")}
-        <div style="margin-top:4px;"><strong>Total extras: ${formatMoney(extrasTotal)}</strong></div>
-      </div>
-    </div>
-  `;
+          <div class="tiny" style="margin-top:6px;">
+            <div><strong>Extras</strong></div>
+            <div style="margin-top:4px;">
+              ${lines.map((line) => `<div>${line}</div>`).join("")}
+              <div style="margin-top:4px;"><strong>Total extras: ${formatMoney(extrasTotal)}</strong></div>
+            </div>
+          </div>
+        `;
       }
 
       function formHtml(booking) {
@@ -3789,43 +3806,43 @@ Equine Transport UK`,
         const resendBtn =
           phone && !complete
             ? `
-      <button
-        class="status-link status-bad js-wa"
-        type="button"
-        data-phone="${escapeHtml(phone)}"
-        data-type="form"
-        data-name="${escapeHtml(firstName)}"
-        data-id="${escapeHtml(id)}"
-        data-formtype="${escapeHtml(requiredType)}"
-      >
-        Send form link
-      </button>
-    `
+            <button
+              class="status-link status-bad js-wa"
+              type="button"
+              data-phone="${escapeHtml(phone)}"
+              data-type="form"
+              data-name="${escapeHtml(firstName)}"
+              data-id="${escapeHtml(id)}"
+              data-formtype="${escapeHtml(requiredType)}"
+            >
+              Send form link
+            </button>
+          `
             : "";
 
         return `
-  <div class="stack">
+        <div class="stack">
 
-    <div>
-      <strong>${complete ? "Form submitted" : "Form missing"}</strong>
-    </div>
+          <div>
+            <strong>${complete ? "Form submitted" : "Form missing"}</strong>
+          </div>
 
-    <div class="tiny">
-      Required: ${requiredType === "short" ? "Short" : "Long"}
-    </div>
+          <div class="tiny">
+            Required: ${requiredType === "short" ? "Short" : "Long"}
+          </div>
 
-    ${
-      booking?.formSubmittedAt
-        ? `<div class="tiny">
-            ${formatDateTime(booking.formSubmittedAt)}
-          </div>`
-        : ""
-    }
+          ${
+            booking?.formSubmittedAt
+              ? `<div class="tiny">
+                  ${formatDateTime(booking.formSubmittedAt)}
+                </div>`
+              : ""
+          }
 
-    ${!complete ? `<div>${resendBtn}</div>` : ""}
+          ${!complete ? `<div>${resendBtn}</div>` : ""}
 
-  </div>
-`;
+        </div>
+      `;
       }
 
       function bookingMatchesSearch(booking, search) {
@@ -3905,8 +3922,8 @@ Equine Transport UK`,
         startOfDayAfter.setDate(startOfDayAfter.getDate() + 1);
 
         /* ===============================
-   FILTER
-=============================== */
+         FILTER
+      =============================== */
 
         const nowTs = Date.now();
 
@@ -3925,29 +3942,29 @@ Equine Transport UK`,
             if (!start || isNaN(start)) return true;
 
             /* ===============================
-     🔥 ALL BOOKINGS (NEW)
-  =============================== */
+           🔥 ALL BOOKINGS (NEW)
+        =============================== */
             if (mode === "all") {
               return true;
             }
 
             /* ===============================
-     🔥 IN PROGRESS
-  =============================== */
+           🔥 IN PROGRESS
+        =============================== */
             if (mode === "inprogress") {
               return start <= now && end >= now;
             }
 
             /* ===============================
-     🔥 PAST
-  =============================== */
+           🔥 PAST
+        =============================== */
             if (mode === "past") {
               return end < now;
             }
 
             /* ===============================
-     🔥 UPCOMING
-  =============================== */
+           🔥 UPCOMING
+        =============================== */
             if (mode === "upcoming") {
               return start > now;
             }
@@ -3957,25 +3974,25 @@ Equine Transport UK`,
 
         bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
         /* ===============================
-     EMPTY STATE
-  =============================== */
+           EMPTY STATE
+        =============================== */
 
         if (!filteredBookings.length) {
           bookingsBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="empty-state">
-          No bookings found for the current filters.
-        </td>
-      </tr>
-    `;
+            <tr>
+              <td colspan="6" class="empty-state">
+                No bookings found for the current filters.
+              </td>
+            </tr>
+          `;
 
           setTimeout(syncScroll, 0);
           return;
         }
 
         /* ===============================
-     GROUPING
-  =============================== */
+           GROUPING
+        =============================== */
 
         const mode = timeFilter?.value || "upcoming";
 
@@ -3988,8 +4005,8 @@ Equine Transport UK`,
         const byWeek = {}; // after that
 
         /* ===============================
-   🔥 TIME-SAFE GROUPING (FINAL)
-=============================== */
+         🔥 TIME-SAFE GROUPING (FINAL)
+      =============================== */
 
         const nowTime = Date.now();
 
@@ -4009,8 +4026,8 @@ Equine Transport UK`,
           const nowTime = Date.now();
 
           /* ===============================
-     MODE-SPECIFIC GROUPING (FIX)
-  =============================== */
+           MODE-SPECIFIC GROUPING (FIX)
+        =============================== */
 
           // 🔴 IN PROGRESS MODE → ONLY SHOW IN PROGRESS
           if (mode === "inprogress") {
@@ -4094,8 +4111,8 @@ Equine Transport UK`,
           byWeek[key].push(booking);
         });
         /* ===============================
-   SORTING
-=============================== */
+         SORTING
+      =============================== */
 
         const sortFn = (a, b) =>
           new Date(a.pickupAt || 0).getTime() -
@@ -4106,8 +4123,8 @@ Equine Transport UK`,
         tomorrow.sort(sortFn);
         rest.sort(sortFn);
         /* ===============================
-     RENDER HELPERS
-  =============================== */
+           RENDER HELPERS
+        =============================== */
 
         function renderRow(booking) {
           const now = new Date();
@@ -4127,47 +4144,47 @@ Equine Transport UK`,
             String(booking.status || "").toLowerCase() === "cancelled";
 
           const customerCell = `
-  <div class="customer-block">
-    <div class="customer-name">
-      ${escapeHtml(getCustomerName(booking))}
-      ${isCancelled ? '<span class="badge-cancelled">Cancelled</span>' : ""}
-    </div>
-    ${buildContactButtons(booking)}
-  </div>
-`;
+        <div class="customer-block">
+          <div class="customer-name">
+            ${escapeHtml(getCustomerName(booking))}
+            ${isCancelled ? '<span class="badge-cancelled">Cancelled</span>' : ""}
+          </div>
+          ${buildContactButtons(booking)}
+        </div>
+      `;
 
           const vehicleCell = `
-      <div>
-        <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
-        <div class="tiny">${escapeHtml(booking.vehicleId || "")}</div>
-      </div>
-    `;
+            <div>
+              <div class="vehicle-line">${escapeHtml(getVehicleName(booking))}</div>
+              <div class="tiny">${escapeHtml(booking.vehicleId || "")}</div>
+            </div>
+          `;
 
           const hireCell = hireCellHtml(booking);
 
           const paymentCell = `
-  <div class="stack">
-    ${paymentHtml(booking)}
-  </div>
-`;
+        <div class="stack">
+          ${paymentHtml(booking)}
+        </div>
+      `;
 
           const actionsCell = buildActionButtons(booking);
           const dvlaCell = dvlaCellHtml(booking);
 
           return `
-<tr class="
-  ${isUrgentBooking(booking) ? "urgent-booking" : ""}
-  ${returnsToday ? "returns-today" : ""}
-  ${isCancelled ? "cancelled-booking" : ""}
-">
-        <td data-label="Customer">${customerCell}</td>
-        <td data-label="Vehicle">${vehicleCell}</td>
-        <td data-label="Hire">${hireCell}</td>
-        <td data-label="Payment">${paymentCell}</td>
-        <td data-label="Actions">${actionsCell}</td>
-        <td data-label="DVLA Check">${dvlaCell}</td>
-      </tr>
-    `;
+      <tr class="
+        ${isUrgentBooking(booking) ? "urgent-booking" : ""}
+        ${returnsToday ? "returns-today" : ""}
+        ${isCancelled ? "cancelled-booking" : ""}
+      ">
+              <td data-label="Customer">${customerCell}</td>
+              <td data-label="Vehicle">${vehicleCell}</td>
+              <td data-label="Hire">${hireCell}</td>
+              <td data-label="Payment">${paymentCell}</td>
+              <td data-label="Actions">${actionsCell}</td>
+              <td data-label="DVLA Check">${dvlaCell}</td>
+            </tr>
+          `;
         }
 
         function formatDayHeader(dateStr) {
@@ -4201,16 +4218,16 @@ Equine Transport UK`,
           if (!list.length) return "";
 
           return `
-      <tr class="section-header">
-        <td colspan="6">${title}</td>
-      </tr>
-      ${list.map(renderRow).join("")}
-    `;
+            <tr class="section-header">
+              <td colspan="6">${title}</td>
+            </tr>
+            ${list.map(renderRow).join("")}
+          `;
         }
 
         /* ===============================
-     RENDER TABLE
-  =============================== */
+           RENDER TABLE
+        =============================== */
 
         let restTitle = "All Bookings";
 
@@ -4234,8 +4251,8 @@ Equine Transport UK`,
         }
 
         /* ===============================
-   📅 NEXT 7 DAYS (ONLY UPCOMING)
-=============================== */
+         📅 NEXT 7 DAYS (ONLY UPCOMING)
+      =============================== */
 
         if (mode === "upcoming") {
           for (let i = 2; i <= 7; i++) {
@@ -4249,11 +4266,11 @@ Equine Transport UK`,
             if (!list.length) continue;
 
             html += `
-      <tr class="section-header">
-        <td colspan="6">${formatDayHeader(key)}</td>
-      </tr>
-      ${list.map(renderRow).join("")}
-    `;
+            <tr class="section-header">
+              <td colspan="6">${formatDayHeader(key)}</td>
+            </tr>
+            ${list.map(renderRow).join("")}
+          `;
           }
         }
 
@@ -4262,11 +4279,11 @@ Equine Transport UK`,
           .sort((a, b) => new Date(a.split("_")[0]) - new Date(b.split("_")[0]))
           .forEach((key) => {
             html += `
-      <tr class="section-header">
-        <td colspan="6">📆 ${formatWeekHeader(key)}</td>
-      </tr>
-      ${byWeek[key].map(renderRow).join("")}
-    `;
+            <tr class="section-header">
+              <td colspan="6">📆 ${formatWeekHeader(key)}</td>
+            </tr>
+            ${byWeek[key].map(renderRow).join("")}
+          `;
           });
 
         bookingsBody.innerHTML = html;
@@ -4274,8 +4291,8 @@ Equine Transport UK`,
         renderMobileCards(filteredBookings);
 
         /* ===============================
-     🔥 DEBUG + DVLA LOAD (FIXED)
-  =============================== */
+           🔥 DEBUG + DVLA LOAD (FIXED)
+        =============================== */
 
         setTimeout(() => {
           const waButtons = document.querySelectorAll(".js-wa");
@@ -4287,17 +4304,17 @@ Equine Transport UK`,
           }
 
           /* ===============================
-   🔥 FIXED DVLA LOADING (FINAL)
-   (no index bug + grouping safe)
-=============================== */
+         🔥 FIXED DVLA LOADING (FINAL)
+         (no index bug + grouping safe)
+      =============================== */
 
           syncScroll();
         }, 0);
       }
 
       /* =====================================
-   MOBILE BOOKING CARDS
-===================================== */
+         MOBILE BOOKING CARDS
+      ===================================== */
 
       function renderMobileCards(bookings = []) {
         if (!mobileBookings) return;
@@ -4329,171 +4346,171 @@ Equine Transport UK`,
 
           mobileCard.innerHTML = `
 
-      <div class="mobile-booking-top">
+            <div class="mobile-booking-top">
 
-        <div>
+              <div>
 
-          <div class="mobile-booking-name">
-            ${escapeHtml(customerName)}
+                <div class="mobile-booking-name">
+                  ${escapeHtml(customerName)}
+                </div>
+
+                <div class="mobile-booking-ref">
+                  ${escapeHtml(ref)}
+                  ·
+                  ${escapeHtml(vehicleName)}
+                </div>
+
+              </div>
+
+              <div>
+                ${
+                  booking.formCompleted
+                    ? '<span class="pill ok">Form Complete</span>'
+                    : '<span class="pill warn">Form Pending</span>'
+                }
+              </div>
+
+            </div>
+
+            <div class="mobile-booking-datetime">
+
+              <div class="mobile-chip">
+                📅 ${escapeHtml(pickupDate)}
+              </div>
+
+              <div class="mobile-chip">
+                ↩️ ${escapeHtml(dropoffDate)}
+              </div>
+
+            </div>
+
+            <div class="mobile-booking-actions">
+
+              <a
+                class="mobile-action-btn call"
+                href="tel:${escapeHtml(booking.customerMobile || "")}"
+              >
+                📞 Call
+              </a>
+
+              <a
+                class="mobile-action-btn email"
+                href="mailto:${escapeHtml(booking.customerEmail || "")}"
+              >
+                ✉️ Email
+              </a>
+
+            </div>
+
+            <div class="mobile-expand">
+
+        <button
+          onclick="toggleMobileBooking('${booking.id}')"
+        >
+          View details
+        </button>
+
+      </div>
+
+      <div
+        id="mobile-extra-${booking.id}"
+        class="mobile-booking-extra"
+      >
+
+        <div class="mobile-info-grid">
+
+          <div class="mobile-info-box">
+            <div class="mobile-info-label">
+              Payment
+            </div>
+
+            <div class="mobile-info-value">
+              ${escapeHtml(booking.paymentStatus || "Pending")}
+            </div>
           </div>
 
-          <div class="mobile-booking-ref">
-            ${escapeHtml(ref)}
-            ·
-            ${escapeHtml(vehicleName)}
+          <div class="mobile-info-box">
+            <div class="mobile-info-label">
+              Paid now
+            </div>
+
+            <div class="mobile-info-value">
+              £${Number(booking.paidNow || 0).toFixed(2)}
+            </div>
+          </div>
+
+          <div class="mobile-info-box">
+            <div class="mobile-info-label">
+              Outstanding
+            </div>
+
+            <div class="mobile-info-value">
+              £${Number(booking.outstandingAmount || 0).toFixed(2)}
+            </div>
+          </div>
+
+          <div class="mobile-info-box">
+            <div class="mobile-info-label">
+              DVLA
+            </div>
+
+            <div class="mobile-info-value">
+              ${booking.dvlaVerified ? "Verified" : "Pending"}
+            </div>
           </div>
 
         </div>
 
-        <div>
-          ${
-            booking.formCompleted
-              ? '<span class="pill ok">Form Complete</span>'
-              : '<span class="pill warn">Form Pending</span>'
-          }
+       <div class="mobile-link-actions">
+
+        <button
+        class="mobile-link-btn"
+        onclick="openMobileForm('${booking.id}')"
+      >
+        📝 View Form
+      </button>
+
+          <button
+            class="mobile-link-btn"
+           onclick="handleMobileResend('${booking.id}','form',this)"
+          >
+            📄 Form
+          </button>
+
+          <button
+            class="mobile-link-btn"
+            onclick="handleMobileResend('${booking.id}','deposit',this)"
+          >
+            💳 Deposit
+          </button>
+
+          <button
+            class="mobile-link-btn"
+            onclick="handleMobileResend('${booking.id}','outstanding',this)"
+          >
+            💰 Balance
+          </button>
+
+          <button
+        class="mobile-link-btn mobile-edit-btn"
+        onclick="openEditBookingById('${booking.id}')"
+      >
+        Edit
+      </button>
+
         </div>
 
       </div>
 
-      <div class="mobile-booking-datetime">
-
-        <div class="mobile-chip">
-          📅 ${escapeHtml(pickupDate)}
-        </div>
-
-        <div class="mobile-chip">
-          ↩️ ${escapeHtml(dropoffDate)}
-        </div>
-
-      </div>
-
-      <div class="mobile-booking-actions">
-
-        <a
-          class="mobile-action-btn call"
-          href="tel:${escapeHtml(booking.customerMobile || "")}"
-        >
-          📞 Call
-        </a>
-
-        <a
-          class="mobile-action-btn email"
-          href="mailto:${escapeHtml(booking.customerEmail || "")}"
-        >
-          ✉️ Email
-        </a>
-
-      </div>
-
-      <div class="mobile-expand">
-
-  <button
-    onclick="toggleMobileBooking('${booking.id}')"
-  >
-    View details
-  </button>
-
-</div>
-
-<div
-  id="mobile-extra-${booking.id}"
-  class="mobile-booking-extra"
->
-
-  <div class="mobile-info-grid">
-
-    <div class="mobile-info-box">
-      <div class="mobile-info-label">
-        Payment
-      </div>
-
-      <div class="mobile-info-value">
-        ${escapeHtml(booking.paymentStatus || "Pending")}
-      </div>
-    </div>
-
-    <div class="mobile-info-box">
-      <div class="mobile-info-label">
-        Paid now
-      </div>
-
-      <div class="mobile-info-value">
-        £${Number(booking.paidNow || 0).toFixed(2)}
-      </div>
-    </div>
-
-    <div class="mobile-info-box">
-      <div class="mobile-info-label">
-        Outstanding
-      </div>
-
-      <div class="mobile-info-value">
-        £${Number(booking.outstandingAmount || 0).toFixed(2)}
-      </div>
-    </div>
-
-    <div class="mobile-info-box">
-      <div class="mobile-info-label">
-        DVLA
-      </div>
-
-      <div class="mobile-info-value">
-        ${booking.dvlaVerified ? "Verified" : "Pending"}
-      </div>
-    </div>
-
-  </div>
-
- <div class="mobile-link-actions">
-
-  <button
-  class="mobile-link-btn"
-  onclick="openMobileForm('${booking.id}')"
->
-  📝 View Form
-</button>
-
-    <button
-      class="mobile-link-btn"
-     onclick="handleMobileResend('${booking.id}','form',this)"
-    >
-      📄 Form
-    </button>
-
-    <button
-      class="mobile-link-btn"
-      onclick="handleMobileResend('${booking.id}','deposit',this)"
-    >
-      💳 Deposit
-    </button>
-
-    <button
-      class="mobile-link-btn"
-      onclick="handleMobileResend('${booking.id}','outstanding',this)"
-    >
-      💰 Balance
-    </button>
-
-    <button
-  class="mobile-link-btn mobile-edit-btn"
-  onclick="openEditBookingById('${booking.id}')"
->
-  Edit
-</button>
-
-  </div>
-
-</div>
-
-    `;
+          `;
 
           mobileBookings.appendChild(mobileCard);
         });
       }
 
       /* =====================================
-   MOBILE RESEND
-===================================== */
+         MOBILE RESEND
+      ===================================== */
 
       async function handleMobileResend(bookingId, type, btn) {
         if (!btn) return;
@@ -4518,8 +4535,8 @@ Equine Transport UK`,
           const data = await res.json();
 
           /* ===============================
-       RATE LIMIT
-    =============================== */
+             RATE LIMIT
+          =============================== */
 
           if (res.status === 429) {
             btn.innerHTML = "Recently sent";
@@ -4555,8 +4572,8 @@ Equine Transport UK`,
       }
 
       /* =====================================
-   MOBILE VIEW FORM
-===================================== */
+         MOBILE VIEW FORM
+      ===================================== */
 
       function openMobileForm(bookingId) {
         if (!bookingId) return;
@@ -4565,8 +4582,8 @@ Equine Transport UK`,
       }
 
       /* =====================================
-   MOBILE ACCORDION
-===================================== */
+         MOBILE ACCORDION
+      ===================================== */
 
       function toggleMobileBooking(bookingId) {
         const extra = document.getElementById(`mobile-extra-${bookingId}`);
@@ -4593,8 +4610,8 @@ Equine Transport UK`,
       }
 
       /* =====================================
-   MOBILE TABBAR NAVIGATION
-===================================== */
+         MOBILE TABBAR NAVIGATION
+      ===================================== */
 
       function scrollToBookings() {
         window.scrollTo({
@@ -4653,8 +4670,8 @@ Equine Transport UK`,
       }
 
       /* =====================================
-   MOBILE MENU
-===================================== */
+         MOBILE MENU
+      ===================================== */
 
       const mobileMenuBtn = document.getElementById("mobile-menu-btn");
 
@@ -4686,11 +4703,11 @@ Equine Transport UK`,
 
       function makeDetailBox(label, value) {
         return `
-        <div class="detail-box">
-          <div class="label">${escapeHtml(label)}</div>
-          <div class="value">${escapeHtml(value ?? "—")}</div>
-        </div>
-      `;
+              <div class="detail-box">
+                <div class="label">${escapeHtml(label)}</div>
+                <div class="value">${escapeHtml(value ?? "—")}</div>
+              </div>
+            `;
       }
 
       function prettyValue(value) {
@@ -4847,8 +4864,8 @@ Equine Transport UK`,
 
       document.addEventListener("click", async (e) => {
         /* ===============================
-     ✏️ EDIT BUTTON CLICK
-  =============================== */
+           ✏️ EDIT BUTTON CLICK
+        =============================== */
 
         const editBtn = e.target.closest(".btn-edit");
 
@@ -4872,8 +4889,8 @@ Equine Transport UK`,
           IS_EDIT_INITIALISING = true;
 
           /* ===============================
-       🔥 GET ELEMENTS
-    =============================== */
+             🔥 GET ELEMENTS
+          =============================== */
 
           const vehicleEl = document.getElementById("edit-vehicle");
           const dateEl = document.getElementById("edit-date");
@@ -4881,8 +4898,8 @@ Equine Transport UK`,
           const durationEl = document.getElementById("edit-duration");
 
           /* ===============================
-   🔥 SET BASE VALUES
-=============================== */
+         🔥 SET BASE VALUES
+      =============================== */
 
           document.getElementById("edit-booking-id").value = booking.id;
 
@@ -4892,14 +4909,14 @@ Equine Transport UK`,
           dateEl.value = booking.pickupAtLocal?.slice(0, 10);
 
           /* ===============================
-       🔥 APPLY RULES FIRST (CRITICAL)
-    =============================== */
+             🔥 APPLY RULES FIRST (CRITICAL)
+          =============================== */
 
           enforceAdminVehicleDurationRules(booking.vehicleId);
 
           /* ===============================
-       🔥 NOW SET DEPENDENT VALUES
-    =============================== */
+             🔥 NOW SET DEPENDENT VALUES
+          =============================== */
 
           durationEl.value = String(booking.durationDays);
 
@@ -4914,8 +4931,8 @@ Equine Transport UK`,
           }
 
           /* ===============================
-       🔥 OTHER FIELDS
-    =============================== */
+             🔥 OTHER FIELDS
+          =============================== */
 
           document.getElementById("edit-price").value = booking.hireTotal || 0;
 
@@ -4926,16 +4943,16 @@ Equine Transport UK`,
             booking?.extras?.earlyPickup || false;
 
           /* ===============================
-       🔥 OPEN MODAL
-    =============================== */
+             🔥 OPEN MODAL
+          =============================== */
 
           editModal.classList.remove("hidden");
 
           clearEditError();
 
           /* ===============================
-       🔥 UNLOCK AFTER INIT
-    =============================== */
+             🔥 UNLOCK AFTER INIT
+          =============================== */
 
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -4943,15 +4960,15 @@ Equine Transport UK`,
             });
           });
           /* ===============================
-       🔥 INITIAL PRICE ONLY
-    =============================== */
+             🔥 INITIAL PRICE ONLY
+          =============================== */
 
           updateAdminPrice();
           checkAdminAvailabilityLive(); // ← ADD THIS
 
           /* ===============================
-       🔥 AUTO LISTENERS
-    =============================== */
+             🔥 AUTO LISTENERS
+          =============================== */
 
           setTimeout(() => {
             [
@@ -4980,8 +4997,8 @@ Equine Transport UK`,
                 }
 
                 /* =====================================
-     DEBOUNCED LIVE CHECK
-  ===================================== */
+           DEBOUNCED LIVE CHECK
+        ===================================== */
 
                 clearTimeout(window._adminCheckTimer);
 
@@ -5007,8 +5024,8 @@ Equine Transport UK`,
         }
 
         /* ===============================
-   DVLA OPEN + COPY (PRO VERSION)
-=============================== */
+         DVLA OPEN + COPY (PRO VERSION)
+      =============================== */
 
         const dvlaBtn = e.target.closest(".copy-licence");
 
@@ -5063,8 +5080,8 @@ Equine Transport UK`,
         }
 
         /* ===============================
-   GENERIC COPY BUTTON (UPGRADED)
-=============================== */
+         GENERIC COPY BUTTON (UPGRADED)
+      =============================== */
 
         const copyBtn = e.target.closest(".copy-btn");
 
@@ -5088,8 +5105,8 @@ Equine Transport UK`,
         }
 
         /* ===============================
-   📲 WHATSAPP ACTIONS
-=============================== */
+         📲 WHATSAPP ACTIONS
+      =============================== */
 
         const waBtn = e.target.closest(".js-wa");
 
@@ -5114,51 +5131,51 @@ Equine Transport UK`,
           let message = "";
 
           /* ===============================
-     FORM
-  =============================== */
+           FORM
+        =============================== */
 
           if (type === "form") {
             message = `Dear ${name},
 
-Please complete your ${formType.toUpperCase()} form before your hire:
+      Please complete your ${formType.toUpperCase()} form before your hire:
 
-${formLink}
+      ${formLink}
 
-Kind regards,
-Koos & Avril
-Equine Transport UK`;
+      Kind regards,
+      Koos & Avril
+      Equine Transport UK`;
           }
 
           /* ===============================
-     DEPOSIT
-  =============================== */
+           DEPOSIT
+        =============================== */
 
           if (type === "deposit") {
             message = `Dear ${name},
 
-Please secure your £200 deposit here:
+      Please secure your £200 deposit here:
 
-${depositLink}
+      ${depositLink}
 
-Kind regards,
-Koos & Avril
-Equine Transport UK`;
+      Kind regards,
+      Koos & Avril
+      Equine Transport UK`;
           }
 
           /* ===============================
-     OUTSTANDING
-  =============================== */
+           OUTSTANDING
+        =============================== */
 
           if (type === "outstanding") {
             message = `Dear ${name},
 
-Your outstanding balance can be paid here:
+      Your outstanding balance can be paid here:
 
-${outstandingLink}
+      ${outstandingLink}
 
-Kind regards,
-Koos & Avril
-Equine Transport UK`;
+      Kind regards,
+      Koos & Avril
+      Equine Transport UK`;
           }
 
           const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -5169,8 +5186,8 @@ Equine Transport UK`;
         }
 
         /* ===============================
-   📧 EMAIL ACTIONS
-=============================== */
+         📧 EMAIL ACTIONS
+      =============================== */
 
         const emailBtn = e.target.closest(".js-resend-email");
 
@@ -5302,10 +5319,10 @@ Equine Transport UK`;
         );
 
         bookingsBody.innerHTML = `
-    <tr>
-      <td colspan="6" class="empty-state">Loading bookings...</td>
-    </tr>
-  `;
+          <tr>
+            <td colspan="6" class="empty-state">Loading bookings...</td>
+          </tr>
+        `;
 
         try {
           const res = await fetch(
@@ -5365,10 +5382,10 @@ Equine Transport UK`;
           );
 
           bookingsBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="empty-state">Failed to load bookings.</td>
-      </tr>
-    `;
+            <tr>
+              <td colspan="6" class="empty-state">Failed to load bookings.</td>
+            </tr>
+          `;
         }
       }
 
@@ -5393,10 +5410,10 @@ Equine Transport UK`;
           // ✅ HANDLE "NO FORM" (NORMAL CASE)
           if (res.status === 404) {
             modalSummary.innerHTML = `
-        <div class="empty-state">
-          No form submitted yet for this booking.
-        </div>
-      `;
+              <div class="empty-state">
+                No form submitted yet for this booking.
+              </div>
+            `;
             modalFields.innerHTML = "";
             modalSignature.innerHTML = "";
             openModal();
@@ -5412,16 +5429,16 @@ Equine Transport UK`;
           const formData = data.form || data;
 
           modalSummary.innerHTML = `
-      ${makeDetailBox("Booking reference", shortRef(bookingId))}
-      ${makeDetailBox("Form type", formData.formType || "—")}
-      ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
-    `;
+            ${makeDetailBox("Booking reference", shortRef(bookingId))}
+            ${makeDetailBox("Form type", formData.formType || "—")}
+            ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
+          `;
 
           const entries = buildFieldEntries(formData);
 
           /* ===============================
-   GROUP FIELDS
-=============================== */
+         GROUP FIELDS
+      =============================== */
 
           const groups = {
             customer: [],
@@ -5445,50 +5462,50 @@ Equine Transport UK`;
           });
 
           /* ===============================
-   RENDER SECTION
-=============================== */
+         RENDER SECTION
+      =============================== */
 
           function renderSection(title, items) {
             if (!items.length) return "";
 
             return `
-   <div class="modal-section">
-  <h4 class="modal-section-title">${title}</h4>
-  <div class="kv-list">
-      ${items
-        .map(
-          ([key, value]) => `
-        <div class="kv-item">
-          <div class="kv-key">${escapeHtml(key)}</div>
-          <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
+         <div class="modal-section">
+        <h4 class="modal-section-title">${title}</h4>
+        <div class="kv-list">
+            ${items
+              .map(
+                ([key, value]) => `
+              <div class="kv-item">
+                <div class="kv-key">${escapeHtml(key)}</div>
+                <div class="kv-value">${escapeHtml(prettyValue(value))}</div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
         </div>
-      `,
-        )
-        .join("")}
-    </div>
-  </div>
-  `;
+        `;
           }
 
           /* ===============================
-   OUTPUT
-=============================== */
+         OUTPUT
+      =============================== */
 
           modalFields.innerHTML = `
-  ${renderSection("Customer Details", groups.customer)}
-  ${renderSection("Licence / DVLA", groups.licence)}
-  ${renderSection("Hire Details", groups.hire)}
-  ${renderSection("Other", groups.other)}
-`;
+        ${renderSection("Customer Details", groups.customer)}
+        ${renderSection("Licence / DVLA", groups.licence)}
+        ${renderSection("Hire Details", groups.hire)}
+        ${renderSection("Other", groups.other)}
+      `;
 
           const signatureData = getSignatureData(formData);
 
           if (signatureData) {
             modalSignature.innerHTML = `
-    <div class="et-modal-signature">
-      <img src="${signatureData}" />
-    </div>
-  `;
+          <div class="et-modal-signature">
+            <img src="${signatureData}" />
+          </div>
+        `;
           } else {
             modalSignature.innerHTML = `<div class="empty-state">No signature</div>`;
           }
@@ -5498,10 +5515,10 @@ Equine Transport UK`;
           console.error("Failed to load form:", err);
 
           modalSummary.innerHTML = `
-      <div class="empty-state">
-        ${escapeHtml(err.message || "Failed to load form.")}
-      </div>
-    `;
+            <div class="empty-state">
+              ${escapeHtml(err.message || "Failed to load form.")}
+            </div>
+          `;
 
           modalFields.innerHTML = "";
           modalSignature.innerHTML = "";
@@ -5539,8 +5556,8 @@ Equine Transport UK`;
       rangeToInput?.addEventListener("change", loadBookings);
 
       /* ===============================
-   ✏️ EDIT MODAL CLOSE HANDLERS (FINAL)
-=============================== */
+         ✏️ EDIT MODAL CLOSE HANDLERS (FINAL)
+      =============================== */
 
       if (editCloseBtn) {
         editCloseBtn.onclick = () => editModal.classList.add("hidden");
@@ -5557,8 +5574,8 @@ Equine Transport UK`;
       const editSaveBtn = document.getElementById("edit-save");
 
       /* ===============================
-   💾 SAVE BOOKING (UNCHANGED CORE)
-=============================== */
+         💾 SAVE BOOKING (UNCHANGED CORE)
+      =============================== */
 
       if (editSaveBtn) {
         editSaveBtn.onclick = async () => {
@@ -5616,8 +5633,8 @@ Equine Transport UK`;
           );
 
           /* ===============================
-   👤 CUSTOMER (FIXED)
-=============================== */
+         👤 CUSTOMER (FIXED)
+      =============================== */
 
           const customerSearchValue =
             document.getElementById("edit-customer-search")?.value?.trim() ||
@@ -5629,8 +5646,8 @@ Equine Transport UK`;
             SELECTED_CUSTOMER?.id || booking?.customerId || null;
 
           /* =====================================
-   ONLY VALIDATE IF USER IS CHANGING CUSTOMER
-===================================== */
+         ONLY VALIDATE IF USER IS CHANGING CUSTOMER
+      ===================================== */
 
           if (customerChanged && !SELECTED_CUSTOMER) {
             return alert("Please select a valid customer");
@@ -5641,8 +5658,8 @@ Equine Transport UK`;
           console.log("👤 FINAL customerId:", customerId);
 
           /* ===============================
-       🔥 DETECT NO CHANGES (ONLY EDIT MODE)
-    =============================== */
+             🔥 DETECT NO CHANGES (ONLY EDIT MODE)
+          =============================== */
 
           if (!isNew) {
             const noChanges =
@@ -5662,8 +5679,8 @@ Equine Transport UK`;
           }
 
           /* ===============================
-       VALIDATION
-    =============================== */
+             VALIDATION
+          =============================== */
 
           if (!vehicleId) return alert("Missing vehicle");
           if (!pickupDate || !pickupTime) return alert("Missing date or time");
@@ -5688,8 +5705,8 @@ Equine Transport UK`;
           console.log("👤 SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
 
           /* ===============================
-       📦 BUILD PAYLOAD
-    =============================== */
+             📦 BUILD PAYLOAD
+          =============================== */
           const payload = {
             bookingId: isNew ? null : bookingId,
             vehicleId,
@@ -5703,8 +5720,8 @@ Equine Transport UK`;
             extras,
 
             /* ===============================
-     👤 CUSTOMER ASSIGN (FIXED)
-  =============================== */
+           👤 CUSTOMER ASSIGN (FIXED)
+        =============================== */
 
             customerId,
 
@@ -5713,8 +5730,8 @@ Equine Transport UK`;
           };
 
           /* ===============================
-       🚚 DEBUG VEHICLE SAVE
-    =============================== */
+             🚚 DEBUG VEHICLE SAVE
+          =============================== */
 
           console.log("🚚 SAVING VEHICLE:", vehicleId);
 
@@ -5748,8 +5765,8 @@ Equine Transport UK`;
               throw new Error(data.error || "Update failed");
             }
             /* ===============================
-         🎉 SUCCESS UX (IMPROVED)
-      =============================== */
+               🎉 SUCCESS UX (IMPROVED)
+            =============================== */
 
             editModal.classList.add("hidden");
 
@@ -5768,8 +5785,8 @@ Equine Transport UK`;
         };
 
         /* ===============================
-   💳 FULL DEPOSIT CAPTURE
-=============================== */
+         💳 FULL DEPOSIT CAPTURE
+      =============================== */
 
         const captureDepositBtn = document.getElementById(
           "capture-deposit-btn",
@@ -5827,8 +5844,8 @@ Equine Transport UK`;
         }
 
         /* ===============================
-   💳 PARTIAL DEPOSIT CAPTURE
-=============================== */
+         💳 PARTIAL DEPOSIT CAPTURE
+      =============================== */
 
         const partialCaptureBtn = document.getElementById(
           "partial-capture-btn",
@@ -5892,8 +5909,8 @@ Equine Transport UK`;
       }
 
       /* ===============================
-   ↩️ CANCEL DEPOSIT
-=============================== */
+         ↩️ CANCEL DEPOSIT
+      =============================== */
 
       const cancelDepositBtn = document.getElementById("cancel-deposit-btn");
 
@@ -5947,8 +5964,8 @@ Equine Transport UK`;
       }
 
       /* ===============================
-   💷 ADD MANUAL PAYMENT (NEW)
-=============================== */
+         💷 ADD MANUAL PAYMENT (NEW)
+      =============================== */
 
       document
         .getElementById("edit-add-payment")
@@ -5982,8 +5999,8 @@ Equine Transport UK`;
         });
 
       /* ===============================
-   💸 REFUND (FIXED)
-=============================== */
+         💸 REFUND (FIXED)
+      =============================== */
 
       document
         .getElementById("edit-refund-btn")
@@ -6067,25 +6084,25 @@ Equine Transport UK`;
             }
 
             /* ===============================
-         🔥 RENDER LIST
-      =============================== */
+               🔥 RENDER LIST
+            =============================== */
 
             resultsEl.innerHTML = data.results
               .map(
                 (c) => `
-        <div class="customer-result"
-             data-id="${c.id}"
-             data-name="${c.full_name}"
-             style="padding:6px; cursor:pointer;">
-          👤 ${c.full_name} (${c.email || c.mobile || "-"})
-        </div>
-      `,
+              <div class="customer-result"
+                   data-id="${c.id}"
+                   data-name="${c.full_name}"
+                   style="padding:6px; cursor:pointer;">
+                👤 ${c.full_name} (${c.email || c.mobile || "-"})
+              </div>
+            `,
               )
               .join("");
 
             /* ===============================
-         🔥 CLICK SELECT
-      =============================== */
+               🔥 CLICK SELECT
+            =============================== */
 
             resultsEl.querySelectorAll(".customer-result").forEach((el) => {
               el.onclick = () => {
@@ -6121,13 +6138,13 @@ Equine Transport UK`;
             SELECTED_CUSTOMER.name;
 
           document.getElementById("customer-results").innerHTML = `
-    ✅ Selected: ${SELECTED_CUSTOMER.name}
-  `;
+          ✅ Selected: ${SELECTED_CUSTOMER.name}
+        `;
         });
 
       /* ===============================
-   ❌ CANCEL BOOKING (NEW)
-=============================== */
+         ❌ CANCEL BOOKING (NEW)
+      =============================== */
 
       document
         .getElementById("edit-cancel-booking")
@@ -6178,16 +6195,16 @@ Equine Transport UK`;
       setTimeout(syncScroll, 100);
 
       /* ===============================
-   🚀 INIT (MISSING - CRITICAL)
-=============================== */
+         🚀 INIT (MISSING - CRITICAL)
+      =============================== */
 
       defaultRanges();
       loadBookings();
       updateClearButton();
 
       /* ===============================
-   🔥 ADMIN PRICE AUTO UPDATE (FINAL)
-=============================== */
+         🔥 ADMIN PRICE AUTO UPDATE (FINAL)
+      =============================== */
 
       function attachAdminPriceListeners() {
         [
@@ -6208,8 +6225,8 @@ Equine Transport UK`;
       }
 
       /* ===============================
-   LOAD CALENDAR
-=============================== */
+         LOAD CALENDAR
+      =============================== */
 
       async function loadAdminCalendar() {
         if (!calGrid) return;
@@ -6262,8 +6279,8 @@ Equine Transport UK`;
       }
 
       /* ===============================
-   RENDER DAYS
-=============================== */
+         RENDER DAYS
+      =============================== */
 
       function renderCalendarDays(daysData) {
         calGrid.innerHTML = "";
@@ -6304,8 +6321,8 @@ Equine Transport UK`;
           let hasBlock = false;
 
           /* ===============================
-       🔥 BOOKINGS
-    =============================== */
+             🔥 BOOKINGS
+          =============================== */
 
           Object.entries(dayData).forEach(([vehicleId, status]) => {
             if (vehicleId === "blocks") return;
@@ -6318,8 +6335,8 @@ Equine Transport UK`;
           });
 
           /* ===============================
-       🔥 BLOCKS
-    =============================== */
+             🔥 BLOCKS
+          =============================== */
 
           Object.entries(blocks).forEach(([vehicleId, block]) => {
             if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
@@ -6363,62 +6380,62 @@ Equine Transport UK`;
           if (dateStr < todayStr) cls += " past";
 
           /* ===============================
-       🔥 BUILD CELL
-    =============================== */
+             🔥 BUILD CELL
+          =============================== */
 
           const el = document.createElement("div");
           el.className = `cal-day ${cls}`;
           el.dataset.date = dateStr;
 
           el.innerHTML = `
-      <div class="cal-date">
-        ${dayObj.toLocaleDateString("en-GB", {
-          weekday: "short",
-          day: "2-digit",
-        })}
+            <div class="cal-date">
+              ${dayObj.toLocaleDateString("en-GB", {
+                weekday: "short",
+                day: "2-digit",
+              })}
+            </div>
+
+            <div class="cal-slots">
+              <div class="cal-slot ${amBusy ? (amFull ? "busy" : "partial") : ""}">
+                AM ${amBusy}/${total}
+              </div>
+              <div class="cal-slot ${pmBusy ? (pmFull ? "busy" : "partial") : ""}">
+                PM ${pmBusy}/${total}
+              </div>
+               </div>
+
+            <div class="cal-meta">
+        ${Math.max(amBusy, pmBusy)}/${total} unavailable
       </div>
 
-      <div class="cal-slots">
-        <div class="cal-slot ${amBusy ? (amFull ? "busy" : "partial") : ""}">
-          AM ${amBusy}/${total}
-        </div>
-        <div class="cal-slot ${pmBusy ? (pmFull ? "busy" : "partial") : ""}">
-          PM ${pmBusy}/${total}
-        </div>
-         </div>
-
-      <div class="cal-meta">
-  ${Math.max(amBusy, pmBusy)}/${total} unavailable
-</div>
-
-${
-  bookingsForDay.length
-    ? `<div class="cal-note">
-        ${escapeHtml(bookingsForDay[0].customerName || "Booking")}
-      </div>`
-    : ""
-}
+      ${
+        bookingsForDay.length
+          ? `<div class="cal-note">
+              ${escapeHtml(bookingsForDay[0].customerName || "Booking")}
+            </div>`
+          : ""
+      }
 
 
 
 
-  ${
-    blockNotes.length
-      ? `<div class="cal-note">${escapeHtml(blockNotes[0])}</div>`
-      : ""
-  }
-    `;
+        ${
+          blockNotes.length
+            ? `<div class="cal-note">${escapeHtml(blockNotes[0])}</div>`
+            : ""
+        }
+          `;
 
           /* ===============================
-       🔥 CLICK (SAFE)
-    =============================== */
+             🔥 CLICK (SAFE)
+          =============================== */
 
           el.addEventListener("click", () => {
             const bookings = getBookingsForDate(dateStr);
 
             /* ===============================
-     📅 EXISTING BOOKING
-  =============================== */
+           📅 EXISTING BOOKING
+        =============================== */
 
             if (bookings.length) {
               openEditBooking(bookings[0]);
@@ -6426,8 +6443,8 @@ ${
             }
 
             /* ===============================
-     ➕ NEW BOOKING (STEP 6)
-  =============================== */
+           ➕ NEW BOOKING (STEP 6)
+        =============================== */
 
             const vehicleId = calVehicle.value;
 
@@ -6553,8 +6570,8 @@ ${
         if (!booking) return;
 
         /* ===============================
-     🆕 NEW vs EXISTING
-  =============================== */
+           🆕 NEW vs EXISTING
+        =============================== */
 
         const isNew = !booking.id;
 
@@ -6581,8 +6598,8 @@ ${
           booking.hireTotal || booking.total || 0;
 
         /* ===============================
-     👤 CUSTOMER (STEP 7 NEW)
-  =============================== */
+           👤 CUSTOMER (STEP 7 NEW)
+        =============================== */
 
         const searchInput = document.getElementById("edit-customer-search");
         const resultsEl = document.getElementById("customer-results");
@@ -6611,14 +6628,14 @@ ${
           }
 
           /* ===============================
-   🔍 DEBUG (CRITICAL)
-=============================== */
+         🔍 DEBUG (CRITICAL)
+      =============================== */
           console.log("👤 INIT SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
         }
 
         /* ===============================
-     🔒 REFUND / CANCEL STATE
-  =============================== */
+           🔒 REFUND / CANCEL STATE
+        =============================== */
 
         const refundBtn = document.getElementById("edit-refund-btn");
         const captureDepositBtn = document.getElementById(
@@ -6668,14 +6685,14 @@ ${
           }
 
           /* ===============================
-       💸 UPDATE REFUND UI
-    =============================== */
+             💸 UPDATE REFUND UI
+          =============================== */
 
           updateRefundUI(booking);
 
           /* ===============================
-       🧾 LOAD AUDIT LOG
-    =============================== */
+             🧾 LOAD AUDIT LOG
+          =============================== */
 
           console.log("🧾 loading audit for", booking.id);
           loadAuditLog(booking.id);
@@ -6699,14 +6716,14 @@ ${
         }
 
         /* ===============================
-     SHOW MODAL
-  =============================== */
+           SHOW MODAL
+        =============================== */
 
         document.getElementById("edit-modal").classList.remove("hidden");
       }
       /* ===============================
-   🔥 UPDATE REMAINING DISPLAY
-=============================== */
+         🔥 UPDATE REMAINING DISPLAY
+      =============================== */
       function updateRefundUI(booking) {
         if (!booking) return;
 
@@ -6783,11 +6800,11 @@ ${
               /* 👤 Customer */
               if (a.type === "customer_changed") {
                 return `
-            👤 Customer changed<br>
-            From: <strong>${a.fromCustomerName || "Unknown"}</strong><br>
-            To: <strong>${a.toCustomerName || "Unknown"}</strong><br>
-            ${date}
-          `;
+                  👤 Customer changed<br>
+                  From: <strong>${a.fromCustomerName || "Unknown"}</strong><br>
+                  To: <strong>${a.toCustomerName || "Unknown"}</strong><br>
+                  ${date}
+                `;
               }
 
               /* 💳 Deposit capture */
@@ -6803,31 +6820,31 @@ ${
               /* 🚚 Vehicle changed */
               if (a.type === "vehicle_changed") {
                 return `
-            🚚 Lorry changed<br>
-            From: <strong>${a.fromVehicle || "Unknown"}</strong><br>
-            To: <strong>${a.toVehicle || "Unknown"}</strong><br>
-            ${date}
-          `;
+                  🚚 Lorry changed<br>
+                  From: <strong>${a.fromVehicle || "Unknown"}</strong><br>
+                  To: <strong>${a.toVehicle || "Unknown"}</strong><br>
+                  ${date}
+                `;
               }
 
               /* ⏱️ Duration changed */
               if (a.type === "duration_changed") {
                 return `
-            ⏱️ Duration changed<br>
-            From: <strong>${a.fromDuration} day(s)</strong><br>
-            To: <strong>${a.toDuration} day(s)</strong><br>
-            ${date}
-          `;
+                  ⏱️ Duration changed<br>
+                  From: <strong>${a.fromDuration} day(s)</strong><br>
+                  To: <strong>${a.toDuration} day(s)</strong><br>
+                  ${date}
+                `;
               }
 
               /* 🧾 Extras */
               if (a.type === "extras_changed") {
                 return `
-            🧾 Extras changed<br>
-            Dartford: <strong>${a.fromDartford}</strong> → <strong>${a.toDartford}</strong><br>
-            Early pickup: <strong>${a.fromEarlyPickup ? "Yes" : "No"}</strong> → <strong>${a.toEarlyPickup ? "Yes" : "No"}</strong><br>
-            ${date}
-          `;
+                  🧾 Extras changed<br>
+                  Dartford: <strong>${a.fromDartford}</strong> → <strong>${a.toDartford}</strong><br>
+                  Early pickup: <strong>${a.fromEarlyPickup ? "Yes" : "No"}</strong> → <strong>${a.toEarlyPickup ? "Yes" : "No"}</strong><br>
+                  ${date}
+                `;
               }
 
               return `• ${a.type} — ${date}`;
@@ -6904,8 +6921,8 @@ ${
       });
 
       /* ===============================
-   CONTROLS
-=============================== */
+         CONTROLS
+      =============================== */
 
       calPrev?.addEventListener("click", () => {
         CAL_DATE.setMonth(CAL_DATE.getMonth() - 1);
@@ -6922,8 +6939,8 @@ ${
       });
 
       /* ===============================
-   INIT (FINAL)
-=============================== */
+         INIT (FINAL)
+      =============================== */
 
       async function initAdmin() {
         try {
@@ -6945,8 +6962,8 @@ ${
       initAdmin();
 
       /* ===============================
-   🔍 CUSTOMER SEARCH (NEW)
-=============================== */
+         🔍 CUSTOMER SEARCH (NEW)
+      =============================== */
 
       const customerSearchInput = document.getElementById(
         "edit-customer-search",
@@ -6991,10 +7008,10 @@ ${
             const c = data.customer;
 
             customerResults.innerHTML = `
-      <div class="pill ok" style="cursor:pointer;">
-        ${c.full_name} (${c.email || c.mobile})
-      </div>
-    `;
+            <div class="pill ok" style="cursor:pointer;">
+              ${c.full_name} (${c.email || c.mobile})
+            </div>
+          `;
 
             customerResults.onclick = () => {
               SELECTED_CUSTOMER = {
