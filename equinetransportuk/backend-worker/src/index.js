@@ -3454,8 +3454,23 @@ async function handleStripeWebhook(request, env) {
 
               if (paymentType === "outstanding") {
                 b.outstandingPaid = true;
+
                 b.outstandingAmount = 0;
+
                 b.outstanding = 0;
+
+                /* ===============================
+     🔥 SAVE SECOND PAYMENT INTENT
+  =============================== */
+
+                b.outstandingPaymentIntentId = paymentIntentId;
+
+                /* ===============================
+     🔥 SAVE OUTSTANDING AMOUNT
+  =============================== */
+
+                b.outstandingAmountPaid =
+                  Number(session.amount_total || 0) / 100;
               }
 
               b.updatedAt = new Date().toISOString();
