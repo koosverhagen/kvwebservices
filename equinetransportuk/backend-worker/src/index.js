@@ -976,13 +976,35 @@ export default {
           }
 
           /* ===============================
-       🔒 PREVENT OVER-REFUND
-    =============================== */
+   🔒 PREVENT OVER-REFUND
+=============================== */
 
-          const paid = Number(booking.paidNow || 0);
+          const total = Number(booking.hireTotal || booking.total || 0);
+
           const refunded = Number(booking.refundedTotal || 0);
-          const remaining = Math.max(0, paid - refunded);
 
+          const manualPaid = Number(
+            booking.manualPayments || booking.manualPaymentsTotal || 0,
+          );
+
+          const outstandingPaid =
+            booking.outstandingPaid === true ||
+            booking.outstandingPaid === "true";
+
+          /* ===============================
+   🔥 TRUE PAID
+=============================== */
+
+          const paid = outstandingPaid
+            ? total
+            : Number(booking.paidNow || booking.confirmationFee || 0) +
+              manualPaid;
+
+          /* ===============================
+   🔥 TRUE REMAINING
+=============================== */
+
+          const remaining = Math.max(0, paid - refunded);
           if (amount > remaining) {
             return withCors(
               json(
