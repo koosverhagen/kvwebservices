@@ -5546,10 +5546,10 @@
   =============================== */
 
         if (window.innerWidth <= 768) {
-          const mobileCard = document.querySelector(".mobile-booking-card");
+          const firstBooking = document.querySelector(".mobile-booking-card");
 
-          if (mobileCard) {
-            mobileCard.scrollIntoView({
+          if (firstBooking) {
+            firstBooking.scrollIntoView({
               behavior: "smooth",
               block: "start",
             });
@@ -5575,36 +5575,36 @@
         });
       }
 
-      applyFiltersBtn?.addEventListener("click", () => {
+      /* ===============================
+   🔍 APPLY FILTERS
+=============================== */
+
+      applyFiltersBtn?.addEventListener("click", async () => {
         renderBookings();
 
-        setTimeout(() => {
-          scrollToFirstBooking();
-        }, 80);
+        await new Promise((r) => setTimeout(r, 150));
+
+        scrollToFirstBooking();
       });
 
-      rangeFromInput?.addEventListener("change", () => {
-        loadBookings();
+      /* ===============================
+   📅 DATE FILTERS
+=============================== */
 
-        setTimeout(() => {
-          scrollToFirstBooking();
-        }, 250);
+      rangeFromInput?.addEventListener("change", async () => {
+        await loadBookings();
+
+        await new Promise((r) => setTimeout(r, 150));
+
+        scrollToFirstBooking();
       });
 
-      rangeToInput?.addEventListener("change", () => {
-        loadBookings();
+      rangeToInput?.addEventListener("change", async () => {
+        await loadBookings();
 
-        setTimeout(() => {
-          scrollToFirstBooking();
-        }, 250);
-      });
+        await new Promise((r) => setTimeout(r, 150));
 
-      rangeToInput?.addEventListener("change", () => {
-        loadBookings();
-
-        setTimeout(() => {
-          scrollToFirstBooking();
-        }, 120);
+        scrollToFirstBooking();
       });
 
       /* ===============================
