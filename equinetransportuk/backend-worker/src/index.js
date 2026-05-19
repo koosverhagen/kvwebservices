@@ -1170,25 +1170,45 @@ export default {
           }
 
           /* ===============================
-       🔄 UPDATE BOOKING FINANCIALS
-    =============================== */
+   🔄 UPDATE BOOKING FINANCIALS
+=============================== */
 
-          const newPaid = Math.max(0, (booking.paidNow || 0) - amount);
-          const outstanding = Math.max(0, (booking.hireTotal || 0) - newPaid);
-
-          booking.paidNow = newPaid;
-          booking.outstandingAmount = outstanding;
-          booking.outstanding = outstanding;
+          booking.refundedTotal =
+            Number(booking.refundedTotal || 0) + Number(amount);
 
           /* ===============================
-       🔒 REFUND TRACKING (IMPORTANT)
-    =============================== */
+   💰 TRUE PAID TOTAL
+=============================== */
 
-          booking.refundedTotal = (booking.refundedTotal || 0) + Number(amount);
+          const totalPaid = Number(booking.hireTotal || booking.total || 0);
 
-          if (booking.refundedTotal >= (booking.paidNow || 0)) {
+          /* ===============================
+   💰 REMAINING AFTER REFUNDS
+=============================== */
+
+          const remainingPaid = Math.max(0, totalPaid - booking.refundedTotal);
+
+          /* ===============================
+   🔥 UPDATE DISPLAY VALUES
+=============================== */
+
+          booking.paidNow = remainingPaid;
+
+          booking.outstandingAmount = 0;
+
+          booking.outstanding = 0;
+
+          /* ===============================
+   🔥 FULLY REFUNDED
+=============================== */
+
+          if (remainingPaid <= 0) {
             booking.fullyRefunded = true;
           }
+
+          /* ===============================
+   UPDATED
+=============================== */
 
           booking.updatedAt = new Date().toISOString();
 
