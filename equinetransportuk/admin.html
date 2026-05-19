@@ -5540,24 +5540,47 @@
    🔍 SEARCH / FILTERS
 =============================== */
 
+      function scrollToFirstBooking() {
+        /* ===============================
+     📱 MOBILE CARDS
+  =============================== */
+
+        const mobileCard = document.querySelector(".mobile-booking-card");
+
+        if (mobileCard && window.innerWidth <= 768) {
+          mobileCard.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+
+          return;
+        }
+
+        /* ===============================
+     🖥️ DESKTOP TABLE
+  =============================== */
+
+        const firstRow = document.querySelector(".bookings-table tbody tr");
+
+        if (!firstRow) return;
+
+        const listWrap = document.querySelector(".list-wrap");
+
+        if (listWrap) {
+          const top = firstRow.offsetTop - listWrap.offsetTop - 12;
+
+          listWrap.scrollTo({
+            top,
+            behavior: "smooth",
+          });
+        }
+      }
+
       applyFiltersBtn?.addEventListener("click", () => {
         renderBookings();
 
-        /* ===============================
-     🔥 AUTO SCROLL TO RESULTS
-  =============================== */
-
         setTimeout(() => {
-          const firstBooking =
-            document.querySelector(".mobile-booking-card") ||
-            document.querySelector(".bookings-table tbody tr");
-
-          if (firstBooking) {
-            firstBooking.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
+          scrollToFirstBooking();
         }, 80);
       });
 
@@ -5565,16 +5588,7 @@
         loadBookings();
 
         setTimeout(() => {
-          const firstBooking =
-            document.querySelector(".mobile-booking-card") ||
-            document.querySelector(".bookings-table tbody tr");
-
-          if (firstBooking) {
-            firstBooking.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
+          scrollToFirstBooking();
         }, 120);
       });
 
@@ -5582,16 +5596,7 @@
         loadBookings();
 
         setTimeout(() => {
-          const firstBooking =
-            document.querySelector(".mobile-booking-card") ||
-            document.querySelector(".bookings-table tbody tr");
-
-          if (firstBooking) {
-            firstBooking.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
+          scrollToFirstBooking();
         }, 120);
       });
 
