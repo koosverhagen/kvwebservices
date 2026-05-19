@@ -4029,11 +4029,18 @@
            MODE-SPECIFIC GROUPING (FIX)
         =============================== */
 
+          /* ===============================
+   🔥 ALL BOOKINGS MODE
+=============================== */
+
           if (mode === "all") {
-            const monthKey =
-              pickup.getFullYear() +
-              "-" +
-              String(pickup.getMonth() + 1).padStart(2, "0");
+            const monthDate = new Date(
+              pickup.getFullYear(),
+              pickup.getMonth(),
+              1,
+            );
+
+            const monthKey = monthDate.toISOString();
 
             if (!byWeek[monthKey]) {
               byWeek[monthKey] = [];
