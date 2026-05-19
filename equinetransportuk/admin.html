@@ -4475,11 +4475,11 @@ Equine Transport UK`,
     </button>
 
     <button
-      class="mobile-link-btn mobile-edit-btn"
-      onclick="openEditBooking('${booking.id}')"
-    >
-      ✏️ Edit
-    </button>
+  class="mobile-link-btn mobile-edit-btn"
+  onclick="openEditBookingById('${booking.id}')"
+>
+  Edit
+</button>
 
   </div>
 
@@ -6537,6 +6537,17 @@ ${
         blockTimeRange.style.display =
           blockSlotInput.value === "range" ? "" : "none";
       });
+
+      function openEditBookingById(id) {
+        const booking = allBookings.find((b) => b.id === id);
+
+        if (!booking) {
+          alert("Booking not found");
+          return;
+        }
+
+        openEditBooking(booking);
+      }
 
       function openEditBooking(booking) {
         if (!booking) return;
