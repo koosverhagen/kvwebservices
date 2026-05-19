@@ -5542,38 +5542,37 @@
 
       function scrollToFirstBooking() {
         /* ===============================
-     📱 MOBILE CARDS
+     📱 MOBILE
   =============================== */
 
-        const mobileCard = document.querySelector(".mobile-booking-card");
+        if (window.innerWidth <= 768) {
+          const mobileCard = document.querySelector(".mobile-booking-card");
 
-        if (mobileCard && window.innerWidth <= 768) {
-          mobileCard.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
+          if (mobileCard) {
+            mobileCard.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
 
           return;
         }
 
         /* ===============================
-     🖥️ DESKTOP TABLE
+     🖥️ DESKTOP
   =============================== */
 
-        const firstRow = document.querySelector(".bookings-table tbody tr");
+        const bookingsTable = document.querySelector(".bookings-table");
 
-        if (!firstRow) return;
+        if (!bookingsTable) return;
 
-        const listWrap = document.querySelector(".list-wrap");
+        const y =
+          bookingsTable.getBoundingClientRect().top + window.pageYOffset - 120;
 
-        if (listWrap) {
-          const top = firstRow.offsetTop - listWrap.offsetTop - 12;
-
-          listWrap.scrollTo({
-            top,
-            behavior: "smooth",
-          });
-        }
+        window.scrollTo({
+          top: y,
+          behavior: "smooth",
+        });
       }
 
       applyFiltersBtn?.addEventListener("click", () => {
@@ -5589,7 +5588,15 @@
 
         setTimeout(() => {
           scrollToFirstBooking();
-        }, 120);
+        }, 250);
+      });
+
+      rangeToInput?.addEventListener("change", () => {
+        loadBookings();
+
+        setTimeout(() => {
+          scrollToFirstBooking();
+        }, 250);
       });
 
       rangeToInput?.addEventListener("change", () => {
