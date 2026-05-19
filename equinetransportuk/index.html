@@ -1,675 +1,830 @@
 <!doctype html>
 <html lang="en">
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Equine Transport UK | Horsebox Rental & Booking</title>
-	<meta name="description" content="Modern horsebox rental website rebuild with responsive fleet pages and custom booking flow.">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Equine Transport UK | Horsebox Rental & Booking</title>
+    <meta
+      name="description"
+      content="Modern horsebox rental website rebuild with responsive fleet pages and custom booking flow."
+    />
 
-	<style>
-	body {
-		min-height: 100vh;
-		background: linear-gradient(135deg, #ff1e8e 0%, #a21caf 40%, #ff80b5 100%);
-		background-attachment: fixed;
-		background-repeat: no-repeat;
-		background-size: cover;
-	}
-	</style>
-	<link rel="stylesheet" href="styles.css">
-  <link rel="icon" href="images/favicon.png">
-</head>
-<body>
-	<header class="site-header">
-		<div class="container header-inner">
-			<a class="brand" href="#top" aria-label="Equine Transport UK home">
-				<img class="brand-logo" src="images/logo.png" alt="Equine Transport UK logo">
-				<span>Equine Transport UK</span>
-			</a>
-			<nav class="main-nav" id="main-nav" aria-label="Main navigation">
-			<a href="#fleet">Fleet</a>
-			<a href="#booking">Book</a>
-			<a href="pricing-terms.html">Pricing & Terms</a>
-			<a href="admin.html">Admin</a>
-			</nav>
-			<button class="nav-toggle" id="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="main-nav">
-				<span class="nav-toggle-bar"></span>
-				<span class="nav-toggle-bar"></span>
-				<span class="nav-toggle-bar"></span>
-			</button>
-		</div>
-	</header>
-
-	<main id="top">
-  <section class="hero">
-  <div class="container hero-grid">
-
-    <div>
-      <p class="kicker">Horsebox Rental</p>
-      <h1>Find available lorries and book in minutes.</h1>
-
-      <p class="lead">
-        Pick a date and duration, see exactly which lorries are free, view the price,
-        then complete your booking details and checkout.
-      </p>
-
-      <div class="hero-cta-row">
-        <a class="btn" href="#booking">Start booking</a>
-        <a class="btn ghost" href="#fleet">View fleet</a>
-
-        <a class="btn ghost reviews-open" href="#">
-          <span style="margin-right:8px;">G</span>
-          Reviews
+    <style>
+      body {
+        min-height: 100vh;
+        background: linear-gradient(
+          135deg,
+          #ff1e8e 0%,
+          #a21caf 40%,
+          #ff80b5 100%
+        );
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+    </style>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="images/favicon.png" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="#top" aria-label="Equine Transport UK home">
+          <img
+            class="brand-logo"
+            src="images/logo.png"
+            alt="Equine Transport UK logo"
+          />
+          <span>Equine Transport UK</span>
         </a>
+        <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+          <a href="#fleet">Fleet</a>
+          <a href="#booking">Book</a>
+          <a href="pricing-terms.html">Pricing & Terms</a>
+          <a href="admin.html">Admin</a>
+        </nav>
+        <button
+          class="nav-toggle"
+          id="nav-toggle"
+          aria-label="Open navigation"
+          aria-expanded="false"
+          aria-controls="main-nav"
+        >
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
       </div>
-    </div>
-
-
-    <!-- HERO IMAGE WITH PLAY OVERLAY -->
-
-    <div class="fleet-image-wrap hero-image-wrap">
-
-      <img
-        class="hero-image"
-        id="hero-slideshow"
-        src="images/hero5.webp"
-        alt="Horsebox on route"
-      >
-      <a href="#booking" class="hero-floating-cta">
-  Check availability
-  <span>→</span>
-</a>
-
-      <div class="fleet-overlay hero-overlay">
-
-        <div class="apple-play-btn" id="heroPlayBtn">
-          <span>View gallery</span>
-
-          <svg viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"></path>
-          </svg>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-</section>
-
-
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-
-  const images = [
-    "images/hero1.webp",
-    "images/hero2.webp",
-    "images/hero3.webp",
-    "images/hero4.webp",
-    "images/hero5.webp"
-  ];
-
-  let idx = 0;
-  let interval = null;
-
-  const el = document.getElementById("hero-slideshow");
-  const playBtn = document.getElementById("heroPlayBtn");
-  const overlay = document.querySelector(".hero-overlay");
-
-  if(!el || !playBtn || !overlay) return;
-
-  function showNext(){
-
-    el.classList.add("fade-out");
-
-    setTimeout(()=>{
-
-      idx = (idx + 1) % images.length;
-      el.src = images[idx];
-
-      el.classList.remove("fade-out");
-
-    },350);
-
-  }
-
-  playBtn.addEventListener("click",()=>{
-
-    if(interval) return;
-
-    overlay.classList.add("playing");
-
-    interval = setInterval(showNext,3200);
-
-  });
-
-});
-</script>
-		
-
-		<section id="fleet" class="section container">
-			<div class="section-head">
-				<p class="kicker">Fleet</p>
-				<h2>5 layouts ready to book</h2>
-			</div>
-			<div id="fleet-grid" class="fleet-grid"></div>
-
-				   <!--
-removed duplicate, script is loaded at end of body -->
-		</section>
-
-		<section id="booking" class="section booking-wrap">
-			<div class="container">
-
-  <!-- Step indicator -->
-  <div class="booking-steps">
-    <div class="step active" data-step="1">1 Availability</div>
-    <div class="step" data-step="2">2 Lorry</div>
-    <div class="step" data-step="3">3 Details</div>
-    <div class="step" data-step="4">4 Payment</div>
-  </div>
-
-  <div class="booking-flow">
-
-    <!-- STEP 1 -->
-    <div class="booking-step active" id="step-1">
-      <div class="card">
-        <h3>Check availability</h3>
-        <p class="muted">Choose date and duration to see available lorries.</p>
-        
-
-
-        <!-- =========================
-     Phase 4: Calendar UI (NEW)
-     ========================= -->
-<!-- Selected vehicle label -->
-<div id="calendar-vehicle-label" class="calendar-vehicle-label hidden"></div>
-
-<div class="cal-wrap" id="availability-calendar" aria-label="Availability calendar">
-
-  <div class="cal-head">
-    <button class="cal-nav" type="button" data-cal-nav="prev" aria-label="Previous month">‹</button>
-    <div class="cal-title" id="cal-title">Month YYYY</div>
-    <button class="cal-nav" type="button" data-cal-nav="next" aria-label="Next month">›</button>
-  </div>
-
-  <div class="cal-weekdays" aria-hidden="true">
-    <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
-  </div>
-
-  <div class="cal-grid" id="cal-grid" role="grid" aria-label="Calendar days"></div>
-
-  <div class="cal-legend" aria-hidden="true">
-    <span class="cal-dot cal-dot-available"></span><span class="cal-legend-text">Available</span>
-    <span class="cal-dot cal-dot-unavailable"></span><span class="cal-legend-text">Fully booked</span>
-  </div>
-
-</div>
-
-<div id="vehicle-preview" class="vehicle-preview hidden"></div>
-
-<!-- ✅ MOBILE PREVIEW (UNDER CALENDAR) -->
-<div id="mobile-preview" class="mobile-preview hidden"></div>
-
-<div id="preselected-warning" class="preselected-warning"></div>
-
-</div>
-      <form id="availability-form" class="availability-form">
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="pickup-date">Pickup date</label>
-            <input id="pickup-date" type="date" required>
-          </div>
-
-          <div class="form-field" id="pickup-time-group" style="display:none;">
-  <label for="pickup-time">Pickup time (½ day hire)</label>
-
-  <select id="pickup-time">
-    <option value="">Select pickup time</option>
-    <option value="07:00">07:00 — Morning</option>
-    <option value="13:00">13:00 — Afternoon</option>
-  </select>
-
-</div>
-
-          <div class="form-field">
-            <label for="duration-days">Duration</label>
-            <select id="duration-days" required>
-              <option value="0.5">1/2 day</option>
-              <option value="1" selected>1 day</option>
-              <option value="2">2 days</option>
-              <option value="3">3 days</option>
-              <option value="4">4 days</option>
-              <option value="5">5 days</option>
-              <option value="6">6 days</option>
-              <option value="7">Week</option>
-            </select>
-          </div>
-
-          <div class="form-field form-field-actions">
-            <button class="btn" type="submit">Check availability</button>
-          </div>
-        </div>
-      </form>
-
-      </div>
-    </div>
-
-<!-- STEP 2 -->
-<div class="booking-step" id="step-2">
-  <div class="card">
-
-    <h3>Select your lorry</h3>
-
-    <div id="availability-search-summary" class="availability-search-summary" hidden></div>
-
-    <div id="price-preview" class="price-preview"></div>
-
-    <div id="availability-results" class="availability-list"></div>
-
-  </div>
-</div>
-
-   <!-- STEP 3 -->
-<div class="booking-step" id="step-3">
-
-  <div class="booking-two-col">
-
-    <!-- LEFT -->
-    <div class="booking-main">
-      <div class="card">
-
-        <h3>Your details</h3>
-
-        <div class="details-actions form-full">
-          <button class="btn ghost" onclick="goBackToDates()">Edit dates</button>
-          <button class="btn ghost" onclick="changeLorry()">Change lorry</button>
-          <button class="btn ghost reset-btn" onclick="resetBookingFlow()">Reset</button>
-        </div>
-
-        <form id="booking-form" class="booking-form">
-
-          <div class="form-grid two">
-            <div class="form-field">
-              <label for="selected-lorry">Selected lorry</label>
-              <input id="selected-lorry" type="text" readonly placeholder="Select a lorry first">
-            </div>
-
-            <div class="form-field">
-              <label for="selected-base">Base price</label>
-              <input id="selected-base" type="text" readonly placeholder="—">
-            </div>
-
-            <div class="form-field">
-              <label for="selected-pickup">Pickup date</label>
-              <input id="selected-pickup" type="date" required>
-            </div>
-
-            <div class="form-field">
-              <label for="selected-duration">Duration</label>
-              <select id="selected-duration" required>
-                <option value="0.5">1/2 day</option>
-                <option value="1" selected>1 day</option>
-                <option value="2">2 days</option>
-                <option value="3">3 days</option>
-                <option value="4">4 days</option>
-                <option value="5">5 days</option>
-                <option value="6">6 days</option>
-                <option value="7">Week</option>
-              </select>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <p class="kicker">Horsebox Rental</p>
+            <h1>Find available lorries and book in minutes.</h1>
+
+            <p class="lead">
+              Pick a date and duration, see exactly which lorries are free, view
+              the price, then complete your booking details and checkout.
+            </p>
+
+            <div class="hero-cta-row">
+              <a class="btn" href="#booking">Start booking</a>
+              <a class="btn ghost" href="#fleet">View fleet</a>
+
+              <a class="btn ghost reviews-open" href="#">
+                <span style="margin-right: 8px">G</span>
+                Reviews
+              </a>
             </div>
           </div>
 
-          <!-- HALF DAY PICKUP TIME -->
-          <div class="form-grid two" id="pickup-time-row" style="display:none;">
-            <div class="form-field">
-              <label for="booking-pickup-time">Pickup time (½ day hire)</label>
-              <select id="booking-pickup-time">
-                <option value="07:00">07:00 — Morning (07:00 → 13:00)</option>
-                <option value="13:00">13:00 — Afternoon (13:00 → 19:00)</option>
-              </select>
-            </div>
-          </div>
+          <!-- HERO IMAGE WITH PLAY OVERLAY -->
 
-          <div id="booking-availability-status" class="availability-status" hidden></div>
+          <div class="fleet-image-wrap hero-image-wrap">
+            <img
+              class="hero-image"
+              id="hero-slideshow"
+              src="images/hero5.webp"
+              alt="Horsebox on route"
+            />
+            <a href="#booking" class="hero-floating-cta">
+              Check availability
+              <span>→</span>
+            </a>
 
-          <div class="form-grid two">
+            <div class="fleet-overlay hero-overlay">
+              <div class="apple-play-btn" id="heroPlayBtn">
+                <span>View gallery</span>
 
-            <div class="form-field">
-              <label for="customer-name">Full name</label>
-              <input id="customer-name" type="text" autocomplete="name" required>
-            </div>
-
-            <div class="form-field">
-              <label for="customer-email">Email</label>
-              <input id="customer-email" type="email" autocomplete="email" required>
-              <div id="returning-customer-badge" class="customer-badge hidden"></div>
-            </div>
-
-            <div class="form-field">
-              <label for="customer-mobile">Mobile</label>
-              <input id="customer-mobile" type="tel" autocomplete="tel" required>
-            </div>
-
-            <div class="form-field">
-              <label for="customer-dob">Date of birth</label>
-              <input id="customer-dob" type="date">
-            </div>
-
-            <div class="form-field form-full">
-              <label for="customer-address">Address</label>
-              <input id="customer-address" type="text" autocomplete="street-address">
-            </div>
-
-          </div>
-
-          <div class="extras-grid">
-
-            <label class="check">
-              <input id="hired-within-3-months" type="checkbox">
-              <span>Hired within last 3 months</span>
-            </label>
-
-            <label class="check">
-              <input id="early-pickup-enabled" type="checkbox">
-              <span>Early pickup (+£20)</span>
-            </label>
-
-            <div class="dartford-row">
-              <label class="check">
-                <input id="dartford-enabled" type="checkbox">
-                <span>Dartford crossings</span>
-              </label>
-
-              <div class="dartford-count">
-                <input id="dartford-count" type="number" min="1" value="1" disabled>
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"></path>
+                </svg>
               </div>
             </div>
-
           </div>
-<div class="form-group">
-  <label for="customer-notes">Notes / special requests (optional)</label>
-  <textarea
-    id="customer-notes"
-    name="customerNotes"
-    rows="3"
-    placeholder="e.g. horse details, travel info, timing notes..."
-  ></textarea>
-</div>
-          <div id="booking-success" class="success-note" hidden></div>
+        </div>
+      </section>
 
-          <div class="form-actions">
-            <button id="booking-submit" class="btn" type="submit" disabled>
-              Pay to confirm booking
-            </button>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const images = [
+            "images/hero1.webp",
+            "images/hero2.webp",
+            "images/hero3.webp",
+            "images/hero4.webp",
+            "images/hero5.webp",
+          ];
+
+          let idx = 0;
+          let interval = null;
+
+          const el = document.getElementById("hero-slideshow");
+          const playBtn = document.getElementById("heroPlayBtn");
+          const overlay = document.querySelector(".hero-overlay");
+
+          if (!el || !playBtn || !overlay) return;
+
+          function showNext() {
+            el.classList.add("fade-out");
+
+            setTimeout(() => {
+              idx = (idx + 1) % images.length;
+              el.src = images[idx];
+
+              el.classList.remove("fade-out");
+            }, 350);
+          }
+
+          playBtn.addEventListener("click", () => {
+            if (interval) return;
+
+            overlay.classList.add("playing");
+
+            interval = setInterval(showNext, 3200);
+          });
+        });
+      </script>
+
+      <section id="fleet" class="section container">
+        <div class="section-head">
+          <p class="kicker">Fleet</p>
+          <h2>5 layouts ready to book</h2>
+        </div>
+        <div id="fleet-grid" class="fleet-grid"></div>
+
+        <!--
+removed duplicate, script is loaded at end of body -->
+      </section>
+
+      <section id="booking" class="section booking-wrap">
+        <div class="container">
+          <!-- Step indicator -->
+          <div class="booking-steps">
+            <div class="step active" data-step="1">1 Availability</div>
+            <div class="step" data-step="2">2 Lorry</div>
+            <div class="step" data-step="3">3 Details</div>
+            <div class="step" data-step="4">4 Payment</div>
           </div>
 
-        </form>
+          <div class="booking-flow">
+            <!-- STEP 1 -->
+            <div class="booking-step active" id="step-1">
+              <div class="card">
+                <h3>Check availability</h3>
+                <p class="muted">
+                  Choose date and duration to see available lorries.
+                </p>
 
-      </div>
-    </div>
+                <!-- =========================
+     Phase 4: Calendar UI (NEW)
+     ========================= -->
+                <!-- Selected vehicle label -->
+                <div
+                  id="calendar-vehicle-label"
+                  class="calendar-vehicle-label hidden"
+                ></div>
 
-    <!-- RIGHT (STICKY SUMMARY) -->
-    <div class="booking-summary">
-      <div class="summary-sticky-wrap">
-        <div id="checkout-summary"></div>
-      </div>
-    </div>
+                <div
+                  class="cal-wrap"
+                  id="availability-calendar"
+                  aria-label="Availability calendar"
+                >
+                  <div class="cal-head">
+                    <button
+                      class="cal-nav"
+                      type="button"
+                      data-cal-nav="prev"
+                      aria-label="Previous month"
+                    >
+                      ‹
+                    </button>
+                    <div class="cal-title" id="cal-title">Month YYYY</div>
+                    <button
+                      class="cal-nav"
+                      type="button"
+                      data-cal-nav="next"
+                      aria-label="Next month"
+                    >
+                      ›
+                    </button>
+                  </div>
 
-  </div>
+                  <div class="cal-weekdays" aria-hidden="true">
+                    <div>Mon</div>
+                    <div>Tue</div>
+                    <div>Wed</div>
+                    <div>Thu</div>
+                    <div>Fri</div>
+                    <div>Sat</div>
+                    <div>Sun</div>
+                  </div>
 
-</div>
+                  <div
+                    class="cal-grid"
+                    id="cal-grid"
+                    role="grid"
+                    aria-label="Calendar days"
+                  ></div>
 
-<!-- STEP 4 -->
-<div class="booking-step" id="step-4">
+                  <div class="cal-legend" aria-hidden="true">
+                    <span class="cal-dot cal-dot-available"></span
+                    ><span class="cal-legend-text">Available</span>
+                    <span class="cal-dot cal-dot-unavailable"></span
+                    ><span class="cal-legend-text">Fully booked</span>
+                  </div>
+                </div>
 
-  <div class="booking-two-col">
+                <div id="vehicle-preview" class="vehicle-preview hidden"></div>
 
-    <!-- LEFT -->
-    <div class="booking-main">
-      <div class="card">
+                <!-- ✅ MOBILE PREVIEW (UNDER CALENDAR) -->
+                <div id="mobile-preview" class="mobile-preview hidden"></div>
 
-        <h3>Review & confirm</h3>
+                <div id="preselected-warning" class="preselected-warning"></div>
+              </div>
+              <form id="availability-form" class="availability-form">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="pickup-date">Pickup date</label>
+                    <input id="pickup-date" type="date" required />
+                  </div>
 
-        <button class="btn ghost" onclick="goToStep(3)">
-          Edit details
-        </button>
+                  <div
+                    class="form-field"
+                    id="pickup-time-group"
+                    style="display: none"
+                  >
+                    <label for="pickup-time">Pickup time (½ day hire)</label>
 
-        <!-- REQUIREMENTS -->
-        <div class="requirements-box">
-          <h4>Before collection</h4>
+                    <select id="pickup-time">
+                      <option value="">Select pickup time</option>
+                      <option value="07:00">07:00 — Morning</option>
+                      <option value="13:00">13:00 — Afternoon</option>
+                    </select>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="duration-days">Duration</label>
+                    <select id="duration-days" required>
+                      <option value="0.5">1/2 day</option>
+                      <option value="1" selected>1 day</option>
+                      <option value="2">2 days</option>
+                      <option value="3">3 days</option>
+                      <option value="4">4 days</option>
+                      <option value="5">5 days</option>
+                      <option value="6">6 days</option>
+                      <option value="7">Week</option>
+                    </select>
+                  </div>
+
+                  <div class="form-field form-field-actions">
+                    <button class="btn" type="submit">
+                      Check availability
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- STEP 2 -->
+          <div class="booking-step" id="step-2">
+            <div class="card">
+              <h3>Select your lorry</h3>
+
+              <div
+                id="availability-search-summary"
+                class="availability-search-summary"
+                hidden
+              ></div>
+
+              <div id="price-preview" class="price-preview"></div>
+
+              <div id="availability-results" class="availability-list"></div>
+            </div>
+          </div>
+
+          <!-- STEP 3 -->
+          <div class="booking-step" id="step-3">
+            <div class="booking-two-col">
+              <!-- LEFT -->
+              <div class="booking-main">
+                <div class="card">
+                  <h3>Your details</h3>
+
+                  <div class="details-actions form-full">
+                    <button class="btn ghost" onclick="goBackToDates()">
+                      Edit dates
+                    </button>
+                    <button class="btn ghost" onclick="changeLorry()">
+                      Change lorry
+                    </button>
+                    <button
+                      class="btn ghost reset-btn"
+                      onclick="resetBookingFlow()"
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <form id="booking-form" class="booking-form">
+                    <div class="form-grid two">
+                      <div class="form-field">
+                        <label for="selected-lorry">Selected lorry</label>
+                        <input
+                          id="selected-lorry"
+                          type="text"
+                          readonly
+                          placeholder="Select a lorry first"
+                        />
+                      </div>
+
+                      <div class="form-field">
+                        <label for="selected-base">Base price</label>
+                        <input
+                          id="selected-base"
+                          type="text"
+                          readonly
+                          placeholder="—"
+                        />
+                      </div>
+
+                      <div class="form-field">
+                        <label for="selected-pickup">Pickup date</label>
+                        <input id="selected-pickup" type="date" required />
+                      </div>
+
+                      <div class="form-field">
+                        <label for="selected-duration">Duration</label>
+                        <select id="selected-duration" required>
+                          <option value="0.5">1/2 day</option>
+                          <option value="1" selected>1 day</option>
+                          <option value="2">2 days</option>
+                          <option value="3">3 days</option>
+                          <option value="4">4 days</option>
+                          <option value="5">5 days</option>
+                          <option value="6">6 days</option>
+                          <option value="7">Week</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- HALF DAY PICKUP TIME -->
+                    <div
+                      class="form-grid two"
+                      id="pickup-time-row"
+                      style="display: none"
+                    >
+                      <div class="form-field">
+                        <label for="booking-pickup-time"
+                          >Pickup time (½ day hire)</label
+                        >
+                        <select id="booking-pickup-time">
+                          <option value="07:00">
+                            07:00 — Morning (07:00 → 13:00)
+                          </option>
+                          <option value="13:00">
+                            13:00 — Afternoon (13:00 → 19:00)
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div
+                      id="booking-availability-status"
+                      class="availability-status"
+                      hidden
+                    ></div>
+
+                    <div class="form-grid two">
+                      <div class="form-field">
+                        <label for="customer-name">Full name</label>
+                        <input
+                          id="customer-name"
+                          type="text"
+                          autocomplete="name"
+                          required
+                        />
+                      </div>
+
+                      <div class="form-field">
+                        <label for="customer-email">Email</label>
+                        <input
+                          id="customer-email"
+                          type="email"
+                          autocomplete="email"
+                          required
+                        />
+                        <div
+                          id="returning-customer-badge"
+                          class="customer-badge hidden"
+                        ></div>
+                      </div>
+
+                      <div class="form-field">
+                        <label for="customer-mobile">Mobile</label>
+                        <input
+                          id="customer-mobile"
+                          type="tel"
+                          autocomplete="tel"
+                          required
+                        />
+                      </div>
+
+                      <div class="form-field">
+                        <label for="customer-dob">Date of birth</label>
+                        <input id="customer-dob" type="date" />
+                      </div>
+
+                      <div class="form-field form-full">
+                        <label for="customer-address">Address</label>
+                        <input
+                          id="customer-address"
+                          type="text"
+                          autocomplete="street-address"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="extras-grid">
+                      <label class="check">
+                        <input id="hired-within-3-months" type="checkbox" />
+                        <span>Hired within last 3 months</span>
+                      </label>
+
+                      <label class="check">
+                        <input id="early-pickup-enabled" type="checkbox" />
+                        <span>Early pickup (+£20)</span>
+                      </label>
+
+                      <div class="dartford-row">
+                        <label class="check">
+                          <input id="dartford-enabled" type="checkbox" />
+                          <span>Dartford crossings</span>
+                        </label>
+
+                        <div class="dartford-count">
+                          <input
+                            id="dartford-count"
+                            type="number"
+                            min="1"
+                            value="1"
+                            disabled
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="customer-notes"
+                        >Notes / special requests (optional)</label
+                      >
+                      <textarea
+                        id="customer-notes"
+                        name="customerNotes"
+                        rows="3"
+                        placeholder="e.g. horse details, travel info, timing notes..."
+                      ></textarea>
+                    </div>
+                    <div id="booking-success" class="success-note" hidden></div>
+
+                    <div class="form-actions">
+                      <button
+                        id="booking-submit"
+                        class="btn"
+                        type="submit"
+                        disabled
+                      >
+                        Pay to confirm booking
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              <!-- RIGHT (STICKY SUMMARY) -->
+              <div class="booking-summary">
+                <div class="summary-sticky-wrap">
+                  <div id="checkout-summary"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 4 -->
+          <div class="booking-step" id="step-4">
+            <div class="booking-two-col">
+              <!-- LEFT -->
+              <div class="booking-main">
+                <div class="card">
+                  <h3>Review & confirm</h3>
+
+                  <button class="btn ghost" onclick="goToStep(3)">
+                    Edit details
+                  </button>
+
+                  <!-- REQUIREMENTS -->
+                  <div class="requirements-box">
+                    <h4>Before collection</h4>
+                    <ul>
+                      <li>Complete hire form (short/long based on history)</li>
+                      <li>Submit DVLA licence check code</li>
+                      <li>Pay outstanding balance</li>
+                      <li>£200 refundable deposit hold</li>
+                      <li>Bring proof of address</li>
+                    </ul>
+                  </div>
+
+                  <button
+                    id="booking-confirm-btn"
+                    class="btn full confirm-btn"
+                    type="button"
+                  >
+                    Confirm booking
+                  </button>
+                </div>
+              </div>
+
+              <!-- RIGHT (STICKY SUMMARY) -->
+              <div class="booking-summary">
+                <div class="summary-sticky-wrap">
+                  <div id="checkout-summary-container"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 5 -->
+          <div class="booking-step" id="step-5">
+            <div class="card booking-confirmation-card">
+              <h3>Booking confirmed</h3>
+
+              <div id="booking-confirmation"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section container">
+        <div class="section-head">
+          <p class="kicker">Upcoming bookings</p>
+          <h2>Live booking register</h2>
+        </div>
+        <div id="booking-list" class="booking-list"></div>
+      </section>
+
+      <section class="section container" id="pricing-terms">
+        <div class="section-head">
+          <p class="kicker">Policy</p>
+          <h2>Current pricing & terms</h2>
+        </div>
+        <article class="card terms-card">
+          <h3>3.5T horsebox pricing rules</h3>
           <ul>
-            <li>Complete hire form (short/long based on history)</li>
-            <li>Submit DVLA licence check code</li>
-            <li>Pay outstanding balance</li>
-            <li>£200 refundable deposit hold</li>
-            <li>Bring proof of address</li>
+            <li>1/2 day: £75</li>
+            <li>1 day: £105</li>
+            <li>2 days: £200</li>
+            <li>3 days: £300</li>
+            <li>4 days: £400</li>
+            <li>5 days: £500</li>
+            <li>6 days: £600</li>
+            <li>Week: £700</li>
           </ul>
+          <p class="muted">
+            Default day rate rule: £105/day for 3.5T resources.
+          </p>
+
+          <h3>7.5T rates</h3>
+          <ul>
+            <li>
+              7.5T 3 horses with living: 1 day £175, 2 days £350, 3 days £525, 4
+              days £700, 5 days £875, 6 days £1050, week £1225
+            </li>
+            <li>7.5T 4 horses no living: default £165/day</li>
+            <li>
+              Weekend rule (Saturday/Sunday) for 1 day: £200/day (living),
+              £175/day (no living)
+            </li>
+            <li>
+              Weekend-start rule for 2 days: £400 (living), £350 (no living)
+            </li>
+          </ul>
+          <p class="muted">Pre-payment rule: £75 for 3.5T and £100 for 7.5T.</p>
+
+          <h3>Booking, forms, and before collection</h3>
+          <ul>
+            <li>
+              Refundable security deposit hold: £200 (card pre-authorisation)
+            </li>
+            <li>
+              First hire: complete long form; hired within 3 months: short form
+            </li>
+            <li>DVLA licence check code must be submitted in form</li>
+            <li>
+              Forms must be in the driver’s name and proof of address is
+              required on collection
+            </li>
+          </ul>
+
+          <h3>Time-related settings</h3>
+          <ul>
+            <li>
+              Pickup start window: 07:00 to 15:00 on working days, quarter-hour
+              intervals
+            </li>
+            <li>
+              3.5T preset durations: 1/2 day (6h), 1 day (12h), 2 days (36h), 3
+              days (50h), 4/5/6 days, week
+            </li>
+            <li>
+              7.5T preset durations: 1 day (12h), 2 days (36h), 3 days (50h),
+              4/5/6 days, week
+            </li>
+          </ul>
+
+          <h3>Fuel, mileage, and charges</h3>
+          <ul>
+            <li>Return with full tank of diesel</li>
+            <li>300 miles per paid day included, then 30p/mile</li>
+            <li>
+              ULEZ, congestion, Dart/CAZ and similar charges are the hirer’s
+              responsibility
+            </li>
+            <li>Insurance excess: £400</li>
+          </ul>
+
+          <p class="muted tiny">
+            This section mirrors your current live policy content so customers
+            see current operational terms during booking.
+          </p>
+        </article>
+      </section>
+
+      <section class="section container" id="admin-review">
+        <div class="section-head">
+          <p class="kicker">Admin View</p>
+          <h2>Booking review</h2>
+          <p class="muted tiny">
+            Legacy-style booking ID format enabled: 19xxxxxx.
+          </p>
         </div>
 
-        <button id="booking-confirm-btn" class="btn full confirm-btn" type="button">
-          Confirm booking
-        </button>
+        <div class="admin-actions">
+          <button id="refresh-admin" class="btn ghost" type="button">
+            Refresh review data
+          </button>
+          <button id="export-admin-csv" class="btn ghost" type="button">
+            Export CSV
+          </button>
+          <button id="export-admin-pdf" class="btn ghost" type="button">
+            Export PDF
+          </button>
+          <button id="clear-admin" class="btn ghost" type="button">
+            Clear all demo data
+          </button>
+        </div>
 
+        <article class="card">
+          <h3>Booking Register</h3>
+          <div id="admin-bookings" class="admin-table-wrap"></div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <small
+          >© <span id="year"></span> Equine Transport UK — case study rebuild
+          concept.</small
+        >
+      </div>
+    </footer>
+
+    <!-- Reviews Overlay -->
+    <div class="reviews-overlay" id="reviewsOverlay">
+      <div class="reviews-modal">
+        <div class="reviews-header">
+          <div class="reviews-drag"></div>
+          <button class="reviews-close" id="closeReviews">×</button>
+        </div>
+
+        <div class="reviews-content">
+          <div class="elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd"></div>
+        </div>
       </div>
     </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const overlay = document.getElementById("reviewsOverlay");
+        const openBtn = document.querySelector(".reviews-open");
+        const closeBtn = document.getElementById("closeReviews");
 
-    <!-- RIGHT (STICKY SUMMARY) -->
-    <div class="booking-summary">
-  <div class="summary-sticky-wrap">
-    <div id="checkout-summary-container"></div>
-  </div>
-</div>
+        if (!overlay || !openBtn || !closeBtn) return;
 
-  </div>
+        function openOverlay() {
+          overlay.classList.add("active");
+          document.body.style.overflow = "hidden";
+        }
 
-</div>
+        function closeOverlay() {
+          overlay.classList.remove("active");
+          document.body.style.overflow = "";
+        }
 
-<!-- STEP 5 -->
-<div class="booking-step" id="step-5">
+        // Open
+        openBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          openOverlay();
+        });
 
-  <div class="card booking-confirmation-card">
+        // Close via X
+        closeBtn.addEventListener("click", closeOverlay);
 
-    <h3>Booking confirmed</h3>
+        // Close when tapping outside modal
+        overlay.addEventListener("click", function (e) {
+          if (e.target === overlay) {
+            closeOverlay();
+          }
+        });
 
-    <div id="booking-confirmation"></div>
+        // Close with ESC key
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") {
+            closeOverlay();
+          }
+        });
 
-  </div>
+        // Swipe down to close (mobile)
+        let startY = 0;
 
-</div>
-  </div>
-		</section>
+        overlay.addEventListener(
+          "touchstart",
+          function (e) {
+            startY = e.touches[0].clientY;
+          },
+          { passive: true },
+        );
 
-		<section class="section container">
-			<div class="section-head">
-				<p class="kicker">Upcoming bookings</p>
-				<h2>Live booking register</h2>
-			</div>
-			<div id="booking-list" class="booking-list"></div>
-		</section>
+        overlay.addEventListener(
+          "touchmove",
+          function (e) {
+            const currentY = e.touches[0].clientY;
+            if (currentY - startY > 80) {
+              closeOverlay();
+            }
+          },
+          { passive: true },
+        );
+      });
+    </script>
 
-		<section class="section container" id="pricing-terms">
-			<div class="section-head">
-				<p class="kicker">Policy</p>
-				<h2>Current pricing & terms</h2>
-			</div>
-			<article class="card terms-card">
-				<h3>3.5T horsebox pricing rules</h3>
-<ul>
-  <li>1/2 day: £75</li>
-  <li>1 day: £105</li>
-  <li>2 days: £200</li>
-  <li>3 days: £300</li>
-  <li>4 days: £400</li>
-  <li>5 days: £500</li>
-  <li>6 days: £600</li>
-  <li>Week: £700</li>
-</ul>
-<p class="muted">Default day rate rule: £105/day for 3.5T resources.</p>
+    <script>
+      (function () {
+        const toggle = document.getElementById("nav-toggle");
+        const nav = document.getElementById("main-nav");
 
-				<h3>7.5T rates</h3>
-				<ul>
-					<li>7.5T 3 horses with living: 1 day £175, 2 days £350, 3 days £525, 4 days £700, 5 days £875, 6 days £1050, week £1225</li>
-					<li>7.5T 4 horses no living: default £165/day</li>
-					<li>Weekend rule (Saturday/Sunday) for 1 day: £200/day (living), £175/day (no living)</li>
-					<li>Weekend-start rule for 2 days: £400 (living), £350 (no living)</li>
-				</ul>
-				<p class="muted">Pre-payment rule: £75 for 3.5T and £100 for 7.5T.</p>
+        toggle.addEventListener("click", function () {
+          const isOpen = nav.classList.toggle("open");
+          toggle.classList.toggle("open", isOpen);
+          toggle.setAttribute("aria-expanded", isOpen);
+          toggle.setAttribute(
+            "aria-label",
+            isOpen ? "Close navigation" : "Open navigation",
+          );
+        });
 
-				<h3>Booking, forms, and before collection</h3>
-				<ul>
-					<li>Refundable security deposit hold: £200 (card pre-authorisation)</li>
-					<li>First hire: complete long form; hired within 3 months: short form</li>
-					<li>DVLA licence check code must be submitted in form</li>
-					<li>Forms must be in the driver’s name and proof of address is required on collection</li>
-				</ul>
+        nav.addEventListener("click", function (e) {
+          if (e.target.tagName === "A") {
+            nav.classList.remove("open");
+            toggle.classList.remove("open");
+            toggle.setAttribute("aria-expanded", "false");
+            toggle.setAttribute("aria-label", "Open navigation");
+          }
+        });
+      })();
+    </script>
 
-				<h3>Time-related settings</h3>
-				<ul>
-					<li>Pickup start window: 07:00 to 15:00 on working days, quarter-hour intervals</li>
-					<li>3.5T preset durations: 1/2 day (6h), 1 day (12h), 2 days (36h), 3 days (50h), 4/5/6 days, week</li>
-					<li>7.5T preset durations: 1 day (12h), 2 days (36h), 3 days (50h), 4/5/6 days, week</li>
-				</ul>
+    <script>
+      (function () {
+        const isCheckoutReturn =
+          window.location.search.includes("checkout=success");
 
-				<h3>Fuel, mileage, and charges</h3>
-				<ul>
-					<li>Return with full tank of diesel</li>
-					<li>300 miles per paid day included, then 30p/mile</li>
-					<li>ULEZ, congestion, Dart/CAZ and similar charges are the hirer’s responsibility</li>
-					<li>Insurance excess: £400</li>
-				</ul>
+        // 🚫 DO NOT LOAD ELFSIGHT ON STRIPE RETURN PAGE
+        if (isCheckoutReturn) {
+          console.log("🚫 Elfsight disabled on checkout return");
+          return;
+        }
 
-				<p class="muted tiny">This section mirrors your current live policy content so customers see current operational terms during booking.</p>
-			</article>
-		</section>
+        const script = document.createElement("script");
 
-		<section class="section container" id="admin-review">
-			<div class="section-head">
-				<p class="kicker">Admin View</p>
-				<h2>Booking review</h2>
-				<p class="muted tiny">Legacy-style booking ID format enabled: 19xxxxxx.</p>
-			</div>
+        script.src = "https://elfsightcdn.com/platform.js";
+        script.async = true;
 
-			<div class="admin-actions">
-				<button id="refresh-admin" class="btn ghost" type="button">Refresh review data</button>
-				<button id="export-admin-csv" class="btn ghost" type="button">Export CSV</button>
-				<button id="export-admin-pdf" class="btn ghost" type="button">Export PDF</button>
-				<button id="clear-admin" class="btn ghost" type="button">Clear all demo data</button>
-			</div>
+        document.body.appendChild(script);
+      })();
+    </script>
 
-			<article class="card">
-				<h3>Booking Register</h3>
-				<div id="admin-bookings" class="admin-table-wrap"></div>
-			</article>
-		</section>
-	</main>
-
-	<footer class="site-footer">
-		<div class="container">
-			<small>© <span id="year"></span> Equine Transport UK — case study rebuild concept.</small>
-		</div>
-	</footer>
-
-<!-- Reviews Overlay -->
-<div class="reviews-overlay" id="reviewsOverlay">
-  <div class="reviews-modal">
-
-    <div class="reviews-header">
-      <div class="reviews-drag"></div>
-      <button class="reviews-close" id="closeReviews">×</button>
-    </div>
-
-    <div class="reviews-content">
-      <div class="elfsight-app-e41d37ef-1961-4257-bd95-84aca6aa69dd"></div>
-    </div>
-
-  </div>
-</div>
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-
-  const overlay = document.getElementById("reviewsOverlay");
-  const openBtn = document.querySelector(".reviews-open");
-  const closeBtn = document.getElementById("closeReviews");
-
-  if(!overlay || !openBtn || !closeBtn) return;
-
-  function openOverlay(){
-    overlay.classList.add("active");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeOverlay(){
-    overlay.classList.remove("active");
-    document.body.style.overflow = "";
-  }
-
-  // Open
-  openBtn.addEventListener("click", function(e){
-    e.preventDefault();
-    openOverlay();
-  });
-
-  // Close via X
-  closeBtn.addEventListener("click", closeOverlay);
-
-  // Close when tapping outside modal
-  overlay.addEventListener("click", function(e){
-    if(e.target === overlay){
-      closeOverlay();
-    }
-  });
-
-  // Close with ESC key
-  document.addEventListener("keydown", function(e){
-    if(e.key === "Escape"){
-      closeOverlay();
-    }
-  });
-
-  // Swipe down to close (mobile)
-  let startY = 0;
-
- overlay.addEventListener("touchstart", function(e){
-  startY = e.touches[0].clientY;
-}, { passive: true });
-
-overlay.addEventListener("touchmove", function(e){
-  const currentY = e.touches[0].clientY;
-  if(currentY - startY > 80){
-    closeOverlay();
-  }
-}, { passive: true });
-
-});
-</script>
-
-<script>
-(function() {
-  const toggle = document.getElementById('nav-toggle');
-  const nav = document.getElementById('main-nav');
-
-  toggle.addEventListener('click', function() {
-    const isOpen = nav.classList.toggle('open');
-    toggle.classList.toggle('open', isOpen);
-    toggle.setAttribute('aria-expanded', isOpen);
-    toggle.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
-  });
-
-  nav.addEventListener('click', function(e) {
-    if (e.target.tagName === 'A') {
-      nav.classList.remove('open');
-      toggle.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-      toggle.setAttribute('aria-label', 'Open navigation');
-    }
-  });
-})();
-</script>
-
-<script src="https://elfsightcdn.com/platform.js" async></script>
-
- <script src="app.js?v=42"></script>
-  <div id="calendar-tooltip" class="cal-tooltip"></div>
-</body>
+    <script src="app.js?v=42"></script>
+    <div id="calendar-tooltip" class="cal-tooltip"></div>
+  </body>
 </html>
