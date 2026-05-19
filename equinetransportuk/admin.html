@@ -3994,7 +3994,7 @@
            GROUPING
         =============================== */
 
-        const mode = timeFilter?.value || "upcoming";
+        const mode = timeFilter?.value || "all";
 
         const inProgress = [];
         const today = [];
@@ -4028,6 +4028,21 @@
           /* ===============================
            MODE-SPECIFIC GROUPING (FIX)
         =============================== */
+
+          if (mode === "all") {
+            const monthKey =
+              pickup.getFullYear() +
+              "-" +
+              String(pickup.getMonth() + 1).padStart(2, "0");
+
+            if (!byWeek[monthKey]) {
+              byWeek[monthKey] = [];
+            }
+
+            byWeek[monthKey].push(booking);
+
+            return;
+          }
 
           // 🔴 IN PROGRESS MODE → ONLY SHOW IN PROGRESS
           if (mode === "inprogress") {
