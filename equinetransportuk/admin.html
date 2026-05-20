@@ -6480,8 +6480,10 @@
           let blockNotes = [];
           let hasBlock = false;
 
+          const countedVehicles = new Set();
+
           /* ===============================
-             🔥 BOOKINGS
+             🔥 BOOKINGS / VEHICLE BASE COUNT
           =============================== */
 
           Object.entries(dayData).forEach(([vehicleId, status]) => {
@@ -6489,19 +6491,25 @@
             if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
 
             total++;
+            countedVehicles.add(vehicleId);
 
             if (status.full || status.am) amBusy++;
             if (status.full || status.pm) pmBusy++;
           });
 
           /* ===============================
-             🔥 BLOCKS
+             🔥 ADMIN BLOCKS
+             Do NOT double-count the same lorry.
           =============================== */
 
           Object.entries(blocks).forEach(([vehicleId, block]) => {
             if (vehicleFilter !== "all" && vehicleId !== vehicleFilter) return;
 
-            total++;
+            if (!countedVehicles.has(vehicleId)) {
+              total++;
+              countedVehicles.add(vehicleId);
+            }
+
             hasBlock = true;
 
             const slot = block.slot || "full";
@@ -6510,6 +6518,7 @@
               amBusy++;
               pmBusy++;
             }
+
             if (slot === "am") amBusy++;
             if (slot === "pm") pmBusy++;
 
