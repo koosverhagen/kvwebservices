@@ -2216,7 +2216,7 @@
               <!-- BLOCK / SAVE / CLOSE -->
               <div style="display: flex; gap: 10px; flex-wrap: wrap">
                 <button class="btn ghost" id="edit-open-block" type="button">
-                  🚫 Block this lorry/date
+                  🚫 Block lorry availability
                 </button>
 
                 <button class="btn primary" id="edit-save">Save</button>
@@ -7060,8 +7060,27 @@
             throw new Error(data?.error || "Failed to save block");
           }
 
+          /* ===============================
+             ✅ BLOCK SAVED
+             Close block modal + edit modal.
+             Do NOT trigger normal booking save.
+          =============================== */
+
           closeBlockModal();
-          await loadAdminCalendar();
+
+          if (editModal) {
+            editModal.classList.add("hidden");
+          }
+
+          await loadBookings();
+
+          if (typeof loadAdminCalendar === "function") {
+            await loadAdminCalendar();
+          }
+
+          if (typeof showCopySuccess === "function") {
+            showCopySuccess("✅ Availability blocked");
+          }
         } catch (err) {
           console.error("Block save failed:", err);
           alert(err.message || "Failed to save block");
