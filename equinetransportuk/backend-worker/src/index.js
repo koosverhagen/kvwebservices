@@ -2073,6 +2073,86 @@ async function handleCreateCheckoutSession(request, env) {
     return pickupTimeValue === "13:00" ? "pm" : "am";
   }
 
+  function getBlockSlotFlags(block) {
+    const slot = String(block?.slot || "full").toLowerCase();
+
+    if (slot === "full") {
+      return { full: true, am: true, pm: true };
+    }
+
+    if (slot === "am") {
+      return { full: false, am: true, pm: false };
+    }
+
+    if (slot === "pm") {
+      return { full: false, am: false, pm: true };
+    }
+
+    if (slot === "range") {
+      const from = block?.fromTime || "07:00";
+      const until = block?.untilTime || "19:00";
+
+      const am = from < "13:00" && until > "07:00";
+      const pm = from < "19:00" && until > "13:00";
+
+      return {
+        full: am && pm,
+        am,
+        pm,
+      };
+    }
+
+    return { full: true, am: true, pm: true };
+  }
+
+  async function getBlockForVehicleDate(env, date, vehicleId) {
+    if (!date || !vehicleId) return null;
+
+    const raw = await env.BOOKINGS_KV.get(`block:${date}:${vehicleId}`);
+
+    if (!raw) return null;
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  function applyBlockToBusyFlags(block, flags) {
+    if (!block || !flags) return;
+
+    const blockFlags = getBlockSlotFlags(block);
+
+    if (blockFlags.full) {
+      flags.fullBlocked = true;
+      flags.amBlocked = true;
+      flags.pmBlocked = true;
+      return;
+    }
+
+    if (blockFlags.am) flags.amBlocked = true;
+    if (blockFlags.pm) flags.pmBlocked = true;
+  }
+
+  function blockConflictsWithRequestedSlot(block, requestedSlot) {
+    const flags = getBlockSlotFlags(block);
+
+    if (requestedSlot === "full") {
+      return flags.full || flags.am || flags.pm;
+    }
+
+    if (requestedSlot === "am") {
+      return flags.full || flags.am;
+    }
+
+    if (requestedSlot === "pm") {
+      return flags.full || flags.pm;
+    }
+
+    return flags.full || flags.am || flags.pm;
+  }
+
   function getConfirmedSlot(confirmedBooking) {
     if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
     return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
@@ -2514,6 +2594,27 @@ async function isAdminBookingEditAvailable(
           };
         }
       }
+    }
+  }
+
+  /* ===============================
+     🚫 ADMIN BLOCKS
+  =============================== */
+
+  for (const requestedDate of requestedDates) {
+    const block = await getBlockForVehicleDate(
+      env,
+      requestedDate,
+      requestedVehicleId,
+    );
+
+    if (!block) continue;
+
+    if (blockConflictsWithRequestedSlot(block, requestedSlot)) {
+      return {
+        ok: false,
+        conflictWith: `block:${requestedDate}:${requestedVehicleId}`,
+      };
     }
   }
 
@@ -4553,6 +4654,36 @@ async function handleAvailability(request, env) {
     });
   }
 
+  /* ===============================
+     🚫 ADMIN BLOCKS
+  =============================== */
+
+  const blockList = await env.BOOKINGS_KV.list({ prefix: "block:" });
+
+  for (const key of blockList.keys) {
+    const raw = await env.BOOKINGS_KV.get(key.name);
+    if (!raw) continue;
+
+    try {
+      const block = JSON.parse(raw);
+
+      if (!block.date || block.date < fromParam || block.date > toParam) {
+        continue;
+      }
+
+      availability.push({
+        vehicleId: block.vehicleId,
+        date: block.date,
+        slot: block.slot || "full",
+        status: "blocked",
+        reason: block.reason || "",
+        note: block.note || "",
+        fromTime: block.fromTime || "",
+        untilTime: block.untilTime || "",
+      });
+    } catch {}
+  }
+
   return json({ availability });
 }
 
@@ -4657,6 +4788,29 @@ async function handleVehicleAvailability(request, env) {
         if (bookingSlot === "pm") pmBlocked = true;
       }
 
+      const block = await getBlockForVehicleDate(env, date, vehicleId);
+
+      applyBlockToBusyFlags(block, {
+        get fullBlocked() {
+          return fullBlocked;
+        },
+        set fullBlocked(value) {
+          fullBlocked = value;
+        },
+        get amBlocked() {
+          return amBlocked;
+        },
+        set amBlocked(value) {
+          amBlocked = value;
+        },
+        get pmBlocked() {
+          return pmBlocked;
+        },
+        set pmBlocked(value) {
+          pmBlocked = value;
+        },
+      });
+
       const list = await env.BOOKINGS_KV.list({
         prefix: `reservation:${vehicleId}:${date}`,
       });
@@ -4719,6 +4873,33 @@ async function handleVehicleAvailability(request, env) {
           if (bookingSlot === "am") amBlocked = true;
           if (bookingSlot === "pm") pmBlocked = true;
         }
+
+        const block = await getBlockForVehicleDate(
+          env,
+          requestedDate,
+          vehicleId,
+        );
+
+        applyBlockToBusyFlags(block, {
+          get fullBlocked() {
+            return fullBlocked;
+          },
+          set fullBlocked(value) {
+            fullBlocked = value;
+          },
+          get amBlocked() {
+            return amBlocked;
+          },
+          set amBlocked(value) {
+            amBlocked = value;
+          },
+          get pmBlocked() {
+            return pmBlocked;
+          },
+          set pmBlocked(value) {
+            pmBlocked = value;
+          },
+        });
 
         const list = await env.BOOKINGS_KV.list({
           prefix: `reservation:${vehicleId}:${requestedDate}`,
@@ -4905,7 +5086,11 @@ async function handleMonthAvailability(request, env) {
     } else if (block.slot === "pm") {
       entry.pm = true;
     } else if (block.slot === "range") {
-      entry.full = true; // treat as full visually
+      const flags = getBlockSlotFlags(block);
+
+      entry.full = flags.full;
+      entry.am = flags.am;
+      entry.pm = flags.pm;
     }
   }
 
