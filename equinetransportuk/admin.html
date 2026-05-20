@@ -2425,6 +2425,14 @@
       let filteredBookings = [];
       let IS_EDIT_INITIALISING = false;
 
+      /* ===============================
+         🚫 INSTANT BLOCK DISPLAY
+         Local overlay so calendar updates immediately
+         after save/restore without needing Refresh bookings.
+      =============================== */
+
+      let ADMIN_BLOCK_OVERRIDES = {};
+
       let SELECTED_CUSTOMER = null;
 
       let ORIGINAL_CUSTOMER_ID = null;
@@ -6408,8 +6416,7 @@
           if (!blocksRes.ok) throw new Error("blocks failed");
 
           const daysMap = {};
-          const blocks = blocksData.blocks || {};
-
+          const blocks = mergeBlockOverrides(blocksData.blocks || {});
           (availabilityData.days || []).forEach((day) => {
             daysMap[day.date] = {};
 
@@ -7139,6 +7146,97 @@
         const dateFrom = blockDateFromInput.value;
         const dateUntil = blockDateUntilInput.value;
         const vehicleId = blockVehicleInput.value;
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        function getDateRangeList(from, until) {
+          if (!from || !until) return [];
+
+          const start = new Date(`${from}T00:00:00`);
+          const end = new Date(`${until}T00:00:00`);
+
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
+          if (end < start) return [];
+
+          const dates = [];
+          const current = new Date(start);
+
+          while (current <= end) {
+            dates.push(toDateInputValue(current));
+            current.setDate(current.getDate() + 1);
+          }
+
+          return dates;
+        }
+
+        function addLocalBlockOverride({
+          dateFrom,
+          dateUntil,
+          vehicleId,
+          reason,
+          note,
+          slot,
+          fromTime,
+          untilTime,
+        }) {
+          const dates = getDateRangeList(dateFrom, dateUntil);
+
+          dates.forEach((date) => {
+            if (!ADMIN_BLOCK_OVERRIDES[date]) {
+              ADMIN_BLOCK_OVERRIDES[date] = {};
+            }
+
+            ADMIN_BLOCK_OVERRIDES[date][vehicleId] = {
+              date,
+              dateFrom,
+              dateUntil,
+              vehicleId,
+              reason: reason || "blocked",
+              note: note || "",
+              slot: slot || "full",
+              fromTime: slot === "range" ? fromTime || "" : "",
+              untilTime: slot === "range" ? untilTime || "" : "",
+              localOverride: true,
+            };
+          });
+        }
+
+        function removeLocalBlockOverride({ dateFrom, dateUntil, vehicleId }) {
+          const dates = getDateRangeList(dateFrom, dateUntil);
+
+          dates.forEach((date) => {
+            if (!ADMIN_BLOCK_OVERRIDES[date]) return;
+
+            delete ADMIN_BLOCK_OVERRIDES[date][vehicleId];
+
+            if (!Object.keys(ADMIN_BLOCK_OVERRIDES[date]).length) {
+              delete ADMIN_BLOCK_OVERRIDES[date];
+            }
+          });
+        }
+
+        function mergeBlockOverrides(blocks) {
+          const merged = { ...(blocks || {}) };
+
+          Object.entries(ADMIN_BLOCK_OVERRIDES || {}).forEach(
+            ([date, vehicleBlocks]) => {
+              if (!merged[date]) merged[date] = {};
+
+              Object.entries(vehicleBlocks || {}).forEach(
+                ([vehicleId, block]) => {
+                  merged[date][vehicleId] = block;
+                },
+              );
+            },
+          );
+
+          return merged;
+        }
+
+        function closeBlockModal() {
+          blockModal?.classList.add("hidden");
+        }
         const reason = blockReasonInput.value;
         const note = blockNoteInput.value.trim();
 
@@ -7208,20 +7306,28 @@
              Close block modal + edit modal.
              Do NOT trigger normal booking save.
           =============================== */
+          /* ===============================
+             ✅ INSTANT LOCAL CALENDAR UPDATE
+             The backend has saved successfully.
+             Add a local display overlay immediately.
+          =============================== */
+
+          addLocalBlockOverride({
+            dateFrom,
+            dateUntil,
+            vehicleId,
+            reason,
+            note,
+            slot,
+            fromTime,
+            untilTime,
+          });
 
           closeBlockModal();
 
           if (editModal) {
             editModal.classList.add("hidden");
           }
-
-          /* ===============================
-             ✅ BLOCK SAVED
-             Do NOT call loadBookings() here.
-             loadBookings() also refreshes calendar and can race.
-          =============================== */
-
-          await wait(650);
 
           if (typeof loadAdminCalendar === "function") {
             await loadAdminCalendar();
@@ -7312,19 +7418,22 @@
             throw new Error(data?.error || "Failed to restore availability");
           }
 
+          /* ===============================
+             ✅ INSTANT LOCAL CALENDAR UPDATE
+             Remove local display overlay immediately.
+          =============================== */
+
+          removeLocalBlockOverride({
+            dateFrom,
+            dateUntil,
+            vehicleId,
+          });
+
           closeBlockModal();
 
           if (editModal) {
             editModal.classList.add("hidden");
           }
-
-          /* ===============================
-             ✅ RESTORED
-             Do NOT call loadBookings() here.
-             This only changes block keys, not bookings.
-          =============================== */
-
-          await wait(650);
 
           if (typeof loadAdminCalendar === "function") {
             await loadAdminCalendar();
