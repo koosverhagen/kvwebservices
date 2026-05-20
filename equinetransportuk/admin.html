@@ -6388,9 +6388,17 @@
         calGrid.innerHTML = "Loading…";
 
         try {
+          const cacheBust = Date.now();
+
           const [availabilityRes, blocksRes] = await Promise.all([
-            fetch(`${API_BASE}/api/availability/month?month=${monthStr}`),
-            fetch(`${API_BASE}/api/admin/blocks?month=${monthStr}`),
+            fetch(
+              `${API_BASE}/api/availability/month?month=${monthStr}&_=${cacheBust}`,
+              { cache: "no-store" },
+            ),
+            fetch(
+              `${API_BASE}/api/admin/blocks?month=${monthStr}&_=${cacheBust}`,
+              { cache: "no-store" },
+            ),
           ]);
 
           const availabilityData = await availabilityRes.json();
@@ -7115,6 +7123,10 @@
         blockRangeSummary.style.color = "#5a6675";
       }
 
+      function wait(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
       function closeBlockModal() {
         blockModal?.classList.add("hidden");
       }
@@ -7203,7 +7215,13 @@
             editModal.classList.add("hidden");
           }
 
-          await loadBookings();
+          /* ===============================
+             ✅ BLOCK SAVED
+             Do NOT call loadBookings() here.
+             loadBookings() also refreshes calendar and can race.
+          =============================== */
+
+          await wait(650);
 
           if (typeof loadAdminCalendar === "function") {
             await loadAdminCalendar();
@@ -7300,7 +7318,13 @@
             editModal.classList.add("hidden");
           }
 
-          await loadBookings();
+          /* ===============================
+             ✅ RESTORED
+             Do NOT call loadBookings() here.
+             This only changes block keys, not bookings.
+          =============================== */
+
+          await wait(650);
 
           if (typeof loadAdminCalendar === "function") {
             await loadAdminCalendar();
