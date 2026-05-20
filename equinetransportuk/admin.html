@@ -2324,8 +2324,25 @@
               <input id="block-note" placeholder="Optional note..." />
             </div>
 
-            <div style="margin-top: 16px; display: flex; gap: 10px">
+            <div
+              style="
+                margin-top: 16px;
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+              "
+            >
               <button class="btn primary" id="block-save">Save block</button>
+
+              <button
+                class="btn ghost"
+                id="block-restore"
+                type="button"
+                style="border-color: #137a3d; color: #137a3d"
+              >
+                Restore availability
+              </button>
+
               <button class="btn ghost" id="block-cancel">Cancel</button>
             </div>
           </div>
@@ -2361,6 +2378,7 @@
       const blockFromTimeInput = document.getElementById("block-from-time");
       const blockUntilTimeInput = document.getElementById("block-until-time");
       const blockSaveBtn = document.getElementById("block-save");
+      const blockRestoreBtn = document.getElementById("block-restore");
       const blockCloseBtn = document.getElementById("block-close");
       const blockCancelBtn = document.getElementById("block-cancel");
 
@@ -6561,8 +6579,8 @@
             const bookings = getBookingsForDate(dateStr);
 
             /* ===============================
-           📅 EXISTING BOOKING
-        =============================== */
+               📅 EXISTING BOOKING
+            =============================== */
 
             if (bookings.length) {
               openEditBooking(bookings[0]);
@@ -6570,8 +6588,25 @@
             }
 
             /* ===============================
-           ➕ NEW BOOKING (STEP 6)
-        =============================== */
+               🚫 EXISTING ADMIN BLOCK
+               Open availability modal so admin can restore.
+            =============================== */
+
+            if (hasBlock) {
+              const vehicleId = calVehicle.value;
+
+              if (!vehicleId || vehicleId === "all") {
+                alert("Select the blocked lorry first.");
+                return;
+              }
+
+              openBlockModal(dateStr);
+              return;
+            }
+
+            /* ===============================
+               ➕ NEW BOOKING
+            =============================== */
 
             const vehicleId = calVehicle.value;
 
@@ -6581,7 +6616,7 @@
             }
 
             openEditBooking({
-              id: null, // 🔥 NEW booking
+              id: null,
               vehicleId,
               pickupAt: `${dateStr}T07:00:00`,
               pickupTime: "07:00",
@@ -7189,6 +7224,103 @@
         } finally {
           blockSaveBtn.disabled = false;
           blockSaveBtn.textContent = "Save block";
+        }
+      });
+
+      /* ===============================
+         ✅ RESTORE AVAILABILITY
+         Removes admin blocks only.
+      =============================== */
+
+      blockRestoreBtn?.addEventListener("click", async () => {
+        const date = blockDateInput.value;
+        const dateFrom = blockDateFromInput.value;
+        const dateUntil = blockDateUntilInput.value;
+        const vehicleId = blockVehicleInput.value;
+
+        const daysToRestore = getDateRangeDays(dateFrom, dateUntil);
+
+        if (!dateFrom || !dateUntil || !vehicleId) {
+          alert("Missing from date, until date, or vehicle.");
+          return;
+        }
+
+        if (daysToRestore === -1) {
+          alert("Until date cannot be before from date.");
+          return;
+        }
+
+        if (daysToRestore <= 0) {
+          alert("Invalid date range.");
+          return;
+        }
+
+        const vehicleLabel =
+          blockVehicleInput?.options?.[blockVehicleInput.selectedIndex]?.text ||
+          "this lorry";
+
+        const confirmText =
+          daysToRestore === 1
+            ? `Restore availability for ${vehicleLabel} on ${dateFrom}?`
+            : `Restore availability for ${vehicleLabel} from ${dateFrom} until ${dateUntil}?`;
+
+        if (!confirm(confirmText)) {
+          return;
+        }
+
+        try {
+          blockRestoreBtn.disabled = true;
+          blockRestoreBtn.textContent = "Restoring...";
+
+          const res = await fetch(
+            `${API_BASE}/api/admin/restore-availability`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                date,
+                dateFrom,
+                dateUntil,
+                vehicleId,
+              }),
+            },
+          );
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data?.error || "Failed to restore availability");
+          }
+
+          closeBlockModal();
+
+          if (editModal) {
+            editModal.classList.add("hidden");
+          }
+
+          await loadBookings();
+
+          if (typeof loadAdminCalendar === "function") {
+            await loadAdminCalendar();
+          }
+
+          if (typeof showCopySuccess === "function") {
+            const count = data?.daysRestored || 0;
+
+            showCopySuccess(
+              count === 1
+                ? "✅ Availability restored"
+                : `✅ ${count} days restored`,
+            );
+          }
+        } catch (err) {
+          console.error("Restore availability failed:", err);
+          alert(err.message || "Failed to restore availability");
+        } finally {
+          blockRestoreBtn.disabled = false;
+          blockRestoreBtn.textContent = "Restore availability";
         }
       });
 
