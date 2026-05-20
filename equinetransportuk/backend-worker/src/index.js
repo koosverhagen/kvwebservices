@@ -1688,6 +1688,100 @@ It is only a security hold.
           );
         }
       }
+
+      /* ===============================
+         ADMIN RESTORE AVAILABILITY
+         Deletes admin block keys only.
+         Does NOT touch bookings/reservations/payments.
+      =============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/restore-availability"
+      ) {
+        try {
+          const { date, dateFrom, dateUntil, vehicleId } = await request.json();
+
+          if (!vehicleId) {
+            return withCors(
+              json({ error: "Missing vehicleId" }, 400),
+              corsHeaders,
+            );
+          }
+
+          const start = dateFrom || date;
+          const end = dateUntil || date;
+
+          if (!start) {
+            return withCors(json({ error: "Missing date" }, 400), corsHeaders);
+          }
+
+          const startDate = new Date(start);
+          const endDate = new Date(end);
+
+          if (isNaN(startDate) || isNaN(endDate)) {
+            return withCors(
+              json({ error: "Invalid date format" }, 400),
+              corsHeaders,
+            );
+          }
+
+          if (endDate < startDate) {
+            return withCors(
+              json({ error: "End date before start date" }, 400),
+              corsHeaders,
+            );
+          }
+
+          const dates = [];
+          const current = new Date(startDate);
+
+          while (current <= endDate) {
+            dates.push(current.toISOString().slice(0, 10));
+            current.setDate(current.getDate() + 1);
+          }
+
+          let deleted = 0;
+
+          for (const d of dates) {
+            const key = `block:${d}:${vehicleId}`;
+
+            const existing = await env.BOOKINGS_KV.get(key);
+
+            if (existing) {
+              await env.BOOKINGS_KV.delete(key);
+              deleted++;
+            }
+          }
+
+          console.log(
+            "✅ Availability restored:",
+            start,
+            "→",
+            end,
+            vehicleId,
+            "deleted:",
+            deleted,
+          );
+
+          return withCors(
+            json({
+              ok: true,
+              daysChecked: dates.length,
+              daysRestored: deleted,
+            }),
+            corsHeaders,
+          );
+        } catch (err) {
+          console.error("❌ restore availability error:", err);
+
+          return withCors(
+            json({ error: "Failed to restore availability" }, 500),
+            corsHeaders,
+          );
+        }
+      }
+
       /* ===============================
    GET BLOCKS FOR MONTH (FIXED)
 =============================== */
