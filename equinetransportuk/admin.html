@@ -2255,19 +2255,26 @@
           <div class="et-modal-body">
             <input type="hidden" id="block-date" />
 
-            <div class="field">
-              <label>From date</label>
-              <input id="block-date-from" type="date" />
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+            >
+              <div class="field">
+                <label>From date</label>
+                <input id="block-date-from" type="date" />
+              </div>
+
+              <div class="field">
+                <label>Until date</label>
+                <input id="block-date-until" type="date" />
+              </div>
             </div>
 
-            <div class="field">
-              <label>Until date</label>
-              <input id="block-date-until" type="date" />
-            </div>
-
-            <div class="field">
-              <label>Date</label>
-              <input id="block-date-display" type="text" readonly />
+            <div
+              class="tiny"
+              id="block-range-summary"
+              style="margin: 6px 0 12px"
+            >
+              Select a from/until date range for this lorry.
             </div>
 
             <div class="field">
@@ -2345,7 +2352,7 @@
       const blockDateInput = document.getElementById("block-date");
       const blockDateFromInput = document.getElementById("block-date-from");
       const blockDateUntilInput = document.getElementById("block-date-until");
-      const blockDateDisplay = document.getElementById("block-date-display");
+      const blockRangeSummary = document.getElementById("block-range-summary");
       const blockVehicleInput = document.getElementById("block-vehicle");
       const blockReasonInput = document.getElementById("block-reason");
       const blockNoteInput = document.getElementById("block-note");
@@ -6649,10 +6656,10 @@
         if (!blockModal) return;
 
         blockDateInput.value = dateStr;
-        blockDateDisplay.value = dateStr;
 
         blockDateFromInput.value = dateStr;
         blockDateUntilInput.value = dateStr;
+
         if (calVehicle?.value && calVehicle.value !== "all") {
           blockVehicleInput.value = calVehicle.value;
         }
@@ -6665,6 +6672,8 @@
         blockFromTimeInput.value = "07:00";
         blockUntilTimeInput.value = "19:00";
 
+        updateBlockRangeSummary();
+
         blockModal.classList.remove("hidden");
       }
 
@@ -6673,8 +6682,25 @@
 
         blockTimeRange.style.display =
           blockSlotInput.value === "range" ? "" : "none";
+
+        updateBlockRangeSummary();
       });
 
+      blockDateFromInput?.addEventListener("change", () => {
+        if (!blockDateUntilInput.value) {
+          blockDateUntilInput.value = blockDateFromInput.value;
+        }
+
+        updateBlockRangeSummary();
+      });
+
+      blockDateUntilInput?.addEventListener("change", () => {
+        updateBlockRangeSummary();
+      });
+
+      blockVehicleInput?.addEventListener("change", () => {
+        updateBlockRangeSummary();
+      });
       function openEditBookingById(id) {
         const booking = allBookings.find((b) => b.id === id);
 
@@ -7008,6 +7034,52 @@
         }
       }
 
+      function getDateRangeDays(from, until) {
+        if (!from || !until) return 0;
+
+        const start = new Date(`${from}T00:00:00`);
+        const end = new Date(`${until}T00:00:00`);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+        if (end < start) return -1;
+
+        const diff = end.getTime() - start.getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+      }
+
+      function updateBlockRangeSummary() {
+        if (!blockRangeSummary) return;
+
+        const from = blockDateFromInput?.value || "";
+        const until = blockDateUntilInput?.value || "";
+        const vehicleLabel =
+          blockVehicleInput?.options?.[blockVehicleInput.selectedIndex]?.text ||
+          "selected lorry";
+
+        const days = getDateRangeDays(from, until);
+
+        if (!from || !until) {
+          blockRangeSummary.textContent =
+            "Select a from/until date range for this lorry.";
+          blockRangeSummary.style.color = "#5a6675";
+          return;
+        }
+
+        if (days === -1) {
+          blockRangeSummary.textContent =
+            "⚠️ Until date cannot be before from date.";
+          blockRangeSummary.style.color = "#b42318";
+          return;
+        }
+
+        blockRangeSummary.textContent =
+          days === 1
+            ? `This will block ${vehicleLabel} for 1 day.`
+            : `This will block ${vehicleLabel} for ${days} days.`;
+
+        blockRangeSummary.style.color = "#5a6675";
+      }
+
       function closeBlockModal() {
         blockModal?.classList.add("hidden");
       }
@@ -7027,9 +7099,33 @@
         const fromTime = blockFromTimeInput.value;
         const untilTime = blockUntilTimeInput.value;
 
-        if (!date || !vehicleId) {
-          alert("Missing date or vehicle.");
+        const daysToBlock = getDateRangeDays(dateFrom, dateUntil);
+
+        if (!dateFrom || !dateUntil || !vehicleId) {
+          alert("Missing from date, until date, or vehicle.");
           return;
+        }
+
+        if (daysToBlock === -1) {
+          alert("Until date cannot be before from date.");
+          return;
+        }
+
+        if (daysToBlock <= 0) {
+          alert("Invalid date range.");
+          return;
+        }
+
+        if (slot === "range") {
+          if (!fromTime || !untilTime) {
+            alert("Please enter both from and until times.");
+            return;
+          }
+
+          if (untilTime <= fromTime) {
+            alert("Until time must be after from time.");
+            return;
+          }
         }
 
         try {
@@ -7079,7 +7175,13 @@
           }
 
           if (typeof showCopySuccess === "function") {
-            showCopySuccess("✅ Availability blocked");
+            const count = data?.daysBlocked || daysToBlock || 1;
+
+            showCopySuccess(
+              count === 1
+                ? "✅ Availability blocked"
+                : `✅ ${count} days blocked`,
+            );
           }
         } catch (err) {
           console.error("Block save failed:", err);

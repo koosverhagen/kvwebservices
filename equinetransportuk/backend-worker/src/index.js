@@ -2073,84 +2073,9 @@ async function handleCreateCheckoutSession(request, env) {
     return pickupTimeValue === "13:00" ? "pm" : "am";
   }
 
-  function getBlockSlotFlags(block) {
-    const slot = String(block?.slot || "full").toLowerCase();
-
-    if (slot === "full") {
-      return { full: true, am: true, pm: true };
-    }
-
-    if (slot === "am") {
-      return { full: false, am: true, pm: false };
-    }
-
-    if (slot === "pm") {
-      return { full: false, am: false, pm: true };
-    }
-
-    if (slot === "range") {
-      const from = block?.fromTime || "07:00";
-      const until = block?.untilTime || "19:00";
-
-      const am = from < "13:00" && until > "07:00";
-      const pm = from < "19:00" && until > "13:00";
-
-      return {
-        full: am && pm,
-        am,
-        pm,
-      };
-    }
-
-    return { full: true, am: true, pm: true };
-  }
-
-  async function getBlockForVehicleDate(env, date, vehicleId) {
-    if (!date || !vehicleId) return null;
-
-    const raw = await env.BOOKINGS_KV.get(`block:${date}:${vehicleId}`);
-
-    if (!raw) return null;
-
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
-  }
-
-  function applyBlockToBusyFlags(block, flags) {
-    if (!block || !flags) return;
-
-    const blockFlags = getBlockSlotFlags(block);
-
-    if (blockFlags.full) {
-      flags.fullBlocked = true;
-      flags.amBlocked = true;
-      flags.pmBlocked = true;
-      return;
-    }
-
-    if (blockFlags.am) flags.amBlocked = true;
-    if (blockFlags.pm) flags.pmBlocked = true;
-  }
-
-  function blockConflictsWithRequestedSlot(block, requestedSlot) {
-    const flags = getBlockSlotFlags(block);
-
-    if (requestedSlot === "full") {
-      return flags.full || flags.am || flags.pm;
-    }
-
-    if (requestedSlot === "am") {
-      return flags.full || flags.am;
-    }
-
-    if (requestedSlot === "pm") {
-      return flags.full || flags.pm;
-    }
-
-    return flags.full || flags.am || flags.pm;
+  function getConfirmedSlot(confirmedBooking) {
+    if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
+    return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
   }
 
   function getConfirmedSlot(confirmedBooking) {
@@ -2507,6 +2432,86 @@ function getHalfDayDropoffTime(pickupTime, vehicleId) {
 function getReservationSlot(durationDaysValue, pickupTimeValue) {
   if (Number(durationDaysValue) !== 0.5) return "full";
   return pickupTimeValue === "13:00" ? "pm" : "am";
+}
+
+function getBlockSlotFlags(block) {
+  const slot = String(block?.slot || "full").toLowerCase();
+
+  if (slot === "full") {
+    return { full: true, am: true, pm: true };
+  }
+
+  if (slot === "am") {
+    return { full: false, am: true, pm: false };
+  }
+
+  if (slot === "pm") {
+    return { full: false, am: false, pm: true };
+  }
+
+  if (slot === "range") {
+    const from = block?.fromTime || "07:00";
+    const until = block?.untilTime || "19:00";
+
+    const am = from < "13:00" && until > "07:00";
+    const pm = from < "19:00" && until > "13:00";
+
+    return {
+      full: am && pm,
+      am,
+      pm,
+    };
+  }
+
+  return { full: true, am: true, pm: true };
+}
+
+async function getBlockForVehicleDate(env, date, vehicleId) {
+  if (!date || !vehicleId) return null;
+
+  const raw = await env.BOOKINGS_KV.get(`block:${date}:${vehicleId}`);
+
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function applyBlockToBusyFlags(block, flags) {
+  if (!block || !flags) return;
+
+  const blockFlags = getBlockSlotFlags(block);
+
+  if (blockFlags.full) {
+    flags.fullBlocked = true;
+    flags.amBlocked = true;
+    flags.pmBlocked = true;
+    return;
+  }
+
+  if (blockFlags.am) flags.amBlocked = true;
+  if (blockFlags.pm) flags.pmBlocked = true;
+}
+
+function blockConflictsWithRequestedSlot(block, requestedSlot) {
+  const flags = getBlockSlotFlags(block);
+
+  if (requestedSlot === "full") {
+    return flags.full || flags.am || flags.pm;
+  }
+
+  if (requestedSlot === "am") {
+    return flags.full || flags.am;
+  }
+
+  if (requestedSlot === "pm") {
+    return flags.full || flags.pm;
+  }
+
+  return flags.full || flags.am || flags.pm;
 }
 
 function getConfirmedSlot(confirmedBooking) {
