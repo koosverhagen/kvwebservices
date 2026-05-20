@@ -7134,10 +7134,93 @@
         return new Promise((resolve) => setTimeout(resolve, ms));
       }
 
+      function getDateRangeList(from, until) {
+        if (!from || !until) return [];
+
+        const start = new Date(`${from}T00:00:00`);
+        const end = new Date(`${until}T00:00:00`);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
+        if (end < start) return [];
+
+        const dates = [];
+        const current = new Date(start);
+
+        while (current <= end) {
+          dates.push(toDateInputValue(current));
+          current.setDate(current.getDate() + 1);
+        }
+
+        return dates;
+      }
+
+      function addLocalBlockOverride({
+        dateFrom,
+        dateUntil,
+        vehicleId,
+        reason,
+        note,
+        slot,
+        fromTime,
+        untilTime,
+      }) {
+        const dates = getDateRangeList(dateFrom, dateUntil);
+
+        dates.forEach((date) => {
+          if (!ADMIN_BLOCK_OVERRIDES[date]) {
+            ADMIN_BLOCK_OVERRIDES[date] = {};
+          }
+
+          ADMIN_BLOCK_OVERRIDES[date][vehicleId] = {
+            date,
+            dateFrom,
+            dateUntil,
+            vehicleId,
+            reason: reason || "blocked",
+            note: note || "",
+            slot: slot || "full",
+            fromTime: slot === "range" ? fromTime || "" : "",
+            untilTime: slot === "range" ? untilTime || "" : "",
+            localOverride: true,
+          };
+        });
+      }
+
+      function removeLocalBlockOverride({ dateFrom, dateUntil, vehicleId }) {
+        const dates = getDateRangeList(dateFrom, dateUntil);
+
+        dates.forEach((date) => {
+          if (!ADMIN_BLOCK_OVERRIDES[date]) return;
+
+          delete ADMIN_BLOCK_OVERRIDES[date][vehicleId];
+
+          if (!Object.keys(ADMIN_BLOCK_OVERRIDES[date]).length) {
+            delete ADMIN_BLOCK_OVERRIDES[date];
+          }
+        });
+      }
+
+      function mergeBlockOverrides(blocks) {
+        const merged = { ...(blocks || {}) };
+
+        Object.entries(ADMIN_BLOCK_OVERRIDES || {}).forEach(
+          ([date, vehicleBlocks]) => {
+            if (!merged[date]) merged[date] = {};
+
+            Object.entries(vehicleBlocks || {}).forEach(
+              ([vehicleId, block]) => {
+                merged[date][vehicleId] = block;
+              },
+            );
+          },
+        );
+
+        return merged;
+      }
+
       function closeBlockModal() {
         blockModal?.classList.add("hidden");
       }
-
       blockCloseBtn?.addEventListener("click", closeBlockModal);
       blockCancelBtn?.addEventListener("click", closeBlockModal);
 
@@ -7146,97 +7229,7 @@
         const dateFrom = blockDateFromInput.value;
         const dateUntil = blockDateUntilInput.value;
         const vehicleId = blockVehicleInput.value;
-        function wait(ms) {
-          return new Promise((resolve) => setTimeout(resolve, ms));
-        }
 
-        function getDateRangeList(from, until) {
-          if (!from || !until) return [];
-
-          const start = new Date(`${from}T00:00:00`);
-          const end = new Date(`${until}T00:00:00`);
-
-          if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
-          if (end < start) return [];
-
-          const dates = [];
-          const current = new Date(start);
-
-          while (current <= end) {
-            dates.push(toDateInputValue(current));
-            current.setDate(current.getDate() + 1);
-          }
-
-          return dates;
-        }
-
-        function addLocalBlockOverride({
-          dateFrom,
-          dateUntil,
-          vehicleId,
-          reason,
-          note,
-          slot,
-          fromTime,
-          untilTime,
-        }) {
-          const dates = getDateRangeList(dateFrom, dateUntil);
-
-          dates.forEach((date) => {
-            if (!ADMIN_BLOCK_OVERRIDES[date]) {
-              ADMIN_BLOCK_OVERRIDES[date] = {};
-            }
-
-            ADMIN_BLOCK_OVERRIDES[date][vehicleId] = {
-              date,
-              dateFrom,
-              dateUntil,
-              vehicleId,
-              reason: reason || "blocked",
-              note: note || "",
-              slot: slot || "full",
-              fromTime: slot === "range" ? fromTime || "" : "",
-              untilTime: slot === "range" ? untilTime || "" : "",
-              localOverride: true,
-            };
-          });
-        }
-
-        function removeLocalBlockOverride({ dateFrom, dateUntil, vehicleId }) {
-          const dates = getDateRangeList(dateFrom, dateUntil);
-
-          dates.forEach((date) => {
-            if (!ADMIN_BLOCK_OVERRIDES[date]) return;
-
-            delete ADMIN_BLOCK_OVERRIDES[date][vehicleId];
-
-            if (!Object.keys(ADMIN_BLOCK_OVERRIDES[date]).length) {
-              delete ADMIN_BLOCK_OVERRIDES[date];
-            }
-          });
-        }
-
-        function mergeBlockOverrides(blocks) {
-          const merged = { ...(blocks || {}) };
-
-          Object.entries(ADMIN_BLOCK_OVERRIDES || {}).forEach(
-            ([date, vehicleBlocks]) => {
-              if (!merged[date]) merged[date] = {};
-
-              Object.entries(vehicleBlocks || {}).forEach(
-                ([vehicleId, block]) => {
-                  merged[date][vehicleId] = block;
-                },
-              );
-            },
-          );
-
-          return merged;
-        }
-
-        function closeBlockModal() {
-          blockModal?.classList.add("hidden");
-        }
         const reason = blockReasonInput.value;
         const note = blockNoteInput.value.trim();
 
