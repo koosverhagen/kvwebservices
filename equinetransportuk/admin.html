@@ -2213,8 +2213,12 @@
                 Cancel Booking
               </button>
 
-              <!-- SAVE / CLOSE -->
-              <div style="display: flex; gap: 10px">
+              <!-- BLOCK / SAVE / CLOSE -->
+              <div style="display: flex; gap: 10px; flex-wrap: wrap">
+                <button class="btn ghost" id="edit-open-block" type="button">
+                  🚫 Block this lorry/date
+                </button>
+
                 <button class="btn primary" id="edit-save">Save</button>
                 <button class="btn ghost" id="edit-cancel">Close</button>
               </div>
@@ -5671,10 +5675,27 @@
       }
 
       const editSaveBtn = document.getElementById("edit-save");
+      const editOpenBlockBtn = document.getElementById("edit-open-block");
+
+      editOpenBlockBtn?.addEventListener("click", () => {
+        const date = document.getElementById("edit-date")?.value || "";
+        const vehicleId = document.getElementById("edit-vehicle")?.value || "";
+
+        if (!date || !vehicleId) {
+          alert("Choose a date and lorry first.");
+          return;
+        }
+
+        openBlockModal(date);
+
+        if (blockVehicleInput) {
+          blockVehicleInput.value = vehicleId;
+        }
+      });
 
       /* ===============================
-         💾 SAVE BOOKING (UNCHANGED CORE)
-      =============================== */
+   💾 SAVE BOOKING (UNCHANGED CORE)
+=============================== */
 
       if (editSaveBtn) {
         editSaveBtn.onclick = async () => {
