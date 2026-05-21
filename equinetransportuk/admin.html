@@ -2032,6 +2032,7 @@
             <div class="field">
               <label>Vehicle</label>
               <select id="edit-vehicle">
+                <option value="" selected disabled>Select lorry</option>
                 <option value="v35-1">3.5T Safety Bar</option>
                 <option value="v35-2">3.5T Stallion</option>
                 <option value="v35-3">3.5T Breast Bar</option>
@@ -2918,7 +2919,17 @@
         );
 
         // 🔥 VALIDATION AFTER DECLARATION
+        // For "Add booking", blank vehicle/date is normal.
+        // Clear any old warning and keep Save available until user selects fields.
         if (!vehicleId || !pickupDate || !pickupTime || !durationDays) {
+          clearEditError();
+
+          const saveBtn = document.getElementById("edit-save");
+
+          if (saveBtn) {
+            saveBtn.disabled = false;
+          }
+
           return;
         }
 
@@ -4741,23 +4752,31 @@
         setActiveMobileTab(2);
       }
       function openAdminAddBooking() {
-        const today = toDateInputValue(new Date());
+        closeMobileMenu();
 
-        const vehicleId =
-          calVehicle?.value && calVehicle.value !== "all"
-            ? calVehicle.value
-            : "v35-1";
+        SELECTED_CUSTOMER = null;
+
+        clearEditError();
+
+        const saveBtn = document.getElementById("edit-save");
+        if (saveBtn) {
+          saveBtn.disabled = false;
+        }
 
         openEditBooking({
           id: null,
-          vehicleId,
-          pickupAt: `${today}T07:00:00`,
+
+          // 🔥 Blank add-booking state
+          vehicleId: "",
+          pickupAt: "",
           pickupTime: "07:00",
           durationDays: 1,
+
           extras: {
             dartford: 0,
             earlyPickup: false,
           },
+
           hireTotal: 0,
           customerId: null,
           customerName: "",
@@ -4767,8 +4786,27 @@
         setActiveMobileTab(3);
 
         setTimeout(() => {
-          if (typeof updateAdminPrice === "function") {
-            updateAdminPrice();
+          clearEditError();
+
+          const customerInput = document.getElementById("edit-customer-search");
+          const customerResults = document.getElementById("customer-results");
+          const vehicleInput = document.getElementById("edit-vehicle");
+          const dateInput = document.getElementById("edit-date");
+          const priceInput = document.getElementById("edit-price");
+          const dartfordInput = document.getElementById("edit-dartford");
+          const earlyInput = document.getElementById("edit-early");
+
+          if (customerInput) customerInput.value = "";
+          if (customerResults)
+            customerResults.innerHTML = "Select or create customer";
+          if (vehicleInput) vehicleInput.value = "";
+          if (dateInput) dateInput.value = "";
+          if (priceInput) priceInput.value = "";
+          if (dartfordInput) dartfordInput.value = "0";
+          if (earlyInput) earlyInput.checked = false;
+
+          if (saveBtn) {
+            saveBtn.disabled = false;
           }
         }, 100);
       }
@@ -4787,6 +4825,16 @@
 
       const mobileMenuPanel = document.getElementById("mobile-menu-panel");
 
+      function closeMobileMenu() {
+        if (mobileMenuPanel) {
+          mobileMenuPanel.classList.add("hidden");
+        }
+
+        if (mobileMenuBtn) {
+          mobileMenuBtn.classList.remove("active");
+        }
+      }
+
       if (mobileMenuBtn && mobileMenuPanel) {
         mobileMenuPanel.classList.add("hidden");
 
@@ -4798,15 +4846,21 @@
           mobileMenuPanel.classList.toggle("hidden");
         });
 
+        mobileMenuPanel.addEventListener("click", (e) => {
+          const item = e.target.closest(".mobile-menu-item");
+
+          if (item) {
+            closeMobileMenu();
+          }
+        });
+
         document.addEventListener("click", (e) => {
           const insideMenu = mobileMenuPanel.contains(e.target);
 
           const insideBtn = mobileMenuBtn.contains(e.target);
 
           if (!insideMenu && !insideBtn) {
-            mobileMenuPanel.classList.add("hidden");
-
-            mobileMenuBtn.classList.remove("active");
+            closeMobileMenu();
           }
         });
       }
