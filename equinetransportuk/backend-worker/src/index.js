@@ -3549,11 +3549,27 @@ async function handleAdminBookingUpdate(request, env) {
        🔥 PRICING
     =============================== */
 
-    const confirmationFee = Number(
-      existing.confirmationFee ||
-        existing.paidNow ||
-        getExpectedConfirmationFee(vehicleId),
-    );
+    /* ===============================
+       🔥 PRICING / OUTSTANDING
+       Admin-created no-payment bookings must NOT
+       subtract the normal £75 / £100 confirmation fee.
+    =============================== */
+
+    const isAdminNoPaymentBooking =
+      existing.adminCreated === true ||
+      existing.paymentMode === "admin_no_payment" ||
+      existing.status === "admin_confirmed";
+
+    const existingPaidNow = Number(existing.paidNow || 0);
+    const existingConfirmationFee = Number(existing.confirmationFee || 0);
+
+    const amountAlreadyPaid = isAdminNoPaymentBooking
+      ? existingPaidNow
+      : Math.max(
+          existingPaidNow,
+          existingConfirmationFee,
+          getExpectedConfirmationFee(vehicleId),
+        );
 
     const baseCost = calculateServerBaseCost(
       vehicleId,
@@ -3564,7 +3580,7 @@ async function handleAdminBookingUpdate(request, env) {
     const finalTotal =
       hireTotal > 0 ? hireTotal : Math.max(0, baseCost + extrasTotal);
 
-    const outstandingAmount = Math.max(0, finalTotal - confirmationFee);
+    const outstandingAmount = Math.max(0, finalTotal - amountAlreadyPaid);
 
     const now = new Date().toISOString();
 
@@ -3650,7 +3666,13 @@ async function handleAdminBookingUpdate(request, env) {
       pickupTime,
 
       hireTotal: finalTotal,
+      priceTotal: finalTotal,
+
+      paidNow: amountAlreadyPaid,
+
       outstandingAmount,
+      outstanding: outstandingAmount,
+      outstandingPaid: outstandingAmount === 0,
 
       customerId: customerId || existing.customerId || null,
 
