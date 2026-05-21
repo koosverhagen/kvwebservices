@@ -5080,54 +5080,11 @@
              🔥 AUTO LISTENERS
           =============================== */
 
+          attachAdminEditLiveListeners();
+
           setTimeout(() => {
-            [
-              "edit-vehicle",
-              "edit-date",
-              "edit-time",
-              "edit-duration",
-              "edit-dartford",
-              "edit-early",
-            ].forEach((id) => {
-              const el = document.getElementById(id);
-              if (!el) return;
-
-              if (el.dataset.listenerAttached === "true") return;
-
-              const handler = () => {
-                if (IS_EDIT_INITIALISING) return;
-
-                clearEditError();
-
-                /* 🔥 vehicle rules */
-                if (id === "edit-vehicle" || id === "edit-duration") {
-                  enforceAdminVehicleDurationRules(
-                    document.getElementById("edit-vehicle")?.value,
-                  );
-                }
-
-                /* =====================================
-           DEBOUNCED LIVE CHECK
-        ===================================== */
-
-                clearTimeout(window._adminCheckTimer);
-
-                window._adminCheckTimer = setTimeout(() => {
-                  checkAdminAvailabilityLive();
-
-                  updateAdminPrice();
-                }, 150);
-              };
-              if (id === "edit-dartford") {
-                el.addEventListener("input", handler);
-              } else {
-                el.addEventListener("change", handler);
-              }
-
-              el.dataset.listenerAttached = "true";
-            });
-
             updateAdminPrice();
+            checkAdminAvailabilityLive();
           }, 0);
 
           return;
@@ -6383,12 +6340,12 @@
       defaultRanges();
       loadBookings();
       updateClearButton();
-
       /* ===============================
-         🔥 ADMIN PRICE AUTO UPDATE (FINAL)
+         🔥 ADMIN EDIT LIVE LISTENERS
+         Used for existing booking edits AND new admin bookings.
       =============================== */
 
-      function attachAdminPriceListeners() {
+      function attachAdminEditLiveListeners() {
         [
           "edit-vehicle",
           "edit-date",
@@ -6398,11 +6355,37 @@
           "edit-early",
         ].forEach((id) => {
           const el = document.getElementById(id);
+          if (!el) return;
 
-          if (el && !el.dataset.listenerAttached) {
-            el.addEventListener("change", updateAdminPrice);
-            el.dataset.listenerAttached = "true"; // prevent duplicates
+          // Use a NEW flag so old listenerAttached logic cannot block this.
+          if (el.dataset.adminLiveListenerAttached === "true") return;
+
+          const handler = () => {
+            if (IS_EDIT_INITIALISING) return;
+
+            clearEditError();
+
+            if (id === "edit-vehicle" || id === "edit-duration") {
+              enforceAdminVehicleDurationRules(
+                document.getElementById("edit-vehicle")?.value,
+              );
+            }
+
+            clearTimeout(window._adminPriceTimer);
+
+            window._adminPriceTimer = setTimeout(() => {
+              updateAdminPrice();
+              checkAdminAvailabilityLive();
+            }, 120);
+          };
+
+          if (id === "edit-dartford") {
+            el.addEventListener("input", handler);
+          } else {
+            el.addEventListener("change", handler);
           }
+
+          el.dataset.adminLiveListenerAttached = "true";
         });
       }
 
@@ -6954,6 +6937,18 @@
         =============================== */
 
         document.getElementById("edit-modal").classList.remove("hidden");
+
+        /* ===============================
+           🔥 ADD BOOKING + EDIT BOOKING
+           Both need live price updates.
+        =============================== */
+
+        attachAdminEditLiveListeners();
+
+        setTimeout(() => {
+          updateAdminPrice();
+          checkAdminAvailabilityLive();
+        }, 80);
       }
       /* ===============================
    🔥 UPDATE REMAINING DISPLAY
