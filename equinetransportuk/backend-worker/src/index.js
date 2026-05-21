@@ -2779,6 +2779,158 @@ async function moveBookingInKv(env, oldBooking, nextBooking) {
   );
 }
 
+/* ===============================
+   ADMIN BOOKING HELPERS
+   Used for no-payment admin bookings
+================================ */
+
+async function upsertBookingInKv(env, booking) {
+  const monthKey = `bookings:${String(booking.pickupAt || "").slice(0, 7)}`;
+
+  let monthBookings = [];
+
+  try {
+    const raw = await env.BOOKINGS_KV.get(monthKey);
+
+    if (raw) {
+      monthBookings = JSON.parse(raw);
+      if (!Array.isArray(monthBookings)) monthBookings = [];
+    }
+  } catch {
+    monthBookings = [];
+  }
+
+  const cleaned = monthBookings.filter(
+    (b) => String(b.id) !== String(booking.id),
+  );
+
+  cleaned.push(booking);
+
+  await env.BOOKINGS_KV.put(monthKey, JSON.stringify(cleaned));
+}
+
+async function getCustomerById(env, customerId) {
+  if (!customerId) return null;
+
+  try {
+    return await env.DB.prepare(
+      `
+      SELECT *
+      FROM customers
+      WHERE id = ?
+      LIMIT 1
+    `,
+    )
+      .bind(customerId)
+      .first();
+  } catch (err) {
+    console.warn("⚠️ Customer by id lookup failed:", err);
+    return null;
+  }
+}
+
+async function enrichBookingLinks(env, booking) {
+  const SITE_BASE =
+    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://kvwebservices.co.uk/equinetransportuk";
+
+  let requiredFormType = "long";
+
+  try {
+    if (booking.customerId) {
+      const previous = await env.DB.prepare(
+        `
+        SELECT pickup_at
+        FROM bookings
+        WHERE customer_id = ?
+          AND id != ?
+          AND pickup_at < ?
+        ORDER BY pickup_at DESC
+        LIMIT 1
+      `,
+      )
+        .bind(booking.customerId, booking.id, booking.pickupAt)
+        .first();
+
+      if (previous?.pickup_at) {
+        const previousPickup = new Date(previous.pickup_at);
+        const currentPickup = new Date(booking.pickupAt);
+
+        const diffDays =
+          (currentPickup.getTime() - previousPickup.getTime()) /
+          (1000 * 60 * 60 * 24);
+
+        if (diffDays <= 90) {
+          requiredFormType = "short";
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("⚠️ Admin form type check failed:", err);
+  }
+
+  const formBase =
+    requiredFormType === "short"
+      ? `${SITE_BASE}/forms/short-form.html`
+      : `${SITE_BASE}/forms/long-form.html`;
+
+  booking.requiredFormType = requiredFormType;
+
+  booking.requiredFormLink = `${formBase}?bookingId=${encodeURIComponent(
+    booking.id,
+  )}&vehicleName=${encodeURIComponent(booking.vehicleSnapshot?.name || "")}`;
+
+  booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
+    booking.id,
+  )}`;
+
+  booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(
+    booking.id,
+  )}`;
+
+  return booking;
+}
+
+async function sendAdminBookingLinksEmail(env, booking) {
+  if (!booking?.customerEmail) {
+    console.warn(
+      "⚠️ Admin booking has no customer email — skipping links email",
+    );
+    return false;
+  }
+
+  const emailHtml = buildModernEmail({
+    title: "Equine Transport UK – Booking Links",
+    customerName: booking.customerName,
+    booking: {
+      id: booking.id,
+      vehicle: booking.vehicleSnapshot?.name || "Horsebox Hire",
+      from: booking.pickupAtLocal,
+      to: booking.dropoffAtLocal,
+      email: booking.customerEmail,
+      mobile: booking.customerMobile,
+      paid: 0,
+      outstanding: booking.outstandingAmount,
+      total: booking.hireTotal,
+      formType: booking.requiredFormType,
+      depositPaid: booking.depositPaid,
+    },
+    formLink: booking.requiredFormLink,
+    depositLink: booking.depositLink,
+    outstandingLink: booking.outstandingLink,
+  });
+
+  await sendBookingEmail(env, {
+    to: booking.customerEmail,
+    subject: "Your Equine Transport UK booking links",
+    html: emailHtml,
+  });
+
+  console.log("📧 ADMIN BOOKING LINKS EMAIL SENT:", booking.id);
+
+  return true;
+}
+
 async function handleAdminBookingUpdate(request, env) {
   try {
     const body = await request.json();
@@ -2792,6 +2944,240 @@ async function handleAdminBookingUpdate(request, env) {
     const action = body.action || null;
     const manualPayment = Number(body.manualPayment || 0);
     const refundAmount = Number(body.refundAmount || 0);
+
+    const isNewAdminBooking = body.isNew === true || !bookingId;
+
+    /* ===============================
+       🆕 ADMIN CREATE BOOKING
+       No Stripe payment required.
+       Customer receives links by email.
+    =============================== */
+
+    if (isNewAdminBooking) {
+      const vehicleId = String(body.vehicleId || "").trim();
+      const pickupDate = String(body.pickupDate || "").trim();
+      const pickupTime = String(body.pickupTime || "07:00").trim();
+      const durationDays = Number(body.durationDays || 0);
+      const hireTotal = Number(body.hireTotal || 0);
+      const customerId = String(body.customerId || "").trim();
+      const extras = body.extras || {};
+
+      if (!vehicleId || !pickupDate || !pickupTime || !durationDays) {
+        return json({ error: "Missing booking fields" }, 400);
+      }
+
+      if (!customerId) {
+        return json(
+          { error: "Please select or create a customer before saving." },
+          400,
+        );
+      }
+
+      if (!hireTotal || hireTotal <= 0) {
+        return json({ error: "Invalid price" }, 400);
+      }
+
+      const customer = await getCustomerById(env, customerId);
+
+      if (!customer) {
+        return json({ error: "Customer not found" }, 404);
+      }
+
+      if (!customer.email) {
+        return json(
+          {
+            error:
+              "Customer needs an email address so form/deposit/outstanding links can be sent.",
+          },
+          400,
+        );
+      }
+
+      if (durationDays === 0.5 && !String(vehicleId).startsWith("v35")) {
+        return json(
+          { error: "Half-day hire is only allowed for 3.5T vehicles" },
+          400,
+        );
+      }
+
+      if (durationDays !== 0.5 && pickupTime !== "07:00") {
+        return json(
+          { error: "Full-day and multi-day hires must use 07:00 pickup time" },
+          400,
+        );
+      }
+
+      let pickupAtDate = londonDateTimeToUtc(pickupDate, pickupTime);
+      let dropoffAtDate;
+
+      if (durationDays === 0.5) {
+        const dropoffTime = getHalfDayDropoffTime(pickupTime, vehicleId);
+        dropoffAtDate = londonDateTimeToUtc(pickupDate, dropoffTime);
+      } else {
+        const dropoffDate = new Date(pickupDate);
+        dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
+
+        const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
+        dropoffAtDate = londonDateTimeToUtc(dropoffDateStr, "19:00");
+      }
+
+      if (
+        Number.isNaN(pickupAtDate.getTime()) ||
+        Number.isNaN(dropoffAtDate.getTime())
+      ) {
+        return json({ error: "Invalid pickup/dropoff date" }, 400);
+      }
+
+      const pickupAt = pickupAtDate.toISOString();
+      const dropoffAt = dropoffAtDate.toISOString();
+
+      const availabilityCheck = await isAdminBookingEditAvailable(env, {
+        bookingId: null,
+        vehicleId,
+        pickupAt,
+        dropoffAt,
+        durationDays,
+        pickupTime,
+      });
+
+      if (!availabilityCheck.ok) {
+        return json(
+          {
+            error: "Vehicle already booked",
+            conflictWith: availabilityCheck.conflictWith,
+          },
+          409,
+        );
+      }
+
+      const now = new Date().toISOString();
+
+      const booking = {
+        id: `book_${crypto.randomUUID()}`,
+
+        adminCreated: true,
+        paymentMode: "admin_no_payment",
+
+        vehicleId,
+
+        vehicleSnapshot: {
+          id: vehicleId,
+          name: getVehicleNameFromId(vehicleId),
+          type: getVehicleTypeFromId(vehicleId),
+        },
+
+        pickupAt,
+        dropoffAt,
+
+        pickupAtLocal: toLondonLocalISOString(new Date(pickupAt)),
+        dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
+
+        durationDays,
+        pickupTime,
+
+        customerId,
+        customerName: customer.full_name || "Customer",
+        customerEmail: customer.email || "",
+        customerMobile: customer.mobile || "",
+
+        extras,
+
+        hireTotal,
+        priceTotal: hireTotal,
+        priceBase: hireTotal,
+        priceExtras: 0,
+
+        confirmationFee: 0,
+        paidNow: 0,
+
+        outstandingAmount: hireTotal,
+        outstanding: hireTotal,
+        outstandingPaid: false,
+
+        depositAmount: 200,
+        depositPaid: false,
+
+        status: "admin_confirmed",
+
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await env.DB.prepare(
+        `
+        INSERT INTO bookings (
+          id,
+          customer_id,
+          vehicle_id,
+          pickup_at,
+          dropoff_at,
+          duration_days,
+          price_total,
+          paid_now,
+          status,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      )
+        .bind(
+          booking.id,
+          booking.customerId,
+          booking.vehicleId,
+          booking.pickupAt,
+          booking.dropoffAt,
+          booking.durationDays,
+          booking.hireTotal,
+          0,
+          booking.status,
+          now,
+          now,
+        )
+        .run();
+
+      try {
+        await env.DB.prepare(
+          `
+          UPDATE customers
+          SET
+            hire_count = COALESCE(hire_count, 0) + 1,
+            last_hire_at = ?,
+            updated_at = ?
+          WHERE id = ?
+        `,
+        )
+          .bind(booking.pickupAt, now, customerId)
+          .run();
+      } catch (err) {
+        console.warn("⚠️ Customer stats update failed:", err);
+      }
+
+      await enrichBookingLinks(env, booking);
+
+      await upsertBookingInKv(env, booking);
+
+      await sendAdminBookingLinksEmail(env, booking);
+
+      try {
+        const auditKey = `audit:${booking.id}`;
+
+        await env.BOOKINGS_KV.put(
+          auditKey,
+          JSON.stringify([
+            {
+              type: "admin_booking_created",
+              at: now,
+            },
+          ]),
+        );
+      } catch {}
+
+      return json({
+        ok: true,
+        booking,
+      });
+    }
 
     if (!bookingId) {
       return json({ error: "Missing bookingId" }, 400);
@@ -3205,19 +3591,28 @@ async function handleAdminBookingUpdate(request, env) {
     /* ===============================
    👤 LOAD CUSTOMER NAME
 =============================== */
-
     let customerName = existing.customerName;
+    let customerEmail = existing.customerEmail;
+    let customerMobile = existing.customerMobile;
 
     if (customerId) {
       try {
         const customer = await env.DB.prepare(
-          "SELECT full_name FROM customers WHERE id = ?",
+          "SELECT * FROM customers WHERE id = ?",
         )
           .bind(customerId)
           .first();
 
         if (customer?.full_name) {
           customerName = customer.full_name;
+        }
+
+        if (customer?.email) {
+          customerEmail = customer.email;
+        }
+
+        if (customer?.mobile) {
+          customerMobile = customer.mobile;
         }
       } catch (err) {
         console.warn("⚠️ Customer lookup failed:", err);
@@ -3250,6 +3645,8 @@ async function handleAdminBookingUpdate(request, env) {
       customerId: customerId || existing.customerId || null,
 
       customerName,
+      customerEmail,
+      customerMobile,
 
       updatedAt: now,
 
@@ -3327,7 +3724,22 @@ async function handleAdminBookingUpdate(request, env) {
    🔥 SAVE BOOKING FIRST
 =============================== */
 
+    await enrichBookingLinks(env, nextBooking);
+
     await moveBookingInKv(env, existing, nextBooking);
+
+    /* ===============================
+       📧 CUSTOMER REASSIGNED
+       Send links to the new customer automatically.
+    =============================== */
+
+    if (customerId && customerId !== originalCustomerId) {
+      try {
+        await sendAdminBookingLinksEmail(env, nextBooking);
+      } catch (err) {
+        console.warn("⚠️ Customer reassignment email failed:", err);
+      }
+    }
 
     /* ===============================
    🧾 AUDIT: FINAL EDIT CHANGES

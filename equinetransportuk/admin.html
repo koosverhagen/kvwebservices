@@ -1761,6 +1761,13 @@
       >
         📅 Calendar
       </button>
+      <button class="mobile-menu-item" onclick="openAdminAddBooking()">
+        ➕ Add booking
+      </button>
+
+      <button class="mobile-menu-item" onclick="scrollToCustomers()">
+        👥 Customers
+      </button>
 
       <button class="mobile-menu-item" onclick="loadBookings()">
         🔄 Refresh bookings
@@ -4733,18 +4740,37 @@
 
         setActiveMobileTab(2);
       }
+      function openAdminAddBooking() {
+        const today = toDateInputValue(new Date());
 
-      function scrollToFleet() {
-        const el = document.querySelector("#cal-vehicle");
+        const vehicleId =
+          calVehicle?.value && calVehicle.value !== "all"
+            ? calVehicle.value
+            : "v35-1";
 
-        if (!el) return;
-
-        el.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
+        openEditBooking({
+          id: null,
+          vehicleId,
+          pickupAt: `${today}T07:00:00`,
+          pickupTime: "07:00",
+          durationDays: 1,
+          extras: {
+            dartford: 0,
+            earlyPickup: false,
+          },
+          hireTotal: 0,
+          customerId: null,
+          customerName: "",
+          adminCreated: true,
         });
 
         setActiveMobileTab(3);
+
+        setTimeout(() => {
+          if (typeof updateAdminPrice === "function") {
+            updateAdminPrice();
+          }
+        }, 100);
       }
 
       function setActiveMobileTab(index) {
@@ -5924,7 +5950,7 @@
             editModal.classList.add("hidden");
 
             if (isNew) {
-              showCopySuccess("✅ Booking created");
+              showCopySuccess("✅ Booking created — links emailed");
             } else {
               showCopySuccess("✅ Booking updated");
             }
@@ -7589,9 +7615,9 @@
         <small>Customers</small>
       </button>
 
-      <button class="mobile-tab" onclick="scrollToFleet()">
-        <span>🚚</span>
-        <small>Fleet</small>
+      <button class="mobile-tab" onclick="openAdminAddBooking()">
+        <span>➕</span>
+        <small>Add booking</small>
       </button>
     </nav>
   </body>
