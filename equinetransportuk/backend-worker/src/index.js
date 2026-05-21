@@ -2829,68 +2829,6 @@ async function getCustomerById(env, customerId) {
   }
 }
 
-async function enrichAdminBookingLinks(env, booking) {
-  const SITE_BASE =
-    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://kvwebservices.co.uk/equinetransportuk";
-
-  let requiredFormType = "long";
-
-  try {
-    if (booking.customerId) {
-      const previous = await env.DB.prepare(
-        `
-        SELECT pickup_at
-        FROM bookings
-        WHERE customer_id = ?
-          AND id != ?
-          AND pickup_at < ?
-        ORDER BY pickup_at DESC
-        LIMIT 1
-      `,
-      )
-        .bind(booking.customerId, booking.id, booking.pickupAt)
-        .first();
-
-      if (previous?.pickup_at) {
-        const previousPickup = new Date(previous.pickup_at);
-        const currentPickup = new Date(booking.pickupAt);
-
-        const diffDays =
-          (currentPickup.getTime() - previousPickup.getTime()) /
-          (1000 * 60 * 60 * 24);
-
-        if (diffDays <= 90) {
-          requiredFormType = "short";
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("⚠️ Admin form type check failed:", err);
-  }
-
-  const formBase =
-    requiredFormType === "short"
-      ? `${SITE_BASE}/forms/short-form.html`
-      : `${SITE_BASE}/forms/long-form.html`;
-
-  booking.requiredFormType = requiredFormType;
-
-  booking.requiredFormLink = `${formBase}?bookingId=${encodeURIComponent(
-    booking.id,
-  )}&vehicleName=${encodeURIComponent(booking.vehicleSnapshot?.name || "")}`;
-
-  booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
-    booking.id,
-  )}`;
-
-  booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(
-    booking.id,
-  )}`;
-
-  return booking;
-}
-
 async function sendAdminBookingLinksEmail(env, booking) {
   if (!booking?.customerEmail) {
     console.warn("⚠️ Admin booking has no customer email — email skipped");
