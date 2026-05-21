@@ -5948,9 +5948,12 @@
             =============================== */
 
             editModal.classList.add("hidden");
-
             if (isNew) {
-              showCopySuccess("✅ Booking created — links emailed");
+              showCopySuccess(
+                data.emailSent
+                  ? "✅ Booking created — links emailed"
+                  : "✅ Booking created — email not sent",
+              );
             } else {
               showCopySuccess("✅ Booking updated");
             }

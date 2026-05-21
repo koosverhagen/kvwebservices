@@ -2780,6 +2780,156 @@ async function moveBookingInKv(env, oldBooking, nextBooking) {
 }
 
 /* ===============================
+   ADMIN CREATE BOOKING HELPERS
+   No-payment bookings created by admin
+================================ */
+
+async function upsertBookingInKv(env, booking) {
+  const monthKey = `bookings:${String(booking.pickupAt || "").slice(0, 7)}`;
+
+  let monthBookings = [];
+
+  try {
+    const raw = await env.BOOKINGS_KV.get(monthKey);
+
+    if (raw) {
+      monthBookings = JSON.parse(raw);
+      if (!Array.isArray(monthBookings)) monthBookings = [];
+    }
+  } catch {
+    monthBookings = [];
+  }
+
+  const cleaned = monthBookings.filter(
+    (b) => String(b.id) !== String(booking.id),
+  );
+
+  cleaned.push(booking);
+
+  await env.BOOKINGS_KV.put(monthKey, JSON.stringify(cleaned));
+}
+
+async function getCustomerById(env, customerId) {
+  if (!customerId) return null;
+
+  try {
+    return await env.DB.prepare(
+      `
+      SELECT *
+      FROM customers
+      WHERE id = ?
+      LIMIT 1
+    `,
+    )
+      .bind(customerId)
+      .first();
+  } catch (err) {
+    console.warn("⚠️ getCustomerById failed:", err);
+    return null;
+  }
+}
+
+async function enrichAdminBookingLinks(env, booking) {
+  const SITE_BASE =
+    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://kvwebservices.co.uk/equinetransportuk";
+
+  let requiredFormType = "long";
+
+  try {
+    if (booking.customerId) {
+      const previous = await env.DB.prepare(
+        `
+        SELECT pickup_at
+        FROM bookings
+        WHERE customer_id = ?
+          AND id != ?
+          AND pickup_at < ?
+        ORDER BY pickup_at DESC
+        LIMIT 1
+      `,
+      )
+        .bind(booking.customerId, booking.id, booking.pickupAt)
+        .first();
+
+      if (previous?.pickup_at) {
+        const previousPickup = new Date(previous.pickup_at);
+        const currentPickup = new Date(booking.pickupAt);
+
+        const diffDays =
+          (currentPickup.getTime() - previousPickup.getTime()) /
+          (1000 * 60 * 60 * 24);
+
+        if (diffDays <= 90) {
+          requiredFormType = "short";
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("⚠️ Admin form type check failed:", err);
+  }
+
+  const formBase =
+    requiredFormType === "short"
+      ? `${SITE_BASE}/forms/short-form.html`
+      : `${SITE_BASE}/forms/long-form.html`;
+
+  booking.requiredFormType = requiredFormType;
+
+  booking.requiredFormLink = `${formBase}?bookingId=${encodeURIComponent(
+    booking.id,
+  )}&vehicleName=${encodeURIComponent(booking.vehicleSnapshot?.name || "")}`;
+
+  booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
+    booking.id,
+  )}`;
+
+  booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(
+    booking.id,
+  )}`;
+
+  return booking;
+}
+
+async function sendAdminBookingLinksEmail(env, booking) {
+  if (!booking?.customerEmail) {
+    console.warn("⚠️ Admin booking has no customer email — email skipped");
+    return false;
+  }
+
+  const emailHtml = buildModernEmail({
+    title: "Equine Transport UK – Booking Links",
+    customerName: booking.customerName,
+    booking: {
+      id: booking.id,
+      vehicle: booking.vehicleSnapshot?.name || "Horsebox Hire",
+      from: booking.pickupAtLocal,
+      to: booking.dropoffAtLocal,
+      email: booking.customerEmail,
+      mobile: booking.customerMobile,
+      paid: 0,
+      outstanding: booking.outstandingAmount,
+      total: booking.hireTotal,
+      formType: booking.requiredFormType,
+      depositPaid: booking.depositPaid,
+    },
+    formLink: booking.requiredFormLink,
+    depositLink: booking.depositLink,
+    outstandingLink: booking.outstandingLink,
+  });
+
+  await sendBookingEmail(env, {
+    to: booking.customerEmail,
+    subject: "Your Equine Transport UK booking links",
+    html: emailHtml,
+  });
+
+  console.log("📧 Admin booking links email sent:", booking.id);
+
+  return true;
+}
+
+/* ===============================
    ADMIN BOOKING HELPERS
    Used for no-payment admin bookings
 ================================ */
@@ -3014,9 +3164,8 @@ async function handleAdminBookingUpdate(request, env) {
         const dropoffTime = getHalfDayDropoffTime(pickupTime, vehicleId);
         dropoffAtDate = londonDateTimeToUtc(pickupDate, dropoffTime);
       } else {
-        const dropoffDate = new Date(pickupDate);
+        const dropoffDate = new Date(`${pickupDate}T00:00:00`);
         dropoffDate.setDate(dropoffDate.getDate() + durationDays - 1);
-
         const dropoffDateStr = dropoffDate.toISOString().slice(0, 10);
         dropoffAtDate = londonDateTimeToUtc(dropoffDateStr, "19:00");
       }
@@ -3157,7 +3306,13 @@ async function handleAdminBookingUpdate(request, env) {
 
       await upsertBookingInKv(env, booking);
 
-      await sendAdminBookingLinksEmail(env, booking);
+      let emailSent = false;
+
+      try {
+        emailSent = await sendAdminBookingLinksEmail(env, booking);
+      } catch (err) {
+        console.warn("⚠️ Admin booking email failed:", err);
+      }
 
       try {
         const auditKey = `audit:${booking.id}`;
@@ -3167,6 +3322,7 @@ async function handleAdminBookingUpdate(request, env) {
           JSON.stringify([
             {
               type: "admin_booking_created",
+              emailSent,
               at: now,
             },
           ]),
@@ -3176,6 +3332,7 @@ async function handleAdminBookingUpdate(request, env) {
       return json({
         ok: true,
         booking,
+        emailSent,
       });
     }
 
@@ -3582,7 +3739,7 @@ async function handleAdminBookingUpdate(request, env) {
         dropoffAt,
         durationDays,
         finalTotal,
-        customerId || null,
+        customerId || existing.customerId || null,
         now,
         bookingId,
       )
