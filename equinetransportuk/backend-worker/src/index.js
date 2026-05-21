@@ -2872,51 +2872,6 @@ async function sendAdminBookingLinksEmail(env, booking) {
    Used for no-payment admin bookings
 ================================ */
 
-async function upsertBookingInKv(env, booking) {
-  const monthKey = `bookings:${String(booking.pickupAt || "").slice(0, 7)}`;
-
-  let monthBookings = [];
-
-  try {
-    const raw = await env.BOOKINGS_KV.get(monthKey);
-
-    if (raw) {
-      monthBookings = JSON.parse(raw);
-      if (!Array.isArray(monthBookings)) monthBookings = [];
-    }
-  } catch {
-    monthBookings = [];
-  }
-
-  const cleaned = monthBookings.filter(
-    (b) => String(b.id) !== String(booking.id),
-  );
-
-  cleaned.push(booking);
-
-  await env.BOOKINGS_KV.put(monthKey, JSON.stringify(cleaned));
-}
-
-async function getCustomerById(env, customerId) {
-  if (!customerId) return null;
-
-  try {
-    return await env.DB.prepare(
-      `
-      SELECT *
-      FROM customers
-      WHERE id = ?
-      LIMIT 1
-    `,
-    )
-      .bind(customerId)
-      .first();
-  } catch (err) {
-    console.warn("⚠️ Customer by id lookup failed:", err);
-    return null;
-  }
-}
-
 async function enrichBookingLinks(env, booking) {
   const SITE_BASE =
     env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -2977,46 +2932,6 @@ async function enrichBookingLinks(env, booking) {
   )}`;
 
   return booking;
-}
-
-async function sendAdminBookingLinksEmail(env, booking) {
-  if (!booking?.customerEmail) {
-    console.warn(
-      "⚠️ Admin booking has no customer email — skipping links email",
-    );
-    return false;
-  }
-
-  const emailHtml = buildModernEmail({
-    title: "Equine Transport UK – Booking Links",
-    customerName: booking.customerName,
-    booking: {
-      id: booking.id,
-      vehicle: booking.vehicleSnapshot?.name || "Horsebox Hire",
-      from: booking.pickupAtLocal,
-      to: booking.dropoffAtLocal,
-      email: booking.customerEmail,
-      mobile: booking.customerMobile,
-      paid: 0,
-      outstanding: booking.outstandingAmount,
-      total: booking.hireTotal,
-      formType: booking.requiredFormType,
-      depositPaid: booking.depositPaid,
-    },
-    formLink: booking.requiredFormLink,
-    depositLink: booking.depositLink,
-    outstandingLink: booking.outstandingLink,
-  });
-
-  await sendBookingEmail(env, {
-    to: booking.customerEmail,
-    subject: "Your Equine Transport UK booking links",
-    html: emailHtml,
-  });
-
-  console.log("📧 ADMIN BOOKING LINKS EMAIL SENT:", booking.id);
-
-  return true;
 }
 
 async function handleAdminBookingUpdate(request, env) {
