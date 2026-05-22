@@ -533,7 +533,10 @@ export default {
       }
 
       /* ===============================
-     CREATE / FIND CUSTOMER (FIXED SAFE)
+     CREATE / FIND CUSTOMER
+     Admin customer records require:
+     full name + email + mobile.
+     Optional: address, dob, notes.
   ================================ */
 
       if (url.pathname === "/api/customers" && request.method === "POST") {
@@ -546,19 +549,29 @@ export default {
           return withCors(json({ error: "Invalid JSON" }, 400), corsHeaders);
         }
 
-        const name = body.full_name?.trim();
-        const email = body.email?.trim().toLowerCase() || null;
-        const mobile = body.mobile?.trim() || null;
+        const name = String(body.full_name || "").trim();
+        const email = String(body.email || "")
+          .trim()
+          .toLowerCase();
+        const mobile = String(body.mobile || "").trim();
+
+        const address = String(body.address || "").trim() || null;
+        const dob = String(body.dob || "").trim() || null;
+        const notes = String(body.notes || "").trim() || null;
 
         if (!name) {
-          return withCors(json({ error: "Name required" }, 400), corsHeaders);
-        }
-
-        if (!email && !mobile) {
           return withCors(
-            json({ error: "Email or mobile required" }, 400),
+            json({ error: "Full name required" }, 400),
             corsHeaders,
           );
+        }
+
+        if (!email) {
+          return withCors(json({ error: "Email required" }, 400), corsHeaders);
+        }
+
+        if (!mobile) {
+          return withCors(json({ error: "Mobile required" }, 400), corsHeaders);
         }
 
         try {
@@ -594,25 +607,21 @@ export default {
 
           await env.DB.prepare(
             `
-      INSERT INTO customers (
-        id,
-        full_name,
-        email,
-        mobile,
-        created_at,
-        updated_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?)
-    `,
-          )
-            .bind(
+            INSERT INTO customers (
               id,
-              name,
-              email, // ✅ NULL safe
-              mobile, // ✅ NULL safe
-              now,
-              now,
+              full_name,
+              email,
+              mobile,
+              address,
+              dob,
+              notes,
+              created_at,
+              updated_at
             )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          )
+            .bind(id, name, email, mobile, address, dob, notes, now, now)
             .run();
 
           console.log("✅ CUSTOMER CREATED:", id);
@@ -695,39 +704,71 @@ export default {
       }
 
       /* ===============================
-   🔥 CUSTOMER SEARCH (NEW)
-=============================== */
+         CUSTOMER SEARCH / LIST
+         Empty q = list all A-Z.
+         q = search name/email/mobile.
+      =============================== */
 
       if (
         request.method === "GET" &&
         url.pathname === "/api/customers/search"
       ) {
         try {
-          const q = url.searchParams.get("q")?.trim().toLowerCase();
+          const q = String(url.searchParams.get("q") || "")
+            .trim()
+            .toLowerCase();
 
-          if (!q || q.length < 2) {
-            return withCors(json({ results: [] }), corsHeaders);
+          let result;
+
+          if (!q) {
+            result = await env.DB.prepare(
+              `
+              SELECT
+                id,
+                full_name,
+                email,
+                mobile,
+                address,
+                dob,
+                notes,
+                hire_count,
+                last_hire_at,
+                created_at,
+                updated_at
+              FROM customers
+              ORDER BY LOWER(full_name) ASC
+              LIMIT 500
+            `,
+            ).all();
+          } else {
+            result = await env.DB.prepare(
+              `
+              SELECT
+                id,
+                full_name,
+                email,
+                mobile,
+                address,
+                dob,
+                notes,
+                hire_count,
+                last_hire_at,
+                created_at,
+                updated_at
+              FROM customers
+              WHERE
+                LOWER(full_name) LIKE ?
+                OR LOWER(email) LIKE ?
+                OR mobile LIKE ?
+              ORDER BY LOWER(full_name) ASC
+              LIMIT 500
+            `,
+            )
+              .bind(`%${q}%`, `%${q}%`, `%${q}%`)
+              .all();
           }
 
-          const results = await env.DB.prepare(
-            `
-      SELECT id, full_name, email, mobile
-      FROM customers
-      WHERE
-        LOWER(full_name) LIKE ?
-        OR LOWER(email) LIKE ?
-        OR mobile LIKE ?
-      ORDER BY full_name ASC
-      LIMIT 10
-      `,
-          )
-            .bind(`%${q}%`, `%${q}%`, `%${q}%`)
-            .all();
-
-          return withCors(
-            json({ results: results.results || [] }),
-            corsHeaders,
-          );
+          return withCors(json({ results: result.results || [] }), corsHeaders);
         } catch (err) {
           console.error("❌ CUSTOMER SEARCH ERROR:", err);
           return withCors(json({ results: [] }), corsHeaders);
@@ -735,41 +776,160 @@ export default {
       }
 
       /* ===============================
-         CUSTOMER BOOKING HISTORY (SAFE)
-      ================================ */
+         ADMIN CUSTOMER UPDATE
+      =============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/customer-update"
+      ) {
+        try {
+          const body = await request.json();
+
+          const id = String(body.id || "").trim();
+          const fullName = String(body.full_name || "").trim();
+          const email = String(body.email || "")
+            .trim()
+            .toLowerCase();
+          const mobile = String(body.mobile || "").trim();
+
+          const address = String(body.address || "").trim() || null;
+          const dob = String(body.dob || "").trim() || null;
+          const notes = String(body.notes || "").trim() || null;
+
+          if (!id) {
+            return withCors(
+              json({ error: "Missing customer id" }, 400),
+              corsHeaders,
+            );
+          }
+
+          if (!fullName) {
+            return withCors(
+              json({ error: "Full name required" }, 400),
+              corsHeaders,
+            );
+          }
+
+          if (!email) {
+            return withCors(
+              json({ error: "Email required" }, 400),
+              corsHeaders,
+            );
+          }
+
+          if (!mobile) {
+            return withCors(
+              json({ error: "Mobile required" }, 400),
+              corsHeaders,
+            );
+          }
+
+          const now = new Date().toISOString();
+
+          await env.DB.prepare(
+            `
+            UPDATE customers
+            SET
+              full_name = ?,
+              email = ?,
+              mobile = ?,
+              address = ?,
+              dob = ?,
+              notes = ?,
+              updated_at = ?
+            WHERE id = ?
+          `,
+          )
+            .bind(fullName, email, mobile, address, dob, notes, now, id)
+            .run();
+
+          const customer = await env.DB.prepare(
+            "SELECT * FROM customers WHERE id = ?",
+          )
+            .bind(id)
+            .first();
+
+          return withCors(
+            json({
+              ok: true,
+              customer,
+            }),
+            corsHeaders,
+          );
+        } catch (err) {
+          console.error("❌ CUSTOMER UPDATE ERROR:", err);
+
+          return withCors(
+            json(
+              {
+                error: "Customer update failed",
+                detail: err.message,
+              },
+              500,
+            ),
+            corsHeaders,
+          );
+        }
+      }
+
+      /* ===============================
+         CUSTOMER BOOKING HISTORY
+         Uses email address so old/new linked bookings show.
+         Returns all past/current/future.
+      =============================== */
 
       if (
         request.method === "GET" &&
         url.pathname === "/api/customers/bookings"
       ) {
         try {
-          const customerId = url.searchParams.get("customer_id");
+          const email = String(url.searchParams.get("email") || "")
+            .trim()
+            .toLowerCase();
 
-          if (!customerId) {
+          if (!email) {
             return withCors(json({ bookings: [] }), corsHeaders);
           }
 
-          const result = await env.DB.prepare(
-            `
-      SELECT
-        id,
-        vehicle_id,
-        pickup_at,
-        dropoff_at,
-        duration_days,
-        status
-      FROM bookings
-      WHERE customer_id = ?
-      ORDER BY pickup_at DESC
-      LIMIT 5
-    `,
-          )
-            .bind(customerId)
-            .all();
+          const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+          const bookings = [];
+
+          for (const key of list.keys) {
+            const raw = await env.BOOKINGS_KV.get(key.name);
+            if (!raw) continue;
+
+            let parsed;
+
+            try {
+              parsed = JSON.parse(raw);
+            } catch {
+              continue;
+            }
+
+            if (!Array.isArray(parsed)) continue;
+
+            parsed.forEach((booking) => {
+              const bookingEmail = String(booking.customerEmail || "")
+                .trim()
+                .toLowerCase();
+
+              if (bookingEmail === email) {
+                bookings.push(booking);
+              }
+            });
+          }
+
+          bookings.sort((a, b) => {
+            const da = new Date(a.pickupAt || a.pickupAtLocal || 0).getTime();
+            const db = new Date(b.pickupAt || b.pickupAtLocal || 0).getTime();
+            return db - da;
+          });
 
           return withCors(
             json({
-              bookings: result.results || [],
+              bookings,
             }),
             corsHeaders,
           );

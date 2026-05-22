@@ -1902,6 +1902,55 @@
         </div>
       </section>
 
+      <!-- ===============================
+         CUSTOMERS CRM
+      =============================== -->
+      <section class="section" id="customers-section">
+        <div class="hero-card">
+          <div class="section-head">
+            <h2>Customers</h2>
+            <div class="muted">
+              Search, edit customer details, and view all linked bookings.
+            </div>
+          </div>
+
+          <div class="toolbar" style="grid-template-columns: 1fr auto">
+            <div class="field">
+              <label for="customer-list-search">Search customers</label>
+              <input
+                id="customer-list-search"
+                type="text"
+                placeholder="Search by name, email or mobile..."
+              />
+            </div>
+
+            <div class="field">
+              <label>&nbsp;</label>
+              <button class="btn primary" id="customer-add-btn" type="button">
+                + Add customer
+              </button>
+            </div>
+          </div>
+
+          <div class="meta-row">
+            <div id="customer-count">0 customers</div>
+            <div class="tiny">Sorted A-Z</div>
+          </div>
+
+          <div
+            id="customers-list"
+            style="
+              margin-top: 14px;
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+              gap: 12px;
+            "
+          >
+            <div class="empty-state">Customers not loaded yet.</div>
+          </div>
+        </div>
+      </section>
+
       <section class="section">
         <div class="section-head">
           <h2>Bookings</h2>
@@ -1959,6 +2008,85 @@
             <div class="subsection">
               <h4>Signature</h4>
               <div id="modal-signature" class="et-modal-signature"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===============================
+       CUSTOMER MODAL
+    =============================== -->
+    <div id="customer-modal" class="et-modal hidden">
+      <div class="et-modal-backdrop" id="customer-modal-backdrop"></div>
+
+      <div class="et-modal-center">
+        <div class="et-modal-card" style="max-width: 760px">
+          <div class="et-modal-header">
+            <h3 id="customer-modal-title">Customer</h3>
+            <button id="customer-modal-close" class="modal-close">✕</button>
+          </div>
+
+          <div class="et-modal-body">
+            <input type="hidden" id="customer-edit-id" />
+
+            <div class="detail-grid">
+              <div class="field">
+                <label>Full name *</label>
+                <input id="customer-edit-name" type="text" />
+              </div>
+
+              <div class="field">
+                <label>Email *</label>
+                <input id="customer-edit-email" type="email" />
+              </div>
+
+              <div class="field">
+                <label>Mobile *</label>
+                <input id="customer-edit-mobile" type="tel" />
+              </div>
+
+              <div class="field">
+                <label>Date of birth</label>
+                <input id="customer-edit-dob" type="date" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Address</label>
+              <input id="customer-edit-address" type="text" />
+            </div>
+
+            <div class="field">
+              <label>Notes</label>
+              <textarea
+                id="customer-edit-notes"
+                rows="4"
+                style="
+                  width: 100%;
+                  border: 1px solid var(--line);
+                  border-radius: 12px;
+                  padding: 10px;
+                  font-family: inherit;
+                "
+              ></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 14px">
+              <button class="btn primary" id="customer-save-btn" type="button">
+                Save customer
+              </button>
+
+              <button class="btn ghost" id="customer-close-btn" type="button">
+                Close
+              </button>
+            </div>
+
+            <div style="margin-top: 22px">
+              <h3 style="margin-bottom: 10px">Bookings linked to this email</h3>
+              <div id="customer-bookings-list" class="stack">
+                Select a customer to load bookings.
+              </div>
             </div>
           </div>
         </div>
@@ -2452,6 +2580,45 @@
       let customerSearchTimeout = null;
       let lastCustomerQuery = "";
 
+      let ALL_CUSTOMERS = [];
+      let SELECTED_CRM_CUSTOMER = null;
+
+      const customersSection = document.getElementById("customers-section");
+      const customersList = document.getElementById("customers-list");
+      const customerListSearch = document.getElementById(
+        "customer-list-search",
+      );
+      const customerCount = document.getElementById("customer-count");
+      const customerAddBtn = document.getElementById("customer-add-btn");
+
+      const customerModal = document.getElementById("customer-modal");
+      const customerModalTitle = document.getElementById(
+        "customer-modal-title",
+      );
+      const customerModalClose = document.getElementById(
+        "customer-modal-close",
+      );
+      const customerModalBackdrop = document.getElementById(
+        "customer-modal-backdrop",
+      );
+      const customerCloseBtn = document.getElementById("customer-close-btn");
+      const customerSaveBtn = document.getElementById("customer-save-btn");
+
+      const customerEditId = document.getElementById("customer-edit-id");
+      const customerEditName = document.getElementById("customer-edit-name");
+      const customerEditEmail = document.getElementById("customer-edit-email");
+      const customerEditMobile = document.getElementById(
+        "customer-edit-mobile",
+      );
+      const customerEditAddress = document.getElementById(
+        "customer-edit-address",
+      );
+      const customerEditDob = document.getElementById("customer-edit-dob");
+      const customerEditNotes = document.getElementById("customer-edit-notes");
+      const customerBookingsList = document.getElementById(
+        "customer-bookings-list",
+      );
+
       /* ===============================
          👤 CUSTOMER SEARCH (NEW)
       =============================== */
@@ -2554,15 +2721,16 @@
         .getElementById("create-customer-btn")
         ?.addEventListener("click", async () => {
           const full_name = prompt("Full name:");
-          const email = prompt("Email (optional):");
-          const mobile = prompt("Mobile (optional):");
+          const email = prompt("Email:");
+          const mobile = prompt("Mobile:");
 
           /* ===============================
-             VALIDATION (MATCH BACKEND)
+             VALIDATION
+             Customers must have all 3 core fields.
           =============================== */
 
-          if (!full_name || (!email && !mobile)) {
-            alert("Name + email OR mobile required");
+          if (!full_name || !email || !mobile) {
+            alert("Full name, email and mobile are required");
             return;
           }
 
@@ -4737,20 +4905,310 @@
         setActiveMobileTab(1);
       }
 
-      function scrollToCustomers() {
-        const el =
-          document.querySelector(".bookings-table") ||
-          document.querySelector(".mobile-bookings");
+      async function scrollToCustomers() {
+        closeMobileMenu?.();
 
-        if (!el) return;
-
-        el.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+        if (customersSection) {
+          customersSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
 
         setActiveMobileTab(2);
+
+        await loadCustomers();
       }
+
+      async function loadCustomers(query = "") {
+        if (!customersList) return;
+
+        customersList.innerHTML = `<div class="empty-state">Loading customers...</div>`;
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/customers/search?q=${encodeURIComponent(query || "")}`,
+            { cache: "no-store" },
+          );
+
+          const data = await res.json();
+
+          ALL_CUSTOMERS = data.results || [];
+
+          renderCustomers();
+        } catch (err) {
+          console.error("❌ Customer list failed:", err);
+          customersList.innerHTML = `<div class="empty-state">Failed to load customers.</div>`;
+        }
+      }
+
+      function renderCustomers() {
+        if (!customersList) return;
+
+        const customers = ALL_CUSTOMERS || [];
+
+        if (customerCount) {
+          customerCount.textContent =
+            customers.length === 1
+              ? "1 customer"
+              : `${customers.length} customers`;
+        }
+
+        if (!customers.length) {
+          customersList.innerHTML = `<div class="empty-state">No customers found.</div>`;
+          return;
+        }
+
+        customersList.innerHTML = customers
+          .map((customer) => {
+            const missing = [];
+
+            if (!customer.full_name) missing.push("name");
+            if (!customer.email) missing.push("email");
+            if (!customer.mobile) missing.push("mobile");
+
+            const complete = missing.length === 0;
+
+            return `
+              <div
+                class="customer-card"
+                data-customer-id="${escapeHtml(customer.id)}"
+                style="
+                  border: 1px solid ${complete ? "#dbe1e8" : "#f59e0b"};
+                  border-radius: 16px;
+                  padding: 14px;
+                  background: ${complete ? "#fff" : "#fff7ed"};
+                  cursor: pointer;
+                  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+                "
+              >
+                <div style="font-weight: 900; font-size: 16px">
+                  👤 ${escapeHtml(customer.full_name || "Unnamed customer")}
+                </div>
+
+                <div class="tiny" style="margin-top: 4px">
+                  ✉️ ${escapeHtml(customer.email || "Missing email")}
+                </div>
+
+                <div class="tiny">
+                  📞 ${escapeHtml(customer.mobile || "Missing mobile")}
+                </div>
+
+                ${
+                  customer.address
+                    ? `<div class="tiny">📍 ${escapeHtml(customer.address)}</div>`
+                    : ""
+                }
+
+                ${
+                  complete
+                    ? `<div class="pill ok" style="margin-top: 8px">Complete</div>`
+                    : `<div class="pill warn" style="margin-top: 8px">Missing ${escapeHtml(missing.join(", "))}</div>`
+                }
+              </div>
+            `;
+          })
+          .join("");
+
+        document.querySelectorAll(".customer-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            const id = card.dataset.customerId;
+            const customer = ALL_CUSTOMERS.find(
+              (c) => String(c.id) === String(id),
+            );
+            if (customer) openCustomerModal(customer);
+          });
+        });
+      }
+
+      function openCustomerModal(customer = null) {
+        SELECTED_CRM_CUSTOMER = customer;
+
+        customerEditId.value = customer?.id || "";
+        customerEditName.value = customer?.full_name || "";
+        customerEditEmail.value = customer?.email || "";
+        customerEditMobile.value = customer?.mobile || "";
+        customerEditAddress.value = customer?.address || "";
+        customerEditDob.value = customer?.dob || "";
+        customerEditNotes.value = customer?.notes || "";
+
+        customerModalTitle.textContent = customer?.id
+          ? `Customer — ${customer.full_name || ""}`
+          : "Add customer";
+
+        customerBookingsList.innerHTML = customer?.email
+          ? "Loading bookings..."
+          : "Save customer first to see linked bookings.";
+
+        customerModal?.classList.remove("hidden");
+
+        if (customer?.email) {
+          loadCustomerBookings(customer.email);
+        }
+      }
+
+      function closeCustomerModal() {
+        customerModal?.classList.add("hidden");
+      }
+
+      async function loadCustomerBookings(email) {
+        if (!customerBookingsList) return;
+
+        customerBookingsList.innerHTML = "Loading bookings...";
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/customers/bookings?email=${encodeURIComponent(email)}`,
+            { cache: "no-store" },
+          );
+
+          const data = await res.json();
+
+          const bookings = data.bookings || [];
+
+          if (!bookings.length) {
+            customerBookingsList.innerHTML = `<div class="empty-state">No bookings linked to this email.</div>`;
+            return;
+          }
+
+          customerBookingsList.innerHTML = bookings
+            .map((booking) => {
+              const pickup = booking.pickupAtLocal || booking.pickupAt || "";
+              const dropoff = booking.dropoffAtLocal || booking.dropoffAt || "";
+
+              return `
+                <div
+                  style="
+                    border: 1px solid var(--line);
+                    border-radius: 14px;
+                    padding: 12px;
+                    background: #fff;
+                  "
+                >
+                  <div style="font-weight: 900">
+                    ${escapeHtml(shortRef(booking.id))}
+                    — ${escapeHtml(booking.vehicleSnapshot?.name || booking.vehicleId || "Lorry")}
+                  </div>
+
+                  <div class="tiny">
+                    From: ${escapeHtml(pickup || "—")}
+                  </div>
+
+                  <div class="tiny">
+                    To: ${escapeHtml(dropoff || "—")}
+                  </div>
+
+                  <div class="tiny">
+                    Status: ${escapeHtml(booking.status || "—")}
+                  </div>
+
+                  <div class="tiny">
+                    Total: £${Number(booking.hireTotal || booking.priceTotal || 0).toFixed(2)}
+                    · Outstanding: £${Number(booking.outstandingAmount || booking.outstanding || 0).toFixed(2)}
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+        } catch (err) {
+          console.error("❌ Customer booking history failed:", err);
+          customerBookingsList.innerHTML = `<div class="empty-state">Failed to load bookings.</div>`;
+        }
+      }
+
+      async function saveCustomerFromModal() {
+        const id = customerEditId.value.trim();
+
+        const full_name = customerEditName.value.trim();
+        const email = customerEditEmail.value.trim();
+        const mobile = customerEditMobile.value.trim();
+
+        const address = customerEditAddress.value.trim();
+        const dob = customerEditDob.value.trim();
+        const notes = customerEditNotes.value.trim();
+
+        if (!full_name || !email || !mobile) {
+          alert("Full name, email and mobile are required.");
+          return;
+        }
+
+        try {
+          customerSaveBtn.disabled = true;
+          customerSaveBtn.textContent = "Saving...";
+
+          const endpoint = id
+            ? `${API_BASE}/api/admin/customer-update`
+            : `${API_BASE}/api/customers`;
+
+          const body = id
+            ? {
+                id,
+                full_name,
+                email,
+                mobile,
+                address,
+                dob,
+                notes,
+              }
+            : {
+                full_name,
+                email,
+                mobile,
+                address,
+                dob,
+                notes,
+              };
+
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.customer) {
+            throw new Error(data.error || "Customer save failed");
+          }
+
+          SELECTED_CRM_CUSTOMER = data.customer;
+
+          showCopySuccess?.("✅ Customer saved");
+
+          await loadCustomers(customerListSearch?.value || "");
+
+          openCustomerModal(data.customer);
+        } catch (err) {
+          console.error("❌ Customer save failed:", err);
+          alert(err.message || "Customer save failed");
+        } finally {
+          customerSaveBtn.disabled = false;
+          customerSaveBtn.textContent = "Save customer";
+        }
+      }
+
+      let customerListSearchTimer = null;
+
+      customerListSearch?.addEventListener("input", () => {
+        clearTimeout(customerListSearchTimer);
+
+        customerListSearchTimer = setTimeout(() => {
+          loadCustomers(customerListSearch.value.trim());
+        }, 250);
+      });
+
+      customerAddBtn?.addEventListener("click", () => {
+        openCustomerModal(null);
+      });
+
+      customerSaveBtn?.addEventListener("click", saveCustomerFromModal);
+
+      customerModalClose?.addEventListener("click", closeCustomerModal);
+      customerCloseBtn?.addEventListener("click", closeCustomerModal);
+      customerModalBackdrop?.addEventListener("click", closeCustomerModal);
+
       function openAdminAddBooking() {
         closeMobileMenu();
 
