@@ -3110,8 +3110,34 @@ textarea {
   max-width: 760px;
 }
 
+.contact-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-form .form-grid {
+  gap: 18px;
+}
+
 .contact-form textarea {
   resize: vertical;
+  min-height: 170px;
+}
+
+/* 🔥 Correct spacing around Formspree button */
+.contact-form > .btn {
+  width: auto;
+  align-self: flex-start;
+  margin-top: 22px;
+  margin-bottom: 16px;
+  min-width: 170px;
+}
+
+/* 🔥 Correct spacing for success/error text */
+#contact-status {
+  margin-top: 0 !important;
+  padding-top: 2px;
+  line-height: 1.45;
 }
 
 .form-full {
@@ -3161,6 +3187,22 @@ textarea {
 
   .contact-card {
     max-width: none;
+  }
+
+  .contact-form .form-grid {
+    gap: 14px;
+  }
+
+  .contact-form > .btn {
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 14px;
+    min-height: 54px;
+  }
+
+  #contact-status {
+    font-size: 15px;
+    line-height: 1.45;
   }
 }
 
