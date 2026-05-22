@@ -1137,7 +1137,7 @@
 
       @media (max-width: 768px) {
         body {
-          padding-bottom: 92px;
+          padding-bottom: 0;
           overflow-x: hidden;
         }
 
@@ -1340,7 +1340,7 @@
           flex-direction: column;
           gap: 14px;
 
-          padding: 0 14px 110px;
+          padding: 0 14px 24px;
         }
       }
 
@@ -8209,31 +8209,5 @@
 
       initAdmin();
     </script>
-
-    <!-- =====================================
-     MOBILE TAB BAR
-===================================== -->
-
-    <nav class="mobile-tabbar">
-      <button class="mobile-tab active" onclick="scrollToBookings()">
-        <span>📋</span>
-        <small>Bookings</small>
-      </button>
-
-      <button class="mobile-tab" onclick="scrollToCalendar()">
-        <span>📅</span>
-        <small>Calendar</small>
-      </button>
-
-      <button class="mobile-tab" onclick="scrollToCustomers()">
-        <span>👥</span>
-        <small>Customers</small>
-      </button>
-
-      <button class="mobile-tab" onclick="openAdminAddBooking()">
-        <span>➕</span>
-        <small>Add booking</small>
-      </button>
-    </nav>
   </body>
 </html>
