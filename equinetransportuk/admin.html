@@ -1767,6 +1767,40 @@
           border-bottom: 1px solid var(--line) !important;
         }
       }
+
+      /* =========================================
+         MOBILE HEADING SIZE FIX
+      ========================================= */
+
+      @media (max-width: 768px) {
+        .hero-card h1 {
+          font-size: 40px;
+          line-height: 1.08;
+          letter-spacing: -1.2px;
+        }
+
+        .section-head h2 {
+          font-size: 32px;
+          line-height: 1.12;
+          letter-spacing: -0.8px;
+        }
+
+        .section-head .muted,
+        .hero-card > p {
+          font-size: 17px;
+          line-height: 1.45;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .hero-card h1 {
+          font-size: 34px;
+        }
+
+        .section-head h2 {
+          font-size: 28px;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -1845,10 +1879,10 @@
       <section class="hero">
         <div class="hero-card">
           <p class="hero-kicker">Admin</p>
-          <h1>Booking register & form viewer</h1>
+          <h1>Find Bookings</h1>
           <p>
-            View bookings, check payment progress, confirm form completion, and
-            open the full submitted long/short form including signature.
+            Search bookings by customer, reference, email, date, vehicle, form
+            status, payment status, and hire period.
           </p>
 
           <div class="toolbar">
@@ -1933,8 +1967,10 @@
       <section class="section">
         <div class="hero-card">
           <div class="section-head">
-            <h2>Availability calendar</h2>
-            <div class="muted">Visual overview per lorry</div>
+            <h2>Set Availability</h2>
+            <div class="muted">
+              View bookings and block or restore lorry availability.
+            </div>
           </div>
 
           <div class="calendar-header">
@@ -1973,9 +2009,10 @@
       <section class="section" id="customers-section">
         <div class="hero-card">
           <div class="section-head">
-            <h2>Customers</h2>
+            <h2>Find Customers + Their Bookings</h2>
             <div class="muted">
-              Search, edit customer details, and view all linked bookings.
+              Search customers, edit details, and open all bookings linked to
+              their email.
             </div>
           </div>
 
