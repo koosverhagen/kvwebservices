@@ -3163,3 +3163,17 @@ textarea {
     max-width: none;
   }
 }
+
+/* ======================================================
+   FORMSPREE CONTACT FORM STATES
+====================================================== */
+
+.success-message {
+  color: #137a3d !important;
+  font-weight: 700;
+}
+
+.contact-form button[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
