@@ -3334,16 +3334,23 @@ async function handleAdminBookingUpdate(request, env) {
       try {
         const auditKey = `audit:${booking.id}`;
 
-        await env.BOOKINGS_KV.put(
-          auditKey,
-          JSON.stringify([
-            {
-              type: "admin_booking_created",
-              emailSent,
-              at: now,
-            },
-          ]),
-        );
+        const audit = [
+          {
+            type: "admin_booking_created",
+            emailSent,
+            at: now,
+          },
+        ];
+
+        if (adminNote) {
+          audit.unshift({
+            type: "admin_note_added",
+            note: adminNote,
+            at: now,
+          });
+        }
+
+        await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
       } catch {}
 
       return json({
@@ -3918,6 +3925,39 @@ async function handleAdminBookingUpdate(request, env) {
         await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
       } catch (err) {
         console.warn("⚠️ Extras audit failed:", err);
+      }
+    }
+
+    /* ===============================
+       📝 AUDIT: ADMIN NOTE CHANGED
+    =============================== */
+
+    const oldAdminNote = String(
+      existing.adminNote || existing.note || "",
+    ).trim();
+    const newAdminNote = String(adminNote || "").trim();
+
+    if (oldAdminNote !== newAdminNote) {
+      try {
+        const auditKey = `audit:${bookingId}`;
+
+        let audit = [];
+
+        try {
+          audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+        } catch {}
+
+        audit.unshift({
+          type: oldAdminNote ? "admin_note_changed" : "admin_note_added",
+          fromNote: oldAdminNote,
+          toNote: newAdminNote,
+          note: newAdminNote,
+          at: new Date().toISOString(),
+        });
+
+        await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+      } catch (err) {
+        console.warn("⚠️ Admin note audit failed:", err);
       }
     }
 

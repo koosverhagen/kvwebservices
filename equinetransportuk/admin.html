@@ -7704,6 +7704,29 @@
                 `;
               }
 
+              /* 📝 Admin note */
+              if (
+                a.type === "admin_note_added" ||
+                a.type === "admin_note_changed"
+              ) {
+                const noteText = escapeHtml(a.note || a.toNote || "");
+
+                if (a.type === "admin_note_added") {
+                  return `
+                    📝 Admin note added<br>
+                    <strong>${noteText || "Note cleared"}</strong><br>
+                    ${date}
+                  `;
+                }
+
+                return `
+                  📝 Admin note changed<br>
+                  From: <strong>${escapeHtml(a.fromNote || "—")}</strong><br>
+                  To: <strong>${noteText || "—"}</strong><br>
+                  ${date}
+                `;
+              }
+
               return `• ${a.type} — ${date}`;
             })
             .join("<br><br>");
