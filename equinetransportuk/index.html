@@ -41,7 +41,7 @@
           <a href="#fleet">Fleet</a>
           <a href="#booking">Book</a>
           <a href="pricing-terms.html">Pricing & Terms</a>
-          <a href="admin.html">Admin</a>
+          <a href="#contact">Contact</a>
         </nav>
         <button
           class="nav-toggle"
@@ -565,138 +565,99 @@ removed duplicate, script is loaded at end of body -->
         </div>
       </section>
 
-      <section class="section container">
+      <!-- ===============================
+         CONTACT
+      =============================== -->
+      <section class="section container" id="contact">
         <div class="section-head">
-          <p class="kicker">Upcoming bookings</p>
-          <h2>Live booking register</h2>
-        </div>
-        <div id="booking-list" class="booking-list"></div>
-      </section>
-
-      <section class="section container" id="pricing-terms">
-        <div class="section-head">
-          <p class="kicker">Policy</p>
-          <h2>Current pricing & terms</h2>
-        </div>
-        <article class="card terms-card">
-          <h3>3.5T horsebox pricing rules</h3>
-          <ul>
-            <li>1/2 day: £75</li>
-            <li>1 day: £105</li>
-            <li>2 days: £200</li>
-            <li>3 days: £300</li>
-            <li>4 days: £400</li>
-            <li>5 days: £500</li>
-            <li>6 days: £600</li>
-            <li>Week: £700</li>
-          </ul>
+          <p class="kicker">Contact</p>
+          <h2>Contact Equine Transport UK</h2>
           <p class="muted">
-            Default day rate rule: £105/day for 3.5T resources.
-          </p>
-
-          <h3>7.5T rates</h3>
-          <ul>
-            <li>
-              7.5T 3 horses with living: 1 day £175, 2 days £350, 3 days £525, 4
-              days £700, 5 days £875, 6 days £1050, week £1225
-            </li>
-            <li>7.5T 4 horses no living: default £165/day</li>
-            <li>
-              Weekend rule (Saturday/Sunday) for 1 day: £200/day (living),
-              £175/day (no living)
-            </li>
-            <li>
-              Weekend-start rule for 2 days: £400 (living), £350 (no living)
-            </li>
-          </ul>
-          <p class="muted">Pre-payment rule: £75 for 3.5T and £100 for 7.5T.</p>
-
-          <h3>Booking, forms, and before collection</h3>
-          <ul>
-            <li>
-              Refundable security deposit hold: £200 (card pre-authorisation)
-            </li>
-            <li>
-              First hire: complete long form; hired within 3 months: short form
-            </li>
-            <li>DVLA licence check code must be submitted in form</li>
-            <li>
-              Forms must be in the driver’s name and proof of address is
-              required on collection
-            </li>
-          </ul>
-
-          <h3>Time-related settings</h3>
-          <ul>
-            <li>
-              Pickup start window: 07:00 to 15:00 on working days, quarter-hour
-              intervals
-            </li>
-            <li>
-              3.5T preset durations: 1/2 day (6h), 1 day (12h), 2 days (36h), 3
-              days (50h), 4/5/6 days, week
-            </li>
-            <li>
-              7.5T preset durations: 1 day (12h), 2 days (36h), 3 days (50h),
-              4/5/6 days, week
-            </li>
-          </ul>
-
-          <h3>Fuel, mileage, and charges</h3>
-          <ul>
-            <li>Return with full tank of diesel</li>
-            <li>300 miles per paid day included, then 30p/mile</li>
-            <li>
-              ULEZ, congestion, Dart/CAZ and similar charges are the hirer’s
-              responsibility
-            </li>
-            <li>Insurance excess: £400</li>
-          </ul>
-
-          <p class="muted tiny">
-            This section mirrors your current live policy content so customers
-            see current operational terms during booking.
-          </p>
-        </article>
-      </section>
-
-      <section class="section container" id="admin-review">
-        <div class="section-head">
-          <p class="kicker">Admin View</p>
-          <h2>Booking review</h2>
-          <p class="muted tiny">
-            Legacy-style booking ID format enabled: 19xxxxxx.
+            Have a question before booking? Send us your details and we will get
+            back to you.
           </p>
         </div>
 
-        <div class="admin-actions">
-          <button id="refresh-admin" class="btn ghost" type="button">
-            Refresh review data
-          </button>
-          <button id="export-admin-csv" class="btn ghost" type="button">
-            Export CSV
-          </button>
-          <button id="export-admin-pdf" class="btn ghost" type="button">
-            Export PDF
-          </button>
-          <button id="clear-admin" class="btn ghost" type="button">
-            Clear all demo data
-          </button>
-        </div>
+        <article class="card contact-card">
+          <form id="contact-form" class="contact-form">
+            <div class="form-grid two">
+              <div class="form-field">
+                <label for="contact-name">Full name *</label>
+                <input id="contact-name" type="text" required />
+              </div>
 
-        <article class="card">
-          <h3>Booking Register</h3>
-          <div id="admin-bookings" class="admin-table-wrap"></div>
+              <div class="form-field">
+                <label for="contact-email">Email *</label>
+                <input id="contact-email" type="email" required />
+              </div>
+
+              <div class="form-field">
+                <label for="contact-mobile">Mobile *</label>
+                <input id="contact-mobile" type="tel" required />
+              </div>
+
+              <div class="form-field form-full">
+                <label for="contact-message">Comment *</label>
+                <textarea
+                  id="contact-message"
+                  rows="6"
+                  required
+                  placeholder="How can we help?"
+                ></textarea>
+              </div>
+            </div>
+
+            <button class="btn" type="submit">Send enquiry</button>
+
+            <p id="contact-status" class="muted tiny" style="margin-top: 10px">
+              This will open your email app addressed to Equine Transport UK.
+            </p>
+          </form>
         </article>
       </section>
     </main>
 
     <footer class="site-footer">
-      <div class="container">
-        <small
-          >© <span id="year"></span> Equine Transport UK — case study rebuild
-          concept.</small
-        >
+      <div class="container footer-grid">
+        <div>
+          <h3>Equine Transport UK</h3>
+          <p class="muted">
+            Self-drive horsebox hire with online availability, secure booking
+            and customer support.
+          </p>
+          <small>© <span id="year"></span> Equine Transport UK</small>
+        </div>
+
+        <div>
+          <h4>Menu</h4>
+          <nav class="footer-menu" aria-label="Footer navigation">
+            <a href="#fleet">Fleet</a>
+            <a href="#booking">Book</a>
+            <a href="pricing-terms.html">Pricing & Terms</a>
+            <a href="#contact">Contact</a>
+          </nav>
+        </div>
+
+        <div>
+          <h4>Contact</h4>
+          <p class="footer-contact">
+            <strong>Address:</strong><br />
+            Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five
+            Ashes, East Sussex TN20 6LL
+          </p>
+
+          <p class="footer-contact">
+            <strong>Email:</strong><br />
+            <a href="mailto:info@equinetransportuk.com">
+              info@equinetransportuk.com
+            </a>
+          </p>
+
+          <p class="footer-contact">
+            <strong>Phone:</strong><br />
+            <a href="tel:07812188871">07812 188871</a>
+          </p>
+        </div>
       </div>
     </footer>
 
@@ -776,6 +737,58 @@ removed duplicate, script is loaded at end of body -->
           { passive: true },
         );
       });
+    </script>
+
+    <script>
+      (function () {
+        const form = document.getElementById("contact-form");
+        const status = document.getElementById("contact-status");
+
+        if (!form) return;
+
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const name = document.getElementById("contact-name")?.value.trim();
+          const email = document.getElementById("contact-email")?.value.trim();
+          const mobile = document
+            .getElementById("contact-mobile")
+            ?.value.trim();
+          const message = document
+            .getElementById("contact-message")
+            ?.value.trim();
+
+          if (!name || !email || !mobile || !message) {
+            if (status) {
+              status.textContent = "Please complete all fields.";
+            }
+            return;
+          }
+
+          const subject = "Equine Transport UK | Enquiry";
+
+          const body = [
+            "New website enquiry",
+            "",
+            `Full name: ${name}`,
+            `Email: ${email}`,
+            `Mobile: ${mobile}`,
+            "",
+            "Comment:",
+            message,
+          ].join("\n");
+
+          const mailto = `mailto:info@equinetransportuk.com?subject=${encodeURIComponent(
+            subject,
+          )}&body=${encodeURIComponent(body)}`;
+
+          window.location.href = mailto;
+
+          if (status) {
+            status.textContent = "Opening your email app...";
+          }
+        });
+      })();
     </script>
 
     <script>
