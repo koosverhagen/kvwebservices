@@ -1299,7 +1299,7 @@
         }
 
         .section {
-          padding-top: 10px !important;
+          padding-top: 0 !important;
           margin-top: 0 !important;
         }
       }
@@ -1701,6 +1701,71 @@
         text-decoration: none;
 
         cursor: pointer;
+      }
+
+      /* =========================================
+         ADMIN CARD SPACING — FINAL
+         Keeps all main admin blocks evenly spaced
+      ========================================= */
+
+      :root {
+        --admin-section-gap: 18px;
+      }
+
+      main.container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--admin-section-gap);
+      }
+
+      main.container > .hero,
+      main.container > .section {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      main.container > .hero:first-child {
+        padding-top: 28px !important;
+      }
+
+      main.container > .section:last-child {
+        padding-bottom: 28px !important;
+      }
+
+      .hero-card,
+      .card.list-wrap {
+        margin: 0 !important;
+      }
+
+      .section-head {
+        margin-bottom: 12px;
+      }
+
+      .section > .section-head {
+        margin-top: 0;
+      }
+
+      @media (max-width: 768px) {
+        :root {
+          --admin-section-gap: 12px;
+        }
+
+        main.container {
+          gap: var(--admin-section-gap) !important;
+        }
+
+        main.container > .hero:first-child {
+          padding-top: 0 !important;
+        }
+
+        main.container > .section:last-child {
+          padding-bottom: 110px !important;
+        }
+
+        .hero-card {
+          border-top: 1px solid var(--line) !important;
+          border-bottom: 1px solid var(--line) !important;
+        }
       }
     </style>
 
