@@ -2270,9 +2270,32 @@
             </div>
 
             <!-- ===============================
+             ADMIN NOTE
+        =============================== -->
+
+            <div class="field">
+              <label>Admin note</label>
+              <textarea
+                id="edit-admin-note"
+                rows="3"
+                placeholder="Optional internal note for this booking..."
+                style="
+                  width: 100%;
+                  border: 1px solid var(--line);
+                  border-radius: 12px;
+                  padding: 10px;
+                  font-family: inherit;
+                  resize: vertical;
+                "
+              ></textarea>
+              <div class="tiny" style="margin-top: 4px">
+                Internal admin note only. Not sent to customer.
+              </div>
+            </div>
+
+            <!-- ===============================
      ACTIONS (UPDATED)
 =============================== -->
-
             <div
               style="
                 margin-top: 16px;
@@ -2579,9 +2602,9 @@
 
       let customerSearchTimeout = null;
       let lastCustomerQuery = "";
-
       let ALL_CUSTOMERS = [];
       let SELECTED_CRM_CUSTOMER = null;
+      let CUSTOMER_BOOKING_CACHE = {};
 
       const customersSection = document.getElementById("customers-section");
       const customersList = document.getElementById("customers-list");
@@ -5055,6 +5078,7 @@
         if (!customerBookingsList) return;
 
         customerBookingsList.innerHTML = "Loading bookings...";
+        CUSTOMER_BOOKING_CACHE = {};
 
         try {
           const res = await fetch(
@@ -5071,6 +5095,12 @@
             return;
           }
 
+          bookings.forEach((booking) => {
+            if (booking?.id) {
+              CUSTOMER_BOOKING_CACHE[String(booking.id)] = booking;
+            }
+          });
+
           customerBookingsList.innerHTML = bookings
             .map((booking) => {
               const pickup = booking.pickupAtLocal || booking.pickupAt || "";
@@ -5078,14 +5108,18 @@
 
               return `
                 <div
+                  class="customer-history-booking"
+                  data-booking-id="${escapeHtml(booking.id)}"
                   style="
                     border: 1px solid var(--line);
                     border-radius: 14px;
                     padding: 12px;
                     background: #fff;
+                    cursor: pointer;
+                    transition: 0.15s ease;
                   "
                 >
-                  <div style="font-weight: 900">
+                  <div style="font-weight: 900; color: var(--accent)">
                     ${escapeHtml(shortRef(booking.id))}
                     — ${escapeHtml(booking.vehicleSnapshot?.name || booking.vehicleId || "Lorry")}
                   </div>
@@ -5106,10 +5140,47 @@
                     Total: £${Number(booking.hireTotal || booking.priceTotal || 0).toFixed(2)}
                     · Outstanding: £${Number(booking.outstandingAmount || booking.outstanding || 0).toFixed(2)}
                   </div>
+
+                  ${
+                    booking.adminNote || booking.note
+                      ? `<div class="tiny" style="margin-top: 6px">📝 ${escapeHtml(booking.adminNote || booking.note)}</div>`
+                      : ""
+                  }
+
+                  <div class="tiny" style="margin-top: 6px; font-weight: 800; color: var(--accent)">
+                    Tap to open booking
+                  </div>
                 </div>
               `;
             })
             .join("");
+
+          document
+            .querySelectorAll(".customer-history-booking")
+            .forEach((card) => {
+              card.addEventListener("click", () => {
+                const bookingId = card.dataset.bookingId;
+                const booking = CUSTOMER_BOOKING_CACHE[String(bookingId)];
+
+                if (!booking) {
+                  alert("Booking not found");
+                  return;
+                }
+
+                /* Keep editable even if outside current loaded range */
+                const existsInAllBookings = allBookings.some(
+                  (b) => String(b.id) === String(booking.id),
+                );
+
+                if (!existsInAllBookings) {
+                  allBookings.push(booking);
+                }
+
+                closeCustomerModal();
+
+                openEditBooking(booking);
+              });
+            });
         } catch (err) {
           console.error("❌ Customer booking history failed:", err);
           customerBookingsList.innerHTML = `<div class="empty-state">Failed to load bookings.</div>`;
@@ -5251,6 +5322,7 @@
           const vehicleInput = document.getElementById("edit-vehicle");
           const dateInput = document.getElementById("edit-date");
           const priceInput = document.getElementById("edit-price");
+          const noteInput = document.getElementById("edit-admin-note");
           const dartfordInput = document.getElementById("edit-dartford");
           const earlyInput = document.getElementById("edit-early");
 
@@ -5260,6 +5332,7 @@
           if (vehicleInput) vehicleInput.value = "";
           if (dateInput) dateInput.value = "";
           if (priceInput) priceInput.value = "";
+          if (noteInput) noteInput.value = "";
           if (dartfordInput) dartfordInput.value = "0";
           if (earlyInput) earlyInput.checked = false;
 
@@ -6280,6 +6353,10 @@
             document.getElementById("edit-price")?.value || 0,
           );
 
+          const adminNote = String(
+            document.getElementById("edit-admin-note")?.value || "",
+          ).trim();
+
           /* ===============================
          👤 CUSTOMER (FIXED)
       =============================== */
@@ -6318,7 +6395,8 @@
               hireTotal === Number(booking.hireTotal || 0) &&
               extras.dartford === Number(booking.extras?.dartford || 0) &&
               extras.earlyPickup === Boolean(booking.extras?.earlyPickup) &&
-              customerId === booking.customerId; // 🔥 NEW
+              customerId === booking.customerId &&
+              adminNote === String(booking.adminNote || booking.note || "");
 
             if (noChanges) {
               editModal.classList.add("hidden");
@@ -6366,6 +6444,7 @@
             durationDays,
             hireTotal,
             extras,
+            adminNote,
 
             /* ===============================
            👤 CUSTOMER ASSIGN (FIXED)
@@ -7325,6 +7404,12 @@
 
         document.getElementById("edit-price").value =
           booking.hireTotal || booking.total || 0;
+
+        const adminNoteInput = document.getElementById("edit-admin-note");
+
+        if (adminNoteInput) {
+          adminNoteInput.value = booking.adminNote || booking.note || "";
+        }
 
         /* ===============================
            👤 CUSTOMER (STEP 7 NEW)
