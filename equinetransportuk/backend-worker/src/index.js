@@ -3124,6 +3124,7 @@ async function handleAdminBookingUpdate(request, env) {
       const hireTotal = Number(body.hireTotal || 0);
       const customerId = String(body.customerId || "").trim();
       const extras = body.extras || {};
+      const adminNote = String(body.adminNote || "").trim();
 
       if (!vehicleId || !pickupDate || !pickupTime || !durationDays) {
         return json({ error: "Missing booking fields" }, 400);
@@ -3243,6 +3244,9 @@ async function handleAdminBookingUpdate(request, env) {
         customerMobile: customer.mobile || "",
 
         extras,
+
+        adminNote,
+        note: adminNote,
 
         hireTotal,
         priceTotal: hireTotal,
@@ -3527,6 +3531,8 @@ async function handleAdminBookingUpdate(request, env) {
     const hireTotal = Number(body.hireTotal || 0);
 
     const extras = body.extras || {};
+
+    const adminNote = String(body.adminNote || "").trim();
 
     /* ===============================
    👤 CUSTOMER
@@ -3841,6 +3847,9 @@ async function handleAdminBookingUpdate(request, env) {
       customerMobile,
 
       updatedAt: now,
+
+      adminNote,
+      note: adminNote,
 
       extras,
       dartfordTotal,
