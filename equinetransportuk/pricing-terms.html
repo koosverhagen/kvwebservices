@@ -1,52 +1,712 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Current Pricing & Terms | Equine Transport UK</title>
-  <meta name="description" content="Current pricing and terms for Equine Transport UK horsebox rental.">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Equine Transport UK home">
-        <img class="brand-logo" src="images/logo.png" alt="Equine Transport UK logo">
-        <span>Equine Transport UK</span>
-      </a>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="index.html#fleet">Fleet</a>
-        <a href="index.html#booking">Book</a>
-        <a href="pricing-terms.html">Pricing & Terms</a>
-        <a href="index.html#admin-review">Admin</a>
-      </nav>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>
+      Self-Drive Horsebox Hire – Pricing & Terms | Equine Transport UK
+    </title>
+
+    <meta
+      name="description"
+      content="Self-drive horsebox hire pricing and terms for Equine Transport UK. Clear 3.5T and 7.5T hire rates, deposits, cancellation policy, mileage and insurance information."
+    />
+
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="images/favicon.png" />
+
+    <style>
+      .terms-page {
+        padding: 42px 0 56px;
+      }
+
+      .terms-hero {
+        margin-bottom: 24px;
+      }
+
+      .terms-hero h1 {
+        max-width: 900px;
+      }
+
+      .terms-hero .lead {
+        max-width: 850px;
+      }
+
+      .terms-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 20px;
+      }
+
+      .terms-card-premium {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 22px;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+      }
+
+      .terms-card-premium h2,
+      .terms-card-premium h3 {
+        margin-top: 0;
+      }
+
+      .terms-card-premium h2 {
+        font-size: 28px;
+        letter-spacing: -0.03em;
+      }
+
+      .terms-card-premium h3 {
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+
+      .price-list {
+        display: grid;
+        gap: 10px;
+        margin: 16px 0 0;
+      }
+
+      .price-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 11px 0;
+        border-bottom: 1px solid rgba(219, 225, 232, 0.8);
+      }
+
+      .price-row:last-child {
+        border-bottom: none;
+      }
+
+      .price-row strong {
+        white-space: nowrap;
+      }
+
+      .terms-pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .terms-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: #eef4ff;
+        border: 1px solid #cfe0ff;
+        color: #1f3b8b;
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      .terms-section-list {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+
+      .terms-section-list li {
+        margin: 8px 0;
+      }
+
+      .terms-full {
+        grid-column: 1 / -1;
+      }
+
+      .terms-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .terms-video-box {
+        margin-top: 16px;
+        padding: 16px;
+        border: 1px solid #dbe1e8;
+        border-radius: 18px;
+        background: #f8fafc;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 22px;
+        background: rgba(15, 23, 42, 0.66);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      .modal-overlay.active {
+        display: flex;
+      }
+
+      .terms-modal {
+        width: min(980px, 96vw);
+        max-height: 88vh;
+        background: #fff;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 34px 90px rgba(15, 23, 42, 0.35);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .terms-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .terms-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .terms-modal-close {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #fff;
+        cursor: pointer;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .terms-modal-body {
+        padding: 18px;
+        overflow: auto;
+      }
+
+      .video-frame {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #0f172a;
+      }
+
+      .video-frame iframe,
+      .pdf-frame iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      .pdf-frame {
+        width: 100%;
+        height: min(72vh, 760px);
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: #f8fafc;
+      }
+
+      @media (max-width: 760px) {
+        .terms-page {
+          padding: 28px 0 42px;
+        }
+
+        .terms-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .terms-card-premium {
+          padding: 18px;
+          border-radius: 18px;
+        }
+
+        .price-row {
+          align-items: flex-start;
+        }
+
+        .terms-actions .btn {
+          width: 100%;
+        }
+
+        .modal-overlay {
+          padding: 10px;
+          align-items: flex-end;
+        }
+
+        .terms-modal {
+          width: 100%;
+          max-height: 92vh;
+          border-radius: 24px 24px 0 0;
+        }
+
+        .pdf-frame {
+          height: 72vh;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a
+          class="brand"
+          href="index.html"
+          aria-label="Equine Transport UK home"
+        >
+          <img
+            class="brand-logo"
+            src="images/logo.png"
+            alt="Equine Transport UK logo"
+          />
+          <span>Equine Transport UK</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+          <a href="index.html#fleet">Fleet</a>
+          <a href="index.html#booking">Book</a>
+          <a href="pricing-terms.html">Pricing & Terms</a>
+          <a href="index.html#contact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container terms-page">
+      <section class="terms-hero">
+        <p class="kicker">Pricing & Terms</p>
+
+        <h1>Self-Drive Horsebox Hire – Pricing & Terms</h1>
+
+        <p class="lead">
+          Our self-drive hire prices are clear and transparent, with no hidden
+          extras. All prices are inclusive of insurance and standard mileage
+          allowances unless stated otherwise.
+        </p>
+
+        <div class="terms-actions">
+          <a class="btn" href="index.html#booking">Check availability</a>
+          <a class="btn ghost" href="index.html#contact">Contact us</a>
+        </div>
+      </section>
+
+      <section class="terms-grid">
+        <article class="terms-card-premium">
+          <h2>3.5 Tonne Horsebox</h2>
+
+          <p class="muted">Daily hire rates</p>
+
+          <div class="price-list">
+            <div class="price-row"><span>1 day</span><strong>£105</strong></div>
+            <div class="price-row">
+              <span>2 days</span><strong>£200</strong>
+            </div>
+            <div class="price-row">
+              <span>3 days</span><strong>£300</strong>
+            </div>
+            <div class="price-row">
+              <span>4 days</span><strong>£400</strong>
+            </div>
+            <div class="price-row">
+              <span>5 days</span><strong>£500</strong>
+            </div>
+            <div class="price-row">
+              <span>6 days</span><strong>£600</strong>
+            </div>
+            <div class="price-row">
+              <span>7 days</span><strong>£700</strong>
+            </div>
+            <div class="price-row">
+              <span>Half-day hire</span>
+              <strong>£75</strong>
+            </div>
+            <div class="price-row">
+              <span>Evening collection, day before hire</span>
+              <strong>£20</strong>
+            </div>
+          </div>
+
+          <div class="terms-pill-row">
+            <span class="terms-pill">Half-day weekdays only</span>
+            <span class="terms-pill">Insurance included</span>
+          </div>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>7.5 Tonne Horseboxes</h2>
+
+          <div class="price-list">
+            <div class="price-row">
+              <span>Blue — 3 Horse with Living, weekdays</span>
+              <strong>£175 / day</strong>
+            </div>
+
+            <div class="price-row">
+              <span>Blue — 3 Horse with Living, weekends</span>
+              <strong>£200 / day</strong>
+            </div>
+
+            <div class="price-row">
+              <span>White — 4 Horse with Large Tack Room, weekdays</span>
+              <strong>£165 / day</strong>
+            </div>
+
+            <div class="price-row">
+              <span>White — 4 Horse with Large Tack Room, weekends</span>
+              <strong>£175 / day</strong>
+            </div>
+          </div>
+
+          <div class="terms-video-box">
+            <h3>7.5T instructions</h3>
+            <p class="muted">
+              For instructions, please watch the following video before hire.
+            </p>
+
+            <button
+              class="btn ghost"
+              type="button"
+              data-open-modal="video-modal"
+            >
+              Watch instruction video
+            </button>
+          </div>
+        </article>
+
+        <article class="terms-card-premium terms-full">
+          <h2>Booking Payment & Deposit</h2>
+
+          <p>
+            At the time of booking, a booking payment of
+            <strong>£70</strong> for 3.5T or <strong>£100</strong> for 7.5T is
+            required. This payment is non-refundable but may be transferred to a
+            future booking if sufficient notice is given.
+          </p>
+
+          <p>
+            In addition, a <strong>£200 security deposit</strong> is required
+            for all vehicles. This is taken as a pre-authorisation/card hold,
+            not an immediate payment. Funds are reserved on your card and will
+            be released after the hire, or partially/fully captured only if
+            required under the hire agreement, for example damage, excessive
+            cleaning, fuel or late return charges.
+          </p>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>Cancellations & Refunds</h2>
+
+          <ul class="terms-section-list">
+            <li>
+              If a booking is cancelled more than 48 hours before the start of
+              hire, a full refund of all monies paid will be issued.
+            </li>
+
+            <li>
+              If a booking is cancelled within 48 hours of the hire start time,
+              the initial booking payment of £70 for 3.5T or £100 for 7.5T will
+              not be refunded.
+            </li>
+
+            <li>
+              This amount will be carried over to a future booking as a credit.
+              A voucher will be issued to the customer and may be redeemed
+              against a future hire, subject to availability.
+            </li>
+          </ul>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>Driver & Questionnaire Requirements</h2>
+
+          <ul class="terms-section-list">
+            <li>
+              First-time hirers, or customers who have not hired within the last
+              3 months, must complete the Millens Hire Questionnaire
+              <strong>LONG Form</strong>.
+            </li>
+
+            <li>
+              Customers who have hired within the last 3 months may complete the
+              Millens Hire Questionnaire <strong>SHORT Form</strong>.
+            </li>
+          </ul>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>What’s Included — 3.5 Tonne</h2>
+
+          <ul class="terms-section-list">
+            <li>24-hour Equine Rescue Service</li>
+            <li>CCTV and aluminium flooring</li>
+            <li>Regularly serviced and safety-checked vehicles</li>
+            <li>Fully comprehensive insurance for drivers aged 22–70</li>
+            <li>Vehicle supplied with a full tank of diesel</li>
+            <li>Flexible hire service</li>
+            <li>Open 7 days a week, all year round</li>
+          </ul>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>Fuel & Mileage</h2>
+
+          <ul class="terms-section-list">
+            <li>
+              Fuel level must match on return. A £50 charge plus the cost of
+              fuel will apply if the vehicle is not returned at the same level.
+            </li>
+
+            <li>
+              A maximum of 300 miles per paid day is included. Mileage above
+              this allowance will be charged at £0.30 per mile.
+            </li>
+          </ul>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>Late Return Policy</h2>
+
+          <p>
+            Vehicles must be returned at the agreed time. Returns more than 30
+            minutes late may incur a £50 late return charge, unless a valid
+            reason has been communicated to us at the time the delay occurs, not
+            retrospectively.
+          </p>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>Insurance & Liability</h2>
+
+          <ul class="terms-section-list">
+            <li>The insurance excess is £400.</li>
+            <li>
+              Vehicles or cars left at our premises are left entirely at the
+              hirer’s own risk.
+            </li>
+          </ul>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>Emissions & Road Charges</h2>
+
+          <p>
+            Hirers are responsible for any emission zone, congestion charge,
+            clean air zone or similar fees incurred during the hire period.
+          </p>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>Additional Services</h2>
+
+          <p>
+            Vehicle delivery and collection is charged at £1 per mile,
+            calculated at four times the distance from TN20 6LL to your address
+            when both delivery and collection are required.
+          </p>
+        </article>
+
+        <article class="terms-card-premium">
+          <h2>Chauffeur & Transport Services</h2>
+
+          <p>
+            We also offer professional horse transport services. For driven
+            services, please contact Avril on
+            <a href="tel:07812188871">07812 188871</a> or use our contact form.
+          </p>
+
+          <div class="terms-actions">
+            <a class="btn ghost" href="index.html#contact">Use contact form</a>
+          </div>
+        </article>
+
+        <article class="terms-card-premium terms-full">
+          <h2>Full Terms & Conditions</h2>
+
+          <p>
+            For full Terms and Conditions, please click below. The document will
+            open in an overlay so you can read it without leaving this page.
+          </p>
+
+          <div class="terms-actions">
+            <button class="btn" type="button" data-open-modal="pdf-modal">
+              View full Terms & Conditions
+            </button>
+
+            <a
+              class="btn ghost"
+              href="files/hire-terms-and-conditions.pdf"
+              target="_blank"
+              rel="noopener"
+            >
+              Open PDF in new tab
+            </a>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <h3>Equine Transport UK</h3>
+          <p class="muted">
+            Self-drive horsebox hire with online availability, secure booking
+            and customer support.
+          </p>
+          <small>© <span id="year"></span> Equine Transport UK</small>
+        </div>
+
+        <div>
+          <h4>Menu</h4>
+          <nav class="footer-menu" aria-label="Footer navigation">
+            <a href="index.html#fleet">Fleet</a>
+            <a href="index.html#booking">Book</a>
+            <a href="pricing-terms.html">Pricing & Terms</a>
+            <a href="index.html#contact">Contact</a>
+          </nav>
+        </div>
+
+        <div>
+          <h4>Contact</h4>
+          <p class="footer-contact">
+            <strong>Address:</strong><br />
+            Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five
+            Ashes, East Sussex TN20 6LL
+          </p>
+
+          <p class="footer-contact">
+            <strong>Email:</strong><br />
+            <a href="mailto:info@equinetransportuk.com">
+              info@equinetransportuk.com
+            </a>
+          </p>
+
+          <p class="footer-contact">
+            <strong>Phone:</strong><br />
+            <a href="tel:07812188871">07812 188871</a>
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- VIDEO OVERLAY -->
+    <div class="modal-overlay" id="video-modal" aria-hidden="true">
+      <div class="terms-modal" role="dialog" aria-modal="true">
+        <div class="terms-modal-header">
+          <h3>7.5T instruction video</h3>
+          <button class="terms-modal-close" type="button" data-close-modal>
+            ×
+          </button>
+        </div>
+
+        <div class="terms-modal-body">
+          <div class="video-frame">
+            <iframe
+              data-video-src="https://www.youtube.com/embed/hWk096v56b0"
+              title="7.5T instruction video"
+              allow="
+                accelerometer;
+                autoplay;
+                clipboard-write;
+                encrypted-media;
+                gyroscope;
+                picture-in-picture;
+                web-share;
+              "
+              allowfullscreen
+            ></iframe>
+          </div>
+        </div>
+      </div>
     </div>
-  </header>
-  <main class="container">
-    <h1>Current Pricing & Terms</h1>
-    <section>
-      <h2>Pricing</h2>
-      <ul>
-        <li>3.5T lorries: 1/2 day £75 · 1 day £105 · 2 days £200 · 3 days £300 · 4 days £400 · 5 days £500 · 6 days £600 · week £700</li>
-        <li>7.5T with living: 1 day £175 · 2 days £350 · 3 days £525 · 4 days £700 · 5 days £875 · 6 days £1050 · week £1225</li>
-        <li>7.5T no living: £165/day · weekend uplift: 1 day £175, 2 days £350</li>
-        <li>Early pickup (evening before): £20</li>
-        <li>Dartford Crossing: £4.20 per crossing</li>
-        <li>Confirmation fee: £75 (3.5T), £100 (7.5T)</li>
-        <li>Refundable security deposit: £200</li>
-      </ul>
-    </section>
-    <section>
-      <h2>Terms</h2>
-      <ul>
-        <li>Pickup for 1 day or more: 07:00, drop-off before 19:00 on last day</li>
-        <li>Pickup for 1/2 day (3.5T only): 07:00 (drop-off 13:00) or 13:00 (drop-off 19:00)</li>
-        <li>All drivers must provide a valid DVLA licence check code and proof of address</li>
-        <li>Outstanding balance and deposit must be paid before collection</li>
-        <li>See full terms and conditions at booking</li>
-      </ul>
-    </section>
-    <a class="btn" href="index.html#booking">Back to booking</a>
-  </main>
-</body>
+
+    <!-- PDF OVERLAY -->
+    <div class="modal-overlay" id="pdf-modal" aria-hidden="true">
+      <div class="terms-modal" role="dialog" aria-modal="true">
+        <div class="terms-modal-header">
+          <h3>Full Terms & Conditions</h3>
+          <button class="terms-modal-close" type="button" data-close-modal>
+            ×
+          </button>
+        </div>
+
+        <div class="terms-modal-body">
+          <div class="pdf-frame">
+            <iframe
+              src="files/hire-terms-and-conditions.pdf"
+              title="Equine Transport UK Hire Terms and Conditions"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      const modals = document.querySelectorAll(".modal-overlay");
+
+      function openModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+
+        modal.classList.add("active");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+
+        const iframe = modal.querySelector("iframe[data-video-src]");
+        if (iframe && !iframe.src) {
+          iframe.src = iframe.dataset.videoSrc + "?autoplay=1";
+        }
+      }
+
+      function closeModal(modal) {
+        if (!modal) return;
+
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+
+        const iframe = modal.querySelector("iframe[data-video-src]");
+        if (iframe) {
+          iframe.src = "";
+        }
+      }
+
+      document.querySelectorAll("[data-open-modal]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          openModal(btn.dataset.openModal);
+        });
+      });
+
+      document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          closeModal(btn.closest(".modal-overlay"));
+        });
+      });
+
+      modals.forEach((modal) => {
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) {
+            closeModal(modal);
+          }
+        });
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          modals.forEach(closeModal);
+        }
+      });
+    </script>
+  </body>
 </html>
