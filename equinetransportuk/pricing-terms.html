@@ -284,13 +284,24 @@
           />
           <span>Equine Transport UK</span>
         </a>
-
-        <nav class="main-nav" aria-label="Main navigation">
+        <nav class="main-nav" id="main-nav" aria-label="Main navigation">
           <a href="index.html#fleet">Fleet</a>
           <a href="index.html#booking">Book</a>
           <a href="pricing-terms.html">Pricing & Terms</a>
-          <a href="index.html#contact">Contact</a>
+          <a href="index.html#contact-form">Contact</a>
         </nav>
+
+        <button
+          class="nav-toggle"
+          id="nav-toggle"
+          aria-label="Open navigation"
+          aria-expanded="false"
+          aria-controls="main-nav"
+        >
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
       </div>
     </header>
 
@@ -667,6 +678,32 @@
 
     <script>
       document.getElementById("year").textContent = new Date().getFullYear();
+
+      /* ===============================
+         MOBILE HAMBURGER MENU
+      =============================== */
+
+      (function () {
+        const toggle = document.getElementById("nav-toggle");
+        const nav = document.getElementById("main-nav");
+
+        if (!toggle || !nav) return;
+
+        toggle.addEventListener("click", function () {
+          const isOpen = nav.classList.toggle("open");
+
+          toggle.classList.toggle("open", isOpen);
+          toggle.setAttribute("aria-expanded", String(isOpen));
+        });
+
+        nav.querySelectorAll("a").forEach((link) => {
+          link.addEventListener("click", function () {
+            nav.classList.remove("open");
+            toggle.classList.remove("open");
+            toggle.setAttribute("aria-expanded", "false");
+          });
+        });
+      })();
 
       const modals = document.querySelectorAll(".modal-overlay");
 
