@@ -238,6 +238,25 @@
           width: 100%;
         }
 
+        /* 🔥 Mobile pills full-width like buttons */
+        .terms-pill-row {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+          margin-top: 18px;
+        }
+
+        .terms-pill {
+          width: 100%;
+          justify-content: center;
+          min-height: 48px;
+          padding: 10px 14px;
+          border-radius: 999px;
+          font-size: 16px;
+          text-align: center;
+        }
+
+        /* 🔥 Centre overlays on mobile */
         .modal-overlay {
           padding: 16px;
           align-items: center;
@@ -388,6 +407,11 @@
               <span>White — 4 Horse with Large Tack Room, weekends</span>
               <strong>£175 / day</strong>
             </div>
+          </div>
+
+          <div class="terms-pill-row">
+            <span class="terms-pill">No half days</span>
+            <span class="terms-pill">Insurance included</span>
           </div>
 
           <div class="terms-video-box">
