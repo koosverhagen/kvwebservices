@@ -1,470 +1,595 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Self-Drive Fuel Calculator | Equine Transport UK</title>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lorry Fuel Calculator | Equine Transport UK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-    <style>
-      :root {
-        --bg: #f5f7fa;
-        --card: #ffffff;
-        --text: #1d2530;
-        --muted: #5a6675;
-        --line: #dbe1e8;
-        --accent: #1f6feb;
-        --ok: #137a3d;
-        --warn: #b45309;
-        --radius: 18px;
-      }
+  <style>
+    :root {
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #5a6675;
+      --line: #cbd5e1;
+      --accent: #2563eb;
+      --soft: #f8fafc;
+      --ok: #137a3d;
+      --warn: #b45309;
+    }
 
-      * {
-        box-sizing: border-box;
-      }
+    * { box-sizing: border-box; }
 
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-      }
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background: transparent;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      line-height: 1.45;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
 
-      body {
-        font-family:
-          "SF Pro Display",
-          "SF Pro Text",
-          Inter,
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          Roboto,
-          sans-serif;
-        color: var(--text);
-        background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
-        line-height: 1.45;
-      }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar { display: none; }
 
-      .calculator-shell {
-        width: min(760px, 92vw);
-        margin: 0 auto;
-        padding: 24px 0 34px;
-      }
+    body { padding: 0; }
 
-      .calculator-card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 24px;
-        padding: 22px;
-        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
-      }
+    .calculator-container {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
 
-      .kicker {
-        margin: 0 0 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.11em;
-        font-size: 11px;
-        color: var(--muted);
-      }
+    .premium-card {
+      width: 100%;
+      margin: 0;
+      background: rgba(255, 255, 255, 0.97);
+      border: 1px solid rgba(219, 225, 232, 0.9);
+      border-radius: 22px;
+      box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
+      padding: 28px;
+    }
 
-      h1 {
-        margin: 0 0 10px;
-        font-size: clamp(28px, 5vw, 42px);
-        line-height: 1.05;
-        letter-spacing: -0.04em;
-      }
+    .header { text-align: center; margin-bottom: 26px; }
+    .header h1 {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 34px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      color: #111827;
+    }
 
-      .lead,
-      .muted {
-        color: var(--muted);
-      }
+    .header p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .header .blue-note { margin-top: 10px; color: #2563eb; font-size: 12px; }
 
-      .lead {
-        margin: 0 0 18px;
-        font-size: 16px;
-      }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
 
-      .form-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 14px;
-        margin-top: 18px;
-      }
+    .full { grid-column: 1 / -1; }
 
-      label {
-        display: grid;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #1d2530;
-      }
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
 
-      input,
-      select {
-        width: 100%;
-        min-height: 40px;
-        border-radius: 8px;
-        border: 1px solid #cbd5e1;
-        padding: 8px 12px;
-        font: inherit;
-        font-size: 14px;
-        background: #ffffff;
-        color: #111827;
-        box-shadow: none;
-      }
+    input,
+    select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      color: #111827;
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+      box-shadow: none;
+    }
 
-      input::placeholder {
-        color: #94a3b8;
-      }
+    input:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
 
-      input:focus,
-      select:focus {
-        outline: none;
-        border-color: #1f6feb;
-        box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
-      }
+    input[type="datetime-local"] {
+      color: #111827 !important;
+      background-color: #ffffff !important;
+      appearance: none;
+      -webkit-appearance: none;
+    }
 
-      .full {
-        grid-column: 1 / -1;
-      }
+    ::placeholder { color: #9ca3af; opacity: 1; }
 
-      .result-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 18px;
-      }
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 22px;
+      align-items: center;
+    }
 
-      .result-card {
-        padding: 16px;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        background: #f8fafc;
-      }
+    button {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      min-height: 46px;
+      border-radius: 12px;
+      padding: 0 18px;
+      transition: all 0.2s ease;
+    }
 
-      .result-label {
-        font-size: 12px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--muted);
-      }
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
-      .result-value {
-        margin-top: 5px;
-        font-size: 26px;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-      }
+    .btn-primary {
+      flex: 1 1 260px;
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+    }
 
-      .result-value.ok {
-        color: var(--ok);
-      }
+    .btn-secondary {
+      flex: 0 0 150px;
+      background: #e5e7eb;
+      color: #111827;
+    }
 
-      .result-value.warn {
-        color: var(--warn);
-      }
+    #loading-indicator,
+    #results,
+    #error-message { display: none; }
 
-      .note {
-        margin-top: 16px;
-        padding: 14px;
-        border-radius: 16px;
-        border: 1px solid #cfe0ff;
-        background: #eef4ff;
-        color: #1f3b8b;
-        font-size: 14px;
-      }
+    #loading-indicator {
+      margin-top: 22px;
+      text-align: center;
+      color: var(--accent);
+      font-weight: 800;
+    }
 
+    .results-card {
+      margin-top: 22px;
+      padding: 18px;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 1px solid #bfdbfe;
+      border-radius: 18px;
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+      color: #1e3a8a;
+    }
 
+    .results-card h3 { margin: 0 0 10px; font-size: 18px; }
+    .results-card p { margin: 7px 0; color: #334155; font-weight: 600; }
+    .results-card span { color: #1e40af; font-weight: 800; }
 
-      .route-box {
-        margin-top: 18px;
-        padding: 16px;
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        background: #f8fafc;
-      }
+    .leg-list {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
 
-      .route-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 12px;
-      }
+    .leg-list li {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.55);
+      color: #334155;
+      font-weight: 600;
+    }
 
-      .route-head h2 {
-        margin: 0;
-        font-size: 20px;
-        letter-spacing: -0.02em;
-      }
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
 
-      .route-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 12px;
-      }
+    .summary-box {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.72);
+    }
 
-      .mini-btn {
-        min-height: 42px;
-        border-radius: 12px;
-        border: 1px solid var(--accent);
-        background: var(--accent);
-        color: #fff;
-        padding: 0 14px;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-      }
+    .summary-box small {
+      display: block;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
 
-      .mini-btn.ghost {
-        background: #fff;
-        color: var(--accent);
-      }
+    .summary-box strong {
+      display: block;
+      margin-top: 3px;
+      color: #1e40af;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
 
-      .map-frame {
-        width: 100%;
-        height: 320px;
-        margin-top: 14px;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        overflow: hidden;
-        background: #eef1f6;
-      }
+    #error-message {
+      margin-top: 18px;
+      padding: 14px;
+      color: #991b1b;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+    }
 
-      .map-frame iframe {
-        width: 100%;
-        height: 100%;
-        border: 0;
-        display: block;
-      }
+    #map {
+      height: 340px;
+      width: 100%;
+      border-radius: 18px;
+      margin-top: 24px;
+      border: 1px solid #dbe1e8;
+      background: #eef1f6;
+      overflow: hidden;
+    }
 
-      @media (max-width: 680px) {
-        .result-grid {
-          grid-template-columns: 1fr;
-        }
+    .maps-note {
+      margin-top: 10px;
+      color: #64748b;
+      font-size: 12px;
+      text-align: center;
+    }
 
-        .calculator-card {
-          padding: 18px;
-        }
-      }
-    </style>
-  </head>
+    @media (max-width: 760px) {
+      .premium-card { padding: 14px; border-radius: 18px; }
+      .form-grid { grid-template-columns: 1fr; gap: 14px; }
+      input, select { font-size: 16px; min-height: 50px; }
+      input[type="datetime-local"] { height: 52px !important; line-height: normal !important; }
+      .btn-primary, .btn-secondary { flex: 1 1 100%; }
+      .summary-row { grid-template-columns: 1fr; }
+      #map { height: 310px; }
+    }
+  </style>
+</head>
 
-  <body>
-    <main class="calculator-shell">
-      <section class="calculator-card">
-        <p class="kicker">Self-drive customers</p>
-        <h1>Fuel & Mileage Calculator</h1>
-        <p class="lead">
-          Estimate fuel cost and check whether your journey may go over the
-          included 300 miles per paid day allowance.
-        </p>
+<body>
+  <div class="calculator-container">
+    <div class="premium-card">
+      <div class="header">
+        <h1>Lorry Fuel Calculator</h1>
+        <p>Professional fuel usage and cost estimate for your planned journey</p>
+        <p class="blue-note">Uses Google Maps route distance, vehicle type, horse weight, traffic, weather and road type.</p>
+      </div>
 
-        <div class="form-grid">
-          <label>
-            Vehicle type
-            <select id="vehicle-type">
-              <option value="3.5T">3.5T horsebox</option>
-              <option value="7.5T">7.5T horsebox</option>
-            </select>
-          </label>
-
-          <label>
-            Paid hire days
-            <input id="hire-days" type="number" min="0.5" step="0.5" value="1" />
-          </label>
-
-          <label>
-            Estimated total miles
-            <input id="total-miles" type="number" min="0" step="1" value="120" />
-          </label>
-
-          <label>
-            Diesel price per litre
-            <input id="fuel-price" type="number" min="0" step="0.01" value="1.90" />
-          </label>
-
-          <label>
-            Estimated MPG
-            <input id="mpg" type="number" min="1" step="0.1" value="26" />
-          </label>
-
-          <label>
-            Mileage excess charge
-            <input id="excess-rate" type="number" min="0" step="0.01" value="0.30" />
-          </label>
-
-          <p class="muted full">
-            Tip: use your total planned journey miles, including returning the
-            lorry to Equine Transport UK.
-          </p>
+      <div class="form-grid">
+        <div>
+          <label for="lorry-type">Lorry Type:</label>
+          <select id="lorry-type">
+            <option value="3.5t">3.5T Lorry</option>
+            <option value="7.5t">7.5T Lorry</option>
+          </select>
         </div>
 
-
-
-        <div class="route-box">
-          <div class="route-head">
-            <div>
-              <p class="kicker">Route map</p>
-              <h2>Plan your journey</h2>
-              <p class="muted">
-                Enter your start and destination to preview the route. Then copy
-                the mileage from Google Maps into the estimated total miles box above.
-              </p>
-            </div>
-          </div>
-
-          <div class="form-grid">
-            <label>
-              Start / collection point
-              <input
-                id="route-from"
-                type="text"
-                value="Upper Broadreed Farm, Stonehurst Lane, Five Ashes TN20 6LL"
-              />
-            </label>
-
-            <label>
-              Destination / event / yard
-              <input id="route-to" type="text" placeholder="Enter postcode or address" />
-            </label>
-          </div>
-
-          <div class="route-actions">
-            <button class="mini-btn" type="button" id="show-route-map">
-              Show route map
-            </button>
-            <a class="mini-btn ghost" id="open-google-maps" href="https://www.google.com/maps" target="_blank" rel="noopener">
-              Open in Google Maps
-            </a>
-          </div>
-
-          <div class="map-frame">
-            <iframe
-              id="route-map"
-              title="Route map"
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"
-              src="https://www.google.com/maps?q=Upper%20Broadreed%20Farm%2C%20Stonehurst%20Lane%2C%20Five%20Ashes%20TN20%206LL&output=embed"
-            ></iframe>
-          </div>
+        <div>
+          <label for="departure-time">Departure Time (for traffic estimate):</label>
+          <input type="datetime-local" id="departure-time" />
         </div>
 
-        <div class="result-grid" aria-live="polite">
-          <div class="result-card">
-            <div class="result-label">Estimated fuel needed</div>
-            <div class="result-value" id="fuel-litres">—</div>
-          </div>
-
-          <div class="result-card">
-            <div class="result-label">Estimated fuel cost</div>
-            <div class="result-value" id="fuel-cost">—</div>
-          </div>
-
-          <div class="result-card">
-            <div class="result-label">Included mileage</div>
-            <div class="result-value ok" id="included-miles">—</div>
-          </div>
-
-          <div class="result-card">
-            <div class="result-label">Possible excess mileage</div>
-            <div class="result-value warn" id="excess-cost">—</div>
-          </div>
+        <div class="full">
+          <label for="start-address">Start Address:</label>
+          <input type="text" id="start-address" placeholder="e.g., London, UK" autocomplete="off" />
         </div>
 
-        <div class="note">
-          This calculator is a guide only. Actual fuel use varies with route,
-          payload, driving style and traffic. Fuel must be returned at the same
-          level as collection.
+        <div>
+          <label for="middle-address1">Stop-off Address 1 (Optional):</label>
+          <input type="text" id="middle-address1" placeholder="e.g., Birmingham, UK" autocomplete="off" />
         </div>
-      </section>
-    </main>
 
-    <script>
-      const inputs = [
-        "vehicle-type",
-        "hire-days",
-        "total-miles",
-        "fuel-price",
-        "mpg",
-        "excess-rate",
-      ].map((id) => document.getElementById(id));
+        <div>
+          <label for="middle-address2">Stop-off Address 2 (Optional):</label>
+          <input type="text" id="middle-address2" placeholder="e.g., Manchester, UK" autocomplete="off" />
+        </div>
 
-      const defaultMpg = {
-        "3.5T": 26,
-        "7.5T": 16,
+        <div class="full">
+          <label for="end-address">End Address:</label>
+          <input type="text" id="end-address" placeholder="e.g., Glasgow, UK" autocomplete="off" />
+        </div>
+
+        <div>
+          <label for="payload">Weight of the horse(s) (kg):</label>
+          <input type="number" id="payload" min="0" step="1" placeholder="e.g., 500" />
+        </div>
+
+        <div>
+          <label for="weather-condition">Weather Condition:</label>
+          <select id="weather-condition">
+            <option value="sunny">Sunny / Clear</option>
+            <option value="rainy">Rainy</option>
+            <option value="windy">Windy</option>
+          </select>
+        </div>
+
+        <div class="full">
+          <label for="road-type">Typical Road Type:</label>
+          <select id="road-type">
+            <option value="mixed">Mixed (Motorway & Urban)</option>
+            <option value="motorway">Mostly Motorway</option>
+            <option value="urban">Mostly Urban</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="calculate-btn" class="btn-primary">Calculate Estimate</button>
+        <button id="reset-btn" class="btn-secondary">Reset</button>
+      </div>
+
+      <div id="loading-indicator">Calculating route and fuel estimate...</div>
+
+      <div id="results" class="results-card">
+        <h3>Calculation Results</h3>
+        <p>Lorry Type: <span id="lorry-type-display">—</span></p>
+        <ul id="leg-list" class="leg-list"></ul>
+        <div class="summary-row">
+          <div class="summary-box"><small>Total miles</small><strong id="total-miles-display">0</strong></div>
+          <div class="summary-box"><small>Travel time</small><strong id="travel-time-display">0</strong></div>
+          <div class="summary-box"><small>Fuel cost</small><strong id="total-cost-display">£0.00</strong></div>
+        </div>
+        <p style="margin-top:14px;">Estimated Fuel Used: <span id="fuel-used-display">0</span> litres</p>
+        <p>Diesel Price Used: <span>£1.90 per litre</span></p>
+      </div>
+
+      <div id="error-message">Please enter valid addresses for both start and end.</div>
+
+      <div id="map"></div>
+      <p class="maps-note">Map and distance are provided by Google Maps. The estimate is a guide only.</p>
+    </div>
+  </div>
+
+  <script>
+    const MAPS_KEY_ENDPOINT = "https://www.equinetransportuk.com/test/_functions/mapskey";
+
+    function initCalculator() {
+      const lorryTypeSelect = document.getElementById("lorry-type");
+      const startAddressInput = document.getElementById("start-address");
+      const middleAddress1Input = document.getElementById("middle-address1");
+      const middleAddress2Input = document.getElementById("middle-address2");
+      const endAddressInput = document.getElementById("end-address");
+      const departureTimeInput = document.getElementById("departure-time");
+      const payloadInput = document.getElementById("payload");
+      const weatherSelect = document.getElementById("weather-condition");
+      const roadTypeSelect = document.getElementById("road-type");
+      const calculateBtn = document.getElementById("calculate-btn");
+      const resetBtn = document.getElementById("reset-btn");
+      const loadingIndicator = document.getElementById("loading-indicator");
+      const resultsDiv = document.getElementById("results");
+      const errorMessageDiv = document.getElementById("error-message");
+      const mapElement = document.getElementById("map");
+
+      const baseMPG = {
+        "3.5t": 35,
+        "7.5t": 20,
       };
 
-      function money(value) {
-        return new Intl.NumberFormat("en-GB", {
-          style: "currency",
-          currency: "GBP",
-        }).format(value || 0);
-      }
+      const dieselPricePerLitre = 1.90;
+      const litresPerGallon = 4.54609;
 
-      function calculate() {
-        const vehicleType = document.getElementById("vehicle-type").value;
-        const days = Number(document.getElementById("hire-days").value || 0);
-        const miles = Number(document.getElementById("total-miles").value || 0);
-        const price = Number(document.getElementById("fuel-price").value || 0);
-        const mpg = Number(document.getElementById("mpg").value || 0);
-        const excessRate = Number(
-          document.getElementById("excess-rate").value || 0,
-        );
+      const directionsService = new google.maps.DirectionsService();
+      const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: false });
 
-        if (!days || !mpg) return;
-
-        const included = Math.max(0, days * 300);
-        const excessMiles = Math.max(0, miles - included);
-        const litres = (miles / mpg) * 4.54609;
-        const fuelCost = litres * price;
-        const excessCost = excessMiles * excessRate;
-
-        document.getElementById("fuel-litres").textContent =
-          `${litres.toFixed(1)} litres`;
-        document.getElementById("fuel-cost").textContent = money(fuelCost);
-        document.getElementById("included-miles").textContent =
-          `${included.toFixed(0)} miles`;
-        document.getElementById("excess-cost").textContent =
-          excessMiles > 0
-            ? `${excessMiles.toFixed(0)} miles / ${money(excessCost)}`
-            : "No excess";
-      }
-
-      function updateRouteMap() {
-        const from = document.getElementById("route-from")?.value.trim();
-        const to = document.getElementById("route-to")?.value.trim();
-        const map = document.getElementById("route-map");
-        const link = document.getElementById("open-google-maps");
-
-        if (!map || !link) return;
-
-        const query = to
-          ? `${from || "Upper Broadreed Farm TN20 6LL"} to ${to}`
-          : from || "Upper Broadreed Farm TN20 6LL";
-
-        const encoded = encodeURIComponent(query);
-
-        map.src = `https://www.google.com/maps?q=${encoded}&output=embed`;
-        link.href = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-      }
-
-      document.getElementById("vehicle-type").addEventListener("change", (e) => {
-        document.getElementById("mpg").value = defaultMpg[e.target.value];
-        calculate();
+      const map = new google.maps.Map(mapElement, {
+        zoom: 6,
+        center: { lat: 54.0, lng: -2.0 },
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: true,
       });
 
-      inputs.forEach((input) => input.addEventListener("input", calculate));
+      directionsRenderer.setMap(map);
 
-      document
-        .getElementById("show-route-map")
-        ?.addEventListener("click", updateRouteMap);
-
-      ["route-from", "route-to"].forEach((id) => {
-        document.getElementById(id)?.addEventListener("change", updateRouteMap);
+      [startAddressInput, middleAddress1Input, middleAddress2Input, endAddressInput].forEach((input) => {
+        new google.maps.places.Autocomplete(input, {
+          componentRestrictions: { country: "uk" },
+          fields: ["formatted_address", "geometry", "name"],
+        });
       });
 
-      calculate();
-    </script>
-  </body>
+      function showError(message) {
+        errorMessageDiv.textContent = message;
+        errorMessageDiv.style.display = "block";
+      }
+
+      function hideError() {
+        errorMessageDiv.style.display = "none";
+      }
+
+      function setBusy(isBusy) {
+        loadingIndicator.style.display = isBusy ? "block" : "none";
+        calculateBtn.disabled = isBusy;
+        resetBtn.disabled = isBusy;
+      }
+
+      function formatDuration(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.round((totalSeconds % 3600) / 60);
+        if (hours <= 0) return `${minutes} mins`;
+        return `${hours} hours, ${minutes} mins`;
+      }
+
+      function getLegLabel(index, totalLegs) {
+        if (totalLegs === 1) return "Start to End";
+        if (index === 0) return "Start to Stop 1";
+        if (index === totalLegs - 1) return `Stop ${index} to End`;
+        return `Stop ${index} to Stop ${index + 1}`;
+      }
+
+      calculateBtn.addEventListener("click", () => {
+        hideError();
+        resultsDiv.style.display = "none";
+        setBusy(true);
+
+        const lorryType = lorryTypeSelect.value;
+        const startAddress = startAddressInput.value.trim();
+        const middleAddress1 = middleAddress1Input.value.trim();
+        const middleAddress2 = middleAddress2Input.value.trim();
+        const endAddress = endAddressInput.value.trim();
+        const payload = parseFloat(payloadInput.value) || 0;
+        const weatherCondition = weatherSelect.value;
+        const roadType = roadTypeSelect.value;
+        const departureTime = departureTimeInput.value;
+
+        if (!startAddress || !endAddress) {
+          setBusy(false);
+          showError("Please enter a valid start address and end address.");
+          return;
+        }
+
+        const waypoints = [];
+        if (middleAddress1) waypoints.push({ location: middleAddress1, stopover: true });
+        if (middleAddress2) waypoints.push({ location: middleAddress2, stopover: true });
+
+        const effectiveDepartureTime = departureTime ? new Date(departureTime) : new Date();
+        const now = new Date();
+
+        const request = {
+          origin: startAddress,
+          destination: endAddress,
+          waypoints,
+          travelMode: google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: false,
+          drivingOptions: {
+            departureTime: effectiveDepartureTime > now ? effectiveDepartureTime : now,
+            trafficModel: "optimistic",
+          },
+        };
+
+        const timeoutId = setTimeout(() => {
+          setBusy(false);
+          showError("Calculation timed out. Please check your connection and try again.");
+        }, 12000);
+
+        directionsService.route(request, (response, status) => {
+          clearTimeout(timeoutId);
+
+          if (status !== "OK") {
+            setBusy(false);
+            let message = "An error occurred. Please check the addresses and try again.";
+            if (status === "ZERO_RESULTS" || status === "NOT_FOUND") {
+              message = "One or more addresses could not be found. Please check your inputs.";
+            }
+            if (status === "REQUEST_DENIED") {
+              message = "Google Maps rejected the request. Please check that the Maps API key allows Directions and Places.";
+            }
+            showError(message);
+            return;
+          }
+
+          directionsRenderer.setDirections(response);
+
+          const legs = response.routes[0].legs || [];
+          const totalMetres = legs.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0);
+          const totalMiles = totalMetres * 0.000621371;
+          const totalDurationInSeconds = legs.reduce((sum, leg) => sum + ((leg.duration_in_traffic && leg.duration_in_traffic.value) || leg.duration?.value || 0), 0);
+
+          let fuelEfficiency = baseMPG[lorryType];
+          const payloadPenaltyFactor = lorryType === "3.5t" ? 0.05 : 0.08;
+          const payloadPenalty = (payload / 500) * payloadPenaltyFactor;
+          fuelEfficiency -= fuelEfficiency * payloadPenalty;
+
+          if (weatherCondition === "rainy") fuelEfficiency -= fuelEfficiency * 0.05;
+          if (weatherCondition === "windy") fuelEfficiency -= fuelEfficiency * 0.10;
+          if (roadType === "motorway") fuelEfficiency += 5;
+          if (roadType === "urban") fuelEfficiency -= 5;
+
+          fuelEfficiency = Math.max(fuelEfficiency, 10);
+
+          const totalLitres = (totalMiles / fuelEfficiency) * litresPerGallon;
+          const totalCost = totalLitres * dieselPricePerLitre;
+
+          document.getElementById("lorry-type-display").textContent = lorryType === "3.5t" ? "3.5T Lorry" : "7.5T Lorry";
+          document.getElementById("total-miles-display").textContent = totalMiles.toFixed(2);
+          document.getElementById("travel-time-display").textContent = formatDuration(totalDurationInSeconds);
+          document.getElementById("fuel-used-display").textContent = totalLitres.toFixed(2);
+          document.getElementById("total-cost-display").textContent = `£${totalCost.toFixed(2)}`;
+
+          const legList = document.getElementById("leg-list");
+          legList.innerHTML = legs.map((leg, index) => {
+            const miles = ((leg.distance?.value || 0) * 0.000621371).toFixed(2);
+            const duration = formatDuration((leg.duration_in_traffic && leg.duration_in_traffic.value) || leg.duration?.value || 0);
+            return `<li>${getLegLabel(index, legs.length)}: <strong>${miles} miles</strong> · ${duration}</li>`;
+          }).join("");
+
+          resultsDiv.style.display = "block";
+          setBusy(false);
+        });
+      });
+
+      resetBtn.addEventListener("click", () => {
+        lorryTypeSelect.value = "3.5t";
+        startAddressInput.value = "";
+        middleAddress1Input.value = "";
+        middleAddress2Input.value = "";
+        endAddressInput.value = "";
+        departureTimeInput.value = "";
+        payloadInput.value = "";
+        weatherSelect.value = "sunny";
+        roadTypeSelect.value = "mixed";
+
+        resultsDiv.style.display = "none";
+        hideError();
+        setBusy(false);
+        directionsRenderer.setDirections({ routes: [] });
+        map.setCenter({ lat: 54.0, lng: -2.0 });
+        map.setZoom(6);
+      });
+    }
+
+    window.initCalculator = initCalculator;
+
+    (async function loadGoogleMaps() {
+      try {
+        const existingKey = new URLSearchParams(window.location.search).get("mapsKey");
+        let apiKey = existingKey;
+
+        if (!apiKey) {
+          const res = await fetch(MAPS_KEY_ENDPOINT, { cache: "no-store" });
+          if (!res.ok) throw new Error(`Maps key request failed: ${res.status}`);
+          apiKey = (await res.text()).trim().replace(/^['\"]|['\"]$/g, "");
+        }
+
+        if (!apiKey) throw new Error("Maps API key is empty");
+
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&callback=initCalculator`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = () => {
+          const errorDiv = document.getElementById("error-message");
+          errorDiv.textContent = "Google Maps failed to load. Please check the Maps API key setup.";
+          errorDiv.style.display = "block";
+        };
+        document.head.appendChild(script);
+      } catch (err) {
+        console.error("Failed to load Maps API key:", err);
+        const errorDiv = document.getElementById("error-message");
+        errorDiv.textContent = "Map service unavailable. Please try again later.";
+        errorDiv.style.display = "block";
+      }
+    })();
+  </script>
+</body>
 </html>
