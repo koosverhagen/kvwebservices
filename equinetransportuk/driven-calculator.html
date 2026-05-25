@@ -4,18 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Driven Transport Cost Estimator | Equine Transport UK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
 
     <style>
       :root {
-        --bg: #f5f7fa;
         --card: #ffffff;
-        --text: #1d2530;
+        --text: #111827;
         --muted: #5a6675;
-        --line: #dbe1e8;
-        --accent: #1f6feb;
+        --line: #cbd5e1;
+        --accent: #2563eb;
+        --soft: #f8fafc;
         --ok: #137a3d;
         --warn: #b45309;
-        --radius: 18px;
       }
 
       * {
@@ -24,14 +29,13 @@
 
       html,
       body {
+        width: 100%;
+        max-width: 100%;
         margin: 0;
         padding: 0;
-      }
-
-      body {
+        overflow-x: hidden;
+        background: transparent;
         font-family:
-          "SF Pro Display",
-          "SF Pro Text",
           Inter,
           -apple-system,
           BlinkMacSystemFont,
@@ -39,343 +43,773 @@
           Roboto,
           sans-serif;
         color: var(--text);
-        background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
         line-height: 1.45;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
       }
 
-      .calculator-shell {
-        width: min(820px, 92vw);
-        margin: 0 auto;
-        padding: 24px 0 34px;
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar {
+        display: none;
       }
 
-      .calculator-card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 24px;
-        padding: 22px;
-        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+      .calculator-container {
+        width: 100%;
+        margin: 0;
+        padding: 0;
       }
 
-      .kicker {
-        margin: 0 0 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.11em;
-        font-size: 11px;
-        color: var(--muted);
+      .premium-card {
+        width: 100%;
+        margin: 0;
+        background: rgba(255, 255, 255, 0.97);
+        border: 1px solid rgba(219, 225, 232, 0.9);
+        border-radius: 22px;
+        box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
+        padding: 28px;
       }
 
-      h1 {
-        margin: 0 0 10px;
-        font-size: clamp(28px, 5vw, 42px);
-        line-height: 1.05;
+      .header {
+        text-align: center;
+        margin-bottom: 26px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: clamp(24px, 4vw, 34px);
+        line-height: 1.08;
         letter-spacing: -0.04em;
+        font-weight: 800;
+        color: #111827;
       }
 
-      .lead,
-      .muted {
+      .header p {
+        margin: 8px 0 0;
         color: var(--muted);
+        font-size: 14px;
       }
-
-      .lead {
-        margin: 0 0 18px;
-        font-size: 16px;
+      .header .blue-note {
+        margin-top: 10px;
+        color: #2563eb;
+        font-size: 12px;
       }
 
       .form-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-        margin-top: 18px;
-      }
-
-      label {
-        display: grid;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--muted);
-      }
-
-      input,
-      select {
-        width: 100%;
-        min-height: 46px;
-        border-radius: 12px;
-        border: 1px solid var(--line);
-        padding: 10px 12px;
-        font: inherit;
-        background: #fafbfc;
-        color: var(--text);
+        gap: 16px;
+        margin-top: 20px;
       }
 
       .full {
         grid-column: 1 / -1;
       }
 
-      .result-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 18px;
+      label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
       }
 
-      .result-card {
-        padding: 16px;
+      input,
+      select,
+      .fixed-field {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
         border: 1px solid var(--line);
-        border-radius: 18px;
-        background: #f8fafc;
-      }
-
-      .result-card.total {
-        grid-column: 1 / -1;
-        background: #eef4ff;
-        border-color: #cfe0ff;
-      }
-
-      .result-label {
-        font-size: 12px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--muted);
-      }
-
-      .result-value {
-        margin-top: 5px;
-        font-size: 26px;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-      }
-
-      .result-card.total .result-value {
-        color: #1f3b8b;
-        font-size: 34px;
-      }
-
-      .note {
-        margin-top: 16px;
-        padding: 14px;
-        border-radius: 16px;
-        border: 1px solid #fed7aa;
-        background: #fff7ed;
-        color: #9a3412;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #111827;
+        font: inherit;
         font-size: 14px;
+        outline: none;
+        box-shadow: none;
       }
 
-      .contact-row {
+      .fixed-field {
+        background: #f8fafc;
+        color: #334155;
+        display: flex;
+        align-items: center;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+      }
+
+      input[type="datetime-local"] {
+        color: #111827 !important;
+        background-color: #ffffff !important;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+
+      ::placeholder {
+        color: #9ca3af;
+        opacity: 1;
+      }
+
+      .button-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 16px;
+        gap: 12px;
+        margin-top: 22px;
+        align-items: center;
       }
 
-      .btn {
+      button,
+      .quote-link {
+        appearance: none;
+        -webkit-appearance: none;
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 800;
+        min-height: 46px;
+        border-radius: 12px;
+        padding: 0 18px;
+        transition: all 0.2s ease;
+        text-decoration: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 44px;
-        border-radius: 12px;
-        border: 1px solid var(--accent);
+      }
+
+      button:hover,
+      .quote-link:hover {
+        transform: translateY(-1px);
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-primary {
+        flex: 1 1 260px;
         background: var(--accent);
-        color: #fff;
-        padding: 0 16px;
-        font-weight: 700;
-        text-decoration: none;
+        color: white;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
       }
 
-      .btn.ghost {
-        background: #fff;
+      .btn-secondary {
+        flex: 0 0 150px;
+        background: #e5e7eb;
+        color: #111827;
+      }
+
+      #loading-indicator,
+      #results,
+      #error-message {
+        display: none;
+      }
+
+      #loading-indicator {
+        margin-top: 22px;
+        text-align: center;
         color: var(--accent);
+        font-weight: 800;
       }
 
-      @media (max-width: 680px) {
-        .form-grid,
-        .result-grid {
+      .results-card {
+        margin-top: 22px;
+        padding: 18px;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border: 1px solid #bfdbfe;
+        border-radius: 18px;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+        color: #1e3a8a;
+      }
+
+      .results-card h3 {
+        margin: 0 0 10px;
+        font-size: 18px;
+      }
+      .results-card p {
+        margin: 7px 0;
+        color: #334155;
+        font-weight: 600;
+      }
+      .results-card span {
+        color: #1e40af;
+        font-weight: 800;
+      }
+
+      .leg-list {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 6px;
+      }
+
+      .leg-list li {
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.55);
+        color: #334155;
+        font-weight: 600;
+      }
+
+      .summary-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .summary-box {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .summary-box.total {
+        grid-column: 1 / -1;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #bfdbfe;
+      }
+
+      .summary-box small {
+        display: block;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .summary-box strong {
+        display: block;
+        margin-top: 3px;
+        color: #1e40af;
+        font-size: 20px;
+        letter-spacing: -0.03em;
+      }
+
+      .summary-box.total strong {
+        font-size: 34px;
+      }
+
+      #error-message {
+        margin-top: 18px;
+        padding: 14px;
+        color: #991b1b;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 14px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      #map {
+        height: 360px;
+        width: 100%;
+        border-radius: 18px;
+        margin-top: 24px;
+        border: 1px solid #dbe1e8;
+        background: #eef1f6;
+        overflow: hidden;
+      }
+
+      .maps-note {
+        margin-top: 10px;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .quote-link {
+        margin-top: 14px;
+        background: #ffffff;
+        color: #2563eb;
+        border: 1px solid #2563eb;
+      }
+
+      @media (max-width: 820px) {
+        .premium-card {
+          padding: 14px;
+          border-radius: 18px;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        input,
+        select {
+          font-size: 16px;
+          min-height: 50px;
+        }
+        input[type="datetime-local"] {
+          height: 52px !important;
+          line-height: normal !important;
+        }
+        .btn-primary,
+        .btn-secondary {
+          flex: 1 1 100%;
+        }
+        .summary-row {
           grid-template-columns: 1fr;
         }
-
-        .result-card.total {
-          grid-column: auto;
-        }
-
-        .calculator-card {
-          padding: 18px;
-        }
-
-        .contact-row .btn {
-          width: 100%;
+        #map {
+          height: 320px;
         }
       }
     </style>
   </head>
 
   <body>
-    <main class="calculator-shell">
-      <section class="calculator-card">
-        <p class="kicker">Driven transport</p>
-        <h1>Cost Estimator</h1>
-        <p class="lead">
-          Use this as a guide before requesting a confirmed quote for
-          professional driven horse transport.
-        </p>
-
-        <div class="form-grid">
-          <label>
-            Journey type
-            <select id="journey-type">
-              <option value="single">Single journey</option>
-              <option value="return">Return journey</option>
-            </select>
-          </label>
-
-          <label>
-            Estimated loaded miles
-            <input id="loaded-miles" type="number" min="0" step="1" value="40" />
-          </label>
-
-          <label>
-            Empty positioning miles
-            <input id="positioning-miles" type="number" min="0" step="1" value="20" />
-          </label>
-
-          <label>
-            Guide rate per mile
-            <input id="mile-rate" type="number" min="0" step="0.05" value="1.50" />
-          </label>
-
-          <label>
-            Waiting/loading time
-            <input id="waiting-hours" type="number" min="0" step="0.25" value="0" />
-          </label>
-
-          <label>
-            Hourly waiting rate
-            <input id="waiting-rate" type="number" min="0" step="1" value="25" />
-          </label>
-
-          <label>
-            Fixed call-out/admin allowance
-            <input id="fixed-fee" type="number" min="0" step="1" value="0" />
-          </label>
-
-          <label>
-            Road charges / tolls
-            <input id="road-charges" type="number" min="0" step="1" value="0" />
-          </label>
-
-          <p class="muted full">
-            Loaded miles are the miles with the horse on board. Positioning
-            miles allow for travel to/from base or between jobs.
+    <div class="calculator-container">
+      <div class="premium-card">
+        <div class="header">
+          <h1>Driven Transport Cost Estimator</h1>
+          <p>
+            Automatic route estimate from our yard, to collection, destination,
+            optional second stop, and back to us.
+          </p>
+          <p class="blue-note">
+            Uses Google Maps route distance and traffic. Final quote may vary
+            after details are checked.
           </p>
         </div>
 
-        <div class="result-grid" aria-live="polite">
-          <div class="result-card">
-            <div class="result-label">Mileage used for guide estimate</div>
-            <div class="result-value" id="billable-miles">—</div>
+        <div class="form-grid">
+          <div>
+            <label for="lorry-type">Vehicle Type:</label>
+            <select id="lorry-type">
+              <option value="3.5t">3.5T Driven Transport</option>
+              <option value="7.5t">7.5T Driven Transport</option>
+            </select>
           </div>
 
-          <div class="result-card">
-            <div class="result-label">Mileage estimate</div>
-            <div class="result-value" id="mileage-cost">—</div>
+          <div>
+            <label for="departure-time"
+              >Departure Time (for traffic estimate):</label
+            >
+            <input type="datetime-local" id="departure-time" />
           </div>
 
-          <div class="result-card">
-            <div class="result-label">Waiting / extras</div>
-            <div class="result-value" id="extras-cost">—</div>
+          <div class="full">
+            <label for="pickup-address">1) Horse Pickup Address:</label>
+            <input
+              type="text"
+              id="pickup-address"
+              placeholder="Pickup postcode / address"
+              autocomplete="off"
+            />
           </div>
 
-          <div class="result-card">
-            <div class="result-label">Road charges</div>
-            <div class="result-value" id="charges-cost">—</div>
+          <div>
+            <label for="destination-address"
+              >2) Destination / Event Address:</label
+            >
+            <input
+              type="text"
+              id="destination-address"
+              placeholder="Drop-off / event address"
+              autocomplete="off"
+            />
           </div>
 
-          <div class="result-card total">
-            <div class="result-label">Guide estimate</div>
-            <div class="result-value" id="total-estimate">—</div>
+          <div>
+            <label for="destination-address2"
+              >3) Destination 2 (Optional):</label
+            >
+            <input
+              type="text"
+              id="destination-address2"
+              placeholder="Optional second stop"
+              autocomplete="off"
+            />
+          </div>
+
+          <div>
+            <label for="horse-count">Number of horses:</label>
+            <select id="horse-count">
+              <option value="1">1 horse</option>
+              <option value="2">2 horses</option>
+              <option value="3">3 horses</option>
+              <option value="4">4 horses</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="waiting-hours">Waiting / loading time:</label>
+            <select id="waiting-hours">
+              <option value="0">No extra waiting</option>
+              <option value="1">Up to 1 hour</option>
+              <option value="2">Up to 2 hours</option>
+              <option value="3">Up to 3 hours</option>
+              <option value="4">Up to 4 hours</option>
+            </select>
           </div>
         </div>
 
-        <div class="note">
-          This is not a confirmed quote. Final driven transport pricing depends
-          on route, timing, vehicle availability, horse requirements, waiting
-          time and any road charges.
+        <div class="button-row">
+          <button id="calculate-btn" class="btn-primary">
+            Calculate Route Estimate
+          </button>
+          <button id="reset-btn" class="btn-secondary">Reset</button>
         </div>
 
-        <div class="contact-row">
-          <a class="btn" href="tel:07812188871" target="_top">Call Avril</a>
+        <div id="loading-indicator">Calculating complete route...</div>
+
+        <div id="results" class="results-card">
+          <h3>Transport Estimate</h3>
+          <p>Vehicle: <span id="lorry-type-display">—</span></p>
+          <ul id="leg-list" class="leg-list"></ul>
+          <div class="summary-row">
+            <div class="summary-box">
+              <small>Total miles</small
+              ><strong id="total-miles-display">0</strong>
+            </div>
+            <div class="summary-box">
+              <small>Travel time</small
+              ><strong id="travel-time-display">0</strong>
+            </div>
+            <div class="summary-box">
+              <small>Mileage rate</small
+              ><strong id="rate-display">£0.00</strong>
+            </div>
+            <div class="summary-box">
+              <small>Waiting</small><strong id="waiting-display">£0.00</strong>
+            </div>
+            <div class="summary-box total">
+              <small>Guide transport estimate</small
+              ><strong id="total-cost-display">£0.00</strong>
+            </div>
+          </div>
           <a
-            class="btn ghost"
-            href="mailto:info@equinetransportuk.com?subject=Driven%20transport%20quote%20request"
+            id="quote-link"
+            class="quote-link"
+            href="contact.html"
             target="_top"
+            >Request confirmed quote</a
           >
-            Email for quote
-          </a>
         </div>
-      </section>
-    </main>
+
+        <div id="error-message">
+          Please enter valid pickup and destination addresses.
+        </div>
+
+        <div id="map"></div>
+        <p class="maps-note">
+          Route: Equine Transport UK → pickup → destination → optional
+          destination 2 → Equine Transport UK.
+        </p>
+      </div>
+    </div>
 
     <script>
-      const ids = [
-        "journey-type",
-        "loaded-miles",
-        "positioning-miles",
-        "mile-rate",
-        "waiting-hours",
-        "waiting-rate",
-        "fixed-fee",
-        "road-charges",
-      ];
+      const MAPS_KEY_ENDPOINT =
+        "https://www.equinetransportuk.com/test/_functions/mapskey";
+      const BASE_ADDRESS =
+        "Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five Ashes, TN20 6LL";
 
-      function money(value) {
-        return new Intl.NumberFormat("en-GB", {
-          style: "currency",
-          currency: "GBP",
-        }).format(value || 0);
+      function initCalculator() {
+        const lorryTypeSelect = document.getElementById("lorry-type");
+        const pickupAddressInput = document.getElementById("pickup-address");
+        const destinationAddressInput = document.getElementById(
+          "destination-address",
+        );
+        const destinationAddress2Input = document.getElementById(
+          "destination-address2",
+        );
+        const departureTimeInput = document.getElementById("departure-time");
+        const horseCountSelect = document.getElementById("horse-count");
+        const waitingHoursSelect = document.getElementById("waiting-hours");
+        const calculateBtn = document.getElementById("calculate-btn");
+        const resetBtn = document.getElementById("reset-btn");
+        const loadingIndicator = document.getElementById("loading-indicator");
+        const resultsDiv = document.getElementById("results");
+        const errorMessageDiv = document.getElementById("error-message");
+        const mapElement = document.getElementById("map");
+
+        const rates = {
+          "3.5t": {
+            // Calibrated so:
+            // Base → Peppers Farm House, Ashurst → Frythe Barn, Eye → Base
+            // with 1 horse and no waiting is approximately £350.
+            perMile: 1.032,
+            callout: 35,
+            waitingPerHour: 25,
+            horseExtra: 10,
+          },
+          "7.5t": {
+            // Keeps the 7.5T guide rate proportionally higher than 3.5T.
+            perMile: 1.38,
+            callout: 55,
+            waitingPerHour: 35,
+            horseExtra: 15,
+          },
+        };
+
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer({
+          suppressMarkers: false,
+        });
+
+        const map = new google.maps.Map(mapElement, {
+          zoom: 9,
+          center: { lat: 51.0, lng: 0.25 },
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: true,
+        });
+
+        directionsRenderer.setMap(map);
+
+        [
+          pickupAddressInput,
+          destinationAddressInput,
+          destinationAddress2Input,
+        ].forEach((input) => {
+          new google.maps.places.Autocomplete(input, {
+            componentRestrictions: { country: "uk" },
+            fields: ["formatted_address", "geometry", "name"],
+          });
+        });
+
+        function showError(message) {
+          errorMessageDiv.textContent = message;
+          errorMessageDiv.style.display = "block";
+        }
+
+        function hideError() {
+          errorMessageDiv.style.display = "none";
+        }
+
+        function setBusy(isBusy) {
+          loadingIndicator.style.display = isBusy ? "block" : "none";
+          calculateBtn.disabled = isBusy;
+          resetBtn.disabled = isBusy;
+        }
+
+        function formatDuration(totalSeconds) {
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.round((totalSeconds % 3600) / 60);
+          if (hours <= 0) return `${minutes} mins`;
+          return `${hours} hours, ${minutes} mins`;
+        }
+
+        function getLegLabel(index, hasDestination2) {
+          const labels = hasDestination2
+            ? [
+                "Base to horse pickup",
+                "Pickup to destination",
+                "Destination to destination 2",
+                "Destination 2 back to base",
+              ]
+            : [
+                "Base to horse pickup",
+                "Pickup to destination",
+                "Destination back to base",
+              ];
+          return labels[index] || `Leg ${index + 1}`;
+        }
+
+        calculateBtn.addEventListener("click", () => {
+          hideError();
+          resultsDiv.style.display = "none";
+          setBusy(true);
+
+          const lorryType = lorryTypeSelect.value;
+          const pickupAddress = pickupAddressInput.value.trim();
+          const destinationAddress = destinationAddressInput.value.trim();
+          const destinationAddress2 = destinationAddress2Input.value.trim();
+          const departureTime = departureTimeInput.value;
+          const horseCount = Number(horseCountSelect.value || 1);
+          const waitingHours = Number(waitingHoursSelect.value || 0);
+          const hasDestination2 = !!destinationAddress2;
+
+          if (!pickupAddress || !destinationAddress) {
+            setBusy(false);
+            showError(
+              "Please enter the horse pickup address and destination address.",
+            );
+            return;
+          }
+
+          const waypoints = [
+            { location: pickupAddress, stopover: true },
+            { location: destinationAddress, stopover: true },
+          ];
+
+          if (hasDestination2) {
+            waypoints.push({ location: destinationAddress2, stopover: true });
+          }
+
+          const now = new Date();
+          const effectiveDepartureTime = departureTime
+            ? new Date(departureTime)
+            : now;
+
+          const request = {
+            origin: BASE_ADDRESS,
+            destination: BASE_ADDRESS,
+            waypoints,
+            travelMode: google.maps.TravelMode.DRIVING,
+            optimizeWaypoints: false,
+            drivingOptions: {
+              departureTime:
+                effectiveDepartureTime > now ? effectiveDepartureTime : now,
+              trafficModel: "optimistic",
+            },
+          };
+
+          const timeoutId = setTimeout(() => {
+            setBusy(false);
+            showError(
+              "Calculation timed out. Please check your connection and try again.",
+            );
+          }, 12000);
+
+          directionsService.route(request, (response, status) => {
+            clearTimeout(timeoutId);
+
+            if (status !== "OK") {
+              setBusy(false);
+              let message =
+                "An error occurred. Please check the addresses and try again.";
+              if (status === "ZERO_RESULTS" || status === "NOT_FOUND") {
+                message =
+                  "One or more addresses could not be found. Please check your inputs.";
+              }
+              if (status === "REQUEST_DENIED") {
+                message =
+                  "Google Maps rejected the request. Please check that the Maps API key allows Directions and Places.";
+              }
+              showError(message);
+              return;
+            }
+
+            directionsRenderer.setDirections(response);
+
+            const legs = response.routes[0].legs || [];
+            const totalMetres = legs.reduce(
+              (sum, leg) => sum + (leg.distance?.value || 0),
+              0,
+            );
+            const totalMiles = totalMetres * 0.000621371;
+            const totalDurationInSeconds = legs.reduce(
+              (sum, leg) =>
+                sum +
+                ((leg.duration_in_traffic && leg.duration_in_traffic.value) ||
+                  leg.duration?.value ||
+                  0),
+              0,
+            );
+
+            const rate = rates[lorryType];
+            const mileageCost = totalMiles * rate.perMile;
+            const waitingCost = waitingHours * rate.waitingPerHour;
+            const extraHorseCost =
+              Math.max(0, horseCount - 1) * rate.horseExtra;
+            const rawGuideTotal =
+              rate.callout + mileageCost + waitingCost + extraHorseCost;
+
+            // Customer-facing guide price rounded to the nearest £5.
+            const guideTotal = Math.round(rawGuideTotal / 5) * 5;
+
+            document.getElementById("lorry-type-display").textContent =
+              lorryType === "3.5t"
+                ? "3.5T Driven Transport"
+                : "7.5T Driven Transport";
+            document.getElementById("total-miles-display").textContent =
+              totalMiles.toFixed(2);
+            document.getElementById("travel-time-display").textContent =
+              formatDuration(totalDurationInSeconds);
+            document.getElementById("rate-display").textContent =
+              `£${rate.perMile.toFixed(2)}/mile`;
+            document.getElementById("waiting-display").textContent =
+              `£${waitingCost.toFixed(2)}`;
+            document.getElementById("total-cost-display").textContent =
+              `£${guideTotal.toFixed(2)}`;
+
+            const legList = document.getElementById("leg-list");
+            legList.innerHTML = legs
+              .map((leg, index) => {
+                const miles = (
+                  (leg.distance?.value || 0) * 0.000621371
+                ).toFixed(2);
+                const duration = formatDuration(
+                  (leg.duration_in_traffic && leg.duration_in_traffic.value) ||
+                    leg.duration?.value ||
+                    0,
+                );
+                return `<li>${getLegLabel(index, hasDestination2)}: <strong>${miles} miles</strong> · ${duration}</li>`;
+              })
+              .join("");
+
+            const quoteText = encodeURIComponent(
+              `Driven transport quote request\nVehicle: ${lorryType === "3.5t" ? "3.5T" : "7.5T"}\nPickup: ${pickupAddress}\nDestination: ${destinationAddress}\nDestination 2: ${destinationAddress2 || "None"}\nGuide miles: ${totalMiles.toFixed(2)}\nGuide estimate: £${guideTotal.toFixed(2)}`,
+            );
+            document.getElementById("quote-link").href =
+              `contact.html?message=${quoteText}`;
+
+            resultsDiv.style.display = "block";
+            setBusy(false);
+          });
+        });
+
+        resetBtn.addEventListener("click", () => {
+          lorryTypeSelect.value = "3.5t";
+          pickupAddressInput.value = "";
+          destinationAddressInput.value = "";
+          destinationAddress2Input.value = "";
+          departureTimeInput.value = "";
+          horseCountSelect.value = "1";
+          waitingHoursSelect.value = "0";
+          resultsDiv.style.display = "none";
+          hideError();
+          setBusy(false);
+          directionsRenderer.setDirections({ routes: [] });
+          map.setCenter({ lat: 51.0, lng: 0.25 });
+          map.setZoom(9);
+        });
       }
 
-      function calculate() {
-        const journeyType = document.getElementById("journey-type").value;
-        const loadedMiles = Number(
-          document.getElementById("loaded-miles").value || 0,
-        );
-        const positioningMiles = Number(
-          document.getElementById("positioning-miles").value || 0,
-        );
-        const mileRate = Number(document.getElementById("mile-rate").value || 0);
-        const waitingHours = Number(
-          document.getElementById("waiting-hours").value || 0,
-        );
-        const waitingRate = Number(
-          document.getElementById("waiting-rate").value || 0,
-        );
-        const fixedFee = Number(document.getElementById("fixed-fee").value || 0);
-        const roadCharges = Number(
-          document.getElementById("road-charges").value || 0,
-        );
+      window.initCalculator = initCalculator;
 
-        const multiplier = journeyType === "return" ? 2 : 1;
-        const billableMiles = loadedMiles * multiplier + positioningMiles;
-        const mileageCost = billableMiles * mileRate;
-        const waitingCost = waitingHours * waitingRate;
-        const extrasCost = waitingCost + fixedFee;
-        const total = mileageCost + extrasCost + roadCharges;
+      (async function loadGoogleMaps() {
+        try {
+          const existingKey = new URLSearchParams(window.location.search).get(
+            "mapsKey",
+          );
+          let apiKey = existingKey;
 
-        document.getElementById("billable-miles").textContent =
-          `${billableMiles.toFixed(0)} miles`;
-        document.getElementById("mileage-cost").textContent = money(mileageCost);
-        document.getElementById("extras-cost").textContent = money(extrasCost);
-        document.getElementById("charges-cost").textContent = money(roadCharges);
-        document.getElementById("total-estimate").textContent = money(total);
-      }
+          if (!apiKey) {
+            const res = await fetch(MAPS_KEY_ENDPOINT, { cache: "no-store" });
+            if (!res.ok)
+              throw new Error(`Maps key request failed: ${res.status}`);
+            apiKey = (await res.text()).trim().replace(/^['\"]|['\"]$/g, "");
+          }
 
-      ids.forEach((id) => {
-        document.getElementById(id).addEventListener("input", calculate);
-        document.getElementById(id).addEventListener("change", calculate);
-      });
+          if (!apiKey) throw new Error("Maps API key is empty");
 
-      calculate();
+          const script = document.createElement("script");
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&callback=initCalculator`;
+          script.async = true;
+          script.defer = true;
+          script.onerror = () => {
+            const errorDiv = document.getElementById("error-message");
+            errorDiv.textContent =
+              "Google Maps failed to load. Please check the Maps API key setup.";
+            errorDiv.style.display = "block";
+          };
+          document.head.appendChild(script);
+        } catch (err) {
+          console.error("Failed to load Maps API key:", err);
+          const errorDiv = document.getElementById("error-message");
+          errorDiv.textContent =
+            "Map service unavailable. Please try again later.";
+          errorDiv.style.display = "block";
+        }
+      })();
     </script>
   </body>
 </html>
