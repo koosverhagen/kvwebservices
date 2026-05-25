@@ -18,9 +18,7 @@
         --radius: 18px;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
       html,
       body {
@@ -44,7 +42,7 @@
       }
 
       .calculator-shell {
-        width: min(820px, 92vw);
+        width: min(980px, 94vw);
         margin: 0 auto;
         padding: 24px 0 34px;
       }
@@ -72,10 +70,14 @@
         letter-spacing: -0.04em;
       }
 
-      .lead,
-      .muted {
-        color: var(--muted);
+      h2 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: -0.02em;
       }
+
+      .lead,
+      .muted { color: var(--muted); }
 
       .lead {
         margin: 0 0 18px;
@@ -93,29 +95,114 @@
         display: grid;
         gap: 6px;
         font-size: 13px;
-        font-weight: 700;
-        color: var(--muted);
+        font-weight: 600;
+        color: #1d2530;
       }
 
       input,
       select {
         width: 100%;
-        min-height: 46px;
-        border-radius: 12px;
-        border: 1px solid var(--line);
-        padding: 10px 12px;
+        min-height: 42px;
+        border-radius: 9px;
+        border: 1px solid #cbd5e1;
+        padding: 9px 12px;
         font: inherit;
-        background: #fafbfc;
-        color: var(--text);
+        font-size: 14px;
+        background: #ffffff;
+        color: #111827;
+        box-shadow: none;
       }
 
-      .full {
-        grid-column: 1 / -1;
+      input::placeholder { color: #94a3b8; }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #1f6feb;
+        box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+      }
+
+      .full { grid-column: 1 / -1; }
+
+      .fixed-field {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        padding: 9px 12px;
+        border: 1px solid #dbe1e8;
+        border-radius: 9px;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 14px;
+      }
+
+      .route-panel {
+        margin-top: 20px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: #f8fafc;
+      }
+
+      .route-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+
+      .route-actions,
+      .contact-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .btn,
+      .mini-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+        padding: 0 16px;
+        font: inherit;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .btn.ghost,
+      .mini-btn.ghost {
+        background: #fff;
+        color: var(--accent);
+      }
+
+      .map-frame {
+        width: 100%;
+        height: 360px;
+        margin-top: 14px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        overflow: hidden;
+        background: #eef1f6;
+      }
+
+      .map-frame iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
       }
 
       .result-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px;
         margin-top: 18px;
       }
@@ -143,7 +230,7 @@
 
       .result-value {
         margin-top: 5px;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 800;
         letter-spacing: -0.03em;
       }
@@ -163,114 +250,20 @@
         font-size: 14px;
       }
 
-      .contact-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 16px;
-      }
-
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 44px;
-        border-radius: 12px;
-        border: 1px solid var(--accent);
-        background: var(--accent);
-        color: #fff;
-        padding: 0 16px;
-        font-weight: 700;
-        text-decoration: none;
-      }
-
-      .btn.ghost {
-        background: #fff;
-        color: var(--accent);
-      }
-
-
-
-      .route-box {
-        margin-top: 18px;
-        padding: 16px;
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        background: #f8fafc;
-      }
-
-      .route-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 12px;
-      }
-
-      .route-head h2 {
-        margin: 0;
-        font-size: 20px;
-        letter-spacing: -0.02em;
-      }
-
-      .route-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 12px;
-      }
-
-      .mini-btn {
-        min-height: 42px;
-        border-radius: 12px;
-        border: 1px solid var(--accent);
-        background: var(--accent);
-        color: #fff;
-        padding: 0 14px;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-      }
-
-      .mini-btn.ghost {
-        background: #fff;
-        color: var(--accent);
-      }
-
-      .map-frame {
-        width: 100%;
-        height: 320px;
-        margin-top: 14px;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        overflow: hidden;
-        background: #eef1f6;
-      }
-
-      .map-frame iframe {
-        width: 100%;
-        height: 100%;
-        border: 0;
-        display: block;
-      }
-
-      @media (max-width: 680px) {
+      @media (max-width: 760px) {
         .form-grid,
         .result-grid {
           grid-template-columns: 1fr;
         }
 
-        .result-card.total {
-          grid-column: auto;
-        }
+        .result-card.total { grid-column: auto; }
 
-        .calculator-card {
-          padding: 18px;
-        }
+        .calculator-card { padding: 18px; }
 
-        .contact-row .btn {
-          width: 100%;
-        }
+        .route-head { display: block; }
+
+        .contact-row .btn,
+        .route-actions .mini-btn { width: 100%; }
       }
     </style>
   </head>
@@ -279,14 +272,74 @@
     <main class="calculator-shell">
       <section class="calculator-card">
         <p class="kicker">Driven transport</p>
-        <h1>Cost Estimator</h1>
+        <h1>Transport Cost Estimator</h1>
         <p class="lead">
-          Use this as a guide before requesting a confirmed quote for
-          professional driven horse transport, including 3.5T and 7.5T options.
+          Enter the horse collection and drop-off details. The route is built from
+          Equine Transport UK, to pickup, to destination, optional destination 2,
+          then back to Equine Transport UK.
         </p>
 
-        <div class="form-grid">
+        <div class="route-panel">
+          <div class="route-head">
+            <div>
+              <p class="kicker">Journey route</p>
+              <h2>Full round-trip route</h2>
+              <p class="muted">
+                Base → horse pickup → drop-off / event → optional second stop → base.
+              </p>
+            </div>
+          </div>
 
+          <div class="form-grid">
+            <label class="full">
+              Start / finish base
+              <div class="fixed-field" id="base-display">
+                Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five Ashes, TN20 6LL
+              </div>
+            </label>
+
+            <label>
+              Horse pickup address / postcode
+              <input id="pickup-address" type="text" placeholder="e.g. TN21 0AB or yard address" />
+            </label>
+
+            <label>
+              Drop-off / event address
+              <input id="dropoff-address" type="text" placeholder="e.g. showground, yard, postcode" />
+            </label>
+
+            <label>
+              Destination 2 / return stop optional
+              <input id="second-address" type="text" placeholder="Optional extra stop" />
+            </label>
+
+            <label>
+              Total route miles
+              <input id="route-miles" type="number" min="0" step="1" value="0" placeholder="Copy total miles from Google Maps" />
+            </label>
+          </div>
+
+          <div class="route-actions">
+            <button class="mini-btn" type="button" id="show-route-map">
+              Show full route map
+            </button>
+            <a class="mini-btn ghost" id="open-google-maps" href="https://www.google.com/maps" target="_blank" rel="noopener">
+              Open route in Google Maps
+            </a>
+          </div>
+
+          <div class="map-frame">
+            <iframe
+              id="route-map"
+              title="Full driven transport route map"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=Equine%20Transport%20UK%2C%20Upper%20Broadreed%20Farm%2C%20Stonehurst%20Lane%2C%20Five%20Ashes%2C%20TN20%206LL&output=embed"
+            ></iframe>
+          </div>
+        </div>
+
+        <div class="form-grid">
           <label>
             Vehicle size
             <select id="vehicle-size">
@@ -296,30 +349,12 @@
           </label>
 
           <label>
-            Journey type
-            <select id="journey-type">
-              <option value="single">Single journey</option>
-              <option value="return">Return journey</option>
-            </select>
-          </label>
-
-          <label>
-            Estimated loaded miles
-            <input id="loaded-miles" type="number" min="0" step="1" value="40" />
-          </label>
-
-          <label>
-            Empty positioning miles
-            <input id="positioning-miles" type="number" min="0" step="1" value="20" />
-          </label>
-
-          <label>
             Guide rate per mile
             <input id="mile-rate" type="number" min="0" step="0.05" value="1.50" />
           </label>
 
           <label>
-            Waiting/loading time
+            Waiting/loading time hours
             <input id="waiting-hours" type="number" min="0" step="0.25" value="0" />
           </label>
 
@@ -339,64 +374,15 @@
           </label>
 
           <p class="muted full">
-            Loaded miles are the miles with the horse on board. Positioning
-            miles allow for travel to/from base or between jobs.
+            The estimate uses the full round-trip mileage, including travel from
+            and back to Equine Transport UK. Final price can still change after
+            route/timing checks.
           </p>
-        </div>
-
-
-
-        <div class="route-box">
-          <div class="route-head">
-            <div>
-              <p class="kicker">Route map</p>
-              <h2>Check the route</h2>
-              <p class="muted">
-                Use the map to check approximate route mileage before requesting
-                a confirmed driven transport quote.
-              </p>
-            </div>
-          </div>
-
-          <div class="form-grid">
-            <label>
-              Collection address
-              <input
-                id="route-from"
-                type="text"
-                value="Upper Broadreed Farm, Stonehurst Lane, Five Ashes TN20 6LL"
-              />
-            </label>
-
-            <label>
-              Delivery address
-              <input id="route-to" type="text" placeholder="Enter postcode or address" />
-            </label>
-          </div>
-
-          <div class="route-actions">
-            <button class="mini-btn" type="button" id="show-route-map">
-              Show route map
-            </button>
-            <a class="mini-btn ghost" id="open-google-maps" href="https://www.google.com/maps" target="_blank" rel="noopener">
-              Open in Google Maps
-            </a>
-          </div>
-
-          <div class="map-frame">
-            <iframe
-              id="route-map"
-              title="Route map"
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"
-              src="https://www.google.com/maps?q=Upper%20Broadreed%20Farm%2C%20Stonehurst%20Lane%2C%20Five%20Ashes%20TN20%206LL&output=embed"
-            ></iframe>
-          </div>
         </div>
 
         <div class="result-grid" aria-live="polite">
           <div class="result-card">
-            <div class="result-label">Mileage used for guide estimate</div>
+            <div class="result-label">Full route miles</div>
             <div class="result-value" id="billable-miles">—</div>
           </div>
 
@@ -416,15 +402,15 @@
           </div>
 
           <div class="result-card total">
-            <div class="result-label">Guide estimate</div>
+            <div class="result-label">Guide transport estimate</div>
             <div class="result-value" id="total-estimate">—</div>
           </div>
         </div>
 
         <div class="note">
-          This is not a confirmed quote. Final driven transport pricing depends
-          on route, timing, vehicle availability, horse requirements, waiting
-          time and any road charges.
+          The route map is built automatically from your addresses. Google Maps does
+          not allow this page to read the exact mileage without a paid Maps API key,
+          so copy the total mileage from Google Maps into the “Total route miles” box.
         </div>
 
         <div class="contact-row">
@@ -441,18 +427,8 @@
     </main>
 
     <script>
-      const ids = [
-        "vehicle-size",
-        "journey-type",
-        "loaded-miles",
-        "positioning-miles",
-        "mile-rate",
-        "waiting-hours",
-        "waiting-rate",
-        "fixed-fee",
-        "road-charges",
-      ];
-
+      const BASE_ADDRESS =
+        "Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five Ashes, TN20 6LL";
 
       const vehicleDefaults = {
         "3.5T": {
@@ -472,47 +448,75 @@
         }).format(value || 0);
       }
 
-      function calculate() {
-        const journeyType = document.getElementById("journey-type").value;
-        const loadedMiles = Number(
-          document.getElementById("loaded-miles").value || 0,
-        );
-        const positioningMiles = Number(
-          document.getElementById("positioning-miles").value || 0,
-        );
-        const mileRate = Number(document.getElementById("mile-rate").value || 0);
-        const waitingHours = Number(
-          document.getElementById("waiting-hours").value || 0,
-        );
-        const waitingRate = Number(
-          document.getElementById("waiting-rate").value || 0,
-        );
-        const fixedFee = Number(document.getElementById("fixed-fee").value || 0);
-        const roadCharges = Number(
-          document.getElementById("road-charges").value || 0,
-        );
+      function value(id) {
+        return document.getElementById(id)?.value.trim() || "";
+      }
 
-        const multiplier = journeyType === "return" ? 2 : 1;
-        const billableMiles = loadedMiles * multiplier + positioningMiles;
-        const mileageCost = billableMiles * mileRate;
+      function numberValue(id) {
+        return Number(document.getElementById(id)?.value || 0);
+      }
+
+      function calculate() {
+        const routeMiles = numberValue("route-miles");
+        const mileRate = numberValue("mile-rate");
+        const waitingHours = numberValue("waiting-hours");
+        const waitingRate = numberValue("waiting-rate");
+        const fixedFee = numberValue("fixed-fee");
+        const roadCharges = numberValue("road-charges");
+
+        const mileageCost = routeMiles * mileRate;
         const waitingCost = waitingHours * waitingRate;
         const extrasCost = waitingCost + fixedFee;
         const total = mileageCost + extrasCost + roadCharges;
 
         document.getElementById("billable-miles").textContent =
-          `${billableMiles.toFixed(0)} miles`;
+          `${routeMiles.toFixed(0)} miles`;
         document.getElementById("mileage-cost").textContent = money(mileageCost);
         document.getElementById("extras-cost").textContent = money(extrasCost);
         document.getElementById("charges-cost").textContent = money(roadCharges);
         document.getElementById("total-estimate").textContent = money(total);
       }
 
-      ids.forEach((id) => {
-        document.getElementById(id).addEventListener("input", calculate);
-        document.getElementById(id).addEventListener("change", calculate);
-      });
+      function buildGoogleRouteUrl() {
+        const pickup = value("pickup-address");
+        const dropoff = value("dropoff-address");
+        const second = value("second-address");
 
+        const stops = [pickup, dropoff, second].filter(Boolean);
 
+        if (!stops.length) {
+          return {
+            mapQuery: BASE_ADDRESS,
+            mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(BASE_ADDRESS)}`,
+          };
+        }
+
+        const waypoints = stops.map(encodeURIComponent).join("%7C");
+        const mapsUrl =
+          `https://www.google.com/maps/dir/?api=1` +
+          `&origin=${encodeURIComponent(BASE_ADDRESS)}` +
+          `&destination=${encodeURIComponent(BASE_ADDRESS)}` +
+          `&waypoints=${waypoints}` +
+          `&travelmode=driving`;
+
+        const mapQuery = [BASE_ADDRESS, ...stops, BASE_ADDRESS].join(" to ");
+
+        return { mapQuery, mapsUrl };
+      }
+
+      function updateRouteMap() {
+        const { mapQuery, mapsUrl } = buildGoogleRouteUrl();
+        const map = document.getElementById("route-map");
+        const link = document.getElementById("open-google-maps");
+
+        if (map) {
+          map.src = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
+        }
+
+        if (link) {
+          link.href = mapsUrl;
+        }
+      }
 
       document.getElementById("vehicle-size")?.addEventListener("change", (e) => {
         const defaults = vehicleDefaults[e.target.value] || vehicleDefaults["3.5T"];
@@ -521,32 +525,27 @@
         calculate();
       });
 
-      function updateRouteMap() {
-        const from = document.getElementById("route-from")?.value.trim();
-        const to = document.getElementById("route-to")?.value.trim();
-        const map = document.getElementById("route-map");
-        const link = document.getElementById("open-google-maps");
+      [
+        "route-miles",
+        "mile-rate",
+        "waiting-hours",
+        "waiting-rate",
+        "fixed-fee",
+        "road-charges",
+      ].forEach((id) => {
+        document.getElementById(id)?.addEventListener("input", calculate);
+        document.getElementById(id)?.addEventListener("change", calculate);
+      });
 
-        if (!map || !link) return;
-
-        const query = to
-          ? `${from || "Upper Broadreed Farm TN20 6LL"} to ${to}`
-          : from || "Upper Broadreed Farm TN20 6LL";
-
-        const encoded = encodeURIComponent(query);
-
-        map.src = `https://www.google.com/maps?q=${encoded}&output=embed`;
-        link.href = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-      }
+      ["pickup-address", "dropoff-address", "second-address"].forEach((id) => {
+        document.getElementById(id)?.addEventListener("change", updateRouteMap);
+      });
 
       document
         .getElementById("show-route-map")
         ?.addEventListener("click", updateRouteMap);
 
-      ["route-from", "route-to"].forEach((id) => {
-        document.getElementById(id)?.addEventListener("change", updateRouteMap);
-      });
-
+      updateRouteMap();
       calculate();
     </script>
   </body>
