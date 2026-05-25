@@ -358,7 +358,8 @@
           </p>
           <p class="blue-note">
             Route starts and finishes at Equine Transport UK. Enter your horse
-            pickup, destination, and optional second destination.
+            pickup, destination, optional second destination, and current diesel
+            price.
           </p>
         </div>
 
@@ -424,6 +425,19 @@
           </div>
 
           <div>
+            <label for="diesel-price">Diesel price per litre (£):</label>
+            <input
+              type="number"
+              id="diesel-price"
+              min="0.01"
+              step="0.01"
+              value="1.90"
+              placeholder="e.g., 1.90"
+              inputmode="decimal"
+            />
+          </div>
+
+          <div>
             <label for="weather-condition">Weather Condition:</label>
             <select id="weather-condition">
               <option value="sunny">Sunny / Clear</option>
@@ -472,7 +486,10 @@
           <p style="margin-top: 14px">
             Estimated Fuel Used: <span id="fuel-used-display">0</span> litres
           </p>
-          <p>Diesel Price Used: <span>£1.90 per litre</span></p>
+          <p>
+            Diesel Price Used:
+            <span id="diesel-price-display">£1.90 per litre</span>
+          </p>
         </div>
 
         <div id="error-message">
@@ -505,6 +522,7 @@
         );
         const departureTimeInput = document.getElementById("departure-time");
         const payloadInput = document.getElementById("payload");
+        const dieselPriceInput = document.getElementById("diesel-price");
         const weatherSelect = document.getElementById("weather-condition");
         const roadTypeSelect = document.getElementById("road-type");
         const calculateBtn = document.getElementById("calculate-btn");
@@ -514,12 +532,8 @@
         const errorMessageDiv = document.getElementById("error-message");
         const mapElement = document.getElementById("map");
 
-        const baseMPG = {
-          "3.5t": 35,
-          "7.5t": 20,
-        };
-
-        const dieselPricePerLitre = 1.9;
+        const baseMPG = { "3.5t": 35, "7.5t": 20 };
+        const DEFAULT_DIESEL_PRICE_PER_LITRE = 1.9;
         const litresPerGallon = 4.54609;
 
         const directionsService = new google.maps.DirectionsService();
@@ -596,6 +610,9 @@
           const destinationAddress = destinationAddressInput.value.trim();
           const destinationAddress2 = destinationAddress2Input.value.trim();
           const payload = parseFloat(payloadInput.value) || 0;
+          const dieselPricePerLitre =
+            parseFloat(dieselPriceInput.value) ||
+            DEFAULT_DIESEL_PRICE_PER_LITRE;
           const weatherCondition = weatherSelect.value;
           const roadType = roadTypeSelect.value;
           const departureTime = departureTimeInput.value;
@@ -609,14 +626,22 @@
             return;
           }
 
+          if (
+            !Number.isFinite(dieselPricePerLitre) ||
+            dieselPricePerLitre <= 0
+          ) {
+            setBusy(false);
+            showError("Please enter a valid diesel price per litre.");
+            return;
+          }
+
           const waypoints = [
             { location: pickupAddress, stopover: true },
             { location: destinationAddress, stopover: true },
           ];
 
-          if (hasDestination2) {
+          if (hasDestination2)
             waypoints.push({ location: destinationAddress2, stopover: true });
-          }
 
           const effectiveDepartureTime = departureTime
             ? new Date(departureTime)
@@ -706,6 +731,8 @@
               totalLitres.toFixed(2);
             document.getElementById("total-cost-display").textContent =
               `£${totalCost.toFixed(2)}`;
+            document.getElementById("diesel-price-display").textContent =
+              `£${dieselPricePerLitre.toFixed(2)} per litre`;
 
             const legList = document.getElementById("leg-list");
             legList.innerHTML = legs
@@ -734,6 +761,7 @@
           destinationAddress2Input.value = "";
           departureTimeInput.value = "";
           payloadInput.value = "";
+          dieselPriceInput.value = DEFAULT_DIESEL_PRICE_PER_LITRE.toFixed(2);
           weatherSelect.value = "sunny";
           roadTypeSelect.value = "mixed";
 
