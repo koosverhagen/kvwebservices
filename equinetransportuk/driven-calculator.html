@@ -394,14 +394,6 @@
           </div>
 
           <div class="full">
-            <label>Start / Finish:</label>
-            <div class="fixed-field">
-              Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five
-              Ashes, TN20 6LL
-            </div>
-          </div>
-
-          <div class="full">
             <label for="pickup-address">1) Horse Pickup Address:</label>
             <input
               type="text"
@@ -539,13 +531,17 @@
 
         const rates = {
           "3.5t": {
-            perMile: 1.5,
+            // Calibrated so:
+            // Base → Peppers Farm House, Ashurst → Frythe Barn, Eye → Base
+            // with 1 horse and no waiting is approximately £350.
+            perMile: 1.032,
             callout: 35,
             waitingPerHour: 25,
             horseExtra: 10,
           },
           "7.5t": {
-            perMile: 2.0,
+            // Keeps the 7.5T guide rate proportionally higher than 3.5T.
+            perMile: 1.38,
             callout: 55,
             waitingPerHour: 35,
             horseExtra: 15,
@@ -713,8 +709,11 @@
             const waitingCost = waitingHours * rate.waitingPerHour;
             const extraHorseCost =
               Math.max(0, horseCount - 1) * rate.horseExtra;
-            const guideTotal =
+            const rawGuideTotal =
               rate.callout + mileageCost + waitingCost + extraHorseCost;
+
+            // Customer-facing guide price rounded to the nearest £5.
+            const guideTotal = Math.round(rawGuideTotal / 5) * 5;
 
             document.getElementById("lorry-type-display").textContent =
               lorryType === "3.5t"
