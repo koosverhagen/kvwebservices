@@ -97,6 +97,18 @@
         font-size: 12px;
       }
 
+      .base-note {
+        display: inline-flex;
+        margin-top: 12px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e40af;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
       .form-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -341,12 +353,16 @@
         <div class="header">
           <h1>Lorry Fuel Calculator</h1>
           <p>
-            Professional fuel usage and cost estimate for your planned journey
+            Professional fuel usage and cost estimate for your planned
+            self-drive journey.
           </p>
           <p class="blue-note">
-            Uses Google Maps route distance, vehicle type, horse weight,
-            traffic, weather and road type.
+            Route starts and finishes at Equine Transport UK. Enter your horse
+            pickup, destination, and optional second destination.
           </p>
+          <div class="base-note">
+            Start/finish: Equine Transport UK, Upper Broadreed Farm, Five Ashes
+          </div>
         </div>
 
         <div class="form-grid">
@@ -366,41 +382,35 @@
           </div>
 
           <div class="full">
-            <label for="start-address">Start Address:</label>
+            <label for="pickup-address">1) Horse Pickup Address:</label>
             <input
               type="text"
-              id="start-address"
-              placeholder="e.g., London, UK"
+              id="pickup-address"
+              placeholder="Pickup postcode / address"
               autocomplete="off"
             />
           </div>
 
           <div>
-            <label for="middle-address1">Stop-off Address 1 (Optional):</label>
+            <label for="destination-address"
+              >2) Destination / Event Address:</label
+            >
             <input
               type="text"
-              id="middle-address1"
-              placeholder="e.g., Birmingham, UK"
+              id="destination-address"
+              placeholder="Drop-off / event address"
               autocomplete="off"
             />
           </div>
 
           <div>
-            <label for="middle-address2">Stop-off Address 2 (Optional):</label>
+            <label for="destination-address2"
+              >3) Destination 2 (Optional):</label
+            >
             <input
               type="text"
-              id="middle-address2"
-              placeholder="e.g., Manchester, UK"
-              autocomplete="off"
-            />
-          </div>
-
-          <div class="full">
-            <label for="end-address">End Address:</label>
-            <input
-              type="text"
-              id="end-address"
-              placeholder="e.g., Glasgow, UK"
+              id="destination-address2"
+              placeholder="Optional second stop"
               autocomplete="off"
             />
           </div>
@@ -469,13 +479,14 @@
         </div>
 
         <div id="error-message">
-          Please enter valid addresses for both start and end.
+          Please enter valid horse pickup and destination addresses.
         </div>
 
         <div id="map"></div>
         <p class="maps-note">
-          Map and distance are provided by Google Maps. The estimate is a guide
-          only.
+          Route: Equine Transport UK → pickup → destination → optional
+          destination 2 → Equine Transport UK. Map and distance are provided by
+          Google Maps. The estimate is a guide only.
         </p>
       </div>
     </div>
@@ -483,13 +494,18 @@
     <script>
       const MAPS_KEY_ENDPOINT =
         "https://www.equinetransportuk.com/test/_functions/mapskey";
+      const BASE_ADDRESS =
+        "Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five Ashes, TN20 6LL";
 
       function initCalculator() {
         const lorryTypeSelect = document.getElementById("lorry-type");
-        const startAddressInput = document.getElementById("start-address");
-        const middleAddress1Input = document.getElementById("middle-address1");
-        const middleAddress2Input = document.getElementById("middle-address2");
-        const endAddressInput = document.getElementById("end-address");
+        const pickupAddressInput = document.getElementById("pickup-address");
+        const destinationAddressInput = document.getElementById(
+          "destination-address",
+        );
+        const destinationAddress2Input = document.getElementById(
+          "destination-address2",
+        );
         const departureTimeInput = document.getElementById("departure-time");
         const payloadInput = document.getElementById("payload");
         const weatherSelect = document.getElementById("weather-condition");
@@ -515,8 +531,8 @@
         });
 
         const map = new google.maps.Map(mapElement, {
-          zoom: 6,
-          center: { lat: 54.0, lng: -2.0 },
+          zoom: 9,
+          center: { lat: 51.0, lng: 0.25 },
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: true,
@@ -525,10 +541,9 @@
         directionsRenderer.setMap(map);
 
         [
-          startAddressInput,
-          middleAddress1Input,
-          middleAddress2Input,
-          endAddressInput,
+          pickupAddressInput,
+          destinationAddressInput,
+          destinationAddress2Input,
         ].forEach((input) => {
           new google.maps.places.Autocomplete(input, {
             componentRestrictions: { country: "uk" },
@@ -558,11 +573,20 @@
           return `${hours} hours, ${minutes} mins`;
         }
 
-        function getLegLabel(index, totalLegs) {
-          if (totalLegs === 1) return "Start to End";
-          if (index === 0) return "Start to Stop 1";
-          if (index === totalLegs - 1) return `Stop ${index} to End`;
-          return `Stop ${index} to Stop ${index + 1}`;
+        function getLegLabel(index, hasDestination2) {
+          const labels = hasDestination2
+            ? [
+                "Equine Transport UK to horse pickup",
+                "Pickup to destination",
+                "Destination to destination 2",
+                "Destination 2 back to Equine Transport UK",
+              ]
+            : [
+                "Equine Transport UK to horse pickup",
+                "Pickup to destination",
+                "Destination back to Equine Transport UK",
+              ];
+          return labels[index] || `Leg ${index + 1}`;
         }
 
         calculateBtn.addEventListener("click", () => {
@@ -571,26 +595,31 @@
           setBusy(true);
 
           const lorryType = lorryTypeSelect.value;
-          const startAddress = startAddressInput.value.trim();
-          const middleAddress1 = middleAddress1Input.value.trim();
-          const middleAddress2 = middleAddress2Input.value.trim();
-          const endAddress = endAddressInput.value.trim();
+          const pickupAddress = pickupAddressInput.value.trim();
+          const destinationAddress = destinationAddressInput.value.trim();
+          const destinationAddress2 = destinationAddress2Input.value.trim();
           const payload = parseFloat(payloadInput.value) || 0;
           const weatherCondition = weatherSelect.value;
           const roadType = roadTypeSelect.value;
           const departureTime = departureTimeInput.value;
+          const hasDestination2 = !!destinationAddress2;
 
-          if (!startAddress || !endAddress) {
+          if (!pickupAddress || !destinationAddress) {
             setBusy(false);
-            showError("Please enter a valid start address and end address.");
+            showError(
+              "Please enter the horse pickup address and destination address.",
+            );
             return;
           }
 
-          const waypoints = [];
-          if (middleAddress1)
-            waypoints.push({ location: middleAddress1, stopover: true });
-          if (middleAddress2)
-            waypoints.push({ location: middleAddress2, stopover: true });
+          const waypoints = [
+            { location: pickupAddress, stopover: true },
+            { location: destinationAddress, stopover: true },
+          ];
+
+          if (hasDestination2) {
+            waypoints.push({ location: destinationAddress2, stopover: true });
+          }
 
           const effectiveDepartureTime = departureTime
             ? new Date(departureTime)
@@ -598,8 +627,8 @@
           const now = new Date();
 
           const request = {
-            origin: startAddress,
-            destination: endAddress,
+            origin: BASE_ADDRESS,
+            destination: BASE_ADDRESS,
             waypoints,
             travelMode: google.maps.TravelMode.DRIVING,
             optimizeWaypoints: false,
@@ -692,7 +721,7 @@
                     leg.duration?.value ||
                     0,
                 );
-                return `<li>${getLegLabel(index, legs.length)}: <strong>${miles} miles</strong> · ${duration}</li>`;
+                return `<li>${getLegLabel(index, hasDestination2)}: <strong>${miles} miles</strong> · ${duration}</li>`;
               })
               .join("");
 
@@ -703,10 +732,9 @@
 
         resetBtn.addEventListener("click", () => {
           lorryTypeSelect.value = "3.5t";
-          startAddressInput.value = "";
-          middleAddress1Input.value = "";
-          middleAddress2Input.value = "";
-          endAddressInput.value = "";
+          pickupAddressInput.value = "";
+          destinationAddressInput.value = "";
+          destinationAddress2Input.value = "";
           departureTimeInput.value = "";
           payloadInput.value = "";
           weatherSelect.value = "sunny";
@@ -716,8 +744,8 @@
           hideError();
           setBusy(false);
           directionsRenderer.setDirections({ routes: [] });
-          map.setCenter({ lat: 54.0, lng: -2.0 });
-          map.setZoom(6);
+          map.setCenter({ lat: 51.0, lng: 0.25 });
+          map.setZoom(9);
         });
       }
 
@@ -734,7 +762,7 @@
             const res = await fetch(MAPS_KEY_ENDPOINT, { cache: "no-store" });
             if (!res.ok)
               throw new Error(`Maps key request failed: ${res.status}`);
-            apiKey = (await res.text()).trim().replace(/^['\"]|['\"]$/g, "");
+            apiKey = (await res.text()).trim().replace(/^[\'\"]|[\'\"]$/g, "");
           }
 
           if (!apiKey) throw new Error("Maps API key is empty");
