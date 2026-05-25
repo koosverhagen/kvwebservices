@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Driven Transport Cost Estimator | Equine Transport UK</title>
+
+    <style>
+      :root {
+        --bg: #f5f7fa;
+        --card: #ffffff;
+        --text: #1d2530;
+        --muted: #5a6675;
+        --line: #dbe1e8;
+        --accent: #1f6feb;
+        --ok: #137a3d;
+        --warn: #b45309;
+        --radius: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          "SF Pro Display",
+          "SF Pro Text",
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        color: var(--text);
+        background: linear-gradient(180deg, #f8f9fb 0%, #eef1f6 100%);
+        line-height: 1.45;
+      }
+
+      .calculator-shell {
+        width: min(820px, 92vw);
+        margin: 0 auto;
+        padding: 24px 0 34px;
+      }
+
+      .calculator-card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 22px;
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+      }
+
+      .kicker {
+        margin: 0 0 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.11em;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(28px, 5vw, 42px);
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+      }
+
+      .lead,
+      .muted {
+        color: var(--muted);
+      }
+
+      .lead {
+        margin: 0 0 18px;
+        font-size: 16px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 46px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        font: inherit;
+        background: #fafbfc;
+        color: var(--text);
+      }
+
+      .full {
+        grid-column: 1 / -1;
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .result-card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #f8fafc;
+      }
+
+      .result-card.total {
+        grid-column: 1 / -1;
+        background: #eef4ff;
+        border-color: #cfe0ff;
+      }
+
+      .result-label {
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+
+      .result-value {
+        margin-top: 5px;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      .result-card.total .result-value {
+        color: #1f3b8b;
+        font-size: 34px;
+      }
+
+      .note {
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid #fed7aa;
+        background: #fff7ed;
+        color: #9a3412;
+        font-size: 14px;
+      }
+
+      .contact-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+        padding: 0 16px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .btn.ghost {
+        background: #fff;
+        color: var(--accent);
+      }
+
+      @media (max-width: 680px) {
+        .form-grid,
+        .result-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .result-card.total {
+          grid-column: auto;
+        }
+
+        .calculator-card {
+          padding: 18px;
+        }
+
+        .contact-row .btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="calculator-shell">
+      <section class="calculator-card">
+        <p class="kicker">Driven transport</p>
+        <h1>Cost Estimator</h1>
+        <p class="lead">
+          Use this as a guide before requesting a confirmed quote for
+          professional driven horse transport.
+        </p>
+
+        <div class="form-grid">
+          <label>
+            Journey type
+            <select id="journey-type">
+              <option value="single">Single journey</option>
+              <option value="return">Return journey</option>
+            </select>
+          </label>
+
+          <label>
+            Estimated loaded miles
+            <input id="loaded-miles" type="number" min="0" step="1" value="40" />
+          </label>
+
+          <label>
+            Empty positioning miles
+            <input id="positioning-miles" type="number" min="0" step="1" value="20" />
+          </label>
+
+          <label>
+            Guide rate per mile
+            <input id="mile-rate" type="number" min="0" step="0.05" value="1.50" />
+          </label>
+
+          <label>
+            Waiting/loading time
+            <input id="waiting-hours" type="number" min="0" step="0.25" value="0" />
+          </label>
+
+          <label>
+            Hourly waiting rate
+            <input id="waiting-rate" type="number" min="0" step="1" value="25" />
+          </label>
+
+          <label>
+            Fixed call-out/admin allowance
+            <input id="fixed-fee" type="number" min="0" step="1" value="0" />
+          </label>
+
+          <label>
+            Road charges / tolls
+            <input id="road-charges" type="number" min="0" step="1" value="0" />
+          </label>
+
+          <p class="muted full">
+            Loaded miles are the miles with the horse on board. Positioning
+            miles allow for travel to/from base or between jobs.
+          </p>
+        </div>
+
+        <div class="result-grid" aria-live="polite">
+          <div class="result-card">
+            <div class="result-label">Mileage used for guide estimate</div>
+            <div class="result-value" id="billable-miles">—</div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-label">Mileage estimate</div>
+            <div class="result-value" id="mileage-cost">—</div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-label">Waiting / extras</div>
+            <div class="result-value" id="extras-cost">—</div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-label">Road charges</div>
+            <div class="result-value" id="charges-cost">—</div>
+          </div>
+
+          <div class="result-card total">
+            <div class="result-label">Guide estimate</div>
+            <div class="result-value" id="total-estimate">—</div>
+          </div>
+        </div>
+
+        <div class="note">
+          This is not a confirmed quote. Final driven transport pricing depends
+          on route, timing, vehicle availability, horse requirements, waiting
+          time and any road charges.
+        </div>
+
+        <div class="contact-row">
+          <a class="btn" href="tel:07812188871" target="_top">Call Avril</a>
+          <a
+            class="btn ghost"
+            href="mailto:info@equinetransportuk.com?subject=Driven%20transport%20quote%20request"
+            target="_top"
+          >
+            Email for quote
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const ids = [
+        "journey-type",
+        "loaded-miles",
+        "positioning-miles",
+        "mile-rate",
+        "waiting-hours",
+        "waiting-rate",
+        "fixed-fee",
+        "road-charges",
+      ];
+
+      function money(value) {
+        return new Intl.NumberFormat("en-GB", {
+          style: "currency",
+          currency: "GBP",
+        }).format(value || 0);
+      }
+
+      function calculate() {
+        const journeyType = document.getElementById("journey-type").value;
+        const loadedMiles = Number(
+          document.getElementById("loaded-miles").value || 0,
+        );
+        const positioningMiles = Number(
+          document.getElementById("positioning-miles").value || 0,
+        );
+        const mileRate = Number(document.getElementById("mile-rate").value || 0);
+        const waitingHours = Number(
+          document.getElementById("waiting-hours").value || 0,
+        );
+        const waitingRate = Number(
+          document.getElementById("waiting-rate").value || 0,
+        );
+        const fixedFee = Number(document.getElementById("fixed-fee").value || 0);
+        const roadCharges = Number(
+          document.getElementById("road-charges").value || 0,
+        );
+
+        const multiplier = journeyType === "return" ? 2 : 1;
+        const billableMiles = loadedMiles * multiplier + positioningMiles;
+        const mileageCost = billableMiles * mileRate;
+        const waitingCost = waitingHours * waitingRate;
+        const extrasCost = waitingCost + fixedFee;
+        const total = mileageCost + extrasCost + roadCharges;
+
+        document.getElementById("billable-miles").textContent =
+          `${billableMiles.toFixed(0)} miles`;
+        document.getElementById("mileage-cost").textContent = money(mileageCost);
+        document.getElementById("extras-cost").textContent = money(extrasCost);
+        document.getElementById("charges-cost").textContent = money(roadCharges);
+        document.getElementById("total-estimate").textContent = money(total);
+      }
+
+      ids.forEach((id) => {
+        document.getElementById(id).addEventListener("input", calculate);
+        document.getElementById(id).addEventListener("change", calculate);
+      });
+
+      calculate();
+    </script>
+  </body>
+</html>
