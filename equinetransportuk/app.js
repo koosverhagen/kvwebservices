@@ -5811,19 +5811,6 @@ if (bookingForm) {
     const hireTotal = Number(selectedAvailability.total || 0);
 
     /* ===============================
-       CONFIRMATION FEE (🔥 FIXED)
-    =============================== */
-
-    let confirmationFee = 75;
-
-    if (vehicleId && vehicleId.startsWith("v75")) {
-      confirmationFee = 100;
-
-      console.log("💰 SUMMARY confirmationFee:", confirmationFee);
-    }
-    const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
-
-    /* ===============================
        BOOKING ID
     =============================== */
 
