@@ -1874,6 +1874,10 @@
         👥 Customers
       </button>
 
+      <button class="mobile-menu-item" onclick="scrollToVouchers()">
+        🎟️ Vouchers
+      </button>
+
       <button class="mobile-menu-item" onclick="loadBookings()">
         🔄 Refresh bookings
       </button>
@@ -2058,6 +2062,133 @@
           </div>
         </div>
       </section>
+
+      <!-- ===============================
+         VOUCHERS
+      =============================== -->
+      <section class="section" id="vouchers-section">
+        <div class="hero-card">
+          <div class="section-head">
+            <h2>Vouchers</h2>
+            <div class="muted">
+              Create customer voucher codes without editing code.
+            </div>
+          </div>
+
+          <div
+            class="toolbar"
+            style="
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+              align-items: end;
+            "
+          >
+            <div class="field">
+              <label for="voucher-token">Admin voucher PIN</label>
+              <input
+                id="voucher-token"
+                type="password"
+                placeholder="Enter admin voucher PIN"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field">
+              <label for="voucher-code">Code</label>
+              <input
+                id="voucher-code"
+                type="text"
+                placeholder="THANKYOU25"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field">
+              <label for="voucher-type">Type</label>
+              <select id="voucher-type">
+                <option value="fixed">£ fixed discount</option>
+                <option value="percent">% percentage discount</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="voucher-value">Value</label>
+              <input
+                id="voucher-value"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="25"
+              />
+            </div>
+
+            <div class="field">
+              <label for="voucher-expires">Expires</label>
+              <input id="voucher-expires" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="voucher-vehicles">Vehicles</label>
+              <select id="voucher-vehicles">
+                <option value="all">All lorries</option>
+                <option value="35">3.5T only</option>
+                <option value="75">7.5T only</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="voucher-min-duration">Minimum duration</label>
+              <select id="voucher-min-duration">
+                <option value="0.5">1/2 day</option>
+                <option value="1" selected>1 day</option>
+                <option value="2">2 days</option>
+                <option value="3">3 days</option>
+                <option value="7">Week</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="voucher-enabled">Status</label>
+              <select id="voucher-enabled">
+                <option value="true" selected>Active</option>
+                <option value="false">Disabled</option>
+              </select>
+            </div>
+          </div>
+
+          <div
+            style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap"
+          >
+            <button class="btn primary" id="voucher-save-btn" type="button">
+              Save voucher
+            </button>
+            <button class="btn ghost" id="voucher-clear-btn" type="button">
+              Clear
+            </button>
+            <button class="btn ghost" id="voucher-refresh-btn" type="button">
+              Refresh vouchers
+            </button>
+          </div>
+
+          <div id="voucher-status" class="status-bar" style="margin-top: 14px">
+            Enter your admin voucher PIN and create a voucher.
+          </div>
+
+          <div
+            id="vouchers-list"
+            style="
+              margin-top: 14px;
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+              gap: 12px;
+            "
+          >
+            <div class="empty-state">Vouchers not loaded yet.</div>
+          </div>
+        </div>
+      </section>
+      <!-- ===============================
+         VOUCHERS
+      =============================== -->
 
       <section class="section">
         <div class="section-head">
@@ -2721,6 +2852,30 @@
       );
       const customerCount = document.getElementById("customer-count");
       const customerAddBtn = document.getElementById("customer-add-btn");
+
+      /* ===============================
+   🎟️ VOUCHERS
+=============================== */
+
+      const vouchersSection = document.getElementById("vouchers-section");
+      const voucherTokenInput = document.getElementById("voucher-token");
+      const voucherCodeInput = document.getElementById("voucher-code");
+      const voucherTypeInput = document.getElementById("voucher-type");
+      const voucherValueInput = document.getElementById("voucher-value");
+      const voucherExpiresInput = document.getElementById("voucher-expires");
+      const voucherVehiclesInput = document.getElementById("voucher-vehicles");
+      const voucherMinDurationInput = document.getElementById(
+        "voucher-min-duration",
+      );
+      const voucherEnabledInput = document.getElementById("voucher-enabled");
+      const voucherSaveBtn = document.getElementById("voucher-save-btn");
+      const voucherClearBtn = document.getElementById("voucher-clear-btn");
+      const voucherRefreshBtn = document.getElementById("voucher-refresh-btn");
+      const voucherStatus = document.getElementById("voucher-status");
+      const vouchersList = document.getElementById("vouchers-list");
+
+      let ALL_VOUCHERS = [];
+      let EDITING_VOUCHER_CODE = null;
 
       const customerModal = document.getElementById("customer-modal");
       const customerModalTitle = document.getElementById(
@@ -5035,6 +5190,296 @@
 
         setActiveMobileTab(1);
       }
+
+      function getVoucherToken() {
+        const typed = String(voucherTokenInput?.value || "").trim();
+
+        if (typed) {
+          localStorage.setItem("etuk_voucher_token", typed);
+          return typed;
+        }
+
+        return localStorage.getItem("etuk_voucher_token") || "";
+      }
+
+      function setVoucherStatus(message, type = "loading") {
+        if (!voucherStatus) return;
+        voucherStatus.textContent = message;
+        voucherStatus.className = `status-bar ${type}`;
+      }
+
+      function scrollToVouchers() {
+        closeMobileMenu?.();
+
+        vouchersSection?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        setActiveMobileTab?.(2);
+
+        loadVouchers();
+      }
+
+      function clearVoucherForm() {
+        EDITING_VOUCHER_CODE = null;
+
+        if (voucherCodeInput) voucherCodeInput.value = "";
+        if (voucherTypeInput) voucherTypeInput.value = "fixed";
+        if (voucherValueInput) voucherValueInput.value = "";
+        if (voucherExpiresInput) voucherExpiresInput.value = "";
+        if (voucherVehiclesInput) voucherVehiclesInput.value = "all";
+        if (voucherMinDurationInput) voucherMinDurationInput.value = "1";
+        if (voucherEnabledInput) voucherEnabledInput.value = "true";
+
+        if (voucherSaveBtn) voucherSaveBtn.textContent = "Save voucher";
+      }
+
+      function getVehicleLabelForVoucher(voucher) {
+        if (voucher.vehicles === "all") return "All lorries";
+
+        const vehicles = Array.isArray(voucher.vehicles)
+          ? voucher.vehicles
+          : [];
+
+        if (
+          vehicles.includes("v35-1") ||
+          vehicles.includes("v35-2") ||
+          vehicles.includes("v35-3")
+        ) {
+          return "3.5T only";
+        }
+
+        if (vehicles.includes("v75-1") || vehicles.includes("v75-2")) {
+          return "7.5T only";
+        }
+
+        return "Custom vehicles";
+      }
+
+      async function loadVouchers() {
+        if (!vouchersList) return;
+
+        const token = getVoucherToken();
+
+        if (!token) {
+          vouchersList.innerHTML = `<div class="empty-state">Enter admin voucher PIN first.</div>`;
+          setVoucherStatus("Enter admin voucher PIN first.", "warn");
+          return;
+        }
+
+        vouchersList.innerHTML = `<div class="empty-state">Loading vouchers...</div>`;
+
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/vouchers`, {
+            cache: "no-store",
+            headers: {
+              "x-admin-voucher-token": token,
+            },
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || "Could not load vouchers");
+          }
+
+          ALL_VOUCHERS = data.vouchers || [];
+          renderVouchers();
+
+          setVoucherStatus(`Loaded ${ALL_VOUCHERS.length} voucher(s).`, "ok");
+        } catch (err) {
+          console.error("Voucher load failed:", err);
+          vouchersList.innerHTML = `<div class="empty-state">Failed to load vouchers.</div>`;
+          setVoucherStatus(err.message || "Failed to load vouchers.", "bad");
+        }
+      }
+
+      function renderVouchers() {
+        if (!vouchersList) return;
+
+        if (!ALL_VOUCHERS.length) {
+          vouchersList.innerHTML = `<div class="empty-state">No vouchers yet.</div>`;
+          return;
+        }
+
+        vouchersList.innerHTML = ALL_VOUCHERS.map((voucher) => {
+          const code = escapeHtml(voucher.code || "");
+          const typeLabel =
+            voucher.type === "percent"
+              ? `${voucher.value}% off`
+              : `£${Number(voucher.value || 0).toFixed(2)} off`;
+          const status = voucher.enabled === false ? "Disabled" : "Active";
+          const pillClass = voucher.enabled === false ? "bad" : "ok";
+          const source = voucher.source === "code" ? "Code file" : "Admin";
+
+          return `
+      <div
+        class="availability-card"
+        style="background:#fff"
+      >
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
+          <div>
+            <h4 style="margin:0 0 6px">${code}</h4>
+            <div class="tiny">${escapeHtml(typeLabel)}</div>
+            <div class="tiny">Vehicles: ${escapeHtml(getVehicleLabelForVoucher(voucher))}</div>
+            <div class="tiny">Min duration: ${escapeHtml(String(voucher.minDuration || 0))} day(s)</div>
+            <div class="tiny">Expires: ${escapeHtml(voucher.expires || "No expiry")}</div>
+            <div class="tiny">Source: ${escapeHtml(source)}</div>
+          </div>
+
+          <span class="pill ${pillClass}">${status}</span>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">
+          ${
+            voucher.source === "code"
+              ? `<button class="btn ghost btn-small" type="button" disabled>Hardcoded</button>`
+              : `
+                <button class="btn ghost btn-small" type="button" onclick="editVoucher('${code}')">
+                  Edit
+                </button>
+                <button class="btn ghost btn-small" type="button" onclick="deleteVoucher('${code}')">
+                  Delete
+                </button>
+              `
+          }
+        </div>
+      </div>
+    `;
+        }).join("");
+      }
+
+      function editVoucher(code) {
+        const voucher = ALL_VOUCHERS.find(
+          (v) =>
+            String(v.code || "").toUpperCase() ===
+            String(code || "").toUpperCase(),
+        );
+
+        if (!voucher) return;
+
+        EDITING_VOUCHER_CODE = voucher.code;
+
+        voucherCodeInput.value = voucher.code || "";
+        voucherTypeInput.value = voucher.type || "fixed";
+        voucherValueInput.value = voucher.value || "";
+        voucherExpiresInput.value = voucher.expires || "";
+        voucherVehiclesInput.value =
+          voucher.vehicleGroup ||
+          (voucher.vehicles === "all"
+            ? "all"
+            : Array.isArray(voucher.vehicles) &&
+                voucher.vehicles.some((v) => String(v).startsWith("v75"))
+              ? "75"
+              : "35");
+        voucherMinDurationInput.value = String(voucher.minDuration || 1);
+        voucherEnabledInput.value =
+          voucher.enabled === false ? "false" : "true";
+
+        voucherSaveBtn.textContent = "Update voucher";
+
+        vouchersSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      async function saveVoucher() {
+        const token = getVoucherToken();
+
+        if (!token) {
+          setVoucherStatus("Enter admin voucher PIN first.", "warn");
+          return;
+        }
+
+        const payload = {
+          code: voucherCodeInput.value,
+          type: voucherTypeInput.value,
+          value: Number(voucherValueInput.value || 0),
+          expires: voucherExpiresInput.value,
+          vehicleGroup: voucherVehiclesInput.value,
+          minDuration: Number(voucherMinDurationInput.value || 1),
+          enabled: voucherEnabledInput.value === "true",
+        };
+
+        try {
+          voucherSaveBtn.disabled = true;
+          voucherSaveBtn.textContent = EDITING_VOUCHER_CODE
+            ? "Updating..."
+            : "Saving...";
+
+          const res = await fetch(`${API_BASE}/api/admin/vouchers/save`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-voucher-token": token,
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || "Could not save voucher");
+          }
+
+          setVoucherStatus(`✅ Voucher ${data.voucher.code} saved.`, "ok");
+          clearVoucherForm();
+          await loadVouchers();
+        } catch (err) {
+          console.error("Voucher save failed:", err);
+          setVoucherStatus(err.message || "Could not save voucher.", "bad");
+        } finally {
+          voucherSaveBtn.disabled = false;
+          voucherSaveBtn.textContent = EDITING_VOUCHER_CODE
+            ? "Update voucher"
+            : "Save voucher";
+        }
+      }
+
+      async function deleteVoucher(code) {
+        const token = getVoucherToken();
+
+        if (!token) {
+          setVoucherStatus("Enter admin voucher PIN first.", "warn");
+          return;
+        }
+
+        if (!confirm(`Delete voucher ${code}?`)) return;
+
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/vouchers/delete`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-voucher-token": token,
+            },
+            body: JSON.stringify({ code }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || "Could not delete voucher");
+          }
+
+          setVoucherStatus(`✅ Voucher ${code} deleted.`, "ok");
+          await loadVouchers();
+        } catch (err) {
+          console.error("Voucher delete failed:", err);
+          setVoucherStatus(err.message || "Could not delete voucher.", "bad");
+        }
+      }
+
+      voucherSaveBtn?.addEventListener("click", saveVoucher);
+      voucherClearBtn?.addEventListener("click", clearVoucherForm);
+      voucherRefreshBtn?.addEventListener("click", loadVouchers);
+
+      voucherTokenInput?.addEventListener("change", () => {
+        const token = String(voucherTokenInput.value || "").trim();
+        if (token) {
+          localStorage.setItem("etuk_voucher_token", token);
+          loadVouchers();
+        }
+      });
 
       async function scrollToCustomers() {
         closeMobileMenu?.();
@@ -8245,6 +8690,17 @@
           window.__calendarReady = true;
 
           await loadAdminCalendar();
+
+          try {
+            const savedVoucherToken =
+              localStorage.getItem("etuk_voucher_token") || "";
+            if (voucherTokenInput && savedVoucherToken) {
+              voucherTokenInput.value = savedVoucherToken;
+              await loadVouchers();
+            }
+          } catch (err) {
+            console.warn("Voucher load skipped:", err);
+          }
         } catch (err) {
           console.error("Init failed:", err);
         }
