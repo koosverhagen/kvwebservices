@@ -3626,9 +3626,12 @@ async function updateCheckoutSummary() {
     vehicles.find((v) => v.name === selectedAvailability?.vehicle?.name)?.id ||
     "";
 
-  const confirmationFee = String(vehicleId).startsWith("v75")
+  const rawConfirmationFee = String(vehicleId).startsWith("v75")
     ? CONFIRMATION_FEE_75T
     : CONFIRMATION_FEE_35T;
+
+  // ✅ Pay now must never be more than the final discounted hire total
+  const confirmationFee = Math.min(rawConfirmationFee, hireTotal);
 
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
@@ -5866,6 +5869,15 @@ if (bookingForm) {
       );
       dropoffAt.setHours(7, 0, 0, 0);
     }
+
+    /* ===============================
+   PAYMENT SPLIT
+   Pay now must never exceed discounted total hire
+=============================== */
+
+    const rawConfirmationFee = getConfirmationFeeFromId(vehicleId);
+    const confirmationFee = Math.min(rawConfirmationFee, hireTotal);
+    const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
     /* ===============================
    BOOKING OBJECT
