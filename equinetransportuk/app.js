@@ -3102,6 +3102,9 @@ async function buildAvailability(
     dropoffAt,
     extras,
 
+    // ✅ Voucher / discount code used for this quote
+    discountCode: discountCode || "",
+
     baseCost: pricing.baseCost,
     discountAmount: pricing.discountAmount,
     extrasTotal: pricing.extrasTotal,
@@ -5116,6 +5119,9 @@ async function createStripeCheckoutSession(booking) {
           bookingId: booking.id,
           confirmationFee: booking.confirmationFee,
 
+          // ✅ Voucher code sent to backend for final server-side validation
+          discountCode: booking.discountCode || getCurrentDiscountCode(),
+
           extras,
 
           // ✅ only include if exists
@@ -5200,9 +5206,18 @@ function resetBookingCustomerFields() {
 
   if (earlyPickupEnabledInput) earlyPickupEnabledInput.checked = false;
 
+  const discountCodeInput = document.getElementById("discount-code");
+  if (discountCodeInput) discountCodeInput.value = "";
+
+  if (discountMessage) {
+    discountMessage.hidden = true;
+    discountMessage.textContent = "";
+    discountMessage.className = "voucher-message muted tiny";
+  }
+
   /* ===============================
-     🔥 RESET AVAILABILITY STATE (CRITICAL)
-  =============================== */
+   🔥 RESET AVAILABILITY STATE (CRITICAL)
+=============================== */
 
   selectedAvailability = null;
 
@@ -5889,6 +5904,8 @@ if (bookingForm) {
       /* 🔥 SERVER-DRIVEN TOTALS */
       baseCost,
       discountAmount,
+      discountCode:
+        selectedAvailability.discountCode || getCurrentDiscountCode(),
       extrasTotal: Number(selectedAvailability.extrasTotal || 0),
       hireTotal,
       confirmationFee,
