@@ -448,6 +448,33 @@ removed duplicate, script is loaded at end of body -->
                       </div>
                     </div>
 
+                    <div class="voucher-card">
+                      <div class="voucher-left">
+                        <label for="discount-code">Voucher code</label>
+                        <input
+                          id="discount-code"
+                          type="text"
+                          placeholder="Enter voucher code"
+                          autocomplete="off"
+                        />
+                        <div
+                          id="discount-message"
+                          class="voucher-message muted tiny"
+                          hidden
+                        ></div>
+                      </div>
+
+                      <div class="voucher-right">
+                        <button
+                          id="apply-discount"
+                          class="btn btn-ghost"
+                          type="button"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+
                     <div class="extras-grid">
                       <label class="check">
                         <input id="early-pickup-enabled" type="checkbox" />

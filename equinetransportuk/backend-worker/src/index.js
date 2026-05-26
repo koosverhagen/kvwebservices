@@ -2039,20 +2039,31 @@ It is only a security hold.
 
 const DISCOUNT_CODES = [
   {
-    code: "SPRING10",
+    // 10% off any lorry, minimum 1 day
+    code: "WELCOME10",
     type: "percent",
     value: 10,
-    expires: "2026-05-31",
+    expires: "2026-12-31",
     vehicles: "all",
     minDuration: 1,
   },
   {
-    code: "HALFDAY15",
+    // £25 off any 3.5T lorry
+    code: "THANKYOU25",
     type: "fixed",
-    value: 15,
+    value: 25,
     expires: "2026-12-31",
     vehicles: ["v35-1", "v35-2", "v35-3"],
-    minDuration: 0.5,
+    minDuration: 1,
+  },
+  {
+    // £50 off 7.5T bookings
+    code: "SEVEN50",
+    type: "fixed",
+    value: 50,
+    expires: "2026-12-31",
+    vehicles: ["v75-1", "v75-2"],
+    minDuration: 1,
   },
 ];
 
