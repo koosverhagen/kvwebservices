@@ -162,7 +162,7 @@ export default {
       ================================ */
 
       if (request.method === "POST" && url.pathname === "/api/pricing/quote") {
-        const response = await handlePricingQuote(request);
+        const response = await handlePricingQuote(request, env);
         return withCors(response, corsHeaders);
       }
 
@@ -316,6 +316,31 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/api/bookings/clear") {
         const response = await handleClearBookings(env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+   ADMIN VOUCHERS
+================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/admin/vouchers") {
+        const response = await handleAdminListVouchers(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/vouchers/save"
+      ) {
+        const response = await handleAdminSaveVoucher(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/vouchers/delete"
+      ) {
+        const response = await handleAdminDeleteVoucher(request, env);
         return withCors(response, corsHeaders);
       }
 
@@ -2067,7 +2092,7 @@ const DISCOUNT_CODES = [
   },
 ];
 
-async function handlePricingQuote(request) {
+async function handlePricingQuote(request, env) {
   const payload = await request.json();
 
   const {
@@ -2085,7 +2110,8 @@ async function handlePricingQuote(request) {
 
   const baseCost = calculateServerBaseCost(vehicleId, durationDays, pickupDate);
 
-  const discount = resolveDiscount({
+  const discount = await resolveDiscount({
+    env,
     code: discountCode,
     vehicleId,
     durationDays,
@@ -2183,19 +2209,34 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
    DISCOUNT LOGIC
 ================================ */
 
-function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
+async function resolveDiscount({
+  env,
+  code,
+  vehicleId,
+  durationDays,
+  baseCost,
+}) {
   if (!code) return { discountAmount: 0 };
 
-  const entry = DISCOUNT_CODES.find(
-    (d) => d.code.toUpperCase() === code.toUpperCase(),
+  const discountCodes = await getActiveDiscountCodes(env);
+
+  const entry = discountCodes.find(
+    (d) =>
+      String(d.code || "").toUpperCase() === String(code || "").toUpperCase(),
   );
 
   if (!entry) return { error: "Invalid code" };
 
-  const now = new Date();
-  const expiry = new Date(entry.expires + "T23:59:59");
+  if (entry.enabled === false) {
+    return { error: "Code is disabled" };
+  }
 
-  if (now > expiry) return { error: "Code expired" };
+  const now = new Date();
+
+  if (entry.expires) {
+    const expiry = new Date(entry.expires + "T23:59:59");
+    if (now > expiry) return { error: "Code expired" };
+  }
 
   if (entry.vehicles !== "all" && !entry.vehicles.includes(vehicleId)) {
     return { error: "Code not valid for this vehicle" };
@@ -2208,18 +2249,182 @@ function resolveDiscount({ code, vehicleId, durationDays, baseCost }) {
   let discountAmount = 0;
 
   if (entry.type === "percent") {
-    discountAmount = (baseCost * entry.value) / 100;
+    discountAmount = (baseCost * Number(entry.value || 0)) / 100;
   }
 
   if (entry.type === "fixed") {
-    discountAmount = entry.value;
+    discountAmount = Number(entry.value || 0);
   }
 
   discountAmount = Math.min(discountAmount, baseCost);
 
   return {
     discountAmount: Number(discountAmount.toFixed(2)),
+    code: entry.code,
   };
+}
+
+async function getActiveDiscountCodes(env) {
+  const map = new Map();
+
+  for (const item of DISCOUNT_CODES || []) {
+    if (!item?.code) continue;
+    map.set(String(item.code).toUpperCase(), {
+      ...item,
+      source: "code",
+      enabled: item.enabled !== false,
+    });
+  }
+
+  try {
+    const list = await env.BOOKINGS_KV.list({ prefix: "voucher:" });
+
+    for (const key of list.keys) {
+      const raw = await env.BOOKINGS_KV.get(key.name);
+      if (!raw) continue;
+
+      try {
+        const voucher = JSON.parse(raw);
+        if (!voucher?.code) continue;
+
+        // KV/admin vouchers override hardcoded vouchers with the same code.
+        map.set(String(voucher.code).toUpperCase(), {
+          ...voucher,
+          source: "admin",
+        });
+      } catch {}
+    }
+  } catch (err) {
+    console.warn("⚠️ Voucher KV load failed:", err);
+  }
+
+  return Array.from(map.values());
+}
+
+function requireAdminVoucherAuth(request, env) {
+  const expected = String(env.ADMIN_VOUCHER_TOKEN || "").trim();
+
+  if (!expected) {
+    return { ok: false, error: "ADMIN_VOUCHER_TOKEN is not configured" };
+  }
+
+  const supplied = String(
+    request.headers.get("x-admin-voucher-token") || "",
+  ).trim();
+
+  if (!supplied || supplied !== expected) {
+    return { ok: false, error: "Not authorised" };
+  }
+
+  return { ok: true };
+}
+
+function normaliseVoucherPayload(input) {
+  const code = String(input.code || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9_-]/g, "");
+
+  const type = String(input.type || "").trim();
+  const value = Number(input.value || 0);
+  const expires = String(input.expires || "").trim();
+  const vehicleGroup = String(input.vehicleGroup || "all").trim();
+  const minDuration = Number(input.minDuration || 0);
+  const enabled = input.enabled !== false;
+
+  if (!code) throw new Error("Voucher code required");
+  if (!["fixed", "percent"].includes(type)) {
+    throw new Error("Voucher type must be fixed or percent");
+  }
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error("Voucher value must be greater than 0");
+  }
+  if (type === "percent" && value > 100) {
+    throw new Error("Percentage cannot be more than 100");
+  }
+  if (expires && Number.isNaN(new Date(expires + "T23:59:59").getTime())) {
+    throw new Error("Expiry date is invalid");
+  }
+
+  let vehicles = "all";
+
+  if (vehicleGroup === "35") {
+    vehicles = ["v35-1", "v35-2", "v35-3"];
+  }
+
+  if (vehicleGroup === "75") {
+    vehicles = ["v75-1", "v75-2"];
+  }
+
+  if (vehicleGroup === "all") {
+    vehicles = "all";
+  }
+
+  return {
+    code,
+    type,
+    value,
+    expires,
+    vehicles,
+    vehicleGroup,
+    minDuration,
+    enabled,
+    createdAt: input.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function handleAdminListVouchers(request, env) {
+  const auth = requireAdminVoucherAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const vouchers = await getActiveDiscountCodes(env);
+
+  vouchers.sort((a, b) =>
+    String(a.code || "").localeCompare(String(b.code || "")),
+  );
+
+  return json({ vouchers });
+}
+
+async function handleAdminSaveVoucher(request, env) {
+  const auth = requireAdminVoucherAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  try {
+    const body = await request.json();
+    const voucher = normaliseVoucherPayload(body);
+
+    await env.BOOKINGS_KV.put(
+      `voucher:${voucher.code}`,
+      JSON.stringify(voucher),
+    );
+
+    return json({ ok: true, voucher });
+  } catch (err) {
+    return json({ error: err.message || "Could not save voucher" }, 400);
+  }
+}
+
+async function handleAdminDeleteVoucher(request, env) {
+  const auth = requireAdminVoucherAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  try {
+    const body = await request.json();
+    const code = String(body.code || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_-]/g, "");
+
+    if (!code) return json({ error: "Missing voucher code" }, 400);
+
+    await env.BOOKINGS_KV.delete(`voucher:${code}`);
+
+    return json({ ok: true });
+  } catch (err) {
+    return json({ error: err.message || "Could not delete voucher" }, 400);
+  }
 }
 
 /* ===============================
@@ -2275,7 +2480,8 @@ async function handleCreateCheckoutSession(request, env) {
     booking.pickupDate,
   );
 
-  const discount = resolveDiscount({
+  const discount = await resolveDiscount({
+    env,
     code: booking.discountCode,
     vehicleId: booking.vehicleId,
     durationDays,
