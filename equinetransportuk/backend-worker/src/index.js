@@ -6830,7 +6830,8 @@ function buildCorsHeaders() {
   return {
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET,POST,OPTIONS",
-    "access-control-allow-headers": "content-type,stripe-signature",
+    "access-control-allow-headers":
+      "content-type,stripe-signature,x-admin-voucher-token",
   };
 }
 
