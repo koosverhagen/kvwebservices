@@ -2521,7 +2521,11 @@ async function handleCreateCheckoutSession(request, env) {
     return 75;
   }
 
-  const confirmationFee = getExpectedConfirmationFee(booking.vehicleId);
+  const rawConfirmationFee = getExpectedConfirmationFee(booking.vehicleId);
+
+  // ✅ Pay now must never be more than the final discounted hire total
+  const confirmationFee = Math.min(rawConfirmationFee, totalHire);
+
   const outstandingAmount = Math.max(0, totalHire - confirmationFee);
 
   /* ===============================
@@ -4822,6 +4826,7 @@ async function handleStripeWebhook(request, env) {
 
         baseCost,
         discountAmount,
+        discountCode: session.metadata.discountCode || "",
 
         dartfordTotal,
         earlyPickupTotal,
