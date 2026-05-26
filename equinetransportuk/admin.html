@@ -8062,7 +8062,7 @@
           =============================== */
 
           console.log("🧾 loading audit for", booking.id);
-          loadAuditLog(booking.id);
+          loadAuditLog(booking.id, booking);
         } else {
           // 👉 NEW BOOKING → disable refund section
           if (refundBtn) {
@@ -8151,7 +8151,7 @@
         }
       }
 
-      async function loadAuditLog(bookingId) {
+      async function loadAuditLog(bookingId, booking = null) {
         const el = document.getElementById("audit-log");
 
         if (!el) return;
@@ -8183,8 +8183,45 @@
             return;
           }
 
+          /* ===============================
+   🎟️ VOUCHER HISTORY
+=============================== */
+
+          const voucherCode = String(
+            booking?.discountCode ||
+              booking?.voucherCode ||
+              booking?.discount?.code ||
+              "",
+          ).trim();
+
+          const voucherAmount = Number(
+            booking?.discountAmount ||
+              booking?.voucherAmount ||
+              booking?.discount?.amount ||
+              0,
+          );
+
+          const voucherHistoryHtml =
+            voucherCode || voucherAmount > 0
+              ? `
+      🎟️ Voucher applied<br>
+      Code: <strong>${escapeHtml(voucherCode || "Unknown")}</strong><br>
+      Discount: <strong>-£${Number(voucherAmount || 0).toFixed(2)}</strong><br>
+      ${
+        booking?.createdAt
+          ? new Date(booking.createdAt).toLocaleString("en-GB")
+          : "Booking checkout"
+      }
+    `
+              : "";
+
           if (!data.audit || !data.audit.length) {
-            el.textContent = "No history yet.";
+            if (voucherHistoryHtml) {
+              el.innerHTML = voucherHistoryHtml;
+            } else {
+              el.textContent = "No history yet.";
+            }
+
             return;
           }
 
@@ -8283,6 +8320,10 @@
               return `• ${a.type} — ${date}`;
             })
             .join("<br><br>");
+
+          if (voucherHistoryHtml) {
+            el.innerHTML = `${voucherHistoryHtml}<br><br>${el.innerHTML}`;
+          }
         } catch (err) {
           console.error("❌ Audit load failed:", err);
 
