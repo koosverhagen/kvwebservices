@@ -2940,6 +2940,7 @@ async function fetchServerQuote(
     return {
       baseCost: Number(pricing.baseCost ?? 0),
       discountAmount: Number(pricing.discountAmount ?? 0),
+      discountCode: String(pricing.discountCode || ""),
       extrasTotal: Number(pricing.extrasTotal ?? 0),
       total: Number(pricing.total ?? 0),
     };
@@ -3102,8 +3103,11 @@ async function buildAvailability(
     dropoffAt,
     extras,
 
-    // ✅ Voucher / discount code used for this quote
-    discountCode: discountCode || "",
+    // ✅ Only keep voucher code if backend actually applied a discount
+    discountCode:
+      Number(pricing.discountAmount || 0) > 0
+        ? String(pricing.discountCode || discountCode || "")
+        : "",
 
     baseCost: pricing.baseCost,
     discountAmount: pricing.discountAmount,
@@ -4553,7 +4557,8 @@ if (applyDiscountBtn) {
           discountMessage.textContent = "Voucher applied ✓";
           discountMessage.className = "voucher-message ok tiny";
         } else {
-          discountMessage.textContent = "Code valid but no discount applied.";
+          discountMessage.textContent =
+            "Voucher not valid — booking will continue at normal price.";
           discountMessage.className = "voucher-message muted tiny";
         }
       }
@@ -5122,8 +5127,10 @@ async function createStripeCheckoutSession(booking) {
           bookingId: booking.id,
           confirmationFee: booking.confirmationFee,
 
-          // ✅ Voucher code sent to backend for final server-side validation
-          discountCode: booking.discountCode || getCurrentDiscountCode(),
+          // ✅ Only send a voucher that was actually applied to the quote.
+          // Invalid text typed in the box must not block checkout.
+          discountCode:
+            booking.discountCode || selectedAvailability.discountCode || "",
 
           extras,
 
