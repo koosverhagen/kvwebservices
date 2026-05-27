@@ -3686,6 +3686,15 @@
         return booking?.customerEmail || booking?.customer_email || "—";
       }
 
+      function getBookingNotes(booking) {
+        return String(
+          booking?.customerNotes ||
+            booking?.customer_notes ||
+            booking?.notes ||
+            "",
+        ).trim();
+      }
+
       function isFormComplete(booking) {
         return (
           booking?.formCompleted === true || booking?.form_completed === true
@@ -4806,15 +4815,38 @@
           const isCancelled =
             String(booking.status || "").toLowerCase() === "cancelled";
 
+          const bookingNotes = getBookingNotes(booking);
+
+          const notesHtml = bookingNotes
+            ? `
+    <div
+      class="tiny"
+      style="
+        margin-top: 6px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: #fff8dc;
+        border-left: 3px solid #facc15;
+        color: #334155;
+        white-space: normal;
+        max-width: 260px;
+      "
+    >
+      <strong>Notes:</strong> ${escapeHtml(bookingNotes)}
+    </div>
+  `
+            : "";
+
           const customerCell = `
-        <div class="customer-block">
-          <div class="customer-name">
-            ${escapeHtml(getCustomerName(booking))}
-            ${isCancelled ? '<span class="badge-cancelled">Cancelled</span>' : ""}
-          </div>
-          ${buildContactButtons(booking)}
-        </div>
-      `;
+  <div class="customer-block">
+    <div class="customer-name">
+      ${escapeHtml(getCustomerName(booking))}
+      ${isCancelled ? '<span class="badge-cancelled">Cancelled</span>' : ""}
+    </div>
+    ${buildContactButtons(booking)}
+    ${notesHtml}
+  </div>
+`;
 
           const vehicleCell = `
             <div>
@@ -5034,6 +5066,80 @@
 
           const ref = shortRef(booking.id);
 
+          const bookingNotes = getBookingNotes(booking);
+
+          const notesBox = bookingNotes
+            ? `
+    <div class="mobile-info-box" style="grid-column: 1 / -1">
+      <div class="mobile-info-label">
+        Notes
+      </div>
+
+      <div class="mobile-info-value" style="white-space: normal">
+        ${escapeHtml(bookingNotes)}
+      </div>
+    </div>
+  `
+            : "";
+
+          const bookingId = booking.id || "";
+          const phone = booking.customerMobile || "";
+          const firstName = getFirstName(customerName);
+          const requiredType = getRequiredFormType(booking) || "long";
+
+          const formDone = isFormComplete(booking);
+          const depositDone = isDepositPaid(booking);
+          const outstandingDone = isOutstandingPaid(booking);
+
+          const mobileFormWhatsapp =
+            phone && !formDone
+              ? `
+      <button
+        class="mobile-link-btn js-wa"
+        type="button"
+        data-phone="${escapeHtml(phone)}"
+        data-type="form"
+        data-name="${escapeHtml(firstName)}"
+        data-id="${escapeHtml(bookingId)}"
+        data-formtype="${escapeHtml(requiredType)}"
+      >
+        📲 WA Form
+      </button>
+    `
+              : "";
+
+          const mobileDepositWhatsapp =
+            phone && !depositDone
+              ? `
+      <button
+        class="mobile-link-btn js-wa"
+        type="button"
+        data-phone="${escapeHtml(phone)}"
+        data-type="deposit"
+        data-name="${escapeHtml(firstName)}"
+        data-id="${escapeHtml(bookingId)}"
+      >
+        📲 WA Deposit
+      </button>
+    `
+              : "";
+
+          const mobileOutstandingWhatsapp =
+            phone && !outstandingDone
+              ? `
+      <button
+        class="mobile-link-btn js-wa"
+        type="button"
+        data-phone="${escapeHtml(phone)}"
+        data-type="outstanding"
+        data-name="${escapeHtml(firstName)}"
+        data-id="${escapeHtml(bookingId)}"
+      >
+        📲 WA Balance
+      </button>
+    `
+              : "";
+
           mobileCard.innerHTML = `
 
             <div class="mobile-booking-top">
@@ -5139,56 +5245,43 @@
             </div>
           </div>
 
-          <div class="mobile-info-box">
-            <div class="mobile-info-label">
-              DVLA
-            </div>
+         <div class="mobile-info-box">
+  <div class="mobile-info-label">
+    DVLA
+  </div>
 
-            <div class="mobile-info-value">
-              ${booking.dvlaVerified ? "Verified" : "Pending"}
-            </div>
-          </div>
+  <div class="mobile-info-value">
+    ${booking.dvlaVerified ? "Verified" : "Pending"}
+  </div>
+</div>
+
+${notesBox}
+
+</div>
 
         </div>
 
        <div class="mobile-link-actions">
 
-        <button
-        class="mobile-link-btn"
-        onclick="openMobileForm('${booking.id}')"
-      >
-        📝 View Form
-      </button>
+  <button
+    class="mobile-link-btn"
+    onclick="openMobileForm('${booking.id}')"
+  >
+    📝 View Form
+  </button>
 
-          <button
-            class="mobile-link-btn"
-           onclick="handleMobileResend('${booking.id}','form',this)"
-          >
-            📄 Form
-          </button>
+  ${mobileFormWhatsapp}
+  ${mobileDepositWhatsapp}
+  ${mobileOutstandingWhatsapp}
 
-          <button
-            class="mobile-link-btn"
-            onclick="handleMobileResend('${booking.id}','deposit',this)"
-          >
-            💳 Deposit
-          </button>
+  <button
+    class="mobile-link-btn mobile-edit-btn"
+    onclick="openEditBookingById('${booking.id}')"
+  >
+    Edit
+  </button>
 
-          <button
-            class="mobile-link-btn"
-            onclick="handleMobileResend('${booking.id}','outstanding',this)"
-          >
-            💰 Balance
-          </button>
-
-          <button
-        class="mobile-link-btn mobile-edit-btn"
-        onclick="openEditBookingById('${booking.id}')"
-      >
-        Edit
-      </button>
-
-        </div>
+</div>
 
       </div>
 
