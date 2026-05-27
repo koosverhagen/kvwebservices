@@ -4656,9 +4656,7 @@
     ${recentSorted.map(renderRow).join("")}
   `;
 
-            mobileBookings.innerHTML = recentSorted
-              .map(renderMobileCard)
-              .join("");
+            renderMobileCards(recentSorted);
 
             setTimeout(syncScroll, 0);
             return;
