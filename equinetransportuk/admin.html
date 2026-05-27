@@ -3700,6 +3700,9 @@
         return String(
           booking?.customerNotes ||
             booking?.customer_notes ||
+            booking?.adminNote ||
+            booking?.admin_note ||
+            booking?.note ||
             booking?.notes ||
             "",
         ).trim();
