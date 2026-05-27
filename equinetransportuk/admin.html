@@ -2220,7 +2220,7 @@
          VOUCHERS
       =============================== -->
 
-      <section class="section">
+      <section class="section" id="bookings-section">
         <div class="section-head">
           <h2>Bookings</h2>
           <div class="muted">Click “View Form” to load full submission</div>
@@ -5247,13 +5247,26 @@
 
               </div>
 
-              <div>
-                ${
-                  booking.formCompleted
-                    ? '<span class="pill ok">Form Complete</span>'
-                    : '<span class="pill warn">Form Pending</span>'
-                }
-              </div>
+              <div
+  style="
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+  "
+>
+  ${
+    booking.formCompleted
+      ? '<span class="pill ok">Form Complete</span>'
+      : '<span class="pill warn">Form Pending</span>'
+  }
+
+  ${
+    depositDone
+      ? '<span class="pill ok">Deposit Complete</span>'
+      : '<span class="pill warn">Deposit Pending</span>'
+  }
+</div>
 
             </div>
 
@@ -7081,19 +7094,30 @@ ${notesBox}
 =============================== */
 
       function scrollToFirstBooking() {
+        const bookingsSection = document.getElementById("bookings-section");
+        const firstMobileBooking = document.querySelector(
+          ".mobile-booking-card",
+        );
+        const bookingsTable = document.querySelector(".bookings-table");
+
         /* ===============================
      📱 MOBILE
+     Scroll to the rendered booking cards/results area,
+     not the calendar.
   =============================== */
 
         if (window.innerWidth <= 768) {
-          const firstBooking = document.querySelector(".mobile-booking-card");
+          const target = firstMobileBooking || bookingsSection;
 
-          if (firstBooking) {
-            firstBooking.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
+          if (!target) return;
+
+          const y =
+            target.getBoundingClientRect().top + window.pageYOffset - 84;
+
+          window.scrollTo({
+            top: Math.max(0, y),
+            behavior: "smooth",
+          });
 
           return;
         }
@@ -7102,15 +7126,14 @@ ${notesBox}
      🖥️ DESKTOP
   =============================== */
 
-        const bookingsTable = document.querySelector(".bookings-table");
+        const target = bookingsTable || bookingsSection;
 
-        if (!bookingsTable) return;
+        if (!target) return;
 
-        const y =
-          bookingsTable.getBoundingClientRect().top + window.pageYOffset - 120;
+        const y = target.getBoundingClientRect().top + window.pageYOffset - 120;
 
         window.scrollTo({
-          top: y,
+          top: Math.max(0, y),
           behavior: "smooth",
         });
       }
@@ -7122,7 +7145,10 @@ ${notesBox}
       applyFiltersBtn?.addEventListener("click", async () => {
         await loadBookings();
 
-        await new Promise((r) => setTimeout(r, 150));
+        // Give mobile layout + calendar refresh time to settle before scrolling.
+        await new Promise((r) =>
+          setTimeout(r, window.innerWidth <= 768 ? 450 : 150),
+        );
 
         scrollToFirstBooking();
 
