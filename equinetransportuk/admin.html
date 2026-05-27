@@ -4574,7 +4574,17 @@
 
             return true;
           })
-          .sort((a, b) => getBookingPickupTime(a) - getBookingPickupTime(b));
+          .sort((a, b) => {
+            const mode = timeFilter?.value || "upcoming";
+
+            // ✅ Recent bookings: newest booking created first
+            if (mode === "recent") {
+              return getBookingCreatedTime(b) - getBookingCreatedTime(a);
+            }
+
+            // ✅ Everything else: oldest pickup date first
+            return getBookingPickupTime(a) - getBookingPickupTime(b);
+          });
 
         bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
         /* ===============================
