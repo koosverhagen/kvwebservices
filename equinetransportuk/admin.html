@@ -4577,12 +4577,12 @@
           .sort((a, b) => {
             const mode = timeFilter?.value || "upcoming";
 
-            // ✅ Recent bookings: newest booking created first
+            // ✅ Recent bookings = booking creation date, newest first
             if (mode === "recent") {
               return getBookingCreatedTime(b) - getBookingCreatedTime(a);
             }
 
-            // ✅ Everything else: oldest pickup date first
+            // ✅ Other searches = hire/pickup date, oldest first
             return getBookingPickupTime(a) - getBookingPickupTime(b);
           });
 
@@ -4640,14 +4640,35 @@
           const nowTime = Date.now();
 
           /* ===============================
-           MODE-SPECIFIC GROUPING (FIX)
-        =============================== */
-
-          /* ===============================
-   🔥 ALL / RECENT BOOKINGS MODE
+   🆕 RECENT BOOKINGS
+   Ordered by booking-created date, newest first
 =============================== */
 
-          if (mode === "all" || mode === "recent") {
+          if (mode === "recent") {
+            const recentSorted = [...filteredBookings].sort(
+              (a, b) => getBookingCreatedTime(b) - getBookingCreatedTime(a),
+            );
+
+            bookingsBody.innerHTML = `
+    <tr class="section-header">
+      <td colspan="7">🆕 Recent Bookings</td>
+    </tr>
+    ${recentSorted.map(renderRow).join("")}
+  `;
+
+            mobileBookings.innerHTML = recentSorted
+              .map(renderMobileCard)
+              .join("");
+
+            setTimeout(syncScroll, 0);
+            return;
+          }
+
+          /* ===============================
+   🔥 ALL BOOKINGS MODE
+=============================== */
+
+          if (mode === "all") {
             const monthDate = new Date(
               pickup.getFullYear(),
               pickup.getMonth(),
