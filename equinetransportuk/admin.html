@@ -5084,6 +5084,7 @@
 
           const bookingId = booking.id || "";
           const phone = booking.customerMobile || "";
+          const email = booking.customerEmail || "";
           const firstName = getFirstName(customerName);
           const requiredType = getRequiredFormType(booking) || "long";
 
@@ -5136,6 +5137,48 @@
         data-id="${escapeHtml(bookingId)}"
       >
         📲 WA Balance
+      </button>
+    `
+              : "";
+
+          const mobileFormEmail =
+            email && !formDone
+              ? `
+      <button
+        class="mobile-link-btn js-resend-email"
+        type="button"
+        data-id="${escapeHtml(bookingId)}"
+        data-type="form"
+      >
+        ✉️ Email Form
+      </button>
+    `
+              : "";
+
+          const mobileDepositEmail =
+            email && !depositDone
+              ? `
+      <button
+        class="mobile-link-btn js-resend-email"
+        type="button"
+        data-id="${escapeHtml(bookingId)}"
+        data-type="deposit"
+      >
+        ✉️ Email Deposit
+      </button>
+    `
+              : "";
+
+          const mobileOutstandingEmail =
+            email && !outstandingDone
+              ? `
+      <button
+        class="mobile-link-btn js-resend-email"
+        type="button"
+        data-id="${escapeHtml(bookingId)}"
+        data-type="outstanding"
+      >
+        ✉️ Email Balance
       </button>
     `
               : "";
@@ -5271,8 +5314,13 @@ ${notesBox}
   </button>
 
   ${mobileFormWhatsapp}
+  ${mobileFormEmail}
+
   ${mobileDepositWhatsapp}
+  ${mobileDepositEmail}
+
   ${mobileOutstandingWhatsapp}
+  ${mobileOutstandingEmail}
 
   <button
     class="mobile-link-btn mobile-edit-btn"
