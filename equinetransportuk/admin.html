@@ -1949,6 +1949,15 @@
             </div>
 
             <div class="field">
+              <label for="deposit-filter">Deposit</label>
+              <select id="deposit-filter">
+                <option value="all">All bookings</option>
+                <option value="active_deposit">Active deposit</option>
+                <option value="no_active_deposit">No active deposit</option>
+              </select>
+            </div>
+
+            <div class="field">
               <label for="range-from">From</label>
               <input id="range-from" type="date" />
             </div>
@@ -2817,6 +2826,7 @@
         "booking-vehicle-filter",
       );
       const voucherFilter = document.getElementById("voucher-filter");
+      const depositFilter = document.getElementById("deposit-filter");
       const applyFiltersBtn = document.getElementById("apply-filters-btn");
 
       const availDateInput = document.getElementById("avail-date");
@@ -4454,6 +4464,40 @@
         return true;
       }
 
+      function bookingHasActiveDeposit(booking) {
+        const depositSecured =
+          booking?.depositPaid === true ||
+          booking?.deposit_paid === 1 ||
+          booking?.depositStatus === "paid" ||
+          booking?.depositStatus === "secured";
+
+        const depositCancelled =
+          booking?.depositCancelled === true ||
+          booking?.deposit_cancelled === 1 ||
+          booking?.depositStatus === "cancelled";
+
+        const capturedAmount = Number(
+          booking?.depositCapturedAmount ||
+            booking?.deposit_captured_amount ||
+            0,
+        );
+
+        // Active deposit = £200 hold is secured and has not been cancelled.
+        // If fully captured, it is no longer an active hold.
+        return depositSecured && !depositCancelled && capturedAmount < 200;
+      }
+
+      function bookingMatchesDepositFilter(booking, depositMode) {
+        if (!depositMode || depositMode === "all") return true;
+
+        const hasActiveDeposit = bookingHasActiveDeposit(booking);
+
+        if (depositMode === "active_deposit") return hasActiveDeposit;
+        if (depositMode === "no_active_deposit") return !hasActiveDeposit;
+
+        return true;
+      }
+
       function getBookingPickupTime(booking) {
         return new Date(
           booking?.pickupAt ||
@@ -4526,6 +4570,7 @@
         const filter = statusFilter.value;
         const vehicleFilter = bookingVehicleFilter?.value || "all";
         const voucherMode = voucherFilter?.value || "all";
+        const depositMode = depositFilter?.value || "all";
 
         const now = new Date();
 
@@ -4549,6 +4594,7 @@
           .filter((b) => bookingMatchesFilter(b, filter))
           .filter((b) => bookingMatchesVehicleFilter(b, vehicleFilter))
           .filter((b) => bookingMatchesVoucherFilter(b, voucherMode))
+          .filter((b) => bookingMatchesDepositFilter(b, depositMode))
           .filter((b) => {
             const mode = timeFilter?.value || "upcoming";
 
@@ -6336,7 +6382,8 @@ ${notesBox}
           statusFilter.value !== "all" ||
           (timeFilter?.value || "upcoming") !== "upcoming" ||
           (bookingVehicleFilter?.value || "all") !== "all" ||
-          (voucherFilter?.value || "all") !== "all";
+          (voucherFilter?.value || "all") !== "all" ||
+          (depositFilter?.value || "all") !== "all";
 
         clearFiltersBtn.style.display = hasFilters ? "block" : "none";
       }
@@ -6372,6 +6419,10 @@ ${notesBox}
 
       searchInput.addEventListener("input", updateClearButton);
       statusFilter.addEventListener("change", updateClearButton);
+
+      bookingVehicleFilter?.addEventListener("change", updateClearButton);
+      voucherFilter?.addEventListener("change", updateClearButton);
+      depositFilter?.addEventListener("change", updateClearButton);
 
       timeFilter.addEventListener("change", () => {
         renderBookings();
@@ -6783,6 +6834,8 @@ ${notesBox}
         if (bookingVehicleFilter) bookingVehicleFilter.value = "all";
 
         if (voucherFilter) voucherFilter.value = "all";
+
+        if (depositFilter) depositFilter.value = "all";
 
         defaultRanges();
 
