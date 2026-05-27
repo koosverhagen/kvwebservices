@@ -2060,37 +2060,10 @@ It is only a security hold.
 
 /* ===============================
    PRICING + DISCOUNT ENGINE
+   Vouchers are now managed from admin UI / KV only.
 ================================ */
 
-const DISCOUNT_CODES = [
-  {
-    // 10% off any lorry, minimum 1 day
-    code: "WELCOME10",
-    type: "percent",
-    value: 10,
-    expires: "2026-12-31",
-    vehicles: "all",
-    minDuration: 1,
-  },
-  {
-    // £25 off any 3.5T lorry
-    code: "THANKYOU25",
-    type: "fixed",
-    value: 25,
-    expires: "2026-12-31",
-    vehicles: ["v35-1", "v35-2", "v35-3"],
-    minDuration: 1,
-  },
-  {
-    // £50 off 7.5T bookings
-    code: "SEVEN50",
-    type: "fixed",
-    value: 50,
-    expires: "2026-12-31",
-    vehicles: ["v75-1", "v75-2"],
-    minDuration: 1,
-  },
-];
+const DISCOUNT_CODES = [];
 
 async function handlePricingQuote(request, env) {
   const payload = await request.json();
@@ -2231,6 +2204,13 @@ async function resolveDiscount({
     return { error: "Code is disabled" };
   }
 
+  const maxUses = Number(entry.maxUses || 1);
+  const usedCount = Number(entry.usedCount || 0);
+
+  if (maxUses > 0 && usedCount >= maxUses) {
+    return { error: "Code already used" };
+  }
+
   const now = new Date();
 
   if (entry.expires) {
@@ -2331,7 +2311,8 @@ function normaliseVoucherPayload(input) {
   const vehicleGroup = String(input.vehicleGroup || "all").trim();
   const minDuration = Number(input.minDuration || 0);
   const enabled = input.enabled !== false;
-
+  const maxUses = Number(input.maxUses || 1);
+  const usedCount = Number(input.usedCount || 0);
   if (!code) throw new Error("Voucher code required");
   if (!["fixed", "percent"].includes(type)) {
     throw new Error("Voucher type must be fixed or percent");
@@ -2368,6 +2349,13 @@ function normaliseVoucherPayload(input) {
     vehicles,
     vehicleGroup,
     minDuration,
+
+    // ✅ one-use voucher by default
+    maxUses: Number.isFinite(maxUses) && maxUses > 0 ? maxUses : 1,
+    usedCount: Number.isFinite(usedCount) && usedCount >= 0 ? usedCount : 0,
+    usedAt: input.usedAt || null,
+    usedByBookingId: input.usedByBookingId || null,
+
     enabled,
     createdAt: input.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -2424,6 +2412,48 @@ async function handleAdminDeleteVoucher(request, env) {
     return json({ ok: true });
   } catch (err) {
     return json({ error: err.message || "Could not delete voucher" }, 400);
+  }
+}
+
+async function markVoucherUsed(env, code, bookingId) {
+  const safeCode = String(code || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9_-]/g, "");
+
+  if (!safeCode) return;
+
+  const key = `voucher:${safeCode}`;
+  const raw = await env.BOOKINGS_KV.get(key);
+
+  if (!raw) {
+    console.warn("⚠️ Voucher not found while marking used:", safeCode);
+    return;
+  }
+
+  try {
+    const voucher = JSON.parse(raw);
+
+    const usedCount = Number(voucher.usedCount || 0);
+    const maxUses = Number(voucher.maxUses || 1);
+
+    voucher.usedCount = usedCount + 1;
+    voucher.maxUses = Number.isFinite(maxUses) && maxUses > 0 ? maxUses : 1;
+    voucher.usedAt = new Date().toISOString();
+    voucher.usedByBookingId = bookingId || null;
+
+    // ✅ disable after one use
+    if (voucher.usedCount >= voucher.maxUses) {
+      voucher.enabled = false;
+    }
+
+    voucher.updatedAt = new Date().toISOString();
+
+    await env.BOOKINGS_KV.put(key, JSON.stringify(voucher));
+
+    console.log("🎟️ Voucher marked used:", safeCode, bookingId);
+  } catch (err) {
+    console.error("❌ Failed to mark voucher used:", err);
   }
 }
 
@@ -5273,6 +5303,15 @@ async function handleStripeWebhook(request, env) {
         } catch (emailErr) {
           console.log("❌ EMAIL SEND FAILED:", emailErr.message || emailErr);
         }
+      }
+
+      /* ===============================
+         🎟️ MARK VOUCHER USED
+         Only after normal booking was successfully created
+      =============================== */
+
+      if (booking.discountCode) {
+        await markVoucherUsed(env, booking.discountCode, booking.id);
       }
     } catch (err) {
       console.log("💥 WEBHOOK CRASH:", err.message, err.stack);
