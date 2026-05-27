@@ -1919,11 +1919,32 @@
             <div class="field">
               <label for="time-filter">Time</label>
               <select id="time-filter">
-                <option value="all" selected>All bookings</option>
-                <!-- ✅ DEFAULT -->
-                <option value="upcoming">Upcoming</option>
+                <option value="all">All bookings</option>
+                <option value="recent">Recent bookings</option>
+                <option value="upcoming" selected>Upcoming</option>
                 <option value="inprogress">In progress</option>
                 <option value="past">Past bookings</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="booking-vehicle-filter">Lorry</label>
+              <select id="booking-vehicle-filter">
+                <option value="all">All lorries</option>
+                <option value="v35-1">3.5T Safety Bar</option>
+                <option value="v35-2">3.5T Stallion</option>
+                <option value="v35-3">3.5T Breast Bar</option>
+                <option value="v75-1">7.5T Living</option>
+                <option value="v75-2">7.5T No Living</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="voucher-filter">Vouchers</label>
+              <select id="voucher-filter">
+                <option value="all">All bookings</option>
+                <option value="with_voucher">With voucher</option>
+                <option value="without_voucher">Without voucher</option>
               </select>
             </div>
 
@@ -2792,6 +2813,10 @@
       const rangeFromInput = document.getElementById("range-from");
       const rangeToInput = document.getElementById("range-to");
       const timeFilter = document.getElementById("time-filter");
+      const bookingVehicleFilter = document.getElementById(
+        "booking-vehicle-filter",
+      );
+      const voucherFilter = document.getElementById("voucher-filter");
       const applyFiltersBtn = document.getElementById("apply-filters-btn");
 
       const availDateInput = document.getElementById("avail-date");
@@ -4385,6 +4410,78 @@
         return true;
       }
 
+      function bookingMatchesVehicleFilter(booking, vehicleFilter) {
+        if (!vehicleFilter || vehicleFilter === "all") return true;
+
+        return String(booking?.vehicleId || "") === String(vehicleFilter);
+      }
+
+      function bookingHasVoucher(booking) {
+        const code = String(
+          booking?.discountCode ||
+            booking?.voucherCode ||
+            booking?.discount?.code ||
+            "",
+        ).trim();
+
+        const amount = Number(
+          booking?.discountAmount ||
+            booking?.voucherAmount ||
+            booking?.discount?.amount ||
+            0,
+        );
+
+        return !!code || amount > 0;
+      }
+
+      function bookingMatchesVoucherFilter(booking, voucherMode) {
+        if (!voucherMode || voucherMode === "all") return true;
+
+        const hasVoucher = bookingHasVoucher(booking);
+
+        if (voucherMode === "with_voucher") return hasVoucher;
+        if (voucherMode === "without_voucher") return !hasVoucher;
+
+        return true;
+      }
+
+      function getBookingPickupTime(booking) {
+        return new Date(
+          booking?.pickupAt ||
+            booking?.pickupAtLocal ||
+            booking?.pickupDate ||
+            0,
+        ).getTime();
+      }
+
+      function getBookingCreatedTime(booking) {
+        return new Date(
+          booking?.createdAt || booking?.updatedAt || booking?.pickupAt || 0,
+        ).getTime();
+      }
+
+      function bookingMatchesDateRange(booking) {
+        const from = rangeFromInput?.value || "";
+        const to = rangeToInput?.value || "";
+
+        if (!from && !to) return true;
+
+        const pickupTime = getBookingPickupTime(booking);
+        if (!pickupTime || Number.isNaN(pickupTime)) return false;
+
+        if (from) {
+          const fromDate = new Date(`${from}T00:00:00`);
+          if (pickupTime < fromDate.getTime()) return false;
+        }
+
+        if (to) {
+          const toDate = new Date(`${to}T23:59:59`);
+          if (pickupTime > toDate.getTime()) return false;
+        }
+
+        return true;
+      }
+
       function truncateBookingId(id) {
         if (!id) return "—";
 
@@ -4418,6 +4515,8 @@
       function renderBookings() {
         const search = searchInput.value.trim();
         const filter = statusFilter.value;
+        const vehicleFilter = bookingVehicleFilter?.value || "all";
+        const voucherMode = voucherFilter?.value || "all";
 
         const now = new Date();
 
@@ -4439,47 +4538,43 @@
         filteredBookings = allBookings
           .filter((b) => bookingMatchesSearch(b, search))
           .filter((b) => bookingMatchesFilter(b, filter))
-
+          .filter((b) => bookingMatchesVehicleFilter(b, vehicleFilter))
+          .filter((b) => bookingMatchesVoucherFilter(b, voucherMode))
+          .filter((b) => bookingMatchesDateRange(b))
           .filter((b) => {
-            const mode = timeFilter?.value || "all"; // 🔥 default = ALL
+            const mode = timeFilter?.value || "upcoming";
 
-            const start = new Date(b.pickupAt).getTime();
+            const start = getBookingPickupTime(b);
             const end = b.dropoffAt ? new Date(b.dropoffAt).getTime() : start;
-
+            const created = getBookingCreatedTime(b);
             const now = nowTs;
 
-            if (!start || isNaN(start)) return true;
+            if (!start || isNaN(start)) return false;
 
-            /* ===============================
-           🔥 ALL BOOKINGS (NEW)
-        =============================== */
             if (mode === "all") {
               return true;
             }
 
-            /* ===============================
-           🔥 IN PROGRESS
-        =============================== */
+            if (mode === "recent") {
+              const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+              return created >= thirtyDaysAgo;
+            }
+
             if (mode === "inprogress") {
               return start <= now && end >= now;
             }
 
-            /* ===============================
-           🔥 PAST
-        =============================== */
             if (mode === "past") {
               return end < now;
             }
 
-            /* ===============================
-           🔥 UPCOMING
-        =============================== */
             if (mode === "upcoming") {
               return start > now;
             }
 
             return true;
-          });
+          })
+          .sort((a, b) => getBookingPickupTime(a) - getBookingPickupTime(b));
 
         bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
         /* ===============================
@@ -4539,10 +4634,10 @@
         =============================== */
 
           /* ===============================
-   🔥 ALL BOOKINGS MODE
+   🔥 ALL / RECENT BOOKINGS MODE
 =============================== */
 
-          if (mode === "all") {
+          if (mode === "all" || mode === "recent") {
             const monthDate = new Date(
               pickup.getFullYear(),
               pickup.getMonth(),
@@ -4791,12 +4886,14 @@
           restTitle = "📜 Past Bookings";
         } else if (mode === "inprogress") {
           restTitle = "📍 In Progress";
+        } else if (mode === "recent") {
+          restTitle = "🆕 Recent Bookings";
         }
 
         let html = "";
 
         // 🔴 IN PROGRESS (ONLY FOR upcoming + inprogress)
-        if (mode !== "past") {
+        if (mode !== "past" && mode !== "all" && mode !== "recent") {
           html += renderSection("🔴 In Progress", inProgress);
         }
 
@@ -4816,7 +4913,7 @@
             d.setDate(d.getDate() + i);
 
             const key = d.toDateString();
-            const list = byDay[key] || [];
+            const list = (byDay[key] || []).sort(sortFn);
 
             // ✅ SKIP EMPTY DAYS (CLEAN UI)
             if (!list.length) continue;
@@ -4838,7 +4935,7 @@
             <tr class="section-header">
               <td colspan="6">📆 ${formatWeekHeader(key)}</td>
             </tr>
-            ${byWeek[key].map(renderRow).join("")}
+            ${byWeek[key].sort(sortFn).map(renderRow).join("")}
           `;
           });
 
@@ -6056,7 +6153,12 @@
       }
 
       function updateClearButton() {
-        const hasFilters = searchInput.value || statusFilter.value !== "all";
+        const hasFilters =
+          searchInput.value ||
+          statusFilter.value !== "all" ||
+          (timeFilter?.value || "upcoming") !== "upcoming" ||
+          (bookingVehicleFilter?.value || "all") !== "all" ||
+          (voucherFilter?.value || "all") !== "all";
 
         clearFiltersBtn.style.display = hasFilters ? "block" : "none";
       }
@@ -6493,18 +6595,20 @@
 
       const clearFiltersBtn = document.getElementById("clear-filters-btn");
 
-      clearFiltersBtn.addEventListener("click", () => {
+      clearFiltersBtn.addEventListener("click", async () => {
         searchInput.value = "";
 
         statusFilter.value = "all";
 
         timeFilter.value = "upcoming";
 
+        if (bookingVehicleFilter) bookingVehicleFilter.value = "all";
+
+        if (voucherFilter) voucherFilter.value = "all";
+
         defaultRanges();
 
-        loadBookings();
-
-        renderBookings();
+        await loadBookings();
 
         updateClearButton();
       });
@@ -6785,31 +6889,28 @@
 =============================== */
 
       applyFiltersBtn?.addEventListener("click", async () => {
-        renderBookings();
+        await loadBookings();
 
         await new Promise((r) => setTimeout(r, 150));
 
         scrollToFirstBooking();
+
+        updateClearButton();
       });
 
       /* ===============================
    📅 DATE FILTERS
+   Do not auto-scroll. Search button applies the range.
 =============================== */
 
-      rangeFromInput?.addEventListener("change", async () => {
-        await loadBookings();
-
-        await new Promise((r) => setTimeout(r, 150));
-
-        scrollToFirstBooking();
+      rangeFromInput?.addEventListener("change", () => {
+        setStatus("Date range updated. Click Search to apply.", "loading");
+        updateClearButton();
       });
 
-      rangeToInput?.addEventListener("change", async () => {
-        await loadBookings();
-
-        await new Promise((r) => setTimeout(r, 150));
-
-        scrollToFirstBooking();
+      rangeToInput?.addEventListener("change", () => {
+        setStatus("Date range updated. Click Search to apply.", "loading");
+        updateClearButton();
       });
 
       /* ===============================
