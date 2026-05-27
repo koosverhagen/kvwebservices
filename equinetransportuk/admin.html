@@ -6874,7 +6874,8 @@ ${notesBox}
         updateClearButton();
       });
 
-      async function loadBookings() {
+      async function loadBookings(options = {}) {
+        const refreshCalendar = options.refreshCalendar !== false;
         const from = rangeFromInput.value;
         const to = rangeToInput.value;
 
@@ -6921,8 +6922,11 @@ ${notesBox}
 
           renderBookings();
 
-          // 🔥 SAFE calendar refresh (prevents double-render race)
+          // 🔥 SAFE calendar refresh
+          // Do NOT refresh calendar during Find Bookings search on mobile;
+          // it causes layout shift and scrolls into the calendar.
           if (
+            refreshCalendar &&
             typeof loadAdminCalendar === "function" &&
             window.__calendarReady
           ) {
@@ -7112,6 +7116,7 @@ ${notesBox}
 
       function scrollToFirstBooking() {
         const bookingsSection = document.getElementById("bookings-section");
+        const mobileResults = document.getElementById("mobile-bookings");
         const firstMobileBooking = document.querySelector(
           ".mobile-booking-card",
         );
@@ -7119,17 +7124,18 @@ ${notesBox}
 
         /* ===============================
      📱 MOBILE
-     Scroll to the rendered booking cards/results area,
-     not the calendar.
+     Always scroll to the bookings results area.
+     Never use calendar position.
   =============================== */
 
         if (window.innerWidth <= 768) {
-          const target = firstMobileBooking || bookingsSection;
+          const target = firstMobileBooking || mobileResults || bookingsSection;
 
           if (!target) return;
 
+          const headerOffset = 86;
           const y =
-            target.getBoundingClientRect().top + window.pageYOffset - 84;
+            target.getBoundingClientRect().top + window.scrollY - headerOffset;
 
           window.scrollTo({
             top: Math.max(0, y),
@@ -7147,7 +7153,7 @@ ${notesBox}
 
         if (!target) return;
 
-        const y = target.getBoundingClientRect().top + window.pageYOffset - 120;
+        const y = target.getBoundingClientRect().top + window.scrollY - 120;
 
         window.scrollTo({
           top: Math.max(0, y),
@@ -7160,12 +7166,11 @@ ${notesBox}
 =============================== */
 
       applyFiltersBtn?.addEventListener("click", async () => {
-        await loadBookings();
+        // ✅ Search should update bookings only.
+        // Do not refresh calendar here, because on mobile it shifts the page.
+        await loadBookings({ refreshCalendar: false });
 
-        // Give mobile layout + calendar refresh time to settle before scrolling.
-        await new Promise((r) =>
-          setTimeout(r, window.innerWidth <= 768 ? 450 : 150),
-        );
+        await new Promise((r) => setTimeout(r, 120));
 
         scrollToFirstBooking();
 
