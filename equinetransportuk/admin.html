@@ -3696,6 +3696,29 @@
         return booking?.customerEmail || booking?.customer_email || "—";
       }
 
+      function normaliseWhatsAppPhone(value) {
+        let phone = String(value || "").trim();
+
+        // Remove everything except digits and +
+        phone = phone.replace(/[^\d+]/g, "");
+
+        // Convert UK local mobile numbers:
+        // 07812 188871 -> 447812188871
+        if (phone.startsWith("0")) {
+          phone = "44" + phone.slice(1);
+        }
+
+        // Convert +44... -> 44...
+        if (phone.startsWith("+")) {
+          phone = phone.slice(1);
+        }
+
+        // Final safety: digits only
+        phone = phone.replace(/\D/g, "");
+
+        return phone;
+      }
+
       function getBookingNotes(booking) {
         return String(
           booking?.customerNotes ||
@@ -6682,7 +6705,12 @@ ${notesBox}
         if (waBtn) {
           e.preventDefault();
 
-          const phone = String(waBtn.dataset.phone || "").replace(/\s+/g, "");
+          const phone = normaliseWhatsAppPhone(waBtn.dataset.phone || "");
+
+          if (!phone || phone.length < 10) {
+            alert("No valid WhatsApp number found for this customer.");
+            return;
+          }
 
           const bookingId = waBtn.dataset.id || "";
           const type = waBtn.dataset.type || "";
@@ -6749,7 +6777,11 @@ ${notesBox}
 
           const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
-          window.open(whatsappUrl, "_blank");
+          const waWindow = window.open(whatsappUrl, "_blank");
+
+          if (!waWindow) {
+            window.location.href = whatsappUrl;
+          }
 
           return;
         }
