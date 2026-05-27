@@ -2091,11 +2091,18 @@ async function handlePricingQuote(request, env) {
     baseCost,
   });
 
-  if (discount.error) {
-    return json({ error: discount.error }, 400);
-  }
+  // ✅ Invalid / disabled / used vouchers should NOT block booking.
+  // They are ignored and the customer can continue at normal price.
+  let discountAmount = 0;
+  let appliedDiscountCode = "";
 
-  const discountAmount = discount.discountAmount || 0;
+  if (discount.error) {
+    console.warn("🎟️ Voucher ignored during pricing:", discount.error);
+  } else {
+    discountAmount = Number(discount.discountAmount || 0);
+    appliedDiscountCode =
+      discountAmount > 0 ? String(discount.code || discountCode || "") : "";
+  }
 
   /* ===============================
      🔥 ADD HERE (EXACT SPOT)
@@ -2113,6 +2120,7 @@ async function handlePricingQuote(request, env) {
   return json({
     baseCost,
     discountAmount,
+    discountCode: appliedDiscountCode,
     extrasTotal,
     total: discountedTotal,
   });
@@ -2518,11 +2526,20 @@ async function handleCreateCheckoutSession(request, env) {
     baseCost,
   });
 
-  if (discount.error) {
-    return json({ error: discount.error }, 400);
-  }
+  // ✅ Invalid / disabled / already-used vouchers should NOT block checkout.
+  // They are ignored and Stripe continues at the normal price.
+  let discountAmount = 0;
+  let appliedDiscountCode = "";
 
-  const discountAmount = discount.discountAmount || 0;
+  if (discount.error) {
+    console.warn("🎟️ Voucher ignored during checkout:", discount.error);
+  } else {
+    discountAmount = Number(discount.discountAmount || 0);
+    appliedDiscountCode =
+      discountAmount > 0
+        ? String(discount.code || booking.discountCode || "")
+        : "";
+  }
 
   /* ===============================
      🔥 EXTRAS
@@ -2686,7 +2703,7 @@ async function handleCreateCheckoutSession(request, env) {
         customerMobile: (booking.customerMobile || "").slice(0, 30),
         customerNotes,
 
-        discountCode: booking.discountCode || "",
+        discountCode: appliedDiscountCode,
 
         baseCost: String(baseCost),
         discountAmount: String(discountAmount),
