@@ -1952,8 +1952,8 @@
               <label for="deposit-filter">Deposit</label>
               <select id="deposit-filter">
                 <option value="all">All bookings</option>
-                <option value="active_deposit">Active deposit</option>
-                <option value="no_active_deposit">No active deposit</option>
+                <option value="active_deposit">Deposit on hold</option>
+                <option value="no_active_deposit">No live deposit</option>
               </select>
             </div>
 
@@ -4469,12 +4469,14 @@
           booking?.depositPaid === true ||
           booking?.deposit_paid === 1 ||
           booking?.depositStatus === "paid" ||
-          booking?.depositStatus === "secured";
+          booking?.depositStatus === "secured" ||
+          booking?.depositStatus === "requires_capture";
 
         const depositCancelled =
           booking?.depositCancelled === true ||
           booking?.deposit_cancelled === 1 ||
-          booking?.depositStatus === "cancelled";
+          booking?.depositStatus === "cancelled" ||
+          booking?.depositStatus === "canceled";
 
         const capturedAmount = Number(
           booking?.depositCapturedAmount ||
@@ -4482,9 +4484,23 @@
             0,
         );
 
-        // Active deposit = £200 hold is secured and has not been cancelled.
-        // If fully captured, it is no longer an active hold.
-        return depositSecured && !depositCancelled && capturedAmount < 200;
+        const hasDepositIntent = !!(
+          booking?.depositPaymentIntentId || booking?.deposit_payment_intent_id
+        );
+
+        /*
+    Live deposit hold only:
+    ✅ deposit has been authorised/secured
+    ✅ has a Stripe deposit PaymentIntent
+    ✅ not cancelled
+    ✅ not fully captured
+  */
+        return (
+          depositSecured &&
+          hasDepositIntent &&
+          !depositCancelled &&
+          capturedAmount < 200
+        );
       }
 
       function bookingMatchesDepositFilter(booking, depositMode) {
@@ -5248,6 +5264,7 @@
               </div>
 
               <div
+  <div
   style="
     display: flex;
     flex-direction: column;
@@ -5262,9 +5279,9 @@
   }
 
   ${
-    depositDone
-      ? '<span class="pill ok">Deposit Complete</span>'
-      : '<span class="pill warn">Deposit Pending</span>'
+    bookingHasActiveDeposit(booking)
+      ? '<span class="pill ok">Deposit on Hold</span>'
+      : '<span class="pill warn">No Deposit</span>'
   }
 </div>
 
