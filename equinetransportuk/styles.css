@@ -3219,3 +3219,8 @@ textarea {
   opacity: 0.65;
   cursor: not-allowed;
 }
+
+/* Google address suggestions */
+.pac-container {
+  z-index: 999999 !important;
+}

@@ -1807,6 +1807,11 @@
           font-size: 28px;
         }
       }
+
+      /* Google address suggestions above admin modal */
+      .pac-container {
+        z-index: 10000000 !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -2322,8 +2327,14 @@
             </div>
 
             <div class="field">
-              <label>Address</label>
-              <input id="customer-edit-address" type="text" />
+              <label>Address *</label>
+              <input
+                id="customer-edit-address"
+                type="text"
+                autocomplete="street-address"
+                placeholder="Start typing address or postcode"
+                required
+              />
             </div>
 
             <div class="field">
@@ -2936,6 +2947,76 @@
       );
       const customerEditDob = document.getElementById("customer-edit-dob");
       const customerEditNotes = document.getElementById("customer-edit-notes");
+      /* ===============================
+   CUSTOMER EDIT ADDRESS AUTOCOMPLETE
+   Uses same Maps key endpoint as calculators
+================================ */
+
+      const ADMIN_MAPS_KEY_ENDPOINT =
+        "https://www.equinetransportuk.com/test/_functions/mapskey";
+
+      let adminCustomerAddressAutocompleteStarted = false;
+
+      function initAdminCustomerAddressAutocomplete() {
+        if (adminCustomerAddressAutocompleteStarted) return;
+        if (!customerEditAddress) return;
+        if (!window.google?.maps?.places?.Autocomplete) return;
+
+        adminCustomerAddressAutocompleteStarted = true;
+
+        new google.maps.places.Autocomplete(customerEditAddress, {
+          componentRestrictions: { country: "uk" },
+          fields: ["formatted_address", "geometry", "name"],
+        });
+      }
+
+      window.__initEquineAdminCustomerAddressAutocomplete =
+        initAdminCustomerAddressAutocomplete;
+
+      async function loadAdminCustomerAddressAutocomplete() {
+        if (!customerEditAddress) return;
+
+        if (window.google?.maps?.places?.Autocomplete) {
+          initAdminCustomerAddressAutocomplete();
+          return;
+        }
+
+        try {
+          const existingScript = document.querySelector(
+            'script[data-equine-admin-address-autocomplete="true"]',
+          );
+
+          if (existingScript) return;
+
+          const res = await fetch(ADMIN_MAPS_KEY_ENDPOINT, {
+            cache: "no-store",
+          });
+
+          if (!res.ok) {
+            throw new Error(`Maps key request failed: ${res.status}`);
+          }
+
+          const apiKey = (await res.text()).trim().replace(/^['"]|['"]$/g, "");
+
+          if (!apiKey) {
+            throw new Error("Maps API key is empty");
+          }
+
+          const script = document.createElement("script");
+          script.dataset.equineAdminAddressAutocomplete = "true";
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+            apiKey,
+          )}&libraries=places&callback=__initEquineAdminCustomerAddressAutocomplete`;
+          script.async = true;
+          script.defer = true;
+
+          document.head.appendChild(script);
+        } catch (err) {
+          console.warn("Admin address autocomplete unavailable:", err);
+        }
+      }
+
+      loadAdminCustomerAddressAutocomplete();
       const customerBookingsList = document.getElementById(
         "customer-bookings-list",
       );
@@ -6128,8 +6209,18 @@ ${notesBox}
         const dob = customerEditDob.value.trim();
         const notes = customerEditNotes.value.trim();
 
-        if (!full_name || !email || !mobile) {
-          alert("Full name, email and mobile are required.");
+        if (!full_name || !email || !mobile || !address) {
+          alert("Full name, email, mobile and address are required.");
+
+          if (!address) {
+            customerEditAddress?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+
+            customerEditAddress?.focus();
+          }
+
           return;
         }
 
