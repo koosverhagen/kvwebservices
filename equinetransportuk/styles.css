@@ -3625,3 +3625,20 @@ textarea {
     line-height: 1.25;
   }
 }
+
+/* Centre calendar month + helper text */
+#availability-calendar .cal-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  text-align: center;
+}
+
+#availability-calendar .cal-title,
+#availability-calendar .cal-title-help {
+  width: 100%;
+  text-align: center;
+}
