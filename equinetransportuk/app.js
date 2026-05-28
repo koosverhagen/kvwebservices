@@ -1019,28 +1019,38 @@ async function getVehicleAvailability(
   pickupTime = null,
   opts = {},
 ) {
+  const forceFresh = opts?.forceFresh === true;
   const cacheKey = `${dateStr}|${duration}|${pickupTime || "any"}`;
 
   /* ===============================
-     🔥 1. HARD CACHE HIT (FIRST)
+     🔥 FORCE-FRESH MODE
+     Used before checkout so stale cache cannot allow
+     a booking that the server will reject.
   =============================== */
 
-  const cached = VEHICLE_AVAILABILITY_CACHE.get(cacheKey);
-
-  if (cached && Date.now() - cached.ts < VEHICLE_AVAILABILITY_CACHE_TTL) {
-    return cached.value;
+  if (forceFresh) {
+    VEHICLE_AVAILABILITY_CACHE.delete(cacheKey);
+    VEHICLE_AVAILABILITY_PROMISES.delete(cacheKey);
   }
 
   /* ===============================
-     🔥 2. PROMISE DEDUPE (SECOND)
+     CACHE HIT
   =============================== */
 
-  if (VEHICLE_AVAILABILITY_PROMISES.has(cacheKey)) {
-    return VEHICLE_AVAILABILITY_PROMISES.get(cacheKey);
+  if (!forceFresh) {
+    const cached = VEHICLE_AVAILABILITY_CACHE.get(cacheKey);
+
+    if (cached && Date.now() - cached.ts < VEHICLE_AVAILABILITY_CACHE_TTL) {
+      return cached.value;
+    }
+
+    if (VEHICLE_AVAILABILITY_PROMISES.has(cacheKey)) {
+      return VEHICLE_AVAILABILITY_PROMISES.get(cacheKey);
+    }
   }
 
   /* ===============================
-     🔥 3. FETCH (ONLY IF NEEDED)
+     FETCH LIVE
   =============================== */
 
   const promise = (async () => {
@@ -1048,19 +1058,20 @@ async function getVehicleAvailability(
       const url = new URL(`${BACKEND_API_BASE}/api/vehicles/available`);
       url.searchParams.set("date", dateStr);
       url.searchParams.set("duration", duration);
+      url.searchParams.set("_", String(Date.now()));
 
       if (pickupTime) {
         url.searchParams.set("pickupTime", pickupTime);
       }
 
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: "no-store" });
+
+      if (!res.ok) {
+        throw new Error(`Availability failed: ${res.status}`);
+      }
+
       const data = await res.json();
-
       const vehicles = data.vehicles || [];
-
-      /* ===============================
-         🔥 SAVE CACHE
-      =============================== */
 
       VEHICLE_AVAILABILITY_CACHE.set(cacheKey, {
         value: vehicles,
@@ -1071,17 +1082,20 @@ async function getVehicleAvailability(
     } catch (err) {
       console.warn("Vehicle availability failed:", err);
 
-      // 🔥 IMPORTANT: cache empty result briefly (prevents hammering API)
-      VEHICLE_AVAILABILITY_CACHE.set(cacheKey, {
-        value: [],
-        ts: Date.now(),
-      });
+      if (!forceFresh) {
+        VEHICLE_AVAILABILITY_CACHE.set(cacheKey, {
+          value: [],
+          ts: Date.now(),
+        });
+      }
 
       return [];
     }
   })();
 
-  VEHICLE_AVAILABILITY_PROMISES.set(cacheKey, promise);
+  if (!forceFresh) {
+    VEHICLE_AVAILABILITY_PROMISES.set(cacheKey, promise);
+  }
 
   try {
     return await promise;
@@ -1092,6 +1106,17 @@ async function getVehicleAvailability(
 
 const HALF_DAY_CACHE = new Map();
 const HALF_DAY_CACHE_TTL = 60 * 1000; // 60s
+
+function clearAvailabilityCaches() {
+  AVAILABILITY_CACHE.clear();
+  VEHICLE_AVAILABILITY_CACHE.clear();
+  VEHICLE_AVAILABILITY_PROMISES.clear();
+  RANGE_AVAILABILITY_CACHE.clear();
+  HALF_DAY_CACHE.clear();
+
+  LAST_AVAILABLE_VEHICLES = [];
+  window.__lastDurationCheck = "";
+}
 
 async function getHalfDayAvailability(dateStr) {
   /* ===============================
@@ -4372,6 +4397,7 @@ async function selectAvailability(vehicleId) {
     pickupDate,
     durationDays,
     durationDays === 0.5 ? pickupTime : null,
+    { forceFresh: true },
   );
 
   // 🔥 KEEP GLOBAL STATE IN SYNC
@@ -5113,6 +5139,7 @@ async function createStripeCheckoutSession(booking) {
       pickupDate,
       durationDays,
       durationDays === 0.5 ? pickupTime : null,
+      { forceFresh: true },
     );
 
     const apiVehicle = liveAvailability.find((v) => v.vehicleId === vehicle.id);
@@ -5125,6 +5152,8 @@ async function createStripeCheckoutSession(booking) {
 
     if (!stillAvailable) {
       alert("This lorry is no longer available for the selected duration.");
+
+      clearAvailabilityCaches();
 
       selectedAvailability = null;
       window.pendingBooking = null;
@@ -5218,6 +5247,8 @@ async function createStripeCheckoutSession(booking) {
         alert(
           data?.error || "This lorry is no longer available for those dates.",
         );
+
+        clearAvailabilityCaches();
 
         selectedAvailability = null;
         window.pendingBooking = null;
@@ -5440,20 +5471,32 @@ document.addEventListener("DOMContentLoaded", async () => {
       =============================== */
 
         if (!data.found) {
-          console.log("🆕 New customer → creating early");
+          console.log("🆕 New customer detected");
 
-          try {
-            await fetch(apiUrl(`/api/customers`), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                full_name: customerNameInput?.value || "",
-                email: email,
-                mobile: customerMobileInput?.value || "",
-              }),
-            });
-          } catch (err) {
-            console.warn("⚠️ Failed to create customer early:", err);
+          const earlyAddress = (customerAddressInput?.value || "").trim();
+
+          // Address is now required by the backend.
+          // If the customer has not entered it yet, do not create early.
+          // The booking checkout/webhook will create/update the customer later.
+          if (earlyAddress) {
+            try {
+              await fetch(apiUrl(`/api/customers`), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  full_name: customerNameInput?.value || "",
+                  email: email,
+                  mobile: customerMobileInput?.value || "",
+                  address: earlyAddress,
+                }),
+              });
+            } catch (err) {
+              console.warn("⚠️ Failed to create customer early:", err);
+            }
+          } else {
+            console.log(
+              "ℹ️ Skipping early customer create until address is entered",
+            );
           }
 
           window.RETURNING_CUSTOMER = false;
