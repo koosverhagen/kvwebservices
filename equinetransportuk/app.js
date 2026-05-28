@@ -4005,6 +4005,43 @@ function getVehicleImagePrefix(vehicle) {
   return null;
 }
 
+function getVehiclePreviewImage(vehicle) {
+  if (!vehicle) return "";
+
+  const prefix =
+    typeof getVehicleImagePrefix === "function"
+      ? getVehicleImagePrefix(vehicle)
+      : null;
+
+  let file = "";
+
+  // Use the same gallery image system as the fleet cards
+  if (prefix && Array.isArray(window.fleetImages)) {
+    file =
+      window.fleetImages.find((img) => String(img || "").startsWith(prefix)) ||
+      "";
+  }
+
+  // Fallback to the vehicle card image
+  if (!file) {
+    file = vehicle.image || "";
+  }
+
+  if (!file) return "";
+
+  // Full URLs stay untouched
+  if (/^https?:\/\//i.test(file)) {
+    return file;
+  }
+
+  // Make sure local image paths point to /images/
+  if (!file.startsWith("images/")) {
+    file = `images/${file}`;
+  }
+
+  return file;
+}
+
 function renderFleet() {
   if (!fleetGrid) return;
   fleetGrid.innerHTML = "";
@@ -6400,7 +6437,7 @@ async function showVehiclePreview(date, event) {
 
         if (!slotText) return;
 
-        const img = vehicle.image || "";
+        const img = getVehiclePreviewImage(vehicle);
 
         rows.push(`
           <div class="preview-item preview-select"
