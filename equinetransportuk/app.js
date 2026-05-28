@@ -6291,153 +6291,150 @@ function movePreview(e) {
   vehiclePreview.style.top = e.pageY + "px";
 }
 
+async function getLiveDayVehicleAvailability(dateKey) {
+  const [fullDay, morning, afternoon] = await Promise.all([
+    getVehicleAvailability(dateKey, 1, null, { forceFresh: true }),
+    getVehicleAvailability(dateKey, 0.5, "07:00", { forceFresh: true }),
+    getVehicleAvailability(dateKey, 0.5, "13:00", { forceFresh: true }),
+  ]);
+
+  const map = new Map();
+
+  vehicles.forEach((vehicle) => {
+    const full = fullDay.find((v) => v.vehicleId === vehicle.id);
+    const am = morning.find((v) => v.vehicleId === vehicle.id);
+    const pm = afternoon.find((v) => v.vehicleId === vehicle.id);
+
+    map.set(vehicle.id, {
+      vehicle,
+      fullDayAvailable: !!full?.available,
+      morningAvailable:
+        is35T(vehicle) &&
+        !!am?.available &&
+        Array.isArray(am?.availableSlots) &&
+        am.availableSlots.includes("am"),
+      afternoonAvailable:
+        is35T(vehicle) &&
+        !!pm?.available &&
+        Array.isArray(pm?.availableSlots) &&
+        pm.availableSlots.includes("pm"),
+    });
+  });
+
+  return map;
+}
+
+function renderUnavailablePreviewMessage(dateLabel, vehicleName = "") {
+  return `
+    <strong>${dateLabel}</strong><br>
+    <div
+      style="
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        font-weight: 800;
+        line-height: 1.35;
+      "
+    >
+      ${vehicleName ? `${vehicleName} is not available on this date.` : "No lorries are available on this date."}
+    </div>
+  `;
+}
+
 async function showVehiclePreview(date, event) {
-  // 🔥 ALWAYS RESET BOTH PREVIEW TYPES FIRST
   const mobilePanel = document.getElementById("mobile-preview");
   const desktopPanel = document.getElementById("vehicle-preview");
 
   if (mobilePanel) mobilePanel.classList.add("hidden");
   if (desktopPanel) desktopPanel.classList.add("hidden");
 
-  const bookings = BOOKINGS_CACHE || (await getBookings(false));
-
   const dateStart = new Date(date);
   dateStart.setHours(0, 0, 0, 0);
 
-  const dateEnd = new Date(dateStart);
-  dateEnd.setDate(dateEnd.getDate() + 1);
+  const dateKey = formatDayKey(dateStart);
+  const dateLabel = dateStart.toDateString();
 
-  const booked = bookings.filter((b) => {
-    const start = new Date(b.pickupAt);
-    const end = new Date(b.dropoffAt);
+  let html = `<strong>${dateLabel}</strong><br>`;
 
-    return start < dateEnd && end > dateStart;
-  });
+  let liveMap;
 
-  /* build preview html FIRST */
+  try {
+    liveMap = await getLiveDayVehicleAvailability(dateKey);
+  } catch (err) {
+    console.warn("Live preview availability failed:", err);
 
-  let html = `<strong>${dateStart.toDateString()}</strong><br>`;
-
-  /* ======================================================
-     AVAILABILITY (BASED ON BOOKINGS — SINGLE SOURCE)
-  ====================================================== */
-
-  const availability = vehicles.map((vehicle) => {
-    const vehicleBookings = booked.filter((b) => b.vehicleId === vehicle.id);
-
-    let morningBooked = false;
-    let afternoonBooked = false;
-
-    vehicleBookings.forEach((b) => {
-      const start = new Date(b.pickupAt);
-      const end = new Date(b.dropoffAt);
-
-      const startHour = getLondonHour(start);
-      const endHour = getLondonHour(end);
-
-      if (startHour < 13) morningBooked = true;
-      if (endHour > 13) afternoonBooked = true;
-    });
-
-    const is35 = is35T(vehicle);
-
-    const morningAvailable = is35 && !morningBooked;
-    const afternoonAvailable = is35 && !afternoonBooked;
-
-    // 7.5T = full-day only, 3.5T = both slots must be free
-    const fullDayAvailable = !morningBooked && !afternoonBooked;
-
-    return {
-      vehicle,
-      morningAvailable,
-      afternoonAvailable,
-      fullDayAvailable,
-    };
-  });
-
-  const availableVehicles = availability.filter(
-    (a) => a.fullDayAvailable || a.morningAvailable || a.afternoonAvailable,
-  );
-
-  /* ======================================================
-   STATUS LABEL (SIMPLIFIED)
-====================================================== */
-
-  const totalAvailable = availableVehicles.length;
-
-  if (totalAvailable > 0) {
-    html += `<div class="preview-status preview-status-good">Available</div>`;
-  } else {
-    html += `<div class="preview-status preview-status-none">Not available</div>`;
+    html += `
+      <div class="muted tiny" style="margin-top: 8px">
+        Checking live availability failed. Please click Check availability.
+      </div>
+    `;
   }
 
-  /* ======================================================
-     VEHICLE LIST
-  ====================================================== */
+  if (liveMap) {
+    const rows = [];
 
-  if (!availableVehicles.length) {
-    html += `<div class="muted tiny">Fully booked</div>`;
-  } else {
-    html += `<div class="muted tiny">Available vehicles (${availableVehicles.length})</div>`;
+    vehicles
+      .filter(
+        (vehicle) => !PRESELECTED_VEHICLE || vehicle.id === PRESELECTED_VEHICLE,
+      )
+      .forEach((vehicle) => {
+        const live = liveMap.get(vehicle.id);
 
-    availableVehicles.forEach((a) => {
-      const vehicle = a.vehicle;
-      const img = getVehicleMainImage(vehicle);
+        if (!live) return;
 
-      let slotText = "";
+        let slotText = "";
 
-      if (!is35T(vehicle)) {
-        if (a.fullDayAvailable) slotText = "Full day available";
-      } else if (a.morningAvailable && a.afternoonAvailable) {
-        slotText = "Full day available";
-      } else if (a.morningAvailable) {
-        slotText = "Morning available";
-      } else if (a.afternoonAvailable) {
-        slotText = "Afternoon available";
-      } else if (a.fullDayAvailable) {
-        slotText = "Full day available";
-      }
+        if (live.fullDayAvailable) {
+          slotText = "Full day available";
+        } else if (is35T(vehicle)) {
+          const parts = [];
 
-      if (!slotText) return;
+          if (live.morningAvailable) parts.push("Morning ½ day");
+          if (live.afternoonAvailable) parts.push("Afternoon ½ day");
 
-      html += `
-        <div class="preview-item preview-select"
-          data-vehicle-id="${vehicle.id}"
-          data-slot="${slotText}">
+          slotText = parts.join(" / ");
+        }
 
-          ${img ? `<img src="${img}" class="preview-img">` : ""}
+        if (!slotText) return;
 
-          <div class="preview-text">
-            <strong>${vehicle.name}</strong><br>
-            <span class="muted tiny">${slotText}</span>
+        const img = vehicle.image || "";
+
+        rows.push(`
+          <div class="preview-item preview-select"
+            data-vehicle-id="${vehicle.id}"
+            data-slot="${slotText}"
+            data-date="${dateKey}">
+
+            ${img ? `<img src="${img}" class="preview-img">` : ""}
+
+            <div class="preview-text">
+              <strong>${vehicle.name}</strong><br>
+              <span class="muted tiny">${slotText}</span>
+            </div>
           </div>
+        `);
+      });
 
-        </div>
-      `;
-    });
+    if (!rows.length) {
+      const vehicleName = PRESELECTED_VEHICLE
+        ? vehicles.find((v) => v.id === PRESELECTED_VEHICLE)?.name || ""
+        : "";
+
+      html = renderUnavailablePreviewMessage(dateLabel, vehicleName);
+    } else {
+      html += rows.join("");
+    }
   }
 
-  /* ======================================================
-   MOBILE VERSION
-====================================================== */
-
-  if (isMobile()) {
-    const panel = document.getElementById("mobile-preview");
-    if (!panel) return;
-
-    const dateKey = formatDayKey(dateStart);
-
-    // 🔥 prevent duplicate render / flicker
-    if (panel.dataset.date === dateKey) return;
-    panel.dataset.date = dateKey;
-
-    panel.innerHTML = html;
-    panel.classList.remove("hidden");
-
+  function bindPreviewClicks(panel) {
     panel.querySelectorAll(".preview-select").forEach((el) => {
       el.addEventListener("click", async () => {
         const vehicleId = el.dataset.vehicleId;
         const slot = (el.dataset.slot || "").toLowerCase();
+        const selectedDateKey = el.dataset.date || dateKey;
 
         const vehicle = vehicles.find((v) => v.id === vehicleId);
         if (!vehicle) return;
@@ -6448,7 +6445,7 @@ async function showVehiclePreview(date, event) {
         updateCalendarVehicleLabel();
 
         if (pickupDateInput) {
-          pickupDateInput.value = dateKey;
+          pickupDateInput.value = selectedDateKey;
         }
 
         if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
@@ -6459,27 +6456,24 @@ async function showVehiclePreview(date, event) {
         updateDurationOptionsForVehicle(vehicle);
         enforceVehicleDurationRules(vehicle);
 
-        /* ===============================
-         🔥 FIXED DURATION LOGIC
-      =============================== */
-
         if (durationDaysInput) {
           if (!is35T(vehicle)) {
-            // 🚛 7.5T → FULL DAY ONLY
             durationDaysInput.value = "1";
-            pickupTimeInput.value = "07:00";
+            if (pickupTimeInput) pickupTimeInput.value = "07:00";
           } else if (slot.includes("morning") || slot.includes("afternoon")) {
             durationDaysInput.value = "0.5";
-            pickupTimeInput.value = slot.includes("afternoon")
-              ? "13:00"
-              : "07:00";
+            if (pickupTimeInput) {
+              pickupTimeInput.value = slot.includes("afternoon")
+                ? "13:00"
+                : "07:00";
+            }
           } else {
             durationDaysInput.value = "1";
-            pickupTimeInput.value = "07:00";
+            if (pickupTimeInput) pickupTimeInput.value = "07:00";
           }
         }
 
-        await syncPickupTimeOptions(dateKey);
+        await syncPickupTimeOptions(selectedDateKey);
         updatePickupTimeVisibility();
         updateCheckoutSummary();
 
@@ -6500,19 +6494,28 @@ async function showVehiclePreview(date, event) {
         }, 150);
       });
     });
+  }
+
+  if (isMobile()) {
+    const panel = mobilePanel;
+    if (!panel) return;
+
+    panel.dataset.date = dateKey;
+    panel.innerHTML = html;
+    panel.classList.remove("hidden");
+
+    bindPreviewClicks(panel);
 
     return;
   }
 
-  /* ======================================================
-     DESKTOP VERSION
-  ====================================================== */
+  const panel = desktopPanel;
+  if (!panel) return;
 
-  const vehiclePreview = document.getElementById("vehicle-preview");
-  if (!vehiclePreview) return;
+  panel.innerHTML = html;
+  panel.classList.remove("hidden");
 
-  vehiclePreview.innerHTML = html;
-  vehiclePreview.classList.remove("hidden");
+  bindPreviewClicks(panel);
 
   if (event) movePreview(event);
 }
@@ -6854,8 +6857,19 @@ async function showVehiclePreview(date, event) {
 
       // remove unused dayKey
 
-      const status = checkDayLocalAvailability(dayDate, bookings);
-      const validStart = canStartRental(dayDate, bookings);
+      let status = checkDayLocalAvailability(dayDate, bookings);
+      let validStart = canStartRental(dayDate, bookings);
+
+      /*
+  Important:
+  The local calendar colouring is only a quick visual guide.
+  Live server availability is checked on hover/click via /api/vehicles/available,
+  because admin blocks and reservations are server-side.
+*/
+      if (PRESELECTED_VEHICLE) {
+        status = "available";
+        validStart = true;
+      }
 
       renderAvailabilityDots(dayEl, bookings, dayDate);
 
@@ -6912,6 +6926,14 @@ async function showVehiclePreview(date, event) {
         hoverPreviewTimer = setTimeout(() => {
           clearPreview();
           previewRental(dayDate);
+
+          const desktopPanel = document.getElementById("vehicle-preview");
+          if (desktopPanel && !isMobile()) {
+            desktopPanel.innerHTML = `<strong>Checking live availability…</strong>`;
+            desktopPanel.classList.remove("hidden");
+            movePreview(e);
+          }
+
           showVehiclePreview(dayDate, e);
         }, 60);
       });
@@ -6975,6 +6997,40 @@ async function showVehiclePreview(date, event) {
 
     restoreSelectedDate();
   }
+
+  function showPreselectedUnavailableWarning(message) {
+    const warningBox = document.getElementById("preselected-warning");
+
+    if (!warningBox) {
+      alert(message);
+      return;
+    }
+
+    warningBox.innerHTML = `
+    <div
+      style="
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        font-weight: 800;
+        line-height: 1.35;
+      "
+    >
+      ${message}
+    </div>
+  `;
+
+    warningBox.style.display = "block";
+
+    warningBox.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
   /* ======================================================
    Select date
 ====================================================== */
@@ -6996,6 +7052,41 @@ async function showVehiclePreview(date, event) {
     }
 
     BLOCK_AUTO_SCROLL = false;
+
+    /* ===============================
+   🔒 PRESELECTED LORRY LIVE CHECK
+   If customer clicked “Book this lorry”, do not let them
+   continue into confusing greyed-out duration state.
+=============================== */
+
+    if (PRESELECTED_VEHICLE) {
+      const vehicle = vehicles.find((v) => v.id === PRESELECTED_VEHICLE);
+      const liveMap = await getLiveDayVehicleAvailability(dateStr);
+      const live = liveMap.get(PRESELECTED_VEHICLE);
+
+      const hasAnyAvailability =
+        !!live?.fullDayAvailable ||
+        !!live?.morningAvailable ||
+        !!live?.afternoonAvailable;
+
+      if (!hasAnyAvailability) {
+        selectedAvailability = null;
+
+        if (durationDaysInput) durationDaysInput.value = "";
+        if (pickupTimeInput) pickupTimeInput.value = "";
+        if (selectedDurationInput) selectedDurationInput.value = "";
+        if (selectedBaseInput) selectedBaseInput.value = "";
+
+        updateCheckoutSummary();
+        resetAvailabilityAutoSubmitState();
+
+        showPreselectedUnavailableWarning(
+          `${vehicle?.name || "This lorry"} is not available on ${dateStr}. Please choose another date or clear the selected lorry.`,
+        );
+
+        return;
+      }
+    }
 
     const pickupInput = document.getElementById("pickup-date");
     const durationInput = document.getElementById("duration-days");
