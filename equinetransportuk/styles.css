@@ -3231,3 +3231,373 @@ textarea {
 #availability-calendar .cal-legend {
   display: none !important;
 }
+
+/* ======================================================
+   CUSTOMER BOOKING CALENDAR — CLEAN PREMIUM VERSION
+   Desktop + Mobile
+   Availability is shown only in the live preview.
+====================================================== */
+
+#availability-calendar.cal-wrap {
+  width: 100%;
+  max-width: 760px;
+  margin: 20px auto 18px;
+  padding: 18px;
+  border-radius: 26px;
+  border: 1px solid rgba(203, 213, 225, 0.85);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98),
+    rgba(248, 250, 252, 0.98)
+  );
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  overflow: visible;
+}
+
+/* Header */
+#availability-calendar .cal-head {
+  display: grid;
+  grid-template-columns: 46px 1fr 46px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+#availability-calendar .cal-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  color: #111827;
+}
+
+#availability-calendar .cal-nav {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  background: #ffffff;
+  color: #111827;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+#availability-calendar .cal-nav:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Weekdays */
+#availability-calendar .cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+#availability-calendar .cal-weekdays div {
+  text-align: center;
+  padding: 4px 0;
+}
+
+/* Grid */
+#availability-calendar .cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* Day tiles */
+#availability-calendar .cal-day {
+  aspect-ratio: 1 / 1;
+  min-height: 66px;
+  padding: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  background: #ffffff;
+  color: #1d2530;
+  font-size: 17px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 6px 14px rgba(15, 23, 42, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+/* Neutralise old available/unavailable colours */
+#availability-calendar .cal-day.cal-available,
+#availability-calendar .cal-day.cal-unavailable,
+#availability-calendar .cal-day.cal-weekend.cal-available,
+#availability-calendar .cal-day.cal-weekend.cal-unavailable {
+  border-color: rgba(203, 213, 225, 0.9);
+  background: #ffffff;
+  opacity: 1;
+}
+
+/* Weekend: very subtle, not availability-related */
+#availability-calendar .cal-day.cal-weekend {
+  background: #f8fafc;
+}
+
+/* Hover */
+@media (hover: hover) {
+  #availability-calendar .cal-day:not(.cal-past):not(.cal-no-start):hover {
+    transform: translateY(-2px);
+    border-color: rgba(31, 111, 235, 0.45);
+    box-shadow:
+      0 12px 26px rgba(31, 111, 235, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* Today */
+#availability-calendar .cal-day.cal-today {
+  border-color: rgba(31, 111, 235, 0.75);
+  box-shadow:
+    0 0 0 3px rgba(31, 111, 235, 0.12),
+    0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+/* Selected day */
+#availability-calendar .cal-day.cal-selected {
+  border-color: var(--accent) !important;
+  background: linear-gradient(180deg, #eff6ff, #dbeafe) !important;
+  color: #1e40af !important;
+  box-shadow:
+    0 0 0 3px rgba(31, 111, 235, 0.16),
+    0 14px 28px rgba(31, 111, 235, 0.16);
+  outline: none !important;
+}
+
+/* Previewed range */
+#availability-calendar .cal-day.cal-preview {
+  border-color: rgba(31, 111, 235, 0.45);
+  background: rgba(31, 111, 235, 0.07);
+}
+
+/* Past / cannot-start days */
+#availability-calendar .cal-day.cal-past,
+#availability-calendar .cal-day.cal-no-start {
+  background: #f1f5f9 !important;
+  color: #94a3b8;
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Hide old privacy-sensitive / confusing indicators */
+#availability-calendar .cal-lines,
+#availability-calendar .cal-line,
+#availability-calendar .cal-legend,
+#availability-calendar .cal-last-label {
+  display: none !important;
+}
+
+/* Desktop preview popup */
+#vehicle-preview.vehicle-preview {
+  width: min(360px, 92vw);
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 22px 46px rgba(15, 23, 42, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  pointer-events: auto;
+  z-index: 50;
+}
+
+#vehicle-preview .preview-item {
+  padding: 9px;
+  border-radius: 14px;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+#vehicle-preview .preview-item:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+#vehicle-preview .preview-img {
+  width: 72px;
+  height: 54px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+/* Mobile preview panel */
+#mobile-preview.mobile-preview {
+  margin: 14px 0 0;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+#mobile-preview .preview-item {
+  padding: 10px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(203, 213, 225, 0.75);
+}
+
+#mobile-preview .preview-item + .preview-item {
+  margin-top: 8px;
+}
+
+#mobile-preview .preview-img {
+  width: 76px;
+  height: 58px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+/* Selected vehicle label polish */
+.calendar-vehicle-label {
+  max-width: 760px;
+  margin: 0 auto 12px;
+  padding: 11px 14px;
+  border-radius: 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ======================================================
+   MOBILE CALENDAR — iPhone friendly
+====================================================== */
+
+@media (max-width: 760px) {
+  #booking .card {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  #availability-calendar.cal-wrap {
+    max-width: none;
+    margin: 16px auto 14px;
+    padding: 10px;
+    border-radius: 20px;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
+  }
+
+  #availability-calendar .cal-head {
+    grid-template-columns: 42px 1fr 42px;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  #availability-calendar .cal-title {
+    font-size: 18px;
+  }
+
+  #availability-calendar .cal-nav {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    font-size: 24px;
+  }
+
+  #availability-calendar .cal-weekdays {
+    gap: 4px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    margin-bottom: 5px;
+  }
+
+  #availability-calendar .cal-grid {
+    gap: 5px;
+  }
+
+  #availability-calendar .cal-day {
+    min-height: 42px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: none;
+  }
+
+  #availability-calendar .cal-day.cal-selected {
+    box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.22);
+  }
+
+  #availability-calendar .cal-day.cal-today {
+    box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.16);
+  }
+
+  .calendar-vehicle-label {
+    max-width: none;
+    margin: 0 0 10px;
+    font-size: 13px;
+    border-radius: 14px;
+  }
+
+  #mobile-preview.mobile-preview {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  #mobile-preview .preview-img {
+    width: 68px;
+    height: 52px;
+  }
+
+  #mobile-preview .preview-text strong {
+    font-size: 14px;
+  }
+
+  #mobile-preview .tiny {
+    font-size: 12px;
+  }
+}
+
+/* Very small phones, e.g. iPhone SE */
+@media (max-width: 390px) {
+  #availability-calendar.cal-wrap {
+    padding: 8px;
+  }
+
+  #availability-calendar .cal-grid {
+    gap: 4px;
+  }
+
+  #availability-calendar .cal-weekdays {
+    gap: 4px;
+    font-size: 9px;
+  }
+
+  #availability-calendar .cal-day {
+    min-height: 38px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+}
