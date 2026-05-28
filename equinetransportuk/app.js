@@ -651,6 +651,16 @@ window.__initEquineCustomerAddressAutocomplete =
 async function loadCustomerAddressAutocomplete() {
   if (!customerAddressInput) return;
 
+  const params = new URLSearchParams(window.location.search);
+  const isStripeReturnPage =
+    params.get("checkout") === "success" ||
+    params.has("session_id") ||
+    params.has("outstanding");
+
+  // ✅ On Stripe return/confirmation page we do not need address autocomplete.
+  // This avoids unnecessary Google Maps loading after payment.
+  if (isStripeReturnPage) return;
+
   if (window.google?.maps?.places?.Autocomplete) {
     initCustomerAddressAutocomplete();
     return;
@@ -681,7 +691,7 @@ async function loadCustomerAddressAutocomplete() {
     script.dataset.equineAddressAutocomplete = "true";
     script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
       apiKey,
-    )}&libraries=places&callback=__initEquineCustomerAddressAutocomplete`;
+    )}&libraries=places&loading=async&callback=__initEquineCustomerAddressAutocomplete`;
     script.async = true;
     script.defer = true;
 
