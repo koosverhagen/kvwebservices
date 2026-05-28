@@ -3456,7 +3456,7 @@ async function enrichBookingLinks(env, booking) {
           (currentPickup.getTime() - previousPickup.getTime()) /
           (1000 * 60 * 60 * 24);
 
-        if (diffDays <= 90) {
+        if (diffDays >= 0 && diffDays <= 90) {
           requiredFormType = "short";
         }
       }
@@ -5236,45 +5236,54 @@ async function handleStripeWebhook(request, env) {
       }
 
       /* ===============================
-         FORM TYPE LOGIC (PRODUCTION SAFE)
-      =============================== */
+   FORM TYPE LOGIC (PRODUCTION SAFE)
+   Long form by default.
+   Short form only if the customer had a PREVIOUS hire
+   before this booking and within the last 90 days.
+=============================== */
 
       let requiredFormType = "long";
 
       try {
         if (booking.customerId) {
+          const currentPickup = new Date(booking.pickupAt);
+
           const result = await env.DB.prepare(
             `
-            SELECT pickup_at
-            FROM bookings
-            WHERE customer_id = ?
-            ORDER BY pickup_at DESC
-            LIMIT 2
-          `,
+      SELECT id, pickup_at
+      FROM bookings
+      WHERE customer_id = ?
+        AND id != ?
+        AND pickup_at < ?
+        AND COALESCE(status, '') != 'cancelled'
+      ORDER BY pickup_at DESC
+      LIMIT 1
+    `,
           )
-            .bind(booking.customerId)
-            .all();
+            .bind(booking.customerId, booking.id, booking.pickupAt)
+            .first();
 
-          const rows = result.results || [];
-          const previousBooking = rows[1];
-
-          if (previousBooking?.pickup_at) {
-            const previousPickup = new Date(previousBooking.pickup_at);
-            const currentPickup = new Date(booking.pickupAt);
+          if (result?.pickup_at) {
+            const previousPickup = new Date(result.pickup_at);
 
             const diffDays =
               (currentPickup.getTime() - previousPickup.getTime()) /
               (1000 * 60 * 60 * 24);
 
             console.log("🧪 FORM CHECK:", {
-              previousPickup: previousBooking.pickup_at,
+              previousBookingId: result.id,
+              previousPickup: result.pickup_at,
               currentPickup: booking.pickupAt,
               diffDays,
             });
 
-            if (diffDays <= 90) {
+            if (diffDays >= 0 && diffDays <= 90) {
               requiredFormType = "short";
             }
+          } else {
+            console.log(
+              "🧪 FORM CHECK: no previous hire found — long form required",
+            );
           }
         }
       } catch (err) {
