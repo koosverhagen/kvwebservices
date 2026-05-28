@@ -45,6 +45,32 @@ async function cleanupExpiredReservations(env) {
   }
 }
 
+async function clearBookingReservations(env, bookingId) {
+  const safeBookingId = String(bookingId || "").trim();
+
+  if (!safeBookingId) return;
+
+  try {
+    const list = await env.BOOKINGS_KV.list({ prefix: "reservation:" });
+
+    const deletes = [];
+
+    for (const key of list.keys) {
+      if (String(key.name).endsWith(`:${safeBookingId}`)) {
+        deletes.push(env.BOOKINGS_KV.delete(key.name));
+      }
+    }
+
+    await Promise.allSettled(deletes);
+
+    if (deletes.length) {
+      console.log("🧹 Cleared checkout reservations:", safeBookingId);
+    }
+  } catch (err) {
+    console.warn("⚠️ Could not clear checkout reservations:", err);
+  }
+}
+
 /* ===============================
    ⏰ PROCESS REMINDERS
 =============================== */
@@ -2597,8 +2623,14 @@ async function handleCreateCheckoutSession(request, env) {
   const outstandingAmount = Math.max(0, totalHire - confirmationFee);
 
   /* ===============================
-     RESERVATION LOGIC (UNCHANGED)
-  =============================== */
+   🔒 LIVE AVAILABILITY CHECK
+   Must match /api/vehicles/available.
+   Checks:
+   - confirmed bookings
+   - temporary reservations
+   - admin blocks
+   - all relevant months
+=============================== */
 
   let dropoffDate;
 
@@ -2610,28 +2642,15 @@ async function handleCreateCheckoutSession(request, env) {
   }
 
   const reservedDates = getDatesBetween(pickupDate, dropoffDate);
-
-  function getReservationSlot(durationDaysValue, pickupTimeValue) {
-    if (Number(durationDaysValue) !== 0.5) return "full";
-    return pickupTimeValue === "13:00" ? "pm" : "am";
-  }
-
-  function getConfirmedSlot(confirmedBooking) {
-    if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
-    return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
-  }
-
-  function getConfirmedSlot(confirmedBooking) {
-    if (Number(confirmedBooking.durationDays) !== 0.5) return "full";
-    return confirmedBooking.pickupTime === "13:00" ? "pm" : "am";
-  }
-
   const requestedSlot = getReservationSlot(durationDays, pickupTime);
 
-  const pickupMonth = booking.pickupDate.slice(0, 7);
-  const existingMonth = await env.BOOKINGS_KV.get(`bookings:${pickupMonth}`);
+  const monthKeys = [...new Set(reservedDates.map((d) => d.slice(0, 7)))];
 
-  if (existingMonth) {
+  for (const month of monthKeys) {
+    const existingMonth = await env.BOOKINGS_KV.get(`bookings:${month}`);
+
+    if (!existingMonth) continue;
+
     let confirmedBookings = [];
 
     try {
@@ -2642,7 +2661,13 @@ async function handleCreateCheckoutSession(request, env) {
     }
 
     for (const confirmed of confirmedBookings) {
-      if (confirmed.vehicleId !== booking.vehicleId) continue;
+      if (String(confirmed.vehicleId || "") !== String(booking.vehicleId)) {
+        continue;
+      }
+
+      if (String(confirmed.status || "").toLowerCase() === "cancelled") {
+        continue;
+      }
 
       const confirmedDates = getDatesBetween(
         new Date(confirmed.pickupAt),
@@ -2668,6 +2693,52 @@ async function handleCreateCheckoutSession(request, env) {
   }
 
   /* ===============================
+   🔒 TEMP RESERVATIONS
+=============================== */
+
+  for (const reservedDate of reservedDates) {
+    const list = await env.BOOKINGS_KV.list({
+      prefix: `reservation:${booking.vehicleId}:${reservedDate}`,
+    });
+
+    for (const key of list.keys) {
+      const parts = key.name.split(":");
+      const reservationSlot = parts[3] || "full";
+
+      if (slotsConflict(requestedSlot, reservationSlot)) {
+        return json(
+          {
+            error:
+              "This lorry is currently being checked out by another customer. Please try again shortly.",
+          },
+          409,
+        );
+      }
+    }
+  }
+
+  /* ===============================
+   🔒 ADMIN BLOCKS
+=============================== */
+
+  for (const reservedDate of reservedDates) {
+    const block = await getBlockForVehicleDate(
+      env,
+      reservedDate,
+      booking.vehicleId,
+    );
+
+    if (block && blockConflictsWithRequestedSlot(block, requestedSlot)) {
+      return json(
+        {
+          error: "This lorry has been blocked by admin for the selected date.",
+        },
+        409,
+      );
+    }
+  }
+
+  /* ===============================
      STRIPE
   =============================== */
 
@@ -2685,6 +2756,34 @@ async function handleCreateCheckoutSession(request, env) {
 
   // 🔥 CRITICAL FIX — GENERATE BOOKING ID HERE
   const bookingId = "book_" + crypto.randomUUID();
+
+  /* ===============================
+   🔒 TEMP CHECKOUT RESERVATION
+   Holds selected lorry/date while customer is on Stripe.
+   Auto-expires after 10 minutes.
+=============================== */
+
+  const reservationKeys = [];
+
+  for (const reservedDate of reservedDates) {
+    const reservationKey = `reservation:${booking.vehicleId}:${reservedDate}:${requestedSlot}:${bookingId}`;
+
+    reservationKeys.push(reservationKey);
+
+    await env.BOOKINGS_KV.put(
+      reservationKey,
+      JSON.stringify({
+        bookingId,
+        vehicleId: booking.vehicleId,
+        date: reservedDate,
+        slot: requestedSlot,
+        createdAt: Date.now(),
+      }),
+      {
+        expirationTtl: 10 * 60,
+      },
+    );
+  }
 
   let session;
 
@@ -2742,6 +2841,10 @@ async function handleCreateCheckoutSession(request, env) {
       },
     });
   } catch (err) {
+    await Promise.allSettled(
+      reservationKeys.map((key) => env.BOOKINGS_KV.delete(key)),
+    );
+
     return json(
       {
         error: "Stripe session creation failed",
@@ -5254,6 +5357,8 @@ async function handleStripeWebhook(request, env) {
       });
 
       console.log("⚡ Session mapping saved:", sessionKey);
+
+      await clearBookingReservations(env, booking.id);
 
       /* ===============================
          EMAIL DEDUPE CHECK
