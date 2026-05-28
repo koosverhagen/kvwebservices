@@ -23,7 +23,7 @@
         background-size: cover;
       }
     </style>
-    <link rel="stylesheet" href="styles.css?v=48" />
+    <link rel="stylesheet" href="styles.css?v=50" />
     <link rel="icon" href="images/favicon.png" />
   </head>
   <body>
@@ -71,7 +71,9 @@
             </p>
 
             <div class="hero-cta-row">
-              <a class="btn" href="#booking">Start booking</a>
+              <a class="btn" href="#booking" id="start-booking-btn"
+                >Start booking</a
+              >
               <a class="btn ghost" href="#fleet">View fleet</a>
 
               <a class="btn ghost reviews-open" href="#">
@@ -292,7 +294,17 @@ removed duplicate, script is loaded at end of body -->
           <!-- STEP 2 -->
           <div class="booking-step" id="step-2">
             <div class="card">
-              <h3>Select your lorry</h3>
+              <div class="step-card-head">
+                <h3>Select your lorry</h3>
+
+                <button
+                  class="btn ghost reset-booking-step-btn"
+                  type="button"
+                  onclick="resetBookingFlow()"
+                >
+                  Reset booking
+                </button>
+              </div>
 
               <div
                 id="availability-search-summary"
@@ -741,7 +753,7 @@ removed duplicate, script is loaded at end of body -->
 
     <script src="https://elfsightcdn.com/platform.js" async></script>
 
-    <script src="app.js?v=49"></script>
+    <script src="app.js?v=50"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
   </body>
 </html>
