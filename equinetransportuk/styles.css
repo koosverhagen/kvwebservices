@@ -1653,17 +1653,12 @@ input[type="date"] {
    Availability states
 ------------------------------------------------------ */
 
-.cal-day.cal-available {
-  border-color: #22c55e;
-  background: rgba(34, 197, 94, 0.06);
-}
-
+.cal-day.cal-available,
 .cal-day.cal-unavailable {
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.06);
-  opacity: 0.85;
+  border-color: rgba(203, 213, 225, 0.9);
+  background: #fafbfc;
+  opacity: 1;
 }
-
 .cal-day.cal-no-start {
   opacity: 0.45;
   cursor: not-allowed;
@@ -3223,4 +3218,16 @@ textarea {
 /* Google address suggestions */
 .pac-container {
   z-index: 999999 !important;
+}
+
+/* ======================================================
+   PUBLIC CALENDAR PRIVACY CLEANUP
+   Hide old per-lorry availability lines and legend.
+   Live availability is shown only in the preview.
+====================================================== */
+
+#availability-calendar .cal-lines,
+#availability-calendar .cal-line,
+#availability-calendar .cal-legend {
+  display: none !important;
 }
