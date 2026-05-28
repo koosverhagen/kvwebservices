@@ -605,6 +605,77 @@ const customerMobileInput = document.getElementById("customer-mobile");
 const customerAddressInput = document.getElementById("customer-address");
 const customerDobInput = document.getElementById("customer-dob");
 
+/* ===============================
+   CUSTOMER ADDRESS AUTOCOMPLETE
+   Uses same Maps key endpoint as calculators
+================================ */
+
+const CUSTOMER_MAPS_KEY_ENDPOINT =
+  "https://www.equinetransportuk.com/test/_functions/mapskey";
+
+let customerAddressAutocompleteStarted = false;
+
+function initCustomerAddressAutocomplete() {
+  if (customerAddressAutocompleteStarted) return;
+  if (!customerAddressInput) return;
+  if (!window.google?.maps?.places?.Autocomplete) return;
+
+  customerAddressAutocompleteStarted = true;
+
+  new google.maps.places.Autocomplete(customerAddressInput, {
+    componentRestrictions: { country: "uk" },
+    fields: ["formatted_address", "geometry", "name"],
+  });
+}
+
+window.__initEquineCustomerAddressAutocomplete =
+  initCustomerAddressAutocomplete;
+
+async function loadCustomerAddressAutocomplete() {
+  if (!customerAddressInput) return;
+
+  if (window.google?.maps?.places?.Autocomplete) {
+    initCustomerAddressAutocomplete();
+    return;
+  }
+
+  try {
+    const existingScript = document.querySelector(
+      'script[data-equine-address-autocomplete="true"]',
+    );
+
+    if (existingScript) return;
+
+    const res = await fetch(CUSTOMER_MAPS_KEY_ENDPOINT, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Maps key request failed: ${res.status}`);
+    }
+
+    const apiKey = (await res.text()).trim().replace(/^['"]|['"]$/g, "");
+
+    if (!apiKey) {
+      throw new Error("Maps API key is empty");
+    }
+
+    const script = document.createElement("script");
+    script.dataset.equineAddressAutocomplete = "true";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+      apiKey,
+    )}&libraries=places&callback=__initEquineCustomerAddressAutocomplete`;
+    script.async = true;
+    script.defer = true;
+
+    document.head.appendChild(script);
+  } catch (err) {
+    console.warn("Address autocomplete unavailable:", err);
+  }
+}
+
+loadCustomerAddressAutocomplete();
+
 const hiredWithin3MonthsInput = document.getElementById(
   "hired-within-3-months",
 );
@@ -5123,6 +5194,7 @@ async function createStripeCheckoutSession(booking) {
 
           customerEmail: booking.customerEmail,
           customerMobile: booking.customerMobile,
+          customerAddress: booking.customerAddress,
 
           bookingId: booking.id,
           confirmationFee: booking.confirmationFee,
@@ -5765,6 +5837,21 @@ if (bookingForm) {
       return;
     }
 
+    const customerAddress = (customerAddressInput?.value || "").trim();
+
+    if (!customerAddress) {
+      alert("Please enter your address before continuing.");
+
+      customerAddressInput?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      customerAddressInput?.focus();
+
+      return;
+    }
+
     /* ===============================
        SAFE VEHICLE ID (🔥 KEY FIX)
     =============================== */
@@ -5894,11 +5981,10 @@ if (bookingForm) {
       durationDays: selectedAvailability.durationDays,
       durationHours: selectedAvailability.durationHours,
       pickupTime: bookingPickupTime,
-
       customerName: (customerNameInput?.value || "").trim(),
       customerEmail: customerEmailInput?.value || "",
       customerMobile: customerMobileInput?.value || "",
-      customerAddress: customerAddressInput?.value || "",
+      customerAddress,
       customerDob: customerDobInput?.value || "",
 
       /* 🔥 CLEAN EXTRAS (single source of truth) */

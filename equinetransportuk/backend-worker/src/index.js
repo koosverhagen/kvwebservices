@@ -599,6 +599,13 @@ export default {
           return withCors(json({ error: "Mobile required" }, 400), corsHeaders);
         }
 
+        if (!address) {
+          return withCors(
+            json({ error: "Address required" }, 400),
+            corsHeaders,
+          );
+        }
+
         try {
           /* ===============================
              FIND EXISTING FIRST
@@ -846,6 +853,13 @@ export default {
           if (!mobile) {
             return withCors(
               json({ error: "Mobile required" }, 400),
+              corsHeaders,
+            );
+          }
+
+          if (!address) {
+            return withCors(
+              json({ error: "Address required" }, 400),
               corsHeaders,
             );
           }
@@ -2473,6 +2487,13 @@ async function handleCreateCheckoutSession(request, env) {
   const booking = await request.json();
   const ignoreBookingId = booking.ignoreBookingId || null;
   const customerNotes = String(booking.customerNotes || "").slice(0, 500);
+  const customerAddress = String(booking.customerAddress || "")
+    .trim()
+    .slice(0, 250);
+
+  if (!customerAddress) {
+    return json({ error: "Customer address is required" }, 400);
+  }
 
   const vehicleName =
     booking.vehicleName || booking.vehicleSnapshot?.name || "Horsebox";
@@ -2701,6 +2722,7 @@ async function handleCreateCheckoutSession(request, env) {
         customerName: cleanCustomerName,
         customerEmail: (booking.customerEmail || "").slice(0, 100),
         customerMobile: (booking.customerMobile || "").slice(0, 30),
+        customerAddress,
         customerNotes,
 
         discountCode: appliedDiscountCode,
@@ -4863,8 +4885,8 @@ async function handleStripeWebhook(request, env) {
           session.customer_details?.email ||
           "",
         customerMobile: session.metadata.customerMobile || "",
+        customerAddress: session.metadata.customerAddress || "",
         customerNotes,
-
         priceBase: baseCost,
         priceExtras: extrasTotal,
         priceTotal: totalHire,
@@ -4984,9 +5006,9 @@ async function handleStripeWebhook(request, env) {
 
           await env.DB.prepare(
             `
-            INSERT INTO customers (
-              id, full_name, email, mobile, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
+           INSERT INTO customers (
+  id, full_name, email, mobile, address, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?)
           `,
           )
             .bind(
@@ -4994,6 +5016,7 @@ async function handleStripeWebhook(request, env) {
               finalCustomerName || "Customer",
               booking.customerEmail,
               booking.customerMobile,
+              booking.customerAddress || null,
               now,
               now,
             )
@@ -5004,6 +5027,33 @@ async function handleStripeWebhook(request, env) {
       } catch (err) {
         console.log("⚠️ CUSTOMER ERROR:", err);
         customer = { id: null };
+      }
+
+      /* ===============================
+       🏠 UPDATE CUSTOMER ADDRESS
+       If customer already exists but address is missing/changed
+    =============================== */
+
+      if (
+        customer &&
+        customer.id &&
+        booking.customerAddress &&
+        String(customer.address || "").trim() !==
+          String(booking.customerAddress).trim()
+      ) {
+        console.log("🏠 Updating customer address:", customer.id);
+
+        await env.DB.prepare(
+          `
+        UPDATE customers
+        SET address = ?, updated_at = ?
+        WHERE id = ?
+      `,
+        )
+          .bind(booking.customerAddress, new Date().toISOString(), customer.id)
+          .run();
+
+        customer.address = booking.customerAddress;
       }
 
       booking.customerId = customer?.id || null;
