@@ -6908,7 +6908,8 @@ async function showVehiclePreview(date, event) {
         validStart = true;
       }
 
-      renderAvailabilityDots(dayEl, bookings, dayDate);
+      // Per-lorry calendar lines removed.
+      // Availability is now shown only in the live preview popup/panel.
 
       /* ===============================
      STATUS COLOURING
@@ -7481,71 +7482,10 @@ async function showVehiclePreview(date, event) {
   }
 
   function renderAvailabilityDots(dayEl, bookings, dayDate) {
-    const wrap = document.createElement("div");
-    wrap.className = "cal-lines";
-
-    vehicles.forEach((vehicle) => {
-      const line = document.createElement("div");
-      line.className = "cal-line";
-
-      const dayStart = new Date(dayDate);
-      dayStart.setHours(0, 0, 0, 0);
-
-      const dayEnd = new Date(dayDate);
-      dayEnd.setHours(23, 59, 59, 999);
-
-      const vehicleBookings = bookings.filter((b) => {
-        if (b.vehicleId !== vehicle.id) return false;
-        if (b.status === "cancelled") return false;
-
-        const start = new Date(b.pickupAt);
-        const end = new Date(b.dropoffAt);
-
-        return start <= dayEnd && end >= dayStart;
-      });
-
-      let hasMorning = false;
-      let hasAfternoon = false;
-      let hasFullDay = false;
-
-      vehicleBookings.forEach((b) => {
-        const start = new Date(b.pickupAt);
-        const end = new Date(b.dropoffAt);
-
-        const sameDay =
-          start.getFullYear() === dayDate.getFullYear() &&
-          start.getMonth() === dayDate.getMonth() &&
-          start.getDate() === dayDate.getDate() &&
-          end.getFullYear() === dayDate.getFullYear() &&
-          end.getMonth() === dayDate.getMonth() &&
-          end.getDate() === dayDate.getDate();
-
-        const startHour = getLondonParts(start).hour;
-        const endHour = getLondonParts(end).hour;
-
-        if (sameDay && startHour === 7 && endHour === 13) {
-          hasMorning = true;
-        } else if (sameDay && startHour === 13 && endHour === 19) {
-          hasAfternoon = true;
-        } else {
-          hasFullDay = true;
-        }
-      });
-
-      if (hasMorning && hasAfternoon) {
-        line.classList.add("booked-am", "booked-pm");
-      } else if (hasMorning) {
-        line.classList.add("booked-am");
-      } else if (hasAfternoon) {
-        line.classList.add("booked-pm");
-      } else if (hasFullDay) {
-        line.classList.add("booked-full");
-      }
-
-      wrap.appendChild(line);
-    });
-
-    dayEl.appendChild(wrap);
+    // Removed deliberately.
+    // The public calendar should not expose per-lorry availability lines.
+    // Live availability is shown through showVehiclePreview().
+    return;
   }
 
   function restoreSelectedDate() {
