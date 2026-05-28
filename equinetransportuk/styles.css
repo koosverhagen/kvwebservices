@@ -3642,3 +3642,39 @@ textarea {
   width: 100%;
   text-align: center;
 }
+
+/* ======================================================
+   STEP 2 RESET BOOKING BUTTON
+====================================================== */
+
+.step-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.step-card-head h3 {
+  margin: 0;
+}
+
+.reset-booking-step-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .step-card-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .reset-booking-step-btn {
+    width: 100%;
+  }
+}

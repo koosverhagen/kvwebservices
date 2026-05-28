@@ -189,8 +189,14 @@ function goToStep(step) {
 }
 
 function startBooking(vehicleId) {
+  // ✅ Starting from a fleet card must always begin clean.
+  // Prevents old date/duration/results/summary carrying over.
+  if (typeof resetBookingFlow === "function") {
+    resetBookingFlow();
+  }
+
   PRESELECTED_VEHICLE = vehicleId;
-  LOCKED_VEHICLE = true; // ✅ NEW
+  LOCKED_VEHICLE = true;
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
 
@@ -590,7 +596,18 @@ pickupTimeInput?.addEventListener("change", async () => {
 });
 
 const availabilityResults = document.getElementById("availability-results");
+const startBookingBtn = document.getElementById("start-booking-btn");
 
+startBookingBtn?.addEventListener("click", () => {
+  resetBookingFlow();
+
+  setTimeout(() => {
+    document.getElementById("booking")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 120);
+});
 const bookingForm = document.getElementById("booking-form");
 const selectedLorryInput = document.getElementById("selected-lorry") || {
   value: "",
