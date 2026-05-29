@@ -3016,7 +3016,15 @@
         }
       }
 
-      loadAdminCustomerAddressAutocomplete();
+      // Load Google address suggestions only when the admin address field is used.
+      // This avoids loading Google Places on every admin page load.
+      customerEditAddress?.addEventListener(
+        "focus",
+        () => {
+          loadAdminCustomerAddressAutocomplete();
+        },
+        { once: true },
+      );
       const customerBookingsList = document.getElementById(
         "customer-bookings-list",
       );
