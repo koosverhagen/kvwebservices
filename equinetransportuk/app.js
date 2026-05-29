@@ -701,7 +701,15 @@ async function loadCustomerAddressAutocomplete() {
   }
 }
 
-loadCustomerAddressAutocomplete();
+// Load Google address suggestions only when the address field is used.
+// This keeps normal page loads and Stripe return pages clean.
+customerAddressInput?.addEventListener(
+  "focus",
+  () => {
+    loadCustomerAddressAutocomplete();
+  },
+  { once: true },
+);
 
 const hiredWithin3MonthsInput = document.getElementById(
   "hired-within-3-months",
