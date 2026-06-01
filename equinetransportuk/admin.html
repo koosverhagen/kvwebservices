@@ -5364,24 +5364,8 @@
             : "";
 
           const mobileDvlaBox = (() => {
-            const last8 =
-              booking?.licenceLast8 ||
-              booking?.licenseLast8 ||
-              booking?.drivingLicenceLast8 ||
-              booking?.driving_license_last8 ||
-              booking?.form?.licenceLast8 ||
-              booking?.form?.licenseLast8 ||
-              booking?.form?.drivingLicenceLast8 ||
-              "";
-
-            const dvla =
-              booking?.dvlaCode ||
-              booking?.dvlaAccessCode ||
-              booking?.dvla_code ||
-              booking?.dvla_access_code ||
-              booking?.form?.dvlaCode ||
-              booking?.form?.dvlaAccessCode ||
-              "";
+            const last8 = getLicenceLast8(booking);
+            const dvla = getDvlaCodeValue(booking);
 
             const isVerified = booking?.dvlaVerified === true;
 
