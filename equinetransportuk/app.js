@@ -1875,10 +1875,18 @@ function renderBookingConfirmation(booking) {
 
   const shortRef = booking.id?.slice(-8);
 
-  /* ===============================
-   RENDER
-=============================== */
+  const confirmationOutstanding = Number(
+    booking.outstandingAmount || booking.outstanding || remaining || 0,
+  );
 
+  const confirmationEmailText =
+    confirmationOutstanding > 0
+      ? "We have emailed your booking confirmation with links to complete your hire form, secure the £200 deposit hold, and pay the outstanding balance."
+      : "We have emailed your booking confirmation with links to complete your hire form and secure the £200 deposit hold.";
+
+  /* ===============================
+ RENDER
+=============================== */
   container.innerHTML = `
   <div class="confirmation-card apple">
 
@@ -1888,10 +1896,19 @@ function renderBookingConfirmation(booking) {
     </div>
 
     <div class="confirmation-note" style="margin-bottom:14px;">
-      ${statusNote}
-    </div>
+  ${statusNote}
+</div>
 
-    <div class="confirmation-block">
+<div class="confirmation-email-notice">
+  <div class="confirmation-email-icon">✉️</div>
+
+  <div>
+    <strong>Email sent</strong>
+    <p>${confirmationEmailText}</p>
+  </div>
+</div>
+
+<div class="confirmation-block">
       <div class="label">Vehicle</div>
       <div class="value strong">${vehicleName}</div>
     </div>
