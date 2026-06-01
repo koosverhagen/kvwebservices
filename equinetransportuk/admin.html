@@ -5345,6 +5345,8 @@
 
           const ref = shortRef(booking.id);
 
+          const bookingId = booking.id || "";
+
           const bookingNotes = getBookingNotes(booking);
 
           const notesBox = bookingNotes
@@ -5455,7 +5457,6 @@
   `;
           })();
 
-          const bookingId = booking.id || "";
           const phone = booking.customerMobile || "";
           const email = booking.customerEmail || "";
           const firstName = getFirstName(customerName);
