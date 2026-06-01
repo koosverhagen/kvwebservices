@@ -5520,15 +5520,19 @@
 
         <div class="mobile-info-grid">
 
-          <div class="mobile-info-box">
-            <div class="mobile-info-label">
-              Payment
-            </div>
+        <div class="mobile-info-box">
+  <div class="mobile-info-label">
+    Payment
+  </div>
 
-            <div class="mobile-info-value">
-              ${escapeHtml(booking.paymentStatus || "Pending")}
-            </div>
-          </div>
+  <div class="mobile-info-value">
+    ${
+      outstandingDone
+        ? "Fully Paid"
+        : escapeHtml(booking.paymentStatus || "Pending")
+    }
+  </div>
+</div>
 
           <div class="mobile-info-box">
             <div class="mobile-info-label">
