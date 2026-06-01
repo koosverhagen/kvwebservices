@@ -2482,17 +2482,7 @@ function resetBookingFlow() {
 
   IS_RESETTING = false;
 
-  /* ===============================
-     TOAST
-  =============================== */
-
   console.log("🔄 Booking reset complete");
-
-  setTimeout(() => {
-    if (typeof showToast === "function") {
-      showToast("Booking reset complete");
-    }
-  }, 150);
 }
 
 function resetCalendarToToday() {
