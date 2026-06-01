@@ -3678,3 +3678,64 @@ textarea {
     width: 100%;
   }
 }
+
+/* ======================================================
+   BOOKING CONFIRMATION — EMAIL SENT NOTICE
+====================================================== */
+
+.confirmation-email-notice {
+  margin: 16px 0 18px;
+  padding: 14px 15px;
+  border-radius: 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  align-items: start;
+
+  text-align: left;
+}
+
+.confirmation-email-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #dbeafe;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 17px;
+}
+
+.confirmation-email-notice strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 3px;
+  color: #1e40af;
+}
+
+.confirmation-email-notice p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #334155;
+}
+
+@media (max-width: 640px) {
+  .confirmation-email-notice {
+    grid-template-columns: 30px 1fr;
+    padding: 13px;
+  }
+
+  .confirmation-email-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+}
