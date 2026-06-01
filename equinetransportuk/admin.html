@@ -1824,6 +1824,46 @@
           white-space: normal;
         }
       }
+
+      /* Mobile DVLA tools inside expanded booking card */
+      @media (max-width: 768px) {
+        .mobile-dvla-box {
+          background: #f8fafc;
+        }
+
+        .mobile-dvla-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 6px;
+        }
+
+        .mobile-dvla-actions .dvla-row {
+          min-height: 42px;
+          padding: 8px 10px;
+          border-radius: 12px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+        }
+
+        .mobile-dvla-actions .btn-small {
+          min-height: 34px;
+          padding: 6px 10px;
+          font-size: 12px;
+          border-radius: 10px;
+          white-space: nowrap;
+        }
+
+        .mobile-dvla-actions .dvla-verify {
+          min-height: 40px;
+          padding: 8px 10px;
+          border-radius: 12px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          font-size: 13px;
+          font-weight: 800;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -5321,6 +5361,100 @@
   `
             : "";
 
+          const mobileDvlaBox = (() => {
+            const last8 =
+              booking?.licenceLast8 ||
+              booking?.licenseLast8 ||
+              booking?.drivingLicenceLast8 ||
+              booking?.driving_license_last8 ||
+              booking?.form?.licenceLast8 ||
+              booking?.form?.licenseLast8 ||
+              booking?.form?.drivingLicenceLast8 ||
+              "";
+
+            const dvla =
+              booking?.dvlaCode ||
+              booking?.dvlaAccessCode ||
+              booking?.dvla_code ||
+              booking?.dvla_access_code ||
+              booking?.form?.dvlaCode ||
+              booking?.form?.dvlaAccessCode ||
+              "";
+
+            const isVerified = booking?.dvlaVerified === true;
+
+            if (!last8 && !dvla) {
+              return `
+      <div class="mobile-info-box mobile-dvla-box" style="grid-column: 1 / -1">
+        <div class="mobile-info-label">DVLA Check</div>
+        <div class="mobile-info-value">Awaiting form details</div>
+      </div>
+    `;
+            }
+
+            return `
+    <div
+      class="mobile-info-box mobile-dvla-box dvla-cell"
+      data-booking-id="${escapeHtml(bookingId)}"
+      style="grid-column: 1 / -1"
+    >
+      <div class="mobile-info-label">DVLA Check</div>
+
+      <div class="mobile-dvla-actions">
+        <div class="dvla-row">
+          <span class="tiny">Licence</span>
+          <strong>${escapeHtml(last8 || "—")}</strong>
+
+          ${
+            last8
+              ? `
+                <button
+                  class="btn primary btn-small copy-licence"
+                  type="button"
+                  data-copy="${escapeHtml(last8)}"
+                  title="Copy licence and open DVLA check"
+                >
+                  Copy + GOV
+                </button>
+              `
+              : ""
+          }
+        </div>
+
+        <div class="dvla-row">
+          <span class="tiny">Code</span>
+          <strong>${escapeHtml(dvla || "—")}</strong>
+
+          ${
+            dvla
+              ? `
+                <button
+                  class="btn ghost btn-small copy-btn"
+                  type="button"
+                  data-copy="${escapeHtml(dvla)}"
+                  title="Copy DVLA access code"
+                >
+                  Copy code
+                </button>
+              `
+              : ""
+          }
+        </div>
+
+        <label class="dvla-verify">
+          <input
+            type="checkbox"
+            class="js-dvla-verify"
+            data-id="${escapeHtml(bookingId)}"
+            ${isVerified ? "checked" : ""}
+          />
+          ${isVerified ? "Verified" : "Mark verified"}
+        </label>
+      </div>
+    </div>
+  `;
+          })();
+
           const bookingId = booking.id || "";
           const phone = booking.customerMobile || "";
           const email = booking.customerEmail || "";
@@ -5554,15 +5688,7 @@
             </div>
           </div>
 
-         <div class="mobile-info-box">
-  <div class="mobile-info-label">
-    DVLA
-  </div>
-
-  <div class="mobile-info-value">
-    ${booking.dvlaVerified ? "Verified" : "Pending"}
-  </div>
-</div>
+      ${mobileDvlaBox}
 
 ${notesBox}
 
