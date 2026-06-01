@@ -1812,6 +1812,18 @@
       .pac-container {
         z-index: 10000000 !important;
       }
+
+      /* Mobile booking top-right status pills */
+      @media (max-width: 768px) {
+        .mobile-booking-top .pill {
+          min-width: 150px;
+          min-height: 38px;
+          font-size: 14px;
+          line-height: 1.15;
+          text-align: center;
+          white-space: normal;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -5294,6 +5306,10 @@
           const depositDone = isDepositPaid(booking);
           const outstandingDone = isOutstandingPaid(booking);
 
+          const outstandingAmount = Number(
+            booking.outstandingAmount || booking.outstanding || 0,
+          );
+
           const mobileFormWhatsapp =
             phone && !formDone
               ? `
@@ -5403,27 +5419,32 @@
 
               </div>
 
-              <div
-  <div
-  style="
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-end;
-  "
->
-  ${
-    booking.formCompleted
-      ? '<span class="pill ok">Form Complete</span>'
-      : '<span class="pill warn">Form Pending</span>'
-  }
+                           <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 6px;
+                  align-items: flex-end;
+                "
+              >
+                ${
+                  formDone
+                    ? '<span class="pill ok">Form Complete</span>'
+                    : '<span class="pill warn">Form Pending</span>'
+                }
 
-  ${
-    bookingHasActiveDeposit(booking)
-      ? '<span class="pill ok">Deposit on Hold</span>'
-      : '<span class="pill warn">No Deposit</span>'
-  }
-</div>
+                ${
+                  bookingHasActiveDeposit(booking)
+                    ? '<span class="pill ok">Deposit on Hold</span>'
+                    : '<span class="pill warn">No Deposit</span>'
+                }
+
+                ${
+                  outstandingDone
+                    ? '<span class="pill ok">Outstanding Paid</span>'
+                    : `<span class="pill warn">Outstanding £${outstandingAmount.toFixed(2)}</span>`
+                }
+              </div>
 
             </div>
 
