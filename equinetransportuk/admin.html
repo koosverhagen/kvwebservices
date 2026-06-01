@@ -3836,6 +3836,20 @@
       }
 
       function isDepositPaid(booking) {
+        const capturedAmount = Number(
+          booking?.depositCapturedAmount ||
+            booking?.deposit_captured_amount ||
+            0,
+        );
+
+        if (
+          capturedAmount > 0 ||
+          booking?.depositReleased === true ||
+          booking?.depositStatus === "captured_remainder_released"
+        ) {
+          return false;
+        }
+
         return booking?.depositPaid === true || booking?.deposit_paid === true;
       }
 
@@ -4335,6 +4349,8 @@
         =============================== */
 
         const depositCaptured = Number(booking.depositCapturedAmount || 0);
+        const depositWasCaptured = depositCaptured > 0;
+        const depositIsLiveHold = bookingHasActiveDeposit(booking);
 
         /* ===============================
            OUTPUT
@@ -4347,7 +4363,13 @@
               : '<span class="pill bad">Confirmation pending</span>'
           }
 
-          ${deposit ? '<span class="pill ok">Deposit secured</span>' : waDeposit}
+          ${
+            depositIsLiveHold
+              ? '<span class="pill ok">Deposit on hold</span>'
+              : depositWasCaptured
+                ? '<span class="pill neutral">Deposit released</span>'
+                : waDeposit
+          }
 
           ${
             outstandingPaid
@@ -4365,25 +4387,28 @@
                🔒 DEPOSIT STATUS
           =============================== -->
 
-          ${
-            booking.depositPaid
-              ? `
-                <div class="pill ok">
-                  £200 on hold
-                </div>
-              `
-              : ""
-          }
+        ${
+          depositIsLiveHold
+            ? `
+      <div class="pill ok">
+        £200 on hold
+      </div>
+    `
+            : ""
+        }
 
-          ${
-            depositCaptured > 0
-              ? `
-                <div class="pill warn">
-                  Captured: £${depositCaptured.toFixed(2)}
-                </div>
-              `
-              : ""
-          }
+         ${
+           depositCaptured > 0
+             ? `
+      <div class="pill warn">
+        Captured: £${depositCaptured.toFixed(2)}
+      </div>
+      <div class="pill neutral">
+        Remainder released
+      </div>
+    `
+             : ""
+         }
 
           ${
             booking.depositCancelled
@@ -4580,6 +4605,24 @@
       }
 
       function bookingHasActiveDeposit(booking) {
+        const capturedAmount = Number(
+          booking?.depositCapturedAmount ||
+            booking?.deposit_captured_amount ||
+            0,
+        );
+
+        const depositCapturedOrReleased =
+          capturedAmount > 0 ||
+          booking?.depositReleased === true ||
+          booking?.deposit_released === 1 ||
+          booking?.depositStatus === "captured" ||
+          booking?.depositStatus === "captured_remainder_released" ||
+          booking?.depositStatus === "released";
+
+        if (depositCapturedOrReleased) {
+          return false;
+        }
+
         const depositSecured =
           booking?.depositPaid === true ||
           booking?.deposit_paid === 1 ||
@@ -4593,29 +4636,11 @@
           booking?.depositStatus === "cancelled" ||
           booking?.depositStatus === "canceled";
 
-        const capturedAmount = Number(
-          booking?.depositCapturedAmount ||
-            booking?.deposit_captured_amount ||
-            0,
-        );
-
         const hasDepositIntent = !!(
           booking?.depositPaymentIntentId || booking?.deposit_payment_intent_id
         );
 
-        /*
-    Live deposit hold only:
-    ✅ deposit has been authorised/secured
-    ✅ has a Stripe deposit PaymentIntent
-    ✅ not cancelled
-    ✅ not fully captured
-  */
-        return (
-          depositSecured &&
-          hasDepositIntent &&
-          !depositCancelled &&
-          capturedAmount < 200
-        );
+        return depositSecured && hasDepositIntent && !depositCancelled;
       }
 
       function bookingMatchesDepositFilter(booking, depositMode) {
