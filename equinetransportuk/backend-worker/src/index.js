@@ -1552,13 +1552,18 @@ export default {
 
           /* ===============================
    🔒 DEPOSIT SYSTEM (SEPARATE)
+   Stripe releases any uncaptured remainder after capture.
 ================================ */
 
-          booking.depositPaid = true;
+          const nowIso = new Date().toISOString();
+
+          booking.depositPaid = false;
+          booking.depositReleased = true;
+          booking.depositReleasedAt = nowIso;
+          booking.depositStatus = "captured_remainder_released";
 
           booking.depositCapturedAmount = capturedPounds;
-
-          booking.depositCapturedAt = new Date().toISOString();
+          booking.depositCapturedAt = nowIso;
 
           /* ===============================
    🚫 DO NOT TOUCH HIRE PAYMENTS
@@ -1574,7 +1579,7 @@ Deposit is NOT booking revenue.
 It is only a security hold.
 */
 
-          booking.updatedAt = new Date().toISOString();
+          booking.updatedAt = nowIso;
           /* ===============================
        AUDIT LOG
     =============================== */
