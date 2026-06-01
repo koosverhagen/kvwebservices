@@ -1895,7 +1895,20 @@
         🎟️ Vouchers
       </button>
 
-      <button class="mobile-menu-item" onclick="loadBookings()">
+      <button
+        class="mobile-menu-item"
+        onclick="
+          mobileMenuPanel?.classList.add('hidden');
+          mobileMenuBtn?.classList.remove('active');
+
+          loadBookings().then(() => {
+            window.scrollTo({
+              top: 0,
+              behavior: 'smooth',
+            });
+          });
+        "
+      >
         🔄 Refresh bookings
       </button>
 
