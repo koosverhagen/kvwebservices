@@ -1893,19 +1893,29 @@
           min-width: 1080px;
         }
 
-        /* Cleaner header */
+        /* Cleaner header — not sticky, so it never covers first booking */
         .bookings-table thead th {
-          position: sticky;
-          top: 78px;
-          z-index: 20;
-          padding: 0 14px 10px;
-          background: rgba(248, 250, 252, 0.96) !important;
+          position: static !important;
+          top: auto !important;
+          z-index: auto !important;
+
+          padding: 0 14px 12px;
+          background: #ffffff !important;
           border-bottom: 0 !important;
+
           color: #64748b;
           font-size: 11px;
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
+        }
+
+        .bookings-table thead tr {
+          background: #ffffff !important;
+        }
+
+        .bookings-table tbody tr:first-child td {
+          margin-top: 0;
         }
 
         /* Row becomes one big soft card */
