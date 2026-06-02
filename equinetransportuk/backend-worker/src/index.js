@@ -6508,6 +6508,46 @@ function toLondonLocalISOString(date) {
    📧 MODERN EMAIL TEMPLATE
 =============================== */
 
+const EMAIL_BRAND_BLOCK = `
+  <div style="
+    margin:0 0 22px;
+    padding:14px 18px;
+    background:#ffffff;
+    border:1px solid #dbe1e8;
+    border-radius:14px;
+    text-align:center;
+  ">
+    <div style="
+      font-size:20px;
+      font-weight:800;
+      color:#1d2530;
+      line-height:1.2;
+    ">
+      Equine Transport UK
+    </div>
+
+    <div style="
+      margin-top:5px;
+      font-size:13px;
+      font-weight:700;
+      color:#5a6675;
+      line-height:1.35;
+    ">
+      Part of the East Grinstead Tyre Service Group
+    </div>
+
+    <div style="
+      margin-top:5px;
+      font-size:14px;
+      font-weight:800;
+      color:#1673ea;
+      line-height:1.35;
+    ">
+      Self Drive or Driven
+    </div>
+  </div>
+`;
+
 function buildModernEmail({
   title,
   customerName,
@@ -6566,6 +6606,8 @@ function buildModernEmail({
         >
       </div>
 
+            ${EMAIL_BRAND_BLOCK}
+
       <!-- TITLE -->
       <h1 style="
         margin:0 0 22px;
@@ -6581,8 +6623,9 @@ function buildModernEmail({
       <p style="margin:0 0 16px;font-size:16px;">Dear ${safeCustomerName},</p>
 
       <p style="margin:0 0 18px;font-size:16px;">
-        Thank you for your booking with <strong>Equine Transport UK</strong>.
-        Please complete the next steps below for your upcoming hire.
+   Thank you for your booking with <strong>Equine Transport UK</strong>,
+part of the <strong>East Grinstead Tyre Service Group</strong>.
+Please complete the next steps below for your upcoming hire.
       </p>
 
       <!-- BOOKING DETAILS CARD -->
@@ -6896,13 +6939,15 @@ ${
       <!-- FOOTER -->
       <hr style="border:none;border-top:1px solid #d6d6d6;margin:34px 0 20px;">
 
-      <div style="text-align:center;color:#555;font-size:14px;line-height:1.7;">
-        <strong>Equine Transport UK</strong><br>
-        Upper Broadreed Farm, Stonehurst Lane, Five Ashes, TN20 6LL, East Sussex, GB<br>
-        📞 +44 7584 578654<br>
-        ✉️ info@equinetransportuk.com<br>
-        🌍 www.equinetransportuk.com
-      </div>
+     <div style="text-align:center;color:#555;font-size:14px;line-height:1.7;">
+  <strong>Equine Transport UK</strong><br>
+  Part of the East Grinstead Tyre Service Group<br>
+  <strong>Self Drive or Driven</strong><br>
+  Upper Broadreed Farm, Stonehurst Lane, Five Ashes, TN20 6LL, East Sussex, GB<br>
+  📞 +44 7584 578654<br>
+  ✉️ info@equinetransportuk.com<br>
+  🌍 www.equinetransportuk.com
+</div>
 
     </div>
   </div>
@@ -6958,7 +7003,9 @@ function buildResendCardEmail({
 
     <div style="background:#ffffff;border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
 
-      <h2 style="margin-top:0;">${title}</h2>
+  ${EMAIL_BRAND_BLOCK}
+
+  <h2 style="margin-top:0;">${title}</h2>
 
       <p>Dear ${firstName},</p>
 
@@ -7145,10 +7192,14 @@ function buildResendCardEmail({
       =============================== -->
 
       <p style="margin-top:30px;">
-        With kind regards,<br>
-        Koos & Avril<br>
-        Equine Transport UK
-      </p>
+  With kind regards,<br>
+  Koos & Avril<br>
+  Equine Transport UK<br>
+  <span style="color:#5a6675;font-size:13px;">
+    Part of the East Grinstead Tyre Service Group<br>
+    Self Drive or Driven
+  </span>
+</p>
 
     </div>
   </div>

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Driven Services | Equine Transport UK</title>
+    <meta
+      name="description"
+      content="Professional driven horse transport services from Equine Transport UK. Get a guide transport estimate and request a confirmed quote."
+    />
+
+    <link rel="stylesheet" href="styles.css?v=52" />
+    <link rel="icon" href="images/favicon.png" />
+
+    <style>
+      .driven-page {
+        padding: 42px 0 56px;
+      }
+
+      .driven-hero {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 24px;
+        align-items: center;
+        margin-bottom: 28px;
+      }
+
+      .driven-hero-card {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 26px;
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+      }
+
+      .driven-hero-card h1 {
+        max-width: 760px;
+      }
+
+      .driven-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .driven-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin: 24px 0;
+      }
+
+      .driven-info-card {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .driven-info-card h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+
+      .driven-calculator-section {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+      }
+
+      .driven-calculator-head {
+        padding: 8px 8px 18px;
+      }
+
+      .driven-calculator-head h2 {
+        margin: 0 0 8px;
+        font-size: clamp(26px, 4vw, 38px);
+      }
+
+      .driven-calculator-frame {
+        width: 100%;
+        height: 980px;
+        border: 0;
+        display: block;
+        border-radius: 20px;
+        background: #f8fafc;
+      }
+
+      @media (max-width: 900px) {
+        .driven-hero {
+          grid-template-columns: 1fr;
+        }
+
+        .driven-info-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .driven-calculator-frame {
+          height: 1120px;
+        }
+      }
+
+      @media (max-width: 650px) {
+        .driven-page {
+          padding-top: 24px;
+        }
+
+        .driven-hero-card {
+          padding: 20px;
+          border-radius: 20px;
+        }
+
+        .driven-actions {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        .driven-actions .btn {
+          width: 100%;
+        }
+
+        .driven-calculator-section {
+          padding: 12px;
+          border-radius: 20px;
+        }
+
+        .driven-calculator-frame {
+          height: 1220px;
+          border-radius: 16px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a
+          class="brand"
+          href="index.html"
+          aria-label="Equine Transport UK home"
+        >
+          <img
+            class="brand-logo"
+            src="images/logo.png"
+            alt="Equine Transport UK logo"
+          />
+
+          <span class="brand-text">
+            <span class="brand-name">Equine Transport UK</span>
+            <span class="brand-group">
+              Part of the East Grinstead Tyre Service Group
+            </span>
+            <span class="brand-subtitle">Self Drive or Driven</span>
+          </span>
+        </a>
+
+        <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+          <a href="index.html#fleet">Self Drive</a>
+          <a href="driven-services.html">Driven Services</a>
+          <a href="index.html#booking">Book Self Drive</a>
+          <a href="pricing-terms.html">Pricing & Terms</a>
+          <a href="calculators.html">Calculators</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+
+        <button
+          class="nav-toggle"
+          id="nav-toggle"
+          aria-label="Open navigation"
+          aria-expanded="false"
+          aria-controls="main-nav"
+        >
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="container driven-page">
+      <section class="driven-hero">
+        <div class="driven-hero-card">
+          <p class="kicker">Driven Services</p>
+          <h1>Professional driven horse transport.</h1>
+
+          <p class="lead">
+            Need your horse transported without hiring and driving the lorry
+            yourself? Our driven service gives you a guide route estimate first,
+            then we confirm the final quote with you directly.
+          </p>
+
+          <div class="driven-actions">
+            <a class="btn" href="#driven-estimator">Get guide estimate</a>
+            <a class="btn ghost" href="contact.html">Request confirmed quote</a>
+          </div>
+        </div>
+
+        <div class="driven-hero-card">
+          <p class="kicker">Self Drive or Driven</p>
+          <h2 style="margin-top: 0">Two ways to move your horse</h2>
+
+          <p class="muted">
+            Choose self-drive hire when you want to book and drive one of our
+            horseboxes yourself, or choose driven transport when you want us to
+            handle the route and driving for you.
+          </p>
+
+          <p class="muted">Part of the East Grinstead Tyre Service Group.</p>
+        </div>
+      </section>
+
+      <section class="driven-info-grid" aria-label="Driven transport benefits">
+        <article class="driven-info-card">
+          <h2>Route-based estimate</h2>
+          <p class="muted">
+            Estimate the journey from our base to pickup, destination, optional
+            second destination and back to base.
+          </p>
+        </article>
+
+        <article class="driven-info-card">
+          <h2>For confirmed quotes</h2>
+          <p class="muted">
+            The calculator gives guidance only. We confirm availability, timing,
+            horse requirements and final price before transport.
+          </p>
+        </article>
+
+        <article class="driven-info-card">
+          <h2>Easy enquiry</h2>
+          <p class="muted">
+            Use the estimator, then request a confirmed quote with your journey
+            details.
+          </p>
+        </article>
+      </section>
+
+      <section
+        id="driven-estimator"
+        class="driven-calculator-section"
+        aria-label="Driven transport cost estimator"
+      >
+        <div class="driven-calculator-head">
+          <p class="kicker">Driven Transport Cost Estimator</p>
+          <h2>Get a guide estimate</h2>
+          <p class="muted">
+            This uses the existing Equine Transport UK driven calculator.
+          </p>
+        </div>
+
+        <iframe
+          class="driven-calculator-frame"
+          src="driven-calculator.html"
+          title="Driven Transport Cost Estimator"
+          loading="lazy"
+        ></iframe>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <h3>Equine Transport UK</h3>
+          <p class="muted">
+            Part of the East Grinstead Tyre Service Group.<br />
+            Self Drive or Driven horse transport services.
+          </p>
+          <small>© <span id="year"></span> Equine Transport UK</small>
+        </div>
+
+        <div>
+          <h4>Menu</h4>
+          <nav class="footer-menu" aria-label="Footer navigation">
+            <a href="index.html#fleet">Self Drive</a>
+            <a href="driven-services.html">Driven Services</a>
+            <a href="index.html#booking">Book Self Drive</a>
+            <a href="pricing-terms.html">Pricing & Terms</a>
+            <a href="calculators.html">Calculators</a>
+            <a href="contact.html">Contact</a>
+          </nav>
+        </div>
+
+        <div>
+          <h4>Contact</h4>
+
+          <p class="footer-contact">
+            <strong>Address:</strong><br />
+            Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five
+            Ashes, East Sussex TN20 6LL
+          </p>
+
+          <p class="footer-contact">
+            <strong>Email:</strong><br />
+            <a href="mailto:info@equinetransportuk.com">
+              info@equinetransportuk.com
+            </a>
+          </p>
+
+          <p class="footer-contact">
+            <strong>Phone:</strong><br />
+            <a href="tel:07812188871">07812 188871</a>
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      (function () {
+        const toggle = document.getElementById("nav-toggle");
+        const nav = document.getElementById("main-nav");
+
+        if (!toggle || !nav) return;
+
+        toggle.addEventListener("click", function () {
+          const isOpen = nav.classList.toggle("open");
+
+          toggle.classList.toggle("open", isOpen);
+          toggle.setAttribute("aria-expanded", String(isOpen));
+        });
+
+        nav.querySelectorAll("a").forEach((link) => {
+          link.addEventListener("click", function () {
+            nav.classList.remove("open");
+            toggle.classList.remove("open");
+            toggle.setAttribute("aria-expanded", "false");
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -129,6 +129,39 @@ html {
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.01em;
+  min-width: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.08;
+  min-width: 0;
+}
+
+.brand-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.brand-group {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.brand-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .brand-logo {
@@ -845,8 +878,17 @@ textarea {
     gap: 12px;
     font-size: 14px;
   }
-  .brand span {
+  .brand-name {
     font-size: 14px;
+  }
+
+  .brand-group {
+    font-size: 9.5px;
+    white-space: normal;
+  }
+
+  .brand-subtitle {
+    font-size: 11px;
   }
   .fleet-grid,
   .booking-list,
@@ -906,10 +948,25 @@ textarea {
   .nav-toggle {
     display: flex;
   }
+
+  .header-inner {
+    min-height: 76px;
+  }
+
+  .brand {
+    max-width: calc(100% - 48px);
+    gap: 8px;
+  }
+
+  .brand-logo {
+    width: 48px;
+    height: 28px;
+    flex: 0 0 auto;
+  }
   .main-nav {
     display: none;
     position: absolute;
-    top: 68px;
+    top: 76px;
     left: 0;
     right: 0;
     background: var(--card);
