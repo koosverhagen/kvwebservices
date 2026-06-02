@@ -6370,6 +6370,23 @@ function movePreview(e) {
   vehiclePreview.style.top = e.pageY + "px";
 }
 
+function scrollToMobileAvailableLorries() {
+  if (!isMobile()) return;
+
+  const target =
+    document.getElementById("mobile-preview") ||
+    document.getElementById("availability-results");
+
+  if (!target) return;
+
+  setTimeout(() => {
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 350);
+}
+
 async function getLiveDayVehicleAvailability(dateKey) {
   const [fullDay, morning, afternoon] = await Promise.all([
     getVehicleAvailability(dateKey, 1, null, { forceFresh: true }),
@@ -7057,6 +7074,7 @@ async function showVehiclePreview(date, event) {
             if (isMobile()) {
               previewRental(dayDate);
               await showVehiclePreview(dayDate, e);
+              scrollToMobileAvailableLorries();
             }
           } finally {
             selecting = false;
