@@ -3739,3 +3739,88 @@ textarea {
     font-size: 15px;
   }
 }
+
+/* ======================================================
+   PAY DEPOSIT PAGE — MOBILE SIZE FIX
+====================================================== */
+
+@media (max-width: 640px) {
+  body:has(.deposit-wrap) {
+    min-height: 100svh;
+    padding: 16px 12px !important;
+    display: flex;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    background: #f1f3f6;
+  }
+
+  .deposit-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: flex-start !important;
+    justify-content: center !important;
+  }
+
+  .deposit-card {
+    width: 100% !important;
+    max-width: 430px !important;
+    margin: 24px auto 0 !important;
+    padding: 26px 20px !important;
+    border-radius: 24px !important;
+  }
+
+  .deposit-logo {
+    width: 108px !important;
+    max-width: 108px !important;
+    height: auto !important;
+    margin-bottom: 16px !important;
+  }
+
+  .deposit-card h2 {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 10px !important;
+  }
+
+  #booking-info {
+    font-size: 14px !important;
+    margin-bottom: 18px !important;
+  }
+
+  #payment-form label {
+    font-size: 15px !important;
+    margin-bottom: 7px !important;
+  }
+
+  #card-name,
+  .stripe-card {
+    width: 100% !important;
+    min-height: 54px !important;
+    padding: 15px 14px !important;
+    font-size: 16px !important;
+    border-radius: 14px !important;
+  }
+
+  #submit-btn {
+    width: 100% !important;
+    min-height: 54px !important;
+    margin-top: 18px !important;
+    border-radius: 14px !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+  }
+
+  .deposit-note {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    margin-top: 18px !important;
+  }
+
+  #message {
+    font-size: 14px !important;
+    margin-top: 14px !important;
+  }
+}
