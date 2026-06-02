@@ -47,7 +47,29 @@
         display: grid;
         grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
         gap: 18px;
-        align-items: start;
+        align-items: stretch;
+      }
+
+      .contact-layout > aside {
+        display: flex;
+      }
+
+      .contact-card,
+      .map-card {
+        height: 100%;
+      }
+
+      .contact-card {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .contact-card form {
+        flex: 1;
+      }
+
+      .map-card {
+        width: 100%;
       }
 
       .contact-panel {
