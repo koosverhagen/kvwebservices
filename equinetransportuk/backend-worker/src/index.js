@@ -6814,6 +6814,77 @@ ${
           `
       }
 
+            <!-- PICKUP LOCATION -->
+      <div style="
+        margin:30px 0 0;
+        padding:18px;
+        border:1px solid #dbe1e8;
+        border-radius:16px;
+        background:#f8fafc;
+      ">
+        <h3 style="
+          margin:0 0 10px;
+          font-size:20px;
+          color:#1d2530;
+        ">
+          Pickup Location
+        </h3>
+
+        <p style="
+          margin:0 0 14px;
+          font-size:15px;
+          line-height:1.6;
+          color:#374151;
+        ">
+          Please collect the lorry from:
+        </p>
+
+        <div style="
+          padding:16px;
+          border-radius:14px;
+          background:#ffffff;
+          border:1px solid #e5e7eb;
+          line-height:1.6;
+          color:#1f2937;
+          font-size:15px;
+        ">
+          <strong>Equine Transport UK</strong><br>
+          Upper Broadreed Farm<br>
+          Stonehurst Lane<br>
+          Five Ashes<br>
+          TN20 6LL<br>
+          United Kingdom
+        </div>
+
+        <p style="
+          margin:14px 0 0;
+          font-size:14px;
+          line-height:1.6;
+          color:#5a6675;
+        ">
+          Tap the button below for directions. Please come to the yard.
+        </p>
+
+        <div style="margin-top:16px;">
+          <a
+            href="https://www.google.com/maps/search/?api=1&query=Equine%20Transport%20UK%2C%20Upper%20Broadreed%20Farm%2C%20Stonehurst%20Lane%2C%20Five%20Ashes%2C%20TN20%206LL"
+            target="_blank"
+            style="
+              display:inline-block;
+              padding:13px 18px;
+              border-radius:12px;
+              background:#1f6feb;
+              color:#ffffff;
+              text-decoration:none;
+              font-weight:700;
+              font-size:15px;
+            "
+          >
+            Open in Google Maps
+          </a>
+        </div>
+      </div>
+
       <!-- SIGN OFF -->
       <p style="margin:26px 0 0;font-size:16px;">With kind regards,</p>
 
@@ -6983,7 +7054,7 @@ function buildResendCardEmail({
           : ""
       }
 
-      <!-- ===============================
+          <!-- ===============================
            WHATSAPP CTA
       =============================== -->
 
@@ -6992,6 +7063,81 @@ function buildResendCardEmail({
            style="display:inline-block;padding:10px 16px;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
           💬 Message us on WhatsApp
         </a>
+      </div>
+
+      <!-- ===============================
+           PICKUP LOCATION
+      =============================== -->
+
+      <div style="
+        margin-top:28px;
+        padding:18px;
+        border:1px solid #dbe1e8;
+        border-radius:16px;
+        background:#f8fafc;
+      ">
+        <h3 style="
+          margin:0 0 10px;
+          font-size:20px;
+          color:#1d2530;
+        ">
+          Location
+        </h3>
+
+        <p style="
+          margin:0 0 14px;
+          font-size:15px;
+          line-height:1.6;
+          color:#374151;
+        ">
+          Please collect the lorry from:
+        </p>
+
+        <div style="
+          padding:16px;
+          border-radius:14px;
+          background:#ffffff;
+          border:1px solid #e5e7eb;
+          line-height:1.6;
+          color:#1f2937;
+          font-size:15px;
+        ">
+          <strong>Equine Transport UK</strong><br>
+          Upper Broadreed Farm<br>
+          Stonehurst Lane<br>
+          Five Ashes<br>
+          TN20 6LL<br>
+          United Kingdom<br><br>
+          <strong>Tel:</strong> 07812 188871
+        </div>
+
+        <p style="
+          margin:14px 0 0;
+          font-size:14px;
+          line-height:1.6;
+          color:#5a6675;
+        ">
+          Tap the button below for directions. Please come to the yard.
+        </p>
+
+        <div style="margin-top:16px;">
+          <a
+            href="https://www.google.com/maps/search/?api=1&query=Equine%20Transport%20UK%2C%20Upper%20Broadreed%20Farm%2C%20Stonehurst%20Lane%2C%20Five%20Ashes%2C%20TN20%206LL"
+            target="_blank"
+            style="
+              display:inline-block;
+              padding:13px 18px;
+              border-radius:12px;
+              background:#1f6feb;
+              color:#ffffff;
+              text-decoration:none;
+              font-weight:700;
+              font-size:15px;
+            "
+          >
+            Open in Google Maps
+          </a>
+        </div>
       </div>
 
       <!-- ===============================
