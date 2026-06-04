@@ -6328,34 +6328,46 @@ async function handleListBookings(request, env) {
   }
 
   /* ===============================
-   🔐 ENRICH WITH DVLA STATUS (NEW)
+   🔐 ENRICH WITH DVLA STATUS
+   Chunked to avoid D1 SQL variable limit
 ================================ */
 
-  const ids = bookings.map((b) => b.id);
+  const ids = bookings.map((b) => b.id).filter(Boolean);
 
   let dvlaMap = {};
 
   if (ids.length) {
-    const placeholders = ids.map(() => "?").join(",");
+    const chunkSize = 80;
 
-    const result = await env.DB.prepare(
-      `
-    SELECT id, dvla_verified
-    FROM bookings
-    WHERE id IN (${placeholders})
-  `,
-    )
-      .bind(...ids)
-      .all();
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const placeholders = chunk.map(() => "?").join(",");
 
-    for (const row of result.results || []) {
-      dvlaMap[row.id] = row.dvla_verified === 1;
+      try {
+        const result = await env.DB.prepare(
+          `
+        SELECT
+          id,
+          dvla_verified
+        FROM bookings
+        WHERE id IN (${placeholders})
+      `,
+        )
+          .bind(...chunk)
+          .all();
+
+        for (const row of result.results || []) {
+          dvlaMap[row.id] = row.dvla_verified === 1;
+        }
+      } catch (err) {
+        console.warn("⚠️ DVLA chunk load failed:", err.message);
+      }
     }
   }
 
   /* ===============================
-     LOAD ACTIVE RESERVATIONS
-  ================================ */
+   LOAD ACTIVE RESERVATIONS
+================================ */
 
   const reservations = [];
 
@@ -6386,9 +6398,10 @@ async function handleListBookings(request, env) {
       extrasTotal: Number(booking.extrasTotal || 0),
       extras: booking.extras || null,
 
-      // ✅ ADD THIS
+      // ✅ D1 value wins, then fallback to existing KV value
       dvlaVerified:
-        booking.dvla_verified === 1 || booking.dvlaVerified === true,
+        dvlaMap[booking.id] ??
+        (booking.dvla_verified === 1 || booking.dvlaVerified === true),
     };
   });
 
@@ -6399,36 +6412,6 @@ async function handleListBookings(request, env) {
 }
 
 async function handleBookingBySession(request, env) {
-  const url = new URL(request.url);
-  const sessionId = url.searchParams.get("session_id");
-
-  if (!sessionId) {
-    return json({ error: "Missing session_id" }, 400);
-  }
-
-  /* ===============================
-     ⚡ FAST PATH (NEW)
-  =============================== */
-
-  const sessionKey = `session:${sessionId}`;
-
-  const cached = await env.BOOKINGS_KV.get(sessionKey);
-
-  if (cached) {
-    console.log("⚡ FAST session hit");
-
-    try {
-      const booking = JSON.parse(cached);
-
-      return json({
-        found: true,
-        booking,
-      });
-    } catch (err) {
-      console.log("⚠️ Session cache parse error:", err);
-    }
-  }
-
   /* ===============================
      HELPERS
   =============================== */
