@@ -2,3 +2,7 @@ node_modules/
 .wrangler/
 .dev.vars
 .vscode/
+# Migration backups / sensitive exports
+*pre-migration-backup*.json
+*migration*.json
+*.csv

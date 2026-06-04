@@ -238,6 +238,18 @@ export default {
       }
 
       /* ===============================
+   MIGRATION — IMPORT PLANYO
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/migration/import-planyo"
+      ) {
+        const response = await handleMigrationImportPlanyo(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    ADMIN ICALENDAR FEED
    Private subscription feed
 ================================ */
@@ -2315,6 +2327,314 @@ async function handleMigrationClearTestData(request, env) {
   await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
 
   return json({ ok: true, report });
+}
+
+/* ===============================
+   MIGRATION — IMPORT PLANYO PAYLOAD
+================================ */
+
+async function handleMigrationImportPlanyo(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const migrationMode = String(env.MIGRATION_MODE || "").toLowerCase();
+
+  if (migrationMode !== "true") {
+    return json(
+      {
+        error: "MIGRATION_MODE must be true before importing data",
+      },
+      400,
+    );
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch (err) {
+    return json({ error: "Invalid JSON payload", detail: err.message }, 400);
+  }
+
+  if (body.confirm !== "IMPORT_PLANYO") {
+    return json(
+      {
+        error:
+          "Missing confirmation. Send { confirm: 'IMPORT_PLANYO', ...payload }",
+      },
+      400,
+    );
+  }
+
+  const customers = Array.isArray(body.customers) ? body.customers : [];
+  const bookings = Array.isArray(body.bookings) ? body.bookings : [];
+
+  if (!customers.length || !bookings.length) {
+    return json(
+      {
+        error: "Payload must contain customers[] and bookings[]",
+        customers: customers.length,
+        bookings: bookings.length,
+      },
+      400,
+    );
+  }
+
+  const existingBookingKeys = await listAllKvKeys(env, "bookings:");
+
+  let existingD1Bookings = 0;
+  let existingD1Customers = 0;
+
+  try {
+    const row = await env.DB.prepare(
+      "SELECT COUNT(*) AS count FROM bookings",
+    ).first();
+    existingD1Bookings = Number(row?.count || 0);
+  } catch {}
+
+  try {
+    const row = await env.DB.prepare(
+      "SELECT COUNT(*) AS count FROM customers",
+    ).first();
+    existingD1Customers = Number(row?.count || 0);
+  } catch {}
+
+  if (
+    body.force !== true &&
+    (existingBookingKeys.length > 1 ||
+      existingD1Bookings > 0 ||
+      existingD1Customers > 0)
+  ) {
+    return json(
+      {
+        error:
+          "System is not empty. Backup and clear test data first, or resend with force:true if you are intentionally re-importing.",
+        existing: {
+          kvBookingKeys: existingBookingKeys,
+          d1Bookings: existingD1Bookings,
+          d1Customers: existingD1Customers,
+        },
+      },
+      409,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const SITE_BASE =
+    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://kvwebservices.co.uk/equinetransportuk";
+
+  function safeText(value) {
+    if (value === undefined || value === null) return "";
+    return String(value);
+  }
+
+  function safeNullable(value) {
+    if (value === undefined || value === null || value === "") return null;
+    return String(value);
+  }
+
+  function safeNumber(value) {
+    const n = Number(value || 0);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function chunkArray(items, size = 50) {
+    const chunks = [];
+    for (let i = 0; i < items.length; i += size) {
+      chunks.push(items.slice(i, i + size));
+    }
+    return chunks;
+  }
+
+  function addLinksToBooking(booking) {
+    const formType = booking.requiredFormType === "short" ? "short" : "long";
+    const formBase =
+      formType === "short"
+        ? `${SITE_BASE}/forms/short-form.html`
+        : `${SITE_BASE}/forms/long-form.html`;
+
+    return {
+      ...booking,
+      requiredFormType: formType,
+      requiredFormLink: `${formBase}?bookingId=${encodeURIComponent(
+        booking.id,
+      )}&vehicleName=${encodeURIComponent(
+        booking.vehicleSnapshot?.name || booking.vehicleId || "",
+      )}`,
+      depositLink: `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
+        booking.id,
+      )}`,
+      outstandingLink: `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(
+        booking.id,
+      )}`,
+      migratedAt: now,
+    };
+  }
+
+  const report = {
+    importedAt: now,
+    customers: {
+      received: customers.length,
+      inserted: 0,
+      errors: [],
+    },
+    bookings: {
+      received: bookings.length,
+      insertedD1: 0,
+      insertedKV: 0,
+      errors: [],
+    },
+    kv: {
+      monthBuckets: 0,
+      versionUpdated: false,
+    },
+  };
+
+  /* ===============================
+     INSERT CUSTOMERS INTO D1
+  =============================== */
+
+  for (const chunk of chunkArray(customers, 50)) {
+    const statements = chunk.map((customer) =>
+      env.DB.prepare(
+        `
+        INSERT OR REPLACE INTO customers (
+          id,
+          full_name,
+          email,
+          mobile,
+          address,
+          dob,
+          notes,
+          hire_count,
+          last_hire_at,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      ).bind(
+        safeText(customer.id),
+        safeText(customer.full_name || "Customer"),
+        safeText(customer.email || ""),
+        safeText(customer.mobile || ""),
+        safeNullable(customer.address),
+        safeNullable(customer.dob),
+        safeNullable(customer.notes),
+        safeNumber(customer.hire_count),
+        safeNullable(customer.last_hire_at),
+        safeNullable(customer.created_at) || now,
+        now,
+      ),
+    );
+
+    try {
+      await env.DB.batch(statements);
+      report.customers.inserted += chunk.length;
+    } catch (err) {
+      report.customers.errors.push({
+        chunkSize: chunk.length,
+        error: err.message,
+      });
+    }
+  }
+
+  /* ===============================
+     ENRICH BOOKINGS + INSERT D1
+  =============================== */
+
+  const enrichedBookings = bookings.map(addLinksToBooking);
+
+  for (const chunk of chunkArray(enrichedBookings, 50)) {
+    const statements = chunk.map((booking) =>
+      env.DB.prepare(
+        `
+        INSERT OR REPLACE INTO bookings (
+          id,
+          customer_id,
+          vehicle_id,
+          pickup_at,
+          dropoff_at,
+          duration_days,
+          price_total,
+          paid_now,
+          status,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      ).bind(
+        safeText(booking.id),
+        safeText(booking.customerId),
+        safeText(booking.vehicleId),
+        safeText(booking.pickupAt),
+        safeText(booking.dropoffAt),
+        safeNumber(booking.durationDays),
+        safeNumber(booking.hireTotal || booking.priceTotal),
+        safeNumber(booking.paidNow),
+        safeText(booking.status || "confirmed"),
+        safeText(booking.createdAt || now),
+        now,
+      ),
+    );
+
+    try {
+      await env.DB.batch(statements);
+      report.bookings.insertedD1 += chunk.length;
+    } catch (err) {
+      report.bookings.errors.push({
+        chunkSize: chunk.length,
+        error: err.message,
+      });
+    }
+  }
+
+  /* ===============================
+     WRITE BOOKINGS TO KV MONTH BUCKETS
+     This is what admin/calendar/availability use.
+  =============================== */
+
+  const byMonth = new Map();
+
+  for (const booking of enrichedBookings) {
+    const month = String(booking.pickupAt || "").slice(0, 7);
+
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      report.bookings.errors.push({
+        bookingId: booking.id,
+        error: "Invalid pickup month",
+      });
+      continue;
+    }
+
+    if (!byMonth.has(month)) byMonth.set(month, []);
+    byMonth.get(month).push(booking);
+  }
+
+  for (const [month, monthBookings] of byMonth.entries()) {
+    monthBookings.sort(
+      (a, b) => new Date(a.pickupAt).getTime() - new Date(b.pickupAt).getTime(),
+    );
+
+    await env.BOOKINGS_KV.put(
+      `bookings:${month}`,
+      JSON.stringify(monthBookings),
+    );
+
+    report.kv.monthBuckets += 1;
+    report.bookings.insertedKV += monthBookings.length;
+  }
+
+  await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+  report.kv.versionUpdated = true;
+
+  return json({
+    ok: true,
+    report,
+  });
 }
 
 /* ===============================
