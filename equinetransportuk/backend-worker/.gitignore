@@ -6,5 +6,7 @@ node_modules/
 *pre-migration-backup*.json
 *migration*.json
 *.csv
+*.ics
+*feed*.ics
 *bookings-check*.json
 *customers-check*.json

@@ -265,6 +265,18 @@ export default {
       }
 
       /* ===============================
+   MIGRATION — PATCH MISSING LIVE DATA
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/migration/patch-live-data"
+      ) {
+        const response = await handleMigrationPatchLiveData(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    ADMIN ICALENDAR FEED
    Private subscription feed
 ================================ */
@@ -2844,6 +2856,384 @@ async function handleMigrationCleanImportedContacts(request, env) {
 
   return json({
     ok: true,
+    report,
+  });
+}
+
+/* ===============================
+   MIGRATION — PATCH LIVE DATA
+   Adds missing bookings + patches legacy deposits
+================================ */
+
+async function handleMigrationPatchLiveData(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const migrationMode = String(env.MIGRATION_MODE || "").toLowerCase();
+
+  if (migrationMode !== "true") {
+    return json(
+      {
+        error: "MIGRATION_MODE must be true before patching live data",
+      },
+      400,
+    );
+  }
+
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch (err) {
+    return json({ error: "Invalid JSON", detail: err.message }, 400);
+  }
+
+  if (body.confirm !== "PATCH_LIVE_DATA") {
+    return json(
+      {
+        error: "Missing confirmation. Send { confirm: 'PATCH_LIVE_DATA' }",
+      },
+      400,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const SITE_BASE =
+    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://kvwebservices.co.uk/equinetransportuk";
+
+  const report = {
+    patchedAt: now,
+    customer: null,
+    addedGeorgiaBooking: false,
+    patchedDeposits: [],
+    errors: [],
+  };
+
+  function buildBookingLinks(booking) {
+    const formType = booking.requiredFormType === "short" ? "short" : "long";
+
+    const formPath =
+      formType === "short" ? "/forms/short-form.html" : "/forms/long-form.html";
+
+    booking.requiredFormLink = `${SITE_BASE}${formPath}?bookingId=${encodeURIComponent(
+      booking.id,
+    )}&vehicleName=${encodeURIComponent(
+      booking.vehicleSnapshot?.name || booking.vehicleId || "",
+    )}`;
+
+    booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
+      booking.id,
+    )}`;
+
+    booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(
+      booking.id,
+    )}`;
+
+    return booking;
+  }
+
+  async function upsertCustomer(customer) {
+    await env.DB.prepare(
+      `
+      INSERT OR REPLACE INTO customers (
+        id,
+        full_name,
+        email,
+        mobile,
+        address,
+        dob,
+        notes,
+        hire_count,
+        last_hire_at,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    )
+      .bind(
+        customer.id,
+        customer.full_name,
+        customer.email,
+        customer.mobile,
+        customer.address || null,
+        customer.dob || null,
+        customer.notes || null,
+        Number(customer.hire_count || 1),
+        customer.last_hire_at || null,
+        customer.created_at || now,
+        now,
+      )
+      .run();
+  }
+
+  async function insertBookingD1(booking) {
+    await env.DB.prepare(
+      `
+      INSERT OR REPLACE INTO bookings (
+        id,
+        customer_id,
+        vehicle_id,
+        pickup_at,
+        dropoff_at,
+        duration_days,
+        price_total,
+        paid_now,
+        status,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    )
+      .bind(
+        booking.id,
+        booking.customerId,
+        booking.vehicleId,
+        booking.pickupAt,
+        booking.dropoffAt,
+        Number(booking.durationDays || 1),
+        Number(booking.hireTotal || booking.priceTotal || 0),
+        Number(booking.paidNow || 0),
+        booking.status || "confirmed",
+        booking.createdAt || now,
+        now,
+      )
+      .run();
+  }
+
+  async function upsertBookingIntoMonthBucket(booking) {
+    const month = String(booking.pickupAt || "").slice(0, 7);
+
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      throw new Error(`Invalid booking month for ${booking.id}`);
+    }
+
+    const key = `bookings:${month}`;
+    const raw = await env.BOOKINGS_KV.get(key);
+
+    let bookings = [];
+
+    if (raw) {
+      try {
+        bookings = JSON.parse(raw);
+        if (!Array.isArray(bookings)) bookings = [];
+      } catch {
+        bookings = [];
+      }
+    }
+
+    const existingIndex = bookings.findIndex(
+      (b) => String(b.id) === String(booking.id),
+    );
+
+    if (existingIndex >= 0) {
+      bookings[existingIndex] = {
+        ...bookings[existingIndex],
+        ...booking,
+        updatedAt: now,
+      };
+    } else {
+      bookings.push(booking);
+    }
+
+    bookings.sort(
+      (a, b) => new Date(a.pickupAt).getTime() - new Date(b.pickupAt).getTime(),
+    );
+
+    await env.BOOKINGS_KV.put(key, JSON.stringify(bookings));
+  }
+
+  async function patchDeposit(bookingId, patch) {
+    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+    let patched = false;
+
+    for (const key of list.keys) {
+      if (!/^bookings:\d{4}-\d{2}$/.test(key.name)) continue;
+
+      const raw = await env.BOOKINGS_KV.get(key.name);
+      if (!raw) continue;
+
+      let bookings;
+
+      try {
+        bookings = JSON.parse(raw);
+      } catch {
+        continue;
+      }
+
+      if (!Array.isArray(bookings)) continue;
+
+      let changed = false;
+
+      const nextBookings = bookings.map((booking) => {
+        if (String(booking.id) !== String(bookingId)) return booking;
+
+        changed = true;
+        patched = true;
+
+        return {
+          ...booking,
+          depositAmount: 200,
+          depositPaid: true,
+          depositStatus: "legacy_authorized",
+          depositLegacy: true,
+          depositCapturedAmount: 0,
+          depositPaymentIntentId:
+            patch.depositPaymentIntentId ||
+            booking.depositPaymentIntentId ||
+            "",
+          depositCardLast4: patch.cardLast4 || booking.depositCardLast4 || "",
+          depositCardholderName:
+            patch.cardholderName || booking.depositCardholderName || "",
+          depositAuthorizedAt:
+            patch.authorizedAt || booking.depositAuthorizedAt || now,
+          updatedAt: now,
+        };
+      });
+
+      if (changed) {
+        await env.BOOKINGS_KV.put(key.name, JSON.stringify(nextBookings));
+        report.patchedDeposits.push(bookingId);
+        break;
+      }
+    }
+
+    if (!patched) {
+      report.errors.push(`Deposit booking not found: ${bookingId}`);
+    }
+  }
+
+  /* ===============================
+     1) ADD MISSING GEORGIA BOOKING
+  =============================== */
+
+  const georgiaCustomer = {
+    id: "cus_planyo_P19657870",
+    full_name: "Georgia Ashcroft",
+    email: "georgia_ashcroft@icloud.com",
+    mobile: "+447834785077",
+    address: "22 Lower Village, Haywards Heath RH16 4GT, UK",
+    dob: null,
+    notes: "Migrated manually from Planyo missing P reservation.",
+    hire_count: 1,
+    last_hire_at: "2026-06-13T06:00:00Z",
+    created_at: now,
+  };
+
+  try {
+    await upsertCustomer(georgiaCustomer);
+    report.customer = georgiaCustomer.id;
+  } catch (err) {
+    report.errors.push(`Georgia customer error: ${err.message}`);
+  }
+
+  let georgiaBooking = {
+    id: "book_planyo_P19657870",
+    legacySource: "planyo",
+    legacyBookingId: "P19657870",
+    legacyImported: true,
+    migrationPatch: true,
+
+    customerId: georgiaCustomer.id,
+    customerName: "Georgia Ashcroft",
+    customerEmail: "georgia_ashcroft@icloud.com",
+    customerMobile: "+447834785077",
+
+    vehicleId: "v35-2",
+    vehicleSnapshot: {
+      id: "v35-2",
+      name: "3.5T Stallion Lorry",
+      type: "3.5 tonne",
+      code: "DL22",
+    },
+
+    pickupAt: "2026-06-13T06:00:00Z",
+    dropoffAt: "2026-06-13T18:00:00Z",
+    pickupAtLocal: "2026-06-13T07:00:00",
+    dropoffAtLocal: "2026-06-13T19:00:00",
+    durationDays: 1,
+    pickupTime: "07:00",
+
+    hireTotal: 125,
+    priceTotal: 125,
+    priceBase: 125,
+    priceExtras: 0,
+    extrasTotal: 0,
+    extras: {},
+
+    paidNow: 125,
+    confirmationFee: 125,
+    outstandingAmount: 0,
+    outstanding: 0,
+    outstandingPaid: true,
+
+    paymentMode: "legacy_planyo",
+    legacyPaymentImported: true,
+    legacyPaymentNote: "Paid in Planyo / legacy migration patch.",
+
+    depositAmount: 200,
+    depositPaid: true,
+    depositStatus: "legacy_authorized",
+    depositLegacy: true,
+    depositCapturedAmount: 0,
+    depositPaymentIntentId: body.georgiaDepositPaymentIntentId || "",
+    depositCardLast4: "1540",
+    depositCardholderName: "Emily Stockwell",
+    depositAuthorizedAt: "2026-06-03T19:13:00Z",
+
+    formCompleted: false,
+    dvlaVerified: false,
+    requiredFormType: "long",
+
+    customerNotes: "",
+    adminNotes:
+      "Manual migration patch: Planyo P19657870 was missing from CSV export.",
+
+    status: "confirmed",
+    createdAt: "2026-06-03T19:40:00Z",
+    updatedAt: now,
+  };
+
+  georgiaBooking = buildBookingLinks(georgiaBooking);
+
+  try {
+    await insertBookingD1(georgiaBooking);
+    await upsertBookingIntoMonthBucket(georgiaBooking);
+    report.addedGeorgiaBooking = true;
+  } catch (err) {
+    report.errors.push(`Georgia booking error: ${err.message}`);
+  }
+
+  /* ===============================
+     2) PATCH LORNA DEPOSIT
+  =============================== */
+
+  await patchDeposit("book_planyo_R19512237", {
+    depositPaymentIntentId: body.lornaDepositPaymentIntentId || "",
+    cardLast4: "3595",
+    cardholderName: "Miss Lorna C Ewin",
+    authorizedAt: "2026-05-28T13:04:00Z",
+  });
+
+  /* ===============================
+     3) PATCH GEORGIA DEPOSIT TOO
+  =============================== */
+
+  await patchDeposit("book_planyo_P19657870", {
+    depositPaymentIntentId: body.georgiaDepositPaymentIntentId || "",
+    cardLast4: "1540",
+    cardholderName: "Emily Stockwell",
+    authorizedAt: "2026-06-03T19:13:00Z",
+  });
+
+  await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+  return json({
+    ok: report.errors.length === 0,
     report,
   });
 }
