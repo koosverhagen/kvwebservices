@@ -277,6 +277,21 @@ export default {
       }
 
       /* ===============================
+   MIGRATION — PATCH EARLY PICKUP EXTRAS
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/migration/patch-early-pickup-extras"
+      ) {
+        const response = await handleMigrationPatchEarlyPickupExtras(
+          request,
+          env,
+        );
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    ADMIN ICALENDAR FEED
    Private subscription feed
 ================================ */
@@ -3236,6 +3251,169 @@ async function handleMigrationPatchLiveData(request, env) {
     ok: report.errors.length === 0,
     report,
   });
+}
+
+/* ===============================
+   MIGRATION — PATCH EARLY PICKUP EXTRAS
+   Adds itemised early pickup to known migrated bookings
+   Does NOT change totals/paid/outstanding
+================================ */
+
+async function handleMigrationPatchEarlyPickupExtras(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const migrationMode = String(env.MIGRATION_MODE || "").toLowerCase();
+
+  if (migrationMode !== "true") {
+    return json(
+      {
+        error: "MIGRATION_MODE must be true before patching extras",
+      },
+      400,
+    );
+  }
+
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch {}
+
+  if (body.confirm !== "PATCH_EARLY_PICKUP_EXTRAS") {
+    return json(
+      {
+        error:
+          "Missing confirmation. Send { confirm: 'PATCH_EARLY_PICKUP_EXTRAS' }",
+      },
+      400,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const earlyPickupBookingIds = new Set([
+    "book_planyo_R19364235", // Laura Lewis
+    "book_planyo_R19451766", // Paul Hunt
+    "book_planyo_R19647794", // Victoria Holden
+    "book_planyo_R19656409", // Amy Howell
+    "book_planyo_P19657870", // Georgia Ashcroft
+  ]);
+
+  const report = {
+    patchedAt: now,
+    targetCount: earlyPickupBookingIds.size,
+    bookingsChecked: 0,
+    bookingsPatched: 0,
+    patched: [],
+    missing: [],
+    bucketsUpdated: 0,
+    errors: [],
+  };
+
+  const found = new Set();
+
+  try {
+    const keys = await listAllKvKeys(env, "bookings:");
+
+    for (const key of keys) {
+      if (!/^bookings:\d{4}-\d{2}$/.test(key)) continue;
+
+      const raw = await env.BOOKINGS_KV.get(key);
+      if (!raw) continue;
+
+      let bookings;
+
+      try {
+        bookings = JSON.parse(raw);
+      } catch {
+        report.errors.push(`Could not parse ${key}`);
+        continue;
+      }
+
+      if (!Array.isArray(bookings)) continue;
+
+      let changed = false;
+
+      const nextBookings = bookings.map((booking) => {
+        report.bookingsChecked += 1;
+
+        if (!earlyPickupBookingIds.has(String(booking.id))) {
+          return booking;
+        }
+
+        found.add(String(booking.id));
+        changed = true;
+        report.bookingsPatched += 1;
+
+        const total = Number(
+          booking.hireTotal || booking.priceTotal || booking.total || 0,
+        );
+
+        const existingExtras = booking.extras || {};
+
+        return {
+          ...booking,
+
+          // Keep total/paid/outstanding exactly as imported
+          hireTotal: total,
+          priceTotal: total,
+
+          // Itemise the imported paid early pickup
+          extras: {
+            ...existingExtras,
+            dartford: Number(existingExtras.dartford || 0),
+            earlyPickup: true,
+            legacyUnspecified: false,
+          },
+
+          earlyPickupTotal: 20,
+          dartfordTotal: Number(booking.dartfordTotal || 0),
+          extrasTotal: 20 + Number(booking.dartfordTotal || 0),
+          priceExtras: 20 + Number(booking.dartfordTotal || 0),
+
+          // Base is informative only; total remains preserved
+          priceBase: Math.max(
+            0,
+            total - 20 - Number(booking.dartfordTotal || 0),
+          ),
+
+          legacyExtrasPatched: true,
+          legacyExtrasPatchNote:
+            "Early pickup itemised after Planyo migration. Total/paid/outstanding preserved.",
+          updatedAt: now,
+        };
+      });
+
+      if (changed) {
+        await env.BOOKINGS_KV.put(key, JSON.stringify(nextBookings));
+        report.bucketsUpdated += 1;
+      }
+    }
+
+    for (const id of earlyPickupBookingIds) {
+      if (!found.has(id)) {
+        report.missing.push(id);
+      }
+    }
+
+    await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+    return json({
+      ok: report.errors.length === 0 && report.missing.length === 0,
+      report,
+    });
+  } catch (err) {
+    report.errors.push(err.message);
+
+    return json(
+      {
+        ok: false,
+        report,
+      },
+      500,
+    );
+  }
 }
 
 /* ===============================
