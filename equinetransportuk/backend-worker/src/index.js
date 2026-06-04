@@ -250,6 +250,21 @@ export default {
       }
 
       /* ===============================
+   MIGRATION — CLEAN IMPORTED CONTACTS
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/migration/clean-imported-contacts"
+      ) {
+        const response = await handleMigrationCleanImportedContacts(
+          request,
+          env,
+        );
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    ADMIN ICALENDAR FEED
    Private subscription feed
 ================================ */
@@ -2630,6 +2645,202 @@ async function handleMigrationImportPlanyo(request, env) {
 
   await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
   report.kv.versionUpdated = true;
+
+  return json({
+    ok: true,
+    report,
+  });
+}
+
+/* ===============================
+   MIGRATION — CLEAN IMPORTED CONTACTS
+   Fixes Planyo phone/email formatting after import
+================================ */
+
+function normalizeImportedEmail(value) {
+  let email = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  // Planyo/export issue seen on import: +name@gmail.com
+  if (email.startsWith("+") && email.includes("@")) {
+    email = email.slice(1);
+  }
+
+  return email;
+}
+
+function normalizeImportedMobile(value) {
+  let mobile = String(value || "").trim();
+
+  if (!mobile) return "";
+
+  mobile = mobile.replace(/\s+/g, "");
+
+  // Planyo/import issue:
+  // +4407815715944 should be +447815715944
+  if (mobile.startsWith("+4407")) {
+    mobile = "+44" + mobile.slice(4);
+  }
+
+  // Also protect against double-zero format if it appears.
+  if (mobile.startsWith("004407")) {
+    mobile = "+44" + mobile.slice(4);
+  }
+
+  return mobile;
+}
+
+async function handleMigrationCleanImportedContacts(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const migrationMode = String(env.MIGRATION_MODE || "").toLowerCase();
+
+  if (migrationMode !== "true") {
+    return json(
+      {
+        error: "MIGRATION_MODE must be true before cleaning imported contacts",
+      },
+      400,
+    );
+  }
+
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch {}
+
+  if (body.confirm !== "CLEAN_IMPORTED_CONTACTS") {
+    return json(
+      {
+        error:
+          "Missing confirmation. Send { confirm: 'CLEAN_IMPORTED_CONTACTS' }",
+      },
+      400,
+    );
+  }
+
+  const report = {
+    cleanedAt: new Date().toISOString(),
+    customers: {
+      checked: 0,
+      updated: 0,
+      errors: [],
+    },
+    bookings: {
+      bucketsChecked: 0,
+      bookingsChecked: 0,
+      bookingsUpdated: 0,
+      bucketsUpdated: 0,
+      errors: [],
+    },
+  };
+
+  /* ===============================
+     CLEAN D1 CUSTOMERS
+  =============================== */
+
+  try {
+    const result =
+      (
+        await env.DB.prepare(
+          `
+        SELECT id, email, mobile
+        FROM customers
+      `,
+        ).all()
+      ).results || [];
+
+    report.customers.checked = result.length;
+
+    for (const row of result) {
+      const nextEmail = normalizeImportedEmail(row.email);
+      const nextMobile = normalizeImportedMobile(row.mobile);
+
+      if (nextEmail !== row.email || nextMobile !== row.mobile) {
+        await env.DB.prepare(
+          `
+          UPDATE customers
+          SET email = ?, mobile = ?, updated_at = ?
+          WHERE id = ?
+        `,
+        )
+          .bind(nextEmail, nextMobile, new Date().toISOString(), row.id)
+          .run();
+
+        report.customers.updated += 1;
+      }
+    }
+  } catch (err) {
+    report.customers.errors.push(err.message);
+  }
+
+  /* ===============================
+     CLEAN KV BOOKINGS
+  =============================== */
+
+  try {
+    const keys = await listAllKvKeys(env, "bookings:");
+
+    for (const key of keys) {
+      // skip bookings:version
+      if (!/^bookings:\d{4}-\d{2}$/.test(key)) continue;
+
+      report.bookings.bucketsChecked += 1;
+
+      const raw = await env.BOOKINGS_KV.get(key);
+      if (!raw) continue;
+
+      let bookings;
+
+      try {
+        bookings = JSON.parse(raw);
+      } catch {
+        report.bookings.errors.push(`Could not parse ${key}`);
+        continue;
+      }
+
+      if (!Array.isArray(bookings)) continue;
+
+      let changed = false;
+
+      const nextBookings = bookings.map((booking) => {
+        report.bookings.bookingsChecked += 1;
+
+        const nextEmail = normalizeImportedEmail(booking.customerEmail);
+        const nextMobile = normalizeImportedMobile(booking.customerMobile);
+
+        if (
+          nextEmail !== String(booking.customerEmail || "") ||
+          nextMobile !== String(booking.customerMobile || "")
+        ) {
+          changed = true;
+          report.bookings.bookingsUpdated += 1;
+
+          return {
+            ...booking,
+            customerEmail: nextEmail,
+            customerMobile: nextMobile,
+            updatedAt: new Date().toISOString(),
+            contactCleanedAt: new Date().toISOString(),
+          };
+        }
+
+        return booking;
+      });
+
+      if (changed) {
+        await env.BOOKINGS_KV.put(key, JSON.stringify(nextBookings));
+        report.bookings.bucketsUpdated += 1;
+      }
+    }
+  } catch (err) {
+    report.bookings.errors.push(err.message);
+  }
+
+  await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
 
   return json({
     ok: true,
