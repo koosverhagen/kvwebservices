@@ -214,6 +214,30 @@ export default {
       }
 
       /* ===============================
+   MIGRATION — EXPORT BACKUP
+================================ */
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/admin/migration/export-backup"
+      ) {
+        const response = await handleMigrationExportBackup(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
+   MIGRATION — CLEAR TEST DATA
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/migration/clear-test-data"
+      ) {
+        const response = await handleMigrationClearTestData(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    ADMIN ICALENDAR FEED
    Private subscription feed
 ================================ */
@@ -2116,9 +2140,420 @@ It is only a security hold.
 };
 
 /* ===============================
+   MIGRATION HELPERS
+   Backup + Clear Test Data
+================================ */
+
+function requireMigrationAuth(request, env) {
+  const expected = String(env.MIGRATION_TOKEN || "").trim();
+  const supplied = String(
+    request.headers.get("x-migration-token") ||
+      new URL(request.url).searchParams.get("token") ||
+      "",
+  ).trim();
+
+  if (!expected) {
+    return { ok: false, error: "MIGRATION_TOKEN is not configured" };
+  }
+
+  if (!supplied || supplied !== expected) {
+    return { ok: false, error: "Not authorised" };
+  }
+
+  return { ok: true };
+}
+
+async function listAllKvKeys(env, prefix) {
+  const keys = [];
+  let cursor = undefined;
+
+  do {
+    const page = await env.BOOKINGS_KV.list({ prefix, cursor });
+    keys.push(...page.keys.map((key) => key.name));
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+
+  return keys;
+}
+
+async function getKvBackupForPrefix(env, prefix) {
+  const keys = await listAllKvKeys(env, prefix);
+  const items = [];
+
+  for (const key of keys) {
+    items.push({
+      key,
+      value: await env.BOOKINGS_KV.get(key),
+    });
+  }
+
+  return items;
+}
+
+async function deleteKvPrefix(env, prefix) {
+  const keys = await listAllKvKeys(env, prefix);
+  await Promise.all(keys.map((key) => env.BOOKINGS_KV.delete(key)));
+  return keys.length;
+}
+
+async function handleMigrationExportBackup(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const backup = {
+    exportedAt: new Date().toISOString(),
+    kv: {
+      bookings: await getKvBackupForPrefix(env, "bookings:"),
+      bookingIndexes: await getKvBackupForPrefix(env, "booking:"),
+      reservations: await getKvBackupForPrefix(env, "reservation:"),
+      reminders: await getKvBackupForPrefix(env, "reminder:"),
+      audits: await getKvBackupForPrefix(env, "audit:"),
+      sessions: await getKvBackupForPrefix(env, "session:"),
+      forms: await getKvBackupForPrefix(env, "form:"),
+    },
+    d1: {},
+  };
+
+  try {
+    backup.d1.bookings =
+      (await env.DB.prepare("SELECT * FROM bookings").all()).results || [];
+  } catch (err) {
+    backup.d1.bookingsError = err.message;
+  }
+
+  try {
+    backup.d1.customers =
+      (await env.DB.prepare("SELECT * FROM customers").all()).results || [];
+  } catch (err) {
+    backup.d1.customersError = err.message;
+  }
+
+  try {
+    backup.d1.forms =
+      (await env.DB.prepare("SELECT * FROM forms").all()).results || [];
+  } catch (err) {
+    backup.d1.formsError = err.message;
+  }
+
+  return new Response(JSON.stringify(backup, null, 2), {
+    status: 200,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "content-disposition": `attachment; filename="etuk-pre-migration-backup-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json"`,
+    },
+  });
+}
+
+async function handleMigrationClearTestData(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const migrationMode = String(env.MIGRATION_MODE || "").toLowerCase();
+
+  if (migrationMode !== "true") {
+    return json(
+      {
+        error: "MIGRATION_MODE must be true before clearing data",
+      },
+      400,
+    );
+  }
+
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch {}
+
+  if (body.confirm !== "CLEAR_TEST_DATA") {
+    return json(
+      {
+        error: "Missing confirmation. Send { confirm: 'CLEAR_TEST_DATA' }",
+      },
+      400,
+    );
+  }
+
+  const report = {
+    clearedAt: new Date().toISOString(),
+    kv: {},
+    d1: {},
+  };
+
+  report.kv.bookings = await deleteKvPrefix(env, "bookings:");
+  report.kv.bookingIndexes = await deleteKvPrefix(env, "booking:");
+  report.kv.reservations = await deleteKvPrefix(env, "reservation:");
+  report.kv.reminders = await deleteKvPrefix(env, "reminder:");
+  report.kv.audits = await deleteKvPrefix(env, "audit:");
+  report.kv.sessions = await deleteKvPrefix(env, "session:");
+  report.kv.forms = await deleteKvPrefix(env, "form:");
+
+  try {
+    const r = await env.DB.prepare("DELETE FROM bookings").run();
+    report.d1.bookings = r.meta?.changes ?? null;
+  } catch (err) {
+    report.d1.bookingsError = err.message;
+  }
+
+  try {
+    const r = await env.DB.prepare("DELETE FROM customers").run();
+    report.d1.customers = r.meta?.changes ?? null;
+  } catch (err) {
+    report.d1.customersError = err.message;
+  }
+
+  try {
+    const r = await env.DB.prepare("DELETE FROM forms").run();
+    report.d1.forms = r.meta?.changes ?? null;
+  } catch (err) {
+    report.d1.formsError = err.message;
+  }
+
+  await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+  return json({ ok: true, report });
+}
+
+/* ===============================
    PRICING + DISCOUNT ENGINE
    Vouchers are now managed from admin UI / KV only.
 ================================ */
+
+/* ===============================
+   ADMIN ICALENDAR FEED HELPERS
+================================ */
+
+function escapeIcsText(value) {
+  return String(value ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+function formatIcsDateTime(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
+}
+
+function formatIcsMoney(value) {
+  const amount = Number(value || 0);
+
+  if (!Number.isFinite(amount)) {
+    return "£0.00";
+  }
+
+  return `£${amount.toFixed(2)}`;
+}
+
+function getBookingLorryLabel(booking) {
+  const vehicleName =
+    booking.vehicleSnapshot?.name ||
+    booking.vehicleName ||
+    booking.vehicleId ||
+    "Lorry";
+
+  const vehicleCode =
+    booking.vehicleSnapshot?.code || booking.vehicleCode || booking.code || "";
+
+  return vehicleCode ? `${vehicleCode} — ${vehicleName}` : vehicleName;
+}
+
+function getBookingExtrasText(booking) {
+  const extras = booking.extras || {};
+  const lines = [];
+
+  if (extras.earlyPickup || booking.earlyPickupTotal) {
+    lines.push(
+      `Early pickup: ${formatIcsMoney(booking.earlyPickupTotal || 20)}`,
+    );
+  }
+
+  const dartfordCount = Number(extras.dartford || 0);
+
+  if (dartfordCount > 0) {
+    lines.push(
+      `Dartford crossings: ${dartfordCount} (${formatIcsMoney(
+        booking.dartfordTotal || dartfordCount * 4.2,
+      )})`,
+    );
+  }
+
+  if (!lines.length) {
+    return "None";
+  }
+
+  return lines.join("\n");
+}
+
+function bookingFormStatusText(booking) {
+  if (booking.formCompleted || booking.formSubmitted) {
+    return "Yes";
+  }
+
+  return "No";
+}
+
+function bookingDepositStatusText(booking) {
+  if (booking.depositPaid || booking.depositStatus === "secured") {
+    return "Yes";
+  }
+
+  if (booking.depositStatus) {
+    return `No (${booking.depositStatus})`;
+  }
+
+  return "No";
+}
+
+async function loadAllBookingsForIcs(env) {
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  const bookings = [];
+
+  for (const key of list.keys) {
+    const data = await env.BOOKINGS_KV.get(key.name);
+
+    if (!data) continue;
+
+    try {
+      const parsed = JSON.parse(data);
+
+      if (Array.isArray(parsed)) {
+        bookings.push(...parsed);
+      } else if (parsed && typeof parsed === "object") {
+        bookings.push(parsed);
+      }
+    } catch (err) {
+      console.warn("⚠️ Could not parse booking batch for ICS:", key.name);
+    }
+  }
+
+  return bookings;
+}
+
+async function handleAdminBookingsIcsFeed(request, env) {
+  const url = new URL(request.url);
+  const token = String(url.searchParams.get("token") || "");
+  const expectedToken = String(env.ICAL_FEED_TOKEN || "");
+
+  if (!expectedToken || token !== expectedToken) {
+    return new Response("Unauthorized", {
+      status: 401,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+      },
+    });
+  }
+
+  const now = new Date();
+
+  let bookings = await loadAllBookingsForIcs(env);
+
+  bookings = bookings
+    .filter((booking) => booking && booking.pickupAt && booking.dropoffAt)
+    .sort((a, b) => new Date(a.pickupAt) - new Date(b.pickupAt));
+
+  const calendarLines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Equine Transport UK//Bookings//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "X-WR-CALNAME:Equine Transport UK Bookings",
+    "X-WR-CALDESC:Private booking feed for Equine Transport UK admin",
+    "X-WR-TIMEZONE:Europe/London",
+    "REFRESH-INTERVAL;VALUE=DURATION:PT15M",
+    "X-PUBLISHED-TTL:PT15M",
+  ];
+
+  for (const booking of bookings) {
+    const pickup = formatIcsDateTime(booking.pickupAt);
+    const dropoff = formatIcsDateTime(booking.dropoffAt);
+
+    if (!pickup || !dropoff) continue;
+
+    const bookingId = String(booking.id || `booking-${pickup}`);
+    const lorry = getBookingLorryLabel(booking);
+    const customerName = booking.customerName || "Customer";
+
+    const isCancelled =
+      String(booking.status || "").toLowerCase() === "cancelled";
+
+    const summary = isCancelled
+      ? `CANCELLED — ${lorry} — ${customerName}`
+      : `${lorry} — ${customerName}`;
+
+    const customerNotes =
+      booking.customerNotes ||
+      booking.notesFromCustomer ||
+      booking.notes ||
+      "None";
+
+    const adminNotes = booking.adminNotes || booking.adminNote || "";
+
+    const descriptionLines = [
+      `Booking ID: ${booking.id || "—"}`,
+      `Lorry: ${lorry}`,
+      `Customer: ${customerName}`,
+      `Mobile: ${booking.customerMobile || "—"}`,
+      `Email: ${booking.customerEmail || "—"}`,
+      "",
+      `Total amount: ${formatIcsMoney(
+        booking.hireTotal || booking.priceTotal || booking.total,
+      )}`,
+      `Outstanding amount: ${formatIcsMoney(
+        booking.outstandingAmount || booking.outstanding,
+      )}`,
+      `Deposit secured: ${bookingDepositStatusText(booking)}`,
+      `Form completed: ${bookingFormStatusText(booking)}`,
+      "",
+      "Extras:",
+      getBookingExtrasText(booking),
+      "",
+      "Customer notes:",
+      customerNotes || "None",
+    ];
+
+    if (adminNotes) {
+      descriptionLines.push("", "Admin notes:", adminNotes);
+    }
+
+    calendarLines.push(
+      "BEGIN:VEVENT",
+      `UID:${escapeIcsText(bookingId)}@equinetransportuk.com`,
+      `DTSTAMP:${formatIcsDateTime(now)}`,
+      `DTSTART:${pickup}`,
+      `DTEND:${dropoff}`,
+      `SUMMARY:${escapeIcsText(summary)}`,
+      `DESCRIPTION:${escapeIcsText(descriptionLines.join("\n"))}`,
+      `LOCATION:${escapeIcsText("Equine Transport UK")}`,
+      `STATUS:${isCancelled ? "CANCELLED" : "CONFIRMED"}`,
+      "END:VEVENT",
+    );
+  }
+
+  calendarLines.push("END:VCALENDAR");
+
+  return new Response(calendarLines.join("\r\n"), {
+    status: 200,
+    headers: {
+      "content-type": "text/calendar; charset=utf-8",
+      "cache-control": "no-store, no-cache, must-revalidate",
+    },
+  });
+}
 
 const DISCOUNT_CODES = [];
 
@@ -5677,239 +6112,6 @@ async function handleBookingBySession(request, env) {
   /* ===============================
      HELPERS
   =============================== */
-
-  function escapeIcsText(value) {
-    return String(value ?? "")
-      .replace(/\\/g, "\\\\")
-      .replace(/\r?\n/g, "\\n")
-      .replace(/,/g, "\\,")
-      .replace(/;/g, "\\;");
-  }
-
-  function formatIcsDateTime(value) {
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return "";
-    }
-
-    return date
-      .toISOString()
-      .replace(/[-:]/g, "")
-      .replace(/\.\d{3}Z$/, "Z");
-  }
-
-  function formatIcsMoney(value) {
-    const amount = Number(value || 0);
-
-    if (!Number.isFinite(amount)) {
-      return "£0.00";
-    }
-
-    return `£${amount.toFixed(2)}`;
-  }
-
-  function getBookingLorryLabel(booking) {
-    const vehicleName =
-      booking.vehicleSnapshot?.name ||
-      booking.vehicleName ||
-      booking.vehicleId ||
-      "Lorry";
-
-    const vehicleCode =
-      booking.vehicleSnapshot?.code ||
-      booking.vehicleCode ||
-      booking.code ||
-      "";
-
-    return vehicleCode ? `${vehicleCode} — ${vehicleName}` : vehicleName;
-  }
-
-  function getBookingExtrasText(booking) {
-    const extras = booking.extras || {};
-    const lines = [];
-
-    if (extras.earlyPickup || booking.earlyPickupTotal) {
-      lines.push(
-        `Early pickup: ${formatIcsMoney(booking.earlyPickupTotal || 20)}`,
-      );
-    }
-
-    const dartfordCount = Number(extras.dartford || 0);
-
-    if (dartfordCount > 0) {
-      lines.push(
-        `Dartford crossings: ${dartfordCount} (${formatIcsMoney(
-          booking.dartfordTotal || dartfordCount * 4.2,
-        )})`,
-      );
-    }
-
-    if (!lines.length) {
-      return "None";
-    }
-
-    return lines.join("\n");
-  }
-
-  function bookingFormStatusText(booking) {
-    if (booking.formCompleted || booking.formSubmitted) {
-      return "Yes";
-    }
-
-    return "No";
-  }
-
-  function bookingDepositStatusText(booking) {
-    if (booking.depositPaid || booking.depositStatus === "secured") {
-      return "Yes";
-    }
-
-    if (booking.depositStatus) {
-      return `No (${booking.depositStatus})`;
-    }
-
-    return "No";
-  }
-
-  async function loadAllBookingsForIcs(env) {
-    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-    const bookings = [];
-
-    for (const key of list.keys) {
-      const data = await env.BOOKINGS_KV.get(key.name);
-
-      if (!data) continue;
-
-      try {
-        const parsed = JSON.parse(data);
-
-        if (Array.isArray(parsed)) {
-          bookings.push(...parsed);
-        } else if (parsed && typeof parsed === "object") {
-          bookings.push(parsed);
-        }
-      } catch (err) {
-        console.warn("⚠️ Could not parse booking batch for ICS:", key.name);
-      }
-    }
-
-    return bookings;
-  }
-
-  async function handleAdminBookingsIcsFeed(request, env) {
-    const url = new URL(request.url);
-    const token = String(url.searchParams.get("token") || "");
-
-    const expectedToken = String(env.ICAL_FEED_TOKEN || "");
-
-    if (!expectedToken || token !== expectedToken) {
-      return new Response("Unauthorized", {
-        status: 401,
-        headers: {
-          "content-type": "text/plain; charset=utf-8",
-        },
-      });
-    }
-
-    const now = new Date();
-
-    let bookings = await loadAllBookingsForIcs(env);
-
-    bookings = bookings
-      .filter((booking) => booking && booking.pickupAt && booking.dropoffAt)
-      .sort((a, b) => new Date(a.pickupAt) - new Date(b.pickupAt));
-
-    const calendarLines = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//Equine Transport UK//Bookings//EN",
-      "CALSCALE:GREGORIAN",
-      "METHOD:PUBLISH",
-      "X-WR-CALNAME:Equine Transport UK Bookings",
-      "X-WR-CALDESC:Private booking feed for Equine Transport UK admin",
-      "X-WR-TIMEZONE:Europe/London",
-      "REFRESH-INTERVAL;VALUE=DURATION:PT15M",
-      "X-PUBLISHED-TTL:PT15M",
-    ];
-
-    for (const booking of bookings) {
-      const pickup = formatIcsDateTime(booking.pickupAt);
-      const dropoff = formatIcsDateTime(booking.dropoffAt);
-
-      if (!pickup || !dropoff) continue;
-
-      const bookingId = String(booking.id || crypto.randomUUID());
-      const lorry = getBookingLorryLabel(booking);
-      const customerName = booking.customerName || "Customer";
-
-      const isCancelled =
-        String(booking.status || "").toLowerCase() === "cancelled";
-
-      const summary = isCancelled
-        ? `CANCELLED — ${lorry} — ${customerName}`
-        : `${lorry} — ${customerName}`;
-
-      const customerNotes =
-        booking.customerNotes ||
-        booking.notesFromCustomer ||
-        booking.notes ||
-        "None";
-
-      const adminNotes = booking.adminNotes || booking.adminNote || "";
-
-      const descriptionLines = [
-        `Booking ID: ${booking.id || "—"}`,
-        `Lorry: ${lorry}`,
-        `Customer: ${customerName}`,
-        `Mobile: ${booking.customerMobile || "—"}`,
-        `Email: ${booking.customerEmail || "—"}`,
-        "",
-        `Total amount: ${formatIcsMoney(
-          booking.hireTotal || booking.priceTotal || booking.total,
-        )}`,
-        `Outstanding amount: ${formatIcsMoney(
-          booking.outstandingAmount || booking.outstanding,
-        )}`,
-        `Deposit secured: ${bookingDepositStatusText(booking)}`,
-        `Form completed: ${bookingFormStatusText(booking)}`,
-        "",
-        "Extras:",
-        getBookingExtrasText(booking),
-        "",
-        "Customer notes:",
-        customerNotes || "None",
-      ];
-
-      if (adminNotes) {
-        descriptionLines.push("", "Admin notes:", adminNotes);
-      }
-
-      calendarLines.push(
-        "BEGIN:VEVENT",
-        `UID:${escapeIcsText(bookingId)}@equinetransportuk.com`,
-        `DTSTAMP:${formatIcsDateTime(now)}`,
-        `DTSTART:${pickup}`,
-        `DTEND:${dropoff}`,
-        `SUMMARY:${escapeIcsText(summary)}`,
-        `DESCRIPTION:${escapeIcsText(descriptionLines.join("\n"))}`,
-        `LOCATION:${escapeIcsText("Equine Transport UK")}`,
-        `STATUS:${isCancelled ? "CANCELLED" : "CONFIRMED"}`,
-        "END:VEVENT",
-      );
-    }
-
-    calendarLines.push("END:VCALENDAR");
-
-    return new Response(calendarLines.join("\r\n"), {
-      status: 200,
-      headers: {
-        "content-type": "text/calendar; charset=utf-8",
-        "cache-control": "no-store, no-cache, must-revalidate",
-      },
-    });
-  }
 
   async function getRequiredFormType(env, customerId, pickupAt) {
     if (!customerId) return "long";
