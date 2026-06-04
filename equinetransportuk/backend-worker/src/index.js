@@ -304,6 +304,21 @@ export default {
       }
 
       /* ===============================
+   MIGRATION — IMPORT LEGACY FORM RECORDS
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/migration/import-legacy-form-records"
+      ) {
+        const response = await handleMigrationImportLegacyFormRecords(
+          request,
+          env,
+        );
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    ADMIN ICALENDAR FEED
    Private subscription feed
 ================================ */
@@ -3578,6 +3593,582 @@ async function handleMigrationPatchCompletedForms(request, env) {
 
     return json({
       ok: report.missing.length === 0,
+      report,
+    });
+  } catch (err) {
+    report.errors.push(err.message);
+
+    return json(
+      {
+        ok: false,
+        report,
+      },
+      500,
+    );
+  }
+}
+
+/* ===============================
+   MIGRATION — IMPORT LEGACY FORM RECORDS
+   Creates booking_forms rows from old PDF submissions
+================================ */
+
+async function handleMigrationImportLegacyFormRecords(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const migrationMode = String(env.MIGRATION_MODE || "").toLowerCase();
+
+  if (migrationMode !== "true") {
+    return json(
+      {
+        error: "MIGRATION_MODE must be true before importing legacy forms",
+      },
+      400,
+    );
+  }
+
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch {}
+
+  if (body.confirm !== "IMPORT_LEGACY_FORM_RECORDS") {
+    return json(
+      {
+        error:
+          "Missing confirmation. Send { confirm: 'IMPORT_LEGACY_FORM_RECORDS' }",
+      },
+      400,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const legacyForms = [
+    {
+      bookingId: "book_planyo_R19364235",
+      legacyReservationId: "19364235",
+      formType: "short",
+      submittedAt: "2026-05-08T13:12:00Z",
+      customerName: "Laura Lewis",
+      customerEmail: "laura.lewis29@yahoo.com",
+      customerMobile: "+447739019089",
+      payload: {
+        legacyFormImported: true,
+        legacyFormSource: "previous_planyo_app_pdf",
+        legacyFormNote:
+          "Short form imported from previous Planyo/app PDF submission.",
+        firstName: "Laura",
+        lastName: "Lewis",
+        email: "laura.lewis29@yahoo.com",
+        mobile: "07739019089",
+        licenceNumber: "LEWIS855294LM9KS",
+        dvlaCode: "NRkbY8Gx",
+        lastLongFormDate: "2026-03-07",
+        dateOfThisHire: "2026-05-09",
+        lastDvlaCodeDate: "2026-05-08",
+        datePicker: "2026-05-08",
+        legacyReservationId: "19364235",
+        signatureImportedFromPdf: true,
+        signatureImageAvailable: false,
+      },
+    },
+
+    {
+      bookingId: "book_planyo_R19483765",
+      legacyReservationId: "19483765",
+      formType: "long",
+      submittedAt: "2026-05-17T18:13:00Z",
+      customerName: "Carrie Thain",
+      customerEmail: "carriethain2000@gmail.com",
+      customerMobile: "+447766672038",
+      payload: {
+        legacyFormImported: true,
+        legacyFormSource: "previous_planyo_app_pdf",
+        legacyFormNote:
+          "Long form imported from previous Planyo/app PDF submission.",
+        firstName: "Carrie",
+        lastName: "Thain",
+        email: "carriethain2000@gmail.com",
+        mobile: "07766672038",
+        address:
+          "Valley View Barn, Meres Lane, Cross in Hand, East Sussex, TN21 0UA",
+        howLongHere: "2.5 years",
+        occupation: "Assistant Headteacher",
+        nationality: "British",
+        hireFrom: "2026-06-14",
+        hireUntil: "2026-06-14",
+        reasonForTravel: "Horse Competition",
+        travelTo: "Golden Cross Equestrian Centre",
+        parkingArrangement: "",
+        drivingLicenceNumber: "THAIN752087C99EH",
+        dvlaCheckCode: "mPtL8KSS",
+        dvlaCheckCodeDate: "2026-05-17",
+        medicalOrDisability: "No",
+        notifiedDvlaMedical: "No",
+        issuedLicence: "No",
+        medicalDetails: "",
+        drivingFrequencyUk: "daily",
+        drivingRegularlySince: "Since 1994",
+        horseboxExperience:
+          "Have driven transit vans and minibuses regularly, and horseboxes 3-4 times.",
+        insuranceRefused: "No",
+        insuranceCancelled: "No",
+        insuranceRestrictions: "No",
+        nonMotoringConvictions: "No",
+        insuranceDetails: "",
+        datePicker: "2026-05-17",
+        legacyReservationId: "19483765",
+        dvlaLicenceHolderChecked: true,
+        nonDvlaLicenceHolderChecked: false,
+        proofOfAddress1: true,
+        proofOfAddress2: true,
+        photoIdChecked: true,
+        signatureImportedFromPdf: true,
+        signatureImageAvailable: false,
+      },
+    },
+
+    {
+      bookingId: "book_planyo_R19512237",
+      legacyReservationId: "19512237",
+      formType: "long",
+      submittedAt: "2026-05-28T13:13:00Z",
+      customerName: "Lorna Ewin",
+      customerEmail: "lornaewin@yahoo.co.uk",
+      customerMobile: "+447815715944",
+      payload: {
+        legacyFormImported: true,
+        legacyFormSource: "previous_planyo_app_pdf",
+        legacyFormNote:
+          "Long form imported from previous Planyo/app PDF submission.",
+        firstName: "Lorna",
+        lastName: "Ewin",
+        email: "lornaewin@yahoo.co.uk",
+        mobile: "07815715944",
+        address: "2 BROOKLANDS COTTAGES, Coopers Wood",
+        howLongHere: "20 years",
+        occupation: "Facilities Manager",
+        nationality: "British",
+        hireFrom: "2026-06-05",
+        hireUntil: "2026-06-05",
+        reasonForTravel: "SOE Show",
+        travelTo: "Ardingly",
+        parkingArrangement:
+          "A third party yard / Your own premisses / Parking on the road",
+        drivingLicenceNumber: "EWIN9654139LC9VH",
+        dvlaCheckCode: "xC5353mp",
+        dvlaCheckCodeDate: "2026-05-28",
+        medicalOrDisability: "No",
+        notifiedDvlaMedical: "No",
+        issuedLicence: "No",
+        medicalDetails: "",
+        drivingFrequencyUk: "Daily",
+        drivingRegularlySince: "Since 18 yrs of age",
+        horseboxExperience: "Have had my own 7.5t horseboxes",
+        insuranceRefused: "No",
+        insuranceCancelled: "No",
+        insuranceRestrictions: "No",
+        nonMotoringConvictions: "No",
+        insuranceDetails: "",
+        datePicker: "2026-05-28",
+        legacyReservationId: "19512237",
+        dvlaLicenceHolderChecked: true,
+        nonDvlaLicenceHolderChecked: false,
+        proofOfAddress1: true,
+        proofOfAddress2: true,
+        photoIdChecked: true,
+        signatureImportedFromPdf: true,
+        signatureImageAvailable: false,
+      },
+    },
+
+    {
+      bookingId: "book_planyo_R19640554",
+      legacyReservationId: "19640554",
+      formType: "long",
+      submittedAt: "2026-06-01T10:22:00Z",
+      customerName: "Charlotte Eveson",
+      customerEmail: "charlotte.eveson@gmail.com",
+      customerMobile: "+447930840455",
+      payload: {
+        legacyFormImported: true,
+        legacyFormSource: "previous_planyo_app_pdf",
+        legacyFormNote:
+          "Long form imported from previous Planyo/app PDF submission.",
+        firstName: "Charlotte",
+        lastName: "Eveson",
+        email: "charlotte.eveson@gmail.com",
+        mobile: "07930840455",
+        address: "3 Home Platt, Sharpthorne, East Grinstead RH19 4NZ, UK",
+        howLongHere: "28 years",
+        occupation: "HGV Driver",
+        nationality: "British",
+        hireFrom: "2026-07-03",
+        hireUntil: "2026-07-05",
+        reasonForTravel: "Holiday",
+        travelTo: "Nottinghamshire",
+        parkingArrangement:
+          "A third party yard / Your own premisses / Parking on the road",
+        drivingLicenceNumber: "EVESO960287CD9VY",
+        dvlaCheckCode: "mSLQ295K",
+        dvlaCheckCodeDate: "2026-06-01",
+        medicalOrDisability: "No",
+        notifiedDvlaMedical: "Yes",
+        issuedLicence: "Yes",
+        medicalDetails:
+          "I have no medical conditions/disabilities that are notifiable to the DVLA",
+        drivingFrequencyUk: "Daily",
+        drivingRegularlySince: "11 years",
+        horseboxExperience: "Used to own a 3.5T which I drove regularly",
+        insuranceRefused: "No",
+        insuranceCancelled: "No",
+        insuranceRestrictions: "No",
+        nonMotoringConvictions: "No",
+        insuranceDetails: "",
+        datePicker: "2026-06-01",
+        legacyReservationId: "19640554",
+        dvlaLicenceHolderChecked: false,
+        nonDvlaLicenceHolderChecked: false,
+        proofOfAddress1: true,
+        proofOfAddress2: true,
+        photoIdChecked: true,
+        signatureImportedFromPdf: true,
+        signatureImageAvailable: false,
+      },
+    },
+
+    {
+      bookingId: "book_planyo_R19565280",
+      legacyReservationId: "19565280",
+      formType: "long",
+      submittedAt: "2026-06-03T09:19:00Z",
+      customerName: "Georgia Jordan-Moore",
+      customerEmail: "georgie.jez12@gmail.com",
+      customerMobile: "+447931420612",
+      payload: {
+        legacyFormImported: true,
+        legacyFormSource: "previous_planyo_app_pdf",
+        legacyFormNote:
+          "Long form imported from previous Planyo/app PDF submission.",
+        firstName: "Georgia",
+        lastName: "Jordan-Moore",
+        email: "georgie.jez12@gmail.com",
+        mobile: "07931420612",
+        address: "21 Aldervale Cottages, Crowborough TN6 3BT, UK",
+        howLongHere: "1 year 8 months",
+        occupation: "Business relationship exec",
+        nationality: "British",
+        hireFrom: "2026-06-05",
+        hireUntil: "2026-06-05",
+        reasonForTravel: "Vet visit",
+        travelTo: "Priors farm vets",
+        parkingArrangement: "",
+        drivingLicenceNumber: "JORDA954209GA9CS",
+        dvlaCheckCode: "mLPRMDz2",
+        dvlaCheckCodeDate: "2026-06-02",
+        medicalOrDisability: "No",
+        notifiedDvlaMedical: "No",
+        issuedLicence: "No",
+        medicalDetails: "",
+        drivingFrequencyUk: "Everyday",
+        drivingRegularlySince: "10 years",
+        horseboxExperience: "Driven 3-5 times",
+        insuranceRefused: "No",
+        insuranceCancelled: "No",
+        insuranceRestrictions: "No",
+        nonMotoringConvictions: "No",
+        insuranceDetails: "",
+        datePicker: "2026-06-03",
+        legacyReservationId: "19565280",
+        dvlaLicenceHolderChecked: true,
+        nonDvlaLicenceHolderChecked: false,
+        proofOfAddress1: true,
+        proofOfAddress2: true,
+        photoIdChecked: true,
+        signatureImportedFromPdf: true,
+        signatureImageAvailable: false,
+      },
+    },
+
+    {
+      bookingId: "book_planyo_P19657870",
+      legacyReservationId: "19657870",
+      formType: "long",
+      submittedAt: "2026-06-03T18:53:00Z",
+      customerName: "Georgia Ashcroft",
+      customerEmail: "georgia_ashcroft@icloud.com",
+      customerMobile: "+447834785077",
+      payload: {
+        legacyFormImported: true,
+        legacyFormSource: "previous_planyo_app_pdf",
+        legacyFormNote:
+          "Long form imported from previous Planyo/app PDF submission.",
+        firstName: "Georgia",
+        lastName: "Ashcroft",
+        email: "georgia_ashcroft@icloud.com",
+        mobile: "07834785077",
+        address: "22 Lower Village",
+        howLongHere: "23yrs",
+        occupation: "Veterinary Nurse",
+        nationality: "British",
+        hireFrom: "2026-06-13",
+        hireUntil: "2026-06-13",
+        reasonForTravel: "Collection of new horse",
+        travelTo: "Somerset",
+        parkingArrangement:
+          "A third party yard / Your own premisses / Parking on the road",
+        drivingLicenceNumber: "ASHCR052020G99FT",
+        dvlaCheckCode: "xyc3BWkz",
+        dvlaCheckCodeDate: "2026-06-03",
+        medicalOrDisability: "No",
+        notifiedDvlaMedical: "No",
+        issuedLicence: "No",
+        medicalDetails: "",
+        drivingFrequencyUk: "Multiple times Daily",
+        drivingRegularlySince: "Since 2018",
+        horseboxExperience:
+          "Driving 7.5t for 2 years, done trailers and 3.5ts too",
+        insuranceRefused: "No",
+        insuranceCancelled: "No",
+        insuranceRestrictions: "No",
+        nonMotoringConvictions: "No",
+        insuranceDetails: "",
+        datePicker: "2026-06-03",
+        legacyReservationId: "19657870",
+        dvlaLicenceHolderChecked: true,
+        nonDvlaLicenceHolderChecked: false,
+        proofOfAddress1: true,
+        proofOfAddress2: true,
+        photoIdChecked: true,
+        signatureImportedFromPdf: true,
+        signatureImageAvailable: false,
+      },
+    },
+
+    {
+      bookingId: "book_planyo_R19656409",
+      legacyReservationId: "19656409",
+      formType: "long",
+      submittedAt: "2026-06-03T15:43:00Z",
+      customerName: "Amy Howell",
+      customerEmail: "amyhowell0@gmail.com",
+      customerMobile: "+447748740831",
+      payload: {
+        legacyFormImported: true,
+        legacyFormSource: "previous_planyo_app_pdf",
+        legacyFormNote:
+          "Long form imported from previous Planyo/app PDF submission.",
+        firstName: "Amy",
+        lastName: "Howell",
+        email: "amyhowell0@gmail.com",
+        mobile: "07748740831",
+        address: "12 Rosehip Ln, Tunbridge Wells TN2 3XU, UK",
+        howLongHere: "2 years",
+        occupation: "Groom",
+        nationality: "British",
+        hireFrom: "2026-06-28",
+        hireUntil: "2026-06-28",
+        reasonForTravel: "Show",
+        travelTo: "South of England show ground",
+        parkingArrangement:
+          "A third party yard / Your own premisses / Parking on the road",
+        drivingLicenceNumber: "HOWEL954080AJ9YD",
+        dvlaCheckCode: "THXVRz3Q",
+        dvlaCheckCodeDate: "2026-06-03",
+        medicalOrDisability: "No",
+        notifiedDvlaMedical: "No",
+        issuedLicence: "No",
+        medicalDetails: "N/A",
+        drivingFrequencyUk: "Every day",
+        drivingRegularlySince: "17 years",
+        horseboxExperience: "Little",
+        insuranceRefused: "No",
+        insuranceCancelled: "No",
+        insuranceRestrictions: "No",
+        nonMotoringConvictions: "No",
+        insuranceDetails: "",
+        datePicker: "2026-06-03",
+        legacyReservationId: "19656409",
+        dvlaLicenceHolderChecked: true,
+        nonDvlaLicenceHolderChecked: false,
+        proofOfAddress1: true,
+        proofOfAddress2: true,
+        photoIdChecked: true,
+        signatureImportedFromPdf: true,
+        signatureImageAvailable: false,
+      },
+    },
+  ];
+
+  const report = {
+    importedAt: now,
+    targetCount: legacyForms.length,
+    insertedForms: 0,
+    d1BookingsUpdated: 0,
+    kvBookingsUpdated: 0,
+    bucketsUpdated: 0,
+    missingBookings: [],
+    errors: [],
+  };
+
+  function extractLicenceLast8(raw) {
+    if (!raw) return "";
+    return String(raw).replace(/\s+/g, "").toUpperCase().slice(-8);
+  }
+
+  try {
+    for (const form of legacyForms) {
+      const booking = await findBookingById(env, form.bookingId);
+
+      if (!booking) {
+        report.missingBookings.push(form.bookingId);
+        continue;
+      }
+
+      const formId = `form_${form.bookingId}`;
+      const payload = {
+        ...form.payload,
+        bookingId: form.bookingId,
+        formType: form.formType,
+      };
+
+      await env.DB.prepare(
+        `
+        INSERT INTO booking_forms (
+          id,
+          booking_id,
+          form_type,
+          customer_id,
+          customer_name,
+          customer_email,
+          customer_mobile,
+          payload_json,
+          signature_data,
+          submitted_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          form_type = excluded.form_type,
+          customer_id = excluded.customer_id,
+          customer_name = excluded.customer_name,
+          customer_email = excluded.customer_email,
+          customer_mobile = excluded.customer_mobile,
+          payload_json = excluded.payload_json,
+          signature_data = excluded.signature_data,
+          submitted_at = excluded.submitted_at,
+          updated_at = excluded.updated_at
+      `,
+      )
+        .bind(
+          formId,
+          form.bookingId,
+          form.formType,
+          booking.customerId || null,
+          form.customerName,
+          form.customerEmail,
+          form.customerMobile,
+          JSON.stringify(payload),
+          "",
+          form.submittedAt,
+          now,
+        )
+        .run();
+
+      report.insertedForms += 1;
+
+      const licenceRaw =
+        payload.drivingLicenceNumber || payload.licenceNumber || "";
+      const dvlaCode = payload.dvlaCheckCode || payload.dvlaCode || "";
+
+      try {
+        const r = await env.DB.prepare(
+          `
+          UPDATE bookings
+          SET form_completed = 1,
+              dvla_verified = 0,
+              updated_at = ?
+          WHERE id = ?
+        `,
+        )
+          .bind(now, form.bookingId)
+          .run();
+
+        report.d1BookingsUpdated += r.meta?.changes || 0;
+      } catch (err) {
+        report.errors.push(
+          `D1 booking update failed ${form.bookingId}: ${err.message}`,
+        );
+      }
+
+      try {
+        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+        for (const key of list.keys) {
+          if (!/^bookings:\d{4}-\d{2}$/.test(key.name)) continue;
+
+          const raw = await env.BOOKINGS_KV.get(key.name);
+          if (!raw) continue;
+
+          let bookings;
+
+          try {
+            bookings = JSON.parse(raw);
+          } catch {
+            continue;
+          }
+
+          if (!Array.isArray(bookings)) continue;
+
+          let changed = false;
+
+          const nextBookings = bookings.map((b) => {
+            if (String(b.id) !== String(form.bookingId)) return b;
+
+            changed = true;
+
+            return {
+              ...b,
+              formCompleted: true,
+              formSubmitted: true,
+              formType: form.formType,
+              formSubmittedAt: form.submittedAt,
+              formRecordId: formId,
+              legacyFormImported: true,
+              legacyFormSource: "previous_planyo_app_pdf",
+              legacyFormNote:
+                "Form data imported from previous Planyo/app PDF submission.",
+              dvlaLicenceLast8: extractLicenceLast8(licenceRaw),
+              dvlaCode,
+              dvlaVerified: b.dvlaVerified === true ? true : false,
+              updatedAt: now,
+            };
+          });
+
+          if (changed) {
+            await env.BOOKINGS_KV.put(key.name, JSON.stringify(nextBookings));
+            report.kvBookingsUpdated += 1;
+            report.bucketsUpdated += 1;
+            break;
+          }
+        }
+      } catch (err) {
+        report.errors.push(
+          `KV booking update failed ${form.bookingId}: ${err.message}`,
+        );
+      }
+    }
+
+    await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+    return json({
+      ok:
+        report.errors.length === 0 &&
+        report.missingBookings.length === 0 &&
+        report.insertedForms === legacyForms.length,
       report,
     });
   } catch (err) {
