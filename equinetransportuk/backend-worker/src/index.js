@@ -292,6 +292,18 @@ export default {
       }
 
       /* ===============================
+   MIGRATION — PATCH COMPLETED FORMS
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/migration/patch-completed-forms"
+      ) {
+        const response = await handleMigrationPatchCompletedForms(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    ADMIN ICALENDAR FEED
    Private subscription feed
 ================================ */
@@ -3401,6 +3413,171 @@ async function handleMigrationPatchEarlyPickupExtras(request, env) {
 
     return json({
       ok: report.errors.length === 0 && report.missing.length === 0,
+      report,
+    });
+  } catch (err) {
+    report.errors.push(err.message);
+
+    return json(
+      {
+        ok: false,
+        report,
+      },
+      500,
+    );
+  }
+}
+
+/* ===============================
+   MIGRATION — PATCH COMPLETED FORMS
+   Marks known migrated bookings as form completed
+================================ */
+
+async function handleMigrationPatchCompletedForms(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const migrationMode = String(env.MIGRATION_MODE || "").toLowerCase();
+
+  if (migrationMode !== "true") {
+    return json(
+      {
+        error: "MIGRATION_MODE must be true before patching completed forms",
+      },
+      400,
+    );
+  }
+
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch {}
+
+  if (body.confirm !== "PATCH_COMPLETED_FORMS") {
+    return json(
+      {
+        error:
+          "Missing confirmation. Send { confirm: 'PATCH_COMPLETED_FORMS' }",
+      },
+      400,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const completedFormBookingIds = new Set([
+    "book_planyo_R19512237", // Lorna Ewin
+    "book_planyo_R19565280", // Georgie Jordan-Moore
+    "book_planyo_R19364235", // Laura Lewis
+    "book_planyo_P19657870", // Georgia Ashcroft
+    "book_planyo_R19483765", // Carrie Thain
+    "book_planyo_R19656409", // Amy Howell
+    "book_planyo_R19640554", // Charlotte Eveson
+  ]);
+
+  const report = {
+    patchedAt: now,
+    targetCount: completedFormBookingIds.size,
+    bookingsChecked: 0,
+    bookingsPatched: 0,
+    d1Patched: 0,
+    patched: [],
+    missing: [],
+    bucketsUpdated: 0,
+    errors: [],
+  };
+
+  const found = new Set();
+
+  try {
+    const keys = await listAllKvKeys(env, "bookings:");
+
+    for (const key of keys) {
+      if (!/^bookings:\d{4}-\d{2}$/.test(key)) continue;
+
+      const raw = await env.BOOKINGS_KV.get(key);
+      if (!raw) continue;
+
+      let bookings;
+
+      try {
+        bookings = JSON.parse(raw);
+      } catch {
+        report.errors.push(`Could not parse ${key}`);
+        continue;
+      }
+
+      if (!Array.isArray(bookings)) continue;
+
+      let changed = false;
+
+      const nextBookings = bookings.map((booking) => {
+        report.bookingsChecked += 1;
+
+        if (!completedFormBookingIds.has(String(booking.id))) {
+          return booking;
+        }
+
+        found.add(String(booking.id));
+        changed = true;
+        report.bookingsPatched += 1;
+        report.patched.push(String(booking.id));
+
+        return {
+          ...booking,
+          formCompleted: true,
+          formSubmitted: true,
+          formSubmittedAt: booking.formSubmittedAt || now,
+          legacyFormImported: true,
+          legacyFormNote:
+            "Form completed in previous Planyo/app system before migration.",
+          updatedAt: now,
+        };
+      });
+
+      if (changed) {
+        await env.BOOKINGS_KV.put(key, JSON.stringify(nextBookings));
+        report.bucketsUpdated += 1;
+      }
+    }
+
+    for (const id of completedFormBookingIds) {
+      if (!found.has(id)) {
+        report.missing.push(id);
+      }
+    }
+
+    /* ===============================
+       Patch D1 booking flags if columns exist
+    =============================== */
+
+    for (const id of completedFormBookingIds) {
+      try {
+        const r = await env.DB.prepare(
+          `
+          UPDATE bookings
+          SET form_completed = 1,
+              updated_at = ?
+          WHERE id = ?
+        `,
+        )
+          .bind(now, id)
+          .run();
+
+        report.d1Patched += r.meta?.changes || 0;
+      } catch (err) {
+        // Some older D1 schemas may not have form_completed.
+        report.errors.push(
+          `D1 form_completed patch skipped for ${id}: ${err.message}`,
+        );
+      }
+    }
+
+    await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+    return json({
+      ok: report.missing.length === 0,
       report,
     });
   } catch (err) {
