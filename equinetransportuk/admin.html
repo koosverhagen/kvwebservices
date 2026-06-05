@@ -2835,6 +2835,185 @@
           font-size: 17px;
         }
       }
+
+      /* ===============================
+   FULL SCREEN DAMAGE DRAWING MODAL
+   STEP 2C — SHELL ONLY
+================================ */
+
+      .handover-open-drawing-btn {
+        width: 100%;
+        margin-top: 12px;
+        min-height: 48px;
+        font-size: 15px;
+      }
+
+      .damage-drawing-modal.hidden {
+        display: none !important;
+      }
+
+      .damage-drawing-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 10000000;
+
+        background: #f8fafc;
+
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .damage-drawing-header {
+        min-height: 82px;
+
+        padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+
+        background: rgba(255, 255, 255, 0.96);
+        border-bottom: 1px solid #e2e8f0;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+
+      .damage-drawing-header h3 {
+        margin: 0;
+
+        font-size: 22px;
+        font-weight: 900;
+
+        letter-spacing: -0.5px;
+      }
+
+      .damage-drawing-header p {
+        margin: 3px 0 0;
+
+        color: #64748b;
+
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .damage-drawing-close {
+        width: 52px;
+        height: 52px;
+
+        border-radius: 18px;
+        border: 1px solid #dbe1e8;
+
+        background: #ffffff;
+
+        font-size: 28px;
+        color: #1f6feb;
+
+        cursor: pointer;
+      }
+
+      .damage-drawing-stage {
+        overflow: auto;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 14px;
+
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .damage-drawing-paper {
+        position: relative;
+
+        background: #ffffff;
+
+        border: 1px solid #dbe1e8;
+        border-radius: 22px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        overflow: hidden;
+
+        box-shadow: 0 12px 34px rgba(15, 23, 42, 0.12);
+      }
+
+      /* Front + rear = portrait */
+      .damage-drawing-stage.portrait .damage-drawing-paper {
+        width: min(92vw, 620px);
+        height: min(72vh, 860px);
+      }
+
+      /* Left + right + fuel = landscape */
+      .damage-drawing-stage.landscape .damage-drawing-paper {
+        width: min(96vw, 980px);
+        height: min(62vh, 620px);
+      }
+
+      .damage-drawing-image {
+        width: 100%;
+        height: 100%;
+
+        object-fit: contain;
+
+        display: block;
+
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+
+      .damage-drawing-toolbar {
+        padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
+
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid #e2e8f0;
+
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+
+      .damage-drawing-toolbar .btn {
+        min-height: 58px;
+        border-radius: 18px;
+
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      @media (max-width: 768px) {
+        .damage-drawing-header h3 {
+          font-size: 24px;
+        }
+
+        .damage-drawing-header p {
+          font-size: 14px;
+        }
+
+        .damage-drawing-stage {
+          padding: 10px;
+        }
+
+        .damage-drawing-stage.landscape .damage-drawing-paper {
+          width: 96vw;
+          height: 58vh;
+        }
+
+        .damage-drawing-stage.portrait .damage-drawing-paper {
+          width: 92vw;
+          height: 66vh;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -3483,88 +3662,167 @@
                 </button>
               </div>
 
-              <div class="handover-damage-panels">
-                <div
-                  class="handover-damage-panel active"
-                  data-handover-damage-panel="front"
-                >
-                  <div class="handover-damage-image-wrap">
-                    <img
-                      id="handover-damage-front-img"
-                      class="handover-damage-img"
-                      alt="Vehicle front view"
-                    />
-                  </div>
+              <div
+                class="handover-damage-panel active"
+                data-handover-damage-panel="front"
+              >
+                <div class="handover-damage-image-wrap">
+                  <img
+                    id="handover-damage-front-img"
+                    class="handover-damage-img"
+                    alt="Vehicle front view"
+                  />
                 </div>
 
-                <div
-                  class="handover-damage-panel"
-                  data-handover-damage-panel="rear"
+                <button
+                  class="btn primary handover-open-drawing-btn"
+                  type="button"
+                  data-open-damage-drawing="front"
                 >
-                  <div class="handover-damage-image-wrap">
-                    <img
-                      id="handover-damage-rear-img"
-                      class="handover-damage-img"
-                      alt="Vehicle rear view"
-                    />
-                  </div>
+                  ✏️ Open front drawing
+                </button>
+              </div>
+
+              <div
+                class="handover-damage-panel"
+                data-handover-damage-panel="rear"
+              >
+                <div class="handover-damage-image-wrap">
+                  <img
+                    id="handover-damage-rear-img"
+                    class="handover-damage-img"
+                    alt="Vehicle rear view"
+                  />
                 </div>
 
-                <div
-                  class="handover-damage-panel"
-                  data-handover-damage-panel="left"
+                <button
+                  class="btn primary handover-open-drawing-btn"
+                  type="button"
+                  data-open-damage-drawing="rear"
                 >
-                  <div class="handover-damage-image-wrap">
-                    <img
-                      id="handover-damage-left-img"
-                      class="handover-damage-img"
-                      alt="Vehicle left side"
-                    />
-                  </div>
+                  ✏️ Open rear drawing
+                </button>
+              </div>
+
+              <div
+                class="handover-damage-panel"
+                data-handover-damage-panel="left"
+              >
+                <div class="handover-damage-image-wrap">
+                  <img
+                    id="handover-damage-left-img"
+                    class="handover-damage-img"
+                    alt="Vehicle left side"
+                  />
                 </div>
 
-                <div
-                  class="handover-damage-panel"
-                  data-handover-damage-panel="right"
+                <button
+                  class="btn primary handover-open-drawing-btn"
+                  type="button"
+                  data-open-damage-drawing="left"
                 >
-                  <div class="handover-damage-image-wrap">
-                    <img
-                      id="handover-damage-right-img"
-                      class="handover-damage-img"
-                      alt="Vehicle right side"
-                    />
-                  </div>
+                  ✏️ Open left side drawing
+                </button>
+              </div>
+
+              <div
+                class="handover-damage-panel"
+                data-handover-damage-panel="right"
+              >
+                <div class="handover-damage-image-wrap">
+                  <img
+                    id="handover-damage-right-img"
+                    class="handover-damage-img"
+                    alt="Vehicle right side"
+                  />
                 </div>
 
-                <div
-                  class="handover-damage-panel"
-                  data-handover-damage-panel="fuel"
+                <button
+                  class="btn primary handover-open-drawing-btn"
+                  type="button"
+                  data-open-damage-drawing="right"
                 >
-                  <div class="handover-damage-image-wrap fuel">
-                    <img
-                      id="handover-damage-fuel-img"
-                      class="handover-damage-img fuel"
-                      src="images/handover/all_fuel.png"
-                      alt="Fuel gauge"
-                    />
-                  </div>
+                  ✏️ Open right side drawing
+                </button>
+              </div>
+
+              <div
+                class="handover-damage-panel"
+                data-handover-damage-panel="fuel"
+              >
+                <div class="handover-damage-image-wrap fuel">
+                  <img
+                    id="handover-damage-fuel-img"
+                    class="handover-damage-img fuel"
+                    src="images/handover/all_fuel.png"
+                    alt="Fuel gauge"
+                  />
                 </div>
+
+                <button
+                  class="btn primary handover-open-drawing-btn"
+                  type="button"
+                  data-open-damage-drawing="fuel"
+                >
+                  ✏️ Open fuel drawing
+                </button>
               </div>
             </div>
-
-            <div class="handover-actions">
-              <button class="btn primary" id="handover-save-btn" type="button">
-                Save handover draft
-              </button>
-
-              <button class="btn ghost" id="handover-close-btn" type="button">
-                Close
-              </button>
-            </div>
-
-            <div id="handover-status-message" class="handover-status"></div>
           </div>
+
+          <div class="handover-actions">
+            <button class="btn primary" id="handover-save-btn" type="button">
+              Save handover draft
+            </button>
+
+            <button class="btn ghost" id="handover-close-btn" type="button">
+              Close
+            </button>
+          </div>
+
+          <div id="handover-status-message" class="handover-status"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ===============================
+   FULL SCREEN DAMAGE DRAWING MODAL
+   STEP 2C — SHELL ONLY
+=============================== -->
+    <div id="damage-drawing-modal" class="damage-drawing-modal hidden">
+      <div class="damage-drawing-header">
+        <div>
+          <h3 id="damage-drawing-title">Damage drawing</h3>
+          <p id="damage-drawing-subtitle">Full screen drawing mode</p>
+        </div>
+
+        <button
+          id="damage-drawing-close"
+          class="damage-drawing-close"
+          type="button"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div id="damage-drawing-stage" class="damage-drawing-stage portrait">
+        <div class="damage-drawing-paper">
+          <img
+            id="damage-drawing-image"
+            class="damage-drawing-image"
+            alt="Damage drawing"
+          />
+        </div>
+      </div>
+
+      <div class="damage-drawing-toolbar">
+        <button class="btn ghost" id="damage-drawing-cancel" type="button">
+          Cancel
+        </button>
+
+        <button class="btn primary" id="damage-drawing-done" type="button">
+          Done
+        </button>
       </div>
     </div>
 
@@ -4211,6 +4469,31 @@
       const handoverDamageFuelImg = document.getElementById(
         "handover-damage-fuel-img",
       );
+
+      const damageDrawingModal = document.getElementById(
+        "damage-drawing-modal",
+      );
+      const damageDrawingTitle = document.getElementById(
+        "damage-drawing-title",
+      );
+      const damageDrawingSubtitle = document.getElementById(
+        "damage-drawing-subtitle",
+      );
+      const damageDrawingStage = document.getElementById(
+        "damage-drawing-stage",
+      );
+      const damageDrawingImage = document.getElementById(
+        "damage-drawing-image",
+      );
+      const damageDrawingClose = document.getElementById(
+        "damage-drawing-close",
+      );
+      const damageDrawingCancel = document.getElementById(
+        "damage-drawing-cancel",
+      );
+      const damageDrawingDone = document.getElementById("damage-drawing-done");
+
+      let CURRENT_DAMAGE_DRAWING_VIEW = null;
 
       let HANDOVER_TERMS_PAD = null;
       let HANDOVER_CUSTOMER_PAD = null;
@@ -8259,6 +8542,76 @@ ${mobileOutstandingText}
         setImageSrcSafe(handoverDamageFuelImg, `${base}/all_fuel.png`);
       }
 
+      function getDamageDrawingImageForView(view) {
+        if (view === "front") return handoverDamageFrontImg?.src || "";
+        if (view === "rear") return handoverDamageRearImg?.src || "";
+        if (view === "left") return handoverDamageLeftImg?.src || "";
+        if (view === "right") return handoverDamageRightImg?.src || "";
+        if (view === "fuel") return handoverDamageFuelImg?.src || "";
+
+        return "";
+      }
+
+      function getDamageDrawingTitle(view) {
+        if (view === "front") return "Front damage drawing";
+        if (view === "rear") return "Rear damage drawing";
+        if (view === "left") return "Left side damage drawing";
+        if (view === "right") return "Right side damage drawing";
+        if (view === "fuel") return "Fuel gauge marking";
+
+        return "Damage drawing";
+      }
+
+      function getDamageDrawingOrientation(view) {
+        if (view === "left" || view === "right" || view === "fuel") {
+          return "landscape";
+        }
+
+        return "portrait";
+      }
+
+      function openDamageDrawingModal(view) {
+        if (!damageDrawingModal || !damageDrawingStage || !damageDrawingImage)
+          return;
+
+        CURRENT_DAMAGE_DRAWING_VIEW = view;
+
+        const orientation = getDamageDrawingOrientation(view);
+        const imageSrc = getDamageDrawingImageForView(view);
+
+        if (damageDrawingTitle) {
+          damageDrawingTitle.textContent = getDamageDrawingTitle(view);
+        }
+
+        if (damageDrawingSubtitle) {
+          damageDrawingSubtitle.textContent =
+            orientation === "landscape"
+              ? "Landscape drawing mode — rotate phone for best use"
+              : "Portrait drawing mode";
+        }
+
+        damageDrawingStage.classList.remove("portrait", "landscape");
+        damageDrawingStage.classList.add(orientation);
+
+        damageDrawingImage.src = imageSrc;
+
+        damageDrawingModal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeDamageDrawingModal() {
+        if (!damageDrawingModal) return;
+
+        damageDrawingModal.classList.add("hidden");
+        CURRENT_DAMAGE_DRAWING_VIEW = null;
+
+        document.body.style.overflow = handoverModal?.classList.contains(
+          "hidden",
+        )
+          ? ""
+          : "hidden";
+      }
+
       function setHandoverStatus(message, type = "ok") {
         if (!handoverStatusMessage) return;
 
@@ -8534,6 +8887,10 @@ ${mobileOutstandingText}
       handoverCloseBtn?.addEventListener("click", closeHandoverModal);
       handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
 
+      damageDrawingClose?.addEventListener("click", closeDamageDrawingModal);
+      damageDrawingCancel?.addEventListener("click", closeDamageDrawingModal);
+      damageDrawingDone?.addEventListener("click", closeDamageDrawingModal);
+
       handoverDamageTabs.forEach((btn) => {
         btn.addEventListener("click", () => {
           const tabName = btn.getAttribute("data-handover-damage-tab");
@@ -8581,16 +8938,13 @@ ${mobileOutstandingText}
 
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
+          closeDamageDrawingModal();
           closeModal();
           closeHandoverModal();
         }
       });
 
       document.addEventListener("click", async (e) => {
-        /* ===============================
-   🧾 HANDOVER BUTTON CLICK
-================================ */
-
         const handoverBtn = e.target.closest("[data-open-handover]");
 
         if (handoverBtn) {
@@ -8599,6 +8953,20 @@ ${mobileOutstandingText}
           const bookingId = handoverBtn.getAttribute("data-open-handover");
 
           openHandoverModal(bookingId);
+
+          return;
+        }
+
+        const damageDrawingBtn = e.target.closest("[data-open-damage-drawing]");
+
+        if (damageDrawingBtn) {
+          e.preventDefault();
+
+          const view =
+            damageDrawingBtn.getAttribute("data-open-damage-drawing") ||
+            "front";
+
+          openDamageDrawingModal(view);
 
           return;
         }
