@@ -2334,6 +2334,67 @@
           height: 200px;
         }
       }
+
+      /* ===============================
+   ADMIN HANDOVER CHECKLIST
+   STEP 1D
+================================ */
+
+      .handover-checklist {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .handover-check-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        min-height: 42px;
+
+        padding: 10px 12px;
+
+        border-radius: 14px;
+
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+
+        color: #64748b;
+
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .handover-check-item.done {
+        background: #e6f4ea;
+        border-color: #bbf7d0;
+        color: #137a3d;
+      }
+
+      .handover-check-icon {
+        width: 22px;
+        height: 22px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 999px;
+
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .handover-check-item.done .handover-check-icon {
+        background: #137a3d;
+        border-color: #137a3d;
+        color: #ffffff;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -2845,9 +2906,26 @@
             </div>
 
             <div class="handover-notice">
-              STEP 1B shell only. This saves the handover draft/comments to KV.
-              Drawings, signatures, PDF generation and email sending will be
-              added later.
+              Complete the handover notes and signatures before saving the
+              draft. Vehicle damage drawings, PDF generation and customer email
+              sending will be added in the next stages.
+            </div>
+
+            <div id="handover-checklist" class="handover-checklist">
+              <div class="handover-check-item" id="handover-check-comments">
+                <span class="handover-check-icon">○</span>
+                <span>Comments / damage notes</span>
+              </div>
+
+              <div class="handover-check-item" id="handover-check-terms">
+                <span class="handover-check-icon">○</span>
+                <span>Terms & Conditions signature</span>
+              </div>
+
+              <div class="handover-check-item" id="handover-check-customer">
+                <span class="handover-check-icon">○</span>
+                <span>Customer signature</span>
+              </div>
             </div>
 
             <div class="field" style="margin-top: 16px">
@@ -3525,6 +3603,16 @@
       const handoverComments = document.getElementById("handover-comments");
       const handoverStatusMessage = document.getElementById(
         "handover-status-message",
+      );
+
+      const handoverCheckComments = document.getElementById(
+        "handover-check-comments",
+      );
+      const handoverCheckTerms = document.getElementById(
+        "handover-check-terms",
+      );
+      const handoverCheckCustomer = document.getElementById(
+        "handover-check-customer",
       );
 
       const handoverTermsCanvas = document.getElementById(
@@ -7419,6 +7507,10 @@ ${mobileOutstandingText}
           hasInk = false;
         }
 
+        function hasSignature() {
+          return hasInk;
+        }
+
         function toDataURL() {
           return hasInk ? canvas.toDataURL("image/png") : null;
         }
@@ -7453,6 +7545,7 @@ ${mobileOutstandingText}
         return {
           resizeCanvas,
           clear,
+          hasSignature,
           toDataURL,
           fromDataURL,
         };
@@ -7478,6 +7571,27 @@ ${mobileOutstandingText}
       function clearHandoverSignaturePads() {
         HANDOVER_TERMS_PAD?.clear();
         HANDOVER_CUSTOMER_PAD?.clear();
+      }
+
+      function setHandoverCheckItem(el, done) {
+        if (!el) return;
+
+        el.classList.toggle("done", !!done);
+
+        const icon = el.querySelector(".handover-check-icon");
+        if (icon) {
+          icon.textContent = done ? "✓" : "○";
+        }
+      }
+
+      function updateHandoverChecklist() {
+        const hasComments = !!handoverComments?.value?.trim();
+        const hasTermsSignature = !!HANDOVER_TERMS_PAD?.hasSignature?.();
+        const hasCustomerSignature = !!HANDOVER_CUSTOMER_PAD?.hasSignature?.();
+
+        setHandoverCheckItem(handoverCheckComments, hasComments);
+        setHandoverCheckItem(handoverCheckTerms, hasTermsSignature);
+        setHandoverCheckItem(handoverCheckCustomer, hasCustomerSignature);
       }
 
       function setHandoverStatus(message, type = "ok") {
@@ -7556,6 +7670,7 @@ ${mobileOutstandingText}
 
         initialiseHandoverSignaturePads();
         clearHandoverSignaturePads();
+        updateHandoverChecklist();
 
         setHandoverStatus("Loading saved handover draft…", "warn");
         try {
@@ -7583,6 +7698,8 @@ ${mobileOutstandingText}
           HANDOVER_CUSTOMER_PAD?.fromDataURL(
             handover.customerSignature || null,
           );
+
+          setTimeout(updateHandoverChecklist, 80);
 
           if (data.found) {
             setHandoverStatus("Saved handover draft loaded.", "ok");
@@ -7640,6 +7757,7 @@ ${mobileOutstandingText}
             throw new Error(data?.error || "Failed to save handover");
           }
 
+          updateHandoverChecklist();
           setHandoverStatus("Handover draft saved ✓", "ok");
         } catch (err) {
           console.error("❌ Failed to save handover:", err);
@@ -7748,8 +7866,24 @@ ${mobileOutstandingText}
       handoverCloseBtn?.addEventListener("click", closeHandoverModal);
       handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
 
+      handoverComments?.addEventListener("input", updateHandoverChecklist);
+
+      handoverTermsCanvas?.addEventListener("mouseup", updateHandoverChecklist);
+      handoverTermsCanvas?.addEventListener("touchend", () => {
+        setTimeout(updateHandoverChecklist, 50);
+      });
+
+      handoverCustomerCanvas?.addEventListener(
+        "mouseup",
+        updateHandoverChecklist,
+      );
+      handoverCustomerCanvas?.addEventListener("touchend", () => {
+        setTimeout(updateHandoverChecklist, 50);
+      });
+
       handoverClearTermsBtn?.addEventListener("click", () => {
         HANDOVER_TERMS_PAD?.clear();
+        updateHandoverChecklist();
         setHandoverStatus(
           "Terms signature cleared. Save to keep this change.",
           "warn",
@@ -7758,6 +7892,7 @@ ${mobileOutstandingText}
 
       handoverClearCustomerBtn?.addEventListener("click", () => {
         HANDOVER_CUSTOMER_PAD?.clear();
+        updateHandoverChecklist();
         setHandoverStatus(
           "Customer signature cleared. Save to keep this change.",
           "warn",
