@@ -1143,6 +1143,24 @@ export default {
       }
 
       /* ===============================
+   ADMIN HANDOVER / DAMAGE REPORT
+   STEP 1A — KV LOAD/SAVE SHELL ONLY
+================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/admin/handover") {
+        const response = await handleAdminHandoverView(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/handover/save"
+      ) {
+        const response = await handleAdminHandoverSave(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    BOOKING UPDATE (ADMIN)
 =============================== */
 
@@ -9838,6 +9856,181 @@ async function handleFormSubmit(request, env) {
 
     return json({ error: "Form submission failed" }, 500);
   }
+}
+
+/* ===============================
+   ADMIN HANDOVER / DAMAGE REPORT
+   STEP 1A — KV LOAD/SAVE SHELL ONLY
+
+   Routes:
+   GET  /api/admin/handover?bookingId=...
+   POST /api/admin/handover/save
+
+   KV key:
+   handover:{bookingId}
+
+   Notes:
+   - No D1 schema changes
+   - No PDF generation
+   - No email sending
+   - No drawing/image handling yet
+================================ */
+
+function getHandoverKvKey(bookingId) {
+  return `handover:${bookingId}`;
+}
+
+function cleanHandoverBookingId(value) {
+  return String(value || "").trim();
+}
+
+async function handleAdminHandoverView(request, env) {
+  const url = new URL(request.url);
+  const bookingId = cleanHandoverBookingId(url.searchParams.get("bookingId"));
+
+  if (!bookingId) {
+    return json(
+      {
+        ok: false,
+        error: "Missing bookingId",
+      },
+      400,
+    );
+  }
+
+  const key = getHandoverKvKey(bookingId);
+
+  const existing = await env.BOOKINGS_KV.get(key);
+
+  if (!existing) {
+    return json({
+      ok: true,
+      found: false,
+      bookingId,
+      handover: null,
+    });
+  }
+
+  try {
+    const handover = JSON.parse(existing);
+
+    return json({
+      ok: true,
+      found: true,
+      bookingId,
+      handover,
+    });
+  } catch (err) {
+    console.log("⚠️ Handover KV parse error:", err);
+
+    return json(
+      {
+        ok: false,
+        error: "Stored handover data could not be read",
+        bookingId,
+      },
+      500,
+    );
+  }
+}
+
+async function handleAdminHandoverSave(request, env) {
+  let body;
+
+  try {
+    body = await request.json();
+  } catch (err) {
+    return json(
+      {
+        ok: false,
+        error: "Invalid JSON body",
+      },
+      400,
+    );
+  }
+
+  const bookingId = cleanHandoverBookingId(body.bookingId);
+
+  if (!bookingId) {
+    return json(
+      {
+        ok: false,
+        error: "Missing bookingId",
+      },
+      400,
+    );
+  }
+
+  const key = getHandoverKvKey(bookingId);
+
+  let existing = null;
+
+  const existingRaw = await env.BOOKINGS_KV.get(key);
+
+  if (existingRaw) {
+    try {
+      existing = JSON.parse(existingRaw);
+    } catch (err) {
+      console.log("⚠️ Existing handover KV parse error:", err);
+      existing = null;
+    }
+  }
+
+  const now = new Date().toISOString();
+
+  const incomingHandover =
+    body.handover && typeof body.handover === "object" ? body.handover : {};
+
+  const handover = {
+    ...(existing || {}),
+    ...incomingHandover,
+
+    bookingId,
+
+    status: incomingHandover.status || existing?.status || "draft",
+
+    comments:
+      typeof incomingHandover.comments === "string"
+        ? incomingHandover.comments
+        : existing?.comments || "",
+
+    termsSignature:
+      incomingHandover.termsSignature || existing?.termsSignature || null,
+
+    customerSignature:
+      incomingHandover.customerSignature || existing?.customerSignature || null,
+
+    drawings:
+      incomingHandover.drawings && typeof incomingHandover.drawings === "object"
+        ? incomingHandover.drawings
+        : existing?.drawings || {},
+
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  };
+
+  const serialised = JSON.stringify(handover);
+
+  // Safety guard for now. We are not storing drawing images yet in STEP 1A.
+  // This prevents accidentally saving a huge payload while building the shell.
+  if (serialised.length > 1024 * 1024) {
+    return json(
+      {
+        ok: false,
+        error: "Handover data is too large for STEP 1A shell save",
+      },
+      413,
+    );
+  }
+
+  await env.BOOKINGS_KV.put(key, serialised);
+
+  return json({
+    ok: true,
+    saved: true,
+    bookingId,
+    handover,
+  });
 }
 
 async function handleAdminFormView(request, env) {

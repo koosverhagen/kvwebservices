@@ -2191,6 +2191,85 @@
           display: none;
         }
       }
+
+      /* ===============================
+   ADMIN HANDOVER MODAL
+   STEP 1B — SHELL ONLY
+================================ */
+
+      .handover-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .handover-status {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        display: none;
+      }
+
+      .handover-status.ok {
+        display: block;
+        background: #e6f4ea;
+        color: #137a3d;
+      }
+
+      .handover-status.warn {
+        display: block;
+        background: #fff4e5;
+        color: #b45309;
+      }
+
+      .handover-status.bad {
+        display: block;
+        background: #fde8e8;
+        color: #b42318;
+      }
+
+      .handover-notice {
+        padding: 12px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .handover-textarea {
+        width: 100%;
+        min-height: 140px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        font-family: inherit;
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      .handover-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+
+      @media (max-width: 768px) {
+        .handover-actions {
+          flex-direction: column;
+        }
+
+        .handover-actions .btn {
+          width: 100%;
+          min-height: 48px;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -2675,6 +2754,67 @@
               <h4>Signature</h4>
               <div id="modal-signature" class="et-modal-signature"></div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===============================
+   ADMIN HANDOVER / DAMAGE REPORT MODAL
+   STEP 1B — SHELL ONLY
+=============================== -->
+    <div id="handover-modal" class="et-modal hidden">
+      <div class="et-modal-backdrop" id="handover-modal-backdrop"></div>
+
+      <div class="et-modal-center">
+        <div class="et-modal-card" style="max-width: 820px">
+          <div class="et-modal-header">
+            <h3>Handover / Damage Report</h3>
+            <button id="handover-modal-close" class="modal-close">✕</button>
+          </div>
+
+          <div class="et-modal-body">
+            <input type="hidden" id="handover-booking-id" />
+
+            <div id="handover-summary" class="handover-summary">
+              <div class="empty-state">Loading handover…</div>
+            </div>
+
+            <div class="handover-notice">
+              STEP 1B shell only. This saves the handover draft/comments to KV.
+              Drawings, signatures, PDF generation and email sending will be
+              added later.
+            </div>
+
+            <div class="field" style="margin-top: 16px">
+              <label for="handover-status-select">Handover status</label>
+              <select id="handover-status-select">
+                <option value="draft">Draft</option>
+                <option value="in_progress">In progress</option>
+                <option value="complete">Complete</option>
+              </select>
+            </div>
+
+            <div class="field" style="margin-top: 16px">
+              <label for="handover-comments">Comments / damage notes</label>
+              <textarea
+                id="handover-comments"
+                class="handover-textarea"
+                placeholder="Example: Small scratch noted on rear ramp..."
+              ></textarea>
+            </div>
+
+            <div class="handover-actions">
+              <button class="btn primary" id="handover-save-btn" type="button">
+                Save handover draft
+              </button>
+
+              <button class="btn ghost" id="handover-close-btn" type="button">
+                Close
+              </button>
+            </div>
+
+            <div id="handover-status-message" class="handover-status"></div>
           </div>
         </div>
       </div>
@@ -3249,6 +3389,35 @@
       const modalSummary = document.getElementById("modal-form-summary");
       const modalFields = document.getElementById("modal-form-fields");
       const modalSignature = document.getElementById("modal-signature");
+
+      /* ===============================
+   ADMIN HANDOVER MODAL
+   STEP 1B — SHELL ONLY
+================================ */
+
+      const handoverModal = document.getElementById("handover-modal");
+      const handoverModalBackdrop = document.getElementById(
+        "handover-modal-backdrop",
+      );
+      const handoverModalClose = document.getElementById(
+        "handover-modal-close",
+      );
+      const handoverCloseBtn = document.getElementById("handover-close-btn");
+      const handoverSaveBtn = document.getElementById("handover-save-btn");
+
+      const handoverBookingIdInput = document.getElementById(
+        "handover-booking-id",
+      );
+      const handoverSummary = document.getElementById("handover-summary");
+      const handoverStatusSelect = document.getElementById(
+        "handover-status-select",
+      );
+      const handoverComments = document.getElementById("handover-comments");
+      const handoverStatusMessage = document.getElementById(
+        "handover-status-message",
+      );
+
+      let CURRENT_HANDOVER_BOOKING = null;
 
       /* ===============================
          EDIT MODAL ELEMENTS
@@ -4487,6 +4656,15 @@
         >
           ✏️ Edit
         </button>
+
+        <!-- 🧾 HANDOVER -->
+<button
+  class="btn primary btn-small"
+  type="button"
+  data-open-handover="${escapeHtml(booking.id)}"
+>
+  🧾 Handover
+</button>
 
         <!-- FORM -->
         <div class="stack">
@@ -6017,6 +6195,14 @@ ${notesBox}
     📝 View Form
   </button>
 
+  <button
+  class="mobile-link-btn"
+  type="button"
+  data-open-handover="${escapeHtml(booking.id)}"
+>
+  🧾 Handover
+</button>
+
   ${mobileFormText}
   ${mobileFormEmail}
 
@@ -7007,6 +7193,173 @@ ${mobileOutstandingText}
         document.body.style.overflow = "";
       }
 
+      /* ===============================
+   ADMIN HANDOVER / DAMAGE REPORT
+   STEP 1B — MODAL SHELL ONLY
+================================ */
+
+      function setHandoverStatus(message, type = "ok") {
+        if (!handoverStatusMessage) return;
+
+        handoverStatusMessage.className = `handover-status ${type}`;
+        handoverStatusMessage.textContent = message || "";
+      }
+
+      function clearHandoverStatus() {
+        if (!handoverStatusMessage) return;
+
+        handoverStatusMessage.className = "handover-status";
+        handoverStatusMessage.textContent = "";
+      }
+
+      function openHandoverModalShell() {
+        if (!handoverModal) return;
+
+        handoverModal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeHandoverModal() {
+        if (!handoverModal) return;
+
+        handoverModal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+
+      function renderHandoverSummary(booking) {
+        if (!handoverSummary) return;
+
+        if (!booking) {
+          handoverSummary.innerHTML = `
+      <div class="empty-state">
+        Booking details not found.
+      </div>
+    `;
+          return;
+        }
+
+        handoverSummary.innerHTML = `
+    ${makeDetailBox("Booking reference", shortRef(booking.id))}
+    ${makeDetailBox("Customer", booking.customerName || "—")}
+    ${makeDetailBox("Vehicle", booking.vehicleSnapshot?.name || booking.vehicleName || booking.vehicleId || "—")}
+    ${makeDetailBox("Pickup", booking.pickupAt ? formatDateTime(booking.pickupAt) : "—")}
+    ${makeDetailBox("Drop-off", booking.dropoffAt ? formatDateTime(booking.dropoffAt) : "—")}
+    ${makeDetailBox("Form", isFormComplete(booking) ? "Complete" : "Pending")}
+  `;
+      }
+
+      async function openHandoverModal(bookingId) {
+        if (!bookingId) return;
+
+        clearHandoverStatus();
+
+        const booking = allBookings.find((b) => b.id === bookingId) || null;
+        CURRENT_HANDOVER_BOOKING = booking;
+
+        if (handoverBookingIdInput) {
+          handoverBookingIdInput.value = bookingId;
+        }
+
+        if (handoverStatusSelect) {
+          handoverStatusSelect.value = "draft";
+        }
+
+        if (handoverComments) {
+          handoverComments.value = "";
+        }
+
+        renderHandoverSummary(booking);
+
+        openHandoverModalShell();
+
+        setHandoverStatus("Loading saved handover draft…", "warn");
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/handover?bookingId=${encodeURIComponent(bookingId)}`,
+          );
+
+          const data = await res.json();
+
+          if (!res.ok || data.ok === false) {
+            throw new Error(data?.error || "Failed to load handover");
+          }
+
+          const handover = data.handover || {};
+
+          if (handoverStatusSelect) {
+            handoverStatusSelect.value = handover.status || "draft";
+          }
+
+          if (handoverComments) {
+            handoverComments.value = handover.comments || "";
+          }
+
+          if (data.found) {
+            setHandoverStatus("Saved handover draft loaded.", "ok");
+          } else {
+            setHandoverStatus("No handover draft yet. Ready to start.", "warn");
+          }
+        } catch (err) {
+          console.error("❌ Failed to load handover:", err);
+          setHandoverStatus(err.message || "Failed to load handover.", "bad");
+        }
+      }
+
+      async function saveHandoverDraft() {
+        const bookingId = handoverBookingIdInput?.value || "";
+
+        if (!bookingId) {
+          setHandoverStatus("Missing booking reference.", "bad");
+          return;
+        }
+
+        if (!handoverSaveBtn) return;
+
+        const originalText = handoverSaveBtn.textContent;
+
+        handoverSaveBtn.disabled = true;
+        handoverSaveBtn.textContent = "Saving…";
+
+        clearHandoverStatus();
+
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/handover/save`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId,
+              handover: {
+                status: handoverStatusSelect?.value || "draft",
+                comments: handoverComments?.value || "",
+
+                // STEP 1B placeholders only.
+                // Real signature canvases and drawing data come later.
+                termsSignature: null,
+                customerSignature: null,
+                drawings: {},
+              },
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || data.ok === false) {
+            throw new Error(data?.error || "Failed to save handover");
+          }
+
+          setHandoverStatus("Handover draft saved ✓", "ok");
+        } catch (err) {
+          console.error("❌ Failed to save handover:", err);
+          setHandoverStatus(err.message || "Failed to save handover.", "bad");
+        } finally {
+          handoverSaveBtn.disabled = false;
+          handoverSaveBtn.textContent = originalText;
+        }
+      }
+
       function showModalLoading() {
         modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
         modalFields.innerHTML = "";
@@ -7100,16 +7453,40 @@ ${mobileOutstandingText}
       modalClose.addEventListener("click", closeModal);
       modalCloseBtn.addEventListener("click", closeModal);
 
+      handoverModalBackdrop?.addEventListener("click", closeHandoverModal);
+      handoverModalClose?.addEventListener("click", closeHandoverModal);
+      handoverCloseBtn?.addEventListener("click", closeHandoverModal);
+      handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
+
       const modalCard = modal.querySelector(".et-modal-card");
       if (modalCard) {
         modalCard.addEventListener("click", (e) => e.stopPropagation());
       }
 
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeModal();
+        if (e.key === "Escape") {
+          closeModal();
+          closeHandoverModal();
+        }
       });
 
       document.addEventListener("click", async (e) => {
+        /* ===============================
+   🧾 HANDOVER BUTTON CLICK
+================================ */
+
+        const handoverBtn = e.target.closest("[data-open-handover]");
+
+        if (handoverBtn) {
+          e.preventDefault();
+
+          const bookingId = handoverBtn.getAttribute("data-open-handover");
+
+          openHandoverModal(bookingId);
+
+          return;
+        }
+
         /* ===============================
            ✏️ EDIT BUTTON CLICK
         =============================== */
