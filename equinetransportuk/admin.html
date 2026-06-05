@@ -7956,21 +7956,26 @@ ${mobileOutstandingText}
         if (vehicleId === "v35-2" || name.includes("stallion")) return "dl22";
         if (vehicleId === "v35-3" || name.includes("breast")) return "ca21";
 
-        if (
-          vehicleId === "v75-1" ||
-          name.includes("living") ||
-          name.includes("3 horses")
-        ) {
-          return "7h_living";
-        }
-
+        // IMPORTANT:
+        // Check "no living" BEFORE "living",
+        // because "no living" also contains the word "living".
         if (
           vehicleId === "v75-2" ||
           name.includes("no living") ||
           name.includes("noliving") ||
+          name.includes("no-living") ||
           name.includes("4 horses")
         ) {
           return "7h_noliving";
+        }
+
+        if (
+          vehicleId === "v75-1" ||
+          name.includes("with living") ||
+          name.includes("living") ||
+          name.includes("3 horses")
+        ) {
+          return "7h_living";
         }
 
         return "ls23";
