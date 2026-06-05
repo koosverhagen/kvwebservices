@@ -3273,6 +3273,61 @@
           padding: 7px 10px !important;
         }
       }
+
+      /* ===============================
+   FINAL HANDOVER BUTTON SIZE FIX
+   Must stay at very bottom
+================================ */
+
+      @media (max-width: 900px) {
+        #handover-modal .handover-actions {
+          display: grid !important;
+          grid-template-columns: 1fr 1fr !important;
+          gap: 10px !important;
+
+          margin-top: 14px !important;
+          position: static !important;
+        }
+
+        #handover-modal .handover-actions .btn {
+          width: 100% !important;
+
+          min-height: 42px !important;
+          height: 42px !important;
+
+          padding: 7px 10px !important;
+
+          border-radius: 14px !important;
+
+          font-size: 14px !important;
+          line-height: 1.1 !important;
+          font-weight: 900 !important;
+        }
+
+        #handover-modal .handover-open-drawing-btn {
+          min-height: 40px !important;
+          height: 40px !important;
+
+          padding: 7px 10px !important;
+
+          border-radius: 14px !important;
+
+          font-size: 14px !important;
+          line-height: 1.1 !important;
+          font-weight: 900 !important;
+        }
+
+        #handover-modal .handover-status {
+          margin-top: 10px !important;
+
+          padding: 10px 12px !important;
+
+          border-radius: 14px !important;
+
+          font-size: 14px !important;
+          line-height: 1.25 !important;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -4740,6 +4795,9 @@
       );
       const damageDrawingStage = document.getElementById(
         "damage-drawing-stage",
+      );
+      const damageDrawingPaper = document.querySelector(
+        "#damage-drawing-stage .damage-drawing-paper",
       );
       const damageDrawingImage = document.getElementById(
         "damage-drawing-image",
@@ -8829,6 +8887,85 @@ ${mobileOutstandingText}
         return "portrait";
       }
 
+      function applyDamageDrawingInlineLayout(orientation) {
+        if (!damageDrawingModal) return;
+
+        const viewportW = window.innerWidth;
+        const viewportH = window.innerHeight;
+
+        const isMobileLike = viewportW <= 900;
+        const isPortraitScreen = viewportH > viewportW;
+        const shouldFakeLandscape =
+          orientation === "landscape" && isMobileLike && isPortraitScreen;
+
+        // Reset first
+        damageDrawingModal.style.position = "fixed";
+        damageDrawingModal.style.inset = "0";
+        damageDrawingModal.style.zIndex = "2147483647";
+        damageDrawingModal.style.maxWidth = "none";
+        damageDrawingModal.style.maxHeight = "none";
+        damageDrawingModal.style.overflow = "hidden";
+
+        if (damageDrawingPaper) {
+          damageDrawingPaper.style.maxWidth = "none";
+          damageDrawingPaper.style.maxHeight = "none";
+        }
+
+        if (shouldFakeLandscape) {
+          // Rotate the whole drawing modal inside iPhone Safari.
+          damageDrawingModal.style.width = `${viewportH}px`;
+          damageDrawingModal.style.height = `${viewportW}px`;
+          damageDrawingModal.style.transform =
+            "rotate(90deg) translateY(-100%)";
+          damageDrawingModal.style.transformOrigin = "top left";
+
+          if (damageDrawingPaper) {
+            damageDrawingPaper.style.width = `${viewportH - 16}px`;
+            damageDrawingPaper.style.height = `${Math.max(220, viewportW - 108)}px`;
+          }
+
+          return;
+        }
+
+        // Normal portrait or already-landscape screen
+        damageDrawingModal.style.width = "100vw";
+        damageDrawingModal.style.height = "100dvh";
+        damageDrawingModal.style.transform = "none";
+        damageDrawingModal.style.transformOrigin = "center center";
+
+        if (damageDrawingPaper) {
+          if (orientation === "landscape") {
+            damageDrawingPaper.style.width = "96vw";
+            damageDrawingPaper.style.height = "calc(100dvh - 108px)";
+          } else {
+            damageDrawingPaper.style.width = "94vw";
+            damageDrawingPaper.style.height = "calc(100dvh - 118px)";
+          }
+        }
+      }
+
+      function clearDamageDrawingInlineLayout() {
+        if (!damageDrawingModal) return;
+
+        damageDrawingModal.style.position = "";
+        damageDrawingModal.style.inset = "";
+        damageDrawingModal.style.zIndex = "";
+        damageDrawingModal.style.width = "";
+        damageDrawingModal.style.height = "";
+        damageDrawingModal.style.maxWidth = "";
+        damageDrawingModal.style.maxHeight = "";
+        damageDrawingModal.style.overflow = "";
+        damageDrawingModal.style.transform = "";
+        damageDrawingModal.style.transformOrigin = "";
+
+        if (damageDrawingPaper) {
+          damageDrawingPaper.style.width = "";
+          damageDrawingPaper.style.height = "";
+          damageDrawingPaper.style.maxWidth = "";
+          damageDrawingPaper.style.maxHeight = "";
+        }
+      }
+
       function openDamageDrawingModal(view) {
         if (!damageDrawingModal || !damageDrawingStage || !damageDrawingImage)
           return;
@@ -8867,6 +9004,8 @@ ${mobileOutstandingText}
         document.documentElement.classList.add("damage-drawing-open");
         document.body.classList.add("damage-drawing-open");
         document.body.style.overflow = "hidden";
+
+        applyDamageDrawingInlineLayout(orientation);
       }
 
       function closeDamageDrawingModal() {
@@ -8877,6 +9016,8 @@ ${mobileOutstandingText}
           "force-portrait",
           "force-landscape",
         );
+
+        clearDamageDrawingInlineLayout();
 
         CURRENT_DAMAGE_DRAWING_VIEW = null;
 
@@ -9168,6 +9309,18 @@ ${mobileOutstandingText}
       damageDrawingClose?.addEventListener("click", closeDamageDrawingModal);
       damageDrawingCancel?.addEventListener("click", closeDamageDrawingModal);
       damageDrawingDone?.addEventListener("click", closeDamageDrawingModal);
+
+      window.addEventListener("resize", () => {
+        if (
+          damageDrawingModal &&
+          !damageDrawingModal.classList.contains("hidden") &&
+          CURRENT_DAMAGE_DRAWING_VIEW
+        ) {
+          applyDamageDrawingInlineLayout(
+            getDamageDrawingOrientation(CURRENT_DAMAGE_DRAWING_VIEW),
+          );
+        }
+      });
 
       handoverDamageTabs.forEach((btn) => {
         btn.addEventListener("click", () => {
