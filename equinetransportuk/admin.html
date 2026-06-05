@@ -2395,6 +2395,131 @@
         border-color: #137a3d;
         color: #ffffff;
       }
+
+      /* ===============================
+   ADMIN HANDOVER DAMAGE DRAWINGS
+   STEP 2A — LAYOUT ONLY
+================================ */
+
+      .handover-damage-section {
+        margin-top: 18px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #ffffff;
+        overflow: hidden;
+      }
+
+      .handover-damage-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        background: #f8fafc;
+      }
+
+      .handover-damage-header h4 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 900;
+      }
+
+      .handover-damage-header p {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      .handover-damage-tabs {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--line);
+        background: #ffffff;
+      }
+
+      .handover-damage-tab {
+        appearance: none;
+        -webkit-appearance: none;
+
+        border: 1px solid #dbe1e8;
+        background: #f8fafc;
+        color: #475569;
+
+        border-radius: 999px;
+
+        padding: 8px 13px;
+
+        font-size: 13px;
+        font-weight: 900;
+
+        cursor: pointer;
+
+        white-space: nowrap;
+      }
+
+      .handover-damage-tab.active {
+        background: #1f6feb;
+        border-color: #1f6feb;
+        color: #ffffff;
+      }
+
+      .handover-damage-panels {
+        padding: 14px;
+      }
+
+      .handover-damage-panel {
+        display: none;
+      }
+
+      .handover-damage-panel.active {
+        display: block;
+      }
+
+      .handover-damage-placeholder {
+        min-height: 260px;
+
+        border: 2px dashed #cbd5e1;
+        border-radius: 18px;
+
+        background: #f8fafc;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        text-align: center;
+
+        padding: 22px;
+
+        color: #64748b;
+      }
+
+      .handover-damage-placeholder strong {
+        display: block;
+        color: #111827;
+        font-size: 18px;
+        margin-bottom: 6px;
+      }
+
+      .handover-damage-placeholder span {
+        font-size: 13px;
+        max-width: 420px;
+      }
+
+      @media (max-width: 768px) {
+        .handover-damage-tabs {
+          padding: 10px;
+        }
+
+        .handover-damage-tab {
+          padding: 9px 13px;
+          font-size: 13px;
+        }
+
+        .handover-damage-placeholder {
+          min-height: 220px;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -2988,6 +3113,125 @@
                   >
                     Clear
                   </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="handover-damage-section">
+              <div class="handover-damage-header">
+                <h4>Damage drawings</h4>
+                <p>
+                  Vehicle diagrams and red pen damage marking will be added in
+                  the next stages.
+                </p>
+              </div>
+
+              <div class="handover-damage-tabs" role="tablist">
+                <button
+                  class="handover-damage-tab active"
+                  type="button"
+                  data-handover-damage-tab="front"
+                >
+                  Front
+                </button>
+
+                <button
+                  class="handover-damage-tab"
+                  type="button"
+                  data-handover-damage-tab="rear"
+                >
+                  Rear
+                </button>
+
+                <button
+                  class="handover-damage-tab"
+                  type="button"
+                  data-handover-damage-tab="left"
+                >
+                  Left
+                </button>
+
+                <button
+                  class="handover-damage-tab"
+                  type="button"
+                  data-handover-damage-tab="right"
+                >
+                  Right
+                </button>
+
+                <button
+                  class="handover-damage-tab"
+                  type="button"
+                  data-handover-damage-tab="fuel"
+                >
+                  Fuel
+                </button>
+              </div>
+
+              <div class="handover-damage-panels">
+                <div
+                  class="handover-damage-panel active"
+                  data-handover-damage-panel="front"
+                >
+                  <div class="handover-damage-placeholder">
+                    <strong>Front view</strong>
+                    <span>
+                      Placeholder only. Vehicle drawing image and red pen canvas
+                      come next.
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  class="handover-damage-panel"
+                  data-handover-damage-panel="rear"
+                >
+                  <div class="handover-damage-placeholder">
+                    <strong>Rear view</strong>
+                    <span>
+                      Placeholder only. Vehicle drawing image and red pen canvas
+                      come next.
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  class="handover-damage-panel"
+                  data-handover-damage-panel="left"
+                >
+                  <div class="handover-damage-placeholder">
+                    <strong>Left side</strong>
+                    <span>
+                      Placeholder only. Vehicle drawing image and red pen canvas
+                      come next.
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  class="handover-damage-panel"
+                  data-handover-damage-panel="right"
+                >
+                  <div class="handover-damage-placeholder">
+                    <strong>Right side</strong>
+                    <span>
+                      Placeholder only. Vehicle drawing image and red pen canvas
+                      come next.
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  class="handover-damage-panel"
+                  data-handover-damage-panel="fuel"
+                >
+                  <div class="handover-damage-placeholder">
+                    <strong>Fuel gauge</strong>
+                    <span>
+                      Placeholder only. Fuel gauge image and marking tools come
+                      next.
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3627,6 +3871,13 @@
       );
       const handoverClearCustomerBtn = document.getElementById(
         "handover-clear-customer-signature",
+      );
+
+      const handoverDamageTabs = document.querySelectorAll(
+        "[data-handover-damage-tab]",
+      );
+      const handoverDamagePanels = document.querySelectorAll(
+        "[data-handover-damage-panel]",
       );
 
       let HANDOVER_TERMS_PAD = null;
@@ -7594,6 +7845,22 @@ ${mobileOutstandingText}
         setHandoverCheckItem(handoverCheckCustomer, hasCustomerSignature);
       }
 
+      function setActiveHandoverDamageTab(tabName = "front") {
+        handoverDamageTabs.forEach((btn) => {
+          btn.classList.toggle(
+            "active",
+            btn.getAttribute("data-handover-damage-tab") === tabName,
+          );
+        });
+
+        handoverDamagePanels.forEach((panel) => {
+          panel.classList.toggle(
+            "active",
+            panel.getAttribute("data-handover-damage-panel") === tabName,
+          );
+        });
+      }
+
       function setHandoverStatus(message, type = "ok") {
         if (!handoverStatusMessage) return;
 
@@ -7667,6 +7934,8 @@ ${mobileOutstandingText}
         renderHandoverSummary(booking);
 
         openHandoverModalShell();
+
+        setActiveHandoverDamageTab("front");
 
         initialiseHandoverSignaturePads();
         clearHandoverSignaturePads();
@@ -7865,6 +8134,13 @@ ${mobileOutstandingText}
       handoverModalClose?.addEventListener("click", closeHandoverModal);
       handoverCloseBtn?.addEventListener("click", closeHandoverModal);
       handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
+
+      handoverDamageTabs.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const tabName = btn.getAttribute("data-handover-damage-tab");
+          setActiveHandoverDamageTab(tabName || "front");
+        });
+      });
 
       handoverComments?.addEventListener("input", updateHandoverChecklist);
 
