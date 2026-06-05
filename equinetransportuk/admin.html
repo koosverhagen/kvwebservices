@@ -3098,6 +3098,181 @@
         height: 100%;
         overflow: hidden !important;
       }
+
+      /* ===============================
+   HANDOVER DRAWING MOBILE FIX
+   Force landscape layout inside web modal
+================================ */
+
+      /* Smaller drawing/open buttons inside handover modal */
+      @media (max-width: 768px) {
+        #handover-modal .handover-open-drawing-btn {
+          min-height: 44px !important;
+          padding: 10px 12px !important;
+
+          border-radius: 16px !important;
+
+          font-size: 15px !important;
+          line-height: 1.15 !important;
+        }
+
+        /* Save / Close buttons: smaller, no huge sticky-looking block */
+        #handover-modal .handover-actions {
+          display: grid !important;
+          grid-template-columns: 1fr 1fr !important;
+          gap: 10px !important;
+
+          margin-top: 16px !important;
+        }
+
+        #handover-modal .handover-actions .btn {
+          width: 100% !important;
+
+          min-height: 46px !important;
+          padding: 10px 12px !important;
+
+          border-radius: 16px !important;
+
+          font-size: 15px !important;
+          line-height: 1.15 !important;
+          font-weight: 900 !important;
+        }
+
+        #handover-modal .handover-status {
+          font-size: 15px !important;
+          padding: 12px !important;
+          border-radius: 16px !important;
+        }
+      }
+
+      /* Base drawing modal should behave like a real app sheet */
+      .damage-drawing-modal {
+        position: fixed !important;
+        inset: 0 !important;
+
+        z-index: 2147483647 !important;
+
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+
+        max-width: none !important;
+        max-height: none !important;
+
+        overflow: hidden !important;
+
+        background: #f8fafc !important;
+      }
+
+      /* Portrait drawing: front/rear */
+      .damage-drawing-modal.force-portrait {
+        transform: none !important;
+        transform-origin: center center !important;
+
+        width: 100vw !important;
+        height: 100dvh !important;
+      }
+
+      /* Landscape drawing: left/right/fuel.
+   This rotates the whole drawing modal inside Safari instead of relying on iOS orientation lock. */
+      @media (max-width: 768px) and (orientation: portrait) {
+        .damage-drawing-modal.force-landscape {
+          width: 100dvh !important;
+          height: 100dvw !important;
+
+          transform: rotate(90deg) translateY(-100%) !important;
+          transform-origin: top left !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-header {
+          min-height: 48px !important;
+
+          padding: 6px 10px !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-header h3 {
+          font-size: 17px !important;
+          line-height: 1.05 !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-header p {
+          font-size: 11px !important;
+          line-height: 1.2 !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-close {
+          width: 38px !important;
+          height: 38px !important;
+
+          border-radius: 12px !important;
+
+          font-size: 24px !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-stage {
+          padding: 6px !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-paper {
+          width: calc(100dvh - 20px) !important;
+          height: calc(100dvw - 118px) !important;
+
+          max-width: none !important;
+          max-height: none !important;
+
+          border-radius: 16px !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-toolbar {
+          padding: 6px 10px !important;
+          gap: 8px !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-toolbar .btn {
+          min-height: 38px !important;
+
+          border-radius: 12px !important;
+
+          font-size: 14px !important;
+          padding: 6px 10px !important;
+        }
+      }
+
+      /* Normal landscape phone orientation */
+      @media (max-width: 950px) and (orientation: landscape) {
+        .damage-drawing-modal.force-landscape {
+          transform: none !important;
+
+          width: 100vw !important;
+          height: 100dvh !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-paper {
+          width: 96vw !important;
+          height: calc(100dvh - 116px) !important;
+
+          max-width: none !important;
+          max-height: none !important;
+        }
+      }
+
+      /* Portrait front/rear mobile size */
+      @media (max-width: 768px) and (orientation: portrait) {
+        .damage-drawing-modal.force-portrait .damage-drawing-paper {
+          width: 94vw !important;
+          height: calc(100dvh - 132px) !important;
+
+          max-width: none !important;
+          max-height: none !important;
+        }
+
+        .damage-drawing-modal.force-portrait .damage-drawing-toolbar .btn {
+          min-height: 42px !important;
+
+          font-size: 14px !important;
+          padding: 7px 10px !important;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -8654,7 +8829,7 @@ ${mobileOutstandingText}
         return "portrait";
       }
 
-      async function openDamageDrawingModal(view) {
+      function openDamageDrawingModal(view) {
         if (!damageDrawingModal || !damageDrawingStage || !damageDrawingImage)
           return;
 
@@ -8677,6 +8852,14 @@ ${mobileOutstandingText}
         damageDrawingStage.classList.remove("portrait", "landscape");
         damageDrawingStage.classList.add(orientation);
 
+        damageDrawingModal.classList.remove(
+          "force-portrait",
+          "force-landscape",
+        );
+        damageDrawingModal.classList.add(
+          orientation === "landscape" ? "force-landscape" : "force-portrait",
+        );
+
         damageDrawingImage.src = imageSrc;
 
         damageDrawingModal.classList.remove("hidden");
@@ -8684,67 +8867,21 @@ ${mobileOutstandingText}
         document.documentElement.classList.add("damage-drawing-open");
         document.body.classList.add("damage-drawing-open");
         document.body.style.overflow = "hidden";
-
-        /*
-    Try real browser fullscreen.
-    Works on many Android/desktop browsers.
-    iPhone Safari may ignore this unless running as installed PWA.
-  */
-        try {
-          if (damageDrawingModal.requestFullscreen) {
-            await damageDrawingModal.requestFullscreen();
-          } else if (damageDrawingModal.webkitRequestFullscreen) {
-            await damageDrawingModal.webkitRequestFullscreen();
-          }
-        } catch (err) {
-          console.log("Fullscreen request not available:", err);
-        }
-
-        /*
-    Try orientation lock.
-    iPhone Safari often blocks/ignores this.
-    The CSS above still gives the best fallback.
-  */
-        try {
-          if (screen.orientation?.lock) {
-            await screen.orientation.lock(
-              orientation === "landscape" ? "landscape" : "portrait",
-            );
-          }
-        } catch (err) {
-          console.log("Orientation lock not available:", err);
-        }
       }
 
-      async function closeDamageDrawingModal() {
+      function closeDamageDrawingModal() {
         if (!damageDrawingModal) return;
 
         damageDrawingModal.classList.add("hidden");
+        damageDrawingModal.classList.remove(
+          "force-portrait",
+          "force-landscape",
+        );
+
         CURRENT_DAMAGE_DRAWING_VIEW = null;
 
         document.documentElement.classList.remove("damage-drawing-open");
         document.body.classList.remove("damage-drawing-open");
-
-        try {
-          if (screen.orientation?.unlock) {
-            screen.orientation.unlock();
-          }
-        } catch (err) {
-          console.log("Orientation unlock not available:", err);
-        }
-
-        try {
-          if (document.fullscreenElement && document.exitFullscreen) {
-            await document.exitFullscreen();
-          } else if (
-            document.webkitFullscreenElement &&
-            document.webkitExitFullscreen
-          ) {
-            await document.webkitExitFullscreen();
-          }
-        } catch (err) {
-          console.log("Exit fullscreen not available:", err);
-        }
 
         document.body.style.overflow = handoverModal?.classList.contains(
           "hidden",
