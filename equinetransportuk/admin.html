@@ -2270,6 +2270,70 @@
           min-height: 48px;
         }
       }
+
+      /* ===============================
+   ADMIN HANDOVER SIGNATURES
+   STEP 1C
+================================ */
+
+      .handover-signature-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .handover-signature-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #f8fafc;
+        padding: 12px;
+      }
+
+      .handover-signature-card h4 {
+        margin: 0 0 8px;
+        font-size: 15px;
+        font-weight: 900;
+      }
+
+      .handover-signature-card p {
+        margin: 0 0 10px;
+        color: #64748b;
+        font-size: 13px;
+      }
+
+      .handover-signature-canvas-wrap {
+        width: 100%;
+        height: 180px;
+        border: 1px solid #cbd5e1;
+        border-radius: 14px;
+        background: #ffffff;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      .handover-signature-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
+
+      .handover-signature-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+      }
+
+      @media (max-width: 768px) {
+        .handover-signature-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .handover-signature-canvas-wrap {
+          height: 200px;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -2802,6 +2866,52 @@
                 class="handover-textarea"
                 placeholder="Example: Small scratch noted on rear ramp..."
               ></textarea>
+            </div>
+
+            <div class="handover-signature-grid">
+              <div class="handover-signature-card">
+                <h4>Terms & Conditions signature</h4>
+                <p>Admin confirms the customer has accepted the hire terms.</p>
+
+                <div class="handover-signature-canvas-wrap">
+                  <canvas
+                    id="handover-terms-signature"
+                    class="handover-signature-canvas"
+                  ></canvas>
+                </div>
+
+                <div class="handover-signature-actions">
+                  <button
+                    class="btn ghost btn-small"
+                    id="handover-clear-terms-signature"
+                    type="button"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              <div class="handover-signature-card">
+                <h4>Customer signature</h4>
+                <p>Customer confirms the handover condition and notes.</p>
+
+                <div class="handover-signature-canvas-wrap">
+                  <canvas
+                    id="handover-customer-signature"
+                    class="handover-signature-canvas"
+                  ></canvas>
+                </div>
+
+                <div class="handover-signature-actions">
+                  <button
+                    class="btn ghost btn-small"
+                    id="handover-clear-customer-signature"
+                    type="button"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="handover-actions">
@@ -3416,6 +3526,23 @@
       const handoverStatusMessage = document.getElementById(
         "handover-status-message",
       );
+
+      const handoverTermsCanvas = document.getElementById(
+        "handover-terms-signature",
+      );
+      const handoverCustomerCanvas = document.getElementById(
+        "handover-customer-signature",
+      );
+
+      const handoverClearTermsBtn = document.getElementById(
+        "handover-clear-terms-signature",
+      );
+      const handoverClearCustomerBtn = document.getElementById(
+        "handover-clear-customer-signature",
+      );
+
+      let HANDOVER_TERMS_PAD = null;
+      let HANDOVER_CUSTOMER_PAD = null;
 
       let CURRENT_HANDOVER_BOOKING = null;
 
@@ -7198,6 +7325,161 @@ ${mobileOutstandingText}
    STEP 1B — MODAL SHELL ONLY
 ================================ */
 
+      /* ===============================
+   HANDOVER SIGNATURE PAD HELPERS
+   STEP 1C
+================================ */
+
+      function createSimpleSignaturePad(canvas) {
+        if (!canvas) return null;
+
+        const ctx = canvas.getContext("2d");
+
+        let drawing = false;
+        let hasInk = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function resizeCanvas() {
+          const rect = canvas.getBoundingClientRect();
+          const ratio = window.devicePixelRatio || 1;
+
+          const existing = hasInk ? canvas.toDataURL("image/png") : null;
+
+          canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+          canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+
+          ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = "#111827";
+
+          ctx.clearRect(0, 0, rect.width, rect.height);
+
+          if (existing) {
+            const img = new Image();
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0, rect.width, rect.height);
+            };
+            img.src = existing;
+          }
+        }
+
+        function getPoint(event) {
+          const rect = canvas.getBoundingClientRect();
+          const point =
+            event.touches?.[0] || event.changedTouches?.[0] || event;
+
+          return {
+            x: point.clientX - rect.left,
+            y: point.clientY - rect.top,
+          };
+        }
+
+        function start(event) {
+          event.preventDefault();
+
+          const point = getPoint(event);
+
+          drawing = true;
+          hasInk = true;
+
+          lastX = point.x;
+          lastY = point.y;
+        }
+
+        function move(event) {
+          if (!drawing) return;
+
+          event.preventDefault();
+
+          const point = getPoint(event);
+
+          ctx.beginPath();
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(point.x, point.y);
+          ctx.stroke();
+
+          lastX = point.x;
+          lastY = point.y;
+        }
+
+        function end(event) {
+          if (!drawing) return;
+
+          event.preventDefault();
+          drawing = false;
+        }
+
+        function clear() {
+          const rect = canvas.getBoundingClientRect();
+
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          hasInk = false;
+        }
+
+        function toDataURL() {
+          return hasInk ? canvas.toDataURL("image/png") : null;
+        }
+
+        function fromDataURL(dataUrl) {
+          clear();
+
+          if (!dataUrl) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const img = new Image();
+
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0, rect.width, rect.height);
+            hasInk = true;
+          };
+
+          img.src = dataUrl;
+        }
+
+        canvas.addEventListener("mousedown", start);
+        canvas.addEventListener("mousemove", move);
+        window.addEventListener("mouseup", end);
+
+        canvas.addEventListener("touchstart", start, { passive: false });
+        canvas.addEventListener("touchmove", move, { passive: false });
+        canvas.addEventListener("touchend", end, { passive: false });
+        canvas.addEventListener("touchcancel", end, { passive: false });
+
+        resizeCanvas();
+
+        return {
+          resizeCanvas,
+          clear,
+          toDataURL,
+          fromDataURL,
+        };
+      }
+
+      function initialiseHandoverSignaturePads() {
+        if (!HANDOVER_TERMS_PAD && handoverTermsCanvas) {
+          HANDOVER_TERMS_PAD = createSimpleSignaturePad(handoverTermsCanvas);
+        }
+
+        if (!HANDOVER_CUSTOMER_PAD && handoverCustomerCanvas) {
+          HANDOVER_CUSTOMER_PAD = createSimpleSignaturePad(
+            handoverCustomerCanvas,
+          );
+        }
+
+        setTimeout(() => {
+          HANDOVER_TERMS_PAD?.resizeCanvas();
+          HANDOVER_CUSTOMER_PAD?.resizeCanvas();
+        }, 50);
+      }
+
+      function clearHandoverSignaturePads() {
+        HANDOVER_TERMS_PAD?.clear();
+        HANDOVER_CUSTOMER_PAD?.clear();
+      }
+
       function setHandoverStatus(message, type = "ok") {
         if (!handoverStatusMessage) return;
 
@@ -7272,8 +7554,10 @@ ${mobileOutstandingText}
 
         openHandoverModalShell();
 
-        setHandoverStatus("Loading saved handover draft…", "warn");
+        initialiseHandoverSignaturePads();
+        clearHandoverSignaturePads();
 
+        setHandoverStatus("Loading saved handover draft…", "warn");
         try {
           const res = await fetch(
             `${API_BASE}/api/admin/handover?bookingId=${encodeURIComponent(bookingId)}`,
@@ -7294,6 +7578,11 @@ ${mobileOutstandingText}
           if (handoverComments) {
             handoverComments.value = handover.comments || "";
           }
+
+          HANDOVER_TERMS_PAD?.fromDataURL(handover.termsSignature || null);
+          HANDOVER_CUSTOMER_PAD?.fromDataURL(
+            handover.customerSignature || null,
+          );
 
           if (data.found) {
             setHandoverStatus("Saved handover draft loaded.", "ok");
@@ -7335,10 +7624,11 @@ ${mobileOutstandingText}
                 status: handoverStatusSelect?.value || "draft",
                 comments: handoverComments?.value || "",
 
-                // STEP 1B placeholders only.
-                // Real signature canvases and drawing data come later.
-                termsSignature: null,
-                customerSignature: null,
+                // STEP 1C signatures.
+                termsSignature: HANDOVER_TERMS_PAD?.toDataURL() || null,
+                customerSignature: HANDOVER_CUSTOMER_PAD?.toDataURL() || null,
+
+                // Drawings come later.
                 drawings: {},
               },
             }),
@@ -7457,6 +7747,22 @@ ${mobileOutstandingText}
       handoverModalClose?.addEventListener("click", closeHandoverModal);
       handoverCloseBtn?.addEventListener("click", closeHandoverModal);
       handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
+
+      handoverClearTermsBtn?.addEventListener("click", () => {
+        HANDOVER_TERMS_PAD?.clear();
+        setHandoverStatus(
+          "Terms signature cleared. Save to keep this change.",
+          "warn",
+        );
+      });
+
+      handoverClearCustomerBtn?.addEventListener("click", () => {
+        HANDOVER_CUSTOMER_PAD?.clear();
+        setHandoverStatus(
+          "Customer signature cleared. Save to keep this change.",
+          "warn",
+        );
+      });
 
       const modalCard = modal.querySelector(".et-modal-card");
       if (modalCard) {
