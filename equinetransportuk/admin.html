@@ -2838,14 +2838,19 @@
 
       /* ===============================
    FULL SCREEN DAMAGE DRAWING MODAL
-   STEP 2C — SHELL ONLY
+   STEP 2C — FIXED MOBILE FULLSCREEN
 ================================ */
 
       .handover-open-drawing-btn {
         width: 100%;
         margin-top: 12px;
-        min-height: 48px;
+
+        min-height: 44px;
+
+        border-radius: 16px;
+
         font-size: 15px;
+        font-weight: 900;
       }
 
       .damage-drawing-modal.hidden {
@@ -2855,41 +2860,47 @@
       .damage-drawing-modal {
         position: fixed;
         inset: 0;
+
         z-index: 10000000;
+
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
 
         background: #f8fafc;
 
         display: grid;
         grid-template-rows: auto 1fr auto;
 
-        width: 100vw;
-        height: 100vh;
+        overflow: hidden;
       }
 
+      /* Header */
       .damage-drawing-header {
-        min-height: 82px;
+        min-height: 64px;
 
-        padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+        padding: calc(env(safe-area-inset-top) + 8px) 14px 8px;
 
-        background: rgba(255, 255, 255, 0.96);
+        background: rgba(255, 255, 255, 0.98);
         border-bottom: 1px solid #e2e8f0;
 
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
 
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
       }
 
       .damage-drawing-header h3 {
         margin: 0;
 
-        font-size: 22px;
+        font-size: 19px;
+        line-height: 1.05;
         font-weight: 900;
 
-        letter-spacing: -0.5px;
+        letter-spacing: -0.4px;
       }
 
       .damage-drawing-header p {
@@ -2897,35 +2908,44 @@
 
         color: #64748b;
 
-        font-size: 13px;
+        font-size: 12px;
+        line-height: 1.25;
         font-weight: 700;
       }
 
       .damage-drawing-close {
-        width: 52px;
-        height: 52px;
+        width: 44px;
+        height: 44px;
 
-        border-radius: 18px;
+        flex-shrink: 0;
+
+        border-radius: 14px;
         border: 1px solid #dbe1e8;
 
         background: #ffffff;
 
-        font-size: 28px;
+        font-size: 26px;
+        line-height: 1;
         color: #1f6feb;
-
-        cursor: pointer;
-      }
-
-      .damage-drawing-stage {
-        overflow: auto;
 
         display: flex;
         align-items: center;
         justify-content: center;
 
-        padding: 14px;
+        cursor: pointer;
+      }
 
-        -webkit-overflow-scrolling: touch;
+      /* Drawing stage */
+      .damage-drawing-stage {
+        overflow: hidden;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 10px;
+
+        background: #f8fafc;
       }
 
       .damage-drawing-paper {
@@ -2934,7 +2954,7 @@
         background: #ffffff;
 
         border: 1px solid #dbe1e8;
-        border-radius: 22px;
+        border-radius: 18px;
 
         display: flex;
         align-items: center;
@@ -2942,19 +2962,19 @@
 
         overflow: hidden;
 
-        box-shadow: 0 12px 34px rgba(15, 23, 42, 0.12);
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.1);
       }
 
       /* Front + rear = portrait */
       .damage-drawing-stage.portrait .damage-drawing-paper {
-        width: min(92vw, 620px);
-        height: min(72vh, 860px);
+        width: min(94vw, 620px);
+        height: min(74dvh, 860px);
       }
 
       /* Left + right + fuel = landscape */
       .damage-drawing-stage.landscape .damage-drawing-paper {
-        width: min(96vw, 980px);
-        height: min(62vh, 620px);
+        width: min(96vw, 1100px);
+        height: min(70dvh, 680px);
       }
 
       .damage-drawing-image {
@@ -2969,50 +2989,114 @@
         -webkit-user-drag: none;
       }
 
+      /* Bottom toolbar — smaller, not sticky-looking */
       .damage-drawing-toolbar {
-        padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
+        padding: 8px 12px calc(env(safe-area-inset-bottom) + 8px);
 
-        background: rgba(255, 255, 255, 0.96);
+        background: rgba(255, 255, 255, 0.98);
         border-top: 1px solid #e2e8f0;
 
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        gap: 10px;
 
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
       }
 
       .damage-drawing-toolbar .btn {
-        min-height: 58px;
-        border-radius: 18px;
+        min-height: 44px;
 
-        font-size: 18px;
+        border-radius: 14px;
+
+        font-size: 15px;
         font-weight: 900;
+
+        padding: 8px 12px;
       }
 
-      @media (max-width: 768px) {
+      /* True landscape phone layout */
+      @media (max-width: 950px) and (orientation: landscape) {
+        .damage-drawing-modal {
+          grid-template-rows: auto 1fr auto;
+        }
+
+        .damage-drawing-header {
+          min-height: 48px;
+          padding: calc(env(safe-area-inset-top) + 5px) 10px 5px;
+        }
+
         .damage-drawing-header h3 {
-          font-size: 24px;
+          font-size: 17px;
         }
 
         .damage-drawing-header p {
-          font-size: 14px;
+          font-size: 11px;
+        }
+
+        .damage-drawing-close {
+          width: 38px;
+          height: 38px;
+
+          border-radius: 12px;
+
+          font-size: 23px;
         }
 
         .damage-drawing-stage {
-          padding: 10px;
+          padding: 6px;
         }
 
         .damage-drawing-stage.landscape .damage-drawing-paper {
           width: 96vw;
-          height: 58vh;
+          height: 72dvh;
+        }
+
+        .damage-drawing-stage.portrait .damage-drawing-paper {
+          width: 58vw;
+          height: 72dvh;
+        }
+
+        .damage-drawing-toolbar {
+          padding: 6px 10px calc(env(safe-area-inset-bottom) + 6px);
+        }
+
+        .damage-drawing-toolbar .btn {
+          min-height: 38px;
+          font-size: 14px;
+        }
+      }
+
+      /* Portrait mobile fallback */
+      @media (max-width: 768px) and (orientation: portrait) {
+        .damage-drawing-header {
+          min-height: 60px;
+        }
+
+        .damage-drawing-header h3 {
+          font-size: 18px;
+        }
+
+        .damage-drawing-header p {
+          font-size: 12px;
+        }
+
+        .damage-drawing-stage.landscape .damage-drawing-paper {
+          width: 96vw;
+          height: 48dvh;
         }
 
         .damage-drawing-stage.portrait .damage-drawing-paper {
           width: 92vw;
-          height: 66vh;
+          height: 68dvh;
         }
+      }
+
+      html.damage-drawing-open,
+      body.damage-drawing-open {
+        width: 100%;
+        height: 100%;
+        overflow: hidden !important;
       }
     </style>
 
@@ -8570,7 +8654,7 @@ ${mobileOutstandingText}
         return "portrait";
       }
 
-      function openDamageDrawingModal(view) {
+      async function openDamageDrawingModal(view) {
         if (!damageDrawingModal || !damageDrawingStage || !damageDrawingImage)
           return;
 
@@ -8586,7 +8670,7 @@ ${mobileOutstandingText}
         if (damageDrawingSubtitle) {
           damageDrawingSubtitle.textContent =
             orientation === "landscape"
-              ? "Landscape drawing mode — rotate phone for best use"
+              ? "Landscape drawing mode"
               : "Portrait drawing mode";
         }
 
@@ -8596,14 +8680,71 @@ ${mobileOutstandingText}
         damageDrawingImage.src = imageSrc;
 
         damageDrawingModal.classList.remove("hidden");
+
+        document.documentElement.classList.add("damage-drawing-open");
+        document.body.classList.add("damage-drawing-open");
         document.body.style.overflow = "hidden";
+
+        /*
+    Try real browser fullscreen.
+    Works on many Android/desktop browsers.
+    iPhone Safari may ignore this unless running as installed PWA.
+  */
+        try {
+          if (damageDrawingModal.requestFullscreen) {
+            await damageDrawingModal.requestFullscreen();
+          } else if (damageDrawingModal.webkitRequestFullscreen) {
+            await damageDrawingModal.webkitRequestFullscreen();
+          }
+        } catch (err) {
+          console.log("Fullscreen request not available:", err);
+        }
+
+        /*
+    Try orientation lock.
+    iPhone Safari often blocks/ignores this.
+    The CSS above still gives the best fallback.
+  */
+        try {
+          if (screen.orientation?.lock) {
+            await screen.orientation.lock(
+              orientation === "landscape" ? "landscape" : "portrait",
+            );
+          }
+        } catch (err) {
+          console.log("Orientation lock not available:", err);
+        }
       }
 
-      function closeDamageDrawingModal() {
+      async function closeDamageDrawingModal() {
         if (!damageDrawingModal) return;
 
         damageDrawingModal.classList.add("hidden");
         CURRENT_DAMAGE_DRAWING_VIEW = null;
+
+        document.documentElement.classList.remove("damage-drawing-open");
+        document.body.classList.remove("damage-drawing-open");
+
+        try {
+          if (screen.orientation?.unlock) {
+            screen.orientation.unlock();
+          }
+        } catch (err) {
+          console.log("Orientation unlock not available:", err);
+        }
+
+        try {
+          if (document.fullscreenElement && document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if (
+            document.webkitFullscreenElement &&
+            document.webkitExitFullscreen
+          ) {
+            await document.webkitExitFullscreen();
+          }
+        } catch (err) {
+          console.log("Exit fullscreen not available:", err);
+        }
 
         document.body.style.overflow = handoverModal?.classList.contains(
           "hidden",
