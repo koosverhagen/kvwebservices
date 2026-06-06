@@ -9937,25 +9937,24 @@ ${mobileOutstandingText}
         if (!CURRENT_DAMAGE_DRAWING_VIEW || !DAMAGE_DRAWING_PAD) return;
 
         const view = CURRENT_DAMAGE_DRAWING_VIEW;
-        const drawingDataUrl = DAMAGE_DRAWING_PAD.toDataURL();
 
-        DAMAGE_DRAWING_TEMP_DATA[view] = drawingDataUrl;
+        if (typeof DAMAGE_DRAWING_PAD.toStrokeData === "function") {
+          DAMAGE_DRAWING_TEMP_DATA[view] = DAMAGE_DRAWING_PAD.toStrokeData();
 
-        if (!drawingDataUrl) {
-          DAMAGE_DRAWING_PREVIEW_DATA[view] = null;
-          applyDamagePreviewImage(view);
+          updateHandoverDamagePreviewMarkings();
+
           return;
         }
 
-        buildDamagePreviewComposite(view, drawingDataUrl)
-          .then((compositeDataUrl) => {
-            DAMAGE_DRAWING_PREVIEW_DATA[view] = compositeDataUrl;
-            applyDamagePreviewImage(view);
-          })
-          .catch((err) => {
-            console.warn("Damage preview composite failed:", err);
-            applyDamagePreviewImage(view);
-          });
+        if (typeof DAMAGE_DRAWING_PAD.toDataURL === "function") {
+          DAMAGE_DRAWING_TEMP_DATA[view] = DAMAGE_DRAWING_PAD.toDataURL();
+
+          updateHandoverDamagePreviewMarkings();
+
+          return;
+        }
+
+        console.warn("Damage drawing pad has no export method.");
       }
 
       function applyDamageDrawingInlineLayout(orientation) {
