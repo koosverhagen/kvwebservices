@@ -3896,6 +3896,17 @@
       #handover-modal .handover-damage-preview-overlay.has-marking {
         display: block !important;
       }
+
+      /* ===============================
+   DISABLE OLD DAMAGE PREVIEW OVERLAYS
+   Preview now uses composite image instead
+================================ */
+
+      #handover-modal .handover-damage-preview-overlay {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -5395,6 +5406,22 @@
         left: null,
         right: null,
         fuel: null,
+      };
+
+      let DAMAGE_DRAWING_PREVIEW_DATA = {
+        front: null,
+        rear: null,
+        left: null,
+        right: null,
+        fuel: null,
+      };
+
+      let HANDOVER_DAMAGE_BASE_SRCS = {
+        front: "",
+        rear: "",
+        left: "",
+        right: "",
+        fuel: "",
       };
 
       let DAMAGE_DRAWING_RETURN_SCROLL_Y = 0;
@@ -9437,25 +9464,29 @@ ${mobileOutstandingText}
         const prefix = getHandoverDamageAssetPrefix(booking);
         const base = "images/handover";
 
-        setImageSrcSafe(handoverDamageFrontImg, `${base}/${prefix}_front.png`);
+        HANDOVER_DAMAGE_BASE_SRCS = {
+          front: `${base}/${prefix}_front.png`,
+          rear: `${base}/${prefix}_rear.png`,
+          left: `${base}/${prefix}_left.png`,
+          right: `${base}/${prefix}_right.png`,
+          fuel: `${base}/all_fuel.png`,
+        };
 
-        setImageSrcSafe(handoverDamageRearImg, `${base}/${prefix}_rear.png`);
-
-        setImageSrcSafe(handoverDamageLeftImg, `${base}/${prefix}_left.png`);
-
-        setImageSrcSafe(handoverDamageRightImg, `${base}/${prefix}_right.png`);
-
-        setImageSrcSafe(handoverDamageFuelImg, `${base}/all_fuel.png`);
+        setImageSrcSafe(
+          handoverDamageFrontImg,
+          HANDOVER_DAMAGE_BASE_SRCS.front,
+        );
+        setImageSrcSafe(handoverDamageRearImg, HANDOVER_DAMAGE_BASE_SRCS.rear);
+        setImageSrcSafe(handoverDamageLeftImg, HANDOVER_DAMAGE_BASE_SRCS.left);
+        setImageSrcSafe(
+          handoverDamageRightImg,
+          HANDOVER_DAMAGE_BASE_SRCS.right,
+        );
+        setImageSrcSafe(handoverDamageFuelImg, HANDOVER_DAMAGE_BASE_SRCS.fuel);
       }
 
       function getDamageDrawingImageForView(view) {
-        if (view === "front") return handoverDamageFrontImg?.src || "";
-        if (view === "rear") return handoverDamageRearImg?.src || "";
-        if (view === "left") return handoverDamageLeftImg?.src || "";
-        if (view === "right") return handoverDamageRightImg?.src || "";
-        if (view === "fuel") return handoverDamageFuelImg?.src || "";
-
-        return "";
+        return HANDOVER_DAMAGE_BASE_SRCS?.[view] || "";
       }
 
       function getDamageDrawingTitle(view) {
@@ -9782,21 +9813,7 @@ ${mobileOutstandingText}
       }
 
       function updateHandoverDamagePreviewMarkings() {
-        ensureHandoverDamagePreviewOverlays();
-
-        Object.entries(HANDOVER_DAMAGE_PREVIEW_OVERLAYS).forEach(
-          ([view, overlay]) => {
-            const strokeData = DAMAGE_DRAWING_TEMP_DATA[view];
-
-            if (Array.isArray(strokeData) && strokeData.length) {
-              overlay.classList.add("has-marking");
-            } else {
-              overlay.classList.remove("has-marking");
-            }
-          },
-        );
-
-        setTimeout(alignAllHandoverDamagePreviewOverlays, 40);
+        applyAllDamagePreviewImages();
       }
 
       function resetDamageDrawingTempData() {
@@ -9808,8 +9825,17 @@ ${mobileOutstandingText}
           fuel: null,
         };
 
+        DAMAGE_DRAWING_PREVIEW_DATA = {
+          front: null,
+          rear: null,
+          left: null,
+          right: null,
+          fuel: null,
+        };
+
         DAMAGE_DRAWING_PAD?.clear?.();
-        updateHandoverDamagePreviewMarkings();
+
+        applyAllDamagePreviewImages();
       }
 
       function initialiseDamageDrawingPad() {
@@ -9827,13 +9853,109 @@ ${mobileOutstandingText}
         }, 80);
       }
 
+      function getHandoverDamagePreviewImg(view) {
+        if (view === "front") return handoverDamageFrontImg;
+        if (view === "rear") return handoverDamageRearImg;
+        if (view === "left") return handoverDamageLeftImg;
+        if (view === "right") return handoverDamageRightImg;
+        if (view === "fuel") return handoverDamageFuelImg;
+
+        return null;
+      }
+
+      function loadImageForComposite(src) {
+        return new Promise((resolve, reject) => {
+          if (!src) {
+            reject(new Error("Missing image source"));
+            return;
+          }
+
+          const img = new Image();
+
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+
+          img.src = src;
+        });
+      }
+
+      async function buildDamagePreviewComposite(view, drawingDataUrl) {
+        const baseSrc = HANDOVER_DAMAGE_BASE_SRCS?.[view];
+
+        if (!baseSrc || !drawingDataUrl) {
+          return baseSrc || "";
+        }
+
+        const baseImg = await loadImageForComposite(baseSrc);
+        const drawingImg = await loadImageForComposite(drawingDataUrl);
+
+        const width = baseImg.naturalWidth || baseImg.width || 1200;
+        const height = baseImg.naturalHeight || baseImg.height || 800;
+
+        const output = document.createElement("canvas");
+        output.width = width;
+        output.height = height;
+
+        const ctx = output.getContext("2d");
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.drawImage(baseImg, 0, 0, width, height);
+
+        /*
+    The fullscreen red canvas is fitted exactly over the visible vehicle image.
+    Therefore drawing it over the full natural image gives the same alignment
+    in every preview size.
+  */
+        ctx.drawImage(drawingImg, 0, 0, width, height);
+
+        return output.toDataURL("image/png");
+      }
+
+      function applyDamagePreviewImage(view) {
+        const img = getHandoverDamagePreviewImg(view);
+        if (!img) return;
+
+        const previewSrc =
+          DAMAGE_DRAWING_PREVIEW_DATA?.[view] ||
+          HANDOVER_DAMAGE_BASE_SRCS?.[view] ||
+          "";
+
+        if (previewSrc) {
+          img.src = previewSrc;
+        }
+      }
+
+      function applyAllDamagePreviewImages() {
+        ["front", "rear", "left", "right", "fuel"].forEach((view) => {
+          applyDamagePreviewImage(view);
+        });
+      }
+
       function storeCurrentDamageDrawingTemp() {
         if (!CURRENT_DAMAGE_DRAWING_VIEW || !DAMAGE_DRAWING_PAD) return;
 
-        DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] =
-          DAMAGE_DRAWING_PAD.toStrokeData();
+        const view = CURRENT_DAMAGE_DRAWING_VIEW;
+        const drawingDataUrl = DAMAGE_DRAWING_PAD.toDataURL();
 
-        updateHandoverDamagePreviewMarkings();
+        DAMAGE_DRAWING_TEMP_DATA[view] = drawingDataUrl;
+
+        if (!drawingDataUrl) {
+          DAMAGE_DRAWING_PREVIEW_DATA[view] = null;
+          applyDamagePreviewImage(view);
+          return;
+        }
+
+        buildDamagePreviewComposite(view, drawingDataUrl)
+          .then((compositeDataUrl) => {
+            DAMAGE_DRAWING_PREVIEW_DATA[view] = compositeDataUrl;
+            applyDamagePreviewImage(view);
+          })
+          .catch((err) => {
+            console.warn("Damage preview composite failed:", err);
+            applyDamagePreviewImage(view);
+          });
       }
 
       function applyDamageDrawingInlineLayout(orientation) {
