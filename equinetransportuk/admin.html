@@ -3844,6 +3844,32 @@
       #handover-modal .handover-damage-preview-overlay.has-marking {
         display: block !important;
       }
+
+      /* ===============================
+   DAMAGE DRAWING ALIGNMENT FIX
+   Canvas/preview must match visible image area
+================================ */
+
+      .damage-drawing-canvas {
+        position: absolute !important;
+
+        /* JS controls exact left/top/width/height */
+        inset: auto !important;
+
+        z-index: 2 !important;
+
+        display: block !important;
+
+        cursor: crosshair !important;
+        touch-action: none !important;
+      }
+
+      #handover-modal .handover-damage-preview-overlay {
+        /* JS controls exact left/top/width/height */
+        inset: auto !important;
+
+        object-fit: fill !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -9565,6 +9591,85 @@ ${mobileOutstandingText}
         };
       }
 
+      function getContainedImageRect(container, img) {
+        if (!container || !img) {
+          return { left: 0, top: 0, width: 1, height: 1 };
+        }
+
+        const containerRect = container.getBoundingClientRect();
+
+        const naturalWidth = img.naturalWidth || 1;
+        const naturalHeight = img.naturalHeight || 1;
+
+        const containerRatio = containerRect.width / containerRect.height;
+        const imageRatio = naturalWidth / naturalHeight;
+
+        let width;
+        let height;
+
+        if (imageRatio > containerRatio) {
+          width = containerRect.width;
+          height = width / imageRatio;
+        } else {
+          height = containerRect.height;
+          width = height * imageRatio;
+        }
+
+        return {
+          left: (containerRect.width - width) / 2,
+          top: (containerRect.height - height) / 2,
+          width,
+          height,
+        };
+      }
+
+      function layoutDamageDrawingCanvasToImage() {
+        if (!damageDrawingPaper || !damageDrawingImage || !damageDrawingCanvas)
+          return;
+
+        const rect = getContainedImageRect(
+          damageDrawingPaper,
+          damageDrawingImage,
+        );
+
+        damageDrawingCanvas.style.left = `${rect.left}px`;
+        damageDrawingCanvas.style.top = `${rect.top}px`;
+        damageDrawingCanvas.style.width = `${rect.width}px`;
+        damageDrawingCanvas.style.height = `${rect.height}px`;
+      }
+
+      function alignHandoverDamagePreviewOverlay(view) {
+        const imgMap = {
+          front: handoverDamageFrontImg,
+          rear: handoverDamageRearImg,
+          left: handoverDamageLeftImg,
+          right: handoverDamageRightImg,
+          fuel: handoverDamageFuelImg,
+        };
+
+        const img = imgMap[view];
+        const overlay = HANDOVER_DAMAGE_PREVIEW_OVERLAYS?.[view];
+
+        if (!img || !overlay) return;
+
+        const wrap = img.closest(".handover-damage-image-wrap");
+        if (!wrap) return;
+
+        const wrapRect = wrap.getBoundingClientRect();
+        const imgRect = img.getBoundingClientRect();
+
+        overlay.style.left = `${imgRect.left - wrapRect.left}px`;
+        overlay.style.top = `${imgRect.top - wrapRect.top}px`;
+        overlay.style.width = `${imgRect.width}px`;
+        overlay.style.height = `${imgRect.height}px`;
+      }
+
+      function alignAllHandoverDamagePreviewOverlays() {
+        ["front", "rear", "left", "right", "fuel"].forEach((view) => {
+          alignHandoverDamagePreviewOverlay(view);
+        });
+      }
+
       function ensureHandoverDamagePreviewOverlays() {
         const previewImages = {
           front: handoverDamageFrontImg,
@@ -9606,6 +9711,8 @@ ${mobileOutstandingText}
             }
           },
         );
+
+        setTimeout(alignAllHandoverDamagePreviewOverlays, 40);
       }
 
       function resetDamageDrawingTempData() {
@@ -9627,6 +9734,8 @@ ${mobileOutstandingText}
         }
 
         setTimeout(() => {
+          layoutDamageDrawingCanvasToImage();
+
           DAMAGE_DRAWING_PAD?.clear?.();
           DAMAGE_DRAWING_PAD?.resizeCanvas?.({ preserve: false });
 
@@ -9774,7 +9883,15 @@ ${mobileOutstandingText}
 
         applyDamageDrawingInlineLayout(orientation);
 
-        initialiseDamageDrawingPad();
+        if (damageDrawingImage.complete) {
+          layoutDamageDrawingCanvasToImage();
+          initialiseDamageDrawingPad();
+        } else {
+          damageDrawingImage.onload = () => {
+            layoutDamageDrawingCanvasToImage();
+            initialiseDamageDrawingPad();
+          };
+        }
       }
 
       function closeDamageDrawingModal() {
@@ -10109,19 +10226,29 @@ ${mobileOutstandingText}
           );
 
           setTimeout(() => {
+            layoutDamageDrawingCanvasToImage();
+
             DAMAGE_DRAWING_PAD?.clear?.();
             DAMAGE_DRAWING_PAD?.resizeCanvas?.({ preserve: false });
             DAMAGE_DRAWING_PAD?.fromDataURL?.(
               DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
             );
+
+            alignAllHandoverDamagePreviewOverlays();
           }, 80);
         }
       });
 
       handoverDamageTabs.forEach((btn) => {
         btn.addEventListener("click", () => {
-          const tabName = btn.getAttribute("data-handover-damage-tab");
-          setActiveHandoverDamageTab(tabName || "front");
+          const tabName =
+            btn.getAttribute("data-handover-damage-tab") || "front";
+
+          setActiveHandoverDamageTab(tabName);
+
+          setTimeout(() => {
+            alignAllHandoverDamagePreviewOverlays();
+          }, 40);
         });
       });
 
