@@ -3809,6 +3809,41 @@
         cursor: crosshair !important;
         touch-action: none !important;
       }
+
+      /* ===============================
+   HANDOVER DAMAGE PREVIEW MARKINGS
+   STEP 2D-FIX
+================================ */
+
+      #handover-modal .handover-damage-image-wrap {
+        position: relative !important;
+      }
+
+      #handover-modal .handover-damage-img {
+        position: relative !important;
+        z-index: 1 !important;
+      }
+
+      #handover-modal .handover-damage-preview-overlay {
+        position: absolute !important;
+        inset: 8px !important;
+
+        width: calc(100% - 16px) !important;
+        height: calc(100% - 16px) !important;
+
+        object-fit: fill !important;
+
+        z-index: 2 !important;
+
+        pointer-events: none !important;
+        user-select: none !important;
+
+        display: none !important;
+      }
+
+      #handover-modal .handover-damage-preview-overlay.has-marking {
+        display: block !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -5310,6 +5345,10 @@
         fuel: null,
       };
 
+      let DAMAGE_DRAWING_RETURN_SCROLL_Y = 0;
+      let DAMAGE_DRAWING_RETURN_MODAL_SCROLL_TOP = 0;
+
+      let HANDOVER_DAMAGE_PREVIEW_OVERLAYS = {};
       let HANDOVER_TERMS_PAD = null;
       let HANDOVER_CUSTOMER_PAD = null;
 
@@ -9399,12 +9438,14 @@ ${mobileOutstandingText}
         let hasInk = false;
         let lastX = 0;
         let lastY = 0;
+        function resizeCanvas(options = {}) {
+          const preserve = options.preserve !== false;
 
-        function resizeCanvas() {
           const rect = canvas.getBoundingClientRect();
           const ratio = window.devicePixelRatio || 1;
 
-          const existing = hasInk ? canvas.toDataURL("image/png") : null;
+          const existing =
+            preserve && hasInk ? canvas.toDataURL("image/png") : null;
 
           canvas.width = Math.max(1, Math.floor(rect.width * ratio));
           canvas.height = Math.max(1, Math.floor(rect.height * ratio));
@@ -9417,6 +9458,8 @@ ${mobileOutstandingText}
           ctx.strokeStyle = "#dc2626";
 
           ctx.clearRect(0, 0, rect.width, rect.height);
+
+          hasInk = false;
 
           if (existing) {
             const img = new Image();
@@ -9522,13 +9565,70 @@ ${mobileOutstandingText}
         };
       }
 
+      function ensureHandoverDamagePreviewOverlays() {
+        const previewImages = {
+          front: handoverDamageFrontImg,
+          rear: handoverDamageRearImg,
+          left: handoverDamageLeftImg,
+          right: handoverDamageRightImg,
+          fuel: handoverDamageFuelImg,
+        };
+
+        Object.entries(previewImages).forEach(([view, img]) => {
+          if (!img || HANDOVER_DAMAGE_PREVIEW_OVERLAYS[view]) return;
+
+          const wrap = img.closest(".handover-damage-image-wrap");
+          if (!wrap) return;
+
+          const overlay = document.createElement("img");
+          overlay.className = "handover-damage-preview-overlay";
+          overlay.alt = "";
+
+          wrap.appendChild(overlay);
+
+          HANDOVER_DAMAGE_PREVIEW_OVERLAYS[view] = overlay;
+        });
+      }
+
+      function updateHandoverDamagePreviewMarkings() {
+        ensureHandoverDamagePreviewOverlays();
+
+        Object.entries(HANDOVER_DAMAGE_PREVIEW_OVERLAYS).forEach(
+          ([view, overlay]) => {
+            const dataUrl = DAMAGE_DRAWING_TEMP_DATA[view];
+
+            if (dataUrl) {
+              overlay.src = dataUrl;
+              overlay.classList.add("has-marking");
+            } else {
+              overlay.removeAttribute("src");
+              overlay.classList.remove("has-marking");
+            }
+          },
+        );
+      }
+
+      function resetDamageDrawingTempData() {
+        DAMAGE_DRAWING_TEMP_DATA = {
+          front: null,
+          rear: null,
+          left: null,
+          right: null,
+          fuel: null,
+        };
+
+        DAMAGE_DRAWING_PAD?.clear?.();
+        updateHandoverDamagePreviewMarkings();
+      }
+
       function initialiseDamageDrawingPad() {
         if (!DAMAGE_DRAWING_PAD && damageDrawingCanvas) {
           DAMAGE_DRAWING_PAD = createDamageDrawingPad(damageDrawingCanvas);
         }
 
         setTimeout(() => {
-          DAMAGE_DRAWING_PAD?.resizeCanvas?.();
+          DAMAGE_DRAWING_PAD?.clear?.();
+          DAMAGE_DRAWING_PAD?.resizeCanvas?.({ preserve: false });
 
           if (CURRENT_DAMAGE_DRAWING_VIEW) {
             DAMAGE_DRAWING_PAD?.fromDataURL?.(
@@ -9543,6 +9643,8 @@ ${mobileOutstandingText}
 
         DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] =
           DAMAGE_DRAWING_PAD.toDataURL();
+
+        updateHandoverDamagePreviewMarkings();
       }
 
       function applyDamageDrawingInlineLayout(orientation) {
@@ -9628,6 +9730,13 @@ ${mobileOutstandingText}
         if (!damageDrawingModal || !damageDrawingStage || !damageDrawingImage)
           return;
 
+        DAMAGE_DRAWING_RETURN_SCROLL_Y = window.scrollY || 0;
+
+        const handoverScroller =
+          handoverModal?.querySelector(".et-modal-center");
+        DAMAGE_DRAWING_RETURN_MODAL_SCROLL_TOP =
+          handoverScroller?.scrollTop || 0;
+
         CURRENT_DAMAGE_DRAWING_VIEW = view;
 
         const orientation = getDamageDrawingOrientation(view);
@@ -9691,6 +9800,17 @@ ${mobileOutstandingText}
         )
           ? ""
           : "hidden";
+
+        requestAnimationFrame(() => {
+          window.scrollTo(0, DAMAGE_DRAWING_RETURN_SCROLL_Y || 0);
+
+          const handoverScroller =
+            handoverModal?.querySelector(".et-modal-center");
+          if (handoverScroller) {
+            handoverScroller.scrollTop =
+              DAMAGE_DRAWING_RETURN_MODAL_SCROLL_TOP || 0;
+          }
+        });
       }
 
       function setHandoverStatus(message, type = "ok") {
@@ -9767,7 +9887,11 @@ ${mobileOutstandingText}
 
         openHandoverModalShell();
 
+        resetDamageDrawingTempData();
         updateHandoverDamageImages(booking);
+        ensureHandoverDamagePreviewOverlays();
+        updateHandoverDamagePreviewMarkings();
+
         setActiveHandoverDamageTab("front");
 
         initialiseHandoverSignaturePads();
@@ -9978,12 +10102,15 @@ ${mobileOutstandingText}
           !damageDrawingModal.classList.contains("hidden") &&
           CURRENT_DAMAGE_DRAWING_VIEW
         ) {
+          storeCurrentDamageDrawingTemp();
+
           applyDamageDrawingInlineLayout(
             getDamageDrawingOrientation(CURRENT_DAMAGE_DRAWING_VIEW),
           );
 
           setTimeout(() => {
-            DAMAGE_DRAWING_PAD?.resizeCanvas?.();
+            DAMAGE_DRAWING_PAD?.clear?.();
+            DAMAGE_DRAWING_PAD?.resizeCanvas?.({ preserve: false });
             DAMAGE_DRAWING_PAD?.fromDataURL?.(
               DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
             );
