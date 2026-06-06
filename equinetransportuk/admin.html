@@ -3870,6 +3870,32 @@
 
         object-fit: fill !important;
       }
+
+      /* ===============================
+   FINAL DAMAGE PREVIEW OVERLAY FIX
+   Coordinate-based canvas previews
+================================ */
+
+      #handover-modal .handover-damage-preview-overlay {
+        position: absolute !important;
+
+        left: 0;
+        top: 0;
+
+        width: 1px;
+        height: 1px;
+
+        z-index: 2 !important;
+
+        pointer-events: none !important;
+        user-select: none !important;
+
+        display: none !important;
+      }
+
+      #handover-modal .handover-damage-preview-overlay.has-marking {
+        display: block !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -9461,42 +9487,60 @@ ${mobileOutstandingText}
         const ctx = canvas.getContext("2d");
 
         let drawing = false;
-        let hasInk = false;
-        let lastX = 0;
-        let lastY = 0;
-        function resizeCanvas(options = {}) {
-          const preserve = options.preserve !== false;
+        let strokes = [];
+        let currentStroke = null;
 
+        function setupContext() {
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = "#dc2626";
+        }
+
+        function resizeCanvas() {
           const rect = canvas.getBoundingClientRect();
           const ratio = window.devicePixelRatio || 1;
-
-          const existing =
-            preserve && hasInk ? canvas.toDataURL("image/png") : null;
 
           canvas.width = Math.max(1, Math.floor(rect.width * ratio));
           canvas.height = Math.max(1, Math.floor(rect.height * ratio));
 
           ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round";
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = "#dc2626";
+          setupContext();
+          redraw();
+        }
 
+        function clearCanvasOnly() {
+          const rect = canvas.getBoundingClientRect();
           ctx.clearRect(0, 0, rect.width, rect.height);
+        }
 
-          hasInk = false;
+        function drawStroke(stroke) {
+          if (!stroke || stroke.length < 2) return;
 
-          if (existing) {
-            const img = new Image();
+          const rect = canvas.getBoundingClientRect();
 
-            img.onload = () => {
-              ctx.drawImage(img, 0, 0, rect.width, rect.height);
-              hasInk = true;
-            };
+          ctx.beginPath();
 
-            img.src = existing;
-          }
+          stroke.forEach((point, index) => {
+            const x = point.x * rect.width;
+            const y = point.y * rect.height;
+
+            if (index === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          });
+
+          ctx.stroke();
+        }
+
+        function redraw() {
+          clearCanvasOnly();
+          setupContext();
+
+          strokes.forEach(drawStroke);
         }
 
         function getPoint(event) {
@@ -9505,71 +9549,63 @@ ${mobileOutstandingText}
             event.touches?.[0] || event.changedTouches?.[0] || event;
 
           return {
-            x: point.clientX - rect.left,
-            y: point.clientY - rect.top,
+            x: Math.max(
+              0,
+              Math.min(1, (point.clientX - rect.left) / rect.width),
+            ),
+            y: Math.max(
+              0,
+              Math.min(1, (point.clientY - rect.top) / rect.height),
+            ),
           };
         }
 
         function start(event) {
           event.preventDefault();
 
-          const point = getPoint(event);
-
           drawing = true;
-          hasInk = true;
 
-          lastX = point.x;
-          lastY = point.y;
+          currentStroke = [getPoint(event)];
+          strokes.push(currentStroke);
         }
 
         function move(event) {
-          if (!drawing) return;
+          if (!drawing || !currentStroke) return;
 
           event.preventDefault();
 
-          const point = getPoint(event);
-
-          ctx.beginPath();
-          ctx.moveTo(lastX, lastY);
-          ctx.lineTo(point.x, point.y);
-          ctx.stroke();
-
-          lastX = point.x;
-          lastY = point.y;
+          currentStroke.push(getPoint(event));
+          redraw();
         }
 
         function end(event) {
           if (!drawing) return;
 
           event.preventDefault();
+
           drawing = false;
+          currentStroke = null;
         }
 
         function clear() {
-          const rect = canvas.getBoundingClientRect();
-
-          ctx.clearRect(0, 0, rect.width, rect.height);
-          hasInk = false;
+          strokes = [];
+          currentStroke = null;
+          clearCanvasOnly();
         }
 
-        function toDataURL() {
-          return hasInk ? canvas.toDataURL("image/png") : null;
+        function toStrokeData() {
+          if (!strokes.length) return null;
+
+          return JSON.parse(JSON.stringify(strokes));
         }
 
-        function fromDataURL(dataUrl) {
+        function fromStrokeData(data) {
           clear();
 
-          if (!dataUrl) return;
+          if (!Array.isArray(data)) return;
 
-          const rect = canvas.getBoundingClientRect();
-          const img = new Image();
-
-          img.onload = () => {
-            ctx.drawImage(img, 0, 0, rect.width, rect.height);
-            hasInk = true;
-          };
-
-          img.src = dataUrl;
+          strokes = JSON.parse(JSON.stringify(data));
+          redraw();
         }
 
         canvas.addEventListener("mousedown", start);
@@ -9586,8 +9622,8 @@ ${mobileOutstandingText}
         return {
           resizeCanvas,
           clear,
-          toDataURL,
-          fromDataURL,
+          toStrokeData,
+          fromStrokeData,
         };
       }
 
@@ -9638,6 +9674,54 @@ ${mobileOutstandingText}
         damageDrawingCanvas.style.height = `${rect.height}px`;
       }
 
+      function drawStrokeDataOnCanvas(canvas, strokeData) {
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+
+        canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+        canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+        ctx.clearRect(0, 0, rect.width, rect.height);
+
+        if (!Array.isArray(strokeData) || !strokeData.length) return;
+
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#dc2626";
+
+        strokeData.forEach((stroke) => {
+          if (!stroke || stroke.length < 2) return;
+
+          ctx.beginPath();
+
+          stroke.forEach((point, index) => {
+            const x = point.x * rect.width;
+            const y = point.y * rect.height;
+
+            if (index === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          });
+
+          ctx.stroke();
+        });
+      }
+
+      function renderHandoverDamagePreviewOverlay(view) {
+        const overlay = HANDOVER_DAMAGE_PREVIEW_OVERLAYS?.[view];
+        if (!overlay) return;
+
+        drawStrokeDataOnCanvas(overlay, DAMAGE_DRAWING_TEMP_DATA[view]);
+      }
+
       function alignHandoverDamagePreviewOverlay(view) {
         const imgMap = {
           front: handoverDamageFrontImg,
@@ -9662,6 +9746,8 @@ ${mobileOutstandingText}
         overlay.style.top = `${imgRect.top - wrapRect.top}px`;
         overlay.style.width = `${imgRect.width}px`;
         overlay.style.height = `${imgRect.height}px`;
+
+        renderHandoverDamagePreviewOverlay(view);
       }
 
       function alignAllHandoverDamagePreviewOverlays() {
@@ -9685,9 +9771,9 @@ ${mobileOutstandingText}
           const wrap = img.closest(".handover-damage-image-wrap");
           if (!wrap) return;
 
-          const overlay = document.createElement("img");
+          const overlay = document.createElement("canvas");
           overlay.className = "handover-damage-preview-overlay";
-          overlay.alt = "";
+          overlay.setAttribute("aria-hidden", "true");
 
           wrap.appendChild(overlay);
 
@@ -9700,13 +9786,11 @@ ${mobileOutstandingText}
 
         Object.entries(HANDOVER_DAMAGE_PREVIEW_OVERLAYS).forEach(
           ([view, overlay]) => {
-            const dataUrl = DAMAGE_DRAWING_TEMP_DATA[view];
+            const strokeData = DAMAGE_DRAWING_TEMP_DATA[view];
 
-            if (dataUrl) {
-              overlay.src = dataUrl;
+            if (Array.isArray(strokeData) && strokeData.length) {
               overlay.classList.add("has-marking");
             } else {
-              overlay.removeAttribute("src");
               overlay.classList.remove("has-marking");
             }
           },
@@ -9736,14 +9820,10 @@ ${mobileOutstandingText}
         setTimeout(() => {
           layoutDamageDrawingCanvasToImage();
 
-          DAMAGE_DRAWING_PAD?.clear?.();
-          DAMAGE_DRAWING_PAD?.resizeCanvas?.({ preserve: false });
-
-          if (CURRENT_DAMAGE_DRAWING_VIEW) {
-            DAMAGE_DRAWING_PAD?.fromDataURL?.(
-              DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
-            );
-          }
+          DAMAGE_DRAWING_PAD?.resizeCanvas?.();
+          DAMAGE_DRAWING_PAD?.fromStrokeData?.(
+            DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
+          );
         }, 80);
       }
 
@@ -9751,7 +9831,7 @@ ${mobileOutstandingText}
         if (!CURRENT_DAMAGE_DRAWING_VIEW || !DAMAGE_DRAWING_PAD) return;
 
         DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] =
-          DAMAGE_DRAWING_PAD.toDataURL();
+          DAMAGE_DRAWING_PAD.toStrokeData();
 
         updateHandoverDamagePreviewMarkings();
       }
@@ -10228,9 +10308,8 @@ ${mobileOutstandingText}
           setTimeout(() => {
             layoutDamageDrawingCanvasToImage();
 
-            DAMAGE_DRAWING_PAD?.clear?.();
-            DAMAGE_DRAWING_PAD?.resizeCanvas?.({ preserve: false });
-            DAMAGE_DRAWING_PAD?.fromDataURL?.(
+            DAMAGE_DRAWING_PAD?.resizeCanvas?.();
+            DAMAGE_DRAWING_PAD?.fromStrokeData?.(
               DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
             );
 
