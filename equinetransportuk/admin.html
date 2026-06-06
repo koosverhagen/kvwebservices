@@ -3776,6 +3776,39 @@
           padding: 11px 12px !important;
         }
       }
+
+      /* ===============================
+   DAMAGE DRAWING RED PEN CANVAS
+   STEP 2D
+================================ */
+
+      .damage-drawing-paper {
+        position: relative !important;
+      }
+
+      .damage-drawing-image {
+        position: relative !important;
+        z-index: 1 !important;
+
+        pointer-events: none !important;
+        user-select: none !important;
+        -webkit-user-drag: none !important;
+      }
+
+      .damage-drawing-canvas {
+        position: absolute !important;
+        inset: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        z-index: 2 !important;
+
+        display: block !important;
+
+        cursor: crosshair !important;
+        touch-action: none !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -4574,6 +4607,11 @@
             class="damage-drawing-image"
             alt="Damage drawing"
           />
+
+          <canvas
+            id="damage-drawing-canvas"
+            class="damage-drawing-canvas"
+          ></canvas>
         </div>
       </div>
 
@@ -5250,6 +5288,9 @@
       const damageDrawingImage = document.getElementById(
         "damage-drawing-image",
       );
+      const damageDrawingCanvas = document.getElementById(
+        "damage-drawing-canvas",
+      );
       const damageDrawingClose = document.getElementById(
         "damage-drawing-close",
       );
@@ -5259,6 +5300,15 @@
       const damageDrawingDone = document.getElementById("damage-drawing-done");
 
       let CURRENT_DAMAGE_DRAWING_VIEW = null;
+
+      let DAMAGE_DRAWING_PAD = null;
+      let DAMAGE_DRAWING_TEMP_DATA = {
+        front: null,
+        rear: null,
+        left: null,
+        right: null,
+        fuel: null,
+      };
 
       let HANDOVER_TERMS_PAD = null;
       let HANDOVER_CUSTOMER_PAD = null;
@@ -9335,6 +9385,166 @@ ${mobileOutstandingText}
         return "portrait";
       }
 
+      /* ===============================
+   FULLSCREEN DAMAGE RED PEN PAD
+   STEP 2D
+================================ */
+
+      function createDamageDrawingPad(canvas) {
+        if (!canvas) return null;
+
+        const ctx = canvas.getContext("2d");
+
+        let drawing = false;
+        let hasInk = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function resizeCanvas() {
+          const rect = canvas.getBoundingClientRect();
+          const ratio = window.devicePixelRatio || 1;
+
+          const existing = hasInk ? canvas.toDataURL("image/png") : null;
+
+          canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+          canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+
+          ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = "#dc2626";
+
+          ctx.clearRect(0, 0, rect.width, rect.height);
+
+          if (existing) {
+            const img = new Image();
+
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0, rect.width, rect.height);
+              hasInk = true;
+            };
+
+            img.src = existing;
+          }
+        }
+
+        function getPoint(event) {
+          const rect = canvas.getBoundingClientRect();
+          const point =
+            event.touches?.[0] || event.changedTouches?.[0] || event;
+
+          return {
+            x: point.clientX - rect.left,
+            y: point.clientY - rect.top,
+          };
+        }
+
+        function start(event) {
+          event.preventDefault();
+
+          const point = getPoint(event);
+
+          drawing = true;
+          hasInk = true;
+
+          lastX = point.x;
+          lastY = point.y;
+        }
+
+        function move(event) {
+          if (!drawing) return;
+
+          event.preventDefault();
+
+          const point = getPoint(event);
+
+          ctx.beginPath();
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(point.x, point.y);
+          ctx.stroke();
+
+          lastX = point.x;
+          lastY = point.y;
+        }
+
+        function end(event) {
+          if (!drawing) return;
+
+          event.preventDefault();
+          drawing = false;
+        }
+
+        function clear() {
+          const rect = canvas.getBoundingClientRect();
+
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          hasInk = false;
+        }
+
+        function toDataURL() {
+          return hasInk ? canvas.toDataURL("image/png") : null;
+        }
+
+        function fromDataURL(dataUrl) {
+          clear();
+
+          if (!dataUrl) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const img = new Image();
+
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0, rect.width, rect.height);
+            hasInk = true;
+          };
+
+          img.src = dataUrl;
+        }
+
+        canvas.addEventListener("mousedown", start);
+        canvas.addEventListener("mousemove", move);
+        window.addEventListener("mouseup", end);
+
+        canvas.addEventListener("touchstart", start, { passive: false });
+        canvas.addEventListener("touchmove", move, { passive: false });
+        canvas.addEventListener("touchend", end, { passive: false });
+        canvas.addEventListener("touchcancel", end, { passive: false });
+
+        resizeCanvas();
+
+        return {
+          resizeCanvas,
+          clear,
+          toDataURL,
+          fromDataURL,
+        };
+      }
+
+      function initialiseDamageDrawingPad() {
+        if (!DAMAGE_DRAWING_PAD && damageDrawingCanvas) {
+          DAMAGE_DRAWING_PAD = createDamageDrawingPad(damageDrawingCanvas);
+        }
+
+        setTimeout(() => {
+          DAMAGE_DRAWING_PAD?.resizeCanvas?.();
+
+          if (CURRENT_DAMAGE_DRAWING_VIEW) {
+            DAMAGE_DRAWING_PAD?.fromDataURL?.(
+              DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
+            );
+          }
+        }, 80);
+      }
+
+      function storeCurrentDamageDrawingTemp() {
+        if (!CURRENT_DAMAGE_DRAWING_VIEW || !DAMAGE_DRAWING_PAD) return;
+
+        DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] =
+          DAMAGE_DRAWING_PAD.toDataURL();
+      }
+
       function applyDamageDrawingInlineLayout(orientation) {
         if (!damageDrawingModal) return;
 
@@ -9454,9 +9664,13 @@ ${mobileOutstandingText}
         document.body.style.overflow = "hidden";
 
         applyDamageDrawingInlineLayout(orientation);
+
+        initialiseDamageDrawingPad();
       }
 
       function closeDamageDrawingModal() {
+        storeCurrentDamageDrawingTemp();
+
         if (!damageDrawingModal) return;
 
         damageDrawingModal.classList.add("hidden");
@@ -9767,6 +9981,13 @@ ${mobileOutstandingText}
           applyDamageDrawingInlineLayout(
             getDamageDrawingOrientation(CURRENT_DAMAGE_DRAWING_VIEW),
           );
+
+          setTimeout(() => {
+            DAMAGE_DRAWING_PAD?.resizeCanvas?.();
+            DAMAGE_DRAWING_PAD?.fromDataURL?.(
+              DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
+            );
+          }, 80);
         }
       });
 
