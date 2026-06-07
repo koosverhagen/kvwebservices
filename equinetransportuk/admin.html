@@ -4054,6 +4054,118 @@
         touch-action: none !important;
         cursor: crosshair !important;
       }
+      /* ===============================
+   DAMAGE DRAWING FULL VIEWPORT POLISH
+   Keep coordinate-safe. No fake rotation.
+   Must stay near bottom.
+================================ */
+
+      .damage-drawing-modal,
+      .damage-drawing-modal.force-portrait,
+      .damage-drawing-modal.force-landscape {
+        position: fixed !important;
+        inset: 0 !important;
+
+        width: 100vw !important;
+        height: var(--damage-drawing-vh, 100dvh) !important;
+
+        max-width: none !important;
+        max-height: none !important;
+
+        overflow: hidden !important;
+
+        transform: none !important;
+        transform-origin: center center !important;
+
+        z-index: 2147483647 !important;
+      }
+
+      /* Make the drawing screen feel more fullscreen */
+      .damage-drawing-header {
+        min-height: 54px !important;
+        padding: calc(env(safe-area-inset-top) + 4px) 12px 6px !important;
+      }
+
+      .damage-drawing-header h3 {
+        font-size: 17px !important;
+      }
+
+      .damage-drawing-header p {
+        font-size: 11px !important;
+      }
+
+      .damage-drawing-close {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 13px !important;
+        font-size: 24px !important;
+      }
+
+      .damage-drawing-stage {
+        min-height: 0 !important;
+        padding: 4px !important;
+      }
+
+      .damage-drawing-toolbar {
+        padding: 6px 10px calc(env(safe-area-inset-bottom) + 6px) !important;
+      }
+
+      .damage-drawing-toolbar .btn {
+        min-height: 40px !important;
+        padding: 7px 10px !important;
+        font-size: 14px !important;
+      }
+
+      /* When phone is physically rotated, give landscape drawings maximum room */
+      @media (max-width: 950px) and (orientation: landscape) {
+        .damage-drawing-modal {
+          grid-template-rows: auto 1fr auto !important;
+        }
+
+        .damage-drawing-header {
+          min-height: 44px !important;
+          padding: calc(env(safe-area-inset-top) + 2px) 10px 4px !important;
+        }
+
+        .damage-drawing-header h3 {
+          font-size: 15px !important;
+        }
+
+        .damage-drawing-header p {
+          display: none !important;
+        }
+
+        .damage-drawing-close {
+          width: 36px !important;
+          height: 36px !important;
+          font-size: 22px !important;
+        }
+
+        .damage-drawing-stage {
+          padding: 3px !important;
+        }
+
+        .damage-drawing-toolbar {
+          padding: 4px 8px calc(env(safe-area-inset-bottom) + 4px) !important;
+        }
+
+        .damage-drawing-toolbar .btn {
+          min-height: 34px !important;
+          font-size: 13px !important;
+          border-radius: 12px !important;
+        }
+      }
+
+      /* Do NOT re-enable fake CSS rotate */
+      .damage-drawing-modal.force-landscape,
+      .damage-drawing-modal.force-portrait,
+      .damage-drawing-stage,
+      .damage-drawing-paper,
+      .damage-drawing-image,
+      .damage-drawing-canvas {
+        transform: none !important;
+        transform-origin: center center !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -5543,6 +5655,31 @@
         "damage-drawing-cancel",
       );
       const damageDrawingDone = document.getElementById("damage-drawing-done");
+
+      function updateDamageDrawingViewportHeight() {
+        const height =
+          window.visualViewport?.height ||
+          window.innerHeight ||
+          document.documentElement.clientHeight ||
+          700;
+
+        document.documentElement.style.setProperty(
+          "--damage-drawing-vh",
+          `${height}px`,
+        );
+      }
+
+      window.addEventListener("resize", updateDamageDrawingViewportHeight);
+      window.visualViewport?.addEventListener(
+        "resize",
+        updateDamageDrawingViewportHeight,
+      );
+      window.visualViewport?.addEventListener(
+        "scroll",
+        updateDamageDrawingViewportHeight,
+      );
+
+      updateDamageDrawingViewportHeight();
 
       let CURRENT_DAMAGE_DRAWING_VIEW = null;
 
@@ -10228,22 +10365,18 @@ ${mobileOutstandingText}
       function applyDamageDrawingInlineLayout(orientation) {
         if (!damageDrawingModal) return;
 
+        updateDamageDrawingViewportHeight();
+
         damageDrawingModal.style.position = "fixed";
         damageDrawingModal.style.inset = "0";
         damageDrawingModal.style.zIndex = "2147483647";
         damageDrawingModal.style.width = "100vw";
-        damageDrawingModal.style.height = "100dvh";
+        damageDrawingModal.style.height = "var(--damage-drawing-vh, 100dvh)";
         damageDrawingModal.style.maxWidth = "none";
         damageDrawingModal.style.maxHeight = "none";
         damageDrawingModal.style.overflow = "hidden";
         damageDrawingModal.style.transform = "none";
         damageDrawingModal.style.transformOrigin = "center center";
-
-        /*
-    Do NOT set damageDrawingPaper width/height here anymore.
-    layoutDamageDrawingCanvasToImage() now sizes the paper from
-    the real image aspect ratio, so canvas + image always match.
-  */
 
         if (damageDrawingStage) {
           damageDrawingStage.classList.remove("portrait", "landscape");
