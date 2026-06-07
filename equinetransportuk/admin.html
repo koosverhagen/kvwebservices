@@ -3900,67 +3900,15 @@
       /* ===============================
    DISABLE OLD DAMAGE PREVIEW OVERLAYS
    Preview now uses composite image instead
+   Must stay as the LAST preview-overlay rule
 ================================ */
 
-      #handover-modal .handover-damage-preview-overlay {
+      #handover-modal .handover-damage-preview-overlay,
+      #handover-modal .handover-damage-preview-overlay.has-marking {
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
-      }
-
-      /* ===============================
-   FINAL DAMAGE PREVIEW CANVAS FIX
-================================ */
-
-      #handover-modal .handover-damage-preview-overlay {
-        position: absolute !important;
-
-        left: 0;
-        top: 0;
-
-        width: 1px;
-        height: 1px;
-
-        z-index: 2 !important;
-
         pointer-events: none !important;
-        user-select: none !important;
-
-        display: none !important;
-      }
-
-      #handover-modal .handover-damage-preview-overlay.has-marking {
-        display: block !important;
-      }
-
-      /* ===============================
-   FINAL FIX — SHOW DAMAGE PREVIEW CANVAS
-   Must be last
-================================ */
-
-      #handover-modal .handover-damage-preview-overlay {
-        position: absolute !important;
-
-        left: 0;
-        top: 0;
-
-        width: 1px;
-        height: 1px;
-
-        z-index: 5 !important;
-
-        pointer-events: none !important;
-        user-select: none !important;
-
-        display: none !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-      }
-
-      #handover-modal .handover-damage-preview-overlay.has-marking {
-        display: block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
       }
     </style>
 
@@ -9685,6 +9633,12 @@ ${mobileOutstandingText}
           return JSON.parse(JSON.stringify(strokes));
         }
 
+        function toCanvasDataURL() {
+          if (!strokes.length) return null;
+
+          return canvas.toDataURL("image/png");
+        }
+
         function fromStrokeData(data) {
           clear();
 
@@ -9710,6 +9664,7 @@ ${mobileOutstandingText}
           clear,
           toStrokeData,
           fromStrokeData,
+          toCanvasDataURL,
         };
       }
 
@@ -9920,23 +9875,7 @@ ${mobileOutstandingText}
       }
 
       function updateHandoverDamagePreviewMarkings() {
-        ensureHandoverDamagePreviewOverlays();
-
-        Object.entries(HANDOVER_DAMAGE_PREVIEW_OVERLAYS).forEach(
-          ([view, overlay]) => {
-            const strokeData = DAMAGE_DRAWING_TEMP_DATA?.[view];
-
-            if (Array.isArray(strokeData) && strokeData.length) {
-              overlay.classList.add("has-marking");
-            } else {
-              overlay.classList.remove("has-marking");
-            }
-          },
-        );
-
-        setTimeout(() => {
-          alignAllHandoverDamagePreviewOverlays();
-        }, 40);
+        applyAllDamagePreviewImages();
       }
 
       function resetDamageDrawingTempData() {
@@ -10027,9 +9966,9 @@ ${mobileOutstandingText}
         ctx.drawImage(baseImg, 0, 0, width, height);
 
         /*
-    The fullscreen red canvas is fitted exactly over the visible vehicle image.
-    Therefore drawing it over the full natural image gives the same alignment
-    in every preview size.
+    This drawingDataUrl is the actual fullscreen red canvas.
+    Because our drawing canvas is locked to the visible image area,
+    stretching it onto the natural base image keeps the same relative position.
   */
         ctx.drawImage(drawingImg, 0, 0, width, height);
 
@@ -10061,23 +10000,35 @@ ${mobileOutstandingText}
 
         const view = CURRENT_DAMAGE_DRAWING_VIEW;
 
-        if (typeof DAMAGE_DRAWING_PAD.toStrokeData === "function") {
-          DAMAGE_DRAWING_TEMP_DATA[view] = DAMAGE_DRAWING_PAD.toStrokeData();
+        const strokeData =
+          typeof DAMAGE_DRAWING_PAD.toStrokeData === "function"
+            ? DAMAGE_DRAWING_PAD.toStrokeData()
+            : null;
 
-          updateHandoverDamagePreviewMarkings();
+        const drawingDataUrl =
+          typeof DAMAGE_DRAWING_PAD.toCanvasDataURL === "function"
+            ? DAMAGE_DRAWING_PAD.toCanvasDataURL()
+            : typeof DAMAGE_DRAWING_PAD.toDataURL === "function"
+              ? DAMAGE_DRAWING_PAD.toDataURL()
+              : null;
 
+        DAMAGE_DRAWING_TEMP_DATA[view] = strokeData;
+
+        if (!drawingDataUrl) {
+          DAMAGE_DRAWING_PREVIEW_DATA[view] = null;
+          applyDamagePreviewImage(view);
           return;
         }
 
-        if (typeof DAMAGE_DRAWING_PAD.toDataURL === "function") {
-          DAMAGE_DRAWING_TEMP_DATA[view] = DAMAGE_DRAWING_PAD.toDataURL();
-
-          updateHandoverDamagePreviewMarkings();
-
-          return;
-        }
-
-        console.warn("Damage drawing pad has no export method.");
+        buildDamagePreviewComposite(view, drawingDataUrl)
+          .then((compositeDataUrl) => {
+            DAMAGE_DRAWING_PREVIEW_DATA[view] = compositeDataUrl;
+            applyDamagePreviewImage(view);
+          })
+          .catch((err) => {
+            console.warn("Damage preview composite failed:", err);
+            applyDamagePreviewImage(view);
+          });
       }
 
       function applyDamageDrawingInlineLayout(orientation) {
