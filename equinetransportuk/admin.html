@@ -3910,6 +3910,24 @@
         visibility: hidden !important;
         pointer-events: none !important;
       }
+
+      /* ===============================
+   FINAL DAMAGE DRAWING ALIGNMENT FIX
+   No CSS rotation — keeps canvas coordinates exact
+================================ */
+
+      .damage-drawing-modal {
+        transform: none !important;
+        transform-origin: center center !important;
+      }
+
+      .damage-drawing-paper {
+        transform: none !important;
+      }
+
+      .damage-drawing-canvas {
+        transform: none !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -10045,57 +10063,31 @@ ${mobileOutstandingText}
       function applyDamageDrawingInlineLayout(orientation) {
         if (!damageDrawingModal) return;
 
-        const viewportW = window.innerWidth;
-        const viewportH = window.innerHeight;
-
-        const isMobileLike = viewportW <= 900;
-        const isPortraitScreen = viewportH > viewportW;
-        const shouldFakeLandscape =
-          orientation === "landscape" && isMobileLike && isPortraitScreen;
-
-        // Reset first
+        // IMPORTANT:
+        // Do not rotate the whole modal with CSS transform.
+        // CSS rotation breaks touch/canvas coordinates on mobile Safari.
         damageDrawingModal.style.position = "fixed";
         damageDrawingModal.style.inset = "0";
         damageDrawingModal.style.zIndex = "2147483647";
+        damageDrawingModal.style.width = "100vw";
+        damageDrawingModal.style.height = "100dvh";
         damageDrawingModal.style.maxWidth = "none";
         damageDrawingModal.style.maxHeight = "none";
         damageDrawingModal.style.overflow = "hidden";
-
-        if (damageDrawingPaper) {
-          damageDrawingPaper.style.maxWidth = "none";
-          damageDrawingPaper.style.maxHeight = "none";
-        }
-
-        if (shouldFakeLandscape) {
-          // Rotate the whole drawing modal inside iPhone Safari.
-          damageDrawingModal.style.width = `${viewportH}px`;
-          damageDrawingModal.style.height = `${viewportW}px`;
-          damageDrawingModal.style.transform =
-            "rotate(90deg) translateY(-100%)";
-          damageDrawingModal.style.transformOrigin = "top left";
-
-          if (damageDrawingPaper) {
-            damageDrawingPaper.style.width = `${viewportH - 16}px`;
-            damageDrawingPaper.style.height = `${Math.max(220, viewportW - 108)}px`;
-          }
-
-          return;
-        }
-
-        // Normal portrait or already-landscape screen
-        damageDrawingModal.style.width = "100vw";
-        damageDrawingModal.style.height = "100dvh";
         damageDrawingModal.style.transform = "none";
         damageDrawingModal.style.transformOrigin = "center center";
 
-        if (damageDrawingPaper) {
-          if (orientation === "landscape") {
-            damageDrawingPaper.style.width = "96vw";
-            damageDrawingPaper.style.height = "calc(100dvh - 108px)";
-          } else {
-            damageDrawingPaper.style.width = "94vw";
-            damageDrawingPaper.style.height = "calc(100dvh - 118px)";
-          }
+        if (!damageDrawingPaper) return;
+
+        damageDrawingPaper.style.maxWidth = "none";
+        damageDrawingPaper.style.maxHeight = "none";
+
+        if (orientation === "landscape") {
+          damageDrawingPaper.style.width = "calc(100vw - 16px)";
+          damageDrawingPaper.style.height = "calc(100dvh - 118px)";
+        } else {
+          damageDrawingPaper.style.width = "min(94vw, 620px)";
+          damageDrawingPaper.style.height = "calc(100dvh - 118px)";
         }
       }
 
@@ -10120,7 +10112,6 @@ ${mobileOutstandingText}
           damageDrawingPaper.style.maxHeight = "";
         }
       }
-
       function openDamageDrawingModal(view) {
         if (!damageDrawingModal || !damageDrawingStage || !damageDrawingImage)
           return;
