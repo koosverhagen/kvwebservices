@@ -3973,6 +3973,87 @@
           max-height: none !important;
         }
       }
+
+      /* ===============================
+   TRUE IMAGE-RATIO DRAWING FIX
+   Paper = image ratio, canvas = paper
+   Must stay at very bottom
+================================ */
+
+      .damage-drawing-modal,
+      .damage-drawing-modal.force-portrait,
+      .damage-drawing-modal.force-landscape {
+        transform: none !important;
+        transform-origin: center center !important;
+
+        position: fixed !important;
+        inset: 0 !important;
+
+        width: 100vw !important;
+        height: 100dvh !important;
+
+        max-width: none !important;
+        max-height: none !important;
+
+        overflow: hidden !important;
+      }
+
+      .damage-drawing-stage {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        overflow: hidden !important;
+      }
+
+      .damage-drawing-paper {
+        position: relative !important;
+
+        display: block !important;
+
+        overflow: hidden !important;
+
+        transform: none !important;
+        transform-origin: center center !important;
+      }
+
+      .damage-drawing-image {
+        position: absolute !important;
+        inset: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        object-fit: fill !important;
+
+        display: block !important;
+
+        transform: none !important;
+
+        pointer-events: none !important;
+        user-select: none !important;
+        -webkit-user-drag: none !important;
+      }
+
+      .damage-drawing-canvas {
+        position: absolute !important;
+        inset: 0 !important;
+
+        left: 0 !important;
+        top: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        transform: none !important;
+
+        z-index: 5 !important;
+
+        display: block !important;
+
+        touch-action: none !important;
+        cursor: crosshair !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -9764,18 +9845,57 @@ ${mobileOutstandingText}
       }
 
       function layoutDamageDrawingCanvasToImage() {
-        if (!damageDrawingPaper || !damageDrawingImage || !damageDrawingCanvas)
+        if (
+          !damageDrawingStage ||
+          !damageDrawingPaper ||
+          !damageDrawingImage ||
+          !damageDrawingCanvas
+        ) {
           return;
+        }
 
-        const rect = getContainedImageRect(
-          damageDrawingPaper,
-          damageDrawingImage,
+        const naturalWidth = damageDrawingImage.naturalWidth || 1;
+        const naturalHeight = damageDrawingImage.naturalHeight || 1;
+
+        if (!naturalWidth || !naturalHeight) return;
+
+        const imageRatio = naturalWidth / naturalHeight;
+
+        const stageRect = damageDrawingStage.getBoundingClientRect();
+
+        const maxWidth = Math.max(1, stageRect.width - 16);
+        const maxHeight = Math.max(1, stageRect.height - 16);
+
+        let paperWidth = maxWidth;
+        let paperHeight = paperWidth / imageRatio;
+
+        if (paperHeight > maxHeight) {
+          paperHeight = maxHeight;
+          paperWidth = paperHeight * imageRatio;
+        }
+
+        /*
+    IMPORTANT:
+    Inline !important is needed because older mobile CSS still has
+    force-portrait / force-landscape paper sizes with !important.
+  */
+        damageDrawingPaper.style.setProperty(
+          "width",
+          `${paperWidth}px`,
+          "important",
         );
+        damageDrawingPaper.style.setProperty(
+          "height",
+          `${paperHeight}px`,
+          "important",
+        );
+        damageDrawingPaper.style.setProperty("max-width", "none", "important");
+        damageDrawingPaper.style.setProperty("max-height", "none", "important");
 
-        damageDrawingCanvas.style.left = `${rect.left}px`;
-        damageDrawingCanvas.style.top = `${rect.top}px`;
-        damageDrawingCanvas.style.width = `${rect.width}px`;
-        damageDrawingCanvas.style.height = `${rect.height}px`;
+        damageDrawingCanvas.style.setProperty("left", "0px", "important");
+        damageDrawingCanvas.style.setProperty("top", "0px", "important");
+        damageDrawingCanvas.style.setProperty("width", "100%", "important");
+        damageDrawingCanvas.style.setProperty("height", "100%", "important");
       }
 
       function drawStrokeDataOnCanvas(canvas, strokeData) {
@@ -10108,9 +10228,6 @@ ${mobileOutstandingText}
       function applyDamageDrawingInlineLayout(orientation) {
         if (!damageDrawingModal) return;
 
-        // IMPORTANT:
-        // Do not rotate the whole modal with CSS transform.
-        // CSS rotation breaks touch/canvas coordinates on mobile Safari.
         damageDrawingModal.style.position = "fixed";
         damageDrawingModal.style.inset = "0";
         damageDrawingModal.style.zIndex = "2147483647";
@@ -10122,17 +10239,15 @@ ${mobileOutstandingText}
         damageDrawingModal.style.transform = "none";
         damageDrawingModal.style.transformOrigin = "center center";
 
-        if (!damageDrawingPaper) return;
+        /*
+    Do NOT set damageDrawingPaper width/height here anymore.
+    layoutDamageDrawingCanvasToImage() now sizes the paper from
+    the real image aspect ratio, so canvas + image always match.
+  */
 
-        damageDrawingPaper.style.maxWidth = "none";
-        damageDrawingPaper.style.maxHeight = "none";
-
-        if (orientation === "landscape") {
-          damageDrawingPaper.style.width = "calc(100vw - 16px)";
-          damageDrawingPaper.style.height = "calc(100dvh - 118px)";
-        } else {
-          damageDrawingPaper.style.width = "min(94vw, 620px)";
-          damageDrawingPaper.style.height = "calc(100dvh - 118px)";
+        if (damageDrawingStage) {
+          damageDrawingStage.classList.remove("portrait", "landscape");
+          damageDrawingStage.classList.add(orientation || "portrait");
         }
       }
 
@@ -10151,10 +10266,17 @@ ${mobileOutstandingText}
         damageDrawingModal.style.transformOrigin = "";
 
         if (damageDrawingPaper) {
-          damageDrawingPaper.style.width = "";
-          damageDrawingPaper.style.height = "";
-          damageDrawingPaper.style.maxWidth = "";
-          damageDrawingPaper.style.maxHeight = "";
+          damageDrawingPaper.style.removeProperty("width");
+          damageDrawingPaper.style.removeProperty("height");
+          damageDrawingPaper.style.removeProperty("max-width");
+          damageDrawingPaper.style.removeProperty("max-height");
+        }
+
+        if (damageDrawingCanvas) {
+          damageDrawingCanvas.style.removeProperty("left");
+          damageDrawingCanvas.style.removeProperty("top");
+          damageDrawingCanvas.style.removeProperty("width");
+          damageDrawingCanvas.style.removeProperty("height");
         }
       }
       function openDamageDrawingModal(view) {
@@ -10193,10 +10315,8 @@ ${mobileOutstandingText}
         );
 
         /*
-  Keep only portrait/landscape on the stage.
-  Do NOT add force-landscape anymore.
-  Old CSS used that class to rotate the whole modal,
-  which breaks touch coordinates on iPhone/Safari.
+  Keep a harmless class only.
+  Never add force-landscape: old CSS uses it for rotation.
 */
         damageDrawingModal.classList.add("force-portrait");
 
