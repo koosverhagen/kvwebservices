@@ -3907,6 +3907,31 @@
         opacity: 0 !important;
         visibility: hidden !important;
       }
+
+      /* ===============================
+   FINAL DAMAGE PREVIEW CANVAS FIX
+================================ */
+
+      #handover-modal .handover-damage-preview-overlay {
+        position: absolute !important;
+
+        left: 0;
+        top: 0;
+
+        width: 1px;
+        height: 1px;
+
+        z-index: 2 !important;
+
+        pointer-events: none !important;
+        user-select: none !important;
+
+        display: none !important;
+      }
+
+      #handover-modal .handover-damage-preview-overlay.has-marking {
+        display: block !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -9753,6 +9778,58 @@ ${mobileOutstandingText}
         drawStrokeDataOnCanvas(overlay, DAMAGE_DRAWING_TEMP_DATA[view]);
       }
 
+      function drawStrokeDataOnCanvas(canvas, strokeData) {
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+
+        canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+        canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+
+        const ctx = canvas.getContext("2d");
+
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.clearRect(0, 0, rect.width, rect.height);
+
+        if (!Array.isArray(strokeData) || !strokeData.length) return;
+
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#dc2626";
+
+        strokeData.forEach((stroke) => {
+          if (!Array.isArray(stroke) || stroke.length < 2) return;
+
+          ctx.beginPath();
+
+          stroke.forEach((point, index) => {
+            const x = Number(point.x || 0) * rect.width;
+            const y = Number(point.y || 0) * rect.height;
+
+            if (index === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          });
+
+          ctx.stroke();
+        });
+      }
+
+      function renderHandoverDamagePreviewOverlay(view) {
+        const overlay = HANDOVER_DAMAGE_PREVIEW_OVERLAYS?.[view];
+
+        if (!overlay) return;
+
+        drawStrokeDataOnCanvas(
+          overlay,
+          DAMAGE_DRAWING_TEMP_DATA?.[view] || null,
+        );
+      }
+
       function alignHandoverDamagePreviewOverlay(view) {
         const imgMap = {
           front: handoverDamageFrontImg,
@@ -9813,7 +9890,23 @@ ${mobileOutstandingText}
       }
 
       function updateHandoverDamagePreviewMarkings() {
-        applyAllDamagePreviewImages();
+        ensureHandoverDamagePreviewOverlays();
+
+        Object.entries(HANDOVER_DAMAGE_PREVIEW_OVERLAYS).forEach(
+          ([view, overlay]) => {
+            const strokeData = DAMAGE_DRAWING_TEMP_DATA?.[view];
+
+            if (Array.isArray(strokeData) && strokeData.length) {
+              overlay.classList.add("has-marking");
+            } else {
+              overlay.classList.remove("has-marking");
+            }
+          },
+        );
+
+        setTimeout(() => {
+          alignAllHandoverDamagePreviewOverlays();
+        }, 40);
       }
 
       function resetDamageDrawingTempData() {
