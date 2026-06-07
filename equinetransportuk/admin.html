@@ -3932,6 +3932,36 @@
       #handover-modal .handover-damage-preview-overlay.has-marking {
         display: block !important;
       }
+
+      /* ===============================
+   FINAL FIX — SHOW DAMAGE PREVIEW CANVAS
+   Must be last
+================================ */
+
+      #handover-modal .handover-damage-preview-overlay {
+        position: absolute !important;
+
+        left: 0;
+        top: 0;
+
+        width: 1px;
+        height: 1px;
+
+        z-index: 5 !important;
+
+        pointer-events: none !important;
+        user-select: none !important;
+
+        display: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
+
+      #handover-modal .handover-damage-preview-overlay.has-marking {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
