@@ -9941,15 +9941,14 @@ ${mobileOutstandingText}
         });
       }
 
-      async function buildDamagePreviewComposite(view, drawingDataUrl) {
+      async function buildDamagePreviewComposite(view, strokeData) {
         const baseSrc = HANDOVER_DAMAGE_BASE_SRCS?.[view];
 
-        if (!baseSrc || !drawingDataUrl) {
-          return baseSrc || "";
+        if (!baseSrc) {
+          return "";
         }
 
         const baseImg = await loadImageForComposite(baseSrc);
-        const drawingImg = await loadImageForComposite(drawingDataUrl);
 
         const width = baseImg.naturalWidth || baseImg.width || 1200;
         const height = baseImg.naturalHeight || baseImg.height || 800;
@@ -9965,12 +9964,31 @@ ${mobileOutstandingText}
 
         ctx.drawImage(baseImg, 0, 0, width, height);
 
-        /*
-    This drawingDataUrl is the actual fullscreen red canvas.
-    Because our drawing canvas is locked to the visible image area,
-    stretching it onto the natural base image keeps the same relative position.
-  */
-        ctx.drawImage(drawingImg, 0, 0, width, height);
+        if (Array.isArray(strokeData) && strokeData.length) {
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = Math.max(4, width * 0.004);
+          ctx.strokeStyle = "#dc2626";
+
+          strokeData.forEach((stroke) => {
+            if (!Array.isArray(stroke) || stroke.length < 2) return;
+
+            ctx.beginPath();
+
+            stroke.forEach((point, index) => {
+              const x = Number(point.x || 0) * width;
+              const y = Number(point.y || 0) * height;
+
+              if (index === 0) {
+                ctx.moveTo(x, y);
+              } else {
+                ctx.lineTo(x, y);
+              }
+            });
+
+            ctx.stroke();
+          });
+        }
 
         return output.toDataURL("image/png");
       }
@@ -10005,22 +10023,15 @@ ${mobileOutstandingText}
             ? DAMAGE_DRAWING_PAD.toStrokeData()
             : null;
 
-        const drawingDataUrl =
-          typeof DAMAGE_DRAWING_PAD.toCanvasDataURL === "function"
-            ? DAMAGE_DRAWING_PAD.toCanvasDataURL()
-            : typeof DAMAGE_DRAWING_PAD.toDataURL === "function"
-              ? DAMAGE_DRAWING_PAD.toDataURL()
-              : null;
-
         DAMAGE_DRAWING_TEMP_DATA[view] = strokeData;
 
-        if (!drawingDataUrl) {
+        if (!Array.isArray(strokeData) || !strokeData.length) {
           DAMAGE_DRAWING_PREVIEW_DATA[view] = null;
           applyDamagePreviewImage(view);
           return;
         }
 
-        buildDamagePreviewComposite(view, drawingDataUrl)
+        buildDamagePreviewComposite(view, strokeData)
           .then((compositeDataUrl) => {
             DAMAGE_DRAWING_PREVIEW_DATA[view] = compositeDataUrl;
             applyDamagePreviewImage(view);
