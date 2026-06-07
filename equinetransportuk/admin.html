@@ -3928,6 +3928,51 @@
       .damage-drawing-canvas {
         transform: none !important;
       }
+
+      /* ===============================
+   FINAL FINAL DAMAGE DRAWING FIX
+   Kill old forced landscape rotation
+   Must stay at the very bottom
+================================ */
+
+      .damage-drawing-modal.force-landscape,
+      .damage-drawing-modal.force-portrait {
+        transform: none !important;
+        transform-origin: center center !important;
+
+        width: 100vw !important;
+        height: 100dvh !important;
+
+        max-width: none !important;
+        max-height: none !important;
+      }
+
+      @media (max-width: 768px) and (orientation: portrait) {
+        .damage-drawing-modal.force-landscape,
+        .damage-drawing-modal.force-portrait {
+          transform: none !important;
+          transform-origin: center center !important;
+
+          width: 100vw !important;
+          height: 100dvh !important;
+        }
+
+        .damage-drawing-modal.force-landscape .damage-drawing-paper {
+          width: calc(100vw - 16px) !important;
+          height: calc(100dvh - 118px) !important;
+
+          max-width: none !important;
+          max-height: none !important;
+        }
+
+        .damage-drawing-modal.force-portrait .damage-drawing-paper {
+          width: min(94vw, 620px) !important;
+          height: calc(100dvh - 118px) !important;
+
+          max-width: none !important;
+          max-height: none !important;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -10135,7 +10180,7 @@ ${mobileOutstandingText}
         if (damageDrawingSubtitle) {
           damageDrawingSubtitle.textContent =
             orientation === "landscape"
-              ? "Landscape drawing mode"
+              ? "Landscape drawing — rotate phone if you want more room"
               : "Portrait drawing mode";
         }
 
@@ -10146,9 +10191,14 @@ ${mobileOutstandingText}
           "force-portrait",
           "force-landscape",
         );
-        damageDrawingModal.classList.add(
-          orientation === "landscape" ? "force-landscape" : "force-portrait",
-        );
+
+        /*
+  Keep only portrait/landscape on the stage.
+  Do NOT add force-landscape anymore.
+  Old CSS used that class to rotate the whole modal,
+  which breaks touch coordinates on iPhone/Safari.
+*/
+        damageDrawingModal.classList.add("force-portrait");
 
         damageDrawingImage.src = imageSrc;
 
