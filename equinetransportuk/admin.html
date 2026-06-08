@@ -4608,21 +4608,20 @@
       }
 
       /* ===============================
-   STEP 2G — COMPLETE HANDOVER BUTTON
-   Uses current .handover-inline-actions class
-   Must stay after all other handover action CSS
+   STEP 3A — HANDOVER ACTION BUTTONS
+   Save / Complete / Print / Close
 ================================ */
 
-      #handover-modal .handover-inline-actions.handover-actions-3 {
+      #handover-modal .handover-inline-actions.handover-actions-4 {
         display: grid !important;
-        grid-template-columns: 1fr 1fr 1fr !important;
-        gap: 14px !important;
+        grid-template-columns: 1fr 1fr 1fr 1fr !important;
+        gap: 12px !important;
 
         margin-left: 18px !important;
         margin-right: 18px !important;
       }
 
-      #handover-modal .handover-inline-actions.handover-actions-3 .btn {
+      #handover-modal .handover-inline-actions.handover-actions-4 .btn {
         width: 100% !important;
 
         min-height: 48px !important;
@@ -4635,7 +4634,7 @@
         text-align: center !important;
         white-space: nowrap !important;
 
-        font-size: 15px !important;
+        font-size: 14px !important;
         line-height: 1.15 !important;
         font-weight: 900 !important;
       }
@@ -4645,8 +4644,14 @@
         color: #ffffff !important;
       }
 
+      @media (max-width: 980px) {
+        #handover-modal .handover-inline-actions.handover-actions-4 {
+          grid-template-columns: 1fr 1fr !important;
+        }
+      }
+
       @media (max-width: 768px) {
-        #handover-modal .handover-inline-actions.handover-actions-3 {
+        #handover-modal .handover-inline-actions.handover-actions-4 {
           grid-template-columns: 1fr !important;
           gap: 10px !important;
 
@@ -4654,7 +4659,7 @@
           margin-right: 10px !important;
         }
 
-        #handover-modal .handover-inline-actions.handover-actions-3 .btn {
+        #handover-modal .handover-inline-actions.handover-actions-4 .btn {
           min-height: 46px !important;
           padding: 10px 10px !important;
           border-radius: 17px !important;
@@ -4663,12 +4668,12 @@
       }
 
       @media (max-width: 380px) {
-        #handover-modal .handover-inline-actions.handover-actions-3 {
+        #handover-modal .handover-inline-actions.handover-actions-4 {
           margin-left: 8px !important;
           margin-right: 8px !important;
         }
 
-        #handover-modal .handover-inline-actions.handover-actions-3 .btn {
+        #handover-modal .handover-inline-actions.handover-actions-4 .btn {
           min-height: 42px !important;
           font-size: 13px !important;
         }
@@ -5507,7 +5512,7 @@
               </div>
             </div>
           </div>
-          <div class="handover-inline-actions handover-actions-3">
+          <div class="handover-inline-actions handover-actions-4">
             <button class="btn primary" id="handover-save-btn" type="button">
               Save handover draft
             </button>
@@ -5518,6 +5523,10 @@
               type="button"
             >
               Complete handover
+            </button>
+
+            <button class="btn ghost" id="handover-print-btn" type="button">
+              Print / PDF
             </button>
 
             <button class="btn ghost" id="handover-close-btn" type="button">
@@ -6175,6 +6184,7 @@
       const handoverCompleteBtn = document.getElementById(
         "handover-complete-btn",
       );
+      const handoverPrintBtn = document.getElementById("handover-print-btn");
 
       const handoverBookingIdInput = document.getElementById(
         "handover-booking-id",
@@ -11960,6 +11970,698 @@ ${mobileOutstandingText}
         }
       }
 
+      function getHandoverPrintImage(view) {
+        return (
+          DAMAGE_DRAWING_PREVIEW_DATA?.[view] ||
+          HANDOVER_DAMAGE_BASE_SRCS?.[view] ||
+          ""
+        );
+      }
+
+      function buildPrintDamageImg(view, label) {
+        const src = getHandoverPrintImage(view);
+
+        if (!src) {
+          return `
+      <div class="damage-cell empty">
+        <div class="damage-label">${escapeHtml(label)}</div>
+        <div class="missing-drawing">No drawing</div>
+      </div>
+    `;
+        }
+
+        return `
+    <div class="damage-cell">
+      <div class="damage-label">${escapeHtml(label)}</div>
+      <img src="${src}" alt="${escapeHtml(label)}" />
+    </div>
+  `;
+      }
+
+      function getPrintSignatureHtml(label, pad, dateText) {
+        const hasSignature = !!pad?.hasSignature?.();
+        const src = hasSignature ? pad.toDataURL() : "";
+
+        return `
+    <div class="signature-box">
+      <div class="signature-title">${escapeHtml(label)}</div>
+      ${
+        src
+          ? `<img src="${src}" alt="${escapeHtml(label)}" />`
+          : `<div class="signature-empty">Sign Here</div>`
+      }
+      <div class="signature-date">Date: ${escapeHtml(dateText)}</div>
+    </div>
+  `;
+      }
+
+      function getBookingFormLabel(booking) {
+        const type = String(
+          booking?.requiredFormType ||
+            booking?.required_form_type ||
+            booking?.formTypeRequired ||
+            "",
+        ).toLowerCase();
+
+        if (type.includes("long")) return "Long Form";
+        if (type.includes("short")) return "Short Form";
+
+        return "—";
+      }
+
+      function getBookingAddressForPrint(booking) {
+        return (
+          booking?.customerAddress ||
+          booking?.address ||
+          booking?.customer_address ||
+          booking?.billingAddress ||
+          "—"
+        );
+      }
+
+      function getBookingDobForPrint(booking) {
+        return (
+          booking?.customerDob ||
+          booking?.customerDOB ||
+          booking?.dateOfBirth ||
+          booking?.dob ||
+          booking?.birthDate ||
+          "—"
+        );
+      }
+
+      function getBookingDvlaForPrint(booking) {
+        const licence =
+          booking?.dvlaLicenceLast8 ||
+          booking?.dvla_licence_last8 ||
+          booking?.licenceLast8 ||
+          booking?.licence_last8 ||
+          "";
+
+        const code =
+          booking?.dvlaAccessCode ||
+          booking?.dvla_access_code ||
+          booking?.accessCode ||
+          booking?.dvlaCode ||
+          "";
+
+        const verified =
+          booking?.dvlaVerified === true ||
+          booking?.dvla_verified === true ||
+          booking?.dvla_verified === 1;
+
+        return {
+          licence,
+          code,
+          verified,
+        };
+      }
+
+      function getPrintCheckMark(value) {
+        return value ? "☑" : "☐";
+      }
+
+      function getPrintMoney(value) {
+        const n = Number(value || 0);
+        return `£${n.toFixed(2)}`;
+      }
+
+      function printHandoverTwoPageReport() {
+        const booking = CURRENT_HANDOVER_BOOKING;
+
+        if (!booking) {
+          setHandoverStatus("No booking loaded for print/PDF.", "bad");
+          return;
+        }
+
+        storeCurrentDamageDrawingTemp();
+
+        const bookingId = booking.id || "";
+        const bookingRef = shortRef(bookingId).replace("#", "");
+        const customerName =
+          booking.customerName || getCustomerName?.(booking) || "—";
+        const customerEmail =
+          booking.customerEmail || getCustomerEmail?.(booking) || "—";
+        const customerMobile = booking.customerMobile || booking.mobile || "—";
+        const customerAddress = getBookingAddressForPrint(booking);
+        const customerDob = getBookingDobForPrint(booking);
+
+        const vehicleName =
+          booking.vehicleSnapshot?.name ||
+          booking.vehicleName ||
+          booking.vehicleId ||
+          "—";
+
+        const pickup = booking.pickupAt
+          ? formatDateTime(booking.pickupAt)
+          : "—";
+        const dropoff = booking.dropoffAt
+          ? formatDateTime(booking.dropoffAt)
+          : "—";
+        const hireDates = `${pickup} → ${dropoff}`;
+
+        const formLabel = getBookingFormLabel(booking);
+        const isShortForm = formLabel === "Short Form";
+        const isLongForm = formLabel === "Long Form";
+        const formComplete = isFormComplete(booking);
+
+        const depositOk = isDepositPaid(booking);
+        const outstandingAmount = Number(
+          booking.outstandingAmount || booking.outstanding || 0,
+        );
+        const fullyPaid = isOutstandingPaid(booking);
+        const dvla = getBookingDvlaForPrint(booking);
+
+        const todayText = new Date().toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
+
+        const comments =
+          handoverComments?.value?.trim() || "No comments entered.";
+        const status = handoverStatusSelect?.value || "draft";
+
+        const logoSrc = "images/logo.png";
+
+        const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Handover Damage Report ${escapeHtml(bookingRef)}</title>
+
+  <style>
+    @page {
+      size: A4;
+      margin: 9mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #111827;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.22;
+    }
+
+    .page {
+      width: 192mm;
+      min-height: 279mm;
+      padding: 0;
+      page-break-after: always;
+      position: relative;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: 1fr 38mm;
+      gap: 8mm;
+      align-items: start;
+      margin-bottom: 7mm;
+    }
+
+    .title {
+      font-size: 16pt;
+      font-weight: 800;
+      line-height: 1.08;
+      margin: 0;
+    }
+
+    .logo {
+      width: 34mm;
+      height: auto;
+      justify-self: end;
+      object-fit: contain;
+    }
+
+    .section-title {
+      font-size: 13pt;
+      font-weight: 800;
+      margin: 0 0 2.5mm;
+    }
+
+    .booking-id-line {
+      display: grid;
+      grid-template-columns: 38mm 1fr;
+      border: 1px solid #111827;
+      min-height: 8mm;
+      align-items: center;
+      margin-bottom: 4mm;
+    }
+
+    .booking-id-line strong {
+      padding-left: 4mm;
+    }
+
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8mm;
+    }
+
+    .info-table th {
+      width: 54mm;
+      text-align: left;
+      font-size: 10.5pt;
+      padding: 1.2mm 2mm 1.2mm 0;
+      vertical-align: top;
+    }
+
+    .info-table td {
+      padding: 1.2mm 2mm;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm 8mm;
+      align-items: center;
+      margin: 4mm 0 8mm;
+    }
+
+    .status-line {
+      font-size: 11pt;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 3mm;
+      min-height: 7mm;
+    }
+
+    .status-line .check {
+      font-size: 17pt;
+      line-height: 1;
+    }
+
+    .status-line.green {
+      color: #137a3d;
+    }
+
+    .small-muted {
+      font-size: 8.5pt;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .terms {
+      margin-top: 4mm;
+    }
+
+    .terms h2 {
+      font-size: 15pt;
+      margin: 0 0 2.5mm;
+    }
+
+    .terms ul {
+      margin: 0;
+      padding-left: 4.5mm;
+    }
+
+    .terms li {
+      margin-bottom: 1.2mm;
+    }
+
+    .terms li.red {
+      color: #b42318;
+      font-weight: 800;
+    }
+
+    .terms-signature-title {
+      font-size: 13pt;
+      font-weight: 800;
+      margin: 5mm 0 2mm;
+    }
+
+    .signature-row {
+      display: grid;
+      grid-template-columns: 78mm 1fr;
+      gap: 8mm;
+      align-items: end;
+    }
+
+    .signature-box {
+      page-break-inside: avoid;
+    }
+
+    .signature-title {
+      font-weight: 800;
+      margin-bottom: 2mm;
+    }
+
+    .signature-box img {
+      width: 75mm;
+      height: 26mm;
+      object-fit: contain;
+      border: 1px solid #111827;
+      display: block;
+    }
+
+    .signature-empty {
+      width: 75mm;
+      height: 26mm;
+      border: 1px solid #111827;
+      color: #6b7280;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .signature-date {
+      margin-top: 2mm;
+      font-size: 10pt;
+    }
+
+    .page-2-header {
+      margin-bottom: 5mm;
+    }
+
+    .page-2-header h1 {
+      font-size: 15pt;
+      margin: 0 0 2mm;
+    }
+
+    .vehicle-line {
+      display: grid;
+      grid-template-columns: 48mm 1fr;
+      margin-bottom: 5mm;
+      font-size: 11pt;
+    }
+
+    .comments-block {
+      margin-bottom: 5mm;
+    }
+
+    .comments-block h2 {
+      font-size: 12.5pt;
+      margin: 0 0 1mm;
+    }
+
+    .comments-text {
+      min-height: 10mm;
+      white-space: pre-wrap;
+    }
+
+    .damage-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7mm 8mm;
+      align-items: center;
+      margin-top: 3mm;
+    }
+
+    .damage-cell {
+      page-break-inside: avoid;
+      text-align: center;
+    }
+
+    .damage-label {
+      text-align: left;
+      font-weight: 800;
+      font-size: 9.5pt;
+      margin-bottom: 1mm;
+    }
+
+    .damage-cell img {
+      width: 100%;
+      height: 48mm;
+      object-fit: contain;
+      display: block;
+    }
+
+    .damage-cell.side img {
+      height: 38mm;
+    }
+
+    .damage-cell.front-rear img {
+      height: 46mm;
+    }
+
+    .damage-cell.fuel img {
+      height: 34mm;
+    }
+
+    .missing-drawing {
+      height: 38mm;
+      border: 1px dashed #cbd5e1;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 82mm;
+      gap: 9mm;
+      align-items: end;
+      margin-top: 8mm;
+    }
+
+    .footer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: 28mm 1fr;
+      align-items: end;
+      gap: 6mm;
+      font-size: 10.5pt;
+    }
+
+    .footer img {
+      width: 24mm;
+      transform: rotate(-8deg);
+      opacity: 0.95;
+    }
+
+    .print-button {
+      position: fixed;
+      right: 16px;
+      top: 16px;
+      z-index: 9999;
+      padding: 12px 18px;
+      font-weight: 800;
+      border-radius: 10px;
+      border: 1px solid #dbe1e8;
+      background: #1f6feb;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media print {
+      .print-button {
+        display: none !important;
+      }
+
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  <\/style>
+</head>
+
+<body>
+  <button class="print-button" onclick="window.print()">Print / Save as PDF</button>
+
+  <section class="page page-1">
+    <div class="top-row">
+      <h1 class="title">
+        Equine Transport UK Pick-Up Damage / Fuel Report<br />
+        and Terms & Conditions
+      </h1>
+      <img class="logo" src="${logoSrc}" alt="Equine Transport UK" />
+    </div>
+
+    <h2 class="section-title">Hirer Information</h2>
+
+    <div class="booking-id-line">
+      <strong>Booking ID:</strong>
+      <span>${escapeHtml(bookingRef)}</span>
+    </div>
+
+    <table class="info-table">
+      <tr>
+        <th>Name of Hirer</th>
+        <td>${escapeHtml(customerName)}</td>
+      </tr>
+      <tr>
+        <th>Date of Birth</th>
+        <td>${escapeHtml(customerDob)}</td>
+      </tr>
+      <tr>
+        <th>Address</th>
+        <td>${escapeHtml(customerAddress)}</td>
+      </tr>
+      <tr>
+        <th>Mobile Number</th>
+        <td>${escapeHtml(customerMobile)}</td>
+      </tr>
+      <tr>
+        <th>Email</th>
+        <td>${escapeHtml(customerEmail)}</td>
+      </tr>
+      <tr>
+        <th>Start / End Date of Hire</th>
+        <td>${escapeHtml(hireDates)}</td>
+      </tr>
+      <tr>
+        <th>Lorry / Vehicle</th>
+        <td>${escapeHtml(vehicleName)}</td>
+      </tr>
+    </table>
+
+    <div class="status-grid">
+      <div class="status-line">
+        Submitted Form:
+        <span>Short Form ${getPrintCheckMark(isShortForm && formComplete)}</span>
+        <span>Long Form ${getPrintCheckMark(isLongForm && formComplete)}</span>
+      </div>
+
+      <div class="status-line">
+        £200 Deposit Successful
+        <span class="check">${getPrintCheckMark(depositOk)}</span>
+      </div>
+
+      <div class="status-line">
+        DVLA Check
+        <span class="check">${getPrintCheckMark(dvla.verified)}</span>
+        <span class="small-muted">
+          ${escapeHtml(
+            [
+              dvla.licence && `Licence: ${dvla.licence}`,
+              dvla.code && `Code: ${dvla.code}`,
+            ]
+              .filter(Boolean)
+              .join("  ") || "",
+          )}
+        </span>
+      </div>
+
+      <div class="status-line ${fullyPaid ? "green" : ""}">
+        ${
+          fullyPaid
+            ? `✅ Fully Paid`
+            : `Outstanding: ${escapeHtml(getPrintMoney(outstandingAmount))}`
+        }
+      </div>
+    </div>
+
+    <div class="terms">
+      <h2>Terms and Conditions of Hire</h2>
+      <ul>
+        <li>If you hire for the first time or have not hired from us within the last 3 months, you must complete the Millens Hire Questionnaire (LONG Form).</li>
+        <li>If you have hired from us within the last 3 months, you may complete the Millens Hire Questionnaire (SHORT Form).</li>
+        <li class="red">Fuel level must match on return (see gauge). A £50 charge plus the cost of fuel will apply if not returned at the same level.</li>
+        <li>300 miles per day are included; thereafter £0.30 per mile will be charged.</li>
+        <li>Late return policy: vehicles must be returned at the agreed time. Returns more than 30 minutes late may incur a £50 late return charge, unless a valid reason has been communicated to us at the time the delay occurs.</li>
+        <li>Insurance excess is £400.</li>
+        <li>Cars left at our premises are at the hirer’s own risk.</li>
+        <li>Hirers are responsible for any emission, congestion, or clean air zone charges incurred during the hire period.</li>
+        <li>Full terms and conditions are available at https://www.equinetransportuk.com</li>
+      </ul>
+    </div>
+
+    <div class="terms-signature-title">Terms & Conditions Acceptance Signature</div>
+    <p style="margin:0 0 2mm;">
+      By signing below you confirm you have read and agree to the rental Terms & Conditions outlined above.
+    </p>
+
+    <div class="signature-row">
+      ${getPrintSignatureHtml("Terms & Conditions Signature", HANDOVER_TERMS_PAD, todayText)}
+      <div></div>
+    </div>
+  </section>
+
+  <section class="page page-2">
+    <div class="page-2-header">
+      <h1>Vehicle Condition Information</h1>
+      <div class="vehicle-line">
+        <strong>Lorry / Vehicle</strong>
+        <span>${escapeHtml(vehicleName)}</span>
+      </div>
+    </div>
+
+    <div class="comments-block">
+      <h2>Comments</h2>
+      <div class="comments-text">${escapeHtml(comments)}</div>
+    </div>
+
+    <div class="damage-grid">
+      <div class="damage-cell side">
+        ${buildPrintDamageImg("left", "Left side")}
+      </div>
+
+      <div class="damage-cell side">
+        ${buildPrintDamageImg("right", "Right side")}
+      </div>
+
+      <div class="damage-cell front-rear">
+        ${buildPrintDamageImg("front", "Front")}
+      </div>
+
+      <div class="damage-cell front-rear">
+        ${buildPrintDamageImg("rear", "Rear")}
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <div class="damage-cell fuel">
+        ${buildPrintDamageImg("fuel", "Fuel gauge")}
+      </div>
+
+      ${getPrintSignatureHtml("Customer Signature", HANDOVER_CUSTOMER_PAD, todayText)}
+    </div>
+
+    <div class="footer">
+      <img src="${logoSrc}" alt="Equine Transport UK" />
+      <div>
+        Contact: info@equinetransportuk.com | 07812 188871 / 07584 578654
+      </div>
+    </div>
+  </section>
+
+  <script>
+    window.addEventListener("load", () => {
+      setTimeout(() => window.print(), 450);
+    });
+  <\/script>
+</body>
+</html>
+  `;
+
+        const printWindow = window.open("", "_blank");
+
+        if (!printWindow) {
+          setHandoverStatus(
+            "Popup blocked. Please allow popups, then try Print / PDF again.",
+            "bad",
+          );
+          return;
+        }
+
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+
+        setHandoverStatus("2-page print/PDF opened.", "ok");
+      }
+
       function showModalLoading() {
         modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
         modalFields.innerHTML = "";
@@ -12058,6 +12760,7 @@ ${mobileOutstandingText}
       handoverCloseBtn?.addEventListener("click", closeHandoverModal);
       handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
       handoverCompleteBtn?.addEventListener("click", completeHandover);
+      handoverPrintBtn?.addEventListener("click", printHandoverTwoPageReport);
 
       damageDrawingClose?.addEventListener("click", closeDamageDrawingModal);
       damageDrawingCancel?.addEventListener("click", closeDamageDrawingModal);
