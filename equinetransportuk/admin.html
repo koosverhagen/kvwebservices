@@ -10499,6 +10499,173 @@ ${mobileOutstandingText}
         return (allBookings || [])
           .filter((booking) => {
             if (!booking || booking.id === currentBooking.id) return false;
+            return booking.vehicleId === currentBooking.vehicleId;
+          })
+          .sort((a, b) => {
+            const aTime = getBookingTimeValue(a);
+            const bTime = getBookingTimeValue(b);
+
+            const aIsBefore = currentTime && aTime && aTime <= currentTime;
+            const bIsBefore = currentTime && bTime && bTime <= currentTime;
+
+            if (aIsBefore && !bIsBefore) return -1;
+            if (!aIsBefore && bIsBefore) return 1;
+
+            return bTime - aTime;
+          })
+          .slice(0, 25);
+      }
+
+      async function loadLatestSameVehicleDamageDrawings(currentBooking) {
+        if (!currentBooking?.vehicleId) return null;
+
+        const candidates = getSameVehicleDamageCandidates(currentBooking);
+
+        for (const booking of candidates) {
+          try {
+            const res = await fetch(
+              `${API_BASE}/api/admin/handover?bookingId=${encodeURIComponent(
+                booking.id,
+              )}`,
+            );
+
+            const data = await res.json();
+
+            if (!res.ok || data.ok === false) continue;
+
+            const handover = data.handover || {};
+            const strokes = handover.drawings?.strokes || null;
+
+            if (hasAnyDamageDrawings(strokes)) {
+              return {
+                booking,
+                drawings: handover.drawings,
+              };
+            }
+          } catch (err) {
+            console.warn("Could not check previous same-lorry drawings:", err);
+          }
+        }
+
+        return null;
+      }
+
+      function cloneDamageDrawingSet(value) {
+        if (!value || typeof value !== "object") {
+          return {
+            front: null,
+            rear: null,
+            left: null,
+            right: null,
+            fuel: null,
+          };
+        }
+
+        return {
+          front: Array.isArray(value.front)
+            ? JSON.parse(JSON.stringify(value.front))
+            : null,
+          rear: Array.isArray(value.rear)
+            ? JSON.parse(JSON.stringify(value.rear))
+            : null,
+          left: Array.isArray(value.left)
+            ? JSON.parse(JSON.stringify(value.left))
+            : null,
+          right: Array.isArray(value.right)
+            ? JSON.parse(JSON.stringify(value.right))
+            : null,
+          fuel: Array.isArray(value.fuel)
+            ? JSON.parse(JSON.stringify(value.fuel))
+            : null,
+        };
+      }
+
+      function hasAnyDamageDrawings(drawings) {
+        if (!drawings || typeof drawings !== "object") return false;
+
+        return ["front", "rear", "left", "right", "fuel"].some((view) => {
+          const strokes = drawings[view];
+          return Array.isArray(strokes) && strokes.length > 0;
+        });
+      }
+
+      function getCurrentDamageDrawingPayload() {
+        return {
+          vehicleId: CURRENT_HANDOVER_BOOKING?.vehicleId || null,
+          vehicleName:
+            CURRENT_HANDOVER_BOOKING?.vehicleSnapshot?.name ||
+            CURRENT_HANDOVER_BOOKING?.vehicleName ||
+            null,
+          assetPrefix: getHandoverDamageAssetPrefix(CURRENT_HANDOVER_BOOKING),
+          baseSrcs: { ...HANDOVER_DAMAGE_BASE_SRCS },
+          strokes: cloneDamageDrawingSet(DAMAGE_DRAWING_TEMP_DATA),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      async function rebuildDamagePreviewDataFromStrokes() {
+        DAMAGE_DRAWING_PREVIEW_DATA = {
+          front: null,
+          rear: null,
+          left: null,
+          right: null,
+          fuel: null,
+        };
+
+        for (const view of ["front", "rear", "left", "right", "fuel"]) {
+          const strokes = DAMAGE_DRAWING_TEMP_DATA?.[view];
+
+          if (Array.isArray(strokes) && strokes.length) {
+            try {
+              DAMAGE_DRAWING_PREVIEW_DATA[view] =
+                await buildDamagePreviewComposite(view, strokes);
+            } catch (err) {
+              console.warn(`Damage preview rebuild failed for ${view}:`, err);
+            }
+          }
+        }
+
+        applyAllDamagePreviewImages();
+      }
+
+      async function loadDamageDrawingPayload(drawings) {
+        const strokes = drawings?.strokes || drawings || {};
+
+        DAMAGE_DRAWING_TEMP_DATA = cloneDamageDrawingSet(strokes);
+
+        await rebuildDamagePreviewDataFromStrokes();
+
+        if (CURRENT_DAMAGE_DRAWING_VIEW && DAMAGE_DRAWING_PAD) {
+          DAMAGE_DRAWING_PAD.fromStrokeData?.(
+            DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
+          );
+        }
+
+        updateHandoverChecklist();
+      }
+
+      function getBookingTimeValue(booking) {
+        const value =
+          booking?.pickupAt ||
+          booking?.pickup_at ||
+          booking?.pickupAtLocal ||
+          booking?.createdAt ||
+          booking?.created_at ||
+          "";
+
+        const time = new Date(value).getTime();
+
+        return Number.isFinite(time) ? time : 0;
+      }
+
+      function getSameVehicleDamageCandidates(currentBooking) {
+        if (!currentBooking?.vehicleId) return [];
+
+        const currentTime = getBookingTimeValue(currentBooking);
+
+        return (allBookings || [])
+          .filter((booking) => {
+            if (!booking || booking.id === currentBooking.id) return false;
 
             return booking.vehicleId === currentBooking.vehicleId;
           })
@@ -10979,6 +11146,8 @@ ${mobileOutstandingText}
 
           if (hasAnyDamageDrawings(ownDrawingStrokes)) {
             await loadDamageDrawingPayload(handover.drawings);
+
+            setHandoverStatus("Saved handover draft loaded.", "ok");
           } else {
             const inherited =
               await loadLatestSameVehicleDamageDrawings(booking);
@@ -10992,11 +11161,17 @@ ${mobileOutstandingText}
                 )}). Add to them and save this handover.`,
                 "warn",
               );
+            } else if (data.found) {
+              setHandoverStatus("Saved handover draft loaded.", "ok");
+            } else {
+              setHandoverStatus(
+                "No handover draft yet. Ready to start.",
+                "warn",
+              );
             }
           }
 
           setTimeout(updateHandoverChecklist, 80);
-
           if (data.found) {
             setHandoverStatus("Saved handover draft loaded.", "ok");
           } else {
