@@ -3778,6 +3778,201 @@
       }
 
       /* ===============================
+   FINAL FINAL HANDOVER ACTIONS FIX
+   Desktop + mobile: actions scroll with modal page
+   Must stay AFTER all handover-actions rules
+================================ */
+
+      #handover-modal {
+        overflow: hidden !important;
+      }
+
+      #handover-modal .et-modal-center {
+        align-items: flex-start !important;
+        justify-content: center !important;
+
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+
+        -webkit-overflow-scrolling: touch !important;
+
+        padding: 24px 18px !important;
+      }
+
+      #handover-modal .et-modal-card {
+        width: min(1120px, calc(100vw - 36px)) !important;
+        max-width: none !important;
+
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+
+        margin: 0 auto 32px !important;
+
+        overflow: visible !important;
+
+        border-radius: 28px !important;
+      }
+
+      #handover-modal .et-modal-body {
+        overflow: visible !important;
+        overflow-y: visible !important;
+        overflow-x: hidden !important;
+
+        height: auto !important;
+        max-height: none !important;
+
+        padding: 20px 24px 26px !important;
+      }
+
+      #handover-modal .et-modal-header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 20 !important;
+
+        background: rgba(255, 255, 255, 0.96) !important;
+
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+      }
+
+      /* Bottom buttons: normal page content, not sticky-looking */
+      #handover-modal .handover-inline-actions,
+      #handover-modal .handover-actions {
+        position: static !important;
+        inset: auto !important;
+
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important;
+
+        width: auto !important;
+
+        margin: 28px 12px 18px !important;
+        padding: 0 !important;
+
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        transform: none !important;
+        z-index: auto !important;
+      }
+
+      #handover-modal .handover-inline-actions .btn,
+      #handover-modal .handover-actions .btn {
+        position: static !important;
+
+        width: 100% !important;
+
+        min-height: 48px !important;
+        height: auto !important;
+
+        padding: 11px 14px !important;
+
+        border-radius: 18px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        text-align: center !important;
+
+        font-size: 15px !important;
+        line-height: 1.15 !important;
+        font-weight: 900 !important;
+
+        white-space: nowrap !important;
+
+        box-shadow: none !important;
+        transform: none !important;
+      }
+
+      /* Status pill: same side padding as buttons and centred text */
+      #handover-modal .handover-status {
+        position: static !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        width: auto !important;
+
+        margin: 14px 12px 26px !important;
+        padding: 13px 16px !important;
+
+        border-radius: 18px !important;
+
+        text-align: center !important;
+
+        font-size: 15px !important;
+        line-height: 1.2 !important;
+        font-weight: 900 !important;
+
+        box-shadow: none !important;
+        transform: none !important;
+      }
+
+      /* Desktop: add a bit more breathing room around damage section */
+      @media (min-width: 901px) {
+        #handover-modal .handover-damage-section {
+          margin-left: 4px !important;
+          margin-right: 4px !important;
+        }
+
+        #handover-modal .handover-damage-panels {
+          padding: 18px !important;
+        }
+
+        #handover-modal .handover-inline-actions,
+        #handover-modal .handover-actions {
+          margin-left: 18px !important;
+          margin-right: 18px !important;
+        }
+
+        #handover-modal .handover-status {
+          margin-left: 18px !important;
+          margin-right: 18px !important;
+        }
+      }
+
+      /* Mobile keeps the neater compact layout */
+      @media (max-width: 768px) {
+        #handover-modal .et-modal-center {
+          padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom) !important;
+        }
+
+        #handover-modal .et-modal-card {
+          width: calc(100vw - 20px) !important;
+          margin: 8px auto 24px !important;
+        }
+
+        #handover-modal .et-modal-body {
+          padding: 16px 16px 22px !important;
+        }
+
+        #handover-modal .handover-inline-actions,
+        #handover-modal .handover-actions {
+          gap: 12px !important;
+          margin: 24px 10px 14px !important;
+        }
+
+        #handover-modal .handover-inline-actions .btn,
+        #handover-modal .handover-actions .btn {
+          min-height: 44px !important;
+          padding: 10px 10px !important;
+          border-radius: 17px !important;
+          font-size: 14px !important;
+        }
+
+        #handover-modal .handover-status {
+          margin: 14px 10px 24px !important;
+          padding: 12px 14px !important;
+          border-radius: 17px !important;
+          font-size: 15px !important;
+        }
+      }
+
+      /* ===============================
    DAMAGE DRAWING RED PEN CANVAS
    STEP 2D
 ================================ */
