@@ -10422,6 +10422,95 @@ ${mobileOutstandingText}
         });
       }
 
+      function getDamageVehicleStorageKey(booking) {
+        if (!booking) return "";
+
+        const vehicleId = booking.vehicleId || "";
+
+        const vehicleName =
+          booking.vehicleSnapshot?.name ||
+          booking.vehicleName ||
+          booking.vehicle ||
+          "";
+
+        const assetPrefix = getHandoverDamageAssetPrefix(booking) || "";
+
+        const rawKey = vehicleId || assetPrefix || vehicleName;
+
+        if (!rawKey) return "";
+
+        const safeKey = String(rawKey)
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9_-]+/g, "_")
+          .replace(/^_+|_+$/g, "");
+
+        return safeKey ? `vehicle_latest_${safeKey}` : "";
+      }
+
+      async function saveLatestVehicleDamageDrawings(drawingsPayload) {
+        const vehicleKey = getDamageVehicleStorageKey(CURRENT_HANDOVER_BOOKING);
+
+        if (!vehicleKey) return;
+
+        const strokes = drawingsPayload?.strokes || null;
+
+        if (!hasAnyDamageDrawings(strokes)) return;
+
+        try {
+          await fetch(`${API_BASE}/api/admin/handover/save`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId: vehicleKey,
+              handover: {
+                status: "vehicle_damage_template",
+                comments: "",
+                termsSignature: null,
+                customerSignature: null,
+                drawings: drawingsPayload,
+                updatedAt: new Date().toISOString(),
+              },
+            }),
+          });
+        } catch (err) {
+          console.warn("Could not save latest vehicle damage template:", err);
+        }
+      }
+
+      async function loadLatestVehicleDamageTemplate(booking) {
+        const vehicleKey = getDamageVehicleStorageKey(booking);
+
+        if (!vehicleKey) return null;
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/handover?bookingId=${encodeURIComponent(
+              vehicleKey,
+            )}`,
+          );
+
+          const data = await res.json();
+
+          if (!res.ok || data.ok === false || !data.found) return null;
+
+          const drawings = data.handover?.drawings || null;
+          const strokes = drawings?.strokes || null;
+
+          if (!hasAnyDamageDrawings(strokes)) return null;
+
+          return {
+            vehicleKey,
+            drawings,
+          };
+        } catch (err) {
+          console.warn("Could not load latest vehicle damage template:", err);
+          return null;
+        }
+      }
+
       function getCurrentDamageDrawingPayload() {
         return {
           vehicleId: CURRENT_HANDOVER_BOOKING?.vehicleId || null,
@@ -11149,34 +11238,41 @@ ${mobileOutstandingText}
 
             setHandoverStatus("Saved handover draft loaded.", "ok");
           } else {
-            const inherited =
-              await loadLatestSameVehicleDamageDrawings(booking);
+            const vehicleTemplate =
+              await loadLatestVehicleDamageTemplate(booking);
 
-            if (inherited?.drawings) {
-              await loadDamageDrawingPayload(inherited.drawings);
+            if (vehicleTemplate?.drawings) {
+              await loadDamageDrawingPayload(vehicleTemplate.drawings);
 
               setHandoverStatus(
-                `Loaded previous damage markings from same lorry (${shortRef(
-                  inherited.booking.id,
-                )}). Add to them and save this handover.`,
+                "Loaded latest saved damage markings for this lorry. Add to them and save this handover.",
                 "warn",
               );
-            } else if (data.found) {
-              setHandoverStatus("Saved handover draft loaded.", "ok");
             } else {
-              setHandoverStatus(
-                "No handover draft yet. Ready to start.",
-                "warn",
-              );
+              const inherited =
+                await loadLatestSameVehicleDamageDrawings(booking);
+
+              if (inherited?.drawings) {
+                await loadDamageDrawingPayload(inherited.drawings);
+
+                setHandoverStatus(
+                  `Loaded previous damage markings from same lorry (${shortRef(
+                    inherited.booking.id,
+                  )}). Add to them and save this handover.`,
+                  "warn",
+                );
+              } else if (data.found) {
+                setHandoverStatus("Saved handover draft loaded.", "ok");
+              } else {
+                setHandoverStatus(
+                  "No handover draft yet. Ready to start.",
+                  "warn",
+                );
+              }
             }
           }
 
           setTimeout(updateHandoverChecklist, 80);
-          if (data.found) {
-            setHandoverStatus("Saved handover draft loaded.", "ok");
-          } else {
-            setHandoverStatus("No handover draft yet. Ready to start.", "warn");
-          }
         } catch (err) {
           console.error("❌ Failed to load handover:", err);
           setHandoverStatus(err.message || "Failed to load handover.", "bad");
@@ -11203,6 +11299,8 @@ ${mobileOutstandingText}
         clearHandoverStatus();
 
         try {
+          const drawingsPayload = getCurrentDamageDrawingPayload();
+
           const res = await fetch(`${API_BASE}/api/admin/handover/save`, {
             method: "POST",
             headers: {
@@ -11219,7 +11317,7 @@ ${mobileOutstandingText}
                 customerSignature: HANDOVER_CUSTOMER_PAD?.toDataURL() || null,
 
                 // STEP 2E damage drawings.
-                drawings: getCurrentDamageDrawingPayload(),
+                drawings: drawingsPayload,
               },
             }),
           });
@@ -11229,6 +11327,8 @@ ${mobileOutstandingText}
           if (!res.ok || data.ok === false) {
             throw new Error(data?.error || "Failed to save handover");
           }
+
+          await saveLatestVehicleDamageDrawings(drawingsPayload);
 
           updateHandoverChecklist();
           setHandoverStatus("Handover draft saved ✓", "ok");
