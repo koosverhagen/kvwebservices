@@ -4673,6 +4673,50 @@
           font-size: 13px !important;
         }
       }
+
+      /* ===============================
+   STEP 2H — COMPLETED HANDOVER UI
+================================ */
+
+      #handover-complete-btn.completed,
+      #handover-complete-btn:disabled.completed {
+        background: #e6f4ea !important;
+        color: #137a3d !important;
+        border: 1px solid #bbf7d0 !important;
+        opacity: 1 !important;
+        cursor: default !important;
+      }
+
+      [data-open-handover].handover-is-complete {
+        background: #e6f4ea !important;
+        color: #137a3d !important;
+        border-color: #bbf7d0 !important;
+      }
+
+      .handover-complete-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 30px;
+
+        padding: 6px 12px;
+        border-radius: 999px;
+
+        background: #fff4e5;
+        color: #b45309;
+
+        font-size: 12px;
+        line-height: 1.15;
+        font-weight: 900;
+
+        text-align: center;
+      }
+
+      .handover-complete-pill.is-complete {
+        background: #e6f4ea;
+        color: #137a3d;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -6288,6 +6332,8 @@
       let HANDOVER_CUSTOMER_PAD = null;
 
       let CURRENT_HANDOVER_BOOKING = null;
+
+      const COMPLETED_HANDOVERS = new Set();
 
       /* ===============================
          EDIT MODAL ELEMENTS
@@ -10249,6 +10295,58 @@ ${mobileOutstandingText}
         setHandoverCheckItem(handoverCheckCustomer, hasCustomerSignature);
       }
 
+      function updateHandoverCompleteUi(isComplete) {
+        const complete = !!isComplete;
+
+        if (handoverCompleteBtn) {
+          handoverCompleteBtn.disabled = complete;
+          handoverCompleteBtn.textContent = complete
+            ? "Handover completed ✓"
+            : "Complete handover";
+
+          handoverCompleteBtn.classList.toggle("completed", complete);
+        }
+
+        if (handoverStatusSelect && complete) {
+          handoverStatusSelect.value = "complete";
+        }
+      }
+
+      function markBookingHandoverComplete(bookingId, isComplete = true) {
+        if (!bookingId) return;
+
+        if (isComplete) {
+          COMPLETED_HANDOVERS.add(String(bookingId));
+        } else {
+          COMPLETED_HANDOVERS.delete(String(bookingId));
+        }
+
+        document
+          .querySelectorAll(
+            `[data-handover-complete-for="${CSS.escape(String(bookingId))}"]`,
+          )
+          .forEach((el) => {
+            el.classList.toggle("is-complete", !!isComplete);
+            el.textContent = isComplete
+              ? "Handover complete ✓"
+              : "Handover pending";
+          });
+
+        document
+          .querySelectorAll(
+            `[data-open-handover="${CSS.escape(String(bookingId))}"]`,
+          )
+          .forEach((btn) => {
+            btn.classList.toggle("handover-is-complete", !!isComplete);
+
+            if (isComplete) {
+              btn.textContent = "View completed handover ✓";
+            } else if (!btn.textContent.trim()) {
+              btn.textContent = "Handover";
+            }
+          });
+      }
+
       function validateHandoverCanComplete() {
         const missing = [];
 
@@ -11563,14 +11661,17 @@ ${mobileOutstandingText}
           return;
         }
 
+        const isComplete = COMPLETED_HANDOVERS.has(String(booking.id));
+
         handoverSummary.innerHTML = `
-    ${makeDetailBox("Booking reference", shortRef(booking.id))}
-    ${makeDetailBox("Customer", booking.customerName || "—")}
-    ${makeDetailBox("Vehicle", booking.vehicleSnapshot?.name || booking.vehicleName || booking.vehicleId || "—")}
-    ${makeDetailBox("Pickup", booking.pickupAt ? formatDateTime(booking.pickupAt) : "—")}
-    ${makeDetailBox("Drop-off", booking.dropoffAt ? formatDateTime(booking.dropoffAt) : "—")}
-    ${makeDetailBox("Form", isFormComplete(booking) ? "Complete" : "Pending")}
-  `;
+  ${makeDetailBox("Booking reference", shortRef(booking.id))}
+  ${makeDetailBox("Customer", booking.customerName || "—")}
+  ${makeDetailBox("Vehicle", booking.vehicleSnapshot?.name || booking.vehicleName || booking.vehicleId || "—")}
+  ${makeDetailBox("Pickup", booking.pickupAt ? formatDateTime(booking.pickupAt) : "—")}
+  ${makeDetailBox("Drop-off", booking.dropoffAt ? formatDateTime(booking.dropoffAt) : "—")}
+  ${makeDetailBox("Form", isFormComplete(booking) ? "Complete" : "Pending")}
+  ${makeDetailBox("Handover", isComplete ? "Complete ✓" : "Pending")}
+`;
       }
 
       async function openHandoverModal(bookingId) {
@@ -11594,6 +11695,8 @@ ${mobileOutstandingText}
         }
 
         renderHandoverSummary(booking);
+
+        updateHandoverCompleteUi(false);
 
         openHandoverModalShell();
 
@@ -11621,6 +11724,11 @@ ${mobileOutstandingText}
           }
 
           const handover = data.handover || {};
+          const handoverIsComplete = handover.status === "complete";
+
+          markBookingHandoverComplete(bookingId, handoverIsComplete);
+          updateHandoverCompleteUi(handoverIsComplete);
+          renderHandoverSummary(booking);
 
           if (handoverStatusSelect) {
             handoverStatusSelect.value = handover.status || "draft";
@@ -11783,6 +11891,10 @@ ${mobileOutstandingText}
           }
 
           await saveHandoverDraft();
+
+          markBookingHandoverComplete(bookingId, true);
+          updateHandoverCompleteUi(true);
+          renderHandoverSummary(CURRENT_HANDOVER_BOOKING);
 
           setHandoverStatus(
             "Handover marked complete ✓ PDF/email will be added later.",
