@@ -8020,8 +8020,52 @@ async function handleBookingBySession(request, env) {
   }
 
   /* ===============================
-     STRIPE LOOKUP (fallback)
-  =============================== */
+   SESSION ID
+================================ */
+
+  const url = new URL(request.url);
+  const sessionId = String(url.searchParams.get("session_id") || "").trim();
+
+  if (!sessionId) {
+    return json({ error: "Missing session_id" }, 400);
+  }
+
+  /* ===============================
+   ⚡ FAST PATH — SESSION → BOOKING KV
+   Webhook saves this as session:{session.id}
+================================ */
+
+  const sessionKey = `session:${sessionId}`;
+
+  try {
+    const cached = await env.BOOKINGS_KV.get(sessionKey);
+
+    if (cached) {
+      const booking = JSON.parse(cached);
+
+      console.log("⚡ Booking by session fast path:", sessionKey);
+
+      return json({
+        found: true,
+        booking: {
+          ...booking,
+          pickupAt: cleanIso(booking.pickupAt),
+          dropoffAt: cleanIso(booking.dropoffAt),
+          extras: booking.extras || {},
+        },
+      });
+    }
+  } catch (err) {
+    console.log("⚠️ Session cache lookup failed:", err);
+  }
+
+  /* ===============================
+   STRIPE LOOKUP (fallback)
+================================ */
+
+  if (!env.STRIPE_SECRET_KEY) {
+    return json({ error: "Stripe not configured" }, 500);
+  }
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20",
@@ -8032,8 +8076,23 @@ async function handleBookingBySession(request, env) {
   try {
     session = await stripe.checkout.sessions.retrieve(sessionId);
   } catch (err) {
-    console.log("❌ Stripe lookup failed:", err);
-    return json({ error: "Stripe lookup failed" }, 500);
+    console.log("❌ Stripe lookup failed:", {
+      sessionId,
+      message: err?.message,
+      type: err?.type,
+      code: err?.code,
+      statusCode: err?.statusCode,
+    });
+
+    return json(
+      {
+        found: false,
+        notReady: true,
+        error: "Stripe lookup failed",
+        detail: err?.message || "Unknown Stripe error",
+      },
+      200,
+    );
   }
 
   const bookingId = session?.metadata?.bookingId || session?.id;
