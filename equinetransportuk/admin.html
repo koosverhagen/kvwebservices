@@ -4606,6 +4606,73 @@
           font-size: 8px !important;
         }
       }
+
+      /* ===============================
+   STEP 2G — COMPLETE HANDOVER BUTTON
+   Uses current .handover-inline-actions class
+   Must stay after all other handover action CSS
+================================ */
+
+      #handover-modal .handover-inline-actions.handover-actions-3 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 1fr !important;
+        gap: 14px !important;
+
+        margin-left: 18px !important;
+        margin-right: 18px !important;
+      }
+
+      #handover-modal .handover-inline-actions.handover-actions-3 .btn {
+        width: 100% !important;
+
+        min-height: 48px !important;
+        height: auto !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        text-align: center !important;
+        white-space: nowrap !important;
+
+        font-size: 15px !important;
+        line-height: 1.15 !important;
+        font-weight: 900 !important;
+      }
+
+      #handover-modal #handover-complete-btn {
+        background: #137a3d !important;
+        color: #ffffff !important;
+      }
+
+      @media (max-width: 768px) {
+        #handover-modal .handover-inline-actions.handover-actions-3 {
+          grid-template-columns: 1fr !important;
+          gap: 10px !important;
+
+          margin-left: 10px !important;
+          margin-right: 10px !important;
+        }
+
+        #handover-modal .handover-inline-actions.handover-actions-3 .btn {
+          min-height: 46px !important;
+          padding: 10px 10px !important;
+          border-radius: 17px !important;
+          font-size: 14px !important;
+        }
+      }
+
+      @media (max-width: 380px) {
+        #handover-modal .handover-inline-actions.handover-actions-3 {
+          margin-left: 8px !important;
+          margin-right: 8px !important;
+        }
+
+        #handover-modal .handover-inline-actions.handover-actions-3 .btn {
+          min-height: 42px !important;
+          font-size: 13px !important;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -5381,10 +5448,17 @@
               </div>
             </div>
           </div>
-
-          <div class="handover-inline-actions">
+          <div class="handover-inline-actions handover-actions-3">
             <button class="btn primary" id="handover-save-btn" type="button">
               Save handover draft
+            </button>
+
+            <button
+              class="btn primary"
+              id="handover-complete-btn"
+              type="button"
+            >
+              Complete handover
             </button>
 
             <button class="btn ghost" id="handover-close-btn" type="button">
@@ -6039,6 +6113,9 @@
       );
       const handoverCloseBtn = document.getElementById("handover-close-btn");
       const handoverSaveBtn = document.getElementById("handover-save-btn");
+      const handoverCompleteBtn = document.getElementById(
+        "handover-complete-btn",
+      );
 
       const handoverBookingIdInput = document.getElementById(
         "handover-booking-id",
@@ -10172,6 +10249,26 @@ ${mobileOutstandingText}
         setHandoverCheckItem(handoverCheckCustomer, hasCustomerSignature);
       }
 
+      function validateHandoverCanComplete() {
+        const missing = [];
+
+        const hasTermsSignature = !!HANDOVER_TERMS_PAD?.hasSignature?.();
+        const hasCustomerSignature = !!HANDOVER_CUSTOMER_PAD?.hasSignature?.();
+
+        if (!hasTermsSignature) {
+          missing.push("Terms & Conditions signature");
+        }
+
+        if (!hasCustomerSignature) {
+          missing.push("Customer signature");
+        }
+
+        return {
+          ok: missing.length === 0,
+          missing,
+        };
+      }
+
       function setActiveHandoverDamageTab(tabName = "front") {
         handoverDamageTabs.forEach((btn) => {
           btn.classList.toggle(
@@ -11648,6 +11745,63 @@ ${mobileOutstandingText}
         }
       }
 
+      async function completeHandover() {
+        const bookingId = handoverBookingIdInput?.value || "";
+
+        if (!bookingId) {
+          setHandoverStatus("Missing booking reference.", "bad");
+          return;
+        }
+
+        const validation = validateHandoverCanComplete();
+
+        if (!validation.ok) {
+          setHandoverStatus(
+            `Cannot complete yet. Missing: ${validation.missing.join(", ")}.`,
+            "bad",
+          );
+          return;
+        }
+
+        const ok = confirm(
+          "Mark this handover as complete? PDF generation and customer email will be added later.",
+        );
+
+        if (!ok) return;
+
+        const originalText =
+          handoverCompleteBtn?.textContent || "Complete handover";
+
+        if (handoverCompleteBtn) {
+          handoverCompleteBtn.disabled = true;
+          handoverCompleteBtn.textContent = "Completing…";
+        }
+
+        try {
+          if (handoverStatusSelect) {
+            handoverStatusSelect.value = "complete";
+          }
+
+          await saveHandoverDraft();
+
+          setHandoverStatus(
+            "Handover marked complete ✓ PDF/email will be added later.",
+            "ok",
+          );
+        } catch (err) {
+          console.error("❌ Failed to complete handover:", err);
+          setHandoverStatus(
+            err.message || "Failed to complete handover.",
+            "bad",
+          );
+        } finally {
+          if (handoverCompleteBtn) {
+            handoverCompleteBtn.disabled = false;
+            handoverCompleteBtn.textContent = originalText;
+          }
+        }
+      }
+
       function showModalLoading() {
         modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
         modalFields.innerHTML = "";
@@ -11745,6 +11899,7 @@ ${mobileOutstandingText}
       handoverModalClose?.addEventListener("click", closeHandoverModal);
       handoverCloseBtn?.addEventListener("click", closeHandoverModal);
       handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
+      handoverCompleteBtn?.addEventListener("click", completeHandover);
 
       damageDrawingClose?.addEventListener("click", closeDamageDrawingModal);
       damageDrawingCancel?.addEventListener("click", closeDamageDrawingModal);
