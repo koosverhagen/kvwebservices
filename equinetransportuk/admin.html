@@ -4717,6 +4717,21 @@
         background: #e6f4ea;
         color: #137a3d;
       }
+
+      /* ===============================
+   STEP 2H — MOBILE HANDOVER PILL LAYOUT
+================================ */
+
+      .mobile-link-actions .mobile-handover-complete-pill {
+        grid-column: 1 / -1 !important;
+
+        width: 100% !important;
+        min-height: 38px !important;
+
+        border-radius: 14px !important;
+
+        font-size: 13px !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -7573,15 +7588,29 @@
           ✏️ Edit
         </button>
 
-        <!-- 🧾 HANDOVER -->
+<!-- 🧾 HANDOVER -->
 <button
-  class="btn primary btn-small"
+  class="btn primary btn-small ${COMPLETED_HANDOVERS.has(String(booking.id)) ? "handover-is-complete" : ""}"
   type="button"
   data-open-handover="${escapeHtml(booking.id)}"
 >
-  🧾 Handover
+  ${
+    COMPLETED_HANDOVERS.has(String(booking.id))
+      ? "View completed handover ✓"
+      : "🧾 Handover"
+  }
 </button>
 
+<span
+  class="handover-complete-pill ${COMPLETED_HANDOVERS.has(String(booking.id)) ? "is-complete" : ""}"
+  data-handover-complete-for="${escapeHtml(booking.id)}"
+>
+  ${
+    COMPLETED_HANDOVERS.has(String(booking.id))
+      ? "Handover complete ✓"
+      : "Handover pending"
+  }
+</span>
         <!-- FORM -->
         <div class="stack">
           <strong>Form</strong>
@@ -9111,13 +9140,28 @@ ${notesBox}
     📝 View Form
   </button>
 
-  <button
-  class="mobile-link-btn"
+<button
+  class="mobile-link-btn ${COMPLETED_HANDOVERS.has(String(booking.id)) ? "handover-is-complete" : ""}"
   type="button"
   data-open-handover="${escapeHtml(booking.id)}"
 >
-  🧾 Handover
+  ${
+    COMPLETED_HANDOVERS.has(String(booking.id))
+      ? "View completed handover ✓"
+      : "🧾 Handover"
+  }
 </button>
+
+<span
+  class="handover-complete-pill mobile-handover-complete-pill ${COMPLETED_HANDOVERS.has(String(booking.id)) ? "is-complete" : ""}"
+  data-handover-complete-for="${escapeHtml(booking.id)}"
+>
+  ${
+    COMPLETED_HANDOVERS.has(String(booking.id))
+      ? "Handover complete ✓"
+      : "Handover pending"
+  }
+</span>
 
   ${mobileFormText}
   ${mobileFormEmail}
@@ -10341,8 +10385,10 @@ ${mobileOutstandingText}
 
             if (isComplete) {
               btn.textContent = "View completed handover ✓";
-            } else if (!btn.textContent.trim()) {
-              btn.textContent = "Handover";
+            } else {
+              btn.textContent = btn.classList.contains("mobile-link-btn")
+                ? "🧾 Handover"
+                : "🧾 Handover";
             }
           });
       }
