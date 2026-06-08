@@ -4495,6 +4495,117 @@
           font-size: 11px !important;
         }
       }
+
+      /* ===============================
+   STEP 2F — DAMAGE SIDE INDICATORS
+================================ */
+
+      #handover-modal .handover-damage-title-row {
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: space-between !important;
+        gap: 14px !important;
+      }
+
+      #handover-modal .handover-damage-title-row h4 {
+        margin: 0 !important;
+      }
+
+      #handover-modal .handover-damage-title-row p {
+        margin: 4px 0 0 !important;
+      }
+
+      #handover-modal #handover-clear-all-damage {
+        flex-shrink: 0 !important;
+        min-height: 36px !important;
+        padding: 7px 11px !important;
+        border-radius: 999px !important;
+        font-size: 12px !important;
+        font-weight: 900 !important;
+      }
+
+      #handover-modal #handover-clear-all-damage:disabled {
+        opacity: 0.45 !important;
+        cursor: not-allowed !important;
+      }
+
+      #handover-modal .handover-damage-side-summary {
+        margin-top: 12px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        width: 100% !important;
+
+        padding: 9px 12px !important;
+
+        border-radius: 999px !important;
+
+        background: #f1f5f9 !important;
+        color: #64748b !important;
+
+        font-size: 13px !important;
+        line-height: 1.2 !important;
+        font-weight: 900 !important;
+
+        text-align: center !important;
+      }
+
+      #handover-modal .handover-damage-side-summary.has-damage {
+        background: #e6f4ea !important;
+        color: #137a3d !important;
+      }
+
+      #handover-modal .handover-damage-tab.has-damage {
+        background: #e6f4ea !important;
+        border-color: #bbf7d0 !important;
+        color: #137a3d !important;
+      }
+
+      #handover-modal .handover-damage-tab.active.has-damage {
+        background: #137a3d !important;
+        border-color: #137a3d !important;
+        color: #ffffff !important;
+      }
+
+      #handover-modal .damage-dot {
+        margin-left: 4px !important;
+        font-size: 10px !important;
+        line-height: 1 !important;
+      }
+
+      @media (max-width: 768px) {
+        #handover-modal .handover-damage-title-row {
+          flex-direction: column !important;
+          align-items: stretch !important;
+          gap: 12px !important;
+        }
+
+        #handover-modal #handover-clear-all-damage {
+          width: 100% !important;
+          min-height: 42px !important;
+          font-size: 13px !important;
+        }
+
+        #handover-modal .handover-damage-side-summary {
+          border-radius: 18px !important;
+          font-size: 14px !important;
+          padding: 11px 12px !important;
+        }
+
+        #handover-modal .handover-damage-tab {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 2px !important;
+        }
+
+        #handover-modal .damage-dot {
+          margin-left: 2px !important;
+          font-size: 8px !important;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -5094,11 +5205,31 @@
 
             <div class="handover-damage-section">
               <div class="handover-damage-header">
-                <h4>Damage drawings</h4>
-                <p>
-                  Vehicle diagrams and red pen damage marking will be added in
-                  the next stages.
-                </p>
+                <div class="handover-damage-title-row">
+                  <div>
+                    <h4>Damage drawings</h4>
+                    <p>
+                      Mark existing damage on the vehicle diagrams. Saved
+                      markings carry over to the next booking for the same
+                      lorry.
+                    </p>
+                  </div>
+
+                  <button
+                    class="btn ghost btn-small"
+                    id="handover-clear-all-damage"
+                    type="button"
+                  >
+                    Clear all drawings
+                  </button>
+                </div>
+
+                <div
+                  id="handover-damage-side-summary"
+                  class="handover-damage-side-summary"
+                >
+                  No damage markings yet.
+                </div>
               </div>
 
               <div class="handover-damage-tabs" role="tablist">
@@ -5966,6 +6097,14 @@
       );
       const handoverDamageFuelImg = document.getElementById(
         "handover-damage-fuel-img",
+      );
+
+      const handoverClearAllDamageBtn = document.getElementById(
+        "handover-clear-all-damage",
+      );
+
+      const handoverDamageSideSummary = document.getElementById(
+        "handover-damage-side-summary",
       );
 
       const damageDrawingModal = document.getElementById(
@@ -10576,6 +10715,7 @@ ${mobileOutstandingText}
 
       function updateHandoverDamagePreviewMarkings() {
         applyAllDamagePreviewImages();
+        updateDamageSideIndicators();
       }
 
       function cloneDamageDrawingSet(value) {
@@ -10616,6 +10756,65 @@ ${mobileOutstandingText}
           return Array.isArray(strokes) && strokes.length > 0;
         });
       }
+
+      /* ===============================
+   STEP 2F — DAMAGE SIDE INDICATORS
+================================ */
+
+      function getDamageSideLabel(view) {
+        const labels = {
+          front: "Front",
+          rear: "Rear",
+          left: "Left",
+          right: "Right",
+          fuel: "Fuel",
+        };
+
+        return labels[view] || view;
+      }
+
+      function getDamageMarkedViews(drawings = DAMAGE_DRAWING_TEMP_DATA) {
+        return ["front", "rear", "left", "right", "fuel"].filter((view) => {
+          const strokes = drawings?.[view];
+          return Array.isArray(strokes) && strokes.length > 0;
+        });
+      }
+
+      function updateDamageSideIndicators() {
+        const markedViews = getDamageMarkedViews();
+
+        handoverDamageTabs.forEach((btn) => {
+          const view = btn.getAttribute("data-handover-damage-tab");
+          const hasMarking = markedViews.includes(view);
+
+          btn.classList.toggle("has-damage", hasMarking);
+
+          const baseLabel = getDamageSideLabel(view);
+
+          btn.innerHTML = hasMarking
+            ? `${baseLabel} <span class="damage-dot">●</span>`
+            : baseLabel;
+        });
+
+        if (handoverDamageSideSummary) {
+          if (!markedViews.length) {
+            handoverDamageSideSummary.textContent = "No damage markings yet.";
+            handoverDamageSideSummary.classList.remove("has-damage");
+          } else {
+            handoverDamageSideSummary.textContent =
+              "Marked: " + markedViews.map(getDamageSideLabel).join(", ");
+            handoverDamageSideSummary.classList.add("has-damage");
+          }
+        }
+
+        if (handoverClearAllDamageBtn) {
+          handoverClearAllDamageBtn.disabled = markedViews.length === 0;
+        }
+      }
+
+      /* ===============================
+   VEHICLE DAMAGE TEMPLATE HELPERS
+================================ */
 
       function getDamageVehicleStorageKey(booking) {
         if (!booking) return "";
@@ -10743,6 +10942,7 @@ ${mobileOutstandingText}
         }
 
         applyAllDamagePreviewImages();
+        updateDamageSideIndicators();
       }
 
       async function loadDamageDrawingPayload(drawings) {
@@ -10758,8 +10958,13 @@ ${mobileOutstandingText}
           );
         }
 
+        updateDamageSideIndicators();
         updateHandoverChecklist();
       }
+
+      /* ===============================
+   SAME-LORRY FALLBACK INHERITANCE
+================================ */
 
       function getBookingTimeValue(booking) {
         const value =
@@ -10832,100 +11037,6 @@ ${mobileOutstandingText}
         }
 
         return null;
-      }
-
-      function cloneDamageDrawingSet(value) {
-        if (!value || typeof value !== "object") {
-          return {
-            front: null,
-            rear: null,
-            left: null,
-            right: null,
-            fuel: null,
-          };
-        }
-
-        return {
-          front: Array.isArray(value.front)
-            ? JSON.parse(JSON.stringify(value.front))
-            : null,
-          rear: Array.isArray(value.rear)
-            ? JSON.parse(JSON.stringify(value.rear))
-            : null,
-          left: Array.isArray(value.left)
-            ? JSON.parse(JSON.stringify(value.left))
-            : null,
-          right: Array.isArray(value.right)
-            ? JSON.parse(JSON.stringify(value.right))
-            : null,
-          fuel: Array.isArray(value.fuel)
-            ? JSON.parse(JSON.stringify(value.fuel))
-            : null,
-        };
-      }
-
-      function hasAnyDamageDrawings(drawings) {
-        if (!drawings || typeof drawings !== "object") return false;
-
-        return ["front", "rear", "left", "right", "fuel"].some((view) => {
-          const strokes = drawings[view];
-          return Array.isArray(strokes) && strokes.length > 0;
-        });
-      }
-
-      function getCurrentDamageDrawingPayload() {
-        return {
-          vehicleId: CURRENT_HANDOVER_BOOKING?.vehicleId || null,
-          vehicleName:
-            CURRENT_HANDOVER_BOOKING?.vehicleSnapshot?.name ||
-            CURRENT_HANDOVER_BOOKING?.vehicleName ||
-            null,
-          assetPrefix: getHandoverDamageAssetPrefix(CURRENT_HANDOVER_BOOKING),
-          baseSrcs: { ...HANDOVER_DAMAGE_BASE_SRCS },
-          strokes: cloneDamageDrawingSet(DAMAGE_DRAWING_TEMP_DATA),
-          updatedAt: new Date().toISOString(),
-        };
-      }
-
-      async function rebuildDamagePreviewDataFromStrokes() {
-        DAMAGE_DRAWING_PREVIEW_DATA = {
-          front: null,
-          rear: null,
-          left: null,
-          right: null,
-          fuel: null,
-        };
-
-        for (const view of ["front", "rear", "left", "right", "fuel"]) {
-          const strokes = DAMAGE_DRAWING_TEMP_DATA?.[view];
-
-          if (Array.isArray(strokes) && strokes.length) {
-            try {
-              DAMAGE_DRAWING_PREVIEW_DATA[view] =
-                await buildDamagePreviewComposite(view, strokes);
-            } catch (err) {
-              console.warn(`Damage preview rebuild failed for ${view}:`, err);
-            }
-          }
-        }
-
-        applyAllDamagePreviewImages();
-      }
-
-      async function loadDamageDrawingPayload(drawings) {
-        const strokes = drawings?.strokes || drawings || {};
-
-        DAMAGE_DRAWING_TEMP_DATA = cloneDamageDrawingSet(strokes);
-
-        await rebuildDamagePreviewDataFromStrokes();
-
-        if (CURRENT_DAMAGE_DRAWING_VIEW && DAMAGE_DRAWING_PAD) {
-          DAMAGE_DRAWING_PAD.fromStrokeData?.(
-            DAMAGE_DRAWING_TEMP_DATA[CURRENT_DAMAGE_DRAWING_VIEW] || null,
-          );
-        }
-
-        updateHandoverChecklist();
       }
 
       function getBookingTimeValue(booking) {
@@ -11022,6 +11133,7 @@ ${mobileOutstandingText}
         DAMAGE_DRAWING_PAD?.clear?.();
 
         applyAllDamagePreviewImages();
+        updateDamageSideIndicators();
       }
 
       function initialiseDamageDrawingPad() {
@@ -11651,6 +11763,9 @@ ${mobileOutstandingText}
         DAMAGE_DRAWING_PREVIEW_DATA[CURRENT_DAMAGE_DRAWING_VIEW] = null;
 
         applyDamagePreviewImage(CURRENT_DAMAGE_DRAWING_VIEW);
+
+        updateDamageSideIndicators();
+        updateHandoverChecklist();
       });
 
       damageDrawingSave?.addEventListener("click", async () => {
@@ -11741,6 +11856,41 @@ ${mobileOutstandingText}
         updateHandoverChecklist();
         setHandoverStatus(
           "Customer signature cleared. Save to keep this change.",
+          "warn",
+        );
+      });
+
+      handoverClearAllDamageBtn?.addEventListener("click", () => {
+        const ok = confirm(
+          "Clear all damage drawings for this handover? This only affects this booking after you press Save.",
+        );
+
+        if (!ok) return;
+
+        DAMAGE_DRAWING_TEMP_DATA = {
+          front: null,
+          rear: null,
+          left: null,
+          right: null,
+          fuel: null,
+        };
+
+        DAMAGE_DRAWING_PREVIEW_DATA = {
+          front: null,
+          rear: null,
+          left: null,
+          right: null,
+          fuel: null,
+        };
+
+        DAMAGE_DRAWING_PAD?.clear?.();
+
+        applyAllDamagePreviewImages();
+        updateDamageSideIndicators();
+        updateHandoverChecklist();
+
+        setHandoverStatus(
+          "All damage drawings cleared. Press Save handover draft to keep this change.",
           "warn",
         );
       });
