@@ -12391,13 +12391,35 @@ ${mobileOutstandingText}
       line-height: 1.05;
     }
 
-    .vehicle-line {
-      display: grid;
-      grid-template-columns: 38mm 1fr;
-      margin-bottom: 1.5mm;
-      font-size: 10.5pt;
-      line-height: 1.08;
-    }
+.page-2-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1mm 8mm;
+  margin-bottom: 1.5mm;
+
+  font-size: 10.2pt;
+  line-height: 1.08;
+}
+
+.page-2-meta-item {
+  display: grid;
+  grid-template-columns: 28mm 1fr;
+  column-gap: 2mm;
+  align-items: start;
+}
+
+.page-2-meta-item.wide {
+  grid-column: 1 / -1;
+  grid-template-columns: 28mm 1fr;
+}
+
+.page-2-meta-item strong {
+  font-weight: 800;
+}
+
+.page-2-meta-item span {
+  font-weight: 500;
+}
 
     .comments-block {
       margin-bottom: 1.5mm;
@@ -12502,6 +12524,9 @@ ${mobileOutstandingText}
   display: flex;
   align-items: flex-start;
   justify-content: center;
+
+  /* Align fuel gauge with the signature rectangle, not the title/date */
+  padding-top: 4.8mm;
 }
 
 .damage-cell.fuel img {
@@ -12717,13 +12742,26 @@ ${mobileOutstandingText}
   </section>
 
   <section class="page page-2">
-    <div class="page-2-header">
-      <h1>Vehicle Condition Information</h1>
-      <div class="vehicle-line">
-        <strong>Lorry / Vehicle</strong>
-        <span>${escapeHtml(vehicleName)}</span>
-      </div>
+<div class="page-2-header">
+  <h1>Vehicle Condition Information</h1>
+
+  <div class="page-2-meta-grid">
+    <div class="page-2-meta-item">
+      <strong>Lorry / Vehicle</strong>
+      <span>${escapeHtml(vehicleName)}</span>
     </div>
+
+    <div class="page-2-meta-item">
+      <strong>Hirer</strong>
+      <span>${escapeHtml(customerName)}</span>
+    </div>
+
+    <div class="page-2-meta-item wide">
+      <strong>Hire date</strong>
+      <span>${escapeHtml(hireDates)}</span>
+    </div>
+  </div>
+</div>
 
     <div class="comments-block">
       <h2>Comments</h2>
