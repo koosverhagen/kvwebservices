@@ -1168,6 +1168,14 @@ export default {
 
       if (
         request.method === "POST" &&
+        url.pathname === "/api/admin/handover/customer-link"
+      ) {
+        const response = await handleAdminHandoverCustomerLink(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      if (
+        request.method === "POST" &&
         url.pathname === "/api/admin/handover/save"
       ) {
         const response = await handleAdminHandoverSave(request, env);
@@ -10263,6 +10271,169 @@ async function handleAdminHandoverEmailCopy(request, env) {
     status,
     emailsEnabled,
     migrationMode,
+  });
+}
+
+async function handleAdminHandoverCustomerLink(request, env) {
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return json(
+      {
+        ok: false,
+        error: "Invalid JSON body",
+      },
+      400,
+    );
+  }
+
+  const bookingId = cleanHandoverBookingId(body.bookingId);
+
+  if (!bookingId) {
+    return json(
+      {
+        ok: false,
+        error: "Missing bookingId",
+      },
+      400,
+    );
+  }
+
+  const handoverRaw = await env.BOOKINGS_KV.get(getHandoverKvKey(bookingId));
+
+  if (!handoverRaw) {
+    return json(
+      {
+        ok: false,
+        error: "No saved handover found for this booking",
+      },
+      404,
+    );
+  }
+
+  let handover;
+
+  try {
+    handover = JSON.parse(handoverRaw);
+  } catch {
+    return json(
+      {
+        ok: false,
+        error: "Saved handover data could not be read",
+      },
+      500,
+    );
+  }
+
+  const status = String(handover?.status || "draft").toLowerCase();
+
+  if (status !== "complete") {
+    return json(
+      {
+        ok: false,
+        error: "Handover must be complete before creating customer copy link",
+        status,
+      },
+      400,
+    );
+  }
+
+  let booking = null;
+
+  try {
+    booking = await findBookingById(env, bookingId);
+  } catch (err) {
+    console.warn("⚠️ Could not load booking for customer handover link:", err);
+  }
+
+  const customerEmail = String(
+    body.customerEmail ||
+      booking?.customerEmail ||
+      booking?.email ||
+      booking?.customer_email ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  const customerName = String(
+    body.customerName || booking?.customerName || booking?.customer_name || "",
+  ).trim();
+
+  const vehicleName = String(
+    body.vehicleName ||
+      booking?.vehicleSnapshot?.name ||
+      booking?.vehicleName ||
+      booking?.vehicleId ||
+      "",
+  ).trim();
+
+  if (!customerEmail) {
+    return json(
+      {
+        ok: false,
+        error: "No customer email found for this booking",
+      },
+      400,
+    );
+  }
+
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 30);
+
+  const tokenRecord = {
+    token,
+    bookingId,
+    customerEmail,
+    customerName,
+    vehicleName,
+    purpose: "handover_customer_copy",
+    createdAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+  };
+
+  await env.BOOKINGS_KV.put(
+    `handover-copy-token:${token}`,
+    JSON.stringify(tokenRecord),
+    {
+      expirationTtl: 60 * 60 * 24 * 30,
+    },
+  );
+
+  const publicSiteUrl = String(
+    env.PUBLIC_SITE_URL || "https://kvwebservices.co.uk/equinetransportuk",
+  ).replace(/\/+$/, "");
+
+  const customerLink = `${publicSiteUrl}/handover-copy.html?token=${encodeURIComponent(
+    token,
+  )}`;
+
+  console.log("🔗 Customer handover copy link created — email NOT sent", {
+    bookingId,
+    customerEmail,
+    customerName,
+    vehicleName,
+    customerLink,
+    expiresAt: tokenRecord.expiresAt,
+  });
+
+  return json({
+    ok: true,
+    created: true,
+    sent: false,
+    dryRun: true,
+    reason: "CUSTOMER_LINK_CREATED_EMAIL_NOT_SENT",
+    message:
+      "Customer handover copy link created. Email sending is still disabled until go-live.",
+    bookingId,
+    customerEmail,
+    customerName,
+    vehicleName,
+    customerLink,
+    expiresAt: tokenRecord.expiresAt,
   });
 }
 
