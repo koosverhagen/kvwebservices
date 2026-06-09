@@ -12427,14 +12427,15 @@ ${mobileOutstandingText}
       grid-template-rows: auto auto auto 1fr auto;
       row-gap: 1.5mm;
     }
+.damage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1mm 2mm;
+  align-items: start;
 
-    .damage-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1mm 2mm;
-      align-items: start;
-      margin-top: 0;
-    }
+  /* Move drawings down so they sit visually centred between comments and fuel/signature */
+  margin-top: 12mm;
+}
 
     .damage-cell {
       page-break-inside: avoid;
@@ -12486,14 +12487,16 @@ ${mobileOutstandingText}
       font-size: 9pt;
     }
 
-    .bottom-row {
-      display: grid;
-      grid-template-columns: 1fr 78mm;
-      gap: 4mm;
-      align-items: end;
-      margin-top: auto;
-      padding-top: 1mm;
-    }
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 78mm;
+  gap: 4mm;
+  align-items: end;
+
+  /* Keep fuel/signature lower, but not so low that drawings look detached */
+  margin-top: 6mm;
+  padding-top: 0;
+}
 
     .damage-cell.fuel img {
       width: 100%;
@@ -12536,24 +12539,28 @@ ${mobileOutstandingText}
       line-height: 1.05;
     }
 
-    .footer {
-      display: grid;
-      grid-template-columns: 26mm 1fr;
-      align-items: end;
-      gap: 5mm;
+  .footer {
+  display: grid;
+  grid-template-columns: 1fr 34mm;
+  align-items: end;
+  gap: 5mm;
 
-      font-size: 10pt;
-      line-height: 1.05;
+  font-size: 10pt;
+  line-height: 1.05;
 
-      padding-top: 1.5mm;
-      margin-top: 0;
-    }
+  padding-top: 1.5mm;
+  margin-top: 0;
+}
 
-    .footer img {
-      width: 24mm;
-      transform: rotate(-8deg);
-      opacity: 0.95;
-    }
+.footer img {
+  width: 32mm;
+  justify-self: end;
+
+  /* Straight logo */
+  transform: none;
+
+  opacity: 0.95;
+}
 
     .print-button {
       position: fixed;
@@ -12735,11 +12742,12 @@ ${mobileOutstandingText}
     </div>
 
     <div class="footer">
-      <img src="${logoSrc}" alt="Equine Transport UK" />
-      <div>
-        Contact: info@equinetransportuk.com | 07812 188871 / 07584 578654
-      </div>
-    </div>
+  <div>
+    Contact: info@equinetransportuk.com | 07812 188871 / 07584 578654
+  </div>
+
+  <img src="${logoSrc}" alt="Equine Transport UK" />
+</div>
   </section>
 
   <script>
