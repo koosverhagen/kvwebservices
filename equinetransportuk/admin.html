@@ -11983,16 +11983,14 @@ ${mobileOutstandingText}
 
         if (!src) {
           return `
-      <div class="damage-cell empty">
-        <div class="damage-label">${escapeHtml(label)}</div>
+      <div class="damage-image-wrap" aria-label="${escapeHtml(label)}">
         <div class="missing-drawing">No drawing</div>
       </div>
     `;
         }
 
         return `
-    <div class="damage-cell">
-      <div class="damage-label">${escapeHtml(label)}</div>
+    <div class="damage-image-wrap" aria-label="${escapeHtml(label)}">
       <img src="${src}" alt="${escapeHtml(label)}" />
     </div>
   `;
@@ -12379,22 +12377,22 @@ ${mobileOutstandingText}
       font-size: 10pt;
     }
 
-         .page-2-header {
+            .page-2-header {
       margin-bottom: 2mm;
     }
 
     .page-2-header h1 {
       font-size: 14pt;
       margin: 0 0 0.5mm;
-      line-height: 1.1;
+      line-height: 1.08;
     }
 
     .vehicle-line {
       display: grid;
-      grid-template-columns: 42mm 1fr;
+      grid-template-columns: 40mm 1fr;
       margin-bottom: 2mm;
       font-size: 10.5pt;
-      line-height: 1.15;
+      line-height: 1.12;
     }
 
     .comments-block {
@@ -12404,33 +12402,31 @@ ${mobileOutstandingText}
     .comments-block h2 {
       font-size: 11pt;
       margin: 0 0 0.5mm;
-      line-height: 1.1;
+      line-height: 1.08;
     }
 
     .comments-text {
       min-height: 4mm;
-      max-height: 10mm;
+      max-height: 9mm;
       overflow: hidden;
       white-space: pre-wrap;
       font-size: 9.5pt;
-      line-height: 1.1;
+      line-height: 1.08;
     }
 
-    /* KEEP PAGE 2 ON ONE SHEET */
     .page.page-2 {
       height: 277mm;
       min-height: 0;
       overflow: hidden;
-
       display: grid;
       grid-template-rows: auto auto 1fr auto;
-      row-gap: 2.5mm;
+      row-gap: 2mm;
     }
 
     .damage-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 3mm 6mm;
+      gap: 2mm 5mm;
       align-items: start;
       margin-top: 0;
     }
@@ -12444,12 +12440,8 @@ ${mobileOutstandingText}
       min-height: 0;
     }
 
-    .damage-label {
-      text-align: left;
-      font-weight: 800;
-      font-size: 9pt;
-      margin-bottom: 0.8mm;
-      line-height: 1.05;
+    .damage-image-wrap {
+      width: 100%;
     }
 
     .damage-cell img {
@@ -12459,17 +12451,20 @@ ${mobileOutstandingText}
       display: block;
     }
 
-    /* MAKE DRAWINGS BIGGER */
     .damage-cell.side img {
-      height: 52mm;
+      height: 58mm;
     }
 
     .damage-cell.front-rear img {
-      height: 64mm;
+      height: 69mm;
+    }
+
+    .damage-cell.fuel img {
+      height: 48mm;
     }
 
     .missing-drawing {
-      height: 40mm;
+      height: 42mm;
       border: 1px dashed #cbd5e1;
       color: #64748b;
       display: flex;
@@ -12480,14 +12475,10 @@ ${mobileOutstandingText}
 
     .bottom-row {
       display: grid;
-      grid-template-columns: 1fr 80mm;
-      gap: 6mm;
+      grid-template-columns: 1fr 78mm;
+      gap: 5mm;
       align-items: end;
-      margin-top: 0;
-    }
-
-    .damage-cell.fuel img {
-      height: 44mm;
+      margin-top: 1mm;
     }
 
     .page.page-2 .signature-title {
@@ -12499,16 +12490,16 @@ ${mobileOutstandingText}
     }
 
     .page.page-2 .signature-box img {
-      width: 80mm;
-      height: 30mm;
+      width: 78mm;
+      height: 29mm;
       object-fit: contain;
       border: 1px solid #111827;
       display: block;
     }
 
     .page.page-2 .signature-empty {
-      width: 80mm;
-      height: 30mm;
+      width: 78mm;
+      height: 29mm;
       border: 1px solid #111827;
       color: #6b7280;
       font-style: italic;
@@ -12527,19 +12518,17 @@ ${mobileOutstandingText}
 
     .footer {
       display: grid;
-      grid-template-columns: 18mm 1fr;
+      grid-template-columns: 16mm 1fr;
       align-items: end;
       gap: 4mm;
-
-      font-size: 9pt;
-      line-height: 1.05;
-
+      font-size: 8.7pt;
+      line-height: 1.02;
       padding-top: 0.5mm;
       margin-top: 0;
     }
 
     .footer img {
-      width: 16mm;
+      width: 14mm;
       transform: rotate(-8deg);
       opacity: 0.95;
     }
