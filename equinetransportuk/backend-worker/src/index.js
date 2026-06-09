@@ -8917,40 +8917,64 @@ function toLondonLocalISOString(date) {
 const EMAIL_BRAND_BLOCK = `
   <div style="
     margin:0 0 22px;
-    padding:14px 18px;
+    padding:18px 20px;
     background:#ffffff;
     border:1px solid #dbe1e8;
-    border-radius:14px;
-    text-align:center;
+    border-radius:22px;
   ">
-    <div style="
-      font-size:20px;
-      font-weight:800;
-      color:#1d2530;
-      line-height:1.2;
-    ">
-      Equine Transport UK
-    </div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
+      <tr>
+        <td width="22%" style="vertical-align:middle;font-size:0;line-height:0;">
+          &nbsp;
+        </td>
 
-    <div style="
-      margin-top:5px;
-      font-size:13px;
-      font-weight:700;
-      color:#5a6675;
-      line-height:1.35;
-    ">
-      Part of the East Grinstead Tyre Service Group
-    </div>
+        <td width="56%" style="vertical-align:middle;text-align:center;">
+          <div style="
+            font-size:30px;
+            font-weight:800;
+            color:#1d2530;
+            line-height:1.15;
+            margin:0;
+          ">
+            Equine Transport UK
+          </div>
 
-    <div style="
-      margin-top:5px;
-      font-size:14px;
-      font-weight:800;
-      color:#1673ea;
-      line-height:1.35;
-    ">
-      Self Drive or Driven
-    </div>
+          <div style="
+            margin-top:8px;
+            font-size:14px;
+            font-weight:700;
+            color:#5a6675;
+            line-height:1.35;
+          ">
+            Part of the East Grinstead Tyre Service Group
+          </div>
+
+          <div style="
+            margin-top:8px;
+            font-size:16px;
+            font-weight:800;
+            color:#2f6fe4;
+            line-height:1.35;
+          ">
+            Self Drive or Driven
+          </div>
+        </td>
+
+        <td width="22%" style="vertical-align:middle;text-align:right;">
+          <img
+            src="https://kvwebservices.co.uk/equinetransportuk/images/logo.png"
+            alt="Equine Transport UK"
+            style="
+              display:block;
+              width:110px;
+              max-width:110px;
+              height:auto;
+              margin-left:auto;
+            "
+          >
+        </td>
+      </tr>
+    </table>
   </div>
 `;
 
