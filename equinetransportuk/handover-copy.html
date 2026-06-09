@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Signed Handover Report | Equine Transport UK</title>
+
+    <style>
+      :root {
+        --text: #111827;
+        --muted: #64748b;
+        --line: #dbe1e8;
+        --blue: #1f6feb;
+        --green: #137a3d;
+        --warn: #b45309;
+        --bad: #b42318;
+        --soft: #f8fafc;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Arial,
+          sans-serif;
+        color: var(--text);
+        background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+      }
+
+      .screen-shell {
+        width: min(980px, calc(100vw - 24px));
+        margin: 0 auto;
+        padding: 18px 0 40px;
+      }
+
+      .top-card {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 18px;
+        margin-bottom: 16px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      .brand-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .brand-row h1 {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.08;
+        letter-spacing: -0.6px;
+      }
+
+      .brand-row p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .logo {
+        width: 92px;
+        height: auto;
+      }
+
+      .notice {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: #e6f4ea;
+        color: var(--green);
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .btn {
+        appearance: none;
+        border: none;
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 14px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .btn.primary {
+        background: var(--blue);
+        color: #ffffff;
+      }
+
+      .btn.ghost {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        color: var(--text);
+      }
+
+      .status {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px;
+        margin-top: 16px;
+        font-weight: 800;
+        color: var(--muted);
+      }
+
+      .status.bad {
+        background: #fff1f2;
+        color: var(--bad);
+        border-color: #fecdd3;
+      }
+
+      .status.warn {
+        background: #fff7ed;
+        color: var(--warn);
+        border-color: #fed7aa;
+      }
+
+      .report-wrap {
+        display: none;
+      }
+
+      .report-wrap.ready {
+        display: block;
+      }
+
+      .page {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        margin-bottom: 16px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      .page h2 {
+        margin: 0 0 12px;
+        font-size: 22px;
+        letter-spacing: -0.3px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .box {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+        background: var(--soft);
+      }
+
+      .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 900;
+        margin-bottom: 4px;
+      }
+
+      .value {
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.3;
+        word-break: break-word;
+      }
+
+      .comments {
+        white-space: pre-wrap;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        background: var(--soft);
+        min-height: 70px;
+        line-height: 1.45;
+      }
+
+      .terms {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        background: #ffffff;
+      }
+
+      .terms ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .terms li {
+        margin-bottom: 7px;
+        line-height: 1.35;
+      }
+
+      .signature-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .signature-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        background: #ffffff;
+      }
+
+      .signature-card h3 {
+        margin: 0 0 10px;
+        font-size: 15px;
+      }
+
+      .signature-card img {
+        width: 100%;
+        height: 110px;
+        object-fit: contain;
+        border: 1px solid #111827;
+        background: #ffffff;
+      }
+
+      .damage-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .damage-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+        background: #ffffff;
+      }
+
+      .damage-card h3 {
+        margin: 0 0 8px;
+        font-size: 14px;
+      }
+
+      .damage-card img {
+        width: 100%;
+        height: 240px;
+        object-fit: contain;
+        display: block;
+      }
+
+      .damage-card.fuel img {
+        height: 160px;
+      }
+
+      .footer-note {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+        margin-top: 12px;
+      }
+
+      @media (max-width: 720px) {
+        .brand-row {
+          grid-template-columns: 1fr;
+        }
+
+        .logo {
+          width: 78px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .signature-grid,
+        .damage-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @page {
+        size: A4;
+        margin: 9mm;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .screen-shell {
+          width: auto;
+          padding: 0;
+        }
+
+        .top-card,
+        .actions,
+        #status {
+          display: none !important;
+        }
+
+        .report-wrap,
+        .report-wrap.ready {
+          display: block;
+        }
+
+        .page {
+          width: 192mm;
+          min-height: 277mm;
+          border: none;
+          box-shadow: none;
+          border-radius: 0;
+          padding: 0;
+          margin: 0;
+          page-break-after: always;
+        }
+
+        .page:last-child {
+          page-break-after: auto;
+        }
+
+        .grid {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 4mm;
+        }
+
+        .box {
+          border-radius: 3mm;
+          padding: 3mm;
+        }
+
+        .signature-card img {
+          height: 28mm;
+        }
+
+        .damage-grid {
+          gap: 4mm;
+        }
+
+        .damage-card {
+          border: none;
+          padding: 0;
+        }
+
+        .damage-card h3 {
+          display: none;
+        }
+
+        .damage-card img {
+          height: 62mm;
+        }
+
+        .damage-card.fuel img {
+          height: 34mm;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="screen-shell">
+      <section class="top-card">
+        <div class="brand-row">
+          <div>
+            <h1>Equine Transport UK</h1>
+            <p>Signed handover / damage report copy</p>
+            <p>Part of the East Grinstead Tyre Service Group</p>
+          </div>
+
+          <img class="logo" src="images/logo.png" alt="Equine Transport UK" />
+        </div>
+
+        <div class="notice">
+          This is your signed vehicle handover and damage report copy. Please
+          keep it for your records before taking the lorry.
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" type="button" onclick="window.print()">
+            Print / Save as PDF
+          </button>
+          <button class="btn ghost" type="button" onclick="location.reload()">
+            Refresh
+          </button>
+        </div>
+      </section>
+
+      <div id="status" class="status">Loading your handover report…</div>
+
+      <div id="report" class="report-wrap">
+        <section class="page">
+          <h2>Hirer Information and Terms</h2>
+
+          <div class="grid" id="info-grid"></div>
+
+          <h2>Terms and Conditions Acceptance</h2>
+          <div class="terms">
+            <ul>
+              <li>
+                The hirer confirms they have inspected the vehicle condition and
+                fuel level before taking the lorry.
+              </li>
+              <li>
+                Fuel level must match on return. Charges may apply if the
+                vehicle is returned with less fuel.
+              </li>
+              <li>
+                The hirer is responsible for charges incurred during the hire,
+                including emission, congestion, toll, and clean air zone
+                charges.
+              </li>
+              <li>
+                Any new damage, late return, excess mileage, or other agreed
+                charges may be deducted from the deposit or charged separately.
+              </li>
+              <li>
+                Full terms and conditions are available from Equine Transport
+                UK.
+              </li>
+            </ul>
+          </div>
+
+          <div class="signature-grid">
+            <div class="signature-card">
+              <h3>Terms & Conditions Signature</h3>
+              <img id="terms-signature" alt="Terms signature" />
+            </div>
+
+            <div class="signature-card">
+              <h3>Customer Handover Signature</h3>
+              <img id="customer-signature" alt="Customer signature" />
+            </div>
+          </div>
+
+          <p class="footer-note">
+            This copy was generated from the completed handover record held by
+            Equine Transport UK.
+          </p>
+        </section>
+
+        <section class="page">
+          <h2>Vehicle Condition Information</h2>
+
+          <div class="grid" id="vehicle-grid"></div>
+
+          <h2>Comments</h2>
+          <div id="comments" class="comments"></div>
+
+          <h2>Damage Drawings</h2>
+
+          <div class="damage-grid">
+            <div class="damage-card">
+              <h3>Left side</h3>
+              <img id="damage-left" alt="Left side damage drawing" />
+            </div>
+
+            <div class="damage-card">
+              <h3>Right side</h3>
+              <img id="damage-right" alt="Right side damage drawing" />
+            </div>
+
+            <div class="damage-card">
+              <h3>Front</h3>
+              <img id="damage-front" alt="Front damage drawing" />
+            </div>
+
+            <div class="damage-card">
+              <h3>Rear</h3>
+              <img id="damage-rear" alt="Rear damage drawing" />
+            </div>
+
+            <div class="damage-card fuel">
+              <h3>Fuel gauge</h3>
+              <img id="damage-fuel" alt="Fuel gauge drawing" />
+            </div>
+          </div>
+
+          <p class="footer-note">
+            Contact: info@equinetransportuk.com | 07812 188871 / 07584 578654
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
+
+      const statusEl = document.getElementById("status");
+      const reportEl = document.getElementById("report");
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function setStatus(message, type = "") {
+        statusEl.textContent = message;
+        statusEl.className = `status ${type}`;
+      }
+
+      function getToken() {
+        return new URLSearchParams(window.location.search).get("token") || "";
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "—";
+
+        const d = new Date(value);
+        if (!Number.isFinite(d.getTime())) return "—";
+
+        return d.toLocaleString("en-GB", {
+          timeZone: "Europe/London",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function makeBox(label, value) {
+        return `
+          <div class="box">
+            <div class="label">${escapeHtml(label)}</div>
+            <div class="value">${escapeHtml(value || "—")}</div>
+          </div>
+        `;
+      }
+
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          if (!src) {
+            reject(new Error("Missing image source"));
+            return;
+          }
+
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+      }
+
+      function drawStrokes(ctx, strokes, width, height) {
+        if (!Array.isArray(strokes)) return;
+
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#dc2626";
+        ctx.lineWidth = Math.max(
+          4,
+          Math.round(Math.min(width, height) * 0.006),
+        );
+
+        strokes.forEach((stroke) => {
+          if (!Array.isArray(stroke) || stroke.length < 2) return;
+
+          ctx.beginPath();
+
+          stroke.forEach((point, index) => {
+            const x = Number(point.x || 0) * width;
+            const y = Number(point.y || 0) * height;
+
+            if (index === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          });
+
+          ctx.stroke();
+        });
+      }
+
+      async function buildDamageImage(baseSrc, strokes) {
+        if (!baseSrc) return "";
+
+        const baseImg = await loadImage(baseSrc);
+
+        const width = baseImg.naturalWidth || baseImg.width || 1000;
+        const height = baseImg.naturalHeight || baseImg.height || 700;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.drawImage(baseImg, 0, 0, width, height);
+        drawStrokes(ctx, strokes, width, height);
+
+        return canvas.toDataURL("image/png");
+      }
+
+      async function setDamageImage(view, handover) {
+        const img = document.getElementById(`damage-${view}`);
+        if (!img) return;
+
+        const drawings = handover.drawings || {};
+        const baseSrc = drawings.baseSrcs?.[view] || "";
+        const strokes = drawings.strokes?.[view] || null;
+
+        try {
+          img.src = await buildDamageImage(baseSrc, strokes);
+        } catch (err) {
+          console.warn(`Could not build ${view} damage image:`, err);
+          img.style.display = "none";
+        }
+      }
+
+      async function loadReport() {
+        const token = getToken();
+
+        if (!token) {
+          setStatus("This handover copy link is missing a token.", "bad");
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/handover-copy?token=${encodeURIComponent(token)}`,
+          );
+
+          const data = await res.json();
+
+          if (!res.ok || data.ok === false) {
+            throw new Error(data?.error || "Could not load handover report.");
+          }
+
+          const booking = data.booking || {};
+          const handover = data.handover || {};
+
+          document.title = `Signed Handover Report | ${
+            booking.customerName || "Equine Transport UK"
+          }`;
+
+          document.getElementById("info-grid").innerHTML = [
+            makeBox("Booking reference", booking.id || data.bookingId),
+            makeBox("Customer", booking.customerName),
+            makeBox("Email", booking.customerEmail),
+            makeBox("Mobile", booking.customerMobile),
+            makeBox("Pickup", formatDateTime(booking.pickupAt)),
+            makeBox("Drop-off", formatDateTime(booking.dropoffAt)),
+          ].join("");
+
+          document.getElementById("vehicle-grid").innerHTML = [
+            makeBox("Vehicle", booking.vehicleName),
+            makeBox("Form", booking.formCompleted ? "Complete" : "Pending"),
+            makeBox("Deposit", booking.depositPaid ? "Secured" : "Pending"),
+            makeBox(
+              "Payment",
+              booking.outstandingPaid
+                ? "Fully paid"
+                : `Outstanding £${Number(booking.outstandingAmount || 0).toFixed(2)}`,
+            ),
+            makeBox("Report completed", formatDateTime(handover.completedAt)),
+            makeBox("Link expires", formatDateTime(data.token?.expiresAt)),
+          ].join("");
+
+          document.getElementById("comments").textContent =
+            handover.comments || "No comments added.";
+
+          const termsSignature = document.getElementById("terms-signature");
+          const customerSignature =
+            document.getElementById("customer-signature");
+
+          if (handover.termsSignature) {
+            termsSignature.src = handover.termsSignature;
+          } else {
+            termsSignature.style.display = "none";
+          }
+
+          if (handover.customerSignature) {
+            customerSignature.src = handover.customerSignature;
+          } else {
+            customerSignature.style.display = "none";
+          }
+
+          await Promise.all([
+            setDamageImage("left", handover),
+            setDamageImage("right", handover),
+            setDamageImage("front", handover),
+            setDamageImage("rear", handover),
+            setDamageImage("fuel", handover),
+          ]);
+
+          reportEl.classList.add("ready");
+          setStatus("Handover report loaded.", "");
+        } catch (err) {
+          console.error("Failed to load handover report:", err);
+          setStatus(err.message || "Could not load handover report.", "bad");
+        }
+      }
+
+      loadReport();
+    </script>
+  </body>
+</html>
