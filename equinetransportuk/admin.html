@@ -4608,20 +4608,20 @@
       }
 
       /* ===============================
-   STEP 3A — HANDOVER ACTION BUTTONS
-   Save / Complete / Print / Close
+   STEP 3B — HANDOVER ACTION BUTTONS
+   Save / Complete / Print / Email / Close
 ================================ */
 
-      #handover-modal .handover-inline-actions.handover-actions-4 {
+      #handover-modal .handover-inline-actions.handover-actions-5 {
         display: grid !important;
-        grid-template-columns: 1fr 1fr 1fr 1fr !important;
-        gap: 12px !important;
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 10px !important;
 
         margin-left: 18px !important;
         margin-right: 18px !important;
       }
 
-      #handover-modal .handover-inline-actions.handover-actions-4 .btn {
+      #handover-modal .handover-inline-actions.handover-actions-5 .btn {
         width: 100% !important;
 
         min-height: 48px !important;
@@ -4634,7 +4634,7 @@
         text-align: center !important;
         white-space: nowrap !important;
 
-        font-size: 14px !important;
+        font-size: 13px !important;
         line-height: 1.15 !important;
         font-weight: 900 !important;
       }
@@ -4644,14 +4644,20 @@
         color: #ffffff !important;
       }
 
-      @media (max-width: 980px) {
-        #handover-modal .handover-inline-actions.handover-actions-4 {
-          grid-template-columns: 1fr 1fr !important;
+      #handover-modal #handover-email-btn {
+        background: #fff7ed !important;
+        color: #b45309 !important;
+        border: 1px solid #fed7aa !important;
+      }
+
+      @media (max-width: 1100px) {
+        #handover-modal .handover-inline-actions.handover-actions-5 {
+          grid-template-columns: 1fr 1fr 1fr !important;
         }
       }
 
       @media (max-width: 768px) {
-        #handover-modal .handover-inline-actions.handover-actions-4 {
+        #handover-modal .handover-inline-actions.handover-actions-5 {
           grid-template-columns: 1fr !important;
           gap: 10px !important;
 
@@ -4659,7 +4665,7 @@
           margin-right: 10px !important;
         }
 
-        #handover-modal .handover-inline-actions.handover-actions-4 .btn {
+        #handover-modal .handover-inline-actions.handover-actions-5 .btn {
           min-height: 46px !important;
           padding: 10px 10px !important;
           border-radius: 17px !important;
@@ -4668,12 +4674,12 @@
       }
 
       @media (max-width: 380px) {
-        #handover-modal .handover-inline-actions.handover-actions-4 {
+        #handover-modal .handover-inline-actions.handover-actions-5 {
           margin-left: 8px !important;
           margin-right: 8px !important;
         }
 
-        #handover-modal .handover-inline-actions.handover-actions-4 .btn {
+        #handover-modal .handover-inline-actions.handover-actions-5 .btn {
           min-height: 42px !important;
           font-size: 13px !important;
         }
@@ -5512,7 +5518,7 @@
               </div>
             </div>
           </div>
-          <div class="handover-inline-actions handover-actions-4">
+          <div class="handover-inline-actions handover-actions-5">
             <button class="btn primary" id="handover-save-btn" type="button">
               Save handover draft
             </button>
@@ -5527,6 +5533,10 @@
 
             <button class="btn ghost" id="handover-print-btn" type="button">
               Print / PDF
+            </button>
+
+            <button class="btn ghost" id="handover-email-btn" type="button">
+              Email PDF copy
             </button>
 
             <button class="btn ghost" id="handover-close-btn" type="button">
@@ -6185,6 +6195,8 @@
         "handover-complete-btn",
       );
       const handoverPrintBtn = document.getElementById("handover-print-btn");
+
+      const handoverEmailBtn = document.getElementById("handover-email-btn");
 
       const handoverBookingIdInput = document.getElementById(
         "handover-booking-id",
@@ -12829,6 +12841,90 @@ ${mobileOutstandingText}
         setHandoverStatus("2-page print/PDF opened.", "ok");
       }
 
+      async function prepareHandoverEmailCopy() {
+        const booking = CURRENT_HANDOVER_BOOKING;
+        const bookingId = handoverBookingIdInput?.value || "";
+
+        if (!booking || !bookingId) {
+          setHandoverStatus("No booking loaded for email copy.", "bad");
+          return;
+        }
+
+        const customerEmail =
+          booking.customerEmail ||
+          booking.email ||
+          booking.customer_email ||
+          "";
+
+        if (!customerEmail) {
+          setHandoverStatus(
+            "No customer email found for this booking. Email copy not prepared.",
+            "bad",
+          );
+          return;
+        }
+
+        const isComplete =
+          handoverStatusSelect?.value === "complete" ||
+          COMPLETED_HANDOVERS.has(String(bookingId));
+
+        if (!isComplete) {
+          setHandoverStatus(
+            "Complete the handover before preparing the customer email copy.",
+            "bad",
+          );
+          return;
+        }
+
+        storeCurrentDamageDrawingTemp();
+
+        const originalText = handoverEmailBtn?.textContent || "Email PDF copy";
+
+        if (handoverEmailBtn) {
+          handoverEmailBtn.disabled = true;
+          handoverEmailBtn.textContent = "Preparing…";
+        }
+
+        try {
+          await saveHandoverDraft();
+
+          const dryRunPayload = {
+            bookingId,
+            customerEmail,
+            customerName: booking.customerName || "",
+            vehicleName:
+              booking.vehicleSnapshot?.name ||
+              booking.vehicleName ||
+              booking.vehicleId ||
+              "",
+            status: handoverStatusSelect?.value || "draft",
+            emailsEnabled: false,
+            mode: "dry_run_only",
+          };
+
+          console.log(
+            "📧 Handover email copy DRY RUN — not sent:",
+            dryRunPayload,
+          );
+
+          setHandoverStatus(
+            "Email copy prepared, but NOT sent. Email sending is disabled until go-live.",
+            "warn",
+          );
+        } catch (err) {
+          console.error("❌ Failed to prepare handover email copy:", err);
+          setHandoverStatus(
+            err.message || "Failed to prepare handover email copy.",
+            "bad",
+          );
+        } finally {
+          if (handoverEmailBtn) {
+            handoverEmailBtn.disabled = false;
+            handoverEmailBtn.textContent = originalText;
+          }
+        }
+      }
+
       function showModalLoading() {
         modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
         modalFields.innerHTML = "";
@@ -12928,6 +13024,8 @@ ${mobileOutstandingText}
       handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
       handoverCompleteBtn?.addEventListener("click", completeHandover);
       handoverPrintBtn?.addEventListener("click", printHandoverTwoPageReport);
+
+      handoverEmailBtn?.addEventListener("click", prepareHandoverEmailCopy);
 
       damageDrawingClose?.addEventListener("click", closeDamageDrawingModal);
       damageDrawingCancel?.addEventListener("click", closeDamageDrawingModal);
