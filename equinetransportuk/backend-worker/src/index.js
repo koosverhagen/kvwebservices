@@ -1152,6 +1152,20 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      /* ===============================
+   ADMIN HANDOVER EMAIL COPY
+   STEP 3C — DRY RUN ONLY
+   No email sending until go-live
+================================ */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/handover/email-copy"
+      ) {
+        const response = await handleAdminHandoverEmailCopy(request, env);
+        return withCors(response, corsHeaders);
+      }
+
       if (
         request.method === "POST" &&
         url.pathname === "/api/admin/handover/save"
@@ -10089,6 +10103,166 @@ async function handleAdminHandoverSave(request, env) {
     saved: true,
     bookingId,
     handover,
+  });
+}
+
+async function handleAdminHandoverEmailCopy(request, env) {
+  const HANDOVER_EMAIL_DRY_RUN = true; // 🔒 SAFETY LOCK — no email can send yet
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch (err) {
+    return json(
+      {
+        ok: false,
+        error: "Invalid JSON body",
+      },
+      400,
+    );
+  }
+
+  const bookingId = cleanHandoverBookingId(body.bookingId);
+
+  if (!bookingId) {
+    return json(
+      {
+        ok: false,
+        error: "Missing bookingId",
+      },
+      400,
+    );
+  }
+
+  const handoverRaw = await env.BOOKINGS_KV.get(getHandoverKvKey(bookingId));
+
+  if (!handoverRaw) {
+    return json(
+      {
+        ok: false,
+        error: "No saved handover found for this booking",
+      },
+      404,
+    );
+  }
+
+  let handover;
+
+  try {
+    handover = JSON.parse(handoverRaw);
+  } catch (err) {
+    return json(
+      {
+        ok: false,
+        error: "Saved handover data could not be read",
+      },
+      500,
+    );
+  }
+
+  const status = String(handover?.status || "draft").toLowerCase();
+
+  if (status !== "complete") {
+    return json(
+      {
+        ok: false,
+        error: "Handover must be complete before emailing customer copy",
+        status,
+      },
+      400,
+    );
+  }
+
+  let booking = null;
+
+  try {
+    booking = await findBookingById(env, bookingId);
+  } catch (err) {
+    console.warn("⚠️ Could not load booking for handover email copy:", err);
+  }
+
+  const customerEmail = String(
+    body.customerEmail ||
+      booking?.customerEmail ||
+      booking?.email ||
+      booking?.customer_email ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  const customerName = String(
+    body.customerName || booking?.customerName || booking?.customer_name || "",
+  ).trim();
+
+  const vehicleName = String(
+    body.vehicleName ||
+      booking?.vehicleSnapshot?.name ||
+      booking?.vehicleName ||
+      booking?.vehicleId ||
+      "",
+  ).trim();
+
+  if (!customerEmail) {
+    return json(
+      {
+        ok: false,
+        error: "No customer email found for this booking",
+      },
+      400,
+    );
+  }
+
+  const emailsEnabled =
+    String(env.EMAILS_ENABLED || "")
+      .trim()
+      .toLowerCase() === "true";
+
+  const migrationMode =
+    String(env.MIGRATION_MODE || "")
+      .trim()
+      .toLowerCase() === "true";
+
+  /*
+    🔒 HARD SAFETY:
+    - HANDOVER_EMAIL_DRY_RUN is true.
+    - MIGRATION_MODE blocks sending.
+    - EMAILS_ENABLED must be true later before any send code is ever allowed.
+    - This endpoint currently makes ZERO SendGrid calls.
+  */
+
+  console.log("📧 Handover email copy dry-run only — not sent", {
+    bookingId,
+    customerEmail,
+    customerName,
+    vehicleName,
+    status,
+    emailsEnabled,
+    migrationMode,
+    dryRun: HANDOVER_EMAIL_DRY_RUN,
+  });
+
+  return json({
+    ok: true,
+    sent: false,
+    dryRun: true,
+    reason: HANDOVER_EMAIL_DRY_RUN
+      ? "HANDOVER_EMAIL_DRY_RUN"
+      : migrationMode
+        ? "MIGRATION_MODE"
+        : !emailsEnabled
+          ? "EMAILS_DISABLED"
+          : "EMAIL_SENDING_NOT_IMPLEMENTED_YET",
+    message:
+      "Handover email copy prepared, but not sent. Email sending is disabled until go-live.",
+    bookingId,
+    customerEmail,
+    customerName,
+    vehicleName,
+    status,
+    emailsEnabled,
+    migrationMode,
   });
 }
 
