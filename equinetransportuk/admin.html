@@ -12078,7 +12078,9 @@ ${mobileOutstandingText}
       }
 
       function getPrintCheckMark(value) {
-        return value ? "☑" : "☐";
+        return value
+          ? `<span class="print-check print-check-yes">✓</span>`
+          : `<span class="print-check print-check-no"></span>`;
       }
 
       function getPrintMoney(value) {
@@ -12261,10 +12263,42 @@ ${mobileOutstandingText}
       min-height: 7mm;
     }
 
-    .status-line .check {
-      font-size: 17pt;
-      line-height: 1;
-    }
+  .status-line .check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.print-check {
+  width: 8.5mm;
+  height: 8.5mm;
+  min-width: 8.5mm;
+  min-height: 8.5mm;
+  border: 1.2px solid #1f2937;
+  border-radius: 1.2mm;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  font-size: 18pt;
+  font-weight: 900;
+  line-height: 1;
+  margin-left: 1.2mm;
+  background: #fff;
+  color: transparent;
+}
+
+.print-check-yes {
+  border-color: #137a3d;
+  background: #eaf7ef;
+  color: #137a3d;
+}
+
+.print-check-no {
+  border-color: #111827;
+  background: #fff;
+}
 
     .status-line.green {
       color: #137a3d;
@@ -12528,10 +12562,10 @@ ${mobileOutstandingText}
 
     <div class="status-grid">
       <div class="status-line">
-        Submitted Form:
-        <span>Short Form ${getPrintCheckMark(isShortForm && formComplete)}</span>
-        <span>Long Form ${getPrintCheckMark(isLongForm && formComplete)}</span>
-      </div>
+  Submitted Form:
+  <span class="check">Short Form ${getPrintCheckMark(isShortForm && formComplete)}</span>
+  <span class="check">Long Form ${getPrintCheckMark(isLongForm && formComplete)}</span>
+</div>
 
       <div class="status-line">
         £200 Deposit Successful
