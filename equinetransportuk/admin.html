@@ -12379,49 +12379,57 @@ ${mobileOutstandingText}
       font-size: 10pt;
     }
 
-        .page-2-header {
-      margin-bottom: 3.5mm;
+         .page-2-header {
+      margin-bottom: 2.5mm;
     }
 
     .page-2-header h1 {
       font-size: 15pt;
-      margin: 0 0 1.5mm;
+      margin: 0 0 1mm;
     }
 
     .vehicle-line {
       display: grid;
       grid-template-columns: 48mm 1fr;
-      margin-bottom: 3.5mm;
+      margin-bottom: 2.5mm;
       font-size: 11pt;
     }
 
     .comments-block {
-      margin-bottom: 3.5mm;
+      margin-bottom: 2.5mm;
     }
 
     .comments-block h2 {
-      font-size: 12.5pt;
+      font-size: 12pt;
       margin: 0 0 1mm;
     }
 
     .comments-text {
-      min-height: 8mm;
+      min-height: 6mm;
+      max-height: 12mm;
+      overflow: hidden;
       white-space: pre-wrap;
+      font-size: 10pt;
+      line-height: 1.15;
     }
 
-    /* PAGE 2 SHOULD USE THE FULL SHEET */
+    /* PAGE 2: EXACT A4 PRINT HEIGHT — prevents page 3 */
     .page.page-2 {
-      display: flex;
-      flex-direction: column;
-      min-height: 279mm;
+      height: 277mm;
+      min-height: 0;
+      overflow: hidden;
+
+      display: grid;
+      grid-template-rows: auto auto 1fr auto auto;
+      row-gap: 3mm;
     }
 
     .damage-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 5mm 8mm;
+      gap: 4mm 8mm;
       align-items: start;
-      margin-top: 2mm;
+      margin-top: 0;
     }
 
     .damage-cell {
@@ -12430,13 +12438,14 @@ ${mobileOutstandingText}
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
+      min-height: 0;
     }
 
     .damage-label {
       text-align: left;
       font-weight: 800;
-      font-size: 10pt;
-      margin-bottom: 1.5mm;
+      font-size: 9.5pt;
+      margin-bottom: 1mm;
     }
 
     .damage-cell img {
@@ -12446,18 +12455,16 @@ ${mobileOutstandingText}
       display: block;
     }
 
-    /* make the two top side views much bigger */
     .damage-cell.side img {
-      height: 50mm;
+      height: 44mm;
     }
 
-    /* make front + rear bigger */
     .damage-cell.front-rear img {
-      height: 64mm;
+      height: 56mm;
     }
 
     .missing-drawing {
-      height: 42mm;
+      height: 40mm;
       border: 1px dashed #cbd5e1;
       color: #64748b;
       display: flex;
@@ -12467,29 +12474,27 @@ ${mobileOutstandingText}
 
     .bottom-row {
       display: grid;
-      grid-template-columns: 1fr 84mm;
+      grid-template-columns: 1fr 82mm;
       gap: 8mm;
       align-items: end;
-      margin-top: 6mm;
+      margin-top: 0;
     }
 
-    /* make fuel image bigger too */
     .damage-cell.fuel img {
-      height: 46mm;
+      height: 38mm;
     }
 
-    /* slightly bigger customer signature area on page 2 */
     .page.page-2 .signature-box img {
-      width: 82mm;
-      height: 34mm;
+      width: 80mm;
+      height: 30mm;
       object-fit: contain;
       border: 1px solid #111827;
       display: block;
     }
 
     .page.page-2 .signature-empty {
-      width: 82mm;
-      height: 34mm;
+      width: 80mm;
+      height: 30mm;
       border: 1px solid #111827;
       color: #6b7280;
       font-style: italic;
@@ -12500,29 +12505,31 @@ ${mobileOutstandingText}
 
     .page.page-2 .signature-title {
       font-weight: 800;
-      margin-bottom: 2mm;
+      margin-bottom: 1.5mm;
       text-align: left;
     }
 
     .page.page-2 .signature-date {
-      margin-top: 2mm;
+      margin-top: 1.5mm;
       font-size: 10pt;
       text-align: left;
     }
 
-    /* footer should sit at the bottom, but not steal space with absolute positioning */
     .footer {
-      margin-top: auto;
-      padding-top: 6mm;
       display: grid;
-      grid-template-columns: 28mm 1fr;
+      grid-template-columns: 24mm 1fr;
       align-items: end;
-      gap: 6mm;
-      font-size: 10.5pt;
+      gap: 5mm;
+
+      font-size: 10pt;
+      line-height: 1.1;
+
+      padding-top: 1mm;
+      margin-top: 0;
     }
 
     .footer img {
-      width: 24mm;
+      width: 21mm;
       transform: rotate(-8deg);
       opacity: 0.95;
     }
