@@ -1174,6 +1174,16 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      /* ===============================
+   PUBLIC HANDOVER COPY VIEW
+   STEP 3F — TOKEN ACCESS ONLY
+================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/handover-copy") {
+        const response = await handlePublicHandoverCopy(request, env);
+        return withCors(response, corsHeaders);
+      }
+
       if (
         request.method === "POST" &&
         url.pathname === "/api/admin/handover/save"
@@ -10434,6 +10444,170 @@ async function handleAdminHandoverCustomerLink(request, env) {
     vehicleName,
     customerLink,
     expiresAt: tokenRecord.expiresAt,
+  });
+}
+
+async function handlePublicHandoverCopy(request, env) {
+  const url = new URL(request.url);
+  const token = String(url.searchParams.get("token") || "").trim();
+
+  if (!token) {
+    return json(
+      {
+        ok: false,
+        error: "Missing token",
+      },
+      400,
+    );
+  }
+
+  const tokenRaw = await env.BOOKINGS_KV.get(`handover-copy-token:${token}`);
+
+  if (!tokenRaw) {
+    return json(
+      {
+        ok: false,
+        error: "This handover copy link is invalid or has expired.",
+      },
+      404,
+    );
+  }
+
+  let tokenRecord;
+
+  try {
+    tokenRecord = JSON.parse(tokenRaw);
+  } catch {
+    return json(
+      {
+        ok: false,
+        error: "This handover copy link could not be read.",
+      },
+      500,
+    );
+  }
+
+  const expiresAtMs = new Date(tokenRecord.expiresAt || 0).getTime();
+
+  if (!Number.isFinite(expiresAtMs) || Date.now() > expiresAtMs) {
+    return json(
+      {
+        ok: false,
+        error: "This handover copy link has expired.",
+      },
+      410,
+    );
+  }
+
+  const bookingId = cleanHandoverBookingId(tokenRecord.bookingId);
+
+  if (!bookingId) {
+    return json(
+      {
+        ok: false,
+        error: "This handover copy link is missing a booking reference.",
+      },
+      400,
+    );
+  }
+
+  const handoverRaw = await env.BOOKINGS_KV.get(getHandoverKvKey(bookingId));
+
+  if (!handoverRaw) {
+    return json(
+      {
+        ok: false,
+        error: "No handover report found for this booking.",
+      },
+      404,
+    );
+  }
+
+  let handover;
+
+  try {
+    handover = JSON.parse(handoverRaw);
+  } catch {
+    return json(
+      {
+        ok: false,
+        error: "The handover report could not be read.",
+      },
+      500,
+    );
+  }
+
+  const status = String(handover?.status || "draft").toLowerCase();
+
+  if (status !== "complete") {
+    return json(
+      {
+        ok: false,
+        error: "This handover report is not complete yet.",
+      },
+      403,
+    );
+  }
+
+  let booking = null;
+
+  try {
+    booking = await findBookingById(env, bookingId);
+  } catch (err) {
+    console.warn("⚠️ Could not load booking for public handover copy:", err);
+  }
+
+  const safeBooking = booking
+    ? {
+        id: booking.id,
+        vehicleId: booking.vehicleId || "",
+        vehicleSnapshot: booking.vehicleSnapshot || null,
+        vehicleName:
+          booking.vehicleSnapshot?.name ||
+          booking.vehicleName ||
+          tokenRecord.vehicleName ||
+          "",
+        pickupAt: booking.pickupAt || "",
+        dropoffAt: booking.dropoffAt || "",
+        pickupAtLocal: booking.pickupAtLocal || "",
+        dropoffAtLocal: booking.dropoffAtLocal || "",
+        customerName: booking.customerName || tokenRecord.customerName || "",
+        customerEmail: booking.customerEmail || tokenRecord.customerEmail || "",
+        customerMobile: booking.customerMobile || "",
+        customerAddress: booking.customerAddress || booking.address || "",
+        requiredFormType: booking.requiredFormType || "",
+        formCompleted: booking.formCompleted === true,
+        depositPaid: booking.depositPaid === true,
+        outstandingPaid: booking.outstandingPaid === true,
+        outstandingAmount: Number(
+          booking.outstandingAmount || booking.outstanding || 0,
+        ),
+        hireTotal: Number(booking.hireTotal || booking.priceTotal || 0),
+      }
+    : {
+        id: bookingId,
+        vehicleName: tokenRecord.vehicleName || "",
+        customerName: tokenRecord.customerName || "",
+        customerEmail: tokenRecord.customerEmail || "",
+      };
+
+  return json({
+    ok: true,
+    found: true,
+    bookingId,
+    booking: safeBooking,
+    handover: {
+      status: handover.status || "complete",
+      comments: handover.comments || "",
+      termsSignature: handover.termsSignature || null,
+      customerSignature: handover.customerSignature || null,
+      drawings: handover.drawings || {},
+      completedAt: handover.completedAt || handover.updatedAt || "",
+      updatedAt: handover.updatedAt || "",
+    },
+    token: {
+      expiresAt: tokenRecord.expiresAt,
+    },
   });
 }
 
