@@ -6372,6 +6372,8 @@
 
       const COMPLETED_HANDOVERS = new Set();
 
+      let HANDOVER_STATUS_HYDRATE_TOKEN = 0;
+
       /* ===============================
          EDIT MODAL ELEMENTS
       =============================== */
@@ -10415,6 +10417,56 @@ ${mobileOutstandingText}
           });
       }
 
+      async function hydrateCompletedHandoversForRenderedBookings() {
+        const token = ++HANDOVER_STATUS_HYDRATE_TOKEN;
+
+        const bookingIds = Array.from(
+          document.querySelectorAll("[data-open-handover]"),
+        )
+          .map((btn) => btn.getAttribute("data-open-handover"))
+          .filter(Boolean);
+
+        const uniqueBookingIds = [...new Set(bookingIds)];
+
+        if (!uniqueBookingIds.length) return;
+
+        const chunkSize = 8;
+
+        for (let i = 0; i < uniqueBookingIds.length; i += chunkSize) {
+          if (token !== HANDOVER_STATUS_HYDRATE_TOKEN) return;
+
+          const chunk = uniqueBookingIds.slice(i, i + chunkSize);
+
+          await Promise.allSettled(
+            chunk.map(async (bookingId) => {
+              try {
+                const res = await fetch(
+                  `${API_BASE}/api/admin/handover?bookingId=${encodeURIComponent(
+                    bookingId,
+                  )}`,
+                );
+
+                const data = await res.json();
+
+                if (!res.ok || data.ok === false) {
+                  return;
+                }
+
+                const isComplete =
+                  data.found === true && data.handover?.status === "complete";
+
+                markBookingHandoverComplete(bookingId, isComplete);
+              } catch (err) {
+                console.warn(
+                  `Could not hydrate handover status for ${bookingId}:`,
+                  err,
+                );
+              }
+            }),
+          );
+        }
+      }
+
       function validateHandoverCanComplete() {
         const missing = [];
 
@@ -13676,6 +13728,7 @@ Equine Transport UK`;
           window.ALL_BOOKINGS = allBookings || [];
 
           renderBookings();
+          hydrateCompletedHandoversForRenderedBookings();
 
           // 🔥 SAFE calendar refresh
           // Do NOT refresh calendar during Find Bookings search on mobile;
