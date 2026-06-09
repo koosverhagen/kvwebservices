@@ -12433,10 +12433,9 @@ ${mobileOutstandingText}
   gap: 1mm 2mm;
   align-items: start;
 
-  /* Move drawings down so they sit visually centred between comments and fuel/signature */
-  margin-top: 12mm;
+  /* Lower the 4 vehicle drawings so they sit closer to fuel/signature */
+  margin-top: 24mm;
 }
-
     .damage-cell {
       page-break-inside: avoid;
       text-align: center;
@@ -12493,16 +12492,16 @@ ${mobileOutstandingText}
   gap: 4mm;
   align-items: end;
 
-  /* Keep fuel/signature lower, but not so low that drawings look detached */
-  margin-top: 6mm;
+  /* Pull fuel/signature slightly up to meet the drawings */
+  margin-top: 2mm;
   padding-top: 0;
 }
 
-    .damage-cell.fuel img {
-      width: 100%;
-      height: 50mm;
-      object-fit: contain;
-    }
+.damage-cell.fuel img {
+  width: 100%;
+  height: 30mm;
+  object-fit: contain;
+}
 
     .page.page-2 .signature-title {
       font-weight: 800;
@@ -12539,10 +12538,10 @@ ${mobileOutstandingText}
       line-height: 1.05;
     }
 
-  .footer {
+.footer {
   display: grid;
   grid-template-columns: 1fr 34mm;
-  align-items: end;
+  align-items: center;
   gap: 5mm;
 
   font-size: 10pt;
@@ -12552,11 +12551,16 @@ ${mobileOutstandingText}
   margin-top: 0;
 }
 
+.footer div {
+  text-align: center;
+  align-self: center;
+}
+
 .footer img {
   width: 32mm;
   justify-self: end;
+  align-self: center;
 
-  /* Straight logo */
   transform: none;
 
   opacity: 0.95;
