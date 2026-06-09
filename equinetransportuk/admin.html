@@ -12490,11 +12490,16 @@ ${mobileOutstandingText}
   display: grid;
   grid-template-columns: 1fr 78mm;
   gap: 4mm;
-  align-items: end;
+  align-items: start;
 
-  /* Pull fuel/signature slightly up to meet the drawings */
-  margin-top: 2mm;
+  margin-top: 6mm;
   padding-top: 0;
+}
+
+.damage-cell.fuel {
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6mm;
 }
 
 .damage-cell.fuel img {
@@ -12502,7 +12507,6 @@ ${mobileOutstandingText}
   height: 30mm;
   object-fit: contain;
 }
-
     .page.page-2 .signature-title {
       font-weight: 800;
       margin-bottom: 1mm;
@@ -12539,10 +12543,12 @@ ${mobileOutstandingText}
     }
 
 .footer {
-  display: grid;
-  grid-template-columns: 1fr 34mm;
-  align-items: center;
-  gap: 5mm;
+  position: relative;
+  min-height: 16mm;
+
+  display: flex;
+  align-items: end;
+  justify-content: center;
 
   font-size: 10pt;
   line-height: 1.05;
@@ -12551,16 +12557,18 @@ ${mobileOutstandingText}
   margin-top: 0;
 }
 
-.footer div {
+.footer > div {
+  width: 100%;
   text-align: center;
-  align-self: center;
 }
 
 .footer img {
-  width: 32mm;
-  justify-self: end;
-  align-self: center;
+  width: 34mm;
+  position: absolute;
+  right: 0;
+  bottom: 0;
 
+  /* Straight logo */
   transform: none;
 
   opacity: 0.95;
