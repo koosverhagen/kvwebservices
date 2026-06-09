@@ -12882,37 +12882,57 @@ ${mobileOutstandingText}
 
         if (handoverEmailBtn) {
           handoverEmailBtn.disabled = true;
-          handoverEmailBtn.textContent = "Preparing…";
+          handoverEmailBtn.textContent = "Checking…";
         }
 
         try {
+          // Save latest handover/damage data first.
           await saveHandoverDraft();
 
-          const dryRunPayload = {
-            bookingId,
-            customerEmail,
-            customerName: booking.customerName || "",
-            vehicleName:
-              booking.vehicleSnapshot?.name ||
-              booking.vehicleName ||
-              booking.vehicleId ||
-              "",
-            status: handoverStatusSelect?.value || "draft",
-            emailsEnabled: false,
-            mode: "dry_run_only",
-          };
+          if (handoverEmailBtn) {
+            handoverEmailBtn.textContent = "Preparing…";
+          }
 
-          console.log(
-            "📧 Handover email copy DRY RUN — not sent:",
-            dryRunPayload,
-          );
+          const res = await fetch(`${API_BASE}/api/admin/handover/email-copy`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId,
+              customerEmail,
+              customerName: booking.customerName || "",
+              vehicleName:
+                booking.vehicleSnapshot?.name ||
+                booking.vehicleName ||
+                booking.vehicleId ||
+                "",
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || data.ok === false) {
+            throw new Error(
+              data?.error || "Failed to prepare handover email copy.",
+            );
+          }
+
+          console.log("📧 Backend handover email-copy response:", data);
+
+          if (data.sent === true) {
+            setHandoverStatus("Handover email copy sent to customer ✓", "ok");
+            return;
+          }
 
           setHandoverStatus(
-            "Email copy prepared, but NOT sent. Email sending is disabled until go-live.",
+            data.message ||
+              "Email copy prepared, but NOT sent. Email sending is disabled until go-live.",
             "warn",
           );
         } catch (err) {
-          console.error("❌ Failed to prepare handover email copy:", err);
+          console.error("❌ Handover email copy failed:", err);
+
           setHandoverStatus(
             err.message || "Failed to prepare handover email copy.",
             "bad",
