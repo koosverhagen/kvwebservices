@@ -12379,24 +12379,24 @@ ${mobileOutstandingText}
       font-size: 10pt;
     }
 
-    .page-2-header {
-      margin-bottom: 5mm;
+        .page-2-header {
+      margin-bottom: 3.5mm;
     }
 
     .page-2-header h1 {
       font-size: 15pt;
-      margin: 0 0 2mm;
+      margin: 0 0 1.5mm;
     }
 
     .vehicle-line {
       display: grid;
       grid-template-columns: 48mm 1fr;
-      margin-bottom: 5mm;
+      margin-bottom: 3.5mm;
       font-size: 11pt;
     }
 
     .comments-block {
-      margin-bottom: 5mm;
+      margin-bottom: 3.5mm;
     }
 
     .comments-block h2 {
@@ -12405,51 +12405,59 @@ ${mobileOutstandingText}
     }
 
     .comments-text {
-      min-height: 10mm;
+      min-height: 8mm;
       white-space: pre-wrap;
+    }
+
+    /* PAGE 2 SHOULD USE THE FULL SHEET */
+    .page.page-2 {
+      display: flex;
+      flex-direction: column;
+      min-height: 279mm;
     }
 
     .damage-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 7mm 8mm;
-      align-items: center;
-      margin-top: 3mm;
+      gap: 5mm 8mm;
+      align-items: start;
+      margin-top: 2mm;
     }
 
     .damage-cell {
       page-break-inside: avoid;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
     }
 
     .damage-label {
       text-align: left;
       font-weight: 800;
-      font-size: 9.5pt;
-      margin-bottom: 1mm;
+      font-size: 10pt;
+      margin-bottom: 1.5mm;
     }
 
     .damage-cell img {
       width: 100%;
-      height: 48mm;
+      height: auto;
       object-fit: contain;
       display: block;
     }
 
+    /* make the two top side views much bigger */
     .damage-cell.side img {
-      height: 38mm;
+      height: 50mm;
     }
 
+    /* make front + rear bigger */
     .damage-cell.front-rear img {
-      height: 46mm;
-    }
-
-    .damage-cell.fuel img {
-      height: 34mm;
+      height: 64mm;
     }
 
     .missing-drawing {
-      height: 38mm;
+      height: 42mm;
       border: 1px dashed #cbd5e1;
       color: #64748b;
       display: flex;
@@ -12459,17 +12467,53 @@ ${mobileOutstandingText}
 
     .bottom-row {
       display: grid;
-      grid-template-columns: 1fr 82mm;
-      gap: 9mm;
+      grid-template-columns: 1fr 84mm;
+      gap: 8mm;
       align-items: end;
-      margin-top: 8mm;
+      margin-top: 6mm;
     }
 
+    /* make fuel image bigger too */
+    .damage-cell.fuel img {
+      height: 46mm;
+    }
+
+    /* slightly bigger customer signature area on page 2 */
+    .page.page-2 .signature-box img {
+      width: 82mm;
+      height: 34mm;
+      object-fit: contain;
+      border: 1px solid #111827;
+      display: block;
+    }
+
+    .page.page-2 .signature-empty {
+      width: 82mm;
+      height: 34mm;
+      border: 1px solid #111827;
+      color: #6b7280;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page.page-2 .signature-title {
+      font-weight: 800;
+      margin-bottom: 2mm;
+      text-align: left;
+    }
+
+    .page.page-2 .signature-date {
+      margin-top: 2mm;
+      font-size: 10pt;
+      text-align: left;
+    }
+
+    /* footer should sit at the bottom, but not steal space with absolute positioning */
     .footer {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      margin-top: auto;
+      padding-top: 6mm;
       display: grid;
       grid-template-columns: 28mm 1fr;
       align-items: end;
