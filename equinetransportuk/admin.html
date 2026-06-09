@@ -12934,59 +12934,98 @@ ${mobileOutstandingText}
 
         if (handoverEmailBtn) {
           handoverEmailBtn.disabled = true;
-          handoverEmailBtn.textContent = "Checking…";
+          handoverEmailBtn.textContent = "Creating link…";
         }
 
         try {
-          // Save latest handover/damage data first.
           await saveHandoverDraft();
 
-          if (handoverEmailBtn) {
-            handoverEmailBtn.textContent = "Preparing…";
-          }
+          const payload = {
+            bookingId,
+            customerEmail,
+            customerName: booking.customerName || "",
+            vehicleName:
+              booking.vehicleSnapshot?.name ||
+              booking.vehicleName ||
+              booking.vehicleId ||
+              "",
+            pickupText: booking.pickupAtLocal || booking.pickupAt || "",
+            dropoffText: booking.dropoffAtLocal || booking.dropoffAt || "",
+          };
 
-          const res = await fetch(`${API_BASE}/api/admin/handover/email-copy`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
+          const linkRes = await fetch(
+            `${API_BASE}/api/admin/handover/customer-link`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
             },
-            body: JSON.stringify({
-              bookingId,
-              customerEmail,
-              customerName: booking.customerName || "",
-              vehicleName:
-                booking.vehicleSnapshot?.name ||
-                booking.vehicleName ||
-                booking.vehicleId ||
-                "",
-            }),
-          });
+          );
 
-          const data = await res.json();
+          const linkData = await linkRes.json();
 
-          if (!res.ok || data.ok === false) {
+          if (!linkRes.ok || linkData.ok === false) {
             throw new Error(
-              data?.error || "Failed to prepare handover email copy.",
+              linkData?.error ||
+                "Failed to create customer handover copy link.",
             );
           }
 
-          console.log("📧 Backend handover email-copy response:", data);
+          console.log("🔗 Customer handover copy link:", linkData);
 
-          if (data.sent === true) {
-            setHandoverStatus("Handover email copy sent to customer ✓", "ok");
-            return;
+          const customerLink = linkData.customerLink || "";
+
+          if (!customerLink) {
+            throw new Error("Customer handover copy link was not returned.");
+          }
+
+          if (handoverEmailBtn) {
+            handoverEmailBtn.textContent = "Preparing email…";
+          }
+
+          const emailRes = await fetch(
+            `${API_BASE}/api/admin/handover/email-copy`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                ...payload,
+                customerLink,
+              }),
+            },
+          );
+
+          const emailData = await emailRes.json();
+
+          if (!emailRes.ok || emailData.ok === false) {
+            throw new Error(
+              emailData?.error || "Failed to prepare handover email copy.",
+            );
+          }
+
+          console.log("📧 Backend handover email-copy response:", emailData);
+
+          if (customerLink && navigator.clipboard?.writeText) {
+            try {
+              await navigator.clipboard.writeText(customerLink);
+            } catch (err) {
+              console.warn("Clipboard copy failed:", err);
+            }
           }
 
           setHandoverStatus(
-            data.message ||
-              "Email copy prepared, but NOT sent. Email sending is disabled until go-live.",
+            `Customer email prepared but NOT sent. Link copied if browser allowed it: ${customerLink}`,
             "warn",
           );
         } catch (err) {
-          console.error("❌ Handover email copy failed:", err);
+          console.error("❌ Handover email/link preparation failed:", err);
 
           setHandoverStatus(
-            err.message || "Failed to prepare handover email copy.",
+            err.message || "Failed to prepare customer handover email.",
             "bad",
           );
         } finally {

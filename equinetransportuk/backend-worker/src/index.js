@@ -10124,43 +10124,138 @@ async function handleAdminHandoverSave(request, env) {
   });
 }
 
+function buildHandoverCopyEmailHtml({
+  customerName,
+  bookingId,
+  vehicleName,
+  pickupText,
+  dropoffText,
+  customerLink,
+}) {
+  const safeName = escapeHtml(customerName || "Customer");
+  const safeBookingId = escapeHtml(bookingId || "");
+  const safeVehicleName = escapeHtml(vehicleName || "your lorry");
+  const safePickupText = escapeHtml(pickupText || "—");
+  const safeDropoffText = escapeHtml(dropoffText || "—");
+  const safeCustomerLink = escapeHtml(customerLink || "");
+
+  return `
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe1e8;">
+            <tr>
+              <td style="padding:24px;background:#111827;color:#ffffff;">
+                <h1 style="margin:0;font-size:24px;line-height:1.15;">Equine Transport UK</h1>
+                <p style="margin:6px 0 0;font-size:14px;color:#d1d5db;">
+                  Signed handover / damage report copy
+                </p>
+                <p style="margin:4px 0 0;font-size:13px;color:#d1d5db;">
+                  Part of the East Grinstead Tyre Service Group
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:24px;">
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.5;">
+                  Dear ${safeName},
+                </p>
+
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.5;">
+                  Thank you for completing the vehicle handover for your Equine Transport UK hire.
+                </p>
+
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.5;">
+                  Your signed handover and damage report copy is now available using the secure link below.
+                  This report records the agreed vehicle condition, fuel level, comments, and signatures before you take the lorry.
+                </p>
+
+                <p style="margin:22px 0;text-align:center;">
+                  <a href="${safeCustomerLink}"
+                     style="display:inline-block;background:#1f6feb;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:800;font-size:16px;">
+                    View signed handover report
+                  </a>
+                </p>
+
+                <p style="margin:0 0 18px;font-size:13px;line-height:1.5;color:#64748b;word-break:break-all;">
+                  If the button does not work, copy and paste this link into your browser:<br>
+                  ${safeCustomerLink}
+                </p>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
+                  <tr>
+                    <td style="padding:10px 12px;font-size:13px;color:#64748b;font-weight:800;">Booking reference</td>
+                    <td style="padding:10px 12px;font-size:14px;font-weight:800;">${safeBookingId}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;font-size:13px;color:#64748b;font-weight:800;">Vehicle</td>
+                    <td style="padding:10px 12px;font-size:14px;font-weight:800;">${safeVehicleName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;font-size:13px;color:#64748b;font-weight:800;">Hire from</td>
+                    <td style="padding:10px 12px;font-size:14px;font-weight:800;">${safePickupText}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;font-size:13px;color:#64748b;font-weight:800;">Hire until</td>
+                    <td style="padding:10px 12px;font-size:14px;font-weight:800;">${safeDropoffText}</td>
+                  </tr>
+                </table>
+
+                <p style="margin:22px 0 0;font-size:16px;line-height:1.5;">
+                  Please keep this copy for your records.
+                </p>
+
+                <p style="margin:22px 0 0;font-size:16px;line-height:1.5;">
+                  With kind regards,<br>
+                  <strong>Koos & Avril</strong><br>
+                  Equine Transport UK
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:18px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;color:#64748b;font-size:13px;line-height:1.5;">
+                <strong>Equine Transport UK</strong><br>
+                Part of the East Grinstead Tyre Service Group<br>
+                info@equinetransportuk.com<br>
+                07812 188871 / 07584 578654
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+  `;
+}
+
 async function handleAdminHandoverEmailCopy(request, env) {
-  const HANDOVER_EMAIL_DRY_RUN = true; // 🔒 SAFETY LOCK — no email can send yet
+  const HANDOVER_EMAIL_DRY_RUN = true; // 🔒 SAFETY LOCK — no customer email can send yet
 
   let body;
 
   try {
     body = await request.json();
-  } catch (err) {
-    return json(
-      {
-        ok: false,
-        error: "Invalid JSON body",
-      },
-      400,
-    );
+  } catch {
+    return json({ ok: false, error: "Invalid JSON body" }, 400);
   }
 
   const bookingId = cleanHandoverBookingId(body.bookingId);
 
   if (!bookingId) {
-    return json(
-      {
-        ok: false,
-        error: "Missing bookingId",
-      },
-      400,
-    );
+    return json({ ok: false, error: "Missing bookingId" }, 400);
   }
 
   const handoverRaw = await env.BOOKINGS_KV.get(getHandoverKvKey(bookingId));
 
   if (!handoverRaw) {
     return json(
-      {
-        ok: false,
-        error: "No saved handover found for this booking",
-      },
+      { ok: false, error: "No saved handover found for this booking" },
       404,
     );
   }
@@ -10169,12 +10264,9 @@ async function handleAdminHandoverEmailCopy(request, env) {
 
   try {
     handover = JSON.parse(handoverRaw);
-  } catch (err) {
+  } catch {
     return json(
-      {
-        ok: false,
-        error: "Saved handover data could not be read",
-      },
+      { ok: false, error: "Saved handover data could not be read" },
       500,
     );
   }
@@ -10211,7 +10303,10 @@ async function handleAdminHandoverEmailCopy(request, env) {
     .toLowerCase();
 
   const customerName = String(
-    body.customerName || booking?.customerName || booking?.customer_name || "",
+    body.customerName ||
+      booking?.customerName ||
+      booking?.customer_name ||
+      "Customer",
   ).trim();
 
   const vehicleName = String(
@@ -10219,18 +10314,44 @@ async function handleAdminHandoverEmailCopy(request, env) {
       booking?.vehicleSnapshot?.name ||
       booking?.vehicleName ||
       booking?.vehicleId ||
-      "",
+      "Horsebox hire",
   ).trim();
+
+  const customerLink = String(body.customerLink || "").trim();
 
   if (!customerEmail) {
     return json(
+      { ok: false, error: "No customer email found for this booking" },
+      400,
+    );
+  }
+
+  if (!customerLink) {
+    return json(
       {
         ok: false,
-        error: "No customer email found for this booking",
+        error: "Missing customer handover copy link",
       },
       400,
     );
   }
+
+  const pickupText =
+    body.pickupText || booking?.pickupAtLocal || booking?.pickupAt || "—";
+
+  const dropoffText =
+    body.dropoffText || booking?.dropoffAtLocal || booking?.dropoffAt || "—";
+
+  const subject = "Your Equine Transport UK signed handover / damage report";
+
+  const html = buildHandoverCopyEmailHtml({
+    customerName,
+    bookingId,
+    vehicleName,
+    pickupText,
+    dropoffText,
+    customerLink,
+  });
 
   const emailsEnabled =
     String(env.EMAILS_ENABLED || "")
@@ -10244,18 +10365,16 @@ async function handleAdminHandoverEmailCopy(request, env) {
 
   /*
     🔒 HARD SAFETY:
-    - HANDOVER_EMAIL_DRY_RUN is true.
-    - MIGRATION_MODE blocks sending.
-    - EMAILS_ENABLED must be true later before any send code is ever allowed.
-    - This endpoint currently makes ZERO SendGrid calls.
+    This endpoint prepares the real customer email content, but it does NOT send yet.
+    Do not call sendBookingEmail() while HANDOVER_EMAIL_DRY_RUN is true.
   */
 
-  console.log("📧 Handover email copy dry-run only — not sent", {
+  console.log("📧 Handover customer email prepared — NOT sent", {
     bookingId,
     customerEmail,
     customerName,
     vehicleName,
-    status,
+    customerLink,
     emailsEnabled,
     migrationMode,
     dryRun: HANDOVER_EMAIL_DRY_RUN,
@@ -10271,14 +10390,16 @@ async function handleAdminHandoverEmailCopy(request, env) {
         ? "MIGRATION_MODE"
         : !emailsEnabled
           ? "EMAILS_DISABLED"
-          : "EMAIL_SENDING_NOT_IMPLEMENTED_YET",
+          : "EMAIL_READY_NOT_SENT",
     message:
-      "Handover email copy prepared, but not sent. Email sending is disabled until go-live.",
+      "Customer handover email prepared, but not sent. Email sending is disabled until go-live.",
     bookingId,
     customerEmail,
     customerName,
     vehicleName,
-    status,
+    customerLink,
+    subject,
+    htmlPreview: html,
     emailsEnabled,
     migrationMode,
   });
