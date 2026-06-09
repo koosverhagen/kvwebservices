@@ -12380,54 +12380,57 @@ ${mobileOutstandingText}
     }
 
          .page-2-header {
-      margin-bottom: 2.5mm;
+      margin-bottom: 2mm;
     }
 
     .page-2-header h1 {
-      font-size: 15pt;
-      margin: 0 0 1mm;
+      font-size: 14pt;
+      margin: 0 0 0.5mm;
+      line-height: 1.1;
     }
 
     .vehicle-line {
       display: grid;
-      grid-template-columns: 48mm 1fr;
-      margin-bottom: 2.5mm;
-      font-size: 11pt;
-    }
-
-    .comments-block {
-      margin-bottom: 2.5mm;
-    }
-
-    .comments-block h2 {
-      font-size: 12pt;
-      margin: 0 0 1mm;
-    }
-
-    .comments-text {
-      min-height: 6mm;
-      max-height: 12mm;
-      overflow: hidden;
-      white-space: pre-wrap;
-      font-size: 10pt;
+      grid-template-columns: 42mm 1fr;
+      margin-bottom: 2mm;
+      font-size: 10.5pt;
       line-height: 1.15;
     }
 
-    /* PAGE 2: EXACT A4 PRINT HEIGHT — prevents page 3 */
+    .comments-block {
+      margin-bottom: 2mm;
+    }
+
+    .comments-block h2 {
+      font-size: 11pt;
+      margin: 0 0 0.5mm;
+      line-height: 1.1;
+    }
+
+    .comments-text {
+      min-height: 4mm;
+      max-height: 10mm;
+      overflow: hidden;
+      white-space: pre-wrap;
+      font-size: 9.5pt;
+      line-height: 1.1;
+    }
+
+    /* KEEP PAGE 2 ON ONE SHEET */
     .page.page-2 {
       height: 277mm;
       min-height: 0;
       overflow: hidden;
 
       display: grid;
-      grid-template-rows: auto auto 1fr auto auto;
-      row-gap: 3mm;
+      grid-template-rows: auto auto 1fr auto;
+      row-gap: 2.5mm;
     }
 
     .damage-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 4mm 8mm;
+      gap: 3mm 6mm;
       align-items: start;
       margin-top: 0;
     }
@@ -12444,8 +12447,9 @@ ${mobileOutstandingText}
     .damage-label {
       text-align: left;
       font-weight: 800;
-      font-size: 9.5pt;
-      margin-bottom: 1mm;
+      font-size: 9pt;
+      margin-bottom: 0.8mm;
+      line-height: 1.05;
     }
 
     .damage-cell img {
@@ -12455,12 +12459,13 @@ ${mobileOutstandingText}
       display: block;
     }
 
+    /* MAKE DRAWINGS BIGGER */
     .damage-cell.side img {
-      height: 44mm;
+      height: 52mm;
     }
 
     .damage-cell.front-rear img {
-      height: 56mm;
+      height: 64mm;
     }
 
     .missing-drawing {
@@ -12470,18 +12475,27 @@ ${mobileOutstandingText}
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 9pt;
     }
 
     .bottom-row {
       display: grid;
-      grid-template-columns: 1fr 82mm;
-      gap: 8mm;
+      grid-template-columns: 1fr 80mm;
+      gap: 6mm;
       align-items: end;
       margin-top: 0;
     }
 
     .damage-cell.fuel img {
-      height: 38mm;
+      height: 44mm;
+    }
+
+    .page.page-2 .signature-title {
+      font-weight: 800;
+      margin-bottom: 1mm;
+      text-align: left;
+      font-size: 9.5pt;
+      line-height: 1.05;
     }
 
     .page.page-2 .signature-box img {
@@ -12501,35 +12515,31 @@ ${mobileOutstandingText}
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .page.page-2 .signature-title {
-      font-weight: 800;
-      margin-bottom: 1.5mm;
-      text-align: left;
+      font-size: 9pt;
     }
 
     .page.page-2 .signature-date {
-      margin-top: 1.5mm;
-      font-size: 10pt;
+      margin-top: 1mm;
+      font-size: 9.5pt;
       text-align: left;
+      line-height: 1.05;
     }
 
     .footer {
       display: grid;
-      grid-template-columns: 24mm 1fr;
+      grid-template-columns: 18mm 1fr;
       align-items: end;
-      gap: 5mm;
+      gap: 4mm;
 
-      font-size: 10pt;
-      line-height: 1.1;
+      font-size: 9pt;
+      line-height: 1.05;
 
-      padding-top: 1mm;
+      padding-top: 0.5mm;
       margin-top: 0;
     }
 
     .footer img {
-      width: 21mm;
+      width: 16mm;
       transform: rotate(-8deg);
       opacity: 0.95;
     }
