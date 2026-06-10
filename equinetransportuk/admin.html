@@ -13132,12 +13132,21 @@ ${mobileOutstandingText}
             console.warn("Email preview popup was blocked by the browser.");
           }
 
-          if (customerLink && navigator.clipboard?.writeText) {
+          if (
+            customerLink &&
+            navigator.clipboard?.writeText &&
+            document.hasFocus()
+          ) {
             try {
               await navigator.clipboard.writeText(customerLink);
             } catch (err) {
-              console.warn("Clipboard copy failed:", err);
+              console.warn("Clipboard copy skipped/failed:", err);
             }
+          } else {
+            console.log(
+              "🔗 Customer link ready, clipboard copy skipped:",
+              customerLink,
+            );
           }
 
           setHandoverStatus(
