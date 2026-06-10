@@ -355,6 +355,38 @@
       }
 
       @media print {
+        body.paper-mode input,
+        body.paper-mode textarea,
+        body.paper-mode select {
+          color: transparent !important;
+          text-shadow: none !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+
+        body.paper-mode input::placeholder,
+        body.paper-mode textarea::placeholder {
+          color: transparent !important;
+        }
+
+        body.paper-mode select option {
+          color: #111827;
+        }
+
+        /* Keep checkboxes visible */
+        body.paper-mode input[type="checkbox"],
+        body.paper-mode input[type="radio"] {
+          color: initial !important;
+          -webkit-text-fill-color: initial !important;
+        }
+
+        /* Remove red browser validation borders on printable paper forms */
+        body.paper-mode input:invalid,
+        body.paper-mode select:invalid,
+        body.paper-mode textarea:invalid {
+          border-color: #d7dde6 !important;
+          box-shadow: none !important;
+          background: #fff !important;
+        }
         .btn,
         button,
         .signature-actions,
@@ -677,8 +709,16 @@
           ?.style.setProperty("display", "block");
 
         // Paper forms are filled in by pen, so remove online hint text.
+        document.body.classList.add("paper-mode");
+
         document.querySelectorAll("input, textarea").forEach((el) => {
           el.removeAttribute("placeholder");
+        });
+
+        // Remove visible "Select / Select an option" text from paper print selects.
+        // The dropdowns still exist on screen, but print blank for pen completion.
+        document.querySelectorAll("select").forEach((select) => {
+          select.dataset.paperOriginalValue = select.value || "";
         });
 
         const customerName = params.get("customerName") || "";
