@@ -7483,7 +7483,12 @@
           bookingId: booking.id || "",
           paper: "1",
           print: "1",
+
           customerName: booking.customerName || "",
+          customerEmail: booking.customerEmail || booking.email || "",
+          customerMobile: booking.customerMobile || booking.mobile || "",
+          customerAddress: booking.customerAddress || booking.address || "",
+
           vehicleName:
             booking.vehicleSnapshot?.name || booking.vehicleName || "",
           pickupAt: booking.pickupAtLocal || booking.pickupAt || "",

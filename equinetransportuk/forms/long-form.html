@@ -353,14 +353,14 @@
 
       .paper-dvla-help-inner {
         display: grid;
-        grid-template-columns: 1fr 180px;
-        gap: 16px;
+        grid-template-columns: 1fr 120px;
+        gap: 14px;
         align-items: center;
       }
 
       .paper-dvla-qr img {
-        width: 160px;
-        height: 160px;
+        width: 110px;
+        height: 110px;
         object-fit: contain;
         display: block;
         margin-left: auto;
@@ -376,24 +376,35 @@
       }
 
       @media print {
-        body.paper-mode input,
-        body.paper-mode textarea,
-        body.paper-mode select {
-          color: transparent !important;
-          text-shadow: none !important;
-          -webkit-text-fill-color: transparent !important;
-        }
+        /* Paper mode:
+     - keep prefilled customer details visible
+     - hide placeholder/default select text
+     - remove red validation styling
+  */
 
         body.paper-mode input::placeholder,
         body.paper-mode textarea::placeholder {
           color: transparent !important;
         }
 
+        body.paper-mode select {
+          color: transparent !important;
+          text-shadow: none !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+
         body.paper-mode select option {
           color: #111827;
         }
 
-        /* Keep checkboxes visible */
+        /* Keep real prefilled input/date/textarea values visible */
+        body.paper-mode input,
+        body.paper-mode textarea {
+          color: #111827 !important;
+          -webkit-text-fill-color: #111827 !important;
+        }
+
+        /* Keep checkboxes/radios visible */
         body.paper-mode input[type="checkbox"],
         body.paper-mode input[type="radio"] {
           color: initial !important;
@@ -404,10 +415,45 @@
         body.paper-mode input:invalid,
         body.paper-mode select:invalid,
         body.paper-mode textarea:invalid {
-          border-color: #d7dde6 !important;
+          border-color: #cbd5e1 !important;
           box-shadow: none !important;
           background: #fff !important;
         }
+
+        /* Page numbering */
+        body.paper-mode::after {
+          content: "Page " counter(page);
+          position: fixed;
+          right: 10mm;
+          bottom: 6mm;
+          font-size: 10px;
+          color: #64748b;
+        }
+
+        body.paper-mode {
+          counter-reset: page;
+          background: #fff !important;
+        }
+
+        /* Keep signature/date block together where possible */
+        .paper-signature-block {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+
+        /* Long form declaration section: white background, clearer borders */
+        body.paper-mode .paper-declaration-section {
+          background: #ffffff !important;
+          border: 2px solid #cbd5e1 !important;
+          box-shadow: none !important;
+        }
+
+        body.paper-mode .paper-declaration-section h2 {
+          background: #ffffff !important;
+          color: #111827 !important;
+          border: 1.5px solid #94a3b8 !important;
+        }
+
         .btn,
         button,
         .signature-actions,
@@ -426,6 +472,19 @@
         .paper-dvla-help {
           display: block !important;
           break-inside: avoid;
+          page-break-inside: avoid;
+        }
+
+        body.paper-mode .paper-declaration-section {
+          background: #ffffff !important;
+          border: 2px solid #cbd5e1 !important;
+          box-shadow: none !important;
+        }
+
+        body.paper-mode .paper-declaration-section h2 {
+          background: #ffffff !important;
+          color: #111827 !important;
+          border: 1.5px solid #94a3b8 !important;
         }
       }
     </style>
@@ -658,6 +717,28 @@
           </div>
         </section>
 
+        <div class="paper-dvla-help" id="paperDvlaHelp" style="display: none">
+          <div class="paper-dvla-help-inner">
+            <div class="paper-dvla-text">
+              <strong>Need your DVLA check code?</strong><br />
+              Scan this QR code with your phone camera, then follow the DVLA
+              steps to get your 8-character access code.
+              <br /><br />
+              Or visit:<br />
+              <span class="mono">
+                https://www.viewdrivingrecord.service.gov.uk/driving-record/licence-number
+              </span>
+            </div>
+
+            <div class="paper-dvla-qr">
+              <img
+                src="/equinetransportuk/assets/dvla-qr.png"
+                alt="QR code for DVLA driving record access code website"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- Licence -->
         <section class="section">
           <h2>Licence Information (UK licences issued by DVLA)</h2>
@@ -715,28 +796,6 @@
             </div>
           </div>
         </section>
-
-        <div class="paper-dvla-help" id="paperDvlaHelp" style="display: none">
-          <div class="paper-dvla-help-inner">
-            <div class="paper-dvla-text">
-              <strong>Need your DVLA check code?</strong><br />
-              Scan this QR code with your phone camera, then follow the DVLA
-              steps to get your 8-character access code.
-              <br /><br />
-              Or visit:<br />
-              <span class="mono">
-                https://www.viewdrivingrecord.service.gov.uk/driving-record/licence-number
-              </span>
-            </div>
-
-            <div class="paper-dvla-qr">
-              <img
-                src="/equinetransportuk/assets/dvla-qr.png"
-                alt="QR code for DVLA driving record access code website"
-              />
-            </div>
-          </div>
-        </div>
 
         <!-- Medical -->
         <section class="section">
@@ -921,7 +980,7 @@
         </section>
 
         <!-- DECLARATION + PAPERWORK -->
-        <section class="section">
+        <section class="section paper-declaration-section">
           <h2>Declaration & Identification Paperwork</h2>
 
           <div class="small" style="margin-bottom: 14px; line-height: 1.5">
@@ -955,9 +1014,8 @@
           </div>
 
           <div class="divider"></div>
-
           <!-- Signature -->
-          <div class="grid two">
+          <div class="grid two paper-signature-block">
             <div>
               <label>Hirer Driver's Signature</label>
 
@@ -1139,6 +1197,29 @@
             el.removeAttribute("placeholder");
           });
 
+          // Prefill key paper fields from the admin paper-print link.
+          const nameParts = customerName.trim().split(/\s+/);
+          const firstName = nameParts.shift() || "";
+          const lastName = nameParts.join(" ");
+
+          const firstInput = document.getElementById("firstName");
+          const lastInput = document.getElementById("lastName");
+          const emailInput = document.getElementById("email");
+          const mobileInput = document.getElementById("mobile");
+          const addressInput = document.getElementById("address");
+
+          if (firstInput && !firstInput.value) firstInput.value = firstName;
+          if (lastInput && !lastInput.value) lastInput.value = lastName;
+          if (emailInput && !emailInput.value) emailInput.value = customerEmail;
+          if (mobileInput && !mobileInput.value)
+            mobileInput.value = customerMobile;
+          if (addressInput && !addressInput.value)
+            addressInput.value = customerAddress;
+
+          // Keep date of signing blank on paper copy.
+          const signedDateInput = document.getElementById("signedDate");
+          if (signedDateInput) signedDateInput.value = "";
+
           // Remove visible "Select / Select an option" text from paper print selects.
           // The dropdowns still exist on screen, but print blank for pen completion.
           document.querySelectorAll("select").forEach((select) => {
@@ -1146,6 +1227,9 @@
           });
 
           const customerName = params.get("customerName") || "";
+          const customerEmail = params.get("customerEmail") || "";
+          const customerMobile = params.get("customerMobile") || "";
+          const customerAddress = params.get("customerAddress") || "";
           const vehicleName = params.get("vehicleName") || "";
           const pickupAt = params.get("pickupAt") || "";
           const dropoffAt = params.get("dropoffAt") || "";
@@ -1177,6 +1261,9 @@
 
           box.appendChild(title);
           addLine("Customer", customerName);
+          addLine("Email", customerEmail);
+          addLine("Mobile", customerMobile);
+          addLine("Address", customerAddress);
           addLine("Vehicle", vehicleName);
           addLine("Hire from", pickupAt);
           addLine("Hire until", dropoffAt);
