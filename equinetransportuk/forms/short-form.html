@@ -751,42 +751,7 @@
       function addPaperFormHeader() {
         if (!PAPER_MODE) return;
 
-        document
-          .getElementById("paperDvlaHelp")
-          ?.style.setProperty("display", "block");
-
-        // Paper forms are filled in by pen, so remove online hint text.
         document.body.classList.add("paper-mode");
-
-        document.querySelectorAll("input, textarea").forEach((el) => {
-          el.removeAttribute("placeholder");
-        });
-
-        // Prefill key paper fields from the admin paper-print link.
-        const nameParts = customerName.trim().split(/\s+/);
-        const firstName = nameParts.shift() || "";
-        const lastName = nameParts.join(" ");
-
-        const firstInput = document.querySelector('[name="firstName"]');
-        const lastInput = document.querySelector('[name="lastName"]');
-        const emailInput = document.querySelector('[name="email"]');
-        const mobileInput = document.querySelector('[name="mobile"]');
-
-        if (firstInput && !firstInput.value) firstInput.value = firstName;
-        if (lastInput && !lastInput.value) lastInput.value = lastName;
-        if (emailInput && !emailInput.value) emailInput.value = customerEmail;
-        if (mobileInput && !mobileInput.value)
-          mobileInput.value = customerMobile;
-
-        // Keep date of signing blank on paper copy.
-        const todayDateInput = document.getElementById("todayDate");
-        if (todayDateInput) todayDateInput.value = "";
-
-        // Remove visible "Select / Select an option" text from paper print selects.
-        // The dropdowns still exist on screen, but print blank for pen completion.
-        document.querySelectorAll("select").forEach((select) => {
-          select.dataset.paperOriginalValue = select.value || "";
-        });
 
         const customerName = params.get("customerName") || "";
         const customerEmail = params.get("customerEmail") || "";
@@ -795,6 +760,58 @@
         const vehicleName = params.get("vehicleName") || "";
         const pickupAt = params.get("pickupAt") || "";
         const dropoffAt = params.get("dropoffAt") || "";
+
+        document
+          .getElementById("paperDvlaHelp")
+          ?.style.setProperty("display", "block");
+
+        // Paper forms are filled in by pen, so remove online hint text.
+        document.querySelectorAll("input, textarea").forEach((el) => {
+          el.removeAttribute("placeholder");
+        });
+
+        // Remove visible select placeholder text from printed paper forms.
+        document.querySelectorAll("select").forEach((select) => {
+          select.dataset.paperOriginalValue = select.value || "";
+        });
+
+        // Prefill key paper fields from the admin paper-print link.
+        const nameParts = customerName.trim().split(/\s+/);
+        const firstName = nameParts.shift() || "";
+        const lastName = nameParts.join(" ");
+
+        const firstInput =
+          document.querySelector('[name="firstName"]') ||
+          document.getElementById("firstName");
+
+        const lastInput =
+          document.querySelector('[name="lastName"]') ||
+          document.getElementById("lastName");
+
+        const emailInput =
+          document.querySelector('[name="email"]') ||
+          document.getElementById("email");
+
+        const mobileInput =
+          document.querySelector('[name="mobile"]') ||
+          document.getElementById("mobile");
+
+        const addressInput =
+          document.querySelector('[name="address"]') ||
+          document.getElementById("address");
+
+        if (firstInput) firstInput.value = firstName;
+        if (lastInput) lastInput.value = lastName;
+        if (emailInput) emailInput.value = customerEmail;
+        if (mobileInput) mobileInput.value = customerMobile;
+        if (addressInput) addressInput.value = customerAddress;
+
+        // Keep signing date blank on paper copies.
+        const todayDateInput = document.getElementById("todayDate");
+        if (todayDateInput) todayDateInput.value = "";
+
+        const signedDateInput = document.getElementById("signedDate");
+        if (signedDateInput) signedDateInput.value = "";
 
         const headerHost = document.createElement("div");
         headerHost.className = "paper-print-only";
@@ -840,9 +857,12 @@
           formCard.prepend(headerHost);
         }
 
+        // Important: prevent white screen if booking prefill fails or is skipped.
+        document.body.classList.remove("loading");
+
         if (AUTO_PRINT) {
           window.addEventListener("load", () => {
-            setTimeout(() => window.print(), 700);
+            setTimeout(() => window.print(), 900);
           });
         }
       }
@@ -916,7 +936,7 @@
    🚀 AUTO SUCCESS SCREEN
 =============================== */
 
-          if (booking.formCompleted) {
+          if (!PAPER_MODE && booking.formCompleted) {
             console.log("✅ Form already completed → skipping form");
 
             renderSuccessCard({
