@@ -164,46 +164,96 @@
       .status-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 5mm 10mm;
-        margin: 5mm 0 8mm;
+        gap: 4mm 8mm;
+        margin: 5mm 0 7mm;
+        align-items: stretch;
+      }
+
+      .status-item {
+        display: grid;
+        grid-template-columns: 42mm 1fr;
+        gap: 4mm;
         align-items: center;
+
+        min-height: 12mm;
+        padding: 2mm 3mm;
+
+        border: 1px solid #dbe1e8;
+        border-radius: 2mm;
+        background: #ffffff;
+
+        page-break-inside: avoid;
       }
 
-      .status-line {
-        font-size: 11pt;
+      .status-label {
+        font-size: 10.5pt;
         font-weight: 900;
+        color: #111827;
+        line-height: 1.1;
       }
 
-      .status-line.green {
+      .status-value {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 4mm;
+
+        font-size: 10.5pt;
+        font-weight: 900;
+        color: #111827;
+        line-height: 1.1;
+      }
+
+      .status-value.green {
         color: #137a3d;
       }
 
-      .check {
+      .check-pair {
         display: inline-flex;
         align-items: center;
-        gap: 3mm;
-        margin-left: 5mm;
+        gap: 2mm;
+        white-space: nowrap;
       }
 
       .tickbox {
         display: inline-flex;
-        width: 8mm;
-        height: 8mm;
+        width: 7.5mm;
+        height: 7.5mm;
+
         border: 1px solid #111827;
+
         align-items: center;
         justify-content: center;
-        font-size: 19pt;
+
+        font-size: 18pt;
         line-height: 1;
         font-weight: 900;
         color: #137a3d;
+
         vertical-align: middle;
+        flex: 0 0 auto;
       }
 
-      .small-muted {
-        font-size: 8pt;
+      .dvla-details {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 2mm;
+
+        font-size: 8.5pt;
         color: #64748b;
-        font-weight: 600;
-        margin-left: 3mm;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      @media print {
+        .status-grid {
+          gap: 3mm 6mm;
+        }
+
+        .status-item {
+          min-height: 10mm;
+          padding: 1.8mm 2.5mm;
+        }
       }
 
       .terms h2 {
@@ -776,46 +826,63 @@
             </table>
 
             <div class="status-grid">
-              <div class="status-line">
-                Submitted Form:
-                <span class="check">Short Form ${getPrintCheckMark(
-                  isShortForm && formComplete,
-                )}</span>
-                <span class="check">Long Form ${getPrintCheckMark(
-                  isLongForm && formComplete,
-                )}</span>
-              </div>
+  <div class="status-item">
+    <div class="status-label">Submitted Form</div>
 
-              <div class="status-line">
-                £200 Deposit Successful
-                <span class="check">${getPrintCheckMark(depositOk)}</span>
-              </div>
+    <div class="status-value">
+      <span class="check-pair">
+        Short ${getPrintCheckMark(isShortForm && formComplete)}
+      </span>
 
-              <div class="status-line">
-                DVLA Check
-                <span class="check">${getPrintCheckMark(dvla.verified)}</span>
-                <span class="small-muted">
-                  ${escapeHtml(
-                    [
-                      dvla.licence && `Licence: ${dvla.licence}`,
-                      dvla.code && `Code: ${dvla.code}`,
-                    ]
-                      .filter(Boolean)
-                      .join("  ") || "",
-                  )}
-                </span>
-              </div>
+      <span class="check-pair">
+        Long ${getPrintCheckMark(isLongForm && formComplete)}
+      </span>
+    </div>
+  </div>
 
-              <div class="status-line ${fullyPaid ? "green" : ""}">
-                ${
-                  fullyPaid
-                    ? `✅ Fully Paid`
-                    : `Outstanding: ${escapeHtml(
-                        getPrintMoney(outstandingAmount),
-                      )}`
-                }
-              </div>
-            </div>
+  <div class="status-item">
+    <div class="status-label">£200 Deposit</div>
+
+    <div class="status-value">
+      <span class="check-pair">
+        Successful ${getPrintCheckMark(depositOk)}
+      </span>
+    </div>
+  </div>
+
+  <div class="status-item">
+    <div class="status-label">DVLA Check</div>
+
+    <div class="status-value">
+      <span class="check-pair">
+        Verified ${getPrintCheckMark(dvla.verified)}
+      </span>
+
+      <span class="dvla-details">
+        ${escapeHtml(
+          [
+            dvla.licence && `Licence: ${dvla.licence}`,
+            dvla.code && `Code: ${dvla.code}`,
+          ]
+            .filter(Boolean)
+            .join("  ") || "",
+        )}
+      </span>
+    </div>
+  </div>
+
+  <div class="status-item">
+    <div class="status-label">Payment</div>
+
+    <div class="status-value ${fullyPaid ? "green" : ""}">
+      ${
+        fullyPaid
+          ? `✅ Fully Paid`
+          : `Outstanding: ${escapeHtml(getPrintMoney(outstandingAmount))}`
+      }
+    </div>
+  </div>
+</div>
 
             <div class="terms">
               <h2>Terms and Conditions of Hire</h2>
