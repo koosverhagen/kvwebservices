@@ -7349,6 +7349,18 @@
         );
       }
 
+      function getFormSource(booking) {
+        const payload = getFormPayload(booking);
+
+        return (
+          booking?.formSource || booking?.form_source || payload?.source || null
+        );
+      }
+
+      function isPaperForm(booking) {
+        return getFormSource(booking) === "paper";
+      }
+
       function getRequiredFormType(booking) {
         return (
           booking?.requiredFormType ||
@@ -7462,6 +7474,25 @@
         return raw.slice(-8);
       }
 
+      function buildPaperFormUrl(booking) {
+        const formType = getRequiredFormType(booking) || "long";
+        const fileName =
+          formType === "short" ? "short-form.html" : "long-form.html";
+
+        const params = new URLSearchParams({
+          bookingId: booking.id || "",
+          paper: "1",
+          print: "1",
+          customerName: booking.customerName || "",
+          vehicleName:
+            booking.vehicleSnapshot?.name || booking.vehicleName || "",
+          pickupAt: booking.pickupAtLocal || booking.pickupAt || "",
+          dropoffAt: booking.dropoffAtLocal || booking.dropoffAt || "",
+        });
+
+        return `https://kvwebservices.co.uk/equinetransportuk/forms/${fileName}?${params.toString()}`;
+      }
+
       function hireCellHtml(booking) {
         const now = new Date();
 
@@ -7494,6 +7525,7 @@
         const bookingId = booking.id || "";
         const complete = isFormComplete(booking);
         const requiredType = getRequiredFormType(booking) || "long";
+        const paperForm = isPaperForm(booking);
 
         const phone = booking.customerMobile || "";
         const email = booking.customerEmail || "";
@@ -7636,28 +7668,48 @@
   }
 </span>
         <!-- FORM -->
-        <div class="stack">
-          <strong>Form</strong>
+<div class="stack">
+  <strong>Form</strong>
 
-          ${
-            complete
-              ? `
-                <button
-                  class="btn ghost btn-small"
-                  type="button"
-                  data-view-form="${escapeHtml(bookingId)}"
-                >
-                  View Form
-                </button>
-              `
-              : `
-                <div class="contact-actions">
-                  ${formText}
-                  ${formEmail}
-                </div>
-              `
-          }
+  ${
+    complete
+      ? paperForm
+        ? `<span class="pill ok">Paper form received</span>`
+        : `
+          <button
+            class="btn ghost btn-small"
+            type="button"
+            data-view-form="${escapeHtml(bookingId)}"
+          >
+            View Form
+          </button>
+        `
+      : `
+        <div class="contact-actions">
+          ${formText}
+          ${formEmail}
         </div>
+        <div class="contact-actions" style="margin-top:8px;">
+          <button
+            class="btn ghost btn-small"
+            type="button"
+            data-print-paper-form="${escapeHtml(bookingId)}"
+          >
+            Print paper
+          </button>
+
+          <button
+            class="btn ghost btn-small"
+            type="button"
+            data-mark-paper-form="${escapeHtml(bookingId)}"
+            data-formtype="${escapeHtml(requiredType)}"
+          >
+            Paper received
+          </button>
+        </div>
+      `
+  }
+</div>
 
         <!-- DEPOSIT -->
         <div class="stack">
@@ -9047,7 +9099,9 @@
               >
                 ${
                   formDone
-                    ? '<span class="pill ok">Form Complete</span>'
+                    ? isPaperForm(booking)
+                      ? '<span class="pill ok">Paper Form Received</span>'
+                      : '<span class="pill ok">Form Complete</span>'
                     : '<span class="pill warn">Form Pending</span>'
                 }
 
@@ -9157,12 +9211,40 @@ ${notesBox}
 
        <div class="mobile-link-actions">
 
-  <button
-    class="mobile-link-btn"
-    onclick="openMobileForm('${booking.id}')"
-  >
-    📝 View Form
-  </button>
+  ${
+    formDone
+      ? isPaperForm(booking)
+        ? `<span class="pill ok">Paper form received</span>`
+        : `
+            <button
+              class="mobile-link-btn"
+              onclick="openMobileForm('${booking.id}')"
+            >
+              📝 View Form
+            </button>
+          `
+      : `
+      <button
+        class="mobile-link-btn"
+        type="button"
+        data-print-paper-form="${escapeHtml(bookingId)}"
+      >
+        🖨️ Print Paper Form
+      </button>
+
+      <button
+        class="mobile-link-btn"
+        type="button"
+        data-mark-paper-form="${escapeHtml(bookingId)}"
+        data-formtype="${escapeHtml(requiredType)}"
+      >
+        ✅ Paper Received
+      </button>
+
+      ${mobileFormText}
+      ${mobileFormEmail}
+    `
+  }
 
 <button
   class="mobile-link-btn ${COMPLETED_HANDOVERS.has(String(booking.id)) ? "handover-is-complete" : ""}"
@@ -14128,15 +14210,127 @@ Equine Transport UK`;
         }
       }
 
-      bookingsBody.addEventListener("click", (event) => {
+      /* ===============================
+   VIEW FORM
+================================ */
+
+      document.addEventListener("click", (event) => {
         const btn = event.target.closest("[data-view-form]");
         if (!btn) return;
 
-        loadForm(btn.getAttribute("data-view-form"));
+        event.preventDefault();
+
+        const bookingId = btn.getAttribute("data-view-form");
+
+        if (!bookingId) {
+          alert("Missing booking reference.");
+          return;
+        }
+
+        loadForm(bookingId);
+      });
+
+      /* ===============================
+   PRINT PAPER FORM
+================================ */
+
+      document.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-print-paper-form]");
+        if (!btn) return;
+
+        event.preventDefault();
+
+        const bookingId = btn.getAttribute("data-print-paper-form");
+
+        const booking = allBookings.find(
+          (b) => String(b.id) === String(bookingId),
+        );
+
+        if (!booking) {
+          alert("Booking not found.");
+          return;
+        }
+
+        const url = buildPaperFormUrl(booking);
+
+        window.open(url, "_blank", "noopener");
+      });
+
+      /* ===============================
+   MARK PAPER FORM RECEIVED
+================================ */
+
+      document.addEventListener("click", async (event) => {
+        const btn = event.target.closest("[data-mark-paper-form]");
+        if (!btn) return;
+
+        event.preventDefault();
+
+        const bookingId = btn.getAttribute("data-mark-paper-form");
+        const formType = btn.getAttribute("data-formtype") || "long";
+
+        const booking = allBookings.find(
+          (b) => String(b.id) === String(bookingId),
+        );
+
+        if (!booking) {
+          alert("Booking not found.");
+          return;
+        }
+
+        const ok = confirm(
+          `Mark this ${formType.toUpperCase()} paper form as received?`,
+        );
+
+        if (!ok) return;
+
+        btn.disabled = true;
+
+        const oldText = btn.textContent;
+        btn.textContent = "Saving...";
+
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/form-paper-received`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId,
+              formType,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || "Failed to save paper form status");
+          }
+
+          booking.formCompleted = true;
+          booking.formType = formType;
+          booking.formSource = "paper";
+          booking.paperFormReceived = true;
+          booking.paperFormReceivedAt =
+            data.paperFormReceivedAt || new Date().toISOString();
+
+          renderBookings();
+
+          // Pull fresh D1/KV state so it survives immediately after refresh too.
+          await loadBookings();
+
+          alert("Paper form marked as received.");
+        } catch (err) {
+          console.error("❌ Paper form received failed:", err);
+
+          alert(err.message || "Failed to mark paper form received.");
+
+          btn.disabled = false;
+          btn.textContent = oldText;
+        }
       });
 
       refreshBtn?.addEventListener("click", loadBookings);
-
       /* ===============================
    🔍 SEARCH / FILTERS
 =============================== */
