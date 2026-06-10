@@ -10160,7 +10160,7 @@ function buildHandoverCopyEmailHtml({
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe1e8;">
          <tr>
-  <td style="padding:22px 24px 0;background:#f4f6f8;">
+  <td style="padding:22px 24px 0;background:#ffffff;">
     ${EMAIL_BRAND_BLOCK}
 
     <div style="
@@ -10700,33 +10700,73 @@ async function handlePublicHandoverCopy(request, env) {
         id: booking.id,
         vehicleId: booking.vehicleId || "",
         vehicleSnapshot: booking.vehicleSnapshot || null,
+
         vehicleName:
           booking.vehicleSnapshot?.name ||
           booking.vehicleName ||
           tokenRecord.vehicleName ||
           "",
+
         pickupAt: booking.pickupAt || "",
         dropoffAt: booking.dropoffAt || "",
         pickupAtLocal: booking.pickupAtLocal || "",
         dropoffAtLocal: booking.dropoffAtLocal || "",
+
         customerName: booking.customerName || tokenRecord.customerName || "",
         customerEmail: booking.customerEmail || tokenRecord.customerEmail || "",
         customerMobile: booking.customerMobile || "",
         customerAddress: booking.customerAddress || booking.address || "",
+        customerDob:
+          booking.customerDob ||
+          booking.dateOfBirth ||
+          booking.customerDateOfBirth ||
+          "",
+
         requiredFormType: booking.requiredFormType || "",
         formCompleted: booking.formCompleted === true,
+
         depositPaid: booking.depositPaid === true,
-        outstandingPaid: booking.outstandingPaid === true,
+        outstandingPaid:
+          booking.outstandingPaid === true ||
+          Number(booking.outstandingAmount || booking.outstanding || 0) <= 0,
+
         outstandingAmount: Number(
           booking.outstandingAmount || booking.outstanding || 0,
         ),
         hireTotal: Number(booking.hireTotal || booking.priceTotal || 0),
+
+        dvlaVerified:
+          booking.dvlaVerified === true || booking.dvla_verified === 1,
+
+        dvlaLicenceLast8:
+          booking.dvlaLicenceLast8 ||
+          booking.dvla_last_8 ||
+          booking.dvlaLicence ||
+          "",
+
+        dvlaCode:
+          booking.dvlaCode ||
+          booking.dvlaCheckCode ||
+          booking.dvla_check_code ||
+          "",
       }
     : {
         id: bookingId,
         vehicleName: tokenRecord.vehicleName || "",
         customerName: tokenRecord.customerName || "",
         customerEmail: tokenRecord.customerEmail || "",
+        customerMobile: "",
+        customerAddress: "",
+        customerDob: "",
+        requiredFormType: "",
+        formCompleted: false,
+        depositPaid: false,
+        outstandingPaid: false,
+        outstandingAmount: 0,
+        hireTotal: 0,
+        dvlaVerified: false,
+        dvlaLicenceLast8: "",
+        dvlaCode: "",
       };
 
   return json({
