@@ -10252,7 +10252,22 @@ function buildHandoverCopyEmailHtml({
 }
 
 async function handleAdminHandoverEmailCopy(request, env) {
-  const HANDOVER_EMAIL_DRY_RUN = true; // 🔒 SAFETY LOCK — no customer email can send yet
+  /*
+    STEP 3I — FINAL SAFETY / SEND SWITCH
+
+    🔒 CURRENT STATE:
+    HANDOVER_EMAIL_DRY_RUN = true means NO customer handover email can send.
+
+    GO-LIVE LATER:
+    Only after final domain/email go-live:
+    1) Set HANDOVER_EMAIL_DRY_RUN = false
+    2) Set Cloudflare secret EMAILS_ENABLED=true
+    3) Set Cloudflare secret MIGRATION_MODE=false
+    4) Deploy Worker
+
+    All 3 conditions must be correct before a SendGrid call is allowed.
+  */
+  const HANDOVER_EMAIL_DRY_RUN = true;
 
   let body;
 
@@ -10380,46 +10395,160 @@ async function handleAdminHandoverEmailCopy(request, env) {
       .trim()
       .toLowerCase() === "true";
 
+  const canSend =
+    HANDOVER_EMAIL_DRY_RUN === false &&
+    emailsEnabled === true &&
+    migrationMode === false;
+
+  const blockedReasons = [];
+
+  if (HANDOVER_EMAIL_DRY_RUN) blockedReasons.push("HANDOVER_EMAIL_DRY_RUN");
+  if (!emailsEnabled) blockedReasons.push("EMAILS_DISABLED");
+  if (migrationMode) blockedReasons.push("MIGRATION_MODE");
+
+  const sentKey = `handover-email-sent:${bookingId}`;
+
   /*
-    🔒 HARD SAFETY:
-    This endpoint prepares the real customer email content, but it does NOT send yet.
-    Do not call sendBookingEmail() while HANDOVER_EMAIL_DRY_RUN is true.
+    🔒 DRY RUN / BLOCKED MODE
+    This is the current live state. It returns the exact email preview,
+    but makes ZERO SendGrid calls.
+  */
+  if (!canSend) {
+    console.log("📧 Handover customer email prepared — NOT sent", {
+      bookingId,
+      customerEmail,
+      customerName,
+      vehicleName,
+      customerLink,
+      emailsEnabled,
+      migrationMode,
+      dryRun: HANDOVER_EMAIL_DRY_RUN,
+      blockedReasons,
+    });
+
+    return json({
+      ok: true,
+      sent: false,
+      dryRun: true,
+      reason: blockedReasons[0] || "EMAIL_BLOCKED",
+      blockedReasons,
+      message:
+        "Customer handover email prepared, but not sent. Email sending is disabled until go-live.",
+      bookingId,
+      customerEmail,
+      customerName,
+      vehicleName,
+      customerLink,
+      subject,
+      htmlPreview: html,
+      emailsEnabled,
+      migrationMode,
+    });
+  }
+
+  /*
+    ✅ LIVE SEND MODE
+    This block only runs after go-live when:
+    - HANDOVER_EMAIL_DRY_RUN === false
+    - EMAILS_ENABLED === true
+    - MIGRATION_MODE === false
   */
 
-  console.log("📧 Handover customer email prepared — NOT sent", {
-    bookingId,
-    customerEmail,
-    customerName,
-    vehicleName,
-    customerLink,
-    emailsEnabled,
-    migrationMode,
-    dryRun: HANDOVER_EMAIL_DRY_RUN,
-  });
+  const alreadySent = await env.BOOKINGS_KV.get(sentKey);
 
-  return json({
-    ok: true,
-    sent: false,
-    dryRun: true,
-    reason: HANDOVER_EMAIL_DRY_RUN
-      ? "HANDOVER_EMAIL_DRY_RUN"
-      : migrationMode
-        ? "MIGRATION_MODE"
-        : !emailsEnabled
-          ? "EMAILS_DISABLED"
-          : "EMAIL_READY_NOT_SENT",
-    message:
-      "Customer handover email prepared, but not sent. Email sending is disabled until go-live.",
-    bookingId,
-    customerEmail,
-    customerName,
-    vehicleName,
-    customerLink,
-    subject,
-    htmlPreview: html,
-    emailsEnabled,
-    migrationMode,
-  });
+  if (alreadySent) {
+    console.log(
+      "📧 Handover customer email already sent — skipping duplicate",
+      {
+        bookingId,
+        customerEmail,
+      },
+    );
+
+    return json({
+      ok: true,
+      sent: false,
+      alreadySent: true,
+      dryRun: false,
+      reason: "ALREADY_SENT",
+      message:
+        "Customer handover email was already sent for this booking. Duplicate send skipped.",
+      bookingId,
+      customerEmail,
+      customerName,
+      vehicleName,
+      customerLink,
+      subject,
+      htmlPreview: html,
+      emailsEnabled,
+      migrationMode,
+    });
+  }
+
+  try {
+    await sendBookingEmail(env, {
+      to: customerEmail,
+      subject,
+      html,
+    });
+
+    await env.BOOKINGS_KV.put(
+      sentKey,
+      JSON.stringify({
+        bookingId,
+        customerEmail,
+        sentAt: new Date().toISOString(),
+        subject,
+        customerLink,
+      }),
+      {
+        expirationTtl: 60 * 60 * 24 * 90,
+      },
+    );
+
+    console.log("✅ Handover customer email SENT", {
+      bookingId,
+      customerEmail,
+      vehicleName,
+    });
+
+    return json({
+      ok: true,
+      sent: true,
+      dryRun: false,
+      reason: "SENT",
+      message: "Customer handover email sent.",
+      bookingId,
+      customerEmail,
+      customerName,
+      vehicleName,
+      customerLink,
+      subject,
+      emailsEnabled,
+      migrationMode,
+    });
+  } catch (err) {
+    console.error("❌ Handover customer email send failed:", err);
+
+    return json(
+      {
+        ok: false,
+        sent: false,
+        dryRun: false,
+        reason: "SEND_FAILED",
+        error: err.message || "Failed to send customer handover email.",
+        bookingId,
+        customerEmail,
+        customerName,
+        vehicleName,
+        customerLink,
+        subject,
+        emailsEnabled,
+        migrationMode,
+      },
+      500,
+    );
+  }
 }
 
 async function handleAdminHandoverCustomerLink(request, env) {
