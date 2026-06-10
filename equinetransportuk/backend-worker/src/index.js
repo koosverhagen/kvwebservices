@@ -8910,39 +8910,35 @@ function toLondonLocalISOString(date) {
    📧 MODERN EMAIL TEMPLATE
 =============================== */
 
-/* ===============================
-   📧 MODERN EMAIL TEMPLATE
-=============================== */
-
 const EMAIL_BRAND_BLOCK = `
   <div style="
-    margin:0 0 22px;
-    padding:18px 20px;
+    margin:0 0 24px;
+    padding:18px 22px;
     background:#ffffff;
     border:1px solid #dbe1e8;
     border-radius:22px;
   ">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
       <tr>
-        <td width="22%" style="vertical-align:middle;font-size:0;line-height:0;">
+        <td width="18%" style="vertical-align:middle;font-size:0;line-height:0;">
           &nbsp;
         </td>
 
-        <td width="56%" style="vertical-align:middle;text-align:center;">
+        <td width="64%" style="vertical-align:middle;text-align:center;">
           <div style="
             font-size:30px;
-            font-weight:800;
+            font-weight:900;
             color:#1d2530;
-            line-height:1.15;
-            margin:0;
+            line-height:1.12;
+            letter-spacing:0.5px;
           ">
             Equine Transport UK
           </div>
 
           <div style="
             margin-top:8px;
-            font-size:14px;
-            font-weight:700;
+            font-size:15px;
+            font-weight:800;
             color:#5a6675;
             line-height:1.35;
           ">
@@ -8951,8 +8947,8 @@ const EMAIL_BRAND_BLOCK = `
 
           <div style="
             margin-top:8px;
-            font-size:16px;
-            font-weight:800;
+            font-size:17px;
+            font-weight:900;
             color:#2f6fe4;
             line-height:1.35;
           ">
@@ -8960,14 +8956,14 @@ const EMAIL_BRAND_BLOCK = `
           </div>
         </td>
 
-        <td width="22%" style="vertical-align:middle;text-align:right;">
+        <td width="18%" style="vertical-align:middle;text-align:right;">
           <img
             src="https://kvwebservices.co.uk/equinetransportuk/images/logo.png"
             alt="Equine Transport UK"
             style="
               display:block;
-              width:110px;
-              max-width:110px;
+              width:104px;
+              max-width:104px;
               height:auto;
               margin-left:auto;
             "
@@ -9027,14 +9023,6 @@ function buildModernEmail({
       line-height:1.6;
     ">
 
-      <!-- LOGO -->
-      <div style="text-align:center;margin:0 0 22px;">
-        <img
-          src="https://kvwebservices.co.uk/equinetransportuk/images/logo.png"
-          alt="Equine Transport UK"
-          style="max-width:280px;width:100%;height:auto;"
-        >
-      </div>
 
             ${EMAIL_BRAND_BLOCK}
 
@@ -10163,7 +10151,7 @@ function buildHandoverCopyEmailHtml({
   const safeDropoffText = escapeHtml(dropoffText || "—");
   const safeCustomerLink = escapeHtml(customerLink || "");
 
-  return `
+  return ` 
 <!doctype html>
 <html>
   <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,sans-serif;color:#111827;">
@@ -10171,17 +10159,22 @@ function buildHandoverCopyEmailHtml({
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe1e8;">
-            <tr>
-              <td style="padding:24px;background:#111827;color:#ffffff;">
-                <h1 style="margin:0;font-size:24px;line-height:1.15;">Equine Transport UK</h1>
-                <p style="margin:6px 0 0;font-size:14px;color:#d1d5db;">
-                  Signed handover / damage report copy
-                </p>
-                <p style="margin:4px 0 0;font-size:13px;color:#d1d5db;">
-                  Part of the East Grinstead Tyre Service Group
-                </p>
-              </td>
-            </tr>
+         <tr>
+  <td style="padding:22px 24px 0;background:#f4f6f8;">
+    ${EMAIL_BRAND_BLOCK}
+
+    <div style="
+      margin:0 0 22px;
+      text-align:center;
+      color:#5a6675;
+      font-size:15px;
+      font-weight:800;
+      line-height:1.4;
+    ">
+      Signed handover / damage report copy
+    </div>
+  </td>
+</tr>
 
             <tr>
               <td style="padding:24px;">
