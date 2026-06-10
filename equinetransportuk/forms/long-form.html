@@ -1100,6 +1100,11 @@
             .getElementById("paperDvlaHelp")
             ?.style.setProperty("display", "block");
 
+          // Paper forms are filled in by pen, so remove online hint text.
+          document.querySelectorAll("input, textarea").forEach((el) => {
+            el.removeAttribute("placeholder");
+          });
+
           const customerName = params.get("customerName") || "";
           const vehicleName = params.get("vehicleName") || "";
           const pickupAt = params.get("pickupAt") || "";
