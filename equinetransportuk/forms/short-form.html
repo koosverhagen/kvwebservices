@@ -321,6 +321,60 @@
       .field-error.hidden {
         display: none;
       }
+
+      .paper-dvla-help {
+        margin-top: 16px;
+        padding: 16px;
+        border: 1px solid #dbe1e8;
+        border-radius: 12px;
+        background: #f8fafc;
+      }
+
+      .paper-dvla-help-inner {
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .paper-dvla-qr img {
+        width: 160px;
+        height: 160px;
+        object-fit: contain;
+        display: block;
+        margin-left: auto;
+      }
+
+      .mono {
+        font-family: monospace;
+        word-break: break-word;
+      }
+
+      .paper-print-only {
+        display: none;
+      }
+
+      @media print {
+        .btn,
+        button,
+        .signature-actions,
+        .hint {
+          display: none !important;
+        }
+
+        body {
+          background: #fff !important;
+        }
+
+        .paper-print-only {
+          display: block !important;
+        }
+
+        .paper-dvla-help {
+          display: block !important;
+          break-inside: avoid;
+        }
+      }
     </style>
     <link rel="icon" href="/equinetransportuk/images/favicon.png" />
   </head>
@@ -544,6 +598,28 @@
             <div>
               <label>Date of Your Last DVLA Access Code</label>
               <input type="date" name="dvlaCodeDate" required />
+            </div>
+          </div>
+
+          <div class="paper-dvla-help" id="paperDvlaHelp" style="display: none">
+            <div class="paper-dvla-help-inner">
+              <div class="paper-dvla-text">
+                <strong>Need your DVLA check code?</strong><br />
+                Scan this QR code with your phone camera, then follow the DVLA
+                steps to get your 8-character access code.
+                <br /><br />
+                Or visit:<br />
+                <span class="mono">
+                  https://www.viewdrivingrecord.service.gov.uk/driving-record/licence-number
+                </span>
+              </div>
+
+              <div class="paper-dvla-qr">
+                <img
+                  src="/equinetransportuk/assets/dvla-qr.png"
+                  alt="QR code for DVLA driving record access code website"
+                />
+              </div>
             </div>
           </div>
 

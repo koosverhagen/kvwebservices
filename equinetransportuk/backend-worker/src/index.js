@@ -1142,6 +1142,14 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/form-paper-received"
+      ) {
+        const response = await handleAdminPaperFormReceived(request, env);
+        return withCors(response, corsHeaders);
+      }
+
       /* ===============================
    ADMIN HANDOVER / DAMAGE REPORT
    STEP 1A — KV LOAD/SAVE SHELL ONLY
@@ -10981,6 +10989,177 @@ async function handleAdminFormView(request, env) {
     console.error("❌ ADMIN FORM VIEW ERROR:", err);
 
     return json({ error: "Failed to load form" }, 500);
+  }
+}
+
+async function handleAdminPaperFormReceived(request, env) {
+  try {
+    const body = await request.json();
+
+    const bookingId = String(body.bookingId || "").trim();
+    const formType = String(body.formType || "")
+      .trim()
+      .toLowerCase();
+
+    if (!bookingId) {
+      return json({ ok: false, error: "Missing bookingId" }, 400);
+    }
+
+    if (!["short", "long"].includes(formType)) {
+      return json({ ok: false, error: "Invalid formType" }, 400);
+    }
+
+    const booking = await findBookingById(env, bookingId);
+
+    if (!booking) {
+      return json({ ok: false, error: "Booking not found" }, 404);
+    }
+
+    const now = new Date().toISOString();
+    const formId = `form_${bookingId}`;
+
+    const payload = {
+      source: "paper",
+      paperFormReceived: true,
+      paperFormReceivedAt: now,
+      bookingId,
+      formType,
+      customerName: booking.customerName || "",
+      customerEmail: booking.customerEmail || "",
+      customerMobile: booking.customerMobile || "",
+      vehicleName: booking.vehicleSnapshot?.name || booking.vehicleName || "",
+      pickupAt: booking.pickupAt || "",
+      dropoffAt: booking.dropoffAt || "",
+    };
+
+    /* ===============================
+       SAVE / UPSERT INTO booking_forms
+    =============================== */
+
+    await env.DB.prepare(
+      `
+      INSERT INTO booking_forms (
+        id,
+        booking_id,
+        form_type,
+        customer_id,
+        customer_name,
+        customer_email,
+        customer_mobile,
+        payload_json,
+        signature_data,
+        submitted_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        form_type = excluded.form_type,
+        customer_id = excluded.customer_id,
+        customer_name = excluded.customer_name,
+        customer_email = excluded.customer_email,
+        customer_mobile = excluded.customer_mobile,
+        payload_json = excluded.payload_json,
+        signature_data = excluded.signature_data,
+        updated_at = excluded.updated_at
+    `,
+    )
+      .bind(
+        formId,
+        bookingId,
+        formType,
+        booking.customerId || null,
+        booking.customerName || null,
+        booking.customerEmail || null,
+        booking.customerMobile || null,
+        JSON.stringify(payload),
+        "", // no digital signature for paper form
+        now,
+        now,
+      )
+      .run();
+
+    /* ===============================
+       UPDATE bookings table
+    =============================== */
+
+    try {
+      await env.DB.prepare(
+        `
+        UPDATE bookings
+        SET
+          form_completed = 1,
+          dvla_verified = 0,
+          updated_at = ?
+        WHERE id = ?
+      `,
+      )
+        .bind(now, bookingId)
+        .run();
+    } catch (err) {
+      console.warn("⚠️ bookings table update skipped:", err.message);
+    }
+
+    /* ===============================
+       UPDATE KV booking copy
+    =============================== */
+
+    try {
+      let updated = false;
+      const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+      for (const key of list.keys) {
+        const raw = await env.BOOKINGS_KV.get(key.name);
+        if (!raw) continue;
+
+        let parsed;
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          continue;
+        }
+
+        if (!Array.isArray(parsed)) continue;
+
+        const next = parsed.map((b) => {
+          if (String(b.id) !== String(bookingId)) return b;
+
+          updated = true;
+
+          return {
+            ...b,
+            formCompleted: true,
+            formType,
+            formSource: "paper",
+            paperFormReceived: true,
+            paperFormReceivedAt: now,
+            formSubmittedAt: now,
+            formRecordId: formId,
+          };
+        });
+
+        if (updated) {
+          await env.BOOKINGS_KV.put(key.name, JSON.stringify(next));
+          break;
+        }
+      }
+    } catch (err) {
+      console.warn("⚠️ KV update failed:", err);
+    }
+
+    return json({
+      ok: true,
+      bookingId,
+      formType,
+      formSource: "paper",
+      paperFormReceived: true,
+      paperFormReceivedAt: now,
+    });
+  } catch (err) {
+    console.error("❌ PAPER FORM RECEIVE ERROR:", err);
+    return json(
+      { ok: false, error: "Failed to mark paper form received" },
+      500,
+    );
   }
 }
 
