@@ -354,18 +354,115 @@
         display: none;
       }
 
+      @page {
+        size: A4;
+        margin: 8mm;
+      }
+
       @media print {
-        /* Paper mode:
-     - keep prefilled customer details visible
-     - hide placeholder/default select text
-     - remove red validation styling
-  */
+        /* ===============================
+     PAPER SHORT FORM — FIT 2 PAGES
+  =============================== */
+
+        html,
+        body {
+          width: 210mm;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #fff !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        body.paper-mode {
+          background: #fff !important;
+          font-size: 10.5pt !important;
+          line-height: 1.25 !important;
+        }
+
+        body.paper-mode .wrap {
+          max-width: none !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          opacity: 1 !important;
+          transform: none !important;
+        }
+
+        body.paper-mode .header-card,
+        body.paper-mode .section {
+          box-shadow: none !important;
+          border: 1.5px solid #cbd5e1 !important;
+          border-radius: 8px !important;
+          padding: 8px 10px !important;
+          margin: 6px 0 !important;
+          background: #fff !important;
+        }
+
+        body.paper-mode .brand-title {
+          font-size: 14pt !important;
+          line-height: 1.15 !important;
+          margin: 0 !important;
+        }
+
+        body.paper-mode .brand-sub {
+          font-size: 9pt !important;
+          line-height: 1.25 !important;
+          margin: 5px 0 0 !important;
+        }
+
+        body.paper-mode .top-meta {
+          margin-top: 5px !important;
+        }
+
+        body.paper-mode .pill {
+          font-size: 8.5pt !important;
+          padding: 3px 7px !important;
+        }
+
+        body.paper-mode .section h2 {
+          font-size: 11pt !important;
+          padding: 5px 8px !important;
+          margin: 0 0 7px !important;
+          border-radius: 6px !important;
+        }
+
+        body.paper-mode .grid {
+          gap: 7px !important;
+          margin-top: 6px !important;
+        }
+
+        body.paper-mode .grid.two {
+          grid-template-columns: repeat(2, 1fr) !important;
+        }
+
+        body.paper-mode label {
+          font-size: 8.8pt !important;
+          margin-bottom: 3px !important;
+          line-height: 1.15 !important;
+        }
+
+        body.paper-mode input,
+        body.paper-mode textarea,
+        body.paper-mode select {
+          min-height: 30px !important;
+          padding: 5px 7px !important;
+          border-radius: 7px !important;
+          font-size: 10pt !important;
+          line-height: 1.15 !important;
+          background: #fff !important;
+        }
+
+        body.paper-mode textarea {
+          min-height: 52px !important;
+        }
 
         body.paper-mode input::placeholder,
         body.paper-mode textarea::placeholder {
           color: transparent !important;
         }
 
+        /* Hide Select / Select an option text from printed paper forms */
         body.paper-mode select {
           color: transparent !important;
           text-shadow: none !important;
@@ -376,21 +473,19 @@
           color: #111827;
         }
 
-        /* Keep real prefilled input/date/textarea values visible */
+        /* Keep real prefilled input/date values visible */
         body.paper-mode input,
         body.paper-mode textarea {
           color: #111827 !important;
           -webkit-text-fill-color: #111827 !important;
         }
 
-        /* Keep checkboxes/radios visible */
         body.paper-mode input[type="checkbox"],
         body.paper-mode input[type="radio"] {
           color: initial !important;
           -webkit-text-fill-color: initial !important;
         }
 
-        /* Remove red browser validation borders on printable paper forms */
         body.paper-mode input:invalid,
         body.paper-mode select:invalid,
         body.paper-mode textarea:invalid {
@@ -399,57 +494,103 @@
           background: #fff !important;
         }
 
-        /* Page numbering */
-        body.paper-mode::after {
-          content: "Page " counter(page);
-          position: fixed;
-          right: 10mm;
-          bottom: 6mm;
-          font-size: 10px;
-          color: #64748b;
+        body.paper-mode .divider {
+          margin: 7px 0 !important;
         }
 
-        body.paper-mode {
-          counter-reset: page;
+        body.paper-mode .date-time {
+          grid-template-columns: 1fr 105px !important;
+          gap: 6px !important;
+        }
+
+        body.paper-mode #hireFromTimeDisplay,
+        body.paper-mode #hireUntilTimeDisplay,
+        body.paper-mode #hireSummary {
+          padding: 6px 8px !important;
+          margin-top: 4px !important;
+          font-size: 9pt !important;
+        }
+
+        body.paper-mode .paper-dvla-help {
+          display: block !important;
+          break-inside: avoid;
+          page-break-inside: avoid;
+          padding: 8px 10px !important;
+          margin: 6px 0 !important;
+          border: 1.5px solid #cbd5e1 !important;
+          border-radius: 8px !important;
           background: #fff !important;
         }
 
-        /* Keep signature/date block together where possible */
-        .paper-signature-block {
-          break-inside: avoid;
-          page-break-inside: avoid;
+        body.paper-mode .paper-dvla-help-inner {
+          grid-template-columns: 1fr 95px !important;
+          gap: 10px !important;
         }
 
-        /* Long form declaration section: white background, clearer borders */
-        body.paper-mode .paper-declaration-section {
-          background: #ffffff !important;
-          border: 2px solid #cbd5e1 !important;
-          box-shadow: none !important;
+        body.paper-mode .paper-dvla-text {
+          font-size: 9pt !important;
+          line-height: 1.25 !important;
         }
 
-        body.paper-mode .paper-declaration-section h2 {
-          background: #ffffff !important;
-          color: #111827 !important;
-          border: 1.5px solid #94a3b8 !important;
+        body.paper-mode .paper-dvla-qr img {
+          width: 88px !important;
+          height: 88px !important;
         }
 
-        .btn,
-        button,
-        .signature-actions,
-        .hint {
+        body.paper-mode .signature-wrap {
+          margin-top: 3px !important;
+        }
+
+        body.paper-mode #signaturePad {
+          height: 92px !important;
+          border-radius: 8px !important;
+        }
+
+        body.paper-mode .clear {
           display: none !important;
         }
 
-        body {
-          background: #fff !important;
+        body.paper-mode .btn,
+        body.paper-mode button,
+        body.paper-mode .signature-actions,
+        body.paper-mode .hint,
+        body.paper-mode .dvla-help,
+        body.paper-mode #status,
+        body.paper-mode #errorBanner {
+          display: none !important;
         }
 
-        .paper-print-only {
+        body.paper-mode .paper-print-only {
           display: block !important;
         }
 
-        .paper-dvla-help {
+        /* Stop the browser-generated Page 0 issue */
+        body.paper-mode::after {
+          content: none !important;
+          display: none !important;
+        }
+
+        /* Manual page numbers */
+        body.paper-mode .paper-page-number {
           display: block !important;
+          position: fixed;
+          bottom: 3mm;
+          left: 0;
+          right: 0;
+          text-align: center;
+          font-size: 9pt;
+          color: #64748b;
+        }
+
+        body.paper-mode .paper-page-number.page-1 {
+          page: page1;
+        }
+
+        body.paper-mode .paper-page-number.page-2 {
+          page: page2;
+        }
+
+        body.paper-mode .paper-signature-block {
           break-inside: avoid;
           page-break-inside: avoid;
         }
@@ -704,7 +845,7 @@
 
           <div class="divider"></div>
 
-          <div>
+          <div class="paper-signature-block">
             <label>Your Signature</label>
             <div class="signature-wrap">
               <canvas id="signaturePad"></canvas>
@@ -729,6 +870,9 @@
           </div>
         </section>
       </form>
+
+      <div class="paper-print-only paper-page-number">Page 1 of 2</div>
+
       <div id="formSuccess" style="display: none"></div>
     </div>
 
