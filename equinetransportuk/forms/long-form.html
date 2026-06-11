@@ -380,55 +380,75 @@
         display: none;
       }
 
+      @page {
+        size: A4;
+        margin: 6mm;
+      }
+
       @media print {
-        .btn,
-        button,
-        .signature-actions,
-        .hint {
-          display: none !important;
-        }
-
+        html,
         body {
+          width: 210mm;
+          margin: 0 !important;
+          padding: 0 !important;
           background: #fff !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
-        .paper-print-only {
-          display: block !important;
-        }
-
-        .paper-dvla-help {
-          display: block !important;
-          break-inside: avoid;
-          page-break-inside: avoid;
-          margin: 10px 0 12px 0 !important;
-          padding: 12px !important;
-          border: 1.5px solid #cbd5e1 !important;
-          border-radius: 10px !important;
+        body.paper-mode {
           background: #fff !important;
+          font-size: 9.2pt !important;
+          line-height: 1.15 !important;
         }
 
         body.paper-mode .wrap {
           max-width: none !important;
-          padding: 0 8mm !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          opacity: 1 !important;
+          transform: none !important;
         }
 
         body.paper-mode .header-card,
         body.paper-mode .section {
           box-shadow: none !important;
-          border: 1.5px solid #cbd5e1 !important;
-          border-radius: 8px !important;
-          padding: 10px 12px !important;
-          margin: 8px 0 !important;
+          border: 1.25px solid #cbd5e1 !important;
+          border-radius: 7px !important;
+          padding: 6px 8px !important;
+          margin: 5px 0 !important;
           background: #fff !important;
         }
 
-        body.paper-mode .grid {
-          gap: 8px !important;
-          margin-top: 6px !important;
+        body.paper-mode .brand-title {
+          font-size: 12.5pt !important;
+          line-height: 1.1 !important;
+          margin: 0 !important;
         }
 
-        body.paper-mode label {
-          margin-bottom: 4px !important;
+        body.paper-mode .brand-sub {
+          font-size: 8.3pt !important;
+          line-height: 1.15 !important;
+          margin: 4px 0 0 !important;
+        }
+
+        body.paper-mode .top-meta {
+          margin-top: 4px !important;
+        }
+
+        body.paper-mode .pill {
+          font-size: 8pt !important;
+          padding: 2px 6px !important;
+        }
+
+        body.paper-mode .section h2 {
+          font-size: 10pt !important;
+          padding: 4px 6px !important;
+          margin: 0 0 5px !important;
+          border-radius: 5px !important;
+          background: #6b7280 !important;
+          color: #fff !important;
         }
 
         body.paper-mode h1,
@@ -438,45 +458,64 @@
           page-break-after: avoid;
         }
 
-        body.paper-mode .divider {
-          margin: 10px 0 !important;
+        body.paper-mode .grid {
+          display: grid !important;
+          gap: 5px !important;
+          margin-top: 4px !important;
         }
 
-        body.paper-mode .small {
-          font-size: 10pt !important;
-          line-height: 1.35 !important;
+        body.paper-mode .grid.two {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         }
 
-        body.paper-mode .small p {
-          margin: 0 0 8px 0 !important;
+        body.paper-mode .grid.three {
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        }
+
+        body.paper-mode label {
+          font-size: 7.9pt !important;
+          margin-bottom: 2px !important;
+          line-height: 1.08 !important;
+          min-height: auto !important;
         }
 
         body.paper-mode input,
         body.paper-mode textarea,
         body.paper-mode select {
-          min-height: 34px !important;
-          padding: 7px 8px !important;
-          border-radius: 7px !important;
-          font-size: 10pt !important;
-          line-height: 1.2 !important;
+          min-height: 23px !important;
+          padding: 3px 5px !important;
+          border-radius: 5px !important;
+          font-size: 8.9pt !important;
+          line-height: 1.05 !important;
           background: #fff !important;
         }
 
         body.paper-mode textarea {
-          min-height: 76px !important;
+          min-height: 42px !important;
         }
 
-        body.paper-mode #signaturePad {
-          height: 105px !important;
-          border-radius: 8px !important;
+        body.paper-mode input::placeholder,
+        body.paper-mode textarea::placeholder {
+          color: transparent !important;
         }
 
-        body.paper-mode input:invalid,
-        body.paper-mode select:invalid,
-        body.paper-mode textarea:invalid {
-          border-color: #d7dde6 !important;
-          box-shadow: none !important;
-          background: #fff !important;
+        body.paper-mode select {
+          color: transparent !important;
+          text-shadow: none !important;
+          -webkit-text-fill-color: transparent !important;
+          appearance: none !important;
+          -webkit-appearance: none !important;
+          background-image: none !important;
+        }
+
+        body.paper-mode select option {
+          color: #111827;
+        }
+
+        body.paper-mode input,
+        body.paper-mode textarea {
+          color: #111827 !important;
+          -webkit-text-fill-color: #111827 !important;
         }
 
         body.paper-mode input[type="checkbox"],
@@ -485,20 +524,124 @@
           -webkit-text-fill-color: initial !important;
         }
 
-        body.paper-mode input::placeholder,
-        body.paper-mode textarea::placeholder {
-          color: transparent !important;
+        body.paper-mode input:invalid,
+        body.paper-mode select:invalid,
+        body.paper-mode textarea:invalid {
+          border-color: #cbd5e1 !important;
+          box-shadow: none !important;
+          background: #fff !important;
         }
 
-        body.paper-mode .paper-page-number-block {
+        body.paper-mode .divider {
+          margin: 5px 0 !important;
+        }
+
+        body.paper-mode .small {
+          font-size: 8pt !important;
+          line-height: 1.18 !important;
+        }
+
+        body.paper-mode .small p {
+          margin: 0 0 4px 0 !important;
+        }
+
+        body.paper-mode .paper-dvla-help {
+          display: block !important;
+          break-inside: avoid;
+          page-break-inside: avoid;
+          padding: 6px 8px !important;
+          margin: 5px 0 !important;
+          border: 1.25px solid #cbd5e1 !important;
+          border-radius: 7px !important;
+          background: #fff !important;
+        }
+
+        body.paper-mode .paper-dvla-help-inner {
+          display: grid !important;
+          grid-template-columns: 1fr 75px !important;
+          gap: 7px !important;
+          align-items: center !important;
+        }
+
+        body.paper-mode .paper-dvla-text {
+          font-size: 8pt !important;
+          line-height: 1.12 !important;
+        }
+
+        body.paper-mode .paper-dvla-qr img {
+          width: 70px !important;
+          height: 70px !important;
+        }
+
+        body.paper-mode #hireFromTimeDisplay,
+        body.paper-mode #hireUntilTimeDisplay,
+        body.paper-mode #hireSummary {
+          padding: 4px 6px !important;
+          margin-top: 2px !important;
+          font-size: 8.2pt !important;
+        }
+
+        body.paper-mode #signaturePad {
+          height: 78px !important;
+          border-radius: 6px !important;
+        }
+
+        body.paper-mode .signature-wrap {
+          margin-top: 2px !important;
+        }
+
+        body.paper-mode .paper-signature-block {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+
+        body.paper-mode .checkbox-line {
+          min-height: 22px !important;
+          padding: 3px 0 !important;
+          gap: 7px !important;
+          font-size: 8.8pt !important;
+        }
+
+        body.paper-mode .checkbox-line input {
+          width: 13px !important;
+          height: 13px !important;
+          min-height: 13px !important;
+        }
+
+        body.paper-mode .paper-declaration-section {
+          background: #ffffff !important;
+          border: 1.25px solid #cbd5e1 !important;
+          box-shadow: none !important;
+        }
+
+        body.paper-mode .paper-declaration-section h2 {
+          background: #ffffff !important;
+          color: #111827 !important;
+          border: 1.2px solid #94a3b8 !important;
+        }
+
+        .btn,
+        button,
+        .signature-actions,
+        .hint,
+        body.paper-mode #status,
+        body.paper-mode #errorBanner {
+          display: none !important;
+        }
+
+        .paper-print-only {
+          display: block !important;
+        }
+
+        .paper-page-number-block {
           display: block !important;
           text-align: center;
-          font-size: 9pt;
+          font-size: 8.5pt;
           color: #64748b;
-          margin: 10mm 0 0 0;
+          margin: 5mm 0 0 0;
         }
 
-        body.paper-mode .paper-page-break {
+        .paper-page-break {
           display: block !important;
           break-after: page;
           page-break-after: always;
@@ -1083,11 +1226,6 @@
 
           <div class="divider"></div>
 
-          <div class="paper-print-only paper-page-number-block">
-            Page 3 of 4
-          </div>
-          <div class="paper-print-only paper-page-break"></div>
-
           <!-- Driving Licence & Paperwork -->
           <h2>Driving Licence and Identification Paperwork</h2>
 
@@ -1109,6 +1247,11 @@
               with you will result in you not being able to complete the hire.
             </p>
           </div>
+
+          <div class="paper-print-only paper-page-number-block">
+            Page 3 of 4
+          </div>
+          <div class="paper-print-only paper-page-break"></div>
 
           <!-- ===============================
      LICENCE TYPE (GROUP)
@@ -1357,7 +1500,10 @@
         document.getElementById("bookingIdPill").textContent = bookingId || "—";
 
         const today = new Date().toISOString().slice(0, 10);
-        document.getElementById("signedDate").value = today;
+
+        if (!PAPER_MODE) {
+          document.getElementById("signedDate").value = today;
+        }
 
         async function prefillFromBooking() {
           if (!bookingId) {
