@@ -375,85 +375,12 @@
         display: none;
       }
 
+      .paper-page-number-block,
+      .paper-page-break {
+        display: none;
+      }
+
       @media print {
-        /* Paper mode:
-     - keep prefilled customer details visible
-     - hide placeholder/default select text
-     - remove red validation styling
-  */
-
-        body.paper-mode input::placeholder,
-        body.paper-mode textarea::placeholder {
-          color: transparent !important;
-        }
-
-        body.paper-mode select {
-          color: transparent !important;
-          text-shadow: none !important;
-          -webkit-text-fill-color: transparent !important;
-        }
-
-        body.paper-mode select option {
-          color: #111827;
-        }
-
-        /* Keep real prefilled input/date/textarea values visible */
-        body.paper-mode input,
-        body.paper-mode textarea {
-          color: #111827 !important;
-          -webkit-text-fill-color: #111827 !important;
-        }
-
-        /* Keep checkboxes/radios visible */
-        body.paper-mode input[type="checkbox"],
-        body.paper-mode input[type="radio"] {
-          color: initial !important;
-          -webkit-text-fill-color: initial !important;
-        }
-
-        /* Remove red browser validation borders on printable paper forms */
-        body.paper-mode input:invalid,
-        body.paper-mode select:invalid,
-        body.paper-mode textarea:invalid {
-          border-color: #cbd5e1 !important;
-          box-shadow: none !important;
-          background: #fff !important;
-        }
-
-        /* Page numbering */
-        body.paper-mode::after {
-          content: "Page " counter(page);
-          position: fixed;
-          right: 10mm;
-          bottom: 6mm;
-          font-size: 10px;
-          color: #64748b;
-        }
-
-        body.paper-mode {
-          counter-reset: page;
-          background: #fff !important;
-        }
-
-        /* Keep signature/date block together where possible */
-        .paper-signature-block {
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
-
-        /* Long form declaration section: white background, clearer borders */
-        body.paper-mode .paper-declaration-section {
-          background: #ffffff !important;
-          border: 2px solid #cbd5e1 !important;
-          box-shadow: none !important;
-        }
-
-        body.paper-mode .paper-declaration-section h2 {
-          background: #ffffff !important;
-          color: #111827 !important;
-          border: 1.5px solid #94a3b8 !important;
-        }
-
         .btn,
         button,
         .signature-actions,
@@ -473,18 +400,108 @@
           display: block !important;
           break-inside: avoid;
           page-break-inside: avoid;
+          margin: 10px 0 12px 0 !important;
+          padding: 12px !important;
+          border: 1.5px solid #cbd5e1 !important;
+          border-radius: 10px !important;
+          background: #fff !important;
         }
 
-        body.paper-mode .paper-declaration-section {
-          background: #ffffff !important;
-          border: 2px solid #cbd5e1 !important;
+        body.paper-mode .wrap {
+          max-width: none !important;
+          padding: 0 8mm !important;
+        }
+
+        body.paper-mode .header-card,
+        body.paper-mode .section {
           box-shadow: none !important;
+          border: 1.5px solid #cbd5e1 !important;
+          border-radius: 8px !important;
+          padding: 10px 12px !important;
+          margin: 8px 0 !important;
+          background: #fff !important;
         }
 
-        body.paper-mode .paper-declaration-section h2 {
-          background: #ffffff !important;
-          color: #111827 !important;
-          border: 1.5px solid #94a3b8 !important;
+        body.paper-mode .grid {
+          gap: 8px !important;
+          margin-top: 6px !important;
+        }
+
+        body.paper-mode label {
+          margin-bottom: 4px !important;
+        }
+
+        body.paper-mode h1,
+        body.paper-mode h2,
+        body.paper-mode h3 {
+          break-after: avoid;
+          page-break-after: avoid;
+        }
+
+        body.paper-mode .divider {
+          margin: 10px 0 !important;
+        }
+
+        body.paper-mode .small {
+          font-size: 10pt !important;
+          line-height: 1.35 !important;
+        }
+
+        body.paper-mode .small p {
+          margin: 0 0 8px 0 !important;
+        }
+
+        body.paper-mode input,
+        body.paper-mode textarea,
+        body.paper-mode select {
+          min-height: 34px !important;
+          padding: 7px 8px !important;
+          border-radius: 7px !important;
+          font-size: 10pt !important;
+          line-height: 1.2 !important;
+          background: #fff !important;
+        }
+
+        body.paper-mode textarea {
+          min-height: 76px !important;
+        }
+
+        body.paper-mode #signaturePad {
+          height: 105px !important;
+          border-radius: 8px !important;
+        }
+
+        body.paper-mode input:invalid,
+        body.paper-mode select:invalid,
+        body.paper-mode textarea:invalid {
+          border-color: #d7dde6 !important;
+          box-shadow: none !important;
+          background: #fff !important;
+        }
+
+        body.paper-mode input[type="checkbox"],
+        body.paper-mode input[type="radio"] {
+          color: initial !important;
+          -webkit-text-fill-color: initial !important;
+        }
+
+        body.paper-mode input::placeholder,
+        body.paper-mode textarea::placeholder {
+          color: transparent !important;
+        }
+
+        body.paper-mode .paper-page-number-block {
+          display: block !important;
+          text-align: center;
+          font-size: 9pt;
+          color: #64748b;
+          margin: 10mm 0 0 0;
+        }
+
+        body.paper-mode .paper-page-break {
+          display: block !important;
+          break-after: page;
+          page-break-after: always;
         }
       }
     </style>
@@ -717,6 +734,9 @@
           </div>
         </section>
 
+        <div class="paper-print-only paper-page-number-block">Page 1 of 4</div>
+        <div class="paper-print-only paper-page-break"></div>
+
         <div class="paper-dvla-help" id="paperDvlaHelp" style="display: none">
           <div class="paper-dvla-help-inner">
             <div class="paper-dvla-text">
@@ -860,6 +880,9 @@
             ></textarea>
           </div>
         </section>
+
+        <div class="paper-print-only paper-page-number-block">Page 2 of 4</div>
+        <div class="paper-print-only paper-page-break"></div>
 
         <!-- Insurance history -->
         <section class="section">
@@ -1060,6 +1083,11 @@
 
           <div class="divider"></div>
 
+          <div class="paper-print-only paper-page-number-block">
+            Page 3 of 4
+          </div>
+          <div class="paper-print-only paper-page-break"></div>
+
           <!-- Driving Licence & Paperwork -->
           <h2>Driving Licence and Identification Paperwork</h2>
 
@@ -1158,6 +1186,10 @@
           </div>
 
           <div id="status" class="status"></div>
+
+          <div class="paper-print-only paper-page-number-block">
+            Page 4 of 4
+          </div>
         </section>
       </form>
 
