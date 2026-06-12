@@ -638,7 +638,28 @@
           text-align: center;
           font-size: 9.5pt;
           color: #64748b;
-          margin: 16mm 0 0 0;
+          margin: 7mm 0 0 0;
+        }
+
+        body.paper-mode .paper-paperwork-section {
+          min-height: 245mm !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+
+        body.paper-mode .paper-paperwork-section .checkbox-line {
+          min-height: 58px !important;
+          padding: 16px 0 !important;
+          font-size: 11.5pt !important;
+        }
+
+        body.paper-mode .paper-paperwork-section h3 {
+          font-size: 13pt !important;
+          margin: 18px 0 8px !important;
+        }
+
+        body.paper-mode .paper-paperwork-section .paper-page-number-block {
+          margin-top: auto !important;
         }
 
         .paper-page-break {
@@ -1247,11 +1268,15 @@
               with you will result in you not being able to complete the hire.
             </p>
           </div>
+        </section>
 
-          <div class="paper-print-only paper-page-number-block">
-            Page 3 of 4
-          </div>
-          <div class="paper-print-only paper-page-break"></div>
+        <div class="paper-print-only paper-page-number-block">Page 3 of 4</div>
+        <div class="paper-print-only paper-page-break"></div>
+
+        <section
+          class="section paper-declaration-section paper-paperwork-section"
+        >
+          <h2>Driving Licence and Identification Paperwork</h2>
 
           <!-- ===============================
      LICENCE TYPE (GROUP)
