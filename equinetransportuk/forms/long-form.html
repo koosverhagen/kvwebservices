@@ -632,76 +632,77 @@
         .paper-print-only {
           display: block !important;
         }
-        /* IMPORTANT:
-   Page numbers are visible only.
-   They must NOT create page breaks, otherwise Chrome/Safari can create a blank extra page. */
-        .paper-page-number-block {
+        /* ===============================
+   HARD PRINT PAGE CONTROL
+   No empty divs. No page-number divs.
+   Real sections start real pages.
+================================ */
+
+        body.paper-mode .paper-page-2,
+        body.paper-mode .paper-page-3,
+        body.paper-mode .paper-page-4 {
+          break-before: page !important;
+          page-break-before: always !important;
+        }
+
+        /* Built-in page labels using pseudo-elements.
+   These do not take normal document height like divs do. */
+        body.paper-mode .header-card::after,
+        body.paper-mode .paper-page-2::before,
+        body.paper-mode .paper-page-3::before,
+        body.paper-mode .paper-page-4::after {
           display: block !important;
           text-align: center;
           font-size: 9.5pt;
           color: #64748b;
-
-          height: 0 !important;
-          min-height: 0 !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          line-height: 1 !important;
-          overflow: visible !important;
-
-          transform: translateY(7mm);
-
-          break-before: auto !important;
-          page-break-before: auto !important;
-          break-after: auto !important;
-          page-break-after: auto !important;
+          font-weight: 500;
         }
 
-        /* Final page number sits a little lower on page 4 */
-        body.paper-mode .paper-paperwork-section .paper-page-number-block {
-          transform: translateY(7mm);
-
-          break-before: auto !important;
-          page-break-before: auto !important;
-          break-after: auto !important;
-          page-break-after: auto !important;
+        /* Page 1 label appears at bottom of page 1 content */
+        body.paper-mode .header-card::after {
+          content: "Page 1 of 4";
+          position: fixed;
+          bottom: 6mm;
+          left: 0;
+          right: 0;
         }
 
-        /* ===============================
-   REAL PRINT PAGE STARTS
-   Page breaks happen before real content,
-   not after page-number text.
-================================ */
-
-        /* Page 2 starts at the DVLA QR / licence area */
-        body.paper-mode .paper-dvla-help {
-          break-before: page !important;
-          page-break-before: always !important;
+        /* Page 2 label */
+        body.paper-mode .paper-page-2::before {
+          content: "Page 2 of 4";
+          position: fixed;
+          bottom: 6mm;
+          left: 0;
+          right: 0;
         }
 
-        /* Page 3 starts at Declaration & Identification Paperwork */
-        body.paper-mode .paper-declaration-page {
-          break-before: page !important;
-          page-break-before: always !important;
+        /* Page 3 label */
+        body.paper-mode .paper-page-3::before {
+          content: "Page 3 of 4";
+          position: fixed;
+          bottom: 6mm;
+          left: 0;
+          right: 0;
         }
 
-        /* Page 4 starts at the final paperwork checklist section */
-        body.paper-mode .paper-paperwork-section {
-          break-before: page !important;
-          page-break-before: always !important;
+        /* Page 4 label */
+        body.paper-mode .paper-page-4::after {
+          content: "Page 4 of 4";
+          margin-top: 8mm;
         }
 
-        /* Page 4 checklist: spread gently, but never force a full A4 height */
+        /* Page 4 checklist: do not force extra height */
         body.paper-mode .paper-paperwork-section {
           min-height: 0 !important;
           height: auto !important;
           display: block !important;
-          padding-top: 4mm !important;
+          padding-top: 6mm !important;
           padding-bottom: 4mm !important;
         }
 
         body.paper-mode .paper-paperwork-section .checkbox-line {
-          min-height: 46px !important;
-          padding: 12px 0 !important;
+          min-height: 44px !important;
+          padding: 11px 0 !important;
           font-size: 11.5pt !important;
         }
 
@@ -714,22 +715,10 @@
           margin: 14px 0 !important;
         }
 
-        /* CRITICAL:
-   Empty break divs are no longer used.
-   Keep this rule even if the divs have been deleted. */
-        .paper-page-break {
+        /* Old break divs/page number divs are no longer used */
+        .paper-page-break,
+        .paper-page-number-block {
           display: none !important;
-          height: 0 !important;
-          min-height: 0 !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: 0 !important;
-          overflow: hidden !important;
-
-          break-before: auto !important;
-          page-break-before: auto !important;
-          break-after: auto !important;
-          page-break-after: auto !important;
         }
       }
     </style>
@@ -962,9 +951,11 @@
           </div>
         </section>
 
-        <div class="paper-print-only paper-page-number-block">Page 1 of 4</div>
-
-        <div class="paper-dvla-help" id="paperDvlaHelp" style="display: none">
+        <div
+          class="paper-dvla-help paper-page paper-page-2"
+          id="paperDvlaHelp"
+          style="display: none"
+        >
           <div class="paper-dvla-help-inner">
             <div class="paper-dvla-text">
               <strong>Need your DVLA check code?</strong><br />
@@ -1226,11 +1217,9 @@
           </div>
         </section>
 
-        <div class="paper-print-only paper-page-number-block">Page 2 of 4</div>
-
         <!-- DECLARATION + PAPERWORK -->
         <section
-          class="section paper-declaration-section paper-declaration-page"
+          class="section paper-declaration-section paper-page paper-page-3"
         >
           <h2>Declaration & Identification Paperwork</h2>
 
@@ -1334,10 +1323,8 @@
           </div>
         </section>
 
-        <div class="paper-print-only paper-page-number-block">Page 3 of 4</div>
-
         <section
-          class="section paper-declaration-section paper-paperwork-section"
+          class="section paper-declaration-section paper-paperwork-section paper-page paper-page-4"
         >
           <h2>Driving Licence and Identification Paperwork</h2>
 
@@ -1417,10 +1404,6 @@
           </div>
 
           <div id="status" class="status"></div>
-
-          <div class="paper-print-only paper-page-number-block">
-            Page 4 of 4
-          </div>
         </section>
       </form>
 
