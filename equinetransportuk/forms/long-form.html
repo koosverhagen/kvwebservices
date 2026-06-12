@@ -641,25 +641,24 @@
           margin: 8mm 0 0 0;
         }
 
-        /* Page 4: spread the checklist gently, but do NOT force a full-page height.
-   The old min-height:230mm caused the extra 5th page. */
+        /* Page 4 checklist: spread gently, but never force a full A4 height */
         body.paper-mode .paper-paperwork-section {
           min-height: 0 !important;
           height: auto !important;
           display: block !important;
-          padding-top: 8mm !important;
-          padding-bottom: 10mm !important;
+          padding-top: 10mm !important;
+          padding-bottom: 8mm !important;
         }
 
         body.paper-mode .paper-paperwork-section .checkbox-line {
-          min-height: 42px !important;
-          padding: 11px 0 !important;
+          min-height: 46px !important;
+          padding: 12px 0 !important;
           font-size: 11.5pt !important;
         }
 
         body.paper-mode .paper-paperwork-section h3 {
           font-size: 13pt !important;
-          margin: 20px 0 10px !important;
+          margin: 18px 0 10px !important;
         }
 
         body.paper-mode .paper-paperwork-section .divider {
@@ -667,13 +666,26 @@
         }
 
         body.paper-mode .paper-paperwork-section .paper-page-number-block {
-          margin-top: 18mm !important;
+          margin-top: 16mm !important;
         }
 
+        /* CRITICAL FIX:
+     Use break-before on the empty divider.
+     break-after was creating the extra blank 5th page. */
         .paper-page-break {
           display: block !important;
-          break-after: page;
-          page-break-after: always;
+          height: 0 !important;
+          min-height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: 0 !important;
+          overflow: hidden !important;
+
+          break-before: page !important;
+          page-break-before: always !important;
+
+          break-after: auto !important;
+          page-break-after: auto !important;
         }
       }
     </style>
