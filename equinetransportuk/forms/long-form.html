@@ -658,7 +658,7 @@
 
         /* Final page number sits a little lower on page 4 */
         body.paper-mode .paper-paperwork-section .paper-page-number-block {
-          transform: translateY(14mm);
+          transform: translateY(7mm);
 
           break-before: auto !important;
           page-break-before: auto !important;
@@ -679,7 +679,7 @@
         }
 
         /* Page 3 starts at Declaration & Identification Paperwork */
-        body.paper-mode .paper-declaration-section {
+        body.paper-mode .paper-declaration-page {
           break-before: page !important;
           page-break-before: always !important;
         }
@@ -695,8 +695,8 @@
           min-height: 0 !important;
           height: auto !important;
           display: block !important;
-          padding-top: 10mm !important;
-          padding-bottom: 8mm !important;
+          padding-top: 4mm !important;
+          padding-bottom: 4mm !important;
         }
 
         body.paper-mode .paper-paperwork-section .checkbox-line {
@@ -1229,7 +1229,9 @@
         <div class="paper-print-only paper-page-number-block">Page 2 of 4</div>
 
         <!-- DECLARATION + PAPERWORK -->
-        <section class="section paper-declaration-section">
+        <section
+          class="section paper-declaration-section paper-declaration-page"
+        >
           <h2>Declaration & Identification Paperwork</h2>
 
           <div class="small" style="margin-bottom: 14px; line-height: 1.5">
