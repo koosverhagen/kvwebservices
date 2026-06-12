@@ -416,8 +416,8 @@
           box-shadow: none !important;
           border: 1.6px solid #cbd5e1 !important;
           border-radius: 10px !important;
-          padding: 14px 16px !important;
-          margin: 12px 0 !important;
+          padding: 16px 18px !important;
+          margin: 14px 0 !important;
           background: #fff !important;
         }
 
@@ -482,16 +482,16 @@
         body.paper-mode input,
         body.paper-mode textarea,
         body.paper-mode select {
-          min-height: 38px !important;
-          padding: 8px 10px !important;
+          min-height: 42px !important;
+          padding: 9px 11px !important;
           border-radius: 8px !important;
-          font-size: 10.6pt !important;
-          line-height: 1.22 !important;
+          font-size: 10.8pt !important;
+          line-height: 1.25 !important;
           background: #fff !important;
         }
 
         body.paper-mode textarea {
-          min-height: 78px !important;
+          min-height: 88px !important;
         }
 
         body.paper-mode input::placeholder,
@@ -638,28 +638,36 @@
           text-align: center;
           font-size: 9.5pt;
           color: #64748b;
-          margin: 7mm 0 0 0;
+          margin: 8mm 0 0 0;
         }
 
+        /* Page 4: spread the checklist gently, but do NOT force a full-page height.
+   The old min-height:230mm caused the extra 5th page. */
         body.paper-mode .paper-paperwork-section {
-          min-height: 230mm !important;
-          display: flex !important;
-          flex-direction: column !important;
+          min-height: 0 !important;
+          height: auto !important;
+          display: block !important;
+          padding-top: 18mm !important;
+          padding-bottom: 10mm !important;
         }
 
         body.paper-mode .paper-paperwork-section .checkbox-line {
-          min-height: 58px !important;
-          padding: 16px 0 !important;
+          min-height: 42px !important;
+          padding: 11px 0 !important;
           font-size: 11.5pt !important;
         }
 
         body.paper-mode .paper-paperwork-section h3 {
           font-size: 13pt !important;
-          margin: 18px 0 8px !important;
+          margin: 20px 0 10px !important;
+        }
+
+        body.paper-mode .paper-paperwork-section .divider {
+          margin: 14px 0 !important;
         }
 
         body.paper-mode .paper-paperwork-section .paper-page-number-block {
-          margin-top: auto !important;
+          margin-top: 18mm !important;
         }
 
         .paper-page-break {
