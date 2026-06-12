@@ -6,696 +6,679 @@
     <title>Long Hire Form | Equine Transport UK</title>
 
     <style>
-      :root {
-        --bg: #f5f7fb;
-        --card: #ffffff;
-        --text: #111827;
-        --muted: #6b7280;
-        --line: #e5e7eb;
-        --accent: #1f6feb;
-        --accent2: #0b5bd3;
-        --radius: 16px;
-        --shadow: 0 14px 40px rgba(15, 23, 42, 0.12);
-        --shadow2: 0 10px 25px rgba(15, 23, 42, 0.1);
-        --input: #f8fafc;
+            :root {
+              --bg: #f5f7fb;
+              --card: #ffffff;
+              --text: #111827;
+              --muted: #6b7280;
+              --line: #e5e7eb;
+              --accent: #1f6feb;
+              --accent2: #0b5bd3;
+              --radius: 16px;
+              --shadow: 0 14px 40px rgba(15, 23, 42, 0.12);
+              --shadow2: 0 10px 25px rgba(15, 23, 42, 0.1);
+              --input: #f8fafc;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+            body {
+              margin: 0;
+              font-family:
+                -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Arial,
+                sans-serif;
+              background: var(--bg);
+              color: var(--text);
+              padding: 18px 14px 32px;
+            }
+
+            .wrap {
+              max-width: 820px;
+              margin: 0 auto;
+            }
+            .header-card {
+              background: linear-gradient(180deg, #ffffff, #fbfcff);
+              border: 1px solid var(--line);
+              border-radius: 18px;
+              box-shadow: var(--shadow2);
+              padding: 16px 16px 14px;
+              margin-bottom: 14px;
+
+              /* ✅ scrolls away with page */
+              position: relative;
+              top: auto;
+
+              /* ✅ reduce iOS “wobble/jitter” */
+              backdrop-filter: none;
+            }
+            .brand-title {
+              font-weight: 800;
+              letter-spacing: -0.4px;
+              font-size: 20px;
+              margin: 0;
+              text-transform: uppercase;
+            }
+            .brand-sub {
+              margin: 8px 0 0;
+              color: var(--muted);
+              font-size: 13px;
+              line-height: 1.35;
+            }
+
+            .section {
+              background: var(--card);
+              border: 1px solid var(--line);
+              border-radius: var(--radius);
+              box-shadow: var(--shadow);
+              padding: 14px;
+              margin: 12px 0;
+            }
+
+            .section h2 {
+              margin: 0 0 10px;
+              font-size: 16px;
+              letter-spacing: -0.2px;
+              background: #6b7280;
+              color: #fff;
+              padding: 10px 12px;
+              border-radius: 12px;
+              font-weight: 700;
+            }
+
+            .grid {
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 12px;
+              margin-top: 10px;
+            }
+
+            @media (min-width: 740px) {
+              .grid.two {
+                grid-template-columns: repeat(2, 1fr);
+              }
+              .grid.three {
+                grid-template-columns: repeat(3, 1fr);
+              }
+            }
+
+            label {
+              display: block;
+              font-size: 12px;
+              color: var(--muted);
+              margin-bottom: 6px;
+              font-weight: 600;
+            }
+
+            /* ===== Checkbox rows (clean + aligned) ===== */
+            .checkbox-line {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin: 0;
+              padding: 6px 0;
+              font-size: 13px;
+              font-weight: 600;
+              color: var(--text);
+            }
+
+            /* ===== Signature canvas ===== */
+            .signature-wrap {
+              margin-top: 6px;
+            }
+
+            #signaturePad {
+              width: 100%;
+              height: 170px;
+              display: block;
+              border-radius: 14px;
+              border: 1px solid var(--line);
+              background: #fff;
+
+              /* critical for mobile drawing */
+              touch-action: none;
+            }
+
+            /* Use native checkbox (most stable on iOS) */
+            .checkbox-line input[type="checkbox"],
+            .checkbox-row input[type="checkbox"] {
+              width: 18px;
+              height: 18px;
+              margin: 0;
+              flex: 0 0 18px;
+              accent-color: var(--accent);
+            }
+
+            /* the label text next to it */
+            .checkbox-line span {
+              display: block;
+              line-height: 1.25;
+              font-weight: 500;
+            }
+
+            input:not([type="checkbox"]):not([type="radio"]),
+            select,
+            textarea {
+              width: 100%;
+              border: 1px solid #d7dde6;
+              background: var(--input);
+              border-radius: 12px;
+              padding: 12px 12px;
+              min-height: 44px;
+              font-size: 15px;
+              outline: none;
+              transition:
+                box-shadow 0.15s ease,
+                border-color 0.15s ease,
+                background 0.15s ease;
+            }
+
+            textarea {
+              min-height: 110px;
+              resize: vertical;
+            }
+
+            input:not([type="checkbox"]):not([type="radio"]):focus,
+            select:focus,
+            textarea:focus {
+              border-color: rgba(31, 111, 235, 0.45);
+              box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.14);
+              background: #fff;
+            }
+
+            .hint {
+              margin-top: 6px;
+              font-size: 12px;
+              color: var(--muted);
+              line-height: 1.35;
+            }
+
+            .row {
+              display: flex;
+              gap: 10px;
+              flex-wrap: wrap;
+              margin-top: 10px;
+            }
+
+            .btn {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+              border-radius: 12px;
+              padding: 12px 14px;
+              min-height: 46px;
+              font-weight: 700;
+              cursor: pointer;
+              border: 1px solid transparent;
+              text-decoration: none;
+              user-select: none;
+              white-space: nowrap;
+            }
+            .btn.primary {
+              background: var(--accent);
+              border-color: var(--accent);
+              color: #fff;
+            }
+            .btn.primary:hover {
+              background: var(--accent2);
+              border-color: var(--accent2);
+            }
+            .btn.ghost {
+              background: #fff;
+              border-color: var(--line);
+              color: var(--text);
+            }
+            .btn.full {
+              width: 100%;
+            }
+
+            .divider {
+              height: 1px;
+              background: var(--line);
+              margin: 12px 0;
+            }
+
+            .checkbox-row {
+              display: flex;
+              align-items: flex-start;
+              gap: 10px;
+              padding: 10px 0 0;
+            }
+            .checkbox-row input {
+              width: 18px;
+              height: 18px;
+              min-height: auto;
+              margin-top: 2px;
+            }
+            .checkbox-row .text {
+              font-size: 13px;
+              color: var(--text);
+              line-height: 1.35;
+            }
+
+            .status {
+              margin-top: 10px;
+              font-size: 13px;
+              color: var(--muted);
+            }
+            .status.ok {
+              color: #0f766e;
+              font-weight: 700;
+            }
+            .status.err {
+              color: #b42318;
+              font-weight: 700;
+            }
+
+            .small {
+              font-size: 12px;
+              color: var(--muted);
+              line-height: 1.35;
+            }
+
+            .top-meta {
+              display: flex;
+              justify-content: space-between;
+              gap: 10px;
+              flex-wrap: wrap;
+              margin-top: 8px;
+            }
+            .pill {
+              background: #eef2ff;
+              border: 1px solid #dbeafe;
+              color: #1e3a8a;
+              padding: 6px 10px;
+              border-radius: 999px;
+              font-size: 12px;
+              font-weight: 700;
+            }
+
+            /* Align medical section selects perfectly */
+            .grid.three > div {
+              display: flex;
+              flex-direction: column;
+              justify-content: flex-start;
+            }
+
+            .grid.three label {
+              min-height: 42px; /* equalises label height */
+              display: flex;
+              align-items: flex-end;
+            }
+
+            /* Add space between date and time select */
+            #hireFromTime,
+            #hireUntilTime {
+              margin-top: 10px;
+              min-height: 40px;
+            }
+
+            /* Keep the page from feeling "raw" on huge screens */
+            .spacer {
+              height: 8px;
+            }
+            /* ==========================================
+         SAFARI (DESKTOP + MOBILE)
+      ========================================== */
+
+            .btn.primary.full {
+              font-size: 17px;
+            }
+
+            @supports (-webkit-hyphens: none) and (not (overflow: clip)) {
+              .btn.primary.full {
+                font-size: 19px !important;
+              }
+            }
+
+            /* ==========================================
+         VALIDATION HIGHLIGHT
+      ========================================== */
+
+            input:invalid,
+            select:invalid,
+            textarea:invalid {
+              border-color: #dc2626;
+              box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+            }
+
+            .paper-dvla-help {
+              margin-top: 16px;
+              padding: 16px;
+              border: 1px solid #dbe1e8;
+              border-radius: 12px;
+              background: #f8fafc;
+            }
+
+            .paper-dvla-help-inner {
+              display: grid;
+              grid-template-columns: 1fr 120px;
+              gap: 14px;
+              align-items: center;
+            }
+
+            .paper-dvla-qr img {
+              width: 110px;
+              height: 110px;
+              object-fit: contain;
+              display: block;
+              margin-left: auto;
+            }
+
+            .mono {
+              font-family: monospace;
+              word-break: break-word;
+            }
+
+            .paper-print-only {
+              display: none;
+            }
+
+            .paper-page-number-block,
+            .paper-page-break {
+              display: none;
+            }
+
+            @page {
+              size: A4;
+              margin: 7mm;
+            }
+
+            @media print {
+              html,
+              body {
+                width: 210mm;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+
+              body.paper-mode {
+                background: #fff !important;
+                font-size: 11pt !important;
+                line-height: 1.32 !important;
+              }
+
+              body.paper-mode .wrap {
+                max-width: none !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                opacity: 1 !important;
+                transform: none !important;
+              }
+
+              body.paper-mode .header-card,
+              body.paper-mode .section {
+                box-shadow: none !important;
+                border: 1.6px solid #cbd5e1 !important;
+                border-radius: 10px !important;
+                padding: 16px 18px !important;
+                margin: 14px 0 !important;
+                background: #fff !important;
+              }
+
+              body.paper-mode .brand-title {
+                font-size: 16pt !important;
+                line-height: 1.18 !important;
+                margin: 0 !important;
+              }
+
+              body.paper-mode .brand-sub {
+                font-size: 10.2pt !important;
+                line-height: 1.35 !important;
+                margin: 8px 0 0 !important;
+              }
+
+              body.paper-mode .top-meta {
+                margin-top: 8px !important;
+              }
+
+              body.paper-mode .pill {
+                font-size: 9.5pt !important;
+                padding: 5px 10px !important;
+              }
+
+              body.paper-mode .section h2 {
+                font-size: 12.2pt !important;
+                padding: 8px 10px !important;
+                margin: 0 0 10px !important;
+                border-radius: 8px !important;
+                background: #6b7280 !important;
+                color: #fff !important;
+              }
+
+              body.paper-mode h1,
+              body.paper-mode h2,
+              body.paper-mode h3 {
+                break-after: avoid;
+                page-break-after: avoid;
+              }
+
+              body.paper-mode .grid {
+                display: grid !important;
+                gap: 11px !important;
+                margin-top: 9px !important;
+              }
+
+              body.paper-mode .grid.two {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              }
+
+              body.paper-mode .grid.three {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              }
+
+              body.paper-mode label {
+                font-size: 9.8pt !important;
+                margin-bottom: 4px !important;
+                line-height: 1.22 !important;
+                min-height: auto !important;
+              }
+
+              body.paper-mode input,
+              body.paper-mode textarea,
+              body.paper-mode select {
+                min-height: 42px !important;
+                padding: 9px 11px !important;
+                border-radius: 8px !important;
+                font-size: 10.8pt !important;
+                line-height: 1.25 !important;
+                background: #fff !important;
+              }
+
+              body.paper-mode textarea {
+                min-height: 88px !important;
+              }
+
+              body.paper-mode input::placeholder,
+              body.paper-mode textarea::placeholder {
+                color: transparent !important;
+              }
+
+              body.paper-mode select {
+                color: transparent !important;
+                text-shadow: none !important;
+                -webkit-text-fill-color: transparent !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                background-image: none !important;
+              }
+
+              body.paper-mode select option {
+                color: #111827;
+              }
+
+              body.paper-mode input,
+              body.paper-mode textarea {
+                color: #111827 !important;
+                -webkit-text-fill-color: #111827 !important;
+              }
+
+              body.paper-mode input[type="checkbox"],
+              body.paper-mode input[type="radio"] {
+                color: initial !important;
+                -webkit-text-fill-color: initial !important;
+              }
+
+              body.paper-mode input:invalid,
+              body.paper-mode select:invalid,
+              body.paper-mode textarea:invalid {
+                border-color: #cbd5e1 !important;
+                box-shadow: none !important;
+                background: #fff !important;
+              }
+
+              body.paper-mode .divider {
+                margin: 11px 0 !important;
+              }
+
+              body.paper-mode .small {
+                font-size: 10pt !important;
+                line-height: 1.38 !important;
+              }
+
+              body.paper-mode .small p {
+                margin: 0 0 9px 0 !important;
+              }
+
+              body.paper-mode .paper-dvla-help {
+                display: block !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+                padding: 14px 16px !important;
+                margin: 12px 0 !important;
+                border: 1.6px solid #cbd5e1 !important;
+                border-radius: 10px !important;
+                background: #fff !important;
+              }
+
+              body.paper-mode .paper-dvla-help-inner {
+                display: grid !important;
+                grid-template-columns: 1fr 115px !important;
+                gap: 14px !important;
+                align-items: center !important;
+              }
+
+              body.paper-mode .paper-dvla-text {
+                font-size: 10pt !important;
+                line-height: 1.35 !important;
+              }
+
+              body.paper-mode .paper-dvla-qr img {
+                width: 105px !important;
+                height: 105px !important;
+              }
+
+              body.paper-mode #hireFromTimeDisplay,
+              body.paper-mode #hireUntilTimeDisplay,
+              body.paper-mode #hireSummary {
+                padding: 9px 10px !important;
+                margin-top: 6px !important;
+                font-size: 10.5pt !important;
+              }
+
+              body.paper-mode #signaturePad {
+                height: 130px !important;
+                border-radius: 10px !important;
+              }
+
+              body.paper-mode .signature-wrap {
+                margin-top: 6px !important;
+              }
+
+              body.paper-mode .paper-signature-block {
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+
+              body.paper-mode .checkbox-line {
+                min-height: 44px !important;
+                padding: 10px 0 !important;
+                gap: 12px !important;
+                font-size: 11pt !important;
+              }
+
+              body.paper-mode .checkbox-line input {
+                width: 20px !important;
+                height: 20px !important;
+                min-height: 20px !important;
+              }
+
+              body.paper-mode .paper-declaration-section {
+                background: #ffffff !important;
+                border: 1.6px solid #cbd5e1 !important;
+                box-shadow: none !important;
+              }
+
+              body.paper-mode .paper-declaration-section h2 {
+                background: #ffffff !important;
+                color: #111827 !important;
+                border: 1.6px solid #94a3b8 !important;
+              }
+
+              .btn,
+              button,
+              .signature-actions,
+              .hint,
+              body.paper-mode #status,
+              body.paper-mode #errorBanner {
+                display: none !important;
+              }
+
+              .paper-print-only {
+                display: block !important;
+              }
+
+             .paper-page-number-block {
+        display: block !important;
+        text-align: center;
+        font-size: 9.5pt;
+        color: #64748b;
+        margin: 8mm 0 0 0;
+
+        /* Page 1, 2 and 3 numbers create the page break */
+        break-after: page !important;
+        page-break-after: always !important;
       }
 
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Arial,
-          sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        padding: 18px 14px 32px;
+      /* Final page number must NOT create another page */
+      body.paper-mode .paper-paperwork-section .paper-page-number-block {
+        margin-top: 16mm !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
       }
 
-      .wrap {
-        max-width: 820px;
-        margin: 0 auto;
-      }
-      .header-card {
-        background: linear-gradient(180deg, #ffffff, #fbfcff);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        box-shadow: var(--shadow2);
-        padding: 16px 16px 14px;
-        margin-bottom: 14px;
-
-        /* ✅ scrolls away with page */
-        position: relative;
-        top: auto;
-
-        /* ✅ reduce iOS “wobble/jitter” */
-        backdrop-filter: none;
-      }
-      .brand-title {
-        font-weight: 800;
-        letter-spacing: -0.4px;
-        font-size: 20px;
-        margin: 0;
-        text-transform: uppercase;
-      }
-      .brand-sub {
-        margin: 8px 0 0;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.35;
+      /* Page 4 checklist: no forced full-page height */
+      body.paper-mode .paper-paperwork-section {
+        min-height: 0 !important;
+        height: auto !important;
+        display: block !important;
+        padding-top: 10mm !important;
+        padding-bottom: 8mm !important;
       }
 
-      .section {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        padding: 14px;
-        margin: 12px 0;
+      body.paper-mode .paper-paperwork-section .checkbox-line {
+        min-height: 46px !important;
+        padding: 12px 0 !important;
+        font-size: 11.5pt !important;
       }
 
-      .section h2 {
-        margin: 0 0 10px;
-        font-size: 16px;
-        letter-spacing: -0.2px;
-        background: #6b7280;
-        color: #fff;
-        padding: 10px 12px;
-        border-radius: 12px;
-        font-weight: 700;
+      body.paper-mode .paper-paperwork-section h3 {
+        font-size: 13pt !important;
+        margin: 18px 0 10px !important;
       }
 
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
-        margin-top: 10px;
+      body.paper-mode .paper-paperwork-section .divider {
+        margin: 14px 0 !important;
       }
 
-      @media (min-width: 740px) {
-        .grid.two {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .grid.three {
-          grid-template-columns: repeat(3, 1fr);
-        }
-      }
-
-      label {
-        display: block;
-        font-size: 12px;
-        color: var(--muted);
-        margin-bottom: 6px;
-        font-weight: 600;
-      }
-
-      /* ===== Checkbox rows (clean + aligned) ===== */
-      .checkbox-line {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 0;
-        padding: 6px 0;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text);
-      }
-
-      /* ===== Signature canvas ===== */
-      .signature-wrap {
-        margin-top: 6px;
-      }
-
-      #signaturePad {
-        width: 100%;
-        height: 170px;
-        display: block;
-        border-radius: 14px;
-        border: 1px solid var(--line);
-        background: #fff;
-
-        /* critical for mobile drawing */
-        touch-action: none;
-      }
-
-      /* Use native checkbox (most stable on iOS) */
-      .checkbox-line input[type="checkbox"],
-      .checkbox-row input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        margin: 0;
-        flex: 0 0 18px;
-        accent-color: var(--accent);
-      }
-
-      /* the label text next to it */
-      .checkbox-line span {
-        display: block;
-        line-height: 1.25;
-        font-weight: 500;
-      }
-
-      input:not([type="checkbox"]):not([type="radio"]),
-      select,
-      textarea {
-        width: 100%;
-        border: 1px solid #d7dde6;
-        background: var(--input);
-        border-radius: 12px;
-        padding: 12px 12px;
-        min-height: 44px;
-        font-size: 15px;
-        outline: none;
-        transition:
-          box-shadow 0.15s ease,
-          border-color 0.15s ease,
-          background 0.15s ease;
-      }
-
-      textarea {
-        min-height: 110px;
-        resize: vertical;
-      }
-
-      input:not([type="checkbox"]):not([type="radio"]):focus,
-      select:focus,
-      textarea:focus {
-        border-color: rgba(31, 111, 235, 0.45);
-        box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.14);
-        background: #fff;
-      }
-
-      .hint {
-        margin-top: 6px;
-        font-size: 12px;
-        color: var(--muted);
-        line-height: 1.35;
-      }
-
-      .row {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 10px;
-      }
-
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        border-radius: 12px;
-        padding: 12px 14px;
-        min-height: 46px;
-        font-weight: 700;
-        cursor: pointer;
-        border: 1px solid transparent;
-        text-decoration: none;
-        user-select: none;
-        white-space: nowrap;
-      }
-      .btn.primary {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: #fff;
-      }
-      .btn.primary:hover {
-        background: var(--accent2);
-        border-color: var(--accent2);
-      }
-      .btn.ghost {
-        background: #fff;
-        border-color: var(--line);
-        color: var(--text);
-      }
-      .btn.full {
-        width: 100%;
-      }
-
-      .divider {
-        height: 1px;
-        background: var(--line);
-        margin: 12px 0;
-      }
-
-      .checkbox-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 10px 0 0;
-      }
-      .checkbox-row input {
-        width: 18px;
-        height: 18px;
-        min-height: auto;
-        margin-top: 2px;
-      }
-      .checkbox-row .text {
-        font-size: 13px;
-        color: var(--text);
-        line-height: 1.35;
-      }
-
-      .status {
-        margin-top: 10px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-      .status.ok {
-        color: #0f766e;
-        font-weight: 700;
-      }
-      .status.err {
-        color: #b42318;
-        font-weight: 700;
-      }
-
-      .small {
-        font-size: 12px;
-        color: var(--muted);
-        line-height: 1.35;
-      }
-
-      .top-meta {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 8px;
-      }
-      .pill {
-        background: #eef2ff;
-        border: 1px solid #dbeafe;
-        color: #1e3a8a;
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      /* Align medical section selects perfectly */
-      .grid.three > div {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-      }
-
-      .grid.three label {
-        min-height: 42px; /* equalises label height */
-        display: flex;
-        align-items: flex-end;
-      }
-
-      /* Add space between date and time select */
-      #hireFromTime,
-      #hireUntilTime {
-        margin-top: 10px;
-        min-height: 40px;
-      }
-
-      /* Keep the page from feeling "raw" on huge screens */
-      .spacer {
-        height: 8px;
-      }
-      /* ==========================================
-   SAFARI (DESKTOP + MOBILE)
-========================================== */
-
-      .btn.primary.full {
-        font-size: 17px;
-      }
-
-      @supports (-webkit-hyphens: none) and (not (overflow: clip)) {
-        .btn.primary.full {
-          font-size: 19px !important;
-        }
-      }
-
-      /* ==========================================
-   VALIDATION HIGHLIGHT
-========================================== */
-
-      input:invalid,
-      select:invalid,
-      textarea:invalid {
-        border-color: #dc2626;
-        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
-      }
-
-      .paper-dvla-help {
-        margin-top: 16px;
-        padding: 16px;
-        border: 1px solid #dbe1e8;
-        border-radius: 12px;
-        background: #f8fafc;
-      }
-
-      .paper-dvla-help-inner {
-        display: grid;
-        grid-template-columns: 1fr 120px;
-        gap: 14px;
-        align-items: center;
-      }
-
-      .paper-dvla-qr img {
-        width: 110px;
-        height: 110px;
-        object-fit: contain;
-        display: block;
-        margin-left: auto;
-      }
-
-      .mono {
-        font-family: monospace;
-        word-break: break-word;
-      }
-
-      .paper-print-only {
-        display: none;
-      }
-
-      .paper-page-number-block,
+      /* Old break divs are no longer used */
       .paper-page-break {
-        display: none;
-      }
-
-      @page {
-        size: A4;
-        margin: 7mm;
-      }
-
-      @media print {
-        html,
-        body {
-          width: 210mm;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #fff !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-
-        body.paper-mode {
-          background: #fff !important;
-          font-size: 11pt !important;
-          line-height: 1.32 !important;
-        }
-
-        body.paper-mode .wrap {
-          max-width: none !important;
-          width: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          opacity: 1 !important;
-          transform: none !important;
-        }
-
-        body.paper-mode .header-card,
-        body.paper-mode .section {
-          box-shadow: none !important;
-          border: 1.6px solid #cbd5e1 !important;
-          border-radius: 10px !important;
-          padding: 16px 18px !important;
-          margin: 14px 0 !important;
-          background: #fff !important;
-        }
-
-        body.paper-mode .brand-title {
-          font-size: 16pt !important;
-          line-height: 1.18 !important;
-          margin: 0 !important;
-        }
-
-        body.paper-mode .brand-sub {
-          font-size: 10.2pt !important;
-          line-height: 1.35 !important;
-          margin: 8px 0 0 !important;
-        }
-
-        body.paper-mode .top-meta {
-          margin-top: 8px !important;
-        }
-
-        body.paper-mode .pill {
-          font-size: 9.5pt !important;
-          padding: 5px 10px !important;
-        }
-
-        body.paper-mode .section h2 {
-          font-size: 12.2pt !important;
-          padding: 8px 10px !important;
-          margin: 0 0 10px !important;
-          border-radius: 8px !important;
-          background: #6b7280 !important;
-          color: #fff !important;
-        }
-
-        body.paper-mode h1,
-        body.paper-mode h2,
-        body.paper-mode h3 {
-          break-after: avoid;
-          page-break-after: avoid;
-        }
-
-        body.paper-mode .grid {
-          display: grid !important;
-          gap: 11px !important;
-          margin-top: 9px !important;
-        }
-
-        body.paper-mode .grid.two {
-          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        }
-
-        body.paper-mode .grid.three {
-          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        }
-
-        body.paper-mode label {
-          font-size: 9.8pt !important;
-          margin-bottom: 4px !important;
-          line-height: 1.22 !important;
-          min-height: auto !important;
-        }
-
-        body.paper-mode input,
-        body.paper-mode textarea,
-        body.paper-mode select {
-          min-height: 42px !important;
-          padding: 9px 11px !important;
-          border-radius: 8px !important;
-          font-size: 10.8pt !important;
-          line-height: 1.25 !important;
-          background: #fff !important;
-        }
-
-        body.paper-mode textarea {
-          min-height: 88px !important;
-        }
-
-        body.paper-mode input::placeholder,
-        body.paper-mode textarea::placeholder {
-          color: transparent !important;
-        }
-
-        body.paper-mode select {
-          color: transparent !important;
-          text-shadow: none !important;
-          -webkit-text-fill-color: transparent !important;
-          appearance: none !important;
-          -webkit-appearance: none !important;
-          background-image: none !important;
-        }
-
-        body.paper-mode select option {
-          color: #111827;
-        }
-
-        body.paper-mode input,
-        body.paper-mode textarea {
-          color: #111827 !important;
-          -webkit-text-fill-color: #111827 !important;
-        }
-
-        body.paper-mode input[type="checkbox"],
-        body.paper-mode input[type="radio"] {
-          color: initial !important;
-          -webkit-text-fill-color: initial !important;
-        }
-
-        body.paper-mode input:invalid,
-        body.paper-mode select:invalid,
-        body.paper-mode textarea:invalid {
-          border-color: #cbd5e1 !important;
-          box-shadow: none !important;
-          background: #fff !important;
-        }
-
-        body.paper-mode .divider {
-          margin: 11px 0 !important;
-        }
-
-        body.paper-mode .small {
-          font-size: 10pt !important;
-          line-height: 1.38 !important;
-        }
-
-        body.paper-mode .small p {
-          margin: 0 0 9px 0 !important;
-        }
-
-        body.paper-mode .paper-dvla-help {
-          display: block !important;
-          break-inside: avoid;
-          page-break-inside: avoid;
-          padding: 14px 16px !important;
-          margin: 12px 0 !important;
-          border: 1.6px solid #cbd5e1 !important;
-          border-radius: 10px !important;
-          background: #fff !important;
-        }
-
-        body.paper-mode .paper-dvla-help-inner {
-          display: grid !important;
-          grid-template-columns: 1fr 115px !important;
-          gap: 14px !important;
-          align-items: center !important;
-        }
-
-        body.paper-mode .paper-dvla-text {
-          font-size: 10pt !important;
-          line-height: 1.35 !important;
-        }
-
-        body.paper-mode .paper-dvla-qr img {
-          width: 105px !important;
-          height: 105px !important;
-        }
-
-        body.paper-mode #hireFromTimeDisplay,
-        body.paper-mode #hireUntilTimeDisplay,
-        body.paper-mode #hireSummary {
-          padding: 9px 10px !important;
-          margin-top: 6px !important;
-          font-size: 10.5pt !important;
-        }
-
-        body.paper-mode #signaturePad {
-          height: 130px !important;
-          border-radius: 10px !important;
-        }
-
-        body.paper-mode .signature-wrap {
-          margin-top: 6px !important;
-        }
-
-        body.paper-mode .paper-signature-block {
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
-
-        body.paper-mode .checkbox-line {
-          min-height: 44px !important;
-          padding: 10px 0 !important;
-          gap: 12px !important;
-          font-size: 11pt !important;
-        }
-
-        body.paper-mode .checkbox-line input {
-          width: 20px !important;
-          height: 20px !important;
-          min-height: 20px !important;
-        }
-
-        body.paper-mode .paper-declaration-section {
-          background: #ffffff !important;
-          border: 1.6px solid #cbd5e1 !important;
-          box-shadow: none !important;
-        }
-
-        body.paper-mode .paper-declaration-section h2 {
-          background: #ffffff !important;
-          color: #111827 !important;
-          border: 1.6px solid #94a3b8 !important;
-        }
-
-        .btn,
-        button,
-        .signature-actions,
-        .hint,
-        body.paper-mode #status,
-        body.paper-mode #errorBanner {
-          display: none !important;
-        }
-
-        .paper-print-only {
-          display: block !important;
-        }
-
-        /* IMPORTANT:
-     Page numbers now create the page break themselves.
-     The empty .paper-page-break div is hidden below. */
-        .paper-page-number-block {
-          display: block !important;
-          text-align: center;
-          font-size: 9.5pt;
-          color: #64748b;
-          margin: 8mm 0 0 0;
-
-          break-after: page !important;
-          page-break-after: always !important;
-        }
-
-        /* Final page number must NOT create another page */
-        body.paper-mode .paper-paperwork-section .paper-page-number-block {
-          margin-top: 16mm !important;
-
-          break-after: auto !important;
-          page-break-after: auto !important;
-        }
-
-        /* Page 4 checklist: spread gently, but never force a full A4 height */
-        body.paper-mode .paper-paperwork-section {
-          min-height: 0 !important;
-          height: auto !important;
-          display: block !important;
-          padding-top: 10mm !important;
-          padding-bottom: 8mm !important;
-        }
-
-        body.paper-mode .paper-paperwork-section .checkbox-line {
-          min-height: 46px !important;
-          padding: 12px 0 !important;
-          font-size: 11.5pt !important;
-        }
-
-        body.paper-mode .paper-paperwork-section h3 {
-          font-size: 13pt !important;
-          margin: 18px 0 10px !important;
-        }
-
-        body.paper-mode .paper-paperwork-section .divider {
-          margin: 14px 0 !important;
-        }
-
-        /* CRITICAL:
-     Hide the old empty break div completely.
-     It was creating the extra blank Page 3 / total Page 5. */
-        .paper-page-break {
-          display: none !important;
-          height: 0 !important;
-          min-height: 0 !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: 0 !important;
-          overflow: hidden !important;
-
-          break-before: auto !important;
-          page-break-before: auto !important;
-          break-after: auto !important;
-          page-break-after: auto !important;
-        }
+        display: none !important;
       }
     </style>
   </head>
@@ -928,7 +911,6 @@
         </section>
 
         <div class="paper-print-only paper-page-number-block">Page 1 of 4</div>
-        <div class="paper-print-only paper-page-break"></div>
 
         <div class="paper-dvla-help" id="paperDvlaHelp" style="display: none">
           <div class="paper-dvla-help-inner">
@@ -1193,7 +1175,6 @@
         </section>
 
         <div class="paper-print-only paper-page-number-block">Page 2 of 4</div>
-        <div class="paper-print-only paper-page-break"></div>
 
         <!-- DECLARATION + PAPERWORK -->
         <section class="section paper-declaration-section">
@@ -1300,7 +1281,6 @@
         </section>
 
         <div class="paper-print-only paper-page-number-block">Page 3 of 4</div>
-        <div class="paper-print-only paper-page-break"></div>
 
         <section
           class="section paper-declaration-section paper-paperwork-section"
