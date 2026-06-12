@@ -633,12 +633,26 @@
           display: block !important;
         }
 
+        /* IMPORTANT:
+     Page numbers now create the page break themselves.
+     The empty .paper-page-break div is hidden below. */
         .paper-page-number-block {
           display: block !important;
           text-align: center;
           font-size: 9.5pt;
           color: #64748b;
           margin: 8mm 0 0 0;
+
+          break-after: page !important;
+          page-break-after: always !important;
+        }
+
+        /* Final page number must NOT create another page */
+        body.paper-mode .paper-paperwork-section .paper-page-number-block {
+          margin-top: 16mm !important;
+
+          break-after: auto !important;
+          page-break-after: auto !important;
         }
 
         /* Page 4 checklist: spread gently, but never force a full A4 height */
@@ -665,15 +679,11 @@
           margin: 14px 0 !important;
         }
 
-        body.paper-mode .paper-paperwork-section .paper-page-number-block {
-          margin-top: 16mm !important;
-        }
-
-        /* CRITICAL FIX:
-     Use break-before on the empty divider.
-     break-after was creating the extra blank 5th page. */
+        /* CRITICAL:
+     Hide the old empty break div completely.
+     It was creating the extra blank Page 3 / total Page 5. */
         .paper-page-break {
-          display: block !important;
+          display: none !important;
           height: 0 !important;
           min-height: 0 !important;
           margin: 0 !important;
@@ -681,9 +691,8 @@
           border: 0 !important;
           overflow: hidden !important;
 
-          break-before: page !important;
-          page-break-before: always !important;
-
+          break-before: auto !important;
+          page-break-before: auto !important;
           break-after: auto !important;
           page-break-after: auto !important;
         }
