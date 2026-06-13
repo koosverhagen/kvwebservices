@@ -634,7 +634,7 @@
         }
         /* ===============================
    HARD PRINT PAGE CONTROL
-   Real page starts + real page labels
+   4 real A4 pages, no flowing page labels
 ================================ */
 
         /* Page 2 starts at DVLA QR / licence area */
@@ -649,15 +649,12 @@
           page-break-before: always !important;
         }
 
-        /* IMPORTANT:
-   Page 4 is forced by a real zero-height break div,
-   not by the section itself. This avoids Chrome merging page 3 + 4. */
+        /* Page 4 is forced by the zero-height break before the checklist */
         body.paper-mode .paper-page-4 {
           break-before: auto !important;
           page-break-before: auto !important;
         }
 
-        /* Hard break before Page 4 */
         .paper-force-page-4-break {
           display: block !important;
           height: 0 !important;
@@ -671,17 +668,7 @@
           page-break-before: always !important;
         }
 
-        /* Real page labels */
-        .paper-visible-page-label {
-          display: block !important;
-          text-align: center;
-          font-size: 9.5pt;
-          color: #64748b;
-          font-weight: 500;
-          margin-top: 8mm;
-        }
-
-        /* Page 4 checklist: breathe a bit, but don't force extra page height */
+        /* Page 4 checklist: no forced full-page height */
         body.paper-mode .paper-paperwork-section {
           min-height: 0 !important;
           height: auto !important;
@@ -705,9 +692,10 @@
           margin: 16px 0 !important;
         }
 
-        /* Disable old page-number systems */
+        /* Disable all old/flowing page labels and old breaks */
         .paper-page-break,
-        .paper-page-number-block {
+        .paper-page-number-block,
+        .paper-visible-page-label {
           display: none !important;
         }
 
@@ -949,8 +937,6 @@
             </select>
           </div>
         </section>
-
-        <div class="paper-print-only paper-visible-page-label">Page 1 of 4</div>
 
         <div
           class="paper-dvla-help paper-page-2"
@@ -1218,8 +1204,6 @@
           </div>
         </section>
 
-        <div class="paper-print-only paper-visible-page-label">Page 2 of 4</div>
-
         <!-- DECLARATION + PAPERWORK -->
         <section class="section paper-declaration-section paper-page-3">
           <h2>Declaration & Identification Paperwork</h2>
@@ -1324,8 +1308,6 @@
           </div>
         </section>
 
-        <div class="paper-print-only paper-visible-page-label">Page 3 of 4</div>
-
         <div class="paper-force-page-4-break" aria-hidden="true"></div>
 
         <section
@@ -1409,10 +1391,6 @@
           </div>
 
           <div id="status" class="status"></div>
-
-          <div class="paper-print-only paper-visible-page-label">
-            Page 4 of 4
-          </div>
         </section>
       </form>
 
