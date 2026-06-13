@@ -12276,7 +12276,8 @@ ${mobileOutstandingText}
         const isLongForm = formLabel === "Long Form";
         const formComplete = isFormComplete(booking);
 
-        const depositOk = isDepositPaid(booking);
+        const depositOk = bookingHasActiveDeposit(booking);
+        const depositText = depositOk ? "Secured" : "Not secured";
         const outstandingAmount = Number(
           booking.outstandingAmount || booking.outstanding || 0,
         );
@@ -12877,14 +12878,14 @@ ${mobileOutstandingText}
   </div>
 
   <div class="status-item">
-    <div class="status-label">£200 Deposit</div>
+  <div class="status-label">£200 Deposit</div>
 
-    <div class="status-value">
-      <span class="check-pair">
-        Successful ${getPrintCheckMark(depositOk)}
-      </span>
-    </div>
+  <div class="status-value">
+    <span class="check-pair">
+      ${escapeHtml(depositText)} ${getPrintCheckMark(depositOk)}
+    </span>
   </div>
+</div>
 
   <div class="status-item">
     <div class="status-label">DVLA Check</div>
