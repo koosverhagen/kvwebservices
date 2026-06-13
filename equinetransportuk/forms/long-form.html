@@ -382,7 +382,16 @@
 
       @page {
         size: A4;
-        margin: 7mm;
+        margin: 7mm 7mm 12mm 7mm;
+
+        @bottom-center {
+          content: "Page " counter(page) " of " counter(pages);
+          font-size: 9pt;
+          color: #64748b;
+          font-family:
+            -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Arial,
+            sans-serif;
+        }
       }
 
       @media print {
