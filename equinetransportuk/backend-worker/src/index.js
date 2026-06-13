@@ -4498,6 +4498,19 @@ async function handlePricingQuote(request, env) {
     return json({ error: "Missing required pricing fields" }, 400);
   }
 
+  if (
+    Number(durationDays) === 0.5 &&
+    String(vehicleId || "").startsWith("v35") &&
+    isWeekendDate(pickupDate)
+  ) {
+    return json(
+      {
+        error: "Half-day hire is not available for 3.5T lorries at weekends",
+      },
+      400,
+    );
+  }
+
   const baseCost = calculateServerBaseCost(vehicleId, durationDays, pickupDate);
 
   const discount = await resolveDiscount({
@@ -4667,6 +4680,19 @@ async function resolveDiscount({
     discountAmount: Number(discountAmount.toFixed(2)),
     code: entry.code,
   };
+}
+
+function isWeekendDate(dateStr) {
+  if (!dateStr) return false;
+
+  const [year, month, day] = String(dateStr).split("-").map(Number);
+
+  if (!year || !month || !day) return false;
+
+  const date = new Date(year, month - 1, day, 12, 0, 0);
+  const weekday = date.getDay();
+
+  return weekday === 0 || weekday === 6;
 }
 
 async function getActiveDiscountCodes(env) {
@@ -5934,6 +5960,20 @@ async function handleAdminBookingUpdate(request, env) {
         );
       }
 
+      if (
+        durationDays === 0.5 &&
+        String(vehicleId).startsWith("v35") &&
+        isWeekendDate(pickupDate)
+      ) {
+        return json(
+          {
+            error:
+              "Half-day hire is not available for 3.5T lorries at weekends",
+          },
+          400,
+        );
+      }
+
       if (durationDays !== 0.5 && pickupTime !== "07:00") {
         return json(
           { error: "Full-day and multi-day hires must use 07:00 pickup time" },
@@ -6336,6 +6376,19 @@ async function handleAdminBookingUpdate(request, env) {
     if (durationDays === 0.5 && !String(vehicleId).startsWith("v35")) {
       return json(
         { error: "Half-day hire is only allowed for 3.5T vehicles" },
+        400,
+      );
+    }
+
+    if (
+      durationDays === 0.5 &&
+      String(vehicleId).startsWith("v35") &&
+      isWeekendDate(pickupDate)
+    ) {
+      return json(
+        {
+          error: "Half-day hire is not available for 3.5T lorries at weekends",
+        },
         400,
       );
     }
