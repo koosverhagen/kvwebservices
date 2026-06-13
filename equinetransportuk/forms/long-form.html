@@ -634,7 +634,9 @@
         }
         /* ===============================
    HARD PRINT PAGE CONTROL
-   4 real A4 pages, no flowing page labels
+   Page 1 stays as-is.
+   Only Page 2 is forced.
+   Declaration + checklist flow naturally after that.
 ================================ */
 
         /* Page 2 starts at DVLA QR / licence area */
@@ -643,20 +645,23 @@
           page-break-before: always !important;
         }
 
-        /* Page 3 starts at Declaration section */
+        /* Do NOT force Page 3.
+   Let Declaration flow up onto the end of page 2 if there is room. */
         body.paper-mode .paper-page-3 {
-          break-before: page !important;
-          page-break-before: always !important;
+          break-before: auto !important;
+          page-break-before: auto !important;
         }
 
-        /* Page 4 is forced by the zero-height break before the checklist */
+        /* Do NOT force Page 4.
+   Let final checklist follow naturally after declaration. */
         body.paper-mode .paper-page-4 {
           break-before: auto !important;
           page-break-before: auto !important;
         }
 
+        /* Disable old hard break before checklist */
         .paper-force-page-4-break {
-          display: block !important;
+          display: none !important;
           height: 0 !important;
           min-height: 0 !important;
           margin: 0 !important;
@@ -664,32 +669,107 @@
           border: 0 !important;
           overflow: hidden !important;
 
-          break-before: page !important;
-          page-break-before: always !important;
+          break-before: auto !important;
+          page-break-before: auto !important;
+          break-after: auto !important;
+          page-break-after: auto !important;
         }
 
-        /* Page 4 checklist: no forced full-page height */
+        /* Slightly compress page 2 content so the top of declaration can move up */
+        body.paper-mode .paper-page-2,
+        body.paper-mode .paper-page-2 + .section,
+        body.paper-mode .paper-page-2 + .section + .section,
+        body.paper-mode .paper-page-2 + .section + .section + .section {
+          margin-top: 8px !important;
+          margin-bottom: 8px !important;
+          padding-top: 10px !important;
+          padding-bottom: 10px !important;
+        }
+
+        body.paper-mode .paper-page-2 + .section h2,
+        body.paper-mode .paper-page-2 + .section + .section h2,
+        body.paper-mode .paper-page-2 + .section + .section + .section h2 {
+          padding: 6px 10px !important;
+          margin-bottom: 7px !important;
+          font-size: 11pt !important;
+        }
+
+        body.paper-mode .paper-page-2 + .section .grid,
+        body.paper-mode .paper-page-2 + .section + .section .grid,
+        body.paper-mode .paper-page-2 + .section + .section + .section .grid {
+          gap: 7px !important;
+          margin-top: 6px !important;
+        }
+
+        body.paper-mode .paper-page-2 + .section input,
+        body.paper-mode .paper-page-2 + .section select,
+        body.paper-mode .paper-page-2 + .section textarea,
+        body.paper-mode .paper-page-2 + .section + .section input,
+        body.paper-mode .paper-page-2 + .section + .section select,
+        body.paper-mode .paper-page-2 + .section + .section textarea,
+        body.paper-mode .paper-page-2 + .section + .section + .section input,
+        body.paper-mode .paper-page-2 + .section + .section + .section select,
+        body.paper-mode
+          .paper-page-2
+          + .section
+          + .section
+          + .section
+          textarea {
+          min-height: 34px !important;
+          padding: 6px 8px !important;
+          font-size: 9.5pt !important;
+          line-height: 1.15 !important;
+        }
+
+        body.paper-mode .paper-page-2 + .section textarea,
+        body.paper-mode .paper-page-2 + .section + .section textarea,
+        body.paper-mode
+          .paper-page-2
+          + .section
+          + .section
+          + .section
+          textarea {
+          min-height: 54px !important;
+        }
+
+        body.paper-mode .paper-dvla-help {
+          margin-top: 0 !important;
+          margin-bottom: 8px !important;
+          padding: 9px 12px !important;
+        }
+
+        body.paper-mode .paper-dvla-help-inner {
+          grid-template-columns: 1fr 90px !important;
+        }
+
+        body.paper-mode .paper-dvla-qr img {
+          width: 82px !important;
+          height: 82px !important;
+        }
+
+        /* Final checklist: keep compact so it joins the previous page naturally */
         body.paper-mode .paper-paperwork-section {
           min-height: 0 !important;
           height: auto !important;
           display: block !important;
-          padding-top: 6mm !important;
-          padding-bottom: 4mm !important;
+          padding-top: 10px !important;
+          padding-bottom: 10px !important;
+          margin-top: 8px !important;
         }
 
         body.paper-mode .paper-paperwork-section .checkbox-line {
-          min-height: 48px !important;
-          padding: 13px 0 !important;
-          font-size: 11.5pt !important;
+          min-height: 34px !important;
+          padding: 7px 0 !important;
+          font-size: 10.5pt !important;
         }
 
         body.paper-mode .paper-paperwork-section h3 {
-          font-size: 13pt !important;
-          margin: 20px 0 12px !important;
+          font-size: 12pt !important;
+          margin: 12px 0 8px !important;
         }
 
         body.paper-mode .paper-paperwork-section .divider {
-          margin: 16px 0 !important;
+          margin: 9px 0 !important;
         }
 
         /* Disable all old/flowing page labels and old breaks */
@@ -1307,8 +1387,6 @@
             </p>
           </div>
         </section>
-
-        <div class="paper-force-page-4-break" aria-hidden="true"></div>
 
         <section
           class="section paper-declaration-section paper-paperwork-section paper-page-4"
