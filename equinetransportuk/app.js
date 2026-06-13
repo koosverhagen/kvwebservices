@@ -858,7 +858,9 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
   if (!select || !dateStr || !vehicleId) return;
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
-  const is75T = vehicle && !is35T(vehicle);
+  const hideHalfDay = vehicle
+    ? shouldHideHalfDayForDateAndVehicle(dateStr, vehicle)
+    : false;
 
   const options = Array.from(select.options);
 
@@ -872,7 +874,7 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
        🔥 HARD BLOCK: 7.5T HALF DAY
     =============================== */
 
-    if (is75T && duration === 0.5) {
+    if (hideHalfDay && duration === 0.5) {
       available = false;
     } else if (duration === 0.5) {
       const { amData, pmData } = await getHalfDayAvailability(dateStr);
@@ -906,9 +908,10 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
        🔥 FORCE HIDE 7.5T HALF DAY
     =============================== */
 
-    if (is75T && duration === 0.5) {
-      opt.disabled = true;
-      opt.style.display = "none";
+    if (duration === 0.5) {
+      opt.disabled = hideHalfDay || !available;
+      opt.hidden = hideHalfDay || !available;
+      opt.style.display = hideHalfDay || !available ? "none" : "";
     }
   }
 
@@ -921,7 +924,7 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
   if (selected) {
     const selectedOption = options.find((o) => Number(o.value) === selected);
     if (selectedOption?.disabled) {
-      select.value = is75T ? "1" : "";
+      select.value = hideHalfDay ? "1" : "";
     }
   }
 
@@ -1287,6 +1290,48 @@ async function updateDurationOptions(dateStr) {
     =============================== */
 
     if (duration === 0.5) {
+      const selectedVehicle = vehicleId
+        ? vehicles.find((v) => v.id === vehicleId)
+        : null;
+
+      const weekend = isWeekendDate(dateStr);
+
+      // Hide half-day on weekends for all public availability checks.
+      // 7.5T is already filtered out below, but this also blocks 3.5T weekend half-days.
+      if (weekend) {
+        available = false;
+
+        opt.disabled = true;
+        opt.hidden = true;
+        opt.style.display = "none";
+        opt.style.color = "#999";
+
+        if (durationDaysInput.value === "0.5") {
+          durationDaysInput.value = "";
+        }
+
+        continue;
+      }
+
+      // If a specific vehicle is selected, still apply vehicle rule.
+      if (
+        selectedVehicle &&
+        shouldHideHalfDayForDateAndVehicle(dateStr, selectedVehicle)
+      ) {
+        available = false;
+
+        opt.disabled = true;
+        opt.hidden = true;
+        opt.style.display = "none";
+        opt.style.color = "#999";
+
+        if (durationDaysInput.value === "0.5") {
+          durationDaysInput.value = "";
+        }
+
+        continue;
+      }
+
       const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
       const filteredAM = (
@@ -1349,6 +1394,11 @@ async function updateDurationOptions(dateStr) {
 
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
+
+    if (duration === 0.5) {
+      opt.hidden = !available;
+      opt.style.display = available ? "" : "none";
+    }
   }
 
   /* ===============================
@@ -2787,22 +2837,50 @@ function is35T(vehicle) {
   );
 }
 
+function isWeekendDate(dateStr) {
+  if (!dateStr) return false;
+
+  const [year, month, day] = String(dateStr).split("-").map(Number);
+
+  if (!year || !month || !day) return false;
+
+  // Use midday to avoid timezone/date-shift problems
+  const date = new Date(year, month - 1, day, 12, 0, 0);
+
+  const weekday = date.getDay();
+
+  return weekday === 0 || weekday === 6; // Sunday or Saturday
+}
+
+function shouldHideHalfDayForDateAndVehicle(dateStr, vehicle) {
+  // 7.5T: always hide half-day
+  if (!is35T(vehicle)) return true;
+
+  // 3.5T: hide half-day only on weekends
+  return isWeekendDate(dateStr);
+}
+
 function enforceVehicleDurationRules(vehicle) {
   if (!durationDaysInput) return;
 
   const halfDayOption = durationDaysInput.querySelector('option[value="0.5"]');
   if (!halfDayOption) return;
 
-  if (!is35T(vehicle)) {
+  const pickupDate = pickupDateInput?.value || "";
+  const hideHalfDay = shouldHideHalfDayForDateAndVehicle(pickupDate, vehicle);
+
+  if (hideHalfDay) {
     halfDayOption.disabled = true;
     halfDayOption.hidden = true;
+    halfDayOption.style.display = "none";
 
     if (durationDaysInput.value === "0.5") {
-      durationDaysInput.value = "1";
+      durationDaysInput.value = "";
     }
   } else {
     halfDayOption.disabled = false;
     halfDayOption.hidden = false;
+    halfDayOption.style.display = "";
   }
 }
 
@@ -3996,7 +4074,32 @@ function autoCheckAvailability() {
 
 /* trigger when date changes */
 
-pickupDateInput?.addEventListener("change", () => {
+pickupDateInput?.addEventListener("change", async () => {
+  const pickupDate = pickupDateInput?.value;
+
+  if (pickupDate) {
+    window.__lastDurationCheck = "";
+
+    const vehicleId =
+      PRESELECTED_VEHICLE || selectedAvailability?.vehicle?.id || null;
+
+    const vehicle = vehicleId ? vehicles.find((v) => v.id === vehicleId) : null;
+
+    if (vehicle) {
+      updateDurationOptionsForVehicle(vehicle);
+      enforceVehicleDurationRules(vehicle);
+    }
+
+    await updateDurationOptions(pickupDate);
+
+    if (selectedAvailability?.vehicle?.id) {
+      await updateBookingDurationOptions(
+        pickupDate,
+        selectedAvailability.vehicle.id,
+      );
+    }
+  }
+
   autoCheckAvailability();
 });
 
@@ -4341,16 +4444,21 @@ function updateDurationOptionsForVehicle(vehicle) {
   const halfDayOption = durationSelect.querySelector('option[value="0.5"]');
   if (!halfDayOption) return;
 
-  if (is35T(vehicle)) {
-    // ✅ allow half day
-    halfDayOption.hidden = false;
-  } else {
-    // ✅ hide for 7.5T (better than display none)
+  const pickupDate = pickupDateInput?.value || "";
+  const hideHalfDay = shouldHideHalfDayForDateAndVehicle(pickupDate, vehicle);
+
+  if (hideHalfDay) {
+    halfDayOption.disabled = true;
     halfDayOption.hidden = true;
+    halfDayOption.style.display = "none";
 
     if (durationSelect.value === "0.5") {
       durationSelect.value = "";
     }
+  } else {
+    halfDayOption.disabled = false;
+    halfDayOption.hidden = false;
+    halfDayOption.style.display = "";
   }
 }
 
