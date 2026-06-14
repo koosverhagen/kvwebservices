@@ -389,6 +389,11 @@
       .contact-call {
         color: var(--ok);
       }
+
+      .contact-text {
+        color: #7c3aed;
+      }
+
       .contact-email {
         color: var(--accent);
       }
@@ -1450,8 +1455,19 @@
 
       .mobile-booking-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .mobile-action-btn.text {
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+
+      @media (max-width: 380px) {
+        .mobile-booking-actions {
+          grid-template-columns: 1fr;
+        }
       }
 
       .mobile-action-btn {
@@ -6783,47 +6799,97 @@
         }
       });
 
+      function buildCustomerBookingMessage(booking) {
+        const name = getCustomerName(booking) || "Customer";
+        const vehicle = getVehicleName(booking) || "your lorry";
+        const bookingId = booking?.id || "—";
+
+        const from = formatDateTime(
+          booking?.pickupAtLocal || booking?.pickupAt || booking?.pickup_at,
+        );
+
+        const until = formatDateTime(
+          booking?.dropoffAtLocal || booking?.dropoffAt || booking?.dropoff_at,
+        );
+
+        return `Dear ${name},
+
+Your Equine Transport UK booking details:
+
+Booking reference: ${bookingId}
+Lorry: ${vehicle}
+From: ${from}
+Until: ${until}
+
+Kind regards,
+Koos & Avril,
+Equine Transport UK`;
+      }
+
+      function buildCustomerBookingEmailHref(booking) {
+        const email = booking?.customerEmail || "";
+        if (!email) return "";
+
+        const subject = "From Equine Transport UK – Booking details";
+        const body = buildCustomerBookingMessage(booking);
+
+        return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      }
+
       function buildContactButtons(booking) {
         const phone = booking.customerMobile || "";
         const email = booking.customerEmail || "";
         const name = getCustomerName(booking) || "Customer";
+        const firstName = getFirstName(name);
+        const bookingId = booking.id || "";
 
-        const emailHref = email
-          ? `mailto:${email}?subject=${encodeURIComponent("from Equine Transport UK")}&body=${encodeURIComponent(
-              `Dear ${name},
+        const smsPhone = normaliseSmsPhone(phone);
 
-      Kind regards,
-      Koos & Avril,
-      Equine Transport UK`,
-            )}`
-          : "";
+        const textBtn =
+          smsPhone && smsPhone.length >= 10
+            ? `<button
+           class="contact-btn contact-text js-sms"
+           type="button"
+           data-phone="${escapeHtml(smsPhone)}"
+           data-type="booking"
+           data-name="${escapeHtml(firstName)}"
+           data-id="${escapeHtml(bookingId)}"
+           title="Text booking details to ${escapeHtml(formatUKDisplay(phone))}"
+         >
+           <span>💬</span>Text
+         </button>`
+            : "";
+
+        const emailHref = buildCustomerBookingEmailHref(booking);
 
         const phoneBtn = phone
           ? `<a
-               href="tel:${escapeHtml(phone)}"
-               class="contact-btn contact-call"
-               title="Call ${escapeHtml(formatUKDisplay(phone))}"
-             >
-               <span>📞</span>Call
-             </a>`
+         href="tel:${escapeHtml(phone)}"
+         class="contact-btn contact-call"
+         title="Call ${escapeHtml(formatUKDisplay(phone))}"
+       >
+         <span>📞</span>Call
+       </a>`
           : `<span class="tiny">—</span>`;
 
         const emailBtn = email
-          ? `<a
-               href="${emailHref}"
-               class="contact-btn contact-email"
-               title="Email ${escapeHtml(email)}"
-             >
-               <span>✉️</span>Email
-             </a>`
+          ? `<button
+       class="contact-btn contact-email js-resend-email"
+       type="button"
+       data-id="${escapeHtml(booking.id || "")}"
+       data-type="booking"
+       title="Email booking details to ${escapeHtml(email)}"
+     >
+       <span>✉️</span>Email
+     </button>`
           : `<span class="tiny">—</span>`;
-
         return `
-          <div class="contact-actions">
-            ${phoneBtn}
-            ${emailBtn}
-          </div>
-        `;
+    <div class="contact-actions">
+      ${phoneBtn}
+      ${textBtn}
+      ${emailBtn}
+    </div>
+  `;
       }
 
       function pad(n) {
@@ -9185,23 +9251,40 @@
 
             </div>
 
-            <div class="mobile-booking-actions">
+         <div class="mobile-booking-actions">
 
-              <a
-                class="mobile-action-btn call"
-                href="tel:${escapeHtml(booking.customerMobile || "")}"
-              >
-                📞 Call
-              </a>
+  <a
+    class="mobile-action-btn call"
+    href="tel:${escapeHtml(booking.customerMobile || "")}"
+  >
+    📞 Call
+  </a>
 
-              <a
-                class="mobile-action-btn email"
-                href="mailto:${escapeHtml(booking.customerEmail || "")}"
-              >
-                ✉️ Email
-              </a>
+  ${
+    phone
+      ? `<button
+          class="mobile-action-btn text js-sms"
+          type="button"
+          data-phone="${escapeHtml(phone)}"
+          data-type="booking"
+          data-name="${escapeHtml(firstName)}"
+          data-id="${escapeHtml(bookingId)}"
+        >
+          💬 Text
+        </button>`
+      : ""
+  }
 
-            </div>
+ <button
+  class="mobile-action-btn email js-resend-email"
+  type="button"
+  data-id="${escapeHtml(bookingId)}"
+  data-type="booking"
+>
+  ✉️ Email
+</button>
+
+</div>
 
             <div class="mobile-expand">
 
@@ -13871,6 +13954,19 @@ ${mobileOutstandingText}
           const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
 
           let message = "";
+
+          if (type === "booking") {
+            const booking = allBookings.find(
+              (b) => String(b.id) === String(bookingId),
+            );
+
+            if (!booking) {
+              alert("Booking not found.");
+              return;
+            }
+
+            message = buildCustomerBookingMessage(booking);
+          }
 
           if (type === "form") {
             message = `Dear ${name},
