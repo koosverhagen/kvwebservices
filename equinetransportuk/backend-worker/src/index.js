@@ -4538,8 +4538,11 @@ async function handlePricingQuote(request, env) {
      🔥 ADD HERE (EXACT SPOT)
   ================================ */
 
+  const safeEarlyPickup =
+    extras.earlyPickup === true && canUseEarlyPickup(durationDays, pickupTime);
+
   const dartfordTotal = (extras.dartford || 0) * 4.2;
-  const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
+  const earlyPickupTotal = safeEarlyPickup ? 20 : 0;
   const extrasTotal = dartfordTotal + earlyPickupTotal;
 
   /* ===============================
@@ -4693,6 +4696,10 @@ function isWeekendDate(dateStr) {
   const weekday = date.getDay();
 
   return weekday === 0 || weekday === 6;
+}
+
+function canUseEarlyPickup(durationDays, pickupTime) {
+  return Number(durationDays) !== 0.5 || String(pickupTime) === "07:00";
 }
 
 async function getActiveDiscountCodes(env) {
@@ -5920,6 +5927,17 @@ async function handleAdminBookingUpdate(request, env) {
       const hireTotal = Number(body.hireTotal || 0);
       const customerId = String(body.customerId || "").trim();
       const extras = body.extras || {};
+      if (
+        extras.earlyPickup === true &&
+        !canUseEarlyPickup(durationDays, pickupTime)
+      ) {
+        return json(
+          {
+            error: "Early pickup is not available for afternoon half-day hires",
+          },
+          400,
+        );
+      }
       const adminNote = String(body.adminNote || "").trim();
 
       if (!vehicleId || !pickupDate || !pickupTime || !durationDays) {
@@ -6349,6 +6367,16 @@ async function handleAdminBookingUpdate(request, env) {
 
     const extras = body.extras || {};
 
+    if (
+      extras.earlyPickup === true &&
+      !canUseEarlyPickup(durationDays, pickupTime)
+    ) {
+      return json(
+        { error: "Early pickup is not available for afternoon half-day hires" },
+        400,
+      );
+    }
+
     const adminNote = String(body.adminNote || "").trim();
 
     /* ===============================
@@ -6359,7 +6387,11 @@ async function handleAdminBookingUpdate(request, env) {
 
     const dartfordTotal = (extras.dartford || 0) * 4.2;
 
-    const earlyPickupTotal = extras.earlyPickup ? 20 : 0;
+    const safeEarlyPickup =
+      extras.earlyPickup === true &&
+      canUseEarlyPickup(durationDays, pickupTime);
+
+    const earlyPickupTotal = safeEarlyPickup ? 20 : 0;
 
     const extrasTotal = dartfordTotal + earlyPickupTotal;
 
