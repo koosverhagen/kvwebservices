@@ -11405,6 +11405,101 @@ async function handleAdminPaperFormReceived(request, env) {
   }
 }
 
+function buildBookingDetailsCustomerEmail(booking) {
+  const escape = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const formatDate = (value) => {
+    if (!value) return "—";
+
+    const d = new Date(value);
+
+    if (Number.isNaN(d.getTime())) return String(value);
+
+    return d.toLocaleString("en-GB", {
+      timeZone: "Europe/London",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  };
+
+  const customerName = escape(booking.customerName || "Customer");
+  const bookingId = escape(booking.id || "—");
+  const vehicle = escape(
+    booking.vehicleSnapshot?.name ||
+      booking.vehicleName ||
+      booking.vehicleId ||
+      "Horsebox hire",
+  );
+
+  const from = escape(formatDate(booking.pickupAtLocal || booking.pickupAt));
+  const until = escape(formatDate(booking.dropoffAtLocal || booking.dropoffAt));
+
+  return `
+<div style="font-family:Arial,sans-serif;background:#f5f7fa;padding:20px;">
+  <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe1e8;">
+    <div style="padding:28px 26px;background:#ffffff;text-align:center;border-bottom:1px solid #dbe1e8;">
+      <h1 style="margin:0;font-size:30px;color:#1d2530;">Equine Transport UK</h1>
+      <p style="margin:8px 0 0;color:#5a6675;font-weight:700;">
+        Part of the East Grinstead Tyre Service Group
+      </p>
+      <p style="margin:8px 0 0;color:#1f6feb;font-weight:800;font-size:20px;">
+        Self Drive or Driven
+      </p>
+    </div>
+
+    <div style="padding:28px 26px;color:#1d2530;font-size:16px;line-height:1.6;">
+      <p>Dear ${customerName},</p>
+
+      <p>Your Equine Transport UK booking details are below:</p>
+
+      <table style="width:100%;border-collapse:separate;border-spacing:0;background:#f8fafc;border-radius:14px;overflow:hidden;margin:20px 0;">
+        <tr>
+          <td style="padding:12px 14px;color:#64748b;font-weight:800;width:38%;">Booking reference</td>
+          <td style="padding:12px 14px;font-weight:800;">${bookingId}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 14px;color:#64748b;font-weight:800;">Lorry</td>
+          <td style="padding:12px 14px;font-weight:800;">${vehicle}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 14px;color:#64748b;font-weight:800;">From</td>
+          <td style="padding:12px 14px;font-weight:800;">${from}</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 14px;color:#64748b;font-weight:800;">Until</td>
+          <td style="padding:12px 14px;font-weight:800;">${until}</td>
+        </tr>
+      </table>
+
+      <p>Kind regards,</p>
+
+      <p>
+        <strong>Koos & Avril</strong><br>
+        <strong>Equine Transport UK</strong>
+      </p>
+    </div>
+
+    <div style="padding:18px 26px;background:#f8fafc;border-top:1px solid #dbe1e8;color:#64748b;font-size:13px;line-height:1.5;text-align:center;">
+      <strong>Equine Transport UK</strong><br>
+      Part of the East Grinstead Tyre Service Group<br>
+      info@equinetransportuk.com<br>
+      07812 188871 / 07584 578654
+    </div>
+  </div>
+</div>
+`;
+}
+
 async function handleResendEmail(request, env) {
   try {
     const body = await request.json();
@@ -11457,6 +11552,11 @@ async function handleResendEmail(request, env) {
     let title = "Equine Transport UK – Update";
     let subject = "Your Equine Transport UK update";
 
+    if (type === "booking") {
+      title = "Equine Transport UK – Booking Details";
+      subject = "Your Equine Transport UK booking details";
+    }
+
     if (type === "form") {
       title = "Equine Transport UK – Form Required";
       subject = "Please complete your hire form";
@@ -11490,13 +11590,19 @@ async function handleResendEmail(request, env) {
     }
 
     // ✅ FIXED EMAIL BUILD
-    const emailHtml = buildResendCardEmail({
-      booking,
-      type,
-      formLink: booking.requiredFormLink,
-      depositLink: booking.depositLink,
-      outstandingLink: booking.outstandingLink,
-    });
+    let emailHtml;
+
+    if (type === "booking") {
+      emailHtml = buildBookingDetailsCustomerEmail(booking);
+    } else {
+      emailHtml = buildResendCardEmail({
+        booking,
+        type,
+        formLink: booking.requiredFormLink,
+        depositLink: booking.depositLink,
+        outstandingLink: booking.outstandingLink,
+      });
+    }
 
     /* ===============================
        SEND EMAIL
