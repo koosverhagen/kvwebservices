@@ -6755,6 +6755,11 @@ async function handleAdminBookingUpdate(request, env) {
 
       pickupAt,
       dropoffAt,
+
+      // ✅ CRITICAL: keep local display/edit dates in sync after admin date changes
+      pickupAtLocal: toLondonLocalISOString(new Date(pickupAt)),
+      dropoffAtLocal: toLondonLocalISOString(new Date(dropoffAt)),
+
       durationDays,
       pickupTime,
 
@@ -7000,8 +7005,52 @@ async function handleAdminBookingUpdate(request, env) {
       }
 
       /* ===============================
-     ⏱️ DURATION CHANGED
-  =============================== */
+   📅 DATE / TIME CHANGED
+================================ */
+
+      const oldPickupLocal =
+        existing.pickupAtLocal ||
+        toLondonLocalISOString(new Date(existing.pickupAt || 0));
+
+      const oldDropoffLocal =
+        existing.dropoffAtLocal ||
+        toLondonLocalISOString(new Date(existing.dropoffAt || 0));
+
+      const newPickupLocal = nextBooking.pickupAtLocal;
+      const newDropoffLocal = nextBooking.dropoffAtLocal;
+
+      const oldPickupDate = String(oldPickupLocal || "").slice(0, 10);
+      const newPickupDate = String(newPickupLocal || "").slice(0, 10);
+
+      const oldDropoffDate = String(oldDropoffLocal || "").slice(0, 10);
+      const newDropoffDate = String(newDropoffLocal || "").slice(0, 10);
+
+      if (
+        oldPickupDate !== newPickupDate ||
+        oldDropoffDate !== newDropoffDate ||
+        String(existing.pickupTime || "") !== String(pickupTime || "")
+      ) {
+        audit.unshift({
+          type: "date_time_changed",
+
+          fromPickupAt: oldPickupLocal,
+          toPickupAt: newPickupLocal,
+
+          fromDropoffAt: oldDropoffLocal,
+          toDropoffAt: newDropoffLocal,
+
+          fromPickupTime: existing.pickupTime || "",
+          toPickupTime: pickupTime || "",
+
+          at: new Date().toISOString(),
+        });
+
+        console.log("✅ DATE/TIME AUDIT ADDED");
+      }
+
+      /* ===============================
+   ⏱️ DURATION CHANGED
+================================ */
 
       if (Number(existing.durationDays) !== Number(durationDays)) {
         audit.unshift({

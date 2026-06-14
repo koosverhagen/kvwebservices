@@ -15602,6 +15602,39 @@ Equine Transport UK`;
       blockVehicleInput?.addEventListener("change", () => {
         updateBlockRangeSummary();
       });
+
+      function getEditDateValue(booking) {
+        if (!booking) return "";
+
+        const local =
+          booking.pickupAtLocal ||
+          booking.pickup_at_local ||
+          booking.pickupDate ||
+          "";
+
+        if (
+          local &&
+          String(local)
+            .slice(0, 10)
+            .match(/^\d{4}-\d{2}-\d{2}$/)
+        ) {
+          return String(local).slice(0, 10);
+        }
+
+        const raw = booking.pickupAt || booking.pickup_at || "";
+
+        if (
+          raw &&
+          String(raw)
+            .slice(0, 10)
+            .match(/^\d{4}-\d{2}-\d{2}$/)
+        ) {
+          return String(raw).slice(0, 10);
+        }
+
+        return "";
+      }
+
       function openEditBookingById(id) {
         const booking = allBookings.find((b) => b.id === id);
 
@@ -15626,8 +15659,7 @@ Equine Transport UK`;
 
         document.getElementById("edit-vehicle").value = booking.vehicleId || "";
 
-        document.getElementById("edit-date").value =
-          booking.pickupAt?.slice(0, 10) || "";
+        document.getElementById("edit-date").value = getEditDateValue(booking);
 
         document.getElementById("edit-time").value =
           booking.pickupTime || "07:00";
