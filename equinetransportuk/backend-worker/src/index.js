@@ -1213,6 +1213,19 @@ export default {
       }
 
       /* ===============================
+   CONTACT CUSTOMER EMAIL (ADMIN)
+   Editable email sent from info@
+=============================== */
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/contact-customer-email"
+      ) {
+        const response = await handleAdminContactCustomerEmail(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    RESEND EMAIL (ADMIN)
 =============================== */
 
@@ -11498,6 +11511,87 @@ function buildBookingDetailsCustomerEmail(booking) {
   </div>
 </div>
 `;
+}
+
+function plainTextToHtml(text) {
+  return String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+}
+
+async function handleAdminContactCustomerEmail(request, env) {
+  try {
+    const body = await request.json();
+
+    const bookingId = String(body.bookingId || "").trim();
+    const subject = String(body.subject || "").trim();
+    const message = String(body.message || "").trim();
+
+    if (!bookingId || !subject || !message) {
+      return json({ error: "Missing bookingId, subject or message" }, 400);
+    }
+
+    const booking = await findBookingById(env, bookingId);
+
+    if (!booking) {
+      return json({ error: "Booking not found" }, 404);
+    }
+
+    if (!booking.customerEmail) {
+      return json({ error: "No customer email found for this booking" }, 400);
+    }
+
+    const html = `
+<div style="font-family:Arial,sans-serif;background:#f5f7fa;padding:20px;">
+  <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe1e8;">
+    <div style="padding:28px 26px;background:#ffffff;text-align:center;border-bottom:1px solid #dbe1e8;">
+      <h1 style="margin:0;font-size:30px;color:#1d2530;">Equine Transport UK</h1>
+      <p style="margin:8px 0 0;color:#5a6675;font-weight:700;">
+        Part of the East Grinstead Tyre Service Group
+      </p>
+      <p style="margin:8px 0 0;color:#1f6feb;font-weight:800;font-size:20px;">
+        Self Drive or Driven
+      </p>
+    </div>
+
+    <div style="padding:28px 26px;color:#1d2530;font-size:16px;line-height:1.6;">
+      ${plainTextToHtml(message)}
+    </div>
+
+    <div style="padding:18px 26px;background:#f8fafc;border-top:1px solid #dbe1e8;color:#64748b;font-size:13px;line-height:1.5;text-align:center;">
+      <strong>Equine Transport UK</strong><br>
+      Part of the East Grinstead Tyre Service Group<br>
+      info@equinetransportuk.com<br>
+      07812 188871 / 07584 578654
+    </div>
+  </div>
+</div>
+`;
+
+    await sendBookingEmail(env, {
+      to: booking.customerEmail,
+      subject,
+      html,
+    });
+
+    return json({
+      ok: true,
+      sent: true,
+      bookingId,
+      to: booking.customerEmail,
+    });
+  } catch (err) {
+    console.error("❌ CONTACT CUSTOMER EMAIL ERROR:", err);
+
+    return json(
+      {
+        error: err.message || "Failed to send contact email",
+      },
+      500,
+    );
+  }
 }
 
 async function handleResendEmail(request, env) {
