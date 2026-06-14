@@ -929,13 +929,17 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
   }
 
   /* ===============================
-     🔥 FINAL SAFETY LOCK
-  =============================== */
+   🔥 FINAL SAFETY LOCK
+   7.5T always blocked.
+   3.5T weekend half-day blocked.
+=============================== */
 
-  if (is75T) {
+  if (hideHalfDay) {
     const half = select.querySelector('option[value="0.5"]');
+
     if (half) {
       half.disabled = true;
+      half.hidden = true;
       half.style.display = "none";
     }
 
@@ -2982,9 +2986,27 @@ function scrollStep2IntoView() {
   }, 120);
 }
 
-function isWeekendDate(date) {
-  const day = date.getDay();
-  return day === 0 || day === 6;
+function isWeekendDate(value) {
+  if (!value) return false;
+
+  let date;
+
+  if (value instanceof Date) {
+    date = value;
+  } else {
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    if (!year || !month || !day) return false;
+
+    // Use midday to avoid timezone/date-shift problems
+    date = new Date(year, month - 1, day, 12, 0, 0);
+  }
+
+  if (!date || Number.isNaN(date.getTime())) return false;
+
+  const weekday = date.getDay();
+
+  return weekday === 0 || weekday === 6;
 }
 
 function getDurationHours(vehicle, durationDays) {
@@ -3161,6 +3183,12 @@ async function fetchServerQuote(
       total: Number(pricing.total ?? 0),
     };
   } catch (err) {
+    const message = String(err?.message || "");
+
+    if (message.includes("Half-day hire is not available")) {
+      throw err;
+    }
+
     console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
 
     const fallbackBase = calculateBaseCost(
@@ -3352,6 +3380,14 @@ async function buildAvailability(
 ====================================================== */
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
+  // 🔥 HARD FRONTEND BLOCK:
+  // No half-day rentals on weekends.
+  // 7.5T is never half-day anyway; this also blocks 3.5T Saturday/Sunday.
+  if (Number(durationDays) === 0.5 && isWeekendDate(pickupDate)) {
+    LAST_AVAILABLE_VEHICLES = [];
+    return [];
+  }
+
   let vehiclesToCheck =
     LOCKED_VEHICLE && PRESELECTED_VEHICLE
       ? vehicles.filter((v) => v.id === PRESELECTED_VEHICLE)
