@@ -5709,6 +5709,66 @@
     </div>
 
     <!-- ===============================
+   CONTACT CUSTOMER EMAIL MODAL
+=============================== -->
+    <div id="contact-email-modal" class="et-modal hidden">
+      <div class="et-modal-backdrop" data-close-contact-email></div>
+
+      <div class="et-modal-center">
+        <div class="et-modal-card">
+          <div class="et-modal-header">
+            <h3>Contact customer</h3>
+
+            <button type="button" class="modal-close" data-close-contact-email>
+              ×
+            </button>
+          </div>
+
+          <div class="et-modal-body">
+            <div class="field">
+              <label>To</label>
+              <input id="contact-email-to" type="email" readonly />
+            </div>
+
+            <div class="field" style="margin-top: 12px">
+              <label>Subject</label>
+              <input id="contact-email-subject" type="text" />
+            </div>
+
+            <div class="field" style="margin-top: 12px">
+              <label>Message</label>
+              <textarea
+                id="contact-email-body"
+                rows="14"
+                style="width: 100%; min-height: 320px"
+              ></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 16px">
+              <button
+                id="send-contact-email-btn"
+                class="btn primary"
+                type="button"
+              >
+                Send from info@equinetransportuk.com
+              </button>
+
+              <button class="btn ghost" type="button" data-close-contact-email>
+                Cancel
+              </button>
+            </div>
+
+            <div
+              id="contact-email-status"
+              class="tiny"
+              style="margin-top: 12px"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===============================
    EDIT BOOKING MODAL
 =============================== -->
     <div id="edit-modal" class="et-modal hidden">
@@ -6826,14 +6886,90 @@ Koos & Avril,
 Equine Transport UK`;
       }
 
-      function buildCustomerBookingEmailHref(booking) {
-        const email = booking?.customerEmail || "";
-        if (!email) return "";
+      let CURRENT_CONTACT_EMAIL_BOOKING_ID = null;
 
-        const subject = "From Equine Transport UK – Booking details";
-        const body = buildCustomerBookingMessage(booking);
+      function buildContactCustomerSubject(booking) {
+        const vehicle = getVehicleName(booking) || "your booking";
 
-        return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        return `Equine Transport UK – ${vehicle}`;
+      }
+
+      function buildContactCustomerBody(booking) {
+        const name = getCustomerName(booking) || "Customer";
+        const firstName = getFirstName(name);
+
+        const vehicle = getVehicleName(booking) || "your lorry";
+        const bookingId = booking?.id || "—";
+
+        const from = formatDateTime(
+          booking?.pickupAtLocal || booking?.pickupAt || booking?.pickup_at,
+        );
+
+        const until = formatDateTime(
+          booking?.dropoffAtLocal || booking?.dropoffAt || booking?.dropoff_at,
+        );
+
+        return `Dear ${firstName},
+
+Booking details:
+
+Booking reference: ${bookingId}
+Lorry: ${vehicle}
+From: ${from}
+Until: ${until}
+
+
+
+Kind regards,
+Koos & Avril,
+Equine Transport UK`;
+      }
+
+      function openContactEmailModal(booking) {
+        if (!booking) return;
+
+        const modal = document.getElementById("contact-email-modal");
+        const toInput = document.getElementById("contact-email-to");
+        const subjectInput = document.getElementById("contact-email-subject");
+        const bodyInput = document.getElementById("contact-email-body");
+        const statusEl = document.getElementById("contact-email-status");
+
+        if (!modal || !toInput || !subjectInput || !bodyInput) return;
+
+        if (!booking.customerEmail) {
+          alert("No customer email found for this booking.");
+          return;
+        }
+
+        CURRENT_CONTACT_EMAIL_BOOKING_ID = booking.id;
+
+        toInput.value = booking.customerEmail;
+        subjectInput.value = buildContactCustomerSubject(booking);
+        bodyInput.value = buildContactCustomerBody(booking);
+
+        if (statusEl) statusEl.textContent = "";
+
+        modal.classList.remove("hidden");
+
+        setTimeout(() => {
+          bodyInput.focus();
+
+          const insertAt = bodyInput.value.indexOf("\n\n") + 2;
+
+          if (insertAt > 1) {
+            bodyInput.setSelectionRange(insertAt, insertAt);
+          }
+        }, 50);
+      }
+
+      function closeContactEmailModal() {
+        const modal = document.getElementById("contact-email-modal");
+
+        if (modal) {
+          modal.classList.add("hidden");
+        }
+
+        CURRENT_CONTACT_EMAIL_BOOKING_ID = null;
       }
 
       function buildContactButtons(booking) {
@@ -6859,8 +6995,6 @@ Equine Transport UK`;
            <span>💬</span>Text
          </button>`
             : "";
-
-        const emailHref = buildCustomerBookingEmailHref(booking);
 
         const phoneBtn = phone
           ? `<a
@@ -9275,10 +9409,9 @@ Equine Transport UK`;
   }
 
  <button
-  class="mobile-action-btn email js-resend-email"
+  class="mobile-action-btn email js-contact-email"
   type="button"
   data-id="${escapeHtml(bookingId)}"
-  data-type="booking"
 >
   ✉️ Email
 </button>
@@ -14011,6 +14144,31 @@ Equine Transport UK`;
         }
 
         /* ===============================
+         📧 CONTACT CUSTOMER EMAIL
+      =============================== */
+
+        const contactEmailBtn = e.target.closest(".js-contact-email");
+
+        if (contactEmailBtn) {
+          e.preventDefault();
+
+          const bookingId = contactEmailBtn.dataset.id;
+
+          const booking = allBookings.find(
+            (b) => String(b.id) === String(bookingId),
+          );
+
+          if (!booking) {
+            alert("Booking not found.");
+            return;
+          }
+
+          openContactEmailModal(booking);
+
+          return;
+        }
+
+        /* ===============================
          📧 EMAIL ACTIONS
       =============================== */
 
@@ -14064,6 +14222,82 @@ Equine Transport UK`;
         // 🔒 FINAL FALLBACK (only ignore plain links)
         if (e.target.tagName === "A") return;
       });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest("[data-close-contact-email]")) {
+          closeContactEmailModal();
+        }
+      });
+
+      document
+        .getElementById("send-contact-email-btn")
+        ?.addEventListener("click", async () => {
+          const btn = document.getElementById("send-contact-email-btn");
+          const statusEl = document.getElementById("contact-email-status");
+
+          const bookingId = CURRENT_CONTACT_EMAIL_BOOKING_ID;
+          const subject =
+            document.getElementById("contact-email-subject")?.value || "";
+          const body =
+            document.getElementById("contact-email-body")?.value || "";
+
+          if (!bookingId) {
+            alert("No booking selected.");
+            return;
+          }
+
+          if (!subject.trim() || !body.trim()) {
+            alert("Please enter a subject and message.");
+            return;
+          }
+
+          const oldText = btn.textContent;
+
+          btn.disabled = true;
+          btn.textContent = "Sending...";
+
+          if (statusEl) statusEl.textContent = "";
+
+          try {
+            const res = await fetch(
+              `${API_BASE}/api/admin/contact-customer-email`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  bookingId,
+                  subject,
+                  message: body,
+                }),
+              },
+            );
+
+            const data = await res.json();
+
+            if (!res.ok || !data.ok) {
+              throw new Error(data.error || "Failed to send email.");
+            }
+
+            if (statusEl) {
+              statusEl.textContent =
+                "Email sent from info@equinetransportuk.com ✓";
+            }
+
+            showCopySuccess("Email sent ✓");
+
+            setTimeout(() => {
+              closeContactEmailModal();
+            }, 700);
+          } catch (err) {
+            console.error("❌ Contact customer email failed:", err);
+            alert(err.message || "Failed to send email.");
+          } finally {
+            btn.disabled = false;
+            btn.textContent = oldText;
+          }
+        });
 
       document.addEventListener("change", async (e) => {
         const checkbox = e.target.closest(".js-dvla-verify");
