@@ -783,6 +783,8 @@ const discountMessage = document.getElementById("discount-message");
 
 let selectedAvailability = null;
 
+let BOOKING_WEEKEND_HALF_DAY_NOTICE = false;
+
 /* ===============================
    Next available date button
 ================================ */
@@ -947,6 +949,56 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
       select.value = "1";
     }
   }
+}
+
+function applyBookingWeekendHalfDayRule(dateStr, vehicle, showNotice = false) {
+  const select = document.getElementById("selected-duration");
+  const statusEl = document.getElementById("booking-availability-status");
+  const pickupRow = document.getElementById("pickup-time-row");
+
+  if (!select || !dateStr || !vehicle) return false;
+
+  const hideHalfDay = shouldHideHalfDayForDateAndVehicle(dateStr, vehicle);
+  const half = select.querySelector('option[value="0.5"]');
+
+  if (!half) return false;
+
+  if (hideHalfDay) {
+    half.disabled = true;
+    half.hidden = true;
+    half.style.display = "none";
+    half.style.color = "#999";
+
+    const wasHalfDay = select.value === "0.5";
+
+    if (wasHalfDay) {
+      select.value = "1";
+      BOOKING_WEEKEND_HALF_DAY_NOTICE = true;
+
+      if (pickupRow) {
+        pickupRow.style.display = "none";
+      }
+
+      if (statusEl && showNotice) {
+        statusEl.textContent =
+          "No 1/2 day hires are available during weekends. Duration has been changed to 1 day.";
+        statusEl.className = "availability-status error full";
+        statusEl.hidden = false;
+      }
+
+      updateCheckoutSummary();
+
+      return true;
+    }
+  } else {
+    half.disabled = false;
+    half.hidden = false;
+    half.style.display = "";
+    half.style.color = "";
+    BOOKING_WEEKEND_HALF_DAY_NOTICE = false;
+  }
+
+  return false;
 }
 
 function safeRenderAvailability(html) {
@@ -4730,7 +4782,17 @@ async function checkBookingFormAvailability() {
 
   const vehicle = selectedAvailability.vehicle;
   const pickupDate = selectedPickupInput.value;
-  const durationDays = Number(selectedDurationInput.value);
+  let durationDays = Number(selectedDurationInput.value);
+
+  const weekendHalfDayWasBlocked = applyBookingWeekendHalfDayRule(
+    pickupDate,
+    vehicle,
+    false,
+  );
+
+  if (weekendHalfDayWasBlocked) {
+    durationDays = Number(selectedDurationInput.value);
+  }
 
   if (!pickupDate || !durationDays || durationDays <= 0) {
     if (statusEl) {
@@ -4809,8 +4871,15 @@ async function checkBookingFormAvailability() {
     }
 
     if (statusEl) {
-      statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
-      statusEl.className = "availability-status ok full";
+      if (BOOKING_WEEKEND_HALF_DAY_NOTICE) {
+        statusEl.textContent =
+          "No 1/2 day hires are available during weekends. Duration has been changed to 1 day.";
+        statusEl.className = "availability-status error full";
+      } else {
+        statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
+        statusEl.className = "availability-status ok full";
+      }
+
       statusEl.hidden = false;
     }
 
@@ -4826,7 +4895,10 @@ async function checkBookingFormAvailability() {
     updateEarlyPickupAvailability();
   } else {
     if (statusEl) {
-      statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
+      statusEl.textContent =
+        durationDays === 0.5 && isWeekendDate(pickupDate)
+          ? "No 1/2 day hires are available during weekends. Please choose 1 day or longer."
+          : `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
@@ -6075,13 +6147,37 @@ hiredWithin3MonthsInput?.addEventListener("change", updateCheckoutSummary);
 =============================== */
 
 selectedPickupInput?.addEventListener("change", async () => {
+  const pickupDate = selectedPickupInput?.value;
+  const vehicle = selectedAvailability?.vehicle;
+
+  if (pickupDate && vehicle?.id) {
+    await updateBookingDurationOptions(pickupDate, vehicle.id);
+
+    applyBookingWeekendHalfDayRule(pickupDate, vehicle, true);
+
+    updateHalfDayPickup();
+  }
+
   await checkBookingFormAvailability();
-  updateEarlyPickupAvailability(); // ✅ ADD
+
+  updateEarlyPickupAvailability();
 });
 
 selectedDurationInput?.addEventListener("change", async () => {
+  const pickupDate = selectedPickupInput?.value;
+  const vehicle = selectedAvailability?.vehicle;
+
+  if (pickupDate && vehicle?.id) {
+    await updateBookingDurationOptions(pickupDate, vehicle.id);
+
+    applyBookingWeekendHalfDayRule(pickupDate, vehicle, true);
+
+    updateHalfDayPickup();
+  }
+
   await checkBookingFormAvailability();
-  updateEarlyPickupAvailability(); // ✅ KEEP
+
+  updateEarlyPickupAvailability();
 });
 
 /* ===============================
