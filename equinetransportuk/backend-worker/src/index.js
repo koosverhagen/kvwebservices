@@ -6468,22 +6468,47 @@ async function handleAdminBookingUpdate(request, env) {
       vehicleChanged,
     });
 
-    const isEditChange =
-      vehicleId !== existing.vehicleId ||
-      pickupDate !== (existing.pickupAtLocal || "").slice(0, 10) ||
-      pickupTime !== existing.pickupTime ||
-      durationDays !== Number(existing.durationDays) ||
-      hireTotal !== Number(existing.hireTotal || 0) ||
-      extrasChanged;
+    /* ===============================
+   🔒 FULLY PAID BOOKING SAFETY
+   Allow operational/admin edits.
+   Only block changes that alter the paid financial agreement.
+================================ */
 
-    if (existing.outstandingPaid === true && isEditChange) {
+    const dateChanged =
+      pickupDate !== (existing.pickupAtLocal || "").slice(0, 10);
+
+    const timeChanged = pickupTime !== existing.pickupTime;
+
+    const durationChanged = durationDays !== Number(existing.durationDays);
+
+    const priceChanged = hireTotal !== Number(existing.hireTotal || 0);
+
+    const financialChange = durationChanged || priceChanged || extrasChanged;
+
+    /*
+  Fully paid bookings may still need admin corrections:
+  - lorry change
+  - date/time correction
+  - customer reassignment
+  - DVLA/form/paper-form status
+  - admin note
+  - handover/admin details
+
+  But changing duration, price or extras changes the paid agreement,
+  so those should still use refund/payment tools first.
+*/
+    if (existing.outstandingPaid === true && financialChange) {
       return json(
         {
-          error: "Outstanding already paid. Use refund/payment tools first.",
+          error:
+            "Outstanding already paid. You can save admin details, lorry, date/time, customer, form/DVLA and notes, but price, duration or extras changes need refund/payment tools first.",
         },
         400,
       );
     }
+
+    const isEditChange =
+      vehicleChanged || dateChanged || timeChanged || financialChange;
 
     /* ===============================
        🔥 DATE BUILD
