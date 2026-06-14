@@ -963,13 +963,13 @@ function applyBookingWeekendHalfDayRule(dateStr, vehicle, showNotice = false) {
 
   if (!half) return false;
 
+  const wasHalfDay = select.value === "0.5";
+
   if (hideHalfDay) {
     half.disabled = true;
     half.hidden = true;
     half.style.display = "none";
     half.style.color = "#999";
-
-    const wasHalfDay = select.value === "0.5";
 
     if (wasHalfDay) {
       select.value = "1";
@@ -979,6 +979,11 @@ function applyBookingWeekendHalfDayRule(dateStr, vehicle, showNotice = false) {
         pickupRow.style.display = "none";
       }
 
+      if (selectedAvailability) {
+        selectedAvailability.durationDays = 1;
+        selectedAvailability.pickupTime = DEFAULT_PICKUP_TIME;
+      }
+
       if (statusEl && showNotice) {
         statusEl.textContent =
           "No 1/2 day hires are available during weekends. Duration has been changed to 1 day.";
@@ -986,17 +991,21 @@ function applyBookingWeekendHalfDayRule(dateStr, vehicle, showNotice = false) {
         statusEl.hidden = false;
       }
 
+      updateHalfDayPickup();
       updateCheckoutSummary();
 
       return true;
     }
-  } else {
-    half.disabled = false;
-    half.hidden = false;
-    half.style.display = "";
-    half.style.color = "";
-    BOOKING_WEEKEND_HALF_DAY_NOTICE = false;
+
+    return false;
   }
+
+  half.disabled = false;
+  half.hidden = false;
+  half.style.display = "";
+  half.style.color = "";
+
+  BOOKING_WEEKEND_HALF_DAY_NOTICE = false;
 
   return false;
 }
@@ -4771,10 +4780,6 @@ async function selectAvailability(vehicleId) {
 }
 
 async function checkBookingFormAvailability() {
-  const duration = Number(
-    selectedDurationInput?.value || durationDaysInput?.value || 0,
-  );
-
   if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput)
     return;
 
@@ -4834,7 +4839,7 @@ async function checkBookingFormAvailability() {
 
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
-    duration,
+    durationDays,
     pickupTime,
   );
 
@@ -6151,9 +6156,18 @@ selectedPickupInput?.addEventListener("change", async () => {
   const vehicle = selectedAvailability?.vehicle;
 
   if (pickupDate && vehicle?.id) {
+    // IMPORTANT: run this BEFORE updateBookingDurationOptions(),
+    // otherwise the old half-day value is silently changed before we can show the warning.
+    const blockedHalfDay = applyBookingWeekendHalfDayRule(
+      pickupDate,
+      vehicle,
+      true,
+    );
+
     await updateBookingDurationOptions(pickupDate, vehicle.id);
 
-    applyBookingWeekendHalfDayRule(pickupDate, vehicle, true);
+    // Re-apply after the async option check, so the 1/2 day option stays hidden.
+    applyBookingWeekendHalfDayRule(pickupDate, vehicle, blockedHalfDay);
 
     updateHalfDayPickup();
   }
@@ -6168,9 +6182,15 @@ selectedDurationInput?.addEventListener("change", async () => {
   const vehicle = selectedAvailability?.vehicle;
 
   if (pickupDate && vehicle?.id) {
+    const blockedHalfDay = applyBookingWeekendHalfDayRule(
+      pickupDate,
+      vehicle,
+      true,
+    );
+
     await updateBookingDurationOptions(pickupDate, vehicle.id);
 
-    applyBookingWeekendHalfDayRule(pickupDate, vehicle, true);
+    applyBookingWeekendHalfDayRule(pickupDate, vehicle, blockedHalfDay);
 
     updateHalfDayPickup();
   }
