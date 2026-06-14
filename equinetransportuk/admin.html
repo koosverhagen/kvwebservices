@@ -6754,6 +6754,7 @@
             document.getElementById("edit-vehicle").value,
           );
 
+          enforceAdminEarlyPickupRules();
           updateAdminPrice();
         });
 
@@ -6761,6 +6762,7 @@
         if (IS_EDIT_INITIALISING) return;
 
         updateAdminPrice();
+        enforceAdminEarlyPickupRules();
       });
 
       document.getElementById("edit-date")?.addEventListener("change", () => {
@@ -6955,6 +6957,52 @@
           timeSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
           console.log("⏰ Admin time rebuilt:", timeSelect.value);
+        }
+
+        enforceAdminEarlyPickupRules();
+      }
+
+      function enforceAdminEarlyPickupRules() {
+        const durationDays = Number(
+          document.getElementById("edit-duration")?.value || 0,
+        );
+
+        const pickupTime =
+          document.getElementById("edit-time")?.value || "07:00";
+
+        const earlyInput = document.getElementById("edit-early");
+        if (!earlyInput) return;
+
+        const label = earlyInput.closest(".field");
+        const textLabel = document.querySelector('label[for="edit-early"]');
+
+        const isAfternoonHalfDay =
+          durationDays === 0.5 && pickupTime === "13:00";
+
+        const canUseEarlyPickup = pickupTime === "07:00" && !isAfternoonHalfDay;
+
+        if (!canUseEarlyPickup) {
+          earlyInput.checked = false;
+          earlyInput.disabled = true;
+
+          if (label) {
+            label.style.opacity = "0.55";
+          }
+
+          if (textLabel) {
+            textLabel.textContent =
+              "Early pickup not available for afternoon half-day hires";
+          }
+        } else {
+          earlyInput.disabled = false;
+
+          if (label) {
+            label.style.opacity = "";
+          }
+
+          if (textLabel) {
+            textLabel.textContent = "Early pickup (£20)";
+          }
         }
       }
 
@@ -13674,6 +13722,8 @@ ${mobileOutstandingText}
           document.getElementById("edit-early").checked =
             booking?.extras?.earlyPickup || false;
 
+          enforceAdminEarlyPickupRules();
+
           /* ===============================
              🔥 OPEN MODAL
           =============================== */
@@ -14501,12 +14551,25 @@ Equine Transport UK`;
             document.getElementById("edit-duration").value,
           );
 
+          const requestedEarlyPickup =
+            document.getElementById("edit-early")?.checked || false;
+
+          const isAfternoonHalfDay =
+            durationDays === 0.5 && pickupTime === "13:00";
+
+          if (requestedEarlyPickup && isAfternoonHalfDay) {
+            document.getElementById("edit-early").checked = false;
+
+            return alert(
+              "Early pickup is not available for afternoon half-day hires.",
+            );
+          }
+
           const extras = {
             dartford: Number(
               document.getElementById("edit-dartford")?.value || 0,
             ),
-            earlyPickup:
-              document.getElementById("edit-early")?.checked || false,
+            earlyPickup: requestedEarlyPickup && pickupTime === "07:00",
           };
 
           const hireTotal = Number(
@@ -15116,10 +15179,20 @@ Equine Transport UK`;
 
             clearEditError();
 
-            if (id === "edit-vehicle" || id === "edit-duration") {
+            if (
+              id === "edit-vehicle" ||
+              id === "edit-duration" ||
+              id === "edit-time"
+            ) {
               enforceAdminVehicleDurationRules(
                 document.getElementById("edit-vehicle")?.value,
               );
+
+              enforceAdminEarlyPickupRules();
+            }
+
+            if (id === "edit-early") {
+              enforceAdminEarlyPickupRules();
             }
 
             clearTimeout(window._adminPriceTimer);
