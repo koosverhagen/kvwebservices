@@ -1010,6 +1010,16 @@ function applyBookingWeekendHalfDayRule(dateStr, vehicle, showNotice = false) {
   return false;
 }
 
+function getWeekendHalfDayNotice(dateStr, vehicle) {
+  if (!dateStr || !vehicle) return "";
+
+  if (shouldHideHalfDayForDateAndVehicle(dateStr, vehicle)) {
+    return " No 1/2 day hires are available during weekends.";
+  }
+
+  return "";
+}
+
 function safeRenderAvailability(html) {
   if (!availabilityResults) return;
 
@@ -4876,12 +4886,14 @@ async function checkBookingFormAvailability() {
     }
 
     if (statusEl) {
+      const weekendNotice = getWeekendHalfDayNotice(pickupDate, vehicle);
+
       if (BOOKING_WEEKEND_HALF_DAY_NOTICE) {
         statusEl.textContent =
           "No 1/2 day hires are available during weekends. Duration has been changed to 1 day.";
         statusEl.className = "availability-status error full";
       } else {
-        statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
+        statusEl.textContent = `${vehicle.name} is available for the selected date and duration.${weekendNotice}`;
         statusEl.className = "availability-status ok full";
       }
 
