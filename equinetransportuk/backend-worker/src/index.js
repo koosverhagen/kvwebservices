@@ -6502,8 +6502,10 @@ async function handleAdminBookingUpdate(request, env) {
 
     /* ===============================
    🔒 FULLY PAID BOOKING SAFETY
-   Allow operational/admin edits.
-   Only block changes that alter the paid financial agreement.
+   Allow admin corrections.
+   Allow ADDING extras after full payment:
+   - re-opens outstanding for the added extra
+   - customer can pay via the normal outstanding link
 ================================ */
 
     const dateChanged =
@@ -6513,31 +6515,60 @@ async function handleAdminBookingUpdate(request, env) {
 
     const durationChanged = durationDays !== Number(existing.durationDays);
 
-    const priceChanged = hireTotal !== Number(existing.hireTotal || 0);
+    const oldExtrasTotal = Number(
+      existing.extrasTotal ||
+        Number(existing.dartfordTotal || 0) +
+          Number(existing.earlyPickupTotal || 0),
+    );
 
-    const financialChange = durationChanged || priceChanged || extrasChanged;
+    const newExtrasTotal = Number(extrasTotal || 0);
 
-    /*
-  Fully paid bookings may still need admin corrections:
-  - lorry change
-  - date/time correction
-  - customer reassignment
-  - DVLA/form/paper-form status
-  - admin note
-  - handover/admin details
+    const extrasDelta = Number((newExtrasTotal - oldExtrasTotal).toFixed(2));
 
-  But changing duration, price or extras changes the paid agreement,
-  so those should still use refund/payment tools first.
-*/
-    if (existing.outstandingPaid === true && financialChange) {
+    const oldTotal = Number(existing.hireTotal || existing.priceTotal || 0);
+
+    const projectedFinalTotal =
+      hireTotal > 0
+        ? hireTotal
+        : Math.max(
+            0,
+            calculateServerBaseCost(vehicleId, durationDays, pickupDate) +
+              newExtrasTotal,
+          );
+
+    const priceChanged =
+      Number(projectedFinalTotal.toFixed(2)) !== Number(oldTotal.toFixed(2));
+
+    const extrasAdded = extrasChanged && extrasDelta > 0;
+
+    const extrasRemovedOrReduced = extrasChanged && extrasDelta < 0;
+
+    const priceChangeIsOnlyAddedExtras =
+      extrasAdded &&
+      !durationChanged &&
+      Math.abs(projectedFinalTotal - oldTotal - extrasDelta) < 0.05;
+
+    const blockedFinancialChange =
+      durationChanged ||
+      extrasRemovedOrReduced ||
+      (priceChanged && !priceChangeIsOnlyAddedExtras);
+
+    if (existing.outstandingPaid === true && blockedFinancialChange) {
       return json(
         {
           error:
-            "Outstanding already paid. You can save admin details, lorry, date/time, customer, form/DVLA and notes, but price, duration or extras changes need refund/payment tools first.",
+            "Outstanding already paid. You can add extras and the outstanding balance will reopen for the added amount. Price reductions, duration changes or other paid-price changes need refund/payment tools first.",
         },
         400,
       );
     }
+
+    const financialChange = durationChanged || priceChanged || extrasChanged;
+
+    const shouldSendExtraOutstandingEmail =
+      existing.outstandingPaid === true &&
+      priceChangeIsOnlyAddedExtras &&
+      extrasDelta > 0;
 
     const isEditChange =
       vehicleChanged || dateChanged || timeChanged || financialChange;
@@ -6616,13 +6647,20 @@ async function handleAdminBookingUpdate(request, env) {
     const existingPaidNow = Number(existing.paidNow || 0);
     const existingConfirmationFee = Number(existing.confirmationFee || 0);
 
-    const amountAlreadyPaid = isAdminNoPaymentBooking
-      ? existingPaidNow
-      : Math.max(
-          existingPaidNow,
-          existingConfirmationFee,
-          getExpectedConfirmationFee(vehicleId),
-        );
+    const previousTotal = Number(
+      existing.hireTotal || existing.priceTotal || 0,
+    );
+
+    const amountAlreadyPaid =
+      existing.outstandingPaid === true
+        ? previousTotal
+        : isAdminNoPaymentBooking
+          ? existingPaidNow
+          : Math.max(
+              existingPaidNow,
+              existingConfirmationFee,
+              getExpectedConfirmationFee(vehicleId),
+            );
 
     const baseCost = calculateServerBaseCost(
       vehicleId,
@@ -6630,10 +6668,12 @@ async function handleAdminBookingUpdate(request, env) {
       pickupDate,
     );
 
-    const finalTotal =
-      hireTotal > 0 ? hireTotal : Math.max(0, baseCost + extrasTotal);
+    const finalTotal = projectedFinalTotal;
 
-    const outstandingAmount = Math.max(0, finalTotal - amountAlreadyPaid);
+    const outstandingAmount = Math.max(
+      0,
+      Number((finalTotal - amountAlreadyPaid).toFixed(2)),
+    );
 
     const now = new Date().toISOString();
 
@@ -6849,10 +6889,51 @@ async function handleAdminBookingUpdate(request, env) {
 
     await moveBookingInKv(env, existing, nextBooking);
 
+    let extraOutstandingEmailSent = false;
+
     /* ===============================
-       📧 CUSTOMER REASSIGNED
-       Send links to the new customer automatically.
-    =============================== */
+   📧 EXTRA ADDED AFTER FULL PAYMENT
+   Re-send booking links so customer can pay the new outstanding extra.
+=============================== */
+
+    if (
+      shouldSendExtraOutstandingEmail &&
+      Number(nextBooking.outstandingAmount || 0) > 0
+    ) {
+      try {
+        extraOutstandingEmailSent = await sendAdminBookingLinksEmail(
+          env,
+          nextBooking,
+        );
+
+        const auditKey = `audit:${bookingId}`;
+
+        let audit = [];
+
+        try {
+          audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+        } catch {
+          audit = [];
+        }
+
+        audit.unshift({
+          type: "extra_outstanding_reopened",
+          amount: Number(nextBooking.outstandingAmount || 0),
+          extrasDelta,
+          emailSent: extraOutstandingEmailSent,
+          at: new Date().toISOString(),
+        });
+
+        await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+      } catch (err) {
+        console.warn("⚠️ Extra outstanding email failed:", err);
+      }
+    }
+
+    /* ===============================
+   📧 CUSTOMER REASSIGNED
+   Send links to the new customer automatically.
+=============================== */
 
     if (customerId && customerId !== originalCustomerId) {
       try {
@@ -6941,6 +7022,8 @@ async function handleAdminBookingUpdate(request, env) {
     return json({
       ok: true,
       booking: nextBooking,
+      outstandingReopened: shouldSendExtraOutstandingEmail,
+      extraOutstandingEmailSent,
     });
   } catch (err) {
     console.error("❌ ADMIN BOOKING UPDATE ERROR:", err);
