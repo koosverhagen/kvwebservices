@@ -29,13 +29,81 @@
    Reset, browser fixes, variables
 ====================================================== */
 
-/* Safari desktop only: Increase button text size */
+/* ======================================================
+   SAFARI DESKTOP ONLY — NORMALISE BUTTONS + FORM FIELDS
+   Makes Safari match Chrome sizing.
+====================================================== */
+
 @media not all and (min-resolution: 0.001dpcm) {
   @supports (-webkit-appearance: none) {
-    .btn,
-    button.btn,
-    a.btn {
-      font-size: 20px !important;
+    @media (hover: hover) and (pointer: fine) {
+      button,
+      .btn,
+      button.btn,
+      a.btn,
+      input,
+      select,
+      textarea {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+
+      input,
+      select,
+      textarea {
+        min-height: 54px !important;
+        padding: 14px 16px !important;
+        border-radius: 14px !important;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      select {
+        height: 54px !important;
+      }
+
+      button,
+      .btn,
+      button.btn,
+      a.btn {
+        min-height: 54px !important;
+        padding: 14px 22px !important;
+        font-weight: 800 !important;
+      }
+
+      .deposit-card input,
+      .deposit-card button,
+      #submit-btn {
+        font-size: 22px !important;
+        min-height: 66px !important;
+        padding: 18px 22px !important;
+        border-radius: 16px !important;
+      }
+
+      .deposit-card label {
+        font-size: 24px !important;
+        line-height: 1.25 !important;
+      }
+
+      .deposit-card h2 {
+        font-size: 42px !important;
+        line-height: 1.15 !important;
+      }
+
+      .deposit-card p,
+      .deposit-note,
+      #booking-info,
+      #message {
+        font-size: 24px !important;
+        line-height: 1.35 !important;
+      }
+
+      .stripe-card {
+        min-height: 66px !important;
+        padding: 18px 22px !important;
+        border-radius: 16px !important;
+        display: flex !important;
+        align-items: center !important;
+      }
     }
   }
 }

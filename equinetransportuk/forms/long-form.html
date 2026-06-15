@@ -319,7 +319,8 @@
         height: 8px;
       }
       /* ==========================================
-   SAFARI (DESKTOP + MOBILE)
+   SAFARI DESKTOP ONLY
+   Match Chrome button + form input sizing
 ========================================== */
 
       .btn.primary.full {
@@ -329,6 +330,51 @@
       @supports (-webkit-hyphens: none) and (not (overflow: clip)) {
         .btn.primary.full {
           font-size: 19px !important;
+        }
+      }
+
+      @media not all and (min-resolution: 0.001dpcm) {
+        @supports (-webkit-appearance: none) {
+          @media (hover: hover) and (pointer: fine) {
+            input:not([type="checkbox"]):not([type="radio"]),
+            select,
+            textarea,
+            button,
+            .btn {
+              font-size: 18px !important;
+              line-height: 1.25 !important;
+            }
+
+            input:not([type="checkbox"]):not([type="radio"]),
+            select,
+            textarea {
+              min-height: 54px !important;
+              padding: 14px 16px !important;
+              border-radius: 14px !important;
+              -webkit-text-size-adjust: 100%;
+            }
+
+            select {
+              height: 54px !important;
+            }
+
+            button,
+            .btn {
+              min-height: 54px !important;
+              padding: 14px 22px !important;
+              font-weight: 800 !important;
+            }
+
+            label {
+              font-size: 16px !important;
+              line-height: 1.25 !important;
+            }
+
+            .btn.primary.full {
+              font-size: 20px !important;
+              min-height: 58px !important;
+            }
+          }
         }
       }
 

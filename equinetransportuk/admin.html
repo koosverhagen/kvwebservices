@@ -4759,6 +4759,79 @@
 
         font-size: 13px !important;
       }
+
+      /* ======================================================
+   SAFARI DESKTOP ONLY — ADMIN FORM/BUTTON SIZE FIX
+   Keeps iPhone/mobile unchanged.
+====================================================== */
+
+      @media not all and (min-resolution: 0.001dpcm) {
+        @supports (-webkit-appearance: none) {
+          @media (hover: hover) and (pointer: fine) {
+            input,
+            select,
+            textarea,
+            button,
+            .btn,
+            .contact-btn,
+            .mobile-action-btn,
+            .admin-btn,
+            .edit-btn {
+              font-size: 18px !important;
+              line-height: 1.25 !important;
+            }
+
+            input,
+            select,
+            textarea {
+              min-height: 54px !important;
+              padding: 14px 16px !important;
+              border-radius: 14px !important;
+              -webkit-text-size-adjust: 100%;
+            }
+
+            select {
+              height: 54px !important;
+            }
+
+            button,
+            .btn,
+            .contact-btn,
+            .mobile-action-btn,
+            .admin-btn,
+            .edit-btn {
+              min-height: 54px !important;
+              padding: 14px 22px !important;
+              border-radius: 16px !important;
+              font-weight: 800 !important;
+            }
+
+            label {
+              font-size: 18px !important;
+              line-height: 1.25 !important;
+            }
+
+            .tiny,
+            .small,
+            .muted {
+              font-size: 16px !important;
+            }
+
+            .et-modal input,
+            .et-modal select,
+            .et-modal textarea {
+              font-size: 20px !important;
+              min-height: 58px !important;
+            }
+
+            .et-modal button,
+            .et-modal .btn {
+              font-size: 20px !important;
+              min-height: 58px !important;
+            }
+          }
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
