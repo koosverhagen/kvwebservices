@@ -4832,6 +4832,107 @@
           }
         }
       }
+      /* ======================================================
+   SAFARI DESKTOP FIX — ADMIN INPUTS / SELECTS / BUTTONS
+   Fixes Safari making form controls too small.
+   Mobile/iPhone unchanged.
+====================================================== */
+
+      @supports (-webkit-hyphens: none) and (not (overflow: clip)) {
+        @media (hover: hover) and (pointer: fine) {
+          input,
+          select,
+          textarea,
+          button,
+          .btn,
+          .contact-btn,
+          .mobile-action-btn {
+            font-size: 18px !important;
+            line-height: 1.25 !important;
+            -webkit-text-size-adjust: 100%;
+          }
+
+          input,
+          select,
+          textarea {
+            min-height: 54px !important;
+            padding: 14px 16px !important;
+            border-radius: 14px !important;
+            background-color: #fff !important;
+          }
+
+          select {
+            height: 54px !important;
+            padding-right: 42px !important;
+            appearance: auto !important;
+            -webkit-appearance: menulist !important;
+          }
+
+          button,
+          .btn,
+          .contact-btn,
+          .mobile-action-btn {
+            min-height: 54px !important;
+            padding: 14px 22px !important;
+            border-radius: 16px !important;
+            font-weight: 800 !important;
+          }
+
+          label {
+            font-size: 18px !important;
+            line-height: 1.25 !important;
+          }
+
+          .filters-grid input,
+          .filters-grid select,
+          .search-grid input,
+          .search-grid select,
+          #booking-search,
+          #form-filter,
+          #time-filter,
+          #vehicle-filter,
+          #voucher-filter,
+          #deposit-filter,
+          #from-date,
+          #to-date {
+            font-size: 18px !important;
+            min-height: 58px !important;
+            height: 58px !important;
+            padding: 15px 18px !important;
+            border-radius: 16px !important;
+          }
+
+          #search-btn,
+          #refresh-bookings-btn,
+          #apply-filters-btn {
+            font-size: 18px !important;
+            min-height: 58px !important;
+            padding: 15px 24px !important;
+            border-radius: 16px !important;
+          }
+
+          .et-modal input,
+          .et-modal select,
+          .et-modal textarea {
+            font-size: 20px !important;
+            min-height: 58px !important;
+            padding: 15px 18px !important;
+            border-radius: 16px !important;
+          }
+
+          .et-modal button,
+          .et-modal .btn {
+            font-size: 20px !important;
+            min-height: 58px !important;
+            padding: 15px 24px !important;
+            border-radius: 16px !important;
+          }
+
+          .et-modal label {
+            font-size: 19px !important;
+          }
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
