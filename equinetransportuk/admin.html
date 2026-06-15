@@ -4762,156 +4762,289 @@
 
       /* ======================================================
    SAFARI DESKTOP FIX — ADMIN ONLY
-   One clean block only.
-   Does NOT touch booking cards or edit modal.
+   Chrome-like sizing for Safari desktop.
+   Booking cards stay compact.
 ====================================================== */
 
-      html.safari-desktop select {
-        -webkit-appearance: menulist !important;
-        appearance: menulist !important;
-      }
+      @media (min-width: 769px) {
+        html.safari-desktop select {
+          -webkit-appearance: menulist !important;
+          appearance: menulist !important;
+        }
 
-      /* Find Bookings filter area */
-      html.safari-desktop #booking-search,
-      html.safari-desktop #form-filter,
-      html.safari-desktop #time-filter,
-      html.safari-desktop #vehicle-filter,
-      html.safari-desktop #voucher-filter,
-      html.safari-desktop #deposit-filter,
-      html.safari-desktop #from-date,
-      html.safari-desktop #to-date {
-        font-size: 16px !important;
-        line-height: 1.25 !important;
-        min-height: 44px !important;
-        height: 44px !important;
-        padding: 9px 12px !important;
-        border-radius: 11px !important;
-      }
+        /* ===============================
+     FIND BOOKINGS FILTERS
+  =============================== */
 
-      /* Find Bookings search button */
-      html.safari-desktop #search-btn,
-      html.safari-desktop #apply-filters-btn,
-      html.safari-desktop #refresh-bookings-btn {
-        font-size: 16px !important;
-        line-height: 1.2 !important;
-        min-height: 44px !important;
-        padding: 9px 16px !important;
-        border-radius: 12px !important;
-        font-weight: 800 !important;
-      }
+        html.safari-desktop #booking-search,
+        html.safari-desktop #form-filter,
+        html.safari-desktop #time-filter,
+        html.safari-desktop #vehicle-filter,
+        html.safari-desktop #voucher-filter,
+        html.safari-desktop #deposit-filter,
+        html.safari-desktop #from-date,
+        html.safari-desktop #to-date {
+          width: 100% !important;
+          font-size: 16px !important;
+          line-height: 1.25 !important;
+          min-height: 46px !important;
+          height: 46px !important;
+          padding: 10px 13px !important;
+          border-radius: 12px !important;
+          border: 1px solid var(--line) !important;
+          background: #fff !important;
+          color: #111827 !important;
+        }
 
-      /* Voucher form only */
-      html.safari-desktop #voucher-pin,
-      html.safari-desktop #voucher-code,
-      html.safari-desktop #voucher-value,
-      html.safari-desktop #voucher-type,
-      html.safari-desktop #voucher-expires,
-      html.safari-desktop #voucher-vehicle,
-      html.safari-desktop #voucher-min-duration,
-      html.safari-desktop #voucher-status {
-        font-size: 16px !important;
-        line-height: 1.25 !important;
-        min-height: 44px !important;
-        height: 44px !important;
-        padding: 9px 12px !important;
-        border-radius: 11px !important;
-      }
+        html.safari-desktop #search-btn,
+        html.safari-desktop #apply-filters-btn,
+        html.safari-desktop #refresh-bookings-btn {
+          font-size: 16px !important;
+          line-height: 1.2 !important;
+          min-height: 46px !important;
+          height: 46px !important;
+          padding: 10px 18px !important;
+          border-radius: 13px !important;
+          font-weight: 800 !important;
+        }
 
-      html.safari-desktop #save-voucher-btn,
-      html.safari-desktop #clear-voucher-btn,
-      html.safari-desktop #refresh-vouchers-btn {
-        font-size: 16px !important;
-        min-height: 44px !important;
-        padding: 9px 16px !important;
-        border-radius: 12px !important;
-        font-weight: 800 !important;
-      }
+        /* ===============================
+     VOUCHERS
+  =============================== */
 
-      /* Customer email modal only */
-      html.safari-desktop #contact-email-modal input,
-      html.safari-desktop #contact-email-modal textarea {
-        font-size: 16px !important;
-        line-height: 1.35 !important;
-        min-height: 44px !important;
-        padding: 9px 12px !important;
-        border-radius: 11px !important;
-      }
+        html.safari-desktop #voucher-pin,
+        html.safari-desktop #voucher-code,
+        html.safari-desktop #voucher-value,
+        html.safari-desktop #voucher-type,
+        html.safari-desktop #voucher-expires,
+        html.safari-desktop #voucher-vehicle,
+        html.safari-desktop #voucher-min-duration,
+        html.safari-desktop #voucher-status {
+          width: 100% !important;
+          font-size: 16px !important;
+          line-height: 1.25 !important;
+          min-height: 46px !important;
+          height: 46px !important;
+          padding: 10px 13px !important;
+          border-radius: 12px !important;
+          border: 1px solid var(--line) !important;
+          background: #fff !important;
+          color: #111827 !important;
+        }
 
-      html.safari-desktop #contact-email-modal button {
-        font-size: 16px !important;
-        min-height: 44px !important;
-        padding: 9px 16px !important;
-        border-radius: 12px !important;
-        font-weight: 800 !important;
-      }
+        html.safari-desktop #save-voucher-btn,
+        html.safari-desktop #clear-voucher-btn,
+        html.safari-desktop #refresh-vouchers-btn {
+          font-size: 16px !important;
+          min-height: 46px !important;
+          height: 46px !important;
+          padding: 10px 18px !important;
+          border-radius: 13px !important;
+          font-weight: 800 !important;
+        }
 
-      /* Hard reset: never enlarge booking cards in Safari */
-      html.safari-desktop #bookings-body input,
-      html.safari-desktop #bookings-body select,
-      html.safari-desktop #bookings-body textarea,
-      html.safari-desktop #bookings-body button,
-      html.safari-desktop #bookings-body .btn,
-      html.safari-desktop #bookings-body .pill,
-      html.safari-desktop #bookings-body .contact-btn,
-      html.safari-desktop #bookings-body .status-pill,
-      html.safari-desktop #bookings-body .badge {
-        font-size: revert !important;
-        min-height: revert !important;
-        height: revert !important;
-        padding: revert !important;
-        border-radius: revert !important;
-        line-height: revert !important;
-      }
+        /* ===============================
+     CUSTOMERS SECTION
+  =============================== */
 
-      /* Re-apply tidy booking card button sizes */
-      html.safari-desktop #bookings-body .contact-btn {
-        height: 34px !important;
-        min-height: 34px !important;
-        padding: 0 12px !important;
-        border-radius: 999px !important;
-        font-size: 12px !important;
-        line-height: 1.15 !important;
-      }
+        html.safari-desktop #customer-list-search {
+          width: 100% !important;
+          font-size: 16px !important;
+          line-height: 1.25 !important;
+          min-height: 46px !important;
+          height: 46px !important;
+          padding: 10px 13px !important;
+          border-radius: 12px !important;
+          border: 1px solid var(--line) !important;
+          background: #fff !important;
+          color: #111827 !important;
+        }
 
-      html.safari-desktop #bookings-body .pill {
-        min-height: 30px !important;
-        padding: 6px 12px !important;
-        border-radius: 999px !important;
-        font-size: 12px !important;
-        line-height: 1.15 !important;
-      }
+        html.safari-desktop #customer-add-btn {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
 
-      html.safari-desktop #bookings-body .copy-btn,
-      html.safari-desktop #bookings-body .btn-small {
-        min-height: 30px !important;
-        padding: 5px 9px !important;
-        border-radius: 10px !important;
-        font-size: 12px !important;
-        line-height: 1.15 !important;
-      }
+          font-size: 16px !important;
+          line-height: 1.2 !important;
+          min-height: 46px !important;
+          height: 46px !important;
+          padding: 10px 18px !important;
+          border-radius: 13px !important;
+          font-weight: 800 !important;
 
-      /* Reset customer page so Add Customer does not become huge */
-      html.safari-desktop #customers-section input,
-      html.safari-desktop #customers-section button,
-      html.safari-desktop #customers-section .btn {
-        font-size: revert !important;
-        min-height: revert !important;
-        height: revert !important;
-        padding: revert !important;
-        border-radius: revert !important;
-      }
+          background: var(--accent) !important;
+          color: #fff !important;
+          border: 1px solid var(--accent) !important;
+        }
 
-      /* Reset edit modal so it stays Chrome-like */
-      html.safari-desktop #edit-modal input,
-      html.safari-desktop #edit-modal select,
-      html.safari-desktop #edit-modal textarea,
-      html.safari-desktop #edit-modal button,
-      html.safari-desktop #edit-modal .btn {
-        font-size: revert !important;
-        min-height: revert !important;
-        height: revert !important;
-        padding: revert !important;
-        border-radius: revert !important;
+        /* ===============================
+     CUSTOMER MODAL
+  =============================== */
+
+        html.safari-desktop #customer-modal input,
+        html.safari-desktop #customer-modal textarea {
+          width: 100% !important;
+          font-size: 16px !important;
+          line-height: 1.3 !important;
+          min-height: 46px !important;
+          padding: 10px 13px !important;
+          border-radius: 12px !important;
+          border: 1px solid var(--line) !important;
+          background: #fff !important;
+          color: #111827 !important;
+        }
+
+        html.safari-desktop #customer-modal button,
+        html.safari-desktop #customer-modal .btn {
+          font-size: 16px !important;
+          min-height: 44px !important;
+          padding: 9px 16px !important;
+          border-radius: 12px !important;
+          font-weight: 800 !important;
+        }
+
+        /* ===============================
+     EDIT BOOKING MODAL
+  =============================== */
+
+        html.safari-desktop #edit-modal .et-modal-card {
+          border-radius: 18px !important;
+        }
+
+        html.safari-desktop #edit-modal .field {
+          margin-bottom: 12px !important;
+        }
+
+        html.safari-desktop #edit-modal label {
+          display: block !important;
+          font-size: 15px !important;
+          line-height: 1.25 !important;
+          font-weight: 800 !important;
+          margin-bottom: 5px !important;
+        }
+
+        html.safari-desktop #edit-modal input:not([type="checkbox"]),
+        html.safari-desktop #edit-modal select,
+        html.safari-desktop #edit-modal textarea {
+          width: 100% !important;
+          font-size: 16px !important;
+          line-height: 1.3 !important;
+          min-height: 46px !important;
+          height: auto !important;
+          padding: 10px 13px !important;
+          border-radius: 12px !important;
+          border: 1px solid var(--line) !important;
+          background: #fff !important;
+          color: #111827 !important;
+        }
+
+        html.safari-desktop #edit-modal select {
+          height: 46px !important;
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+        }
+
+        html.safari-desktop #edit-modal textarea {
+          min-height: 90px !important;
+        }
+
+        html.safari-desktop #edit-modal input[type="checkbox"] {
+          width: 18px !important;
+          height: 18px !important;
+          min-width: 18px !important;
+          min-height: 18px !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          transform: none !important;
+        }
+
+        html.safari-desktop #edit-dartford {
+          max-width: 90px !important;
+        }
+
+        html.safari-desktop #edit-modal button,
+        html.safari-desktop #edit-modal .btn {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+
+          font-size: 15px !important;
+          line-height: 1.2 !important;
+          min-height: 44px !important;
+          height: auto !important;
+          padding: 9px 16px !important;
+          border-radius: 12px !important;
+          font-weight: 800 !important;
+        }
+
+        html.safari-desktop #edit-modal .modal-close {
+          width: 38px !important;
+          height: 38px !important;
+          min-height: 38px !important;
+          padding: 0 !important;
+          border-radius: 10px !important;
+          font-size: 20px !important;
+        }
+
+        /* ===============================
+     CONTACT CUSTOMER EMAIL MODAL
+  =============================== */
+
+        html.safari-desktop #contact-email-modal input,
+        html.safari-desktop #contact-email-modal textarea {
+          width: 100% !important;
+          font-size: 16px !important;
+          line-height: 1.35 !important;
+          min-height: 46px !important;
+          padding: 10px 13px !important;
+          border-radius: 12px !important;
+          border: 1px solid var(--line) !important;
+          background: #fff !important;
+          color: #111827 !important;
+        }
+
+        html.safari-desktop #contact-email-modal textarea {
+          min-height: 320px !important;
+        }
+
+        html.safari-desktop #contact-email-modal button {
+          font-size: 16px !important;
+          min-height: 44px !important;
+          padding: 9px 16px !important;
+          border-radius: 12px !important;
+          font-weight: 800 !important;
+        }
+
+        /* ===============================
+     BOOKING CARDS — KEEP COMPACT
+  =============================== */
+
+        html.safari-desktop #bookings-body .contact-btn {
+          height: 34px !important;
+          min-height: 34px !important;
+          padding: 0 12px !important;
+          border-radius: 999px !important;
+          font-size: 12px !important;
+          line-height: 1.15 !important;
+        }
+
+        html.safari-desktop #bookings-body .pill {
+          min-height: 30px !important;
+          padding: 6px 12px !important;
+          border-radius: 999px !important;
+          font-size: 12px !important;
+          line-height: 1.15 !important;
+        }
+
+        html.safari-desktop #bookings-body .copy-btn,
+        html.safari-desktop #bookings-body .btn-small {
+          min-height: 30px !important;
+          padding: 5px 9px !important;
+          border-radius: 10px !important;
+          font-size: 12px !important;
+          line-height: 1.15 !important;
+        }
       }
     </style>
 
