@@ -4933,9 +4933,131 @@
           }
         }
       }
+
+      /* ======================================================
+   SAFARI DESKTOP FIX — ADMIN CONTROLS
+   Uses JS-added .safari-desktop class, so it actually applies.
+====================================================== */
+
+      html.safari-desktop input,
+      html.safari-desktop select,
+      html.safari-desktop textarea,
+      html.safari-desktop button,
+      html.safari-desktop .btn,
+      html.safari-desktop .contact-btn {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+
+      html.safari-desktop input,
+      html.safari-desktop select,
+      html.safari-desktop textarea {
+        min-height: 56px !important;
+        height: auto !important;
+        padding: 15px 18px !important;
+        border-radius: 16px !important;
+      }
+
+      html.safari-desktop select {
+        height: 56px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-right: 44px !important;
+        -webkit-appearance: menulist !important;
+        appearance: menulist !important;
+      }
+
+      html.safari-desktop button,
+      html.safari-desktop .btn,
+      html.safari-desktop .contact-btn {
+        min-height: 56px !important;
+        padding: 15px 24px !important;
+        border-radius: 16px !important;
+        font-weight: 800 !important;
+      }
+
+      html.safari-desktop label {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+
+      /* Find Bookings filter area */
+      html.safari-desktop #booking-search,
+      html.safari-desktop #form-filter,
+      html.safari-desktop #time-filter,
+      html.safari-desktop #vehicle-filter,
+      html.safari-desktop #voucher-filter,
+      html.safari-desktop #deposit-filter,
+      html.safari-desktop #from-date,
+      html.safari-desktop #to-date,
+      html.safari-desktop .filters-card input,
+      html.safari-desktop .filters-card select {
+        font-size: 19px !important;
+        min-height: 60px !important;
+        height: 60px !important;
+        padding: 16px 20px !important;
+        border-radius: 18px !important;
+      }
+
+      /* Search button */
+      html.safari-desktop #search-btn,
+      html.safari-desktop #apply-filters-btn,
+      html.safari-desktop #refresh-bookings-btn,
+      html.safari-desktop .filters-card button {
+        font-size: 19px !important;
+        min-height: 60px !important;
+        padding: 16px 24px !important;
+        border-radius: 18px !important;
+      }
+
+      /* Edit booking modal */
+      html.safari-desktop .et-modal input,
+      html.safari-desktop .et-modal select,
+      html.safari-desktop .et-modal textarea {
+        font-size: 21px !important;
+        min-height: 62px !important;
+        padding: 17px 20px !important;
+        border-radius: 18px !important;
+      }
+
+      html.safari-desktop .et-modal select {
+        height: 62px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+      }
+
+      html.safari-desktop .et-modal button,
+      html.safari-desktop .et-modal .btn {
+        font-size: 21px !important;
+        min-height: 62px !important;
+        padding: 17px 26px !important;
+        border-radius: 18px !important;
+      }
+
+      html.safari-desktop .et-modal label {
+        font-size: 20px !important;
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
+
+    <script>
+      (function () {
+        const ua = navigator.userAgent || "";
+
+        const isSafari =
+          /Safari/i.test(ua) &&
+          !/Chrome|Chromium|CriOS|Edg|OPR|Firefox/i.test(ua);
+
+        const isDesktop =
+          window.matchMedia &&
+          window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+        if (isSafari && isDesktop) {
+          document.documentElement.classList.add("safari-desktop");
+        }
+      })();
+    </script>
   </head>
 
   <body>
