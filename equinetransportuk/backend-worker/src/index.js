@@ -128,7 +128,12 @@ async function processReminders(env) {
           paid: booking.confirmationFee,
           outstanding: booking.outstandingAmount,
           total: booking.hireTotal,
-          formType: booking.requiredFormType,
+          formType: booking.requiredFormType || booking.formType,
+          formCompleted:
+            booking.formCompleted === true ||
+            booking.form_completed === 1 ||
+            booking.paperFormReceived === true ||
+            booking.formSource === "paper",
           depositPaid: booking.depositPaid,
         },
 
@@ -5824,7 +5829,12 @@ async function sendAdminBookingLinksEmail(env, booking) {
       paid: 0,
       outstanding: booking.outstandingAmount,
       total: booking.hireTotal,
-      formType: booking.requiredFormType,
+      formType: booking.requiredFormType || booking.formType,
+      formCompleted:
+        booking.formCompleted === true ||
+        booking.form_completed === 1 ||
+        booking.paperFormReceived === true ||
+        booking.formSource === "paper",
       depositPaid: booking.depositPaid,
     },
     formLink: booking.requiredFormLink,
@@ -9265,6 +9275,12 @@ function buildModernEmail({
   const safeDepositLink = escapeHtml(depositLink || "");
   const safeOutstandingLink = escapeHtml(outstandingLink || "");
 
+  const formCompleted =
+    booking?.formCompleted === true ||
+    booking?.form_completed === 1 ||
+    booking?.paperFormReceived === true ||
+    booking?.formSource === "paper";
+
   const paidNow = Number(booking?.paid || 0);
 
   const outstanding = Number(booking?.outstanding || 0);
@@ -9350,54 +9366,78 @@ Please complete the next steps below for your upcoming hire.
         </p>
       </div>
 
-      <!-- FORM -->
+            <!-- FORM -->
       <h2 style="margin:0 0 8px;color:#1673ea;font-size:22px;">
-        ${safeFormType}
+        Hire Form
       </h2>
 
-      <p style="margin:0 0 10px;font-size:16px;">
-        Please complete the required hire form before collection.
-      </p>
+      ${
+        formCompleted
+          ? `
+            <div style="
+              margin:12px 0 26px;
+              padding:18px 20px;
+              background:#edf8f0;
+              border:1px solid #9ed2ab;
+              border-radius:12px;
+              color:#215c31;
+              font-size:15px;
+              line-height:1.7;
+            ">
+              <strong>Form received:</strong>
+              Your hire form has already been completed. No further action is required.
+            </div>
+          `
+          : `
+            <h3 style="margin:0 0 8px;color:#1673ea;font-size:18px;">
+              ${safeFormType}
+            </h3>
 
-      <div style="text-align:center;margin:18px 0 14px;">
-        <a href="${safeFormLink}"
-           style="
-             display:inline-block;
-             background:#1673ea;
-             color:#ffffff;
-             text-decoration:none;
-             font-weight:700;
-             font-size:16px;
-             line-height:1;
-             padding:16px 28px;
-             border-radius:10px;
-           ">
-          Complete Form
-        </a>
-      </div>
+            <p style="margin:0 0 10px;font-size:16px;">
+              Please complete the required hire form before collection.
+            </p>
 
-      <div style="
-        margin:20px 0 26px;
-        padding:18px 20px;
-        background:#f4ecd8;
-        border:1px solid #e5b54a;
-        border-radius:12px;
-        color:#6f4c00;
-        font-size:15px;
-        line-height:1.7;
-      ">
-        <strong>Why this matters:</strong>
-        This form is required before the hire can proceed. It allows us to confirm your details, licence information and hire readiness.
-      </div>
+            <div style="text-align:center;margin:18px 0 14px;">
+              <a href="${safeFormLink}"
+                 style="
+                   display:inline-block;
+                   background:#1673ea;
+                   color:#ffffff;
+                   text-decoration:none;
+                   font-weight:700;
+                   font-size:16px;
+                   line-height:1;
+                   padding:16px 28px;
+                   border-radius:10px;
+                 ">
+                Complete Form
+              </a>
+            </div>
 
-      <p style="margin:0 0 8px;color:#222;font-size:15px;">
-        If the button does not work, please use this link:
-      </p>
-      <p style="margin:0 0 24px;">
-        <a href="${safeFormLink}" style="color:#1673ea;word-break:break-all;">
-          ${safeFormLink}
-        </a>
-      </p>
+            <div style="
+              margin:20px 0 26px;
+              padding:18px 20px;
+              background:#f4ecd8;
+              border:1px solid #e5b54a;
+              border-radius:12px;
+              color:#6f4c00;
+              font-size:15px;
+              line-height:1.7;
+            ">
+              <strong>Why this matters:</strong>
+              This form is required before the hire can proceed. It allows us to confirm your details, licence information and hire readiness.
+            </div>
+
+            <p style="margin:0 0 8px;color:#222;font-size:15px;">
+              If the button does not work, please use this link:
+            </p>
+            <p style="margin:0 0 24px;">
+              <a href="${safeFormLink}" style="color:#1673ea;word-break:break-all;">
+                ${safeFormLink}
+              </a>
+            </p>
+          `
+      }
 
       <!-- DEPOSIT -->
 <h2 style="margin:0 0 8px;color:#1673ea;font-size:22px;">
