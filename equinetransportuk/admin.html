@@ -5043,19 +5043,28 @@
 
     <script>
       (function () {
-        const ua = navigator.userAgent || "";
+        function applySafariDesktopClass() {
+          const ua = navigator.userAgent || "";
+          const vendor = navigator.vendor || "";
 
-        const isSafari =
-          /Safari/i.test(ua) &&
-          !/Chrome|Chromium|CriOS|Edg|OPR|Firefox/i.test(ua);
+          const isAppleSafari =
+            vendor.includes("Apple") &&
+            /Safari/i.test(ua) &&
+            !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR|Firefox/i.test(ua);
 
-        const isDesktop =
-          window.matchMedia &&
-          window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+          const isDesktopLike =
+            window.matchMedia &&
+            window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-        if (isSafari && isDesktop) {
-          document.documentElement.classList.add("safari-desktop");
+          if (isAppleSafari && isDesktopLike) {
+            document.documentElement.classList.add("safari-desktop");
+          }
         }
+
+        applySafariDesktopClass();
+
+        document.addEventListener("DOMContentLoaded", applySafariDesktopClass);
+        window.addEventListener("load", applySafariDesktopClass);
       })();
     </script>
   </head>
