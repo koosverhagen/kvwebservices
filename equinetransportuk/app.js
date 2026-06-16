@@ -137,14 +137,13 @@ function goToStep(step) {
         const vehicle = vehicles.find((v) => v.id === vehicleId);
 
         if (vehicle && !is35T(vehicle)) {
-          const select = document.getElementById("selected-duration"); // ✅ FIXED
+          const select = document.getElementById("selected-duration");
 
           if (select) {
             const half = select.querySelector('option[value="0.5"]');
 
             if (half) {
-              half.disabled = true;
-              half.style.display = "none";
+              showHalfDayAsUnavailable(half, pickupDate, vehicle);
             }
 
             if (select.value === "0.5") {
@@ -296,7 +295,7 @@ const VEHICLE_AVAILABILITY_PROMISES = new Map();
 const RANGE_AVAILABILITY_CACHE = new Map();
 const RANGE_AVAILABILITY_TTL = 60 * 1000;
 
-const PREFETCH_WINDOW_DAYS = 7;
+const PREFETCH_WINDOW_DAYS = 0;
 const PREFETCH_PROMISES = new Map();
 
 function addDaysToDateStr(dateStr, days) {
@@ -783,6 +782,8 @@ const discountMessage = document.getElementById("discount-message");
 
 let selectedAvailability = null;
 
+let BOOKING_WEEKEND_HALF_DAY_NOTICE = false;
+
 /* ===============================
    Next available date button
 ================================ */
@@ -858,7 +859,9 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
   if (!select || !dateStr || !vehicleId) return;
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
-  const is75T = vehicle && !is35T(vehicle);
+  const hideHalfDay = vehicle
+    ? shouldHideHalfDayForDateAndVehicle(dateStr, vehicle)
+    : false;
 
   const options = Array.from(select.options);
 
@@ -872,7 +875,7 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
        🔥 HARD BLOCK: 7.5T HALF DAY
     =============================== */
 
-    if (is75T && duration === 0.5) {
+    if (hideHalfDay && duration === 0.5) {
       available = false;
     } else if (duration === 0.5) {
       const { amData, pmData } = await getHalfDayAvailability(dateStr);
@@ -906,9 +909,12 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
        🔥 FORCE HIDE 7.5T HALF DAY
     =============================== */
 
-    if (is75T && duration === 0.5) {
-      opt.disabled = true;
-      opt.style.display = "none";
+    if (duration === 0.5) {
+      if (hideHalfDay || !available) {
+        showHalfDayAsUnavailable(opt, dateStr, vehicle);
+      } else {
+        showHalfDayAsAvailable(opt);
+      }
     }
   }
 
@@ -921,25 +927,98 @@ async function updateBookingDurationOptions(dateStr, vehicleId) {
   if (selected) {
     const selectedOption = options.find((o) => Number(o.value) === selected);
     if (selectedOption?.disabled) {
-      select.value = is75T ? "1" : "";
+      select.value = hideHalfDay ? "1" : "";
     }
   }
 
   /* ===============================
-     🔥 FINAL SAFETY LOCK
-  =============================== */
+   🔥 FINAL SAFETY LOCK
+   7.5T always blocked.
+   3.5T weekend half-day blocked.
+=============================== */
 
-  if (is75T) {
+  if (hideHalfDay) {
     const half = select.querySelector('option[value="0.5"]');
+
     if (half) {
-      half.disabled = true;
-      half.style.display = "none";
+      showHalfDayAsUnavailable(half, dateStr, vehicle);
     }
 
     if (select.value === "0.5") {
       select.value = "1";
     }
   }
+}
+
+function applyBookingWeekendHalfDayRule(dateStr, vehicle, showNotice = false) {
+  const select = document.getElementById("selected-duration");
+  const statusEl = document.getElementById("booking-availability-status");
+  const pickupRow = document.getElementById("pickup-time-row");
+
+  if (!select || !dateStr || !vehicle) return false;
+
+  const hideHalfDay = shouldHideHalfDayForDateAndVehicle(dateStr, vehicle);
+  const half = select.querySelector('option[value="0.5"]');
+
+  if (!half) return false;
+
+  const wasHalfDay = select.value === "0.5";
+
+  if (hideHalfDay) {
+    showHalfDayAsUnavailable(half, dateStr, vehicle);
+
+    if (wasHalfDay) {
+      select.value = "1";
+
+      if (is35T(vehicle) && isWeekendDate(dateStr)) {
+        BOOKING_WEEKEND_HALF_DAY_NOTICE = true;
+      }
+
+      if (pickupRow) {
+        pickupRow.style.display = "none";
+      }
+
+      if (selectedAvailability) {
+        selectedAvailability.durationDays = 1;
+        selectedAvailability.pickupTime = DEFAULT_PICKUP_TIME;
+      }
+
+      if (statusEl && showNotice) {
+        statusEl.textContent = is35T(vehicle)
+          ? "No 1/2 day hires are available during weekends. Duration has been changed to 1 day."
+          : "No 1/2 day hires are available for 7.5T lorries. Duration has been changed to 1 day.";
+
+        statusEl.className = "availability-status error full";
+        statusEl.hidden = false;
+      }
+
+      updateHalfDayPickup();
+      updateCheckoutSummary();
+
+      return true;
+    }
+
+    return false;
+  }
+
+  showHalfDayAsAvailable(half);
+  BOOKING_WEEKEND_HALF_DAY_NOTICE = false;
+
+  return false;
+}
+
+function getWeekendHalfDayNotice(dateStr, vehicle) {
+  if (!dateStr || !vehicle) return "";
+
+  if (!shouldHideHalfDayForDateAndVehicle(dateStr, vehicle)) {
+    return "";
+  }
+
+  if (!is35T(vehicle)) {
+    return " No 1/2 day hires are available for 7.5T lorries.";
+  }
+
+  return " No 1/2 day hires are available during weekends.";
 }
 
 function safeRenderAvailability(html) {
@@ -1251,10 +1330,14 @@ async function updateDurationOptions(dateStr) {
   const vehicleId =
     PRESELECTED_VEHICLE || selectedAvailability?.vehicle?.id || null;
 
+  const selectedVehicle = vehicleId
+    ? vehicles.find((v) => v.id === vehicleId)
+    : null;
+
   const pickupTime = pickupTimeInput?.value || "";
 
   /* ===============================
-     🔥 SMART SKIP (SAFE VERSION)
+     SMART SKIP
   =============================== */
 
   const cacheKey = `${dateStr}|${vehicleId || "any"}|${pickupTime}`;
@@ -1263,16 +1346,6 @@ async function updateDurationOptions(dateStr) {
   window.__lastDurationCheck = cacheKey;
 
   const options = Array.from(durationDaysInput.options);
-
-  /* ===============================
-     🔥 PREFETCH (SAFE, NON-BLOCKING)
-  =============================== */
-
-  try {
-    prefetchAvailabilityWindow(dateStr);
-  } catch (err) {
-    console.warn("Background prefetch failed:", err);
-  }
 
   for (const opt of options) {
     if (thisRunId !== durationOptionsRunId) return;
@@ -1287,28 +1360,38 @@ async function updateDurationOptions(dateStr) {
     =============================== */
 
     if (duration === 0.5) {
-      const { amData, pmData } = await getHalfDayAvailability(dateStr);
+      const hideHalfDay =
+        selectedVehicle &&
+        shouldHideHalfDayForDateAndVehicle(dateStr, selectedVehicle);
 
-      const filteredAM = (
-        vehicleId ? amData.filter((v) => v.vehicleId === vehicleId) : amData
-      ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
+      const weekendWithoutVehicle = !selectedVehicle && isWeekendDate(dateStr);
 
-      const filteredPM = (
-        vehicleId ? pmData.filter((v) => v.vehicleId === vehicleId) : pmData
-      ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
+      if (hideHalfDay || weekendWithoutVehicle) {
+        available = false;
+      } else {
+        const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-      const hasAM = filteredAM.some(
-        (v) => v.available || v.availableSlots?.includes("am"),
-      );
+        const filteredAM = (
+          vehicleId ? amData.filter((v) => v.vehicleId === vehicleId) : amData
+        ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
 
-      const hasPM = filteredPM.some(
-        (v) => v.available || v.availableSlots?.includes("pm"),
-      );
+        const filteredPM = (
+          vehicleId ? pmData.filter((v) => v.vehicleId === vehicleId) : pmData
+        ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
 
-      available = hasAM || hasPM;
+        const hasAM = filteredAM.some(
+          (v) => v.available || v.availableSlots?.includes("am"),
+        );
+
+        const hasPM = filteredPM.some(
+          (v) => v.available || v.availableSlots?.includes("pm"),
+        );
+
+        available = hasAM || hasPM;
+      }
     } else {
       /* ===============================
-         🔥 MULTI-DAY (CACHE FIRST)
+         MULTI-DAY
       =============================== */
 
       const cached = getRangeAvailabilityFromCache(
@@ -1349,6 +1432,14 @@ async function updateDurationOptions(dateStr) {
 
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
+
+    if (duration === 0.5) {
+      if (available) {
+        showHalfDayAsAvailable(opt);
+      } else {
+        showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
+      }
+    }
   }
 
   /* ===============================
@@ -2787,22 +2878,92 @@ function is35T(vehicle) {
   );
 }
 
+function isWeekendDate(dateStr) {
+  if (!dateStr) return false;
+
+  const [year, month, day] = String(dateStr).split("-").map(Number);
+
+  if (!year || !month || !day) return false;
+
+  // Use midday to avoid timezone/date-shift problems
+  const date = new Date(year, month - 1, day, 12, 0, 0);
+
+  const weekday = date.getDay();
+
+  return weekday === 0 || weekday === 6; // Sunday or Saturday
+}
+
+function shouldHideHalfDayForDateAndVehicle(dateStr, vehicle) {
+  // 7.5T: always hide half-day
+  if (!is35T(vehicle)) return true;
+
+  // 3.5T: hide half-day only on weekends
+  return isWeekendDate(dateStr);
+}
+
+function getHalfDayUnavailableText(dateStr, vehicle) {
+  if (!vehicle) {
+    if (isWeekendDate(dateStr)) {
+      return "Not During Weekends";
+    }
+
+    return "1/2 day";
+  }
+
+  if (!is35T(vehicle)) {
+    return "No 1/2 Days";
+  }
+
+  if (isWeekendDate(dateStr)) {
+    return "Not During Weekends";
+  }
+
+  return "1/2 day";
+}
+
+function showHalfDayAsUnavailable(option, dateStr, vehicle) {
+  if (!option) return;
+
+  if (!option.dataset.originalText) {
+    option.dataset.originalText = option.textContent || "1/2 day";
+  }
+
+  option.textContent = getHalfDayUnavailableText(dateStr, vehicle);
+  option.disabled = true;
+
+  // Important: keep visible on mobile + desktop
+  option.hidden = false;
+  option.style.display = "";
+  option.style.color = "#999";
+}
+
+function showHalfDayAsAvailable(option) {
+  if (!option) return;
+
+  option.textContent = option.dataset.originalText || "1/2 day";
+  option.disabled = false;
+  option.hidden = false;
+  option.style.display = "";
+  option.style.color = "";
+}
+
 function enforceVehicleDurationRules(vehicle) {
   if (!durationDaysInput) return;
 
   const halfDayOption = durationDaysInput.querySelector('option[value="0.5"]');
   if (!halfDayOption) return;
 
-  if (!is35T(vehicle)) {
-    halfDayOption.disabled = true;
-    halfDayOption.hidden = true;
+  const pickupDate = pickupDateInput?.value || "";
+  const hideHalfDay = shouldHideHalfDayForDateAndVehicle(pickupDate, vehicle);
+
+  if (hideHalfDay) {
+    showHalfDayAsUnavailable(halfDayOption, pickupDate, vehicle);
 
     if (durationDaysInput.value === "0.5") {
-      durationDaysInput.value = "1";
+      durationDaysInput.value = "";
     }
   } else {
-    halfDayOption.disabled = false;
-    halfDayOption.hidden = false;
+    showHalfDayAsAvailable(halfDayOption);
   }
 }
 
@@ -2904,9 +3065,27 @@ function scrollStep2IntoView() {
   }, 120);
 }
 
-function isWeekendDate(date) {
-  const day = date.getDay();
-  return day === 0 || day === 6;
+function isWeekendDate(value) {
+  if (!value) return false;
+
+  let date;
+
+  if (value instanceof Date) {
+    date = value;
+  } else {
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    if (!year || !month || !day) return false;
+
+    // Use midday to avoid timezone/date-shift problems
+    date = new Date(year, month - 1, day, 12, 0, 0);
+  }
+
+  if (!date || Number.isNaN(date.getTime())) return false;
+
+  const weekday = date.getDay();
+
+  return weekday === 0 || weekday === 6;
 }
 
 function getDurationHours(vehicle, durationDays) {
@@ -3083,6 +3262,12 @@ async function fetchServerQuote(
       total: Number(pricing.total ?? 0),
     };
   } catch (err) {
+    const message = String(err?.message || "");
+
+    if (message.includes("Half-day hire is not available")) {
+      throw err;
+    }
+
     console.warn("⚠️ Pricing API failed. Falling back to local pricing.", err);
 
     const fallbackBase = calculateBaseCost(
@@ -3274,6 +3459,14 @@ async function buildAvailability(
 ====================================================== */
 
 async function getAvailableLorries(pickupDate, durationDays, pickupTime) {
+  // 🔥 HARD FRONTEND BLOCK:
+  // No half-day rentals on weekends.
+  // 7.5T is never half-day anyway; this also blocks 3.5T Saturday/Sunday.
+  if (Number(durationDays) === 0.5 && isWeekendDate(pickupDate)) {
+    LAST_AVAILABLE_VEHICLES = [];
+    return [];
+  }
+
   let vehiclesToCheck =
     LOCKED_VEHICLE && PRESELECTED_VEHICLE
       ? vehicles.filter((v) => v.id === PRESELECTED_VEHICLE)
@@ -3996,7 +4189,32 @@ function autoCheckAvailability() {
 
 /* trigger when date changes */
 
-pickupDateInput?.addEventListener("change", () => {
+pickupDateInput?.addEventListener("change", async () => {
+  const pickupDate = pickupDateInput?.value;
+
+  if (pickupDate) {
+    window.__lastDurationCheck = "";
+
+    const vehicleId =
+      PRESELECTED_VEHICLE || selectedAvailability?.vehicle?.id || null;
+
+    const vehicle = vehicleId ? vehicles.find((v) => v.id === vehicleId) : null;
+
+    if (vehicle) {
+      updateDurationOptionsForVehicle(vehicle);
+      enforceVehicleDurationRules(vehicle);
+    }
+
+    await updateDurationOptions(pickupDate);
+
+    if (selectedAvailability?.vehicle?.id) {
+      await updateBookingDurationOptions(
+        pickupDate,
+        selectedAvailability.vehicle.id,
+      );
+    }
+  }
+
   autoCheckAvailability();
 });
 
@@ -4341,16 +4559,17 @@ function updateDurationOptionsForVehicle(vehicle) {
   const halfDayOption = durationSelect.querySelector('option[value="0.5"]');
   if (!halfDayOption) return;
 
-  if (is35T(vehicle)) {
-    // ✅ allow half day
-    halfDayOption.hidden = false;
-  } else {
-    // ✅ hide for 7.5T (better than display none)
-    halfDayOption.hidden = true;
+  const pickupDate = pickupDateInput?.value || "";
+  const hideHalfDay = shouldHideHalfDayForDateAndVehicle(pickupDate, vehicle);
+
+  if (hideHalfDay) {
+    showHalfDayAsUnavailable(halfDayOption, pickupDate, vehicle);
 
     if (durationSelect.value === "0.5") {
       durationSelect.value = "";
     }
+  } else {
+    showHalfDayAsAvailable(halfDayOption);
   }
 }
 
@@ -4575,10 +4794,6 @@ async function selectAvailability(vehicleId) {
 }
 
 async function checkBookingFormAvailability() {
-  const duration = Number(
-    selectedDurationInput?.value || durationDaysInput?.value || 0,
-  );
-
   if (!selectedAvailability || !selectedPickupInput || !selectedDurationInput)
     return;
 
@@ -4586,7 +4801,17 @@ async function checkBookingFormAvailability() {
 
   const vehicle = selectedAvailability.vehicle;
   const pickupDate = selectedPickupInput.value;
-  const durationDays = Number(selectedDurationInput.value);
+  let durationDays = Number(selectedDurationInput.value);
+
+  const weekendHalfDayWasBlocked = applyBookingWeekendHalfDayRule(
+    pickupDate,
+    vehicle,
+    false,
+  );
+
+  if (weekendHalfDayWasBlocked) {
+    durationDays = Number(selectedDurationInput.value);
+  }
 
   if (!pickupDate || !durationDays || durationDays <= 0) {
     if (statusEl) {
@@ -4628,7 +4853,7 @@ async function checkBookingFormAvailability() {
 
   const vehiclesAvailability = await getVehicleAvailability(
     pickupDate,
-    duration,
+    durationDays,
     pickupTime,
   );
 
@@ -4665,8 +4890,17 @@ async function checkBookingFormAvailability() {
     }
 
     if (statusEl) {
-      statusEl.textContent = `${vehicle.name} is available for the selected date and duration.`;
-      statusEl.className = "availability-status ok full";
+      const weekendNotice = getWeekendHalfDayNotice(pickupDate, vehicle);
+
+      if (BOOKING_WEEKEND_HALF_DAY_NOTICE) {
+        statusEl.textContent =
+          "No 1/2 day hires are available during weekends. Duration has been changed to 1 day.";
+        statusEl.className = "availability-status error full";
+      } else {
+        statusEl.textContent = `${vehicle.name} is available for the selected date and duration.${weekendNotice}`;
+        statusEl.className = "availability-status ok full";
+      }
+
       statusEl.hidden = false;
     }
 
@@ -4682,7 +4916,10 @@ async function checkBookingFormAvailability() {
     updateEarlyPickupAvailability();
   } else {
     if (statusEl) {
-      statusEl.textContent = `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
+      statusEl.textContent =
+        durationDays === 0.5 && isWeekendDate(pickupDate)
+          ? "No 1/2 day hires are available during weekends. Please choose 1 day or longer."
+          : `${vehicle.name} is not available for the selected date and duration. Please choose different dates.`;
       statusEl.className = "availability-status error full";
       statusEl.hidden = false;
     }
@@ -5931,13 +6168,52 @@ hiredWithin3MonthsInput?.addEventListener("change", updateCheckoutSummary);
 =============================== */
 
 selectedPickupInput?.addEventListener("change", async () => {
+  const pickupDate = selectedPickupInput?.value;
+  const vehicle = selectedAvailability?.vehicle;
+
+  if (pickupDate && vehicle?.id) {
+    // IMPORTANT: run this BEFORE updateBookingDurationOptions(),
+    // otherwise the old half-day value is silently changed before we can show the warning.
+    const blockedHalfDay = applyBookingWeekendHalfDayRule(
+      pickupDate,
+      vehicle,
+      true,
+    );
+
+    await updateBookingDurationOptions(pickupDate, vehicle.id);
+
+    // Re-apply after the async option check, so the 1/2 day option stays hidden.
+    applyBookingWeekendHalfDayRule(pickupDate, vehicle, blockedHalfDay);
+
+    updateHalfDayPickup();
+  }
+
   await checkBookingFormAvailability();
-  updateEarlyPickupAvailability(); // ✅ ADD
+
+  updateEarlyPickupAvailability();
 });
 
 selectedDurationInput?.addEventListener("change", async () => {
+  const pickupDate = selectedPickupInput?.value;
+  const vehicle = selectedAvailability?.vehicle;
+
+  if (pickupDate && vehicle?.id) {
+    const blockedHalfDay = applyBookingWeekendHalfDayRule(
+      pickupDate,
+      vehicle,
+      true,
+    );
+
+    await updateBookingDurationOptions(pickupDate, vehicle.id);
+
+    applyBookingWeekendHalfDayRule(pickupDate, vehicle, blockedHalfDay);
+
+    updateHalfDayPickup();
+  }
+
   await checkBookingFormAvailability();
-  updateEarlyPickupAvailability(); // ✅ KEEP
+
+  updateEarlyPickupAvailability();
 });
 
 /* ===============================
