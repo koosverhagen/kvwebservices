@@ -45,6 +45,9 @@
         border-radius: 24px;
         padding: 24px;
         box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+
+        display: flex;
+        flex-direction: column;
       }
 
       .calculator-card::before {
@@ -62,6 +65,18 @@
       .calculator-card > * {
         position: relative;
         z-index: 1;
+      }
+
+      .calculator-card-actions {
+        margin-top: auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .calculator-card-actions .btn {
+        margin-top: 0 !important;
       }
 
       .calculator-icon {
@@ -249,14 +264,16 @@
             Estimate fuel cost, included mileage allowance and possible excess
             mileage before returning the lorry.
           </p>
-          <button
-            class="btn"
-            type="button"
-            data-calculator-title="Self-Drive Fuel Calculator"
-            data-calculator-src="fuel-calculator.html"
-          >
-            Open fuel calculator
-          </button>
+          <div class="calculator-card-actions">
+            <button
+              class="btn"
+              type="button"
+              data-calculator-title="Self-Drive Fuel Calculator"
+              data-calculator-src="fuel-calculator.html"
+            >
+              Open fuel calculator
+            </button>
+          </div>
         </article>
 
         <article class="calculator-card">
@@ -267,22 +284,20 @@
             Get a guide estimate for professional driven transport before
             contacting us for a confirmed quote.
           </p>
-          <button
-            class="btn"
-            type="button"
-            data-calculator-title="Driven Transport Cost Estimator"
-            data-calculator-src="driven-calculator.html"
-          >
-            Open driven estimator
-          </button>
+          <div class="calculator-card-actions">
+            <button
+              class="btn"
+              type="button"
+              data-calculator-title="Driven Transport Cost Estimator"
+              data-calculator-src="driven-calculator.html"
+            >
+              Open driven estimator
+            </button>
 
-          <a
-            class="btn ghost"
-            href="driven-services.html"
-            style="margin-top: 10px"
-          >
-            View Driven Services
-          </a>
+            <a class="btn ghost" href="driven-services.html">
+              View Driven Services
+            </a>
+          </div>
         </article>
       </section>
     </main>
