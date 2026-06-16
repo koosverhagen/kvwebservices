@@ -1010,11 +1010,15 @@ function applyBookingWeekendHalfDayRule(dateStr, vehicle, showNotice = false) {
 function getWeekendHalfDayNotice(dateStr, vehicle) {
   if (!dateStr || !vehicle) return "";
 
-  if (shouldHideHalfDayForDateAndVehicle(dateStr, vehicle)) {
-    return " No 1/2 day hires are available during weekends.";
+  if (!shouldHideHalfDayForDateAndVehicle(dateStr, vehicle)) {
+    return "";
   }
 
-  return "";
+  if (!is35T(vehicle)) {
+    return " No 1/2 day hires are available for 7.5T lorries.";
+  }
+
+  return " No 1/2 day hires are available during weekends.";
 }
 
 function safeRenderAvailability(html) {
@@ -1368,15 +1372,11 @@ async function updateDurationOptions(dateStr) {
 
       const weekend = isWeekendDate(dateStr);
 
-      // Hide half-day on weekends for all public availability checks.
-      // 7.5T is already filtered out below, but this also blocks 3.5T weekend half-days.
+      // Show disabled text instead of hiding 1/2 day.
       if (weekend) {
         available = false;
 
-        opt.disabled = true;
-        opt.hidden = true;
-        opt.style.display = "none";
-        opt.style.color = "#999";
+        showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
 
         if (durationDaysInput.value === "0.5") {
           durationDaysInput.value = "";
@@ -1392,10 +1392,7 @@ async function updateDurationOptions(dateStr) {
       ) {
         available = false;
 
-        opt.disabled = true;
-        opt.hidden = true;
-        opt.style.display = "none";
-        opt.style.color = "#999";
+        showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
 
         if (durationDaysInput.value === "0.5") {
           durationDaysInput.value = "";
@@ -1467,11 +1464,13 @@ async function updateDurationOptions(dateStr) {
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
 
-    if (duration === 0.5) {
-      opt.hidden = !available;
-      opt.style.display = available ? "" : "none";
-    }
+if (duration === 0.5) {
+  if (available) {
+    showHalfDayAsAvailable(opt);
+  } else {
+    showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
   }
+}
 
   /* ===============================
      VALIDATE SELECTED VALUE
