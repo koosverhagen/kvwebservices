@@ -8113,6 +8113,54 @@ Equine Transport UK`;
         return `£${Number(value || 0).toFixed(2)}`;
       }
 
+      function getDepositCapturedAmount(booking) {
+        const value = Number(
+          booking?.depositCapturedAmount ??
+            booking?.deposit_captured_amount ??
+            booking?.depositCaptured ??
+            booking?.deposit_captured ??
+            booking?.depositCaptureAmount ??
+            booking?.deposit_capture_amount ??
+            0,
+        );
+
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      function isDepositCancelled(booking) {
+        const status = String(
+          booking?.depositStatus || booking?.deposit_status || "",
+        ).toLowerCase();
+
+        return (
+          booking?.depositCancelled === true ||
+          booking?.deposit_cancelled === true ||
+          booking?.deposit_cancelled === 1 ||
+          status === "cancelled" ||
+          status === "canceled"
+        );
+      }
+
+      function depositStatusPillHtml(booking, options = {}) {
+        const compact = options.compact === true;
+
+        const capturedAmount = getDepositCapturedAmount(booking);
+
+        if (capturedAmount > 0) {
+          return `<span class="pill bad">Deposit captured: ${formatMoney(capturedAmount)}</span>`;
+        }
+
+        if (isDepositCancelled(booking)) {
+          return `<span class="pill neutral">${compact ? "Deposit cancelled" : "Deposit cancelled"}</span>`;
+        }
+
+        if (bookingHasActiveDeposit(booking)) {
+          return `<span class="pill ok">${compact ? "Deposit on Hold" : "Deposit on hold"}</span>`;
+        }
+
+        return `<span class="pill warn">${compact ? "No Deposit" : "Deposit not secured"}</span>`;
+      }
+
       function getFormPayload(booking) {
         if (booking?.formPayload && typeof booking.formPayload === "object") {
           return booking.formPayload;
@@ -8652,9 +8700,9 @@ Equine Transport UK`;
            🔒 DEPOSIT SYSTEM
         =============================== */
 
-        const depositCaptured = Number(booking.depositCapturedAmount || 0);
-        const depositWasCaptured = depositCaptured > 0;
+        const depositCaptured = getDepositCapturedAmount(booking);
         const depositIsLiveHold = bookingHasActiveDeposit(booking);
+        const depositCancelled = isDepositCancelled(booking);
 
         /* ===============================
            OUTPUT
@@ -8667,13 +8715,7 @@ Equine Transport UK`;
               : '<span class="pill bad">Confirmation pending</span>'
           }
 
-         ${
-           depositIsLiveHold
-             ? '<span class="pill ok">Deposit on hold</span>'
-             : depositWasCaptured
-               ? '<span class="pill neutral">Deposit released</span>'
-               : textDeposit
-         }
+                 ${depositStatusPillHtml(booking)}
 
          ${
            outstandingPaid
@@ -8691,38 +8733,15 @@ Equine Transport UK`;
                🔒 DEPOSIT STATUS
           =============================== -->
 
-        ${
-          depositIsLiveHold
-            ? `
+               ${
+                 depositIsLiveHold
+                   ? `
       <div class="pill ok">
         £200 on hold
       </div>
     `
-            : ""
-        }
-
-         ${
-           depositCaptured > 0
-             ? `
-      <div class="pill warn">
-        Captured: £${depositCaptured.toFixed(2)}
-      </div>
-      <div class="pill neutral">
-        Remainder released
-      </div>
-    `
-             : ""
-         }
-
-          ${
-            booking.depositCancelled
-              ? `
-                <div class="pill neutral">
-                  Deposit cancelled
-                </div>
-              `
-              : ""
-          }
+                   : ""
+               }
 
           <!-- ===============================
                💰 HIRE PAYMENTS
@@ -9806,11 +9825,7 @@ Equine Transport UK`;
                     : '<span class="pill warn">Form Pending</span>'
                 }
 
-                ${
-                  bookingHasActiveDeposit(booking)
-                    ? '<span class="pill ok">Deposit on Hold</span>'
-                    : '<span class="pill warn">No Deposit</span>'
-                }
+                               ${depositStatusPillHtml(booking, { compact: true })}
 
                 ${
                   outstandingDone
