@@ -596,9 +596,20 @@ export default {
    SAVE DEPOSIT PAYMENT INTENT
 =============================== */
 
+        const nowIso = new Date().toISOString();
+
         booking.depositPaymentIntentId = paymentIntent.id;
 
-        booking.updatedAt = new Date().toISOString();
+        // Do NOT mark as paid/held yet.
+        // The card should only show "Deposit on Hold" after Stripe confirms requires_capture.
+        booking.depositPaid = false;
+        booking.depositCancelled = false;
+        booking.depositReleased = false;
+        booking.depositCapturedAmount = 0;
+        booking.depositStatus = "payment_intent_created";
+        booking.depositIntentCreatedAt = nowIso;
+
+        booking.updatedAt = nowIso;
 
         await moveBookingInKv(env, booking, booking);
 
@@ -5892,11 +5903,16 @@ function bookingLooksLikeActiveDepositHold(booking) {
   const paymentIntentId =
     booking.depositPaymentIntentId || booking.deposit_payment_intent_id;
 
+  // No Stripe deposit PaymentIntent = nothing to sync.
   if (!paymentIntentId) return false;
 
   const capturedAmount = Number(
     booking.depositCapturedAmount || booking.deposit_captured_amount || 0,
   );
+
+  const depositStatus = String(
+    booking.depositStatus || booking.deposit_status || "",
+  ).toLowerCase();
 
   const alreadyFinal =
     capturedAmount > 0 ||
@@ -5904,22 +5920,21 @@ function bookingLooksLikeActiveDepositHold(booking) {
     booking.deposit_cancelled === 1 ||
     booking.depositReleased === true ||
     booking.deposit_released === 1 ||
-    booking.depositStatus === "canceled" ||
-    booking.depositStatus === "cancelled" ||
-    booking.depositStatus === "captured" ||
-    booking.depositStatus === "captured_remainder_released" ||
-    booking.depositStatus === "released";
+    depositStatus === "canceled" ||
+    depositStatus === "cancelled" ||
+    depositStatus === "captured" ||
+    depositStatus === "captured_remainder_released" ||
+    depositStatus === "released";
 
   if (alreadyFinal) return false;
 
-  return (
-    booking.depositPaid === true ||
-    booking.deposit_paid === 1 ||
-    booking.depositStatus === "paid" ||
-    booking.depositStatus === "secured" ||
-    booking.depositStatus === "requires_capture" ||
-    booking.depositStatus === "legacy_authorized"
-  );
+  /*
+    CRITICAL:
+    If the booking has a depositPaymentIntentId, we must ask Stripe.
+    A newly made deposit may only have the PaymentIntent ID in KV,
+    while depositPaid/depositStatus have not yet been updated by webhook.
+  */
+  return true;
 }
 
 async function syncDepositStatusesFromStripe(env, bookings) {
@@ -5934,7 +5949,7 @@ async function syncDepositStatusesFromStripe(env, bookings) {
 
   // Safety limit so the admin list does not become slow with hundreds of old bookings.
   let checked = 0;
-  const MAX_STRIPE_CHECKS_PER_LIST_LOAD = 50;
+  const MAX_STRIPE_CHECKS_PER_LIST_LOAD = 100;
 
   for (const booking of bookings) {
     let nextBooking = booking;
