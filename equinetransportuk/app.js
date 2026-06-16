@@ -1330,6 +1330,10 @@ async function updateDurationOptions(dateStr) {
   const vehicleId =
     PRESELECTED_VEHICLE || selectedAvailability?.vehicle?.id || null;
 
+  const selectedVehicle = vehicleId
+    ? vehicles.find((v) => v.id === vehicleId)
+    : null;
+
   const pickupTime = pickupTimeInput?.value || "";
 
   /* ===============================
@@ -1366,10 +1370,6 @@ async function updateDurationOptions(dateStr) {
     =============================== */
 
     if (duration === 0.5) {
-      const selectedVehicle = vehicleId
-        ? vehicles.find((v) => v.id === vehicleId)
-        : null;
-
       const weekend = isWeekendDate(dateStr);
 
       // Show disabled text instead of hiding 1/2 day.
@@ -1464,13 +1464,14 @@ async function updateDurationOptions(dateStr) {
     opt.disabled = !available;
     opt.style.color = available ? "" : "#999";
 
-if (duration === 0.5) {
-  if (available) {
-    showHalfDayAsAvailable(opt);
-  } else {
-    showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
+    if (duration === 0.5) {
+      if (available) {
+        showHalfDayAsAvailable(opt);
+      } else {
+        showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
+      }
+    }
   }
-}
 
   /* ===============================
      VALIDATE SELECTED VALUE
