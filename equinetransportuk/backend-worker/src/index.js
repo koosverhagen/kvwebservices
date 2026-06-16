@@ -1801,6 +1801,21 @@ It is only a security hold.
 
           await moveBookingInKv(env, booking, booking);
 
+          try {
+            await env.DB.prepare(
+              `
+              UPDATE bookings
+              SET deposit_paid = 0,
+                  updated_at = ?
+              WHERE id = ?
+            `,
+            )
+              .bind(nowIso, booking.id)
+              .run();
+          } catch (err) {
+            console.warn("⚠️ Deposit capture DB update failed:", err.message);
+          }
+
           return withCors(
             json({
               ok: true,
@@ -1892,17 +1907,31 @@ It is only a security hold.
           await stripe.paymentIntents.cancel(paymentIntentId);
 
           console.log("↩️ Deposit cancelled");
+          const nowIso = new Date().toISOString();
+
           booking.depositCancelled = true;
-
           booking.depositPaid = false;
-
           booking.depositCapturedAmount = 0;
-
-          booking.depositCancelledAt = new Date().toISOString();
-
-          booking.updatedAt = new Date().toISOString();
+          booking.depositStatus = "canceled";
+          booking.depositCancelledAt = nowIso;
+          booking.updatedAt = nowIso;
 
           await moveBookingInKv(env, booking, booking);
+
+          try {
+            await env.DB.prepare(
+              `
+              UPDATE bookings
+              SET deposit_paid = 0,
+                  updated_at = ?
+              WHERE id = ?
+            `,
+            )
+              .bind(nowIso, booking.id)
+              .run();
+          } catch (err) {
+            console.warn("⚠️ Deposit cancel DB update failed:", err.message);
+          }
 
           try {
             const auditKey = `audit:${booking.id}`;
@@ -5761,6 +5790,199 @@ async function moveBookingInKv(env, oldBooking, nextBooking) {
 }
 
 /* ===============================
+   DEPOSIT STATUS HELPERS
+   Keeps Stripe manual-capture deposit state in KV + DB
+================================ */
+
+function buildDepositPatchFromPaymentIntent(paymentIntent) {
+  if (!paymentIntent) return null;
+
+  const nowIso = new Date().toISOString();
+
+  const amountReceivedPounds = Number(paymentIntent.amount_received || 0) / 100;
+
+  const amountCapturablePounds =
+    Number(paymentIntent.amount_capturable || 0) / 100;
+
+  if (paymentIntent.status === "canceled") {
+    return {
+      depositPaid: false,
+      depositCancelled: true,
+      depositCancelledAt: paymentIntent.canceled_at
+        ? new Date(paymentIntent.canceled_at * 1000).toISOString()
+        : nowIso,
+      depositCapturedAmount: 0,
+      depositStatus: "canceled",
+      updatedAt: nowIso,
+    };
+  }
+
+  if (paymentIntent.status === "succeeded" && amountReceivedPounds > 0) {
+    return {
+      depositPaid: false,
+      depositCancelled: false,
+      depositReleased: true,
+      depositReleasedAt: nowIso,
+      depositCapturedAmount: amountReceivedPounds,
+      depositCapturedAt: nowIso,
+      depositStatus:
+        amountReceivedPounds >= 200
+          ? "captured"
+          : "captured_remainder_released",
+      updatedAt: nowIso,
+    };
+  }
+
+  if (paymentIntent.status === "requires_capture") {
+    return {
+      depositPaid: true,
+      depositCancelled: false,
+      depositReleased: false,
+      depositCapturedAmount: 0,
+      depositStatus: "requires_capture",
+      updatedAt: nowIso,
+    };
+  }
+
+  // Anything else: do not overwrite the booking.
+  return null;
+}
+
+async function updateDepositStateForBooking(env, bookingId, patch) {
+  const booking = await findBookingById(env, bookingId);
+
+  if (!booking) {
+    console.warn("⚠️ Deposit booking not found:", bookingId);
+    return null;
+  }
+
+  const nowIso = new Date().toISOString();
+
+  const nextBooking = {
+    ...booking,
+    ...patch,
+    updatedAt: patch?.updatedAt || nowIso,
+  };
+
+  await moveBookingInKv(env, booking, nextBooking);
+
+  if (Object.prototype.hasOwnProperty.call(patch || {}, "depositPaid")) {
+    try {
+      await env.DB.prepare(
+        `
+        UPDATE bookings
+        SET deposit_paid = ?,
+            updated_at = ?
+        WHERE id = ?
+      `,
+      )
+        .bind(patch.depositPaid ? 1 : 0, nextBooking.updatedAt, bookingId)
+        .run();
+    } catch (err) {
+      console.warn("⚠️ Deposit DB status update failed:", err.message);
+    }
+  }
+
+  return nextBooking;
+}
+
+function bookingLooksLikeActiveDepositHold(booking) {
+  if (!booking) return false;
+
+  const paymentIntentId =
+    booking.depositPaymentIntentId || booking.deposit_payment_intent_id;
+
+  if (!paymentIntentId) return false;
+
+  const capturedAmount = Number(
+    booking.depositCapturedAmount || booking.deposit_captured_amount || 0,
+  );
+
+  const alreadyFinal =
+    capturedAmount > 0 ||
+    booking.depositCancelled === true ||
+    booking.deposit_cancelled === 1 ||
+    booking.depositReleased === true ||
+    booking.deposit_released === 1 ||
+    booking.depositStatus === "canceled" ||
+    booking.depositStatus === "cancelled" ||
+    booking.depositStatus === "captured" ||
+    booking.depositStatus === "captured_remainder_released" ||
+    booking.depositStatus === "released";
+
+  if (alreadyFinal) return false;
+
+  return (
+    booking.depositPaid === true ||
+    booking.deposit_paid === 1 ||
+    booking.depositStatus === "paid" ||
+    booking.depositStatus === "secured" ||
+    booking.depositStatus === "requires_capture" ||
+    booking.depositStatus === "legacy_authorized"
+  );
+}
+
+async function syncDepositStatusesFromStripe(env, bookings) {
+  if (!Array.isArray(bookings) || !bookings.length) return bookings;
+  if (!env.STRIPE_SECRET_KEY) return bookings;
+
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    apiVersion: "2024-06-20",
+  });
+
+  const synced = [];
+
+  // Safety limit so the admin list does not become slow with hundreds of old bookings.
+  let checked = 0;
+  const MAX_STRIPE_CHECKS_PER_LIST_LOAD = 50;
+
+  for (const booking of bookings) {
+    let nextBooking = booking;
+
+    if (
+      checked < MAX_STRIPE_CHECKS_PER_LIST_LOAD &&
+      bookingLooksLikeActiveDepositHold(booking)
+    ) {
+      checked += 1;
+
+      const paymentIntentId =
+        booking.depositPaymentIntentId || booking.deposit_payment_intent_id;
+
+      try {
+        const paymentIntent =
+          await stripe.paymentIntents.retrieve(paymentIntentId);
+
+        const patch = buildDepositPatchFromPaymentIntent(paymentIntent);
+
+        if (patch) {
+          patch.depositPaymentIntentId = paymentIntent.id;
+
+          const updatedBooking = await updateDepositStateForBooking(
+            env,
+            booking.id,
+            patch,
+          );
+
+          if (updatedBooking) {
+            nextBooking = updatedBooking;
+          }
+        }
+      } catch (err) {
+        console.warn(
+          "⚠️ Could not sync Stripe deposit status:",
+          booking.id,
+          err.message,
+        );
+      }
+    }
+
+    synced.push(nextBooking);
+  }
+
+  return synced;
+}
+
+/* ===============================
    ADMIN CREATE BOOKING HELPERS
    No-payment bookings created by admin
 ================================ */
@@ -7156,8 +7378,13 @@ async function handleStripeWebhook(request, env) {
      DEPOSIT PAYMENT INTENT (CRITICAL FIX)
   ================================ */
 
+  /* ===============================
+   DEPOSIT CAPTURE WEBHOOK
+   Fires when a manual-capture deposit is captured
+================================ */
+
   if (event.type === "payment_intent.succeeded") {
-    console.log("💳 PAYMENT INTENT EVENT");
+    console.log("💳 PAYMENT INTENT SUCCEEDED");
 
     const paymentIntent = event.data.object;
 
@@ -7165,70 +7392,33 @@ async function handleStripeWebhook(request, env) {
     const paymentType = paymentIntent.metadata?.paymentType;
 
     if (!bookingId || paymentType !== "deposit") {
-      console.log("⚠️ Not a deposit payment");
+      console.log("⚠️ Not a deposit PaymentIntent");
+      await env.BOOKINGS_KV.put(eventId, "processed");
       return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
 
-    console.log("🔥 DEPOSIT CONFIRMED:", bookingId);
+    const patch = buildDepositPatchFromPaymentIntent(paymentIntent);
 
-    // ✅ IMPORTANT: check status
-    if (paymentIntent.status !== "requires_capture") {
-      console.log("⚠️ Not a HOLD payment:", paymentIntent.status);
+    if (!patch) {
+      console.log("⚠️ No deposit patch needed:", paymentIntent.status);
+      await env.BOOKINGS_KV.put(eventId, "processed");
       return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
 
-    try {
-      // ✅ UPDATE DB
-      await env.DB.prepare(
-        `
-      UPDATE bookings
-      SET deposit_paid = 1,
-          updated_at = ?
-      WHERE id = ?
-    `,
-      )
-        .bind(new Date().toISOString(), bookingId)
-        .run();
+    patch.depositPaymentIntentId = paymentIntent.id;
 
-      console.log("✅ Deposit updated in DB");
-    } catch (err) {
-      console.error("❌ DB update failed:", err);
-    }
+    await updateDepositStateForBooking(env, bookingId, patch);
 
-    // ✅ UPDATE KV (same as before)
-    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+    console.log("✅ Deposit capture synced:", bookingId, patch);
 
-    for (const key of list.keys) {
-      const data = await env.BOOKINGS_KV.get(key.name);
-      if (!data) continue;
-
-      try {
-        const parsed = JSON.parse(data);
-        if (!Array.isArray(parsed)) continue;
-
-        let updated = false;
-
-        for (const b of parsed) {
-          if (String(b.id) === String(bookingId)) {
-            b.depositPaid = true;
-            b.updatedAt = new Date().toISOString();
-            updated = true;
-          }
-        }
-
-        if (updated) {
-          await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
-          console.log("✅ Deposit updated in KV");
-          break;
-        }
-      } catch {}
-    }
+    await env.BOOKINGS_KV.put(eventId, "processed");
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
 
   /* ===============================
-   DEPOSIT HOLD (FINAL FINAL FIX)
+   DEPOSIT HOLD WEBHOOK
+   Fires when £200 manual-capture hold is authorised
 ================================ */
 
   if (event.type === "payment_intent.amount_capturable_updated") {
@@ -7239,61 +7429,65 @@ async function handleStripeWebhook(request, env) {
     const bookingId = paymentIntent.metadata?.bookingId;
     const paymentType = paymentIntent.metadata?.paymentType;
 
-    console.log("🧪 METADATA:", paymentIntent.metadata);
-
     if (!bookingId || paymentType !== "deposit") {
-      console.log("⚠️ Not a deposit");
+      console.log("⚠️ Not a deposit hold");
+      await env.BOOKINGS_KV.put(eventId, "processed");
       return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
 
-    console.log("🔥 DEPOSIT HOLD CONFIRMED:", bookingId);
+    const patch = buildDepositPatchFromPaymentIntent(paymentIntent);
 
-    try {
-      // ✅ UPDATE DB
-      await env.DB.prepare(
-        `
-      UPDATE bookings
-      SET deposit_paid = 1,
-          updated_at = ?
-      WHERE id = ?
-    `,
-      )
-        .bind(new Date().toISOString(), bookingId)
-        .run();
-
-      console.log("✅ Deposit marked in DB");
-    } catch (err) {
-      console.error("❌ DB update failed:", err);
+    if (!patch) {
+      console.log("⚠️ No deposit hold patch needed:", paymentIntent.status);
+      await env.BOOKINGS_KV.put(eventId, "processed");
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
 
-    // ✅ UPDATE KV
-    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+    patch.depositPaymentIntentId = paymentIntent.id;
 
-    for (const key of list.keys) {
-      const data = await env.BOOKINGS_KV.get(key.name);
-      if (!data) continue;
+    await updateDepositStateForBooking(env, bookingId, patch);
 
-      try {
-        const parsed = JSON.parse(data);
-        if (!Array.isArray(parsed)) continue;
+    console.log("✅ Deposit hold synced:", bookingId, patch);
 
-        let updated = false;
+    await env.BOOKINGS_KV.put(eventId, "processed");
 
-        for (const b of parsed) {
-          if (String(b.id) === String(bookingId)) {
-            b.depositPaid = true;
-            b.updatedAt = new Date().toISOString();
-            updated = true;
-          }
-        }
+    return new Response(JSON.stringify({ received: true }), { status: 200 });
+  }
 
-        if (updated) {
-          await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
-          console.log("✅ Deposit updated in KV");
-          break;
-        }
-      } catch {}
+  /* ===============================
+   DEPOSIT CANCELLED WEBHOOK
+   Fires when a manual-capture hold is cancelled/released
+================================ */
+
+  if (event.type === "payment_intent.canceled") {
+    console.log("↩️ PAYMENT INTENT CANCELED");
+
+    const paymentIntent = event.data.object;
+
+    const bookingId = paymentIntent.metadata?.bookingId;
+    const paymentType = paymentIntent.metadata?.paymentType;
+
+    if (!bookingId || paymentType !== "deposit") {
+      console.log("⚠️ Not a deposit cancellation");
+      await env.BOOKINGS_KV.put(eventId, "processed");
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
     }
+
+    const patch = buildDepositPatchFromPaymentIntent(paymentIntent);
+
+    if (!patch) {
+      console.log("⚠️ No deposit cancel patch needed:", paymentIntent.status);
+      await env.BOOKINGS_KV.put(eventId, "processed");
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
+
+    patch.depositPaymentIntentId = paymentIntent.id;
+
+    await updateDepositStateForBooking(env, bookingId, patch);
+
+    console.log("✅ Deposit cancellation synced:", bookingId, patch);
+
+    await env.BOOKINGS_KV.put(eventId, "processed");
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   }
@@ -8196,6 +8390,13 @@ async function handleListBookings(request, env) {
       bookings = bookings.concat(parsed);
     } catch {}
   }
+
+  /* ===============================
+     🔒 SYNC DEPOSIT STATUS FROM STRIPE
+     Fixes stale past bookings still showing "on hold"
+  ================================ */
+
+  bookings = await syncDepositStatusesFromStripe(env, bookings);
 
   /* ===============================
    🔐 ENRICH WITH DVLA STATUS
