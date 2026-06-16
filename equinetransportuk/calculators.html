@@ -69,6 +69,7 @@
       .calculator-card-actions {
         margin-top: auto;
         display: flex;
+        flex-direction: row;
         flex-wrap: wrap;
         gap: 10px;
         align-items: center;
@@ -76,13 +77,19 @@
 
       .calculator-card-actions .btn {
         margin-top: 0 !important;
-        min-height: 56px;
-        min-width: 290px;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 52px;
+        padding: 0 22px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         text-align: center;
         white-space: nowrap;
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1;
+        flex: 0 0 auto;
       }
 
       .calculator-icon {
