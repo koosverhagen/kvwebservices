@@ -295,7 +295,7 @@ const VEHICLE_AVAILABILITY_PROMISES = new Map();
 const RANGE_AVAILABILITY_CACHE = new Map();
 const RANGE_AVAILABILITY_TTL = 60 * 1000;
 
-const PREFETCH_WINDOW_DAYS = 7;
+const PREFETCH_WINDOW_DAYS = 0;
 const PREFETCH_PROMISES = new Map();
 
 function addDaysToDateStr(dateStr, days) {
@@ -1348,14 +1348,16 @@ async function updateDurationOptions(dateStr) {
   const options = Array.from(durationDaysInput.options);
 
   /* ===============================
-     🔥 PREFETCH (SAFE, NON-BLOCKING)
+     PREFETCH DISABLED
+     The old prefetch made 60+ background requests
+     and caused the calendar/dropdowns to hang.
   =============================== */
 
-  try {
-    prefetchAvailabilityWindow(dateStr);
-  } catch (err) {
-    console.warn("Background prefetch failed:", err);
-  }
+  // try {
+  //   prefetchAvailabilityWindow(dateStr);
+  // } catch (err) {
+  //   console.warn("Background prefetch failed:", err);
+  // }
 
   for (const opt of options) {
     if (thisRunId !== durationOptionsRunId) return;
