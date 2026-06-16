@@ -116,16 +116,21 @@
       select,
       .fixed-field {
         width: 100%;
-        min-height: 44px;
-        padding: 10px 12px;
+        height: 52px;
+        min-height: 52px;
+        padding: 0 14px;
         border: 1px solid var(--line);
         border-radius: 10px;
-        background: #ffffff;
+        background-color: #ffffff;
         color: #111827;
-        font: inherit;
-        font-size: 14px;
+        font-family: inherit;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 52px;
         outline: none;
         box-shadow: none;
+        appearance: none;
+        -webkit-appearance: none;
       }
 
       .fixed-field {
@@ -142,10 +147,24 @@
       }
 
       input[type="datetime-local"] {
+        height: 52px !important;
+        min-height: 52px !important;
+        padding: 0 14px !important;
+        line-height: 52px !important;
         color: #111827 !important;
         background-color: #ffffff !important;
         appearance: none;
         -webkit-appearance: none;
+      }
+
+      input[type="datetime-local"]::-webkit-date-and-time-value {
+        min-height: 52px;
+        line-height: 52px;
+        text-align: left;
+      }
+
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        margin-right: 0;
       }
 
       ::placeholder {
@@ -339,15 +358,19 @@
           grid-template-columns: 1fr;
           gap: 14px;
         }
+
         input,
         select {
+          height: 52px;
+          min-height: 52px;
           font-size: 16px;
-          min-height: 50px;
         }
+
         input[type="datetime-local"] {
           height: 52px !important;
-          line-height: normal !important;
+          line-height: 52px !important;
         }
+
         .btn-primary,
         .btn-secondary {
           flex: 1 1 100%;
