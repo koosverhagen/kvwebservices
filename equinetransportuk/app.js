@@ -1337,7 +1337,7 @@ async function updateDurationOptions(dateStr) {
   const pickupTime = pickupTimeInput?.value || "";
 
   /* ===============================
-     🔥 SMART SKIP (SAFE VERSION)
+     SMART SKIP
   =============================== */
 
   const cacheKey = `${dateStr}|${vehicleId || "any"}|${pickupTime}`;
@@ -1346,18 +1346,6 @@ async function updateDurationOptions(dateStr) {
   window.__lastDurationCheck = cacheKey;
 
   const options = Array.from(durationDaysInput.options);
-
-  /* ===============================
-     PREFETCH DISABLED
-     The old prefetch made 60+ background requests
-     and caused the calendar/dropdowns to hang.
-  =============================== */
-
-  // try {
-  //   prefetchAvailabilityWindow(dateStr);
-  // } catch (err) {
-  //   console.warn("Background prefetch failed:", err);
-  // }
 
   for (const opt of options) {
     if (thisRunId !== durationOptionsRunId) return;
@@ -1372,59 +1360,38 @@ async function updateDurationOptions(dateStr) {
     =============================== */
 
     if (duration === 0.5) {
-      const weekend = isWeekendDate(dateStr);
-
-      // Show disabled text instead of hiding 1/2 day.
-      if (weekend) {
-        available = false;
-
-        showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
-
-        if (durationDaysInput.value === "0.5") {
-          durationDaysInput.value = "";
-        }
-
-        continue;
-      }
-
-      // If a specific vehicle is selected, still apply vehicle rule.
-      if (
+      const hideHalfDay =
         selectedVehicle &&
-        shouldHideHalfDayForDateAndVehicle(dateStr, selectedVehicle)
-      ) {
+        shouldHideHalfDayForDateAndVehicle(dateStr, selectedVehicle);
+
+      const weekendWithoutVehicle = !selectedVehicle && isWeekendDate(dateStr);
+
+      if (hideHalfDay || weekendWithoutVehicle) {
         available = false;
+      } else {
+        const { amData, pmData } = await getHalfDayAvailability(dateStr);
 
-        showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
+        const filteredAM = (
+          vehicleId ? amData.filter((v) => v.vehicleId === vehicleId) : amData
+        ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
 
-        if (durationDaysInput.value === "0.5") {
-          durationDaysInput.value = "";
-        }
+        const filteredPM = (
+          vehicleId ? pmData.filter((v) => v.vehicleId === vehicleId) : pmData
+        ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
 
-        continue;
+        const hasAM = filteredAM.some(
+          (v) => v.available || v.availableSlots?.includes("am"),
+        );
+
+        const hasPM = filteredPM.some(
+          (v) => v.available || v.availableSlots?.includes("pm"),
+        );
+
+        available = hasAM || hasPM;
       }
-
-      const { amData, pmData } = await getHalfDayAvailability(dateStr);
-
-      const filteredAM = (
-        vehicleId ? amData.filter((v) => v.vehicleId === vehicleId) : amData
-      ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
-
-      const filteredPM = (
-        vehicleId ? pmData.filter((v) => v.vehicleId === vehicleId) : pmData
-      ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
-
-      const hasAM = filteredAM.some(
-        (v) => v.available || v.availableSlots?.includes("am"),
-      );
-
-      const hasPM = filteredPM.some(
-        (v) => v.available || v.availableSlots?.includes("pm"),
-      );
-
-      available = hasAM || hasPM;
     } else {
       /* ===============================
-         🔥 MULTI-DAY (CACHE FIRST)
+         MULTI-DAY
       =============================== */
 
       const cached = getRangeAvailabilityFromCache(
@@ -2935,7 +2902,13 @@ function shouldHideHalfDayForDateAndVehicle(dateStr, vehicle) {
 }
 
 function getHalfDayUnavailableText(dateStr, vehicle) {
-  if (!vehicle) return "1/2 day";
+  if (!vehicle) {
+    if (isWeekendDate(dateStr)) {
+      return "Not During Weekends";
+    }
+
+    return "1/2 day";
+  }
 
   if (!is35T(vehicle)) {
     return "No 1/2 Days";
