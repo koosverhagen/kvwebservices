@@ -9842,7 +9842,7 @@ ${
           line-height:1.6;
           color:#5a6675;
         ">
-          Tap the button below for directions. Please come to the yard.
+          Tap the button below for directions. Please come to the House (not the yard).
         </p>
 
         <div style="margin-top:16px;">
