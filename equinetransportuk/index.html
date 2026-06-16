@@ -23,7 +23,7 @@
         background-size: cover;
       }
     </style>
-    <link rel="stylesheet" href="styles.css?v=59" />
+    <link rel="stylesheet" href="styles.css?v=61" />
     <link rel="icon" href="images/favicon.png" />
   </head>
   <body>
@@ -680,11 +680,21 @@ removed duplicate, script is loaded at end of body -->
 
         if (!overlay || !openBtn || !closeBtn) return;
 
+        function loadReviewsWidget() {
+          if (document.querySelector('script[data-elfsight="true"]')) return;
+
+          const script = document.createElement("script");
+          script.src = "https://elfsightcdn.com/platform.js";
+          script.async = true;
+          script.dataset.elfsight = "true";
+          document.body.appendChild(script);
+        }
+
         function openOverlay() {
           overlay.classList.add("active");
           document.body.style.overflow = "hidden";
+          loadReviewsWidget();
         }
-
         function closeOverlay() {
           overlay.classList.remove("active");
           document.body.style.overflow = "";
@@ -761,8 +771,6 @@ removed duplicate, script is loaded at end of body -->
         });
       })();
     </script>
-
-    <script src="https://elfsightcdn.com/platform.js" async></script>
 
     <script src="app.js?v=61"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
