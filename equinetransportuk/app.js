@@ -7112,10 +7112,25 @@ async function showVehiclePreview(date, event) {
     calGrid.innerHTML = "";
 
     /* ===============================
-   LOAD BOOKINGS (DEDUPED + CACHED)
+   LOAD BOOKINGS — NON-BLOCKING
+   Render calendar immediately, refresh markings after bookings load.
 =============================== */
 
-    const bookings = BOOKINGS_CACHE || (await getBookings(false));
+    const bookings = BOOKINGS_CACHE || [];
+
+    if (!BOOKINGS_CACHE && !window.__calendarBookingsLoading) {
+      window.__calendarBookingsLoading = true;
+
+      getBookings(false)
+        .then(() => {
+          window.__calendarBookingsLoading = false;
+          renderCalendar();
+        })
+        .catch((err) => {
+          window.__calendarBookingsLoading = false;
+          console.warn("Calendar bookings background load failed:", err);
+        });
+    }
 
     if (DEBUG) {
       console.log("Calendar bookings:", bookings);
