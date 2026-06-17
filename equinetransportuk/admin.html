@@ -2233,15 +2233,49 @@
         }
 
         /* Give sticky date headers breathing room */
-        .section-header td {
-          padding-top: 18px !important;
-          padding-bottom: 12px !important;
+        .bookings-table tbody tr.section-header {
+          display: block !important;
+
+          position: sticky !important;
+          top: 92px !important;
+          z-index: 30 !important;
+
+          width: 100% !important;
+
+          margin: 0 0 18px 0 !important;
+          padding: 0 0 8px 0 !important;
+
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
         }
 
-        .section-header + tr td {
+        .bookings-table tbody tr.section-header td {
+          display: flex !important;
+          align-items: center !important;
+
+          width: 100% !important;
+          min-height: 58px !important;
+
+          padding: 10px 14px !important;
+
+          border-radius: 20px !important;
+          border: 1px solid #e2e8f0 !important;
+
+          background: rgba(255, 255, 255, 0.96) !important;
+
+          box-shadow:
+            0 10px 24px rgba(15, 23, 42, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .bookings-table tbody tr.section-header td::before {
+          display: none !important;
+        }
+
+        .bookings-table tbody tr.section-header + tr {
           margin-top: 8px !important;
         }
-
         /* Booking list wrapper */
         #bookings-section .card.list-wrap {
           padding: 10px !important;
@@ -2289,11 +2323,11 @@
             minmax(205px, 1fr)
             minmax(190px, 0.95fr) !important;
 
-          gap: 8px !important;
+          gap: 10px !important;
 
           width: 100% !important;
 
-          padding: 10px !important;
+          padding: 12px !important;
 
           border-radius: 22px !important;
 
@@ -2321,11 +2355,11 @@
         .bookings-table tbody tr td {
           display: flex !important;
           flex-direction: column !important;
-          gap: 6px !important;
+          gap: 7px !important;
 
           min-width: 0 !important;
 
-          padding: 10px !important;
+          padding: 12px !important;
 
           background: #f8fafc !important;
           border: 1px solid #e2e8f0 !important;
@@ -2525,9 +2559,12 @@
 
         .btn.ghost,
         .btn.primary {
-          width: 100% !important;
+          width: calc(100% - 4px) !important;
           min-height: 36px !important;
           height: auto !important;
+
+          margin-left: 2px !important;
+          margin-right: 2px !important;
 
           padding: 8px 10px !important;
 
