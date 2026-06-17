@@ -2921,6 +2921,192 @@
         }
       }
 
+      /* ======================================================
+   DESKTOP BOOKING CARDS — FINAL BUTTON + DVLA FIX
+   Equal buttons, centered, no DVLA arrow/copy buttons
+====================================================== */
+
+      @media (min-width: 769px) {
+        /* Stop columns overlapping: fixed sensible fractions */
+        .bookings-table tbody tr {
+          grid-template-columns:
+            minmax(150px, 0.8fr)
+            minmax(150px, 0.8fr)
+            minmax(190px, 1fr)
+            minmax(215px, 1.08fr)
+            minmax(215px, 1.08fr)
+            minmax(215px, 1.08fr) !important;
+
+          column-gap: 5px !important;
+          row-gap: 5px !important;
+
+          padding: 10px !important;
+        }
+
+        .bookings-table tbody tr td {
+          padding: 10px 12px !important;
+          overflow: hidden !important;
+        }
+
+        /* One shared size for almost all action buttons/pills */
+        .bookings-table td:nth-child(4) .pill,
+        .bookings-table td:nth-child(5) .pill,
+        .bookings-table td:nth-child(5) .btn,
+        .bookings-table td:nth-child(5) .btn.ghost,
+        .bookings-table td:nth-child(5) .btn.primary,
+        .bookings-table td:nth-child(5) .contact-btn {
+          width: 176px !important;
+          max-width: 100% !important;
+          min-height: 34px !important;
+
+          align-self: center !important;
+          justify-content: center !important;
+
+          padding: 6px 9px !important;
+
+          border-radius: 999px !important;
+
+          font-size: 11.5px !important;
+          font-weight: 900 !important;
+          line-height: 1.12 !important;
+
+          text-align: center !important;
+          white-space: normal !important;
+        }
+
+        /* Contact buttons in customer column stay vertical */
+        .bookings-table td:nth-child(1) .contact-actions {
+          width: 96px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 5px !important;
+        }
+
+        .bookings-table td:nth-child(1) .contact-btn {
+          width: 96px !important;
+          min-height: 28px !important;
+          padding: 5px 8px !important;
+          font-size: 10.5px !important;
+        }
+
+        /* Form/deposit/outstanding button rows in Actions */
+        .bookings-table td:nth-child(5) .contact-actions {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          gap: 5px !important;
+          width: 100% !important;
+        }
+
+        /* Payment pills centered and equal */
+        .bookings-table td:nth-child(4) .pill {
+          width: 176px !important;
+        }
+
+        /* Actions buttons/pills centered and equal */
+        .bookings-table td:nth-child(5) .btn,
+        .bookings-table td:nth-child(5) .pill,
+        .bookings-table td:nth-child(5) .contact-btn {
+          width: 176px !important;
+        }
+
+        /* DVLA: no separate arrow/copy buttons, whole pill is clickable */
+        .dvla-pill {
+          appearance: none !important;
+          -webkit-appearance: none !important;
+
+          width: 176px !important;
+          max-width: 100% !important;
+          min-height: 34px !important;
+
+          align-self: center !important;
+
+          display: grid !important;
+          grid-template-columns: auto 1fr !important;
+          align-items: center !important;
+          gap: 8px !important;
+
+          padding: 6px 10px !important;
+
+          border-radius: 999px !important;
+          border: 1px solid #dbe1e8 !important;
+
+          background: #ffffff !important;
+          color: #111827 !important;
+
+          cursor: pointer !important;
+
+          font-family: inherit !important;
+          text-align: left !important;
+        }
+
+        .dvla-pill span {
+          color: #64748b !important;
+          font-size: 10.5px !important;
+          font-weight: 800 !important;
+        }
+
+        .dvla-pill strong {
+          min-width: 0 !important;
+
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+
+          font-size: 11.5px !important;
+          font-weight: 950 !important;
+          letter-spacing: 0.02em !important;
+        }
+
+        .dvla-pill:hover {
+          transform: translateY(-1px) !important;
+          box-shadow: 0 7px 14px rgba(15, 23, 42, 0.09) !important;
+        }
+
+        .dvla-pill.copy-licence {
+          background: #eff6ff !important;
+          border-color: #bfdbfe !important;
+          color: #1d4ed8 !important;
+        }
+
+        .dvla-pill.copy-licence strong {
+          color: #1d4ed8 !important;
+        }
+
+        .dvla-pill.copy-btn {
+          background: #f8fafc !important;
+        }
+
+        .dvla-pill[disabled] {
+          opacity: 0.5 !important;
+          cursor: default !important;
+          pointer-events: none !important;
+        }
+
+        .dvla-verify {
+          width: 176px !important;
+          max-width: 100% !important;
+          min-height: 34px !important;
+
+          align-self: center !important;
+
+          padding: 6px 10px !important;
+
+          border-radius: 999px !important;
+
+          font-size: 11.5px !important;
+          font-weight: 900 !important;
+
+          justify-content: center !important;
+        }
+
+        /* Hide any old separate DVLA buttons if browser cached old HTML */
+        .dvla-row .copy-licence,
+        .dvla-row .copy-btn {
+          display: none !important;
+        }
+      }
+
       /* Slightly narrower desktop screens */
       @media (min-width: 769px) and (max-width: 1180px) {
         .bookings-table {
@@ -9165,42 +9351,29 @@ Equine Transport UK`;
         return `
           <div class="stack dvla-cell" data-booking-id="${escapeHtml(bookingId)}">
 
-            <!-- Licence -->
-            <div class="dvla-row">
-              <span class="tiny">Licence</span>
+            <!-- Licence: whole pill opens GOV + copies licence/code -->
+            <button
+              type="button"
+              class="dvla-pill copy-licence"
+              data-copy="${escapeHtml(last8 || "")}"
+              title="Copy licence and open DVLA check"
+              ${last8 ? "" : "disabled"}
+            >
+              <span>Licence</span>
               <strong>${escapeHtml(last8 || "—")}</strong>
+            </button>
 
-              ${
-                last8
-                  ? `
-              <button
-                class="btn primary btn-small copy-licence"
-                data-copy="${escapeHtml(last8)}"
-                title="Copy licence and open DVLA check"
-              >
-                ↗
-              </button>`
-                  : ""
-              }
-            </div>
-
-            <!-- DVLA Code -->
-            <div class="dvla-row">
-              <span class="tiny">Code</span>
+            <!-- DVLA Code: whole pill copies code -->
+            <button
+              type="button"
+              class="dvla-pill copy-btn"
+              data-copy="${escapeHtml(dvla || "")}"
+              title="Copy DVLA access code"
+              ${dvla ? "" : "disabled"}
+            >
+              <span>Code</span>
               <strong>${escapeHtml(dvla || "—")}</strong>
-
-              ${
-                dvla
-                  ? `
-              <button
-                class="btn ghost btn-small copy-btn"
-                data-copy="${escapeHtml(dvla)}"
-              >
-                Copy
-              </button>`
-                  : ""
-              }
-            </div>
+            </button>
 
             <!-- VERIFY -->
             <label class="dvla-verify">
@@ -9230,31 +9403,29 @@ Equine Transport UK`;
         el.innerHTML = `
           <div class="stack">
 
-            <!-- Licence -->
-            <div class="dvla-row">
-              <span class="tiny">Licence</span>
+            <!-- Licence: whole pill opens GOV + copies licence/code -->
+            <button
+              type="button"
+              class="dvla-pill copy-licence"
+              data-copy="${escapeHtml(data.last8 || "")}"
+              title="Copy licence and open DVLA check"
+              ${data.last8 ? "" : "disabled"}
+            >
+              <span>Licence</span>
               <strong>${escapeHtml(data.last8 || "—")}</strong>
-              <button
-                class="btn primary btn-small copy-licence"
-                data-copy="${escapeHtml(data.last8 || "")}"
-                title="Copy licence and open DVLA check"
-              >
-                ↗
-              </button>
-            </div>
+            </button>
 
-            <!-- DVLA Code -->
-            <div class="dvla-row">
-              <span class="tiny">Code</span>
+            <!-- DVLA Code: whole pill copies code -->
+            <button
+              type="button"
+              class="dvla-pill copy-btn"
+              data-copy="${escapeHtml(data.dvla || "")}"
+              title="Copy DVLA access code"
+              ${data.dvla ? "" : "disabled"}
+            >
+              <span>Code</span>
               <strong>${escapeHtml(data.dvla || "—")}</strong>
-              <button
-                class="btn ghost btn-small copy-btn"
-                data-copy="${escapeHtml(data.dvla || "")}"
-                title="Copy DVLA access code"
-              >
-                Copy
-              </button>
-            </div>
+            </button>
 
             <!-- ✅ VERIFIED CHECKBOX -->
             <label class="dvla-verify">
@@ -9264,7 +9435,7 @@ Equine Transport UK`;
                 data-id="${bookingId}"
                 ${isVerified ? "checked" : ""}
               />
-              Verified
+              ${isVerified ? "Verified" : "Mark verified"}
             </label>
 
           </div>
