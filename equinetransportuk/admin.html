@@ -2720,6 +2720,206 @@
           box-shadow: inset 5px 0 0 #0ea5e9 !important;
         }
       }
+      /* ======================================================
+   DESKTOP BOOKING CARDS — FINAL DENSITY PATCH
+   More room, smaller text, vertical contact buttons
+====================================================== */
+
+      @media (min-width: 769px) {
+        /* Columns: max 5px separation */
+        .bookings-table tbody tr {
+          grid-template-columns:
+            minmax(145px, 0.78fr)
+            minmax(145px, 0.78fr)
+            minmax(185px, 0.95fr)
+            minmax(210px, 1.05fr)
+            minmax(210px, 1.05fr)
+            minmax(205px, 1fr) !important;
+
+          column-gap: 5px !important;
+          row-gap: 5px !important;
+
+          padding: 9px !important;
+        }
+
+        /* Slightly tighter column cards, but still enough edge space */
+        .bookings-table tbody tr td {
+          padding: 10px 11px !important;
+          gap: 6px !important;
+          border-radius: 16px !important;
+        }
+
+        /* Smaller headings/labels */
+        .bookings-table tbody tr td::before {
+          font-size: 9.5px !important;
+          letter-spacing: 0.08em !important;
+          margin-bottom: 1px !important;
+        }
+
+        /* 1) Contact buttons underneath each other */
+        .contact-actions {
+          display: flex !important;
+          flex-direction: column !important;
+          flex-wrap: nowrap !important;
+
+          gap: 5px !important;
+
+          width: 96px !important;
+          max-width: 100% !important;
+
+          margin-top: 6px !important;
+        }
+
+        .contact-btn {
+          width: 100% !important;
+          flex: 0 0 auto !important;
+
+          min-height: 28px !important;
+
+          padding: 5px 8px !important;
+
+          font-size: 10.5px !important;
+          line-height: 1.05 !important;
+
+          justify-content: center !important;
+        }
+
+        /* 2) Smaller customer text */
+        .customer-name {
+          font-size: 16px !important;
+          line-height: 1.05 !important;
+          letter-spacing: -0.035em !important;
+        }
+
+        .booking-id {
+          font-size: 10.5px !important;
+          padding: 3px 7px !important;
+        }
+
+        /* 2) Smaller vehicle + hire/rental date text */
+        .bookings-table td:nth-child(2),
+        .bookings-table td:nth-child(3) {
+          font-size: 13px !important;
+          line-height: 1.22 !important;
+        }
+
+        .bookings-table td:nth-child(2) strong,
+        .bookings-table td:nth-child(3) strong {
+          font-size: 14px !important;
+          line-height: 1.18 !important;
+        }
+
+        .bookings-table td:nth-child(2) .tiny,
+        .bookings-table td:nth-child(3) .tiny,
+        .tiny {
+          font-size: 10.5px !important;
+          line-height: 1.22 !important;
+        }
+
+        /* 3) Payment pills less wide */
+        .bookings-table td:nth-child(4) .pill {
+          width: 86% !important;
+          max-width: 210px !important;
+          min-height: 30px !important;
+
+          align-self: center !important;
+
+          padding: 6px 8px !important;
+
+          font-size: 10.8px !important;
+          line-height: 1.1 !important;
+        }
+
+        .bookings-table td:nth-child(4) {
+          font-size: 11px !important;
+          line-height: 1.25 !important;
+        }
+
+        .bookings-table td:nth-child(4) .tiny,
+        .bookings-table td:nth-child(4) strong {
+          font-size: 11px !important;
+          line-height: 1.25 !important;
+        }
+
+        /* 4) Actions buttons/pills less wide */
+        .bookings-table td:nth-child(5) .btn,
+        .bookings-table td:nth-child(5) .pill,
+        .bookings-table td:nth-child(5) .handover-complete-pill {
+          width: 86% !important;
+          max-width: 210px !important;
+
+          align-self: center !important;
+        }
+
+        .bookings-table td:nth-child(5) .btn.ghost,
+        .bookings-table td:nth-child(5) .btn.primary {
+          min-height: 32px !important;
+
+          padding: 6px 8px !important;
+
+          font-size: 11.5px !important;
+          line-height: 1.1 !important;
+        }
+
+        .bookings-table td:nth-child(5) .pill,
+        .bookings-table td:nth-child(5) .handover-complete-pill {
+          min-height: 30px !important;
+
+          padding: 6px 8px !important;
+
+          font-size: 10.8px !important;
+          line-height: 1.1 !important;
+        }
+
+        .bookings-table td:nth-child(5) h3,
+        .bookings-table td:nth-child(5) h4,
+        .bookings-table td:nth-child(5) strong {
+          font-size: 14px !important;
+          line-height: 1.15 !important;
+        }
+
+        /* Form/deposit/outstanding two-button rows stay neat */
+        .bookings-table td:nth-child(5) div[style*="grid-template-columns"] {
+          gap: 5px !important;
+        }
+
+        /* DVLA: give text room and prevent cutting off */
+        .bookings-table td:nth-child(6) {
+          overflow: hidden !important;
+        }
+
+        .dvla-row {
+          min-height: 34px !important;
+          padding: 6px 7px !important;
+          gap: 5px !important;
+        }
+
+        .dvla-row span,
+        .dvla-row strong {
+          font-size: 11px !important;
+          line-height: 1.1 !important;
+        }
+
+        .dvla-row strong {
+          max-width: 92px !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+
+        .dvla-verify {
+          min-height: 34px !important;
+          padding: 6px 7px !important;
+          font-size: 11px !important;
+          line-height: 1.1 !important;
+        }
+
+        .copy-btn {
+          min-height: 28px !important;
+          padding: 4px 7px !important;
+          font-size: 10.5px !important;
+        }
+      }
 
       /* Slightly narrower desktop screens */
       @media (min-width: 769px) and (max-width: 1180px) {
@@ -2729,12 +2929,15 @@
 
         .bookings-table tbody tr {
           grid-template-columns:
-            minmax(180px, 1fr)
-            minmax(155px, 0.85fr)
-            minmax(200px, 1fr)
-            minmax(195px, 1fr)
-            minmax(195px, 1fr)
-            minmax(180px, 0.9fr) !important;
+            minmax(140px, 0.78fr)
+            minmax(140px, 0.78fr)
+            minmax(180px, 0.95fr)
+            minmax(205px, 1.05fr)
+            minmax(205px, 1.05fr)
+            minmax(200px, 1fr) !important;
+
+          column-gap: 5px !important;
+          row-gap: 5px !important;
         }
       }
 
