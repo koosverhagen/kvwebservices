@@ -1895,344 +1895,52 @@
       }
 
       /* ======================================================
-   DESKTOP BOOKINGS — CLEAN APPLE / AIRBNB STYLE
-   CSS-only polish. Mobile cards are left untouched.
+   DESKTOP BOOKING CARDS — FINAL CLEAN VERSION
+   One CSS block only. No overlap. No duplicate patches.
+   Mobile cards untouched.
 ====================================================== */
 
       @media (min-width: 769px) {
-        /* Main bookings container */
+        /* Main booking list wrapper */
         #bookings-section .card.list-wrap {
-          padding: 18px;
-          border-radius: 28px;
-          background: rgba(255, 255, 255, 0.78);
-          border: 1px solid rgba(219, 225, 232, 0.9);
+          padding: 10px !important;
+          border-radius: 22px !important;
+          background: rgba(255, 255, 255, 0.9) !important;
+          border: 1px solid rgba(219, 225, 232, 0.95) !important;
           box-shadow:
-            0 20px 50px rgba(15, 23, 42, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.75);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
-          overflow-x: auto;
+            0 14px 34px rgba(15, 23, 42, 0.07),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+          overflow-x: hidden !important;
         }
 
-        /* Table spacing */
-        .bookings-table {
-          border-collapse: separate !important;
-          border-spacing: 0 14px !important;
-          background: transparent !important;
-          min-width: 1080px;
-        }
-
-        /* Cleaner header — not sticky, so it never covers first booking */
-        .bookings-table thead th {
-          position: static !important;
-          top: auto !important;
-          z-index: auto !important;
-
-          padding: 0 14px 12px;
-          background: #ffffff !important;
-          border-bottom: 0 !important;
-
-          color: #64748b;
-          font-size: 11px;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .bookings-table thead tr {
-          background: #ffffff !important;
-        }
-
-        .bookings-table tbody tr:first-child td {
-          margin-top: 0;
-        }
-
-        /* Row becomes one big soft card */
-        .bookings-table tbody tr {
-          border-radius: 24px;
-          overflow: hidden;
-          background: #ffffff;
-          box-shadow:
-            0 10px 28px rgba(15, 23, 42, 0.055),
-            0 1px 0 rgba(15, 23, 42, 0.035);
-          transition:
-            transform 0.16s ease,
-            box-shadow 0.16s ease,
-            background 0.16s ease;
-        }
-
-        .bookings-table tbody tr:hover {
-          background: #ffffff !important;
-          transform: translateY(-2px);
-          box-shadow:
-            0 18px 42px rgba(15, 23, 42, 0.09),
-            0 1px 0 rgba(15, 23, 42, 0.04);
-        }
-
-        .bookings-table tbody tr td {
-          padding: 18px 16px !important;
-          background: #ffffff !important;
-          border-top: 1px solid rgba(226, 232, 240, 0.75);
-          border-bottom: 1px solid rgba(226, 232, 240, 0.75);
-          vertical-align: top;
-        }
-
-        .bookings-table tbody tr td:first-child {
-          border-left: 1px solid rgba(226, 232, 240, 0.75);
-          border-radius: 24px 0 0 24px;
-        }
-
-        .bookings-table tbody tr td:last-child {
-          border-right: 1px solid rgba(226, 232, 240, 0.75);
-          border-radius: 0 24px 24px 0;
-        }
-
-        .bookings-table tbody tr + tr td {
-          border-top-width: 1px !important;
-        }
-
-        /* Better desktop column widths */
-        .bookings-table th:nth-child(1),
-        .bookings-table td:nth-child(1) {
-          width: 210px;
-          max-width: 210px;
-        }
-
-        .bookings-table th:nth-child(2),
-        .bookings-table td:nth-child(2) {
-          width: 190px;
-          max-width: 190px;
-        }
-
-        .bookings-table th:nth-child(3),
-        .bookings-table td:nth-child(3) {
-          width: 225px;
-          max-width: 225px;
-        }
-
-        .bookings-table th:nth-child(4),
-        .bookings-table td:nth-child(4) {
-          width: 240px;
-          max-width: 240px;
-        }
-
-        .bookings-table th:nth-child(5),
-        .bookings-table td:nth-child(5) {
-          width: 230px;
-          max-width: 230px;
-        }
-
-        .bookings-table th:nth-child(6),
-        .bookings-table td:nth-child(6) {
-          width: 210px;
-          max-width: 210px;
-        }
-
-        /* Text hierarchy */
-        .customer-name {
-          font-size: 18px;
-          line-height: 1.1;
-          font-weight: 900;
-          letter-spacing: -0.035em;
-          color: #111827;
-        }
-
-        .booking-id {
-          display: inline-flex;
-          width: fit-content;
-          margin-top: 5px;
-          padding: 4px 8px;
-          border-radius: 999px;
-          background: #eff6ff;
-          color: #1d4ed8 !important;
-          font-size: 12px;
-          font-weight: 850;
-          text-decoration: none !important;
-        }
-
-        .tiny {
-          color: #64748b;
-          font-size: 12px;
-          line-height: 1.35;
-        }
-
-        .stack {
-          gap: 8px;
-        }
-
-        /* Contact buttons */
-        .contact-actions {
-          gap: 8px;
-          margin-top: 8px;
-        }
-
-        .contact-btn {
-          height: 34px;
-          padding: 0 12px;
-          border-radius: 999px;
-          border: 1px solid #dbe1e8;
-          background: #f8fafc;
-          font-size: 12px;
-          font-weight: 850;
-          text-decoration: none;
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
-        }
-
-        .contact-btn:hover {
-          background: #ffffff;
-          transform: translateY(-1px);
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        }
-
-        /* Pills become unified status chips */
-        .pill {
-          min-height: 30px;
-          padding: 6px 12px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 900;
-          letter-spacing: -0.01em;
-          white-space: normal;
-          text-align: center;
-          line-height: 1.15;
-        }
-
-        .pill.ok {
-          background: #e6f4ea;
-          color: #137a3d;
-        }
-
-        .pill.warn {
-          background: #fff4e5;
-          color: #b45309;
-        }
-
-        .pill.bad {
-          background: #fde8e8;
-          color: #b42318;
-        }
-
-        .pill.neutral,
-        .pill.done {
-          background: #f1f5f9;
-          color: #475569;
-        }
-
-        .pill.action {
-          transition:
-            transform 0.15s ease,
-            box-shadow 0.15s ease,
-            background 0.15s ease;
-        }
-
-        .pill.action:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        }
-
-        /* Action buttons feel like clean app controls */
-        .btn,
-        .mobile-link-btn,
-        .status-link {
-          border-radius: 14px;
-        }
-
-        .btn.ghost,
-        .btn.primary {
-          min-height: 38px;
-          font-weight: 900;
-        }
-
-        .btn.ghost {
-          background: #f8fafc;
-          border: 1px solid #dbe1e8;
-        }
-
-        .btn.ghost:hover {
-          background: #ffffff;
-          transform: translateY(-1px);
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        }
-
-        .btn.primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 10px 22px rgba(31, 111, 235, 0.18);
-        }
-
-        /* Payment/action columns look less messy */
-        .bookings-table td:nth-child(4) .stack,
-        .bookings-table td:nth-child(5) .stack,
-        .bookings-table td:nth-child(6) .stack {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        /* DVLA rows as small cards */
-        .dvla-row {
-          min-height: 38px;
-          padding: 8px 10px;
-          border-radius: 14px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-        }
-
-        .dvla-row strong {
-          font-size: 13px;
-          letter-spacing: 0.03em;
-        }
-
-        .dvla-verify {
-          margin-top: 8px;
-          padding: 8px 10px;
-          border-radius: 14px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          font-weight: 850;
-        }
-
-        /* Notes / extras blocks if present */
-        .admin-note,
-        .booking-note,
-        .customer-note {
-          border-radius: 14px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          padding: 10px;
-        }
-
-        /* Cancelled/urgent rows still clear but prettier */
-        .cancelled-booking {
-          opacity: 0.62;
-          filter: grayscale(0.2);
-        }
-
-        .urgent-booking td:first-child {
-          box-shadow: inset 5px 0 0 #ef4444;
-        }
-
-        .returns-today td:first-child {
-          box-shadow: inset 5px 0 0 #0ea5e9;
-        }
-
-        /* Prevent desktop table styles from affecting mobile */
-        .mobile-bookings {
-          display: none;
-        }
-      }
-
-      /* ======================================================
-   DESKTOP BOOKING CARDS — DENSE 6-COLUMN LAYOUT
-   CSS ONLY — does not touch booking/payment/edit logic
-====================================================== */
-
-      @media (min-width: 769px) {
-        /* Mobile cards stay untouched */
         .mobile-bookings {
           display: none !important;
         }
 
-        /* Date/week separator — NOT sticky */
+        /* Table becomes stacked booking cards */
+        .bookings-table {
+          display: block !important;
+          width: 100% !important;
+          min-width: 0 !important;
+          max-width: 100% !important;
+          border-collapse: separate !important;
+          border-spacing: 0 !important;
+          background: transparent !important;
+        }
+
+        .bookings-table thead {
+          display: none !important;
+        }
+
+        .bookings-table tbody {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 12px !important;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+
+        /* Date/week separator — not sticky */
         .bookings-table tbody tr.section-header {
           display: grid !important;
           grid-template-columns: 1fr !important;
@@ -2242,14 +1950,16 @@
           z-index: auto !important;
 
           width: 100% !important;
+          max-width: 100% !important;
 
-          margin: 14px 0 6px !important;
+          margin: 14px 0 4px !important;
           padding: 0 !important;
 
           background: transparent !important;
           border: none !important;
           box-shadow: none !important;
           transform: none !important;
+          overflow: visible !important;
         }
 
         .bookings-table tbody tr.section-header:hover {
@@ -2262,11 +1972,11 @@
           align-items: center !important;
 
           width: 100% !important;
-          min-height: 46px !important;
+          min-height: 42px !important;
 
           padding: 8px 14px !important;
 
-          border-radius: 18px !important;
+          border-radius: 16px !important;
           border: 1px solid #e2e8f0 !important;
 
           background: #ffffff !important;
@@ -2274,68 +1984,35 @@
           box-shadow:
             0 6px 16px rgba(15, 23, 42, 0.055),
             inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+
+          font-size: 14px !important;
+          font-weight: 900 !important;
         }
 
         .bookings-table tbody tr.section-header td::before {
           display: none !important;
         }
 
-        .bookings-table tbody tr.section-header + tr {
-          margin-top: 0 !important;
-        }
-        /* Booking list wrapper */
-        #bookings-section .card.list-wrap {
-          padding: 10px !important;
-          border-radius: 22px !important;
-          background: rgba(255, 255, 255, 0.88) !important;
-          border: 1px solid rgba(219, 225, 232, 0.95) !important;
-          box-shadow:
-            0 14px 34px rgba(15, 23, 42, 0.07),
-            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-
-          overflow-x: auto !important;
-        }
-
-        /* Table becomes vertical list of compact cards */
-        .bookings-table {
-          display: block !important;
-          width: 100% !important;
-          min-width: 1120px !important;
-
-          border-collapse: separate !important;
-          border-spacing: 0 !important;
-
-          background: transparent !important;
-        }
-
-        .bookings-table thead {
-          display: none !important;
-        }
-
-        .bookings-table tbody {
-          display: flex !important;
-          flex-direction: column !important;
-          gap: 10px !important;
-        }
-
-        /* Each booking row becomes a compact 6-column card */
-        .bookings-table tbody tr {
+        /* Actual booking row */
+        .bookings-table tbody tr:not(.section-header) {
           display: grid !important;
 
           grid-template-columns:
-            minmax(185px, 1.05fr)
-            minmax(160px, 0.9fr)
-            minmax(205px, 1fr)
-            minmax(205px, 1fr)
-            minmax(220px, 1.08fr)
-            minmax(150px, 0.75fr) !important;
+            minmax(0, 0.78fr)
+            minmax(0, 0.82fr)
+            minmax(0, 1fr)
+            minmax(0, 1.14fr)
+            minmax(0, 1.14fr)
+            minmax(0, 1fr) !important;
 
-          column-gap: 8px !important;
-          row-gap: 8px !important;
+          column-gap: 5px !important;
+          row-gap: 5px !important;
 
           width: 100% !important;
+          max-width: 100% !important;
 
-          padding: 12px !important;
+          padding: 10px !important;
+
           border-radius: 22px !important;
 
           background: #ffffff !important;
@@ -2345,12 +2022,14 @@
             0 8px 22px rgba(15, 23, 42, 0.055),
             0 1px 0 rgba(15, 23, 42, 0.035) !important;
 
+          overflow: hidden !important;
+
           transition:
             transform 0.16s ease,
             box-shadow 0.16s ease !important;
         }
 
-        .bookings-table tbody tr:hover {
+        .bookings-table tbody tr:not(.section-header):hover {
           transform: translateY(-1px) !important;
           background: #ffffff !important;
           box-shadow:
@@ -2358,51 +2037,52 @@
             0 1px 0 rgba(15, 23, 42, 0.04) !important;
         }
 
-        /* Each cell becomes a tight panel */
-        .bookings-table tbody tr td {
+        /* Column cards */
+        .bookings-table tbody tr:not(.section-header) td {
           display: flex !important;
           flex-direction: column !important;
-          gap: 7px !important;
 
           min-width: 0 !important;
+          max-width: 100% !important;
 
-          padding: 11px 13px !important;
+          gap: 6px !important;
+
+          padding: 10px !important;
 
           background: #f8fafc !important;
           border: 1px solid #e2e8f0 !important;
-          border-radius: 17px !important;
+          border-radius: 15px !important;
 
           white-space: normal !important;
           vertical-align: top !important;
 
+          overflow: hidden !important;
           overflow-wrap: normal !important;
           word-break: normal !important;
         }
 
-        /* Labels above each panel */
-        .bookings-table tbody tr td::before {
+        .bookings-table tbody tr:not(.section-header) td::before {
           content: attr(data-label);
-
           display: block;
 
-          margin-bottom: 0;
+          margin-bottom: 1px;
 
           color: #64748b;
 
-          font-size: 10px;
-          font-weight: 950;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
+          font-size: 9.5px !important;
+          font-weight: 950 !important;
+          letter-spacing: 0.08em !important;
+          text-transform: uppercase !important;
         }
 
-        /* Customer */
+        /* Smaller customer / vehicle / hire text */
         .customer-block {
           gap: 5px !important;
         }
 
         .customer-name {
-          font-size: 17px !important;
-          line-height: 1.08 !important;
+          font-size: 15px !important;
+          line-height: 1.05 !important;
           font-weight: 950 !important;
           letter-spacing: -0.035em !important;
           color: #111827 !important;
@@ -2412,25 +2092,35 @@
           display: inline-flex !important;
           width: fit-content !important;
 
-          padding: 4px 8px !important;
+          padding: 3px 7px !important;
 
           border-radius: 999px !important;
 
           background: #eff6ff !important;
           color: #1d4ed8 !important;
 
-          font-size: 11px !important;
+          font-size: 10.5px !important;
           font-weight: 900 !important;
 
           text-decoration: none !important;
         }
 
+        .bookings-table td:nth-child(2),
+        .bookings-table td:nth-child(3) {
+          font-size: 12.5px !important;
+          line-height: 1.18 !important;
+        }
+
+        .bookings-table td:nth-child(2) strong,
+        .bookings-table td:nth-child(3) strong {
+          font-size: 13px !important;
+          line-height: 1.15 !important;
+        }
+
         .tiny {
           color: #64748b !important;
-
-          font-size: 11px !important;
-          line-height: 1.28 !important;
-
+          font-size: 10.5px !important;
+          line-height: 1.18 !important;
           white-space: normal !important;
         }
 
@@ -2438,44 +2128,38 @@
           gap: 6px !important;
         }
 
-        /* Contact buttons stay next to each other */
-        .contact-actions {
+        /* Contact buttons vertical */
+        .bookings-table td:nth-child(1) .contact-actions {
           display: flex !important;
-          flex-direction: row !important;
+          flex-direction: column !important;
           flex-wrap: nowrap !important;
 
+          width: 82px !important;
+          max-width: 100% !important;
+
           gap: 5px !important;
-
-          width: 100% !important;
-          min-width: 0 !important;
-
-          margin-top: 3px !important;
+          margin-top: 6px !important;
         }
 
-        .contact-btn {
-          flex: 1 1 0 !important;
+        .bookings-table td:nth-child(1) .contact-btn {
+          width: 82px !important;
+          max-width: 82px !important;
 
-          display: inline-flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-
-          min-width: 0 !important;
-          min-height: 30px !important;
+          min-height: 27px !important;
           height: auto !important;
 
-          padding: 5px 6px !important;
+          padding: 4px 6px !important;
 
           border-radius: 999px !important;
           border: 1px solid transparent !important;
 
-          font-size: 10.5px !important;
+          font-size: 10px !important;
           font-weight: 900 !important;
-          line-height: 1.05 !important;
+          line-height: 1 !important;
 
-          white-space: nowrap !important;
+          justify-content: center !important;
           text-decoration: none !important;
-
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75) !important;
+          white-space: nowrap !important;
         }
 
         .contact-call {
@@ -2496,34 +2180,46 @@
           border-color: #bfdbfe !important;
         }
 
-        .contact-btn:hover {
-          transform: translateY(-1px) !important;
-          box-shadow: 0 7px 14px rgba(15, 23, 42, 0.09) !important;
-        }
+        /* Shared button/pill sizing */
+        .bookings-table td:nth-child(4) .pill,
+        .bookings-table td:nth-child(5) .pill,
+        .bookings-table td:nth-child(5) .btn,
+        .bookings-table td:nth-child(5) .btn.ghost,
+        .bookings-table td:nth-child(5) .btn.primary,
+        .bookings-table td:nth-child(5) .contact-btn,
+        .dvla-pill,
+        .dvla-verify {
+          width: min(140px, calc(100% - 8px)) !important;
+          max-width: calc(100% - 8px) !important;
 
-        /* All pills/buttons readable but less tall */
-        .pill {
-          display: inline-flex !important;
+          min-height: 30px !important;
+          height: auto !important;
+
+          margin-left: auto !important;
+          margin-right: auto !important;
+
+          align-self: center !important;
           align-items: center !important;
           justify-content: center !important;
 
-          width: 100% !important;
-          min-height: 32px !important;
-          height: auto !important;
-
-          padding: 6px 8px !important;
+          padding: 5px 7px !important;
 
           border-radius: 999px !important;
 
-          font-size: 11px !important;
+          font-size: 10.5px !important;
           font-weight: 900 !important;
-          line-height: 1.12 !important;
+          line-height: 1.08 !important;
 
           text-align: center !important;
           text-decoration: none !important;
-
           white-space: normal !important;
-          overflow: visible !important;
+
+          overflow: hidden !important;
+        }
+
+        /* Payment pills */
+        .bookings-table td:nth-child(4) .pill {
+          background-clip: padding-box !important;
         }
 
         .pill.ok {
@@ -2551,37 +2247,33 @@
           cursor: pointer !important;
         }
 
-        .pill.action:hover {
-          transform: translateY(-1px) !important;
-          box-shadow: 0 7px 14px rgba(15, 23, 42, 0.09) !important;
+        /* Payment text smaller */
+        .bookings-table td:nth-child(4) {
+          font-size: 11px !important;
+          line-height: 1.22 !important;
         }
 
-        /* Main admin buttons readable but compact */
-        .btn,
-        .btn-small,
-        .mobile-link-btn,
-        .status-link {
-          text-decoration: none !important;
+        .bookings-table td:nth-child(4) strong,
+        .bookings-table td:nth-child(4) .tiny {
+          font-size: 10.8px !important;
+          line-height: 1.22 !important;
         }
 
-        .btn.ghost,
-        .btn.primary {
+        /* Actions headings smaller */
+        .bookings-table td:nth-child(5) h3,
+        .bookings-table td:nth-child(5) h4,
+        .bookings-table td:nth-child(5) strong {
+          font-size: 13px !important;
+          line-height: 1.1 !important;
+        }
+
+        /* Force form/deposit/outstanding two-button grids to become centred vertical buttons */
+        .bookings-table td:nth-child(5) div[style*="grid-template-columns"] {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          gap: 5px !important;
           width: 100% !important;
-          min-height: 34px !important;
-          height: auto !important;
-
-          margin-left: 0 !important;
-          margin-right: 0 !important;
-
-          padding: 7px 9px !important;
-
-          border-radius: 13px !important;
-
-          font-size: 12px !important;
-          font-weight: 900 !important;
-          line-height: 1.15 !important;
-
-          white-space: normal !important;
         }
 
         .btn.ghost {
@@ -2595,74 +2287,97 @@
           color: #ffffff !important;
         }
 
-        .btn.ghost:hover,
-        .btn.primary:hover {
+        .btn:hover,
+        .pill.action:hover,
+        .contact-btn:hover,
+        .dvla-pill:hover {
           transform: translateY(-1px) !important;
-          box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1) !important;
+          box-shadow: 0 7px 14px rgba(15, 23, 42, 0.09) !important;
         }
 
-        /* Payment area uses less height */
-        .bookings-table td:nth-child(4) .stack,
-        .bookings-table td:nth-child(5) .stack {
-          gap: 6px !important;
+        /* DVLA pills: no separate arrow/copy buttons */
+        .dvla-cell {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+
+        .dvla-pill {
+          appearance: none !important;
+          -webkit-appearance: none !important;
+
+          display: grid !important;
+          grid-template-columns: auto minmax(0, 1fr) !important;
+          gap: 5px !important;
+
+          border: 1px solid #dbe1e8 !important;
+
+          background: #ffffff !important;
+          color: #111827 !important;
+
+          cursor: pointer !important;
+
+          font-family: inherit !important;
+          text-align: left !important;
+        }
+
+        .dvla-pill span {
+          color: #64748b !important;
+          font-size: 9.8px !important;
+          font-weight: 800 !important;
+          white-space: nowrap !important;
+        }
+
+        .dvla-pill strong {
+          min-width: 0 !important;
+
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+
+          font-size: 10.5px !important;
+          font-weight: 950 !important;
+          letter-spacing: 0.02em !important;
+        }
+
+        .dvla-pill.copy-licence {
+          background: #eff6ff !important;
+          border-color: #bfdbfe !important;
+          color: #1d4ed8 !important;
+        }
+
+        .dvla-pill.copy-licence strong {
+          color: #1d4ed8 !important;
+        }
+
+        .dvla-pill.copy-btn {
+          background: #f8fafc !important;
+        }
+
+        .dvla-pill[disabled] {
+          opacity: 0.5 !important;
+          cursor: default !important;
+          pointer-events: none !important;
+        }
+
+        .dvla-verify {
+          display: flex !important;
+          border: 1px solid #dbe1e8 !important;
+          background: #ffffff !important;
+        }
+
+        /* Hide old separate DVLA buttons if cached HTML exists */
+        .dvla-row .copy-licence,
+        .dvla-row .copy-btn {
+          display: none !important;
         }
 
         /* Notes less bulky */
         .bookings-table td .tiny[style*="background"] {
-          padding: 8px 9px !important;
-          border-radius: 13px !important;
-        }
-
-        /* DVLA rows */
-        .dvla-row {
-          display: flex !important;
-          align-items: center !important;
-          justify-content: space-between !important;
-
-          gap: 6px !important;
-
-          min-height: 36px !important;
-
           padding: 7px 8px !important;
-
-          border-radius: 14px !important;
-
-          background: #ffffff !important;
-          border: 1px solid #e2e8f0 !important;
+          border-radius: 12px !important;
         }
 
-        .dvla-row strong {
-          font-size: 12px !important;
-          letter-spacing: 0.035em !important;
-        }
-
-        .dvla-verify {
-          min-height: 36px !important;
-
-          margin-top: 0 !important;
-          padding: 7px 8px !important;
-
-          border-radius: 14px !important;
-
-          background: #ffffff !important;
-          border: 1px solid #e2e8f0 !important;
-
-          font-size: 12px !important;
-          font-weight: 900 !important;
-        }
-
-        .copy-btn {
-          min-height: 30px !important;
-
-          padding: 5px 8px !important;
-
-          border-radius: 11px !important;
-
-          font-size: 11px !important;
-          font-weight: 900 !important;
-        }
-
-        /* Cancelled bookings stay readable without striking every button */
+        /* Cancelled bookings readable */
         .cancelled-booking {
           opacity: 0.82 !important;
           filter: grayscale(0.08) !important;
@@ -2698,7 +2413,7 @@
         .cancelled-booking .contact-btn,
         .cancelled-booking .btn,
         .cancelled-booking .pill,
-        .cancelled-booking .dvla-row,
+        .cancelled-booking .dvla-pill,
         .cancelled-booking .dvla-verify {
           text-decoration: none !important;
         }
@@ -2709,7 +2424,7 @@
         }
 
         .urgent-booking td:first-child {
-          box-shadow: inset 5px 0 0 #ef4444 !important;
+          box-shadow: inset 4px 0 0 #ef4444 !important;
         }
 
         .returns-today {
@@ -2717,413 +2432,7 @@
         }
 
         .returns-today td:first-child {
-          box-shadow: inset 5px 0 0 #0ea5e9 !important;
-        }
-      }
-      /* ======================================================
-   DESKTOP BOOKING CARDS — FINAL DENSITY PATCH
-   More room, smaller text, vertical contact buttons
-====================================================== */
-
-      @media (min-width: 769px) {
-        /* Columns: max 5px separation */
-        .bookings-table tbody tr {
-          grid-template-columns:
-            minmax(145px, 0.78fr)
-            minmax(145px, 0.78fr)
-            minmax(185px, 0.95fr)
-            minmax(210px, 1.05fr)
-            minmax(210px, 1.05fr)
-            minmax(205px, 1fr) !important;
-
-          column-gap: 5px !important;
-          row-gap: 5px !important;
-
-          padding: 9px !important;
-        }
-
-        /* Slightly tighter column cards, but still enough edge space */
-        .bookings-table tbody tr td {
-          padding: 10px 11px !important;
-          gap: 6px !important;
-          border-radius: 16px !important;
-        }
-
-        /* Smaller headings/labels */
-        .bookings-table tbody tr td::before {
-          font-size: 9.5px !important;
-          letter-spacing: 0.08em !important;
-          margin-bottom: 1px !important;
-        }
-
-        /* 1) Contact buttons underneath each other */
-        .contact-actions {
-          display: flex !important;
-          flex-direction: column !important;
-          flex-wrap: nowrap !important;
-
-          gap: 5px !important;
-
-          width: 96px !important;
-          max-width: 100% !important;
-
-          margin-top: 6px !important;
-        }
-
-        .contact-btn {
-          width: 100% !important;
-          flex: 0 0 auto !important;
-
-          min-height: 28px !important;
-
-          padding: 5px 8px !important;
-
-          font-size: 10.5px !important;
-          line-height: 1.05 !important;
-
-          justify-content: center !important;
-        }
-
-        /* 2) Smaller customer text */
-        .customer-name {
-          font-size: 16px !important;
-          line-height: 1.05 !important;
-          letter-spacing: -0.035em !important;
-        }
-
-        .booking-id {
-          font-size: 10.5px !important;
-          padding: 3px 7px !important;
-        }
-
-        /* 2) Smaller vehicle + hire/rental date text */
-        .bookings-table td:nth-child(2),
-        .bookings-table td:nth-child(3) {
-          font-size: 13px !important;
-          line-height: 1.22 !important;
-        }
-
-        .bookings-table td:nth-child(2) strong,
-        .bookings-table td:nth-child(3) strong {
-          font-size: 14px !important;
-          line-height: 1.18 !important;
-        }
-
-        .bookings-table td:nth-child(2) .tiny,
-        .bookings-table td:nth-child(3) .tiny,
-        .tiny {
-          font-size: 10.5px !important;
-          line-height: 1.22 !important;
-        }
-
-        /* 3) Payment pills less wide */
-        .bookings-table td:nth-child(4) .pill {
-          width: 86% !important;
-          max-width: 210px !important;
-          min-height: 30px !important;
-
-          align-self: center !important;
-
-          padding: 6px 8px !important;
-
-          font-size: 10.8px !important;
-          line-height: 1.1 !important;
-        }
-
-        .bookings-table td:nth-child(4) {
-          font-size: 11px !important;
-          line-height: 1.25 !important;
-        }
-
-        .bookings-table td:nth-child(4) .tiny,
-        .bookings-table td:nth-child(4) strong {
-          font-size: 11px !important;
-          line-height: 1.25 !important;
-        }
-
-        /* 4) Actions buttons/pills less wide */
-        .bookings-table td:nth-child(5) .btn,
-        .bookings-table td:nth-child(5) .pill,
-        .bookings-table td:nth-child(5) .handover-complete-pill {
-          width: 86% !important;
-          max-width: 210px !important;
-
-          align-self: center !important;
-        }
-
-        .bookings-table td:nth-child(5) .btn.ghost,
-        .bookings-table td:nth-child(5) .btn.primary {
-          min-height: 32px !important;
-
-          padding: 6px 8px !important;
-
-          font-size: 11.5px !important;
-          line-height: 1.1 !important;
-        }
-
-        .bookings-table td:nth-child(5) .pill,
-        .bookings-table td:nth-child(5) .handover-complete-pill {
-          min-height: 30px !important;
-
-          padding: 6px 8px !important;
-
-          font-size: 10.8px !important;
-          line-height: 1.1 !important;
-        }
-
-        .bookings-table td:nth-child(5) h3,
-        .bookings-table td:nth-child(5) h4,
-        .bookings-table td:nth-child(5) strong {
-          font-size: 14px !important;
-          line-height: 1.15 !important;
-        }
-
-        /* Form/deposit/outstanding two-button rows stay neat */
-        .bookings-table td:nth-child(5) div[style*="grid-template-columns"] {
-          gap: 5px !important;
-        }
-
-        /* DVLA: give text room and prevent cutting off */
-        .bookings-table td:nth-child(6) {
-          overflow: hidden !important;
-        }
-
-        .dvla-row {
-          min-height: 34px !important;
-          padding: 6px 7px !important;
-          gap: 5px !important;
-        }
-
-        .dvla-row span,
-        .dvla-row strong {
-          font-size: 11px !important;
-          line-height: 1.1 !important;
-        }
-
-        .dvla-row strong {
-          max-width: 92px !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-          white-space: nowrap !important;
-        }
-
-        .dvla-verify {
-          min-height: 34px !important;
-          padding: 6px 7px !important;
-          font-size: 11px !important;
-          line-height: 1.1 !important;
-        }
-
-        .copy-btn {
-          min-height: 28px !important;
-          padding: 4px 7px !important;
-          font-size: 10.5px !important;
-        }
-      }
-
-      /* ======================================================
-   DESKTOP BOOKING CARDS — FINAL BUTTON + DVLA FIX
-   Equal buttons, centered, no DVLA arrow/copy buttons
-====================================================== */
-
-      @media (min-width: 769px) {
-        /* Stop columns overlapping: fixed sensible fractions */
-        .bookings-table tbody tr {
-          grid-template-columns:
-            minmax(150px, 0.8fr)
-            minmax(150px, 0.8fr)
-            minmax(190px, 1fr)
-            minmax(215px, 1.08fr)
-            minmax(215px, 1.08fr)
-            minmax(215px, 1.08fr) !important;
-
-          column-gap: 5px !important;
-          row-gap: 5px !important;
-
-          padding: 10px !important;
-        }
-
-        .bookings-table tbody tr td {
-          padding: 10px 12px !important;
-          overflow: hidden !important;
-        }
-
-        /* One shared size for almost all action buttons/pills */
-        .bookings-table td:nth-child(4) .pill,
-        .bookings-table td:nth-child(5) .pill,
-        .bookings-table td:nth-child(5) .btn,
-        .bookings-table td:nth-child(5) .btn.ghost,
-        .bookings-table td:nth-child(5) .btn.primary,
-        .bookings-table td:nth-child(5) .contact-btn {
-          width: 176px !important;
-          max-width: 100% !important;
-          min-height: 34px !important;
-
-          align-self: center !important;
-          justify-content: center !important;
-
-          padding: 6px 9px !important;
-
-          border-radius: 999px !important;
-
-          font-size: 11.5px !important;
-          font-weight: 900 !important;
-          line-height: 1.12 !important;
-
-          text-align: center !important;
-          white-space: normal !important;
-        }
-
-        /* Contact buttons in customer column stay vertical */
-        .bookings-table td:nth-child(1) .contact-actions {
-          width: 96px !important;
-          display: flex !important;
-          flex-direction: column !important;
-          gap: 5px !important;
-        }
-
-        .bookings-table td:nth-child(1) .contact-btn {
-          width: 96px !important;
-          min-height: 28px !important;
-          padding: 5px 8px !important;
-          font-size: 10.5px !important;
-        }
-
-        /* Form/deposit/outstanding button rows in Actions */
-        .bookings-table td:nth-child(5) .contact-actions {
-          display: flex !important;
-          flex-direction: column !important;
-          align-items: center !important;
-          gap: 5px !important;
-          width: 100% !important;
-        }
-
-        /* Payment pills centered and equal */
-        .bookings-table td:nth-child(4) .pill {
-          width: 176px !important;
-        }
-
-        /* Actions buttons/pills centered and equal */
-        .bookings-table td:nth-child(5) .btn,
-        .bookings-table td:nth-child(5) .pill,
-        .bookings-table td:nth-child(5) .contact-btn {
-          width: 176px !important;
-        }
-
-        /* DVLA: no separate arrow/copy buttons, whole pill is clickable */
-        .dvla-pill {
-          appearance: none !important;
-          -webkit-appearance: none !important;
-
-          width: 176px !important;
-          max-width: 100% !important;
-          min-height: 34px !important;
-
-          align-self: center !important;
-
-          display: grid !important;
-          grid-template-columns: auto 1fr !important;
-          align-items: center !important;
-          gap: 8px !important;
-
-          padding: 6px 10px !important;
-
-          border-radius: 999px !important;
-          border: 1px solid #dbe1e8 !important;
-
-          background: #ffffff !important;
-          color: #111827 !important;
-
-          cursor: pointer !important;
-
-          font-family: inherit !important;
-          text-align: left !important;
-        }
-
-        .dvla-pill span {
-          color: #64748b !important;
-          font-size: 10.5px !important;
-          font-weight: 800 !important;
-        }
-
-        .dvla-pill strong {
-          min-width: 0 !important;
-
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-          white-space: nowrap !important;
-
-          font-size: 11.5px !important;
-          font-weight: 950 !important;
-          letter-spacing: 0.02em !important;
-        }
-
-        .dvla-pill:hover {
-          transform: translateY(-1px) !important;
-          box-shadow: 0 7px 14px rgba(15, 23, 42, 0.09) !important;
-        }
-
-        .dvla-pill.copy-licence {
-          background: #eff6ff !important;
-          border-color: #bfdbfe !important;
-          color: #1d4ed8 !important;
-        }
-
-        .dvla-pill.copy-licence strong {
-          color: #1d4ed8 !important;
-        }
-
-        .dvla-pill.copy-btn {
-          background: #f8fafc !important;
-        }
-
-        .dvla-pill[disabled] {
-          opacity: 0.5 !important;
-          cursor: default !important;
-          pointer-events: none !important;
-        }
-
-        .dvla-verify {
-          width: 176px !important;
-          max-width: 100% !important;
-          min-height: 34px !important;
-
-          align-self: center !important;
-
-          padding: 6px 10px !important;
-
-          border-radius: 999px !important;
-
-          font-size: 11.5px !important;
-          font-weight: 900 !important;
-
-          justify-content: center !important;
-        }
-
-        /* Hide any old separate DVLA buttons if browser cached old HTML */
-        .dvla-row .copy-licence,
-        .dvla-row .copy-btn {
-          display: none !important;
-        }
-      }
-
-      /* Slightly narrower desktop screens */
-      @media (min-width: 769px) and (max-width: 1180px) {
-        .bookings-table {
-          min-width: 1040px !important;
-        }
-
-        .bookings-table tbody tr {
-          grid-template-columns:
-            minmax(140px, 0.78fr)
-            minmax(140px, 0.78fr)
-            minmax(180px, 0.95fr)
-            minmax(205px, 1.05fr)
-            minmax(205px, 1.05fr)
-            minmax(200px, 1fr) !important;
-
-          column-gap: 5px !important;
-          row-gap: 5px !important;
+          box-shadow: inset 4px 0 0 #0ea5e9 !important;
         }
       }
 
