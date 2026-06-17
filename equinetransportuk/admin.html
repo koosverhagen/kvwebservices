@@ -2222,7 +2222,7 @@
       }
 
       /* ======================================================
-   DESKTOP BOOKING CARDS — COMPACT 3-COLUMN LAYOUT
+   DESKTOP BOOKING CARDS — DENSE 6-COLUMN LAYOUT
    CSS ONLY — does not touch booking/payment/edit logic
 ====================================================== */
 
@@ -2232,24 +2232,34 @@
           display: none !important;
         }
 
+        /* Give sticky date headers breathing room */
+        .section-header td {
+          padding-top: 18px !important;
+          padding-bottom: 12px !important;
+        }
+
+        .section-header + tr td {
+          margin-top: 8px !important;
+        }
+
         /* Booking list wrapper */
         #bookings-section .card.list-wrap {
-          padding: 14px !important;
-          border-radius: 24px !important;
+          padding: 10px !important;
+          border-radius: 22px !important;
           background: rgba(255, 255, 255, 0.88) !important;
           border: 1px solid rgba(219, 225, 232, 0.95) !important;
           box-shadow:
-            0 16px 38px rgba(15, 23, 42, 0.08),
+            0 14px 34px rgba(15, 23, 42, 0.07),
             inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 
-          overflow-x: visible !important;
+          overflow-x: auto !important;
         }
 
-        /* Table becomes vertical list of cards */
+        /* Table becomes vertical list of compact cards */
         .bookings-table {
           display: block !important;
           width: 100% !important;
-          min-width: 0 !important;
+          min-width: 1120px !important;
 
           border-collapse: separate !important;
           border-spacing: 0 !important;
@@ -2264,30 +2274,35 @@
         .bookings-table tbody {
           display: flex !important;
           flex-direction: column !important;
-          gap: 14px !important;
+          gap: 10px !important;
         }
 
-        /* Each booking row becomes a compact 3-column card */
+        /* Each booking row becomes a compact 6-column card */
         .bookings-table tbody tr {
           display: grid !important;
 
-          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          grid-template-columns:
+            minmax(190px, 1.05fr)
+            minmax(165px, 0.9fr)
+            minmax(215px, 1.05fr)
+            minmax(210px, 1fr)
+            minmax(205px, 1fr)
+            minmax(190px, 0.95fr) !important;
 
-          gap: 12px !important;
+          gap: 8px !important;
 
           width: 100% !important;
-          min-width: 0 !important;
 
-          padding: 14px !important;
+          padding: 10px !important;
 
-          border-radius: 24px !important;
+          border-radius: 22px !important;
 
           background: #ffffff !important;
           border: 1px solid #e2e8f0 !important;
 
           box-shadow:
-            0 10px 26px rgba(15, 23, 42, 0.07),
-            0 1px 0 rgba(15, 23, 42, 0.04) !important;
+            0 8px 22px rgba(15, 23, 42, 0.055),
+            0 1px 0 rgba(15, 23, 42, 0.035) !important;
 
           transition:
             transform 0.16s ease,
@@ -2298,23 +2313,23 @@
           transform: translateY(-1px) !important;
           background: #ffffff !important;
           box-shadow:
-            0 16px 34px rgba(15, 23, 42, 0.1),
-            0 1px 0 rgba(15, 23, 42, 0.05) !important;
+            0 14px 30px rgba(15, 23, 42, 0.085),
+            0 1px 0 rgba(15, 23, 42, 0.04) !important;
         }
 
-        /* Each cell becomes a tidy panel */
+        /* Each cell becomes a tight panel */
         .bookings-table tbody tr td {
           display: flex !important;
           flex-direction: column !important;
-          gap: 8px !important;
+          gap: 6px !important;
 
           min-width: 0 !important;
 
-          padding: 12px !important;
+          padding: 10px !important;
 
           background: #f8fafc !important;
           border: 1px solid #e2e8f0 !important;
-          border-radius: 18px !important;
+          border-radius: 17px !important;
 
           white-space: normal !important;
           vertical-align: top !important;
@@ -2329,11 +2344,11 @@
 
           display: block;
 
-          margin-bottom: 2px;
+          margin-bottom: 0;
 
           color: #64748b;
 
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 950;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -2341,14 +2356,14 @@
 
         /* Customer */
         .customer-block {
-          gap: 7px !important;
+          gap: 5px !important;
         }
 
         .customer-name {
-          font-size: 20px !important;
-          line-height: 1.1 !important;
+          font-size: 17px !important;
+          line-height: 1.08 !important;
           font-weight: 950 !important;
-          letter-spacing: -0.04em !important;
+          letter-spacing: -0.035em !important;
           color: #111827 !important;
         }
 
@@ -2356,14 +2371,14 @@
           display: inline-flex !important;
           width: fit-content !important;
 
-          padding: 5px 9px !important;
+          padding: 4px 8px !important;
 
           border-radius: 999px !important;
 
           background: #eff6ff !important;
           color: #1d4ed8 !important;
 
-          font-size: 12px !important;
+          font-size: 11px !important;
           font-weight: 900 !important;
 
           text-decoration: none !important;
@@ -2372,14 +2387,14 @@
         .tiny {
           color: #64748b !important;
 
-          font-size: 12px !important;
-          line-height: 1.35 !important;
+          font-size: 11px !important;
+          line-height: 1.28 !important;
 
           white-space: normal !important;
         }
 
         .stack {
-          gap: 8px !important;
+          gap: 6px !important;
         }
 
         /* Contact buttons stay next to each other */
@@ -2388,12 +2403,12 @@
           flex-direction: row !important;
           flex-wrap: nowrap !important;
 
-          gap: 6px !important;
+          gap: 5px !important;
 
           width: 100% !important;
           min-width: 0 !important;
 
-          margin-top: 4px !important;
+          margin-top: 3px !important;
         }
 
         .contact-btn {
@@ -2404,17 +2419,17 @@
           justify-content: center !important;
 
           min-width: 0 !important;
-          min-height: 36px !important;
+          min-height: 32px !important;
           height: auto !important;
 
-          padding: 7px 8px !important;
+          padding: 6px 7px !important;
 
           border-radius: 999px !important;
           border: 1px solid transparent !important;
 
-          font-size: 12px !important;
+          font-size: 11px !important;
           font-weight: 900 !important;
-          line-height: 1.15 !important;
+          line-height: 1.1 !important;
 
           white-space: nowrap !important;
           text-decoration: none !important;
@@ -2442,26 +2457,26 @@
 
         .contact-btn:hover {
           transform: translateY(-1px) !important;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1) !important;
+          box-shadow: 0 7px 14px rgba(15, 23, 42, 0.09) !important;
         }
 
-        /* All pills/buttons readable */
+        /* All pills/buttons readable but less tall */
         .pill {
           display: inline-flex !important;
           align-items: center !important;
           justify-content: center !important;
 
           width: 100% !important;
-          min-height: 38px !important;
+          min-height: 34px !important;
           height: auto !important;
 
-          padding: 8px 12px !important;
+          padding: 7px 10px !important;
 
           border-radius: 999px !important;
 
-          font-size: 13px !important;
+          font-size: 12px !important;
           font-weight: 950 !important;
-          line-height: 1.2 !important;
+          line-height: 1.16 !important;
 
           text-align: center !important;
           text-decoration: none !important;
@@ -2497,10 +2512,10 @@
 
         .pill.action:hover {
           transform: translateY(-1px) !important;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1) !important;
+          box-shadow: 0 7px 14px rgba(15, 23, 42, 0.09) !important;
         }
 
-        /* Main admin buttons readable */
+        /* Main admin buttons readable but compact */
         .btn,
         .btn-small,
         .mobile-link-btn,
@@ -2511,16 +2526,16 @@
         .btn.ghost,
         .btn.primary {
           width: 100% !important;
-          min-height: 40px !important;
+          min-height: 36px !important;
           height: auto !important;
 
-          padding: 9px 12px !important;
+          padding: 8px 10px !important;
 
-          border-radius: 15px !important;
+          border-radius: 14px !important;
 
-          font-size: 14px !important;
+          font-size: 13px !important;
           font-weight: 950 !important;
-          line-height: 1.2 !important;
+          line-height: 1.18 !important;
 
           white-space: normal !important;
         }
@@ -2539,7 +2554,19 @@
         .btn.ghost:hover,
         .btn.primary:hover {
           transform: translateY(-1px) !important;
-          box-shadow: 0 9px 20px rgba(15, 23, 42, 0.11) !important;
+          box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1) !important;
+        }
+
+        /* Payment area uses less height */
+        .bookings-table td:nth-child(4) .stack,
+        .bookings-table td:nth-child(5) .stack {
+          gap: 6px !important;
+        }
+
+        /* Notes less bulky */
+        .bookings-table td .tiny[style*="background"] {
+          padding: 8px 9px !important;
+          border-radius: 13px !important;
         }
 
         /* DVLA rows */
@@ -2548,50 +2575,50 @@
           align-items: center !important;
           justify-content: space-between !important;
 
-          gap: 8px !important;
+          gap: 6px !important;
 
-          min-height: 40px !important;
+          min-height: 36px !important;
 
-          padding: 8px 9px !important;
+          padding: 7px 8px !important;
 
-          border-radius: 15px !important;
+          border-radius: 14px !important;
 
           background: #ffffff !important;
           border: 1px solid #e2e8f0 !important;
         }
 
         .dvla-row strong {
-          font-size: 13px !important;
-          letter-spacing: 0.04em !important;
+          font-size: 12px !important;
+          letter-spacing: 0.035em !important;
         }
 
         .dvla-verify {
-          min-height: 40px !important;
+          min-height: 36px !important;
 
           margin-top: 0 !important;
-          padding: 8px 9px !important;
+          padding: 7px 8px !important;
 
-          border-radius: 15px !important;
+          border-radius: 14px !important;
 
           background: #ffffff !important;
           border: 1px solid #e2e8f0 !important;
-
-          font-size: 13px !important;
-          font-weight: 900 !important;
-        }
-
-        .copy-btn {
-          min-height: 32px !important;
-
-          padding: 5px 9px !important;
-
-          border-radius: 11px !important;
 
           font-size: 12px !important;
           font-weight: 900 !important;
         }
 
-        /* Cancelled bookings stay readable */
+        .copy-btn {
+          min-height: 30px !important;
+
+          padding: 5px 8px !important;
+
+          border-radius: 11px !important;
+
+          font-size: 11px !important;
+          font-weight: 900 !important;
+        }
+
+        /* Cancelled bookings stay readable without striking every button */
         .cancelled-booking {
           opacity: 0.82 !important;
           filter: grayscale(0.08) !important;
@@ -2611,14 +2638,14 @@
           display: inline-flex !important;
           width: fit-content !important;
 
-          padding: 5px 10px !important;
+          padding: 4px 9px !important;
 
           border-radius: 999px !important;
 
           background: #fee2e2 !important;
           color: #991b1b !important;
 
-          font-size: 12px !important;
+          font-size: 11px !important;
           font-weight: 950 !important;
 
           text-decoration: none !important;
@@ -2651,88 +2678,19 @@
       }
 
       /* Slightly narrower desktop screens */
-      @media (min-width: 769px) and (max-width: 1120px) {
+      @media (min-width: 769px) and (max-width: 1180px) {
+        .bookings-table {
+          min-width: 1040px !important;
+        }
+
         .bookings-table tbody tr {
-          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        }
-      }
-
-      /* ===============================
-   ADMIN HANDOVER MODAL
-   STEP 1B — SHELL ONLY
-================================ */
-
-      .handover-summary {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
-        margin-bottom: 18px;
-      }
-
-      .handover-status {
-        margin-top: 12px;
-        padding: 10px 12px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 700;
-        display: none;
-      }
-
-      .handover-status.ok {
-        display: block;
-        background: #e6f4ea;
-        color: #137a3d;
-      }
-
-      .handover-status.warn {
-        display: block;
-        background: #fff4e5;
-        color: #b45309;
-      }
-
-      .handover-status.bad {
-        display: block;
-        background: #fde8e8;
-        color: #b42318;
-      }
-
-      .handover-notice {
-        padding: 12px;
-        border-radius: 14px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #475569;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-
-      .handover-textarea {
-        width: 100%;
-        min-height: 140px;
-        resize: vertical;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 12px;
-        font-family: inherit;
-        font-size: 15px;
-        line-height: 1.45;
-      }
-
-      .handover-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 14px;
-      }
-
-      @media (max-width: 768px) {
-        .handover-actions {
-          flex-direction: column;
-        }
-
-        .handover-actions .btn {
-          width: 100%;
-          min-height: 48px;
+          grid-template-columns:
+            minmax(180px, 1fr)
+            minmax(155px, 0.85fr)
+            minmax(200px, 1fr)
+            minmax(195px, 1fr)
+            minmax(195px, 1fr)
+            minmax(180px, 0.9fr) !important;
         }
       }
 
