@@ -809,8 +809,21 @@
         background: #ffedd5;
       }
 
-      .cal-day.weekend.full,
+      .cal-day.weekend.full {
+        background: #fee2e2;
+      }
+
+      /* Past free days should not look unavailable */
       .cal-day.past {
+        background: #f8fafc;
+        opacity: 0.72;
+      }
+
+      .cal-day.past.partial {
+        background: #fff4e5;
+      }
+
+      .cal-day.past.full {
         background: #fee2e2;
       }
 
