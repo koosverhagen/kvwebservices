@@ -6498,7 +6498,34 @@ async function handleAdminBookingUpdate(request, env) {
 
       if (action === "cancel") {
         updated.status = "cancelled";
+        updated.cancelled = true;
         updated.cancelledAt = now;
+
+        /* ===============================
+     ✅ CANCEL MUST UPDATE D1 TOO
+     This makes cancelled bookings stop blocking admin/calendar data.
+  =============================== */
+
+        try {
+          await env.DB.prepare(
+            `
+      UPDATE bookings
+      SET status = ?,
+          updated_at = ?
+      WHERE id = ?
+    `,
+          )
+            .bind("cancelled", now, updated.id)
+            .run();
+        } catch (err) {
+          console.warn("⚠️ Cancel D1 update failed:", err.message);
+        }
+
+        try {
+          await clearBookingReservations(env, updated.id);
+        } catch (err) {
+          console.warn("⚠️ Cancel reservation cleanup failed:", err.message);
+        }
 
         try {
           const auditKey = `audit:${updated.id}`;
@@ -6603,8 +6630,10 @@ async function handleAdminBookingUpdate(request, env) {
 
       await moveBookingInKv(env, existing, updated);
 
-      console.log("✅ ADMIN ACTION:", action, bookingId);
+      // ✅ force admin/calendar clients to reload fresh availability
+      await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
 
+      console.log("✅ ADMIN ACTION:", action, bookingId);
       return json({
         ok: true,
         booking: updated,
@@ -9109,7 +9138,20 @@ async function handleMonthAvailability(request, env) {
 
   for (const b of bookings) {
     if (!b.pickupAt || !b.vehicleId) continue;
-    if (String(b.status).toLowerCase() === "cancelled") continue;
+
+    const bookingStatus = String(b.status || b.bookingStatus || "")
+      .trim()
+      .toLowerCase();
+
+    // ✅ cancelled bookings must never block availability
+    if (
+      bookingStatus === "cancelled" ||
+      bookingStatus === "canceled" ||
+      b.cancelled === true ||
+      b.isCancelled === true
+    ) {
+      continue;
+    }
 
     const start = new Date(b.pickupAt);
     const end = b.dropoffAt ? new Date(b.dropoffAt) : new Date(b.pickupAt);

@@ -14854,7 +14854,8 @@ Equine Transport UK`;
 
         try {
           const res = await fetch(
-            `${API_BASE}/api/bookings/list?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+            `${API_BASE}/api/bookings/list?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&_=${Date.now()}`,
+            { cache: "no-store" },
           );
 
           let data = {};
@@ -15895,8 +15896,8 @@ Equine Transport UK`;
         });
 
       /* ===============================
-         ❌ CANCEL BOOKING (NEW)
-      =============================== */
+   ❌ CANCEL BOOKING (NEW)
+=============================== */
 
       document
         .getElementById("edit-cancel-booking")
@@ -15906,7 +15907,7 @@ Equine Transport UK`;
           if (!confirm("Cancel this booking?")) return;
 
           try {
-            await fetch(`${API_BASE}/api/admin/booking-update`, {
+            const res = await fetch(`${API_BASE}/api/admin/booking-update`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -15915,12 +15916,38 @@ Equine Transport UK`;
               }),
             });
 
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok || data.ok === false) {
+              throw new Error(data.error || "Cancel failed");
+            }
+
+            // ✅ update local state immediately
+            allBookings = (allBookings || []).map((b) =>
+              String(b.id) === String(bookingId)
+                ? {
+                    ...b,
+                    status: "cancelled",
+                    cancelled: true,
+                    cancelledAt:
+                      data.booking?.cancelledAt || new Date().toISOString(),
+                  }
+                : b,
+            );
+
+            window.ALL_BOOKINGS = allBookings;
+
             showCopySuccess("Booking cancelled");
             editModal.classList.add("hidden");
+
             await loadBookings();
+
+            if (typeof loadAdminCalendar === "function") {
+              await loadAdminCalendar();
+            }
           } catch (err) {
             console.error(err);
-            alert("Cancel failed");
+            alert(err.message || "Cancel failed");
           }
         });
       const scrollTop = document.getElementById("scroll-top");
@@ -16302,9 +16329,24 @@ Equine Transport UK`;
         return window.ALL_BOOKINGS.filter((b) => {
           if (!b.pickupAt) return false;
 
+          const status = String(b.status || b.bookingStatus || "")
+            .trim()
+            .toLowerCase();
+
+          // ✅ cancelled bookings must not keep calendar days locked/clickable
+          if (
+            status === "cancelled" ||
+            status === "canceled" ||
+            b.cancelled === true ||
+            b.isCancelled === true
+          ) {
+            return false;
+          }
+
           // 🔥 CRITICAL FIX: only show bookings for selected lorry
           if (
             selectedVehicle &&
+            selectedVehicle !== "all" &&
             String(b.vehicleId) !== String(selectedVehicle)
           ) {
             return false;
