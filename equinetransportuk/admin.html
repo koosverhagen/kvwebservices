@@ -2436,6 +2436,57 @@
         }
       }
 
+      /* ======================================================
+   DESKTOP BOOKING CARDS — FINAL ALIGNMENT POLISH
+====================================================== */
+
+      @media (min-width: 769px) {
+        /* 1) Payment price info: block centered, text lines left aligned */
+        .bookings-table td:nth-child(4) > .tiny,
+        .bookings-table td:nth-child(4) > div:not(.stack):not(.pill) {
+          width: min(190px, calc(100% - 8px)) !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+          text-align: left !important;
+        }
+
+        .bookings-table td:nth-child(4) strong,
+        .bookings-table td:nth-child(4) .tiny {
+          text-align: left !important;
+        }
+
+        /* 2) Actions section headings: Form / Deposit / Outstanding centered */
+        .bookings-table td:nth-child(5) h3,
+        .bookings-table td:nth-child(5) h4,
+        .bookings-table td:nth-child(5) > strong,
+        .bookings-table td:nth-child(5) .stack > strong {
+          width: 100% !important;
+          text-align: center !important;
+          align-self: center !important;
+        }
+
+        /* 3) DVLA pill text centered */
+        .dvla-pill {
+          grid-template-columns: 1fr !important;
+          justify-items: center !important;
+          text-align: center !important;
+        }
+
+        .dvla-pill span,
+        .dvla-pill strong {
+          width: 100% !important;
+          text-align: center !important;
+        }
+
+        .dvla-pill strong {
+          text-overflow: ellipsis !important;
+        }
+
+        .dvla-verify {
+          text-align: center !important;
+        }
+      }
+
       /* ===============================
    ADMIN HANDOVER SIGNATURES
    STEP 1C
