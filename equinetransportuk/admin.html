@@ -2221,6 +2221,407 @@
         }
       }
 
+      /* ======================================================
+   DESKTOP BOOKING CARDS — TIDY GROUPED LAYOUT
+   CSS ONLY — does not touch booking/payment/edit logic
+====================================================== */
+
+      @media (min-width: 769px) {
+        /* Keep mobile cards untouched */
+        .mobile-bookings {
+          display: none !important;
+        }
+
+        /* Main booking list container */
+        #bookings-section .card.list-wrap {
+          padding: 22px !important;
+          border-radius: 30px !important;
+          background: rgba(255, 255, 255, 0.86) !important;
+          border: 1px solid rgba(219, 225, 232, 0.95) !important;
+          box-shadow:
+            0 22px 55px rgba(15, 23, 42, 0.09),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+          overflow-x: auto !important;
+        }
+
+        /* Turn each desktop row into a tidy card */
+        .bookings-table {
+          display: block !important;
+          width: 100% !important;
+          min-width: 1180px !important;
+          border-collapse: separate !important;
+          border-spacing: 0 !important;
+          background: transparent !important;
+        }
+
+        .bookings-table thead {
+          display: none !important;
+        }
+
+        .bookings-table tbody {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 18px !important;
+        }
+
+        .bookings-table tbody tr {
+          display: grid !important;
+          grid-template-columns:
+            minmax(210px, 1.05fr)
+            minmax(220px, 1fr)
+            minmax(240px, 1.1fr)
+            minmax(250px, 1.15fr)
+            minmax(230px, 1fr)
+            minmax(230px, 1fr) !important;
+
+          gap: 14px !important;
+
+          padding: 18px !important;
+          border-radius: 28px !important;
+
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
+
+          box-shadow:
+            0 12px 32px rgba(15, 23, 42, 0.07),
+            0 1px 0 rgba(15, 23, 42, 0.04) !important;
+
+          transition:
+            transform 0.16s ease,
+            box-shadow 0.16s ease !important;
+        }
+
+        .bookings-table tbody tr:hover {
+          transform: translateY(-2px) !important;
+          background: #ffffff !important;
+          box-shadow:
+            0 20px 45px rgba(15, 23, 42, 0.1),
+            0 1px 0 rgba(15, 23, 42, 0.05) !important;
+        }
+
+        /* Each table cell becomes a little section card */
+        .bookings-table tbody tr td {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 10px !important;
+
+          min-width: 0 !important;
+          padding: 14px !important;
+
+          background: #f8fafc !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 20px !important;
+
+          white-space: normal !important;
+          vertical-align: top !important;
+        }
+
+        .bookings-table tbody tr td::before {
+          content: attr(data-label);
+          display: block;
+
+          margin-bottom: 2px;
+
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 950;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        /* Customer block */
+        .customer-block {
+          gap: 8px !important;
+        }
+
+        .customer-name {
+          font-size: 20px !important;
+          line-height: 1.1 !important;
+          font-weight: 950 !important;
+          letter-spacing: -0.04em !important;
+          color: #111827 !important;
+        }
+
+        .booking-id {
+          display: inline-flex !important;
+          width: fit-content !important;
+
+          padding: 5px 9px !important;
+          border-radius: 999px !important;
+
+          background: #eff6ff !important;
+          color: #1d4ed8 !important;
+
+          font-size: 12px !important;
+          font-weight: 900 !important;
+
+          text-decoration: none !important;
+        }
+
+        /* Text */
+        .tiny {
+          color: #64748b !important;
+          font-size: 12px !important;
+          line-height: 1.4 !important;
+        }
+
+        .stack {
+          gap: 9px !important;
+        }
+
+        /* Contact buttons */
+        .contact-actions {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          gap: 8px !important;
+          margin-top: 4px !important;
+        }
+
+        .contact-btn {
+          min-height: 38px !important;
+          height: auto !important;
+
+          justify-content: center !important;
+
+          padding: 8px 10px !important;
+          border-radius: 999px !important;
+
+          font-size: 12px !important;
+          font-weight: 900 !important;
+
+          text-decoration: none !important;
+          border: 1px solid transparent !important;
+
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75) !important;
+        }
+
+        .contact-call {
+          background: #dcfce7 !important;
+          color: #166534 !important;
+          border-color: #bbf7d0 !important;
+        }
+
+        .contact-text {
+          background: #ede9fe !important;
+          color: #6d28d9 !important;
+          border-color: #ddd6fe !important;
+        }
+
+        .contact-email {
+          background: #dbeafe !important;
+          color: #1d4ed8 !important;
+          border-color: #bfdbfe !important;
+        }
+
+        .contact-btn:hover {
+          transform: translateY(-1px) !important;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1) !important;
+        }
+
+        /* All pills / status buttons consistent */
+        .pill {
+          width: 100% !important;
+          min-height: 38px !important;
+
+          padding: 8px 12px !important;
+          border-radius: 999px !important;
+
+          font-size: 13px !important;
+          font-weight: 950 !important;
+          line-height: 1.15 !important;
+          text-align: center !important;
+
+          text-decoration: none !important;
+          white-space: normal !important;
+        }
+
+        .pill.ok {
+          background: #dcfce7 !important;
+          color: #166534 !important;
+        }
+
+        .pill.warn {
+          background: #ffedd5 !important;
+          color: #9a3412 !important;
+        }
+
+        .pill.bad {
+          background: #fee2e2 !important;
+          color: #991b1b !important;
+        }
+
+        .pill.neutral,
+        .pill.done {
+          background: #e5e7eb !important;
+          color: #475569 !important;
+        }
+
+        .pill.action {
+          cursor: pointer !important;
+        }
+
+        .pill.action:hover {
+          transform: translateY(-1px) !important;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1) !important;
+        }
+
+        /* Main admin buttons */
+        .btn,
+        .btn-small,
+        .mobile-link-btn,
+        .status-link {
+          text-decoration: none !important;
+        }
+
+        .btn.ghost,
+        .btn.primary {
+          width: 100% !important;
+          min-height: 42px !important;
+
+          border-radius: 16px !important;
+          font-size: 14px !important;
+          font-weight: 950 !important;
+        }
+
+        .btn.ghost {
+          background: #ffffff !important;
+          border: 1px solid #dbe1e8 !important;
+          color: #111827 !important;
+        }
+
+        .btn.primary {
+          background: #1f6feb !important;
+          color: #ffffff !important;
+        }
+
+        .btn.ghost:hover,
+        .btn.primary:hover {
+          transform: translateY(-1px) !important;
+          box-shadow: 0 9px 20px rgba(15, 23, 42, 0.11) !important;
+        }
+
+        /* DVLA rows */
+        .dvla-row {
+          min-height: 42px !important;
+
+          padding: 9px 10px !important;
+          border-radius: 16px !important;
+
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
+        }
+
+        .dvla-row strong {
+          font-size: 13px !important;
+          letter-spacing: 0.04em !important;
+        }
+
+        .dvla-verify {
+          min-height: 42px !important;
+
+          margin-top: 0 !important;
+          padding: 9px 10px !important;
+
+          border-radius: 16px !important;
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
+
+          font-size: 13px !important;
+          font-weight: 900 !important;
+        }
+
+        .copy-btn {
+          min-height: 32px !important;
+          border-radius: 12px !important;
+          font-weight: 900 !important;
+        }
+
+        /* Notes blocks */
+        .bookings-table td .tiny strong,
+        .bookings-table td strong {
+          color: #111827 !important;
+        }
+
+        /* Cancelled bookings: keep card clear, but stop ugly full-row strike-through */
+        .cancelled-booking {
+          opacity: 0.78 !important;
+          filter: grayscale(0.12) !important;
+        }
+
+        .cancelled-booking td {
+          text-decoration: none !important;
+          background: #f8fafc !important;
+        }
+
+        .cancelled-booking .customer-name {
+          text-decoration: line-through !important;
+          color: #6b7280 !important;
+        }
+
+        .cancelled-booking .badge-cancelled {
+          display: inline-flex !important;
+          width: fit-content !important;
+
+          padding: 5px 10px !important;
+          border-radius: 999px !important;
+
+          background: #fee2e2 !important;
+          color: #991b1b !important;
+
+          font-size: 12px !important;
+          font-weight: 950 !important;
+
+          text-decoration: none !important;
+        }
+
+        .cancelled-booking .contact-btn,
+        .cancelled-booking .btn,
+        .cancelled-booking .pill,
+        .cancelled-booking .dvla-row,
+        .cancelled-booking .dvla-verify {
+          text-decoration: none !important;
+        }
+
+        /* Red/blue side markers still visible */
+        .urgent-booking {
+          border-left: none !important;
+        }
+
+        .urgent-booking td:first-child {
+          box-shadow: inset 5px 0 0 #ef4444 !important;
+        }
+
+        .returns-today {
+          border-left: none !important;
+        }
+
+        .returns-today td:first-child {
+          box-shadow: inset 5px 0 0 #0ea5e9 !important;
+        }
+
+        /* Prevent huge note/text boxes from making the row feel wild */
+        .bookings-table td {
+          overflow-wrap: anywhere !important;
+        }
+
+        /* Better small screens on desktop/tablet widths */
+        @media (min-width: 769px) and (max-width: 1250px) {
+          .bookings-table {
+            min-width: 1120px !important;
+          }
+
+          .bookings-table tbody tr {
+            grid-template-columns:
+              minmax(200px, 1fr)
+              minmax(200px, 1fr)
+              minmax(220px, 1fr)
+              minmax(230px, 1fr)
+              minmax(220px, 1fr)
+              minmax(220px, 1fr) !important;
+          }
+        }
+      }
+
       /* ===============================
    ADMIN HANDOVER MODAL
    STEP 1B — SHELL ONLY
