@@ -254,6 +254,17 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/migration/import-planyo-incremental"
+      ) {
+        const response = await handleMigrationImportPlanyoIncremental(
+          request,
+          env,
+        );
+        return withCors(response, corsHeaders);
+      }
+
       /* ===============================
    MIGRATION — CLEAN IMPORTED CONTACTS
 ================================ */
@@ -2823,10 +2834,432 @@ async function handleMigrationImportPlanyo(request, env) {
 }
 
 /* ===============================
+   MIGRATION — SAFE INCREMENTAL PLANYO IMPORT
+   Adds missing customers/bookings only.
+   Merges KV month buckets instead of replacing them.
+================================ */
+
+async function handleMigrationImportPlanyoIncremental(request, env) {
+  const auth = requireMigrationAuth(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401);
+
+  const migrationMode = String(env.MIGRATION_MODE || "").toLowerCase();
+
+  if (migrationMode !== "true") {
+    return json(
+      {
+        error: "MIGRATION_MODE must be true before importing data",
+      },
+      400,
+    );
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch (err) {
+    return json({ error: "Invalid JSON payload", detail: err.message }, 400);
+  }
+
+  if (body.confirm !== "IMPORT_INCREMENTAL_PLANYO") {
+    return json(
+      {
+        error:
+          "Missing confirmation. Send { confirm: 'IMPORT_INCREMENTAL_PLANYO', ...payload }",
+      },
+      400,
+    );
+  }
+
+  const customers = Array.isArray(body.customers) ? body.customers : [];
+  const bookings = Array.isArray(body.bookings) ? body.bookings : [];
+
+  if (!customers.length || !bookings.length) {
+    return json(
+      {
+        error: "Payload must contain customers[] and bookings[]",
+        customers: customers.length,
+        bookings: bookings.length,
+      },
+      400,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const SITE_BASE =
+    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://kvwebservices.co.uk/equinetransportuk";
+
+  function safeText(value) {
+    if (value === undefined || value === null) return "";
+    return String(value);
+  }
+
+  function safeNullable(value) {
+    if (value === undefined || value === null || value === "") return null;
+    return String(value);
+  }
+
+  function safeNumber(value) {
+    const n = Number(value || 0);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function addLinksToBooking(booking) {
+    const formType = booking.requiredFormType === "short" ? "short" : "long";
+    const formBase =
+      formType === "short"
+        ? `${SITE_BASE}/forms/short-form.html`
+        : `${SITE_BASE}/forms/long-form.html`;
+
+    return {
+      ...booking,
+      requiredFormType: formType,
+      requiredFormLink: `${formBase}?bookingId=${encodeURIComponent(
+        booking.id,
+      )}&vehicleName=${encodeURIComponent(
+        booking.vehicleSnapshot?.name || booking.vehicleId || "",
+      )}`,
+      depositLink: `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
+        booking.id,
+      )}`,
+      outstandingLink: `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(
+        booking.id,
+      )}`,
+      migratedAt: now,
+      updatedAt: booking.updatedAt || now,
+    };
+  }
+
+  const report = {
+    importedAt: now,
+    mode: "incremental",
+    customers: {
+      received: customers.length,
+      inserted: 0,
+      updatedBlankFields: 0,
+      skippedExisting: 0,
+      errors: [],
+    },
+    bookings: {
+      received: bookings.length,
+      insertedD1: 0,
+      skippedExistingD1: 0,
+      insertedKV: 0,
+      skippedExistingKV: 0,
+      errors: [],
+    },
+    kv: {
+      monthBucketsTouched: 0,
+      versionUpdated: false,
+    },
+  };
+
+  for (const customer of customers) {
+    const id = safeText(customer.id);
+
+    if (!id) {
+      report.customers.errors.push({
+        customer,
+        error: "Missing customer id",
+      });
+      continue;
+    }
+
+    let existing = null;
+
+    try {
+      existing = await env.DB.prepare("SELECT * FROM customers WHERE id = ?")
+        .bind(id)
+        .first();
+    } catch (err) {
+      report.customers.errors.push({
+        customerId: id,
+        error: `Customer lookup failed: ${err.message}`,
+      });
+      continue;
+    }
+
+    if (!existing) {
+      try {
+        await env.DB.prepare(
+          `
+          INSERT INTO customers (
+            id,
+            full_name,
+            email,
+            mobile,
+            address,
+            dob,
+            notes,
+            hire_count,
+            last_hire_at,
+            created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        )
+          .bind(
+            id,
+            safeText(customer.full_name || "Customer"),
+            safeText(customer.email || ""),
+            safeText(customer.mobile || ""),
+            safeNullable(customer.address),
+            safeNullable(customer.dob),
+            safeNullable(customer.notes),
+            safeNumber(customer.hire_count),
+            safeNullable(customer.last_hire_at),
+            safeNullable(customer.created_at) || now,
+            now,
+          )
+          .run();
+
+        report.customers.inserted += 1;
+      } catch (err) {
+        report.customers.errors.push({
+          customerId: id,
+          error: `Customer insert failed: ${err.message}`,
+        });
+      }
+
+      continue;
+    }
+
+    const next = {
+      full_name:
+        existing.full_name || safeText(customer.full_name || "Customer"),
+      email: existing.email || safeText(customer.email || ""),
+      mobile: existing.mobile || safeText(customer.mobile || ""),
+      address: existing.address || safeNullable(customer.address),
+      dob: existing.dob || safeNullable(customer.dob),
+      notes: existing.notes || safeNullable(customer.notes),
+      hire_count: Math.max(
+        safeNumber(existing.hire_count),
+        safeNumber(customer.hire_count),
+      ),
+      last_hire_at:
+        existing.last_hire_at && customer.last_hire_at
+          ? new Date(existing.last_hire_at) > new Date(customer.last_hire_at)
+            ? existing.last_hire_at
+            : customer.last_hire_at
+          : existing.last_hire_at || customer.last_hire_at || null,
+    };
+
+    const changed =
+      next.full_name !== existing.full_name ||
+      next.email !== existing.email ||
+      next.mobile !== existing.mobile ||
+      next.address !== existing.address ||
+      next.dob !== existing.dob ||
+      next.notes !== existing.notes ||
+      Number(next.hire_count || 0) !== Number(existing.hire_count || 0) ||
+      next.last_hire_at !== existing.last_hire_at;
+
+    if (!changed) {
+      report.customers.skippedExisting += 1;
+      continue;
+    }
+
+    try {
+      await env.DB.prepare(
+        `
+        UPDATE customers
+        SET full_name = ?,
+            email = ?,
+            mobile = ?,
+            address = ?,
+            dob = ?,
+            notes = ?,
+            hire_count = ?,
+            last_hire_at = ?,
+            updated_at = ?
+        WHERE id = ?
+      `,
+      )
+        .bind(
+          next.full_name,
+          next.email,
+          next.mobile,
+          next.address,
+          next.dob,
+          next.notes,
+          next.hire_count,
+          next.last_hire_at,
+          now,
+          id,
+        )
+        .run();
+
+      report.customers.updatedBlankFields += 1;
+    } catch (err) {
+      report.customers.errors.push({
+        customerId: id,
+        error: `Customer update failed: ${err.message}`,
+      });
+    }
+  }
+
+  const enrichedBookings = bookings.map(addLinksToBooking);
+  const bookingsForKv = [];
+
+  for (const booking of enrichedBookings) {
+    const id = safeText(booking.id);
+
+    if (!id) {
+      report.bookings.errors.push({
+        booking,
+        error: "Missing booking id",
+      });
+      continue;
+    }
+
+    let existing = null;
+
+    try {
+      existing = await env.DB.prepare("SELECT id FROM bookings WHERE id = ?")
+        .bind(id)
+        .first();
+    } catch (err) {
+      report.bookings.errors.push({
+        bookingId: id,
+        error: `Booking lookup failed: ${err.message}`,
+      });
+      continue;
+    }
+
+    if (existing) {
+      report.bookings.skippedExistingD1 += 1;
+      continue;
+    }
+
+    try {
+      await env.DB.prepare(
+        `
+        INSERT INTO bookings (
+          id,
+          customer_id,
+          vehicle_id,
+          pickup_at,
+          dropoff_at,
+          duration_days,
+          price_total,
+          paid_now,
+          status,
+          created_at,
+          updated_at,
+          form_completed,
+          deposit_paid,
+          dvla_verified
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      )
+        .bind(
+          id,
+          safeText(booking.customerId),
+          safeText(booking.vehicleId),
+          safeText(booking.pickupAt),
+          safeText(booking.dropoffAt),
+          safeNumber(booking.durationDays),
+          safeNumber(booking.hireTotal || booking.priceTotal),
+          safeNumber(booking.paidNow),
+          safeText(booking.status || "legacy_imported"),
+          safeText(booking.createdAt || now),
+          now,
+          booking.formCompleted ? 1 : 0,
+          booking.depositPaid ? 1 : 0,
+          booking.dvlaVerified ? 1 : 0,
+        )
+        .run();
+
+      report.bookings.insertedD1 += 1;
+      bookingsForKv.push(booking);
+    } catch (err) {
+      report.bookings.errors.push({
+        bookingId: id,
+        error: `Booking insert failed: ${err.message}`,
+      });
+    }
+  }
+
+  const byMonth = new Map();
+
+  for (const booking of bookingsForKv) {
+    const month = String(booking.pickupAt || "").slice(0, 7);
+
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      report.bookings.errors.push({
+        bookingId: booking.id,
+        error: "Invalid pickup month",
+      });
+      continue;
+    }
+
+    if (!byMonth.has(month)) byMonth.set(month, []);
+    byMonth.get(month).push(booking);
+  }
+
+  for (const [month, newBookings] of byMonth.entries()) {
+    const key = `bookings:${month}`;
+
+    let existingMonthBookings = [];
+
+    try {
+      const existingRaw = await env.BOOKINGS_KV.get(key);
+
+      if (existingRaw) {
+        const parsed = JSON.parse(existingRaw);
+        existingMonthBookings = Array.isArray(parsed) ? parsed : [];
+      }
+    } catch (err) {
+      report.bookings.errors.push({
+        month,
+        error: `KV month parse failed: ${err.message}`,
+      });
+      continue;
+    }
+
+    const existingIds = new Set(
+      existingMonthBookings.map((booking) => String(booking.id || "")),
+    );
+
+    const merged = [...existingMonthBookings];
+
+    for (const booking of newBookings) {
+      if (existingIds.has(String(booking.id))) {
+        report.bookings.skippedExistingKV += 1;
+        continue;
+      }
+
+      merged.push(booking);
+      existingIds.add(String(booking.id));
+      report.bookings.insertedKV += 1;
+    }
+
+    merged.sort(
+      (a, b) => new Date(a.pickupAt).getTime() - new Date(b.pickupAt).getTime(),
+    );
+
+    await env.BOOKINGS_KV.put(key, JSON.stringify(merged));
+    report.kv.monthBucketsTouched += 1;
+  }
+
+  await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+  report.kv.versionUpdated = true;
+
+  return json({
+    ok: true,
+    report,
+  });
+}
+
+/* ===============================
    MIGRATION — CLEAN IMPORTED CONTACTS
    Fixes Planyo phone/email formatting after import
 ================================ */
-
 function normalizeImportedEmail(value) {
   let email = String(value || "")
     .trim()
