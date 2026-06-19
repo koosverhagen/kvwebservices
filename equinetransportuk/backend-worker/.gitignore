@@ -10,3 +10,14 @@ node_modules/
 *feed*.ics
 *bookings-check*.json
 *customers-check*.json
+# Local customer/import/export data - never commit
+current-*.json
+current-*.jsonls
+*-before-import-*.json
+migration-import-payload*.json
+planyo-*.csv
+stripe-*.csv
+imported-*.json
+legacy-form-check.json
+etuk-pre-migration-backup.json
+*.ics
