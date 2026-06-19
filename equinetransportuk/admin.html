@@ -8245,6 +8245,26 @@ Equine Transport UK`;
         { id: "v75-2", name: "7.5T No Living" },
       ];
 
+      function ensureAllLorriesCalendarOption() {
+        if (!calVehicle) return;
+
+        const existingAll = Array.from(calVehicle.options).find(
+          (option) => option.value === "all",
+        );
+
+        if (existingAll) {
+          existingAll.textContent = "All Lorries";
+          return;
+        }
+
+        const option = document.createElement("option");
+        option.value = "all";
+        option.textContent = "All Lorries";
+
+        calVehicle.insertBefore(option, calVehicle.firstChild);
+        calVehicle.value = "all";
+      }
+
       function updateAvailabilityTimeOptions() {
         const duration = Number(availDurationInput?.value || 1);
 
@@ -16596,11 +16616,22 @@ Equine Transport UK`;
           =============================== */
 
           el.addEventListener("click", () => {
+            const vehicleId = calVehicle.value;
+
+            // In All Lorries view this calendar is overview-only.
+            // This prevents accidentally opening the first booking on that date.
+            if (!vehicleId || vehicleId === "all") {
+              alert(
+                "Select one lorry first to open, edit, block, or add a booking.",
+              );
+              return;
+            }
+
             const bookings = getBookingsForDate(dateStr);
 
             /* ===============================
-               📅 EXISTING BOOKING
-            =============================== */
+     📅 EXISTING BOOKING
+  =============================== */
 
             if (bookings.length) {
               openEditBooking(bookings[0]);
@@ -16627,10 +16658,7 @@ Equine Transport UK`;
             /* ===============================
                ➕ NEW BOOKING
             =============================== */
-
-            const vehicleId = calVehicle.value;
-
-            if (!vehicleId || vehicleId === "all") {
+            if (!vehicleId) {
               alert("Select a vehicle first");
               return;
             }
@@ -17624,6 +17652,7 @@ Equine Transport UK`;
 
           defaultRanges();
           updateClearButton();
+          ensureAllLorriesCalendarOption();
 
           await loadBookings();
 
