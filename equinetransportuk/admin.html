@@ -697,62 +697,12 @@
       }
 
       /* =========================================
-   IOS VEHICLE SELECT
+   CALENDAR VIEW
+   Dropdown removed: calendar is always All Lorries
 ========================================= */
 
       .calendar-toolbar {
-        margin-top: 14px;
-        margin-bottom: 18px;
-
-        width: 100%;
-      }
-
-      .calendar-toolbar select {
-        width: 100%;
-
-        min-height: 54px;
-
-        padding: 0 52px 0 18px;
-
-        border-radius: 18px;
-
-        border: 1px solid rgba(15, 23, 42, 0.08);
-
-        background: linear-gradient(
-          to bottom,
-          rgba(255, 255, 255, 0.98),
-          rgba(248, 250, 252, 0.98)
-        );
-
-        box-shadow:
-          0 2px 8px rgba(15, 23, 42, 0.04),
-          inset 0 1px 0 rgba(255, 255, 255, 0.8);
-
-        font-size: 18px;
-        font-weight: 700;
-
-        color: #111827;
-
-        appearance: none;
-        -webkit-appearance: none;
-
-        outline: none;
-
-        transition: all 0.18s ease;
-
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%23111827' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 8 10 12 14 8'/%3E%3C/svg%3E");
-
-        background-repeat: no-repeat;
-
-        background-position: right 18px center;
-
-        background-size: 18px;
-      }
-
-      .calendar-toolbar select:focus {
-        border-color: #2563eb;
-
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        display: none !important;
       }
 
       .calendar-weekdays,
@@ -7179,6 +7129,9 @@
       const calPrev = document.getElementById("cal-prev");
       const calNext = document.getElementById("cal-next");
       const calVehicle = document.getElementById("cal-vehicle");
+      if (calVehicle) {
+        calVehicle.value = "all";
+      }
 
       const blockModal = document.getElementById("block-modal");
       const blockDateInput = document.getElementById("block-date");
@@ -16587,10 +16540,11 @@ Equine Transport UK`;
         const month = CAL_DATE.getMonth() + 1;
         const monthStr = `${year}-${String(month).padStart(2, "0")}`;
 
-        calTitle.textContent = CAL_DATE.toLocaleString("en-GB", {
-          month: "long",
-          year: "numeric",
-        });
+        calTitle.textContent =
+          CAL_DATE.toLocaleString("en-GB", {
+            month: "long",
+            year: "numeric",
+          }) + " · All Lorries";
 
         calGrid.innerHTML = "Loading…";
 
@@ -18049,9 +18003,8 @@ Equine Transport UK`;
         loadAdminCalendar();
       });
 
-      calVehicle?.addEventListener("change", () => {
-        loadAdminCalendar();
-      });
+      // Calendar is always All Lorries now.
+      // No dropdown change listener needed.
 
       /* ===============================
          INIT (FINAL)
