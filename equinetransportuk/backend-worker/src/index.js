@@ -8050,31 +8050,83 @@ async function handleStripeWebhook(request, env) {
 
               if (paymentType === "outstanding") {
                 /* ===============================
-     ✅ OUTSTANDING FULLY PAID
+     ✅ OUTSTANDING PAYMENT RECEIVED
+     Add Stripe outstanding payment to paidNow,
+     then recalculate the remaining balance.
   =============================== */
 
-                b.outstandingPaid = true;
+                const nowIso = new Date().toISOString();
 
-                b.outstandingAmount = 0;
+                const outstandingPaidAmount = Number(
+                  (Number(session.amount_total || 0) / 100).toFixed(2),
+                );
 
-                b.outstanding = 0;
+                const previousPaidNow = Number(b.paidNow || 0);
+                const totalDue = Number(b.hireTotal || b.priceTotal || 0);
+
+                const newPaidNow = Number(
+                  (previousPaidNow + outstandingPaidAmount).toFixed(2),
+                );
+
+                const newOutstandingAmount = Math.max(
+                  0,
+                  Number((totalDue - newPaidNow).toFixed(2)),
+                );
+
+                b.paidNow = newPaidNow;
+                b.outstandingAmount = newOutstandingAmount;
+                b.outstanding = newOutstandingAmount;
+                b.outstandingPaid = newOutstandingAmount <= 0.05;
 
                 /* ===============================
-     🔥 SAVE SECOND PAYMENT INTENT
+     🔥 SAVE OUTSTANDING STRIPE DETAILS
   =============================== */
 
                 b.outstandingSessionPaymentIntentId = paymentIntentId;
 
+                b.outstandingAmountPaid = Number(
+                  (
+                    Number(b.outstandingAmountPaid || 0) + outstandingPaidAmount
+                  ).toFixed(2),
+                );
+
+                b.outstandingPaidAt = nowIso;
+
                 /* ===============================
-     🔥 SAVE OUTSTANDING PAYMENT VALUE
+     ✅ ALSO SAVE PAID TOTAL TO D1
   =============================== */
 
-                b.outstandingAmountPaid =
-                  Number(session.amount_total || 0) / 100;
+                try {
+                  await env.DB.prepare(
+                    `
+      UPDATE bookings
+      SET paid_now = ?,
+          updated_at = ?
+      WHERE id = ?
+    `,
+                  )
+                    .bind(newPaidNow, nowIso, paymentBookingId)
+                    .run();
+
+                  console.log("✅ Outstanding payment marked in DB:", {
+                    bookingId: paymentBookingId,
+                    paidNow: newPaidNow,
+                    outstanding: newOutstandingAmount,
+                  });
+                } catch (err) {
+                  console.error(
+                    "❌ Failed to update outstanding payment in DB:",
+                    err,
+                  );
+                }
 
                 console.log("💰 Outstanding payment stored:", {
+                  bookingId: paymentBookingId,
                   paymentIntent: b.outstandingSessionPaymentIntentId,
-                  amount: b.outstandingAmountPaid,
+                  amount: outstandingPaidAmount,
+                  paidNow: b.paidNow,
+                  outstanding: b.outstandingAmount,
+                  outstandingPaid: b.outstandingPaid,
                 });
               }
 
@@ -8086,6 +8138,7 @@ async function handleStripeWebhook(request, env) {
 
           if (updated) {
             await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
+            await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
             console.log("✅ Payment status updated in KV");
             break;
           }
