@@ -14095,7 +14095,7 @@ ${mobileOutstandingText}
 
     <div class="status-value">
       <span class="check-pair">
-        Verified ${getPrintCheckMark(dvla.verified)}
+        ${dvla.verified ? "Verified" : "Not verified"} ${getPrintCheckMark(dvla.verified)}
       </span>
 
       <span class="dvla-details">
