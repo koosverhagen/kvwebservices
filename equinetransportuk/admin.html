@@ -15758,7 +15758,10 @@ Equine Transport UK`;
       =============================== */
 
       if (editCloseBtn) {
-        editCloseBtn.onclick = () => editModal.classList.add("hidden");
+        editCloseBtn.onclick = () => {
+          editModal.classList.add("hidden");
+          restoreMobileCalendarDayOverlay();
+        };
       }
 
       const editCancelBtn = document.getElementById("edit-cancel");
@@ -15766,6 +15769,7 @@ Equine Transport UK`;
       if (editCancelBtn) {
         editCancelBtn.onclick = () => {
           editModal.classList.add("hidden");
+          restoreMobileCalendarDayOverlay();
         };
       }
 
@@ -16752,11 +16756,12 @@ Equine Transport UK`;
         overlay
           .querySelector(".mobile-calendar-close")
           ?.addEventListener("click", () => {
+            RETURN_TO_MOBILE_CALENDAR_DAY_HTML = "";
             overlay.classList.add("hidden");
           });
-
         overlay.addEventListener("click", (event) => {
           if (event.target === overlay) {
+            RETURN_TO_MOBILE_CALENDAR_DAY_HTML = "";
             overlay.classList.add("hidden");
           }
         });
