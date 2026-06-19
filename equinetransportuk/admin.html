@@ -880,6 +880,85 @@
         white-space: normal;
       }
 
+      /* ===============================
+   ADMIN CALENDAR — GREEN / RED BAR VIEW
+=============================== */
+
+      .cal-bar-system {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        margin-top: 8px;
+      }
+
+      .cal-bar-row {
+        display: grid;
+        grid-template-columns: 26px 1fr;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .cal-bar-label {
+        font-size: 10px;
+        font-weight: 900;
+        color: #475569;
+        text-align: right;
+      }
+
+      .cal-bars {
+        display: grid;
+        gap: 4px;
+      }
+
+      .cal-bars.all-lorries {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .cal-bars.single-lorry {
+        grid-template-columns: 1fr;
+      }
+
+      .cal-bar {
+        min-height: 24px;
+        border-radius: 999px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 3px 4px;
+
+        font-size: 9px;
+        font-weight: 900;
+        line-height: 1.05;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .cal-bar.free {
+        background: #bbf7d0;
+        color: #166534;
+      }
+
+      .cal-bar.busy {
+        background: #fecaca;
+        color: #991b1b;
+      }
+
+      .cal-bar.blocked {
+        background: #fed7aa;
+        color: #9a3412;
+      }
+
+      .cal-bar-legend {
+        margin-top: 6px;
+        font-size: 10px;
+        font-weight: 800;
+        color: #64748b;
+      }
+
       /* MOBILE */
       @media (max-width: 768px) {
         .calendar-weekdays {
@@ -16549,8 +16628,17 @@ Equine Transport UK`;
             blockNotes.push(block.note || block.reason || "Blocked");
           });
 
-          const amFull = total > 0 && amBusy >= total;
-          const pmFull = total > 0 && pmBusy >= total;
+          const visibleVehicles = ADMIN_VEHICLES.filter(
+            (vehicle) =>
+              vehicleFilter === "all" || vehicle.id === vehicleFilter,
+          );
+
+          const visibleVehicleTotal = visibleVehicles.length || total || 1;
+
+          const amFull =
+            visibleVehicleTotal > 0 && amBusy >= visibleVehicleTotal;
+          const pmFull =
+            visibleVehicleTotal > 0 && pmBusy >= visibleVehicleTotal;
 
           let cls = "free";
 
@@ -16572,44 +16660,148 @@ Equine Transport UK`;
           el.className = `cal-day ${cls}`;
           el.dataset.date = dateStr;
 
+          const isAllLorriesView = vehicleFilter === "all";
+
+          const shortVehicleLabel = (vehicle) =>
+            String(vehicle.name || vehicle.id || "")
+              .replace("3.5T ", "3.5 ")
+              .replace("7.5T ", "7.5 ")
+              .replace("Safety Bar", "SB")
+              .replace("Stallion", "ST")
+              .replace("Breast Bar", "BB")
+              .replace("Living", "L")
+              .replace("No Living", "NL");
+
+          const getVehicleBlock = (vehicleId) => blocks?.[vehicleId] || null;
+
+          const isVehicleSlotBusy = (vehicleId, slotName) => {
+            const status = dayData?.[vehicleId] || {};
+            const block = getVehicleBlock(vehicleId);
+
+            if (status.full) return true;
+            if (slotName === "am" && status.am) return true;
+            if (slotName === "pm" && status.pm) return true;
+
+            if (block) {
+              const blockSlot = block.slot || "full";
+
+              if (blockSlot === "full") return true;
+              if (slotName === "am" && blockSlot === "am") return true;
+              if (slotName === "pm" && blockSlot === "pm") return true;
+
+              if (blockSlot === "range") {
+                const from = block.fromTime || "07:00";
+                const until = block.untilTime || "19:00";
+
+                if (slotName === "am" && from < "13:00" && until > "07:00") {
+                  return true;
+                }
+
+                if (slotName === "pm" && from < "19:00" && until > "13:00") {
+                  return true;
+                }
+              }
+            }
+
+            return false;
+          };
+
+          const isVehicleSlotBlocked = (vehicleId, slotName) => {
+            const block = getVehicleBlock(vehicleId);
+            if (!block) return false;
+
+            const blockSlot = block.slot || "full";
+
+            if (blockSlot === "full") return true;
+            if (slotName === "am" && blockSlot === "am") return true;
+            if (slotName === "pm" && blockSlot === "pm") return true;
+
+            if (blockSlot === "range") {
+              const from = block.fromTime || "07:00";
+              const until = block.untilTime || "19:00";
+
+              if (slotName === "am" && from < "13:00" && until > "07:00") {
+                return true;
+              }
+
+              if (slotName === "pm" && from < "19:00" && until > "13:00") {
+                return true;
+              }
+            }
+
+            return false;
+          };
+
+          const buildAvailabilityBars = (slotName) =>
+            visibleVehicles
+              .map((vehicle) => {
+                const busy = isVehicleSlotBusy(vehicle.id, slotName);
+                const blocked = isVehicleSlotBlocked(vehicle.id, slotName);
+                const label = isAllLorriesView
+                  ? shortVehicleLabel(vehicle)
+                  : busy
+                    ? "Unavailable"
+                    : "Available";
+
+                const fullTitle = `${vehicle.name} ${slotName.toUpperCase()} ${
+                  busy ? "unavailable" : "available"
+                }`;
+
+                return `
+        <span
+          class="cal-bar ${busy ? "busy" : "free"} ${blocked ? "blocked" : ""}"
+          title="${escapeHtml(fullTitle)}"
+        >
+          ${escapeHtml(label)}
+        </span>
+      `;
+              })
+              .join("");
+
           el.innerHTML = `
-            <div class="cal-date">
-              ${dayObj.toLocaleDateString("en-GB", {
-                weekday: "short",
-                day: "2-digit",
-              })}
-            </div>
+  <div class="cal-date">
+    ${dayObj.toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "2-digit",
+    })}
+  </div>
 
-            <div class="cal-slots">
-              <div class="cal-slot ${amBusy ? (amFull ? "busy" : "partial") : ""}">
-                AM ${amBusy}/${total}
-              </div>
-              <div class="cal-slot ${pmBusy ? (pmFull ? "busy" : "partial") : ""}">
-                PM ${pmBusy}/${total}
-              </div>
-               </div>
-
-            <div class="cal-meta">
-        ${Math.max(amBusy, pmBusy)}/${total} unavailable
+  <div class="cal-bar-system">
+    <div class="cal-bar-row">
+      <div class="cal-bar-label">AM</div>
+      <div class="cal-bars ${isAllLorriesView ? "all-lorries" : "single-lorry"}">
+        ${buildAvailabilityBars("am")}
       </div>
+    </div>
 
-      ${
-        bookingsForDay.length
-          ? `<div class="cal-note">
-              ${escapeHtml(bookingsForDay[0].customerName || "Booking")}
-            </div>`
-          : ""
-      }
+    <div class="cal-bar-row">
+      <div class="cal-bar-label">PM</div>
+      <div class="cal-bars ${isAllLorriesView ? "all-lorries" : "single-lorry"}">
+        ${buildAvailabilityBars("pm")}
+      </div>
+    </div>
+  </div>
 
+  ${
+    isAllLorriesView
+      ? `<div class="cal-bar-legend">Green = free · Red = unavailable</div>`
+      : ""
+  }
 
+  ${
+    bookingsForDay.length
+      ? `<div class="cal-note">
+          ${escapeHtml(bookingsForDay[0].customerName || "Booking")}
+        </div>`
+      : ""
+  }
 
-
-        ${
-          blockNotes.length
-            ? `<div class="cal-note">${escapeHtml(blockNotes[0])}</div>`
-            : ""
-        }
-          `;
+  ${
+    blockNotes.length
+      ? `<div class="cal-note">${escapeHtml(blockNotes[0])}</div>`
+      : ""
+  }
+`;
 
           /* ===============================
              🔥 CLICK (SAFE)
