@@ -410,6 +410,8 @@ export default {
             return withCors(json({ found: false }), corsHeaders);
           }
 
+          await enrichBookingLinks(env, booking);
+
           return withCors(
             json({
               found: true,
