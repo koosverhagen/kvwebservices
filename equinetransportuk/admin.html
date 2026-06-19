@@ -15999,11 +15999,17 @@ Equine Transport UK`;
                   ? "✅ Booking created — links emailed"
                   : "✅ Booking created — email not sent",
               );
+            } else if (data.refundSuggested) {
+              showCopySuccess(
+                `✅ Booking updated — refund suggested: £${Number(
+                  data.refundSuggestedAmount || 0,
+                ).toFixed(2)}`,
+              );
             } else if (data.outstandingReopened) {
               showCopySuccess(
                 data.extraOutstandingEmailSent
-                  ? "✅ Extras added — new outstanding link emailed"
-                  : "✅ Extras added — outstanding reopened, but email not sent",
+                  ? "✅ Booking updated — new outstanding link emailed"
+                  : "✅ Booking updated — outstanding reopened, but email not sent",
               );
             } else {
               showCopySuccess("✅ Booking updated");

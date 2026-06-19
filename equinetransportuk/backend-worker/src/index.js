@@ -7225,11 +7225,11 @@ async function handleAdminBookingUpdate(request, env) {
     });
 
     /* ===============================
-   🔒 FULLY PAID BOOKING SAFETY
-   Allow admin corrections.
-   Allow ADDING extras after full payment:
-   - re-opens outstanding for the added extra
-   - customer can pay via the normal outstanding link
+   💰 PAID BOOKING EDIT BALANCING
+   Date changes are allowed.
+   Price increases reopen outstanding.
+   Price reductions save but suggest refund.
+   No automatic refund is issued here.
 ================================ */
 
     const dateChanged =
@@ -7263,36 +7263,12 @@ async function handleAdminBookingUpdate(request, env) {
     const priceChanged =
       Number(projectedFinalTotal.toFixed(2)) !== Number(oldTotal.toFixed(2));
 
-    const extrasAdded = extrasChanged && extrasDelta > 0;
-
-    const extrasRemovedOrReduced = extrasChanged && extrasDelta < 0;
-
-    const priceChangeIsOnlyAddedExtras =
-      extrasAdded &&
-      !durationChanged &&
-      Math.abs(projectedFinalTotal - oldTotal - extrasDelta) < 0.05;
-
-    const blockedFinancialChange =
-      durationChanged ||
-      extrasRemovedOrReduced ||
-      (priceChanged && !priceChangeIsOnlyAddedExtras);
-
-    if (existing.outstandingPaid === true && blockedFinancialChange) {
-      return json(
-        {
-          error:
-            "Outstanding already paid. You can add extras and the outstanding balance will reopen for the added amount. Price reductions, duration changes or other paid-price changes need refund/payment tools first.",
-        },
-        400,
-      );
-    }
+    const finalTotalDelta = Number((projectedFinalTotal - oldTotal).toFixed(2));
 
     const financialChange = durationChanged || priceChanged || extrasChanged;
 
     const shouldSendExtraOutstandingEmail =
-      existing.outstandingPaid === true &&
-      priceChangeIsOnlyAddedExtras &&
-      extrasDelta > 0;
+      existing.outstandingPaid === true && finalTotalDelta > 0.05;
 
     const isEditChange =
       vehicleChanged || dateChanged || timeChanged || financialChange;
@@ -7377,7 +7353,7 @@ async function handleAdminBookingUpdate(request, env) {
 
     const amountAlreadyPaid =
       existing.outstandingPaid === true
-        ? previousTotal
+        ? Math.max(existingPaidNow, previousTotal)
         : isAdminNoPaymentBooking
           ? existingPaidNow
           : Math.max(
@@ -7399,6 +7375,11 @@ async function handleAdminBookingUpdate(request, env) {
       Number((finalTotal - amountAlreadyPaid).toFixed(2)),
     );
 
+    const refundSuggestedAmount = Math.max(
+      0,
+      Number((amountAlreadyPaid - finalTotal).toFixed(2)),
+    );
+
     const now = new Date().toISOString();
 
     /* ===============================
@@ -7407,17 +7388,18 @@ async function handleAdminBookingUpdate(request, env) {
 
     await env.DB.prepare(
       `
-      UPDATE bookings
-      SET
-        vehicle_id = ?,
-        pickup_at = ?,
-        dropoff_at = ?,
-        duration_days = ?,
-        price_total = ?,
-        customer_id = ?,
-        updated_at = ?
-      WHERE id = ?
-    `,
+  UPDATE bookings
+  SET
+    vehicle_id = ?,
+    pickup_at = ?,
+    dropoff_at = ?,
+    duration_days = ?,
+    price_total = ?,
+    paid_now = ?,
+    customer_id = ?,
+    updated_at = ?
+  WHERE id = ?
+`,
     )
       .bind(
         vehicleId,
@@ -7425,6 +7407,7 @@ async function handleAdminBookingUpdate(request, env) {
         dropoffAt,
         durationDays,
         finalTotal,
+        amountAlreadyPaid,
         customerId || existing.customerId || null,
         now,
         bookingId,
@@ -7495,6 +7478,11 @@ async function handleAdminBookingUpdate(request, env) {
       outstandingAmount,
       outstanding: outstandingAmount,
       outstandingPaid: outstandingAmount === 0,
+
+      refundSuggested: refundSuggestedAmount > 0,
+      refundSuggestedAmount,
+      adminSuggestedRefundAmount: refundSuggestedAmount,
+      overpaidAmount: refundSuggestedAmount,
 
       customerId: customerId || existing.customerId || null,
 
@@ -7646,8 +7634,9 @@ async function handleAdminBookingUpdate(request, env) {
         }
 
         audit.unshift({
-          type: "extra_outstanding_reopened",
+          type: "outstanding_reopened_after_admin_edit",
           amount: Number(nextBooking.outstandingAmount || 0),
+          finalTotalDelta,
           extrasDelta,
           emailSent: extraOutstandingEmailSent,
           at: new Date().toISOString(),
@@ -7795,8 +7784,13 @@ async function handleAdminBookingUpdate(request, env) {
     return json({
       ok: true,
       booking: nextBooking,
-      outstandingReopened: shouldSendExtraOutstandingEmail,
+      outstandingReopened:
+        shouldSendExtraOutstandingEmail &&
+        Number(nextBooking.outstandingAmount || 0) > 0,
       extraOutstandingEmailSent,
+      refundSuggested: refundSuggestedAmount > 0,
+      refundSuggestedAmount,
+      finalTotalDelta,
     });
   } catch (err) {
     console.error("❌ ADMIN BOOKING UPDATE ERROR:", err);
