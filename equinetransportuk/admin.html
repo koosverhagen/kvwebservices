@@ -6708,7 +6708,7 @@
       <div class="et-modal-center">
         <div class="et-modal-card" style="max-width: 500px">
           <div class="et-modal-header">
-            <h3>Edit Booking</h3>
+            <h3 id="edit-modal-title">Edit Booking</h3>
             <button id="edit-close-btn" class="modal-close">✕</button>
           </div>
 
@@ -17224,6 +17224,12 @@ Equine Transport UK`;
         =============================== */
 
         const isNew = !booking.id;
+
+        const editModalTitle = document.getElementById("edit-modal-title");
+
+        if (editModalTitle) {
+          editModalTitle.textContent = isNew ? "Add Booking" : "Edit Booking";
+        }
 
         document.getElementById("edit-booking-id").value = booking.id || "";
 
