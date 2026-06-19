@@ -20,4 +20,4 @@ database_id = "f65671fd-8b3b-4396-97b7-fa1b82f41bd3"
 # ✅ ADD THIS BLOCK
 # ===============================
 [vars]
-PUBLIC_SITE_URL = "https://kvwebservices.co.uk/equinetransportuk"
+PUBLIC_SITE_URL = "https://www.equinetransportuk.com"

@@ -2072,7 +2072,7 @@ function renderBookingConfirmation(booking) {
     </div>
 
     <div class="confirmation-actions">
-      <a href="https://kvwebservices.co.uk/equinetransportuk/index.html" class="btn">
+      <a href="https://www.equinetransportuk.com/index.html" class="btn">
         Back to homepage
       </a>
     </div>

@@ -8744,7 +8744,7 @@ Equine Transport UK`;
           dropoffAt: booking.dropoffAtLocal || booking.dropoffAt || "",
         });
 
-        return `https://kvwebservices.co.uk/equinetransportuk/forms/${fileName}?${params.toString()}`;
+        return `https://www.equinetransportuk.com/forms/${fileName}?${params.toString()}`;
       }
 
       function hireCellHtml(booking) {
@@ -9117,7 +9117,7 @@ Equine Transport UK`;
 
         let phone = booking.customerMobile || "";
 
-        const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+        const BASE = "https://www.equinetransportuk.com";
 
         const depositLink = `${BASE}/pay-deposit.html?bookingId=${id}`;
         const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${id}`;
@@ -15033,7 +15033,7 @@ ${mobileOutstandingText}
           const name = smsBtn.dataset.name || "Customer";
           const formType = smsBtn.dataset.formtype || "long";
 
-          const BASE = "https://kvwebservices.co.uk/equinetransportuk";
+          const BASE = "https://www.equinetransportuk.com";
 
           const formLink = `${BASE}/forms/${formType}-form.html?bookingId=${bookingId}`;
           const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;

@@ -2619,7 +2619,7 @@ async function handleMigrationImportPlanyo(request, env) {
 
   const SITE_BASE =
     env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://kvwebservices.co.uk/equinetransportuk";
+    "https://www.equinetransportuk.com";
 
   function safeText(value) {
     if (value === undefined || value === null) return "";
@@ -2890,7 +2890,7 @@ async function handleMigrationImportPlanyoIncremental(request, env) {
 
   const SITE_BASE =
     env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://kvwebservices.co.uk/equinetransportuk";
+    "https://www.equinetransportuk.com";
 
   function safeText(value) {
     if (value === undefined || value === null) return "";
@@ -3492,7 +3492,7 @@ async function handleMigrationPatchLiveData(request, env) {
 
   const SITE_BASE =
     env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://kvwebservices.co.uk/equinetransportuk";
+    "https://www.equinetransportuk.com";
 
   const report = {
     patchedAt: now,
@@ -5649,7 +5649,7 @@ async function handleCreateCheckoutSession(request, env) {
 
   const siteBase =
     env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://kvwebservices.co.uk/equinetransportuk";
+    "https://www.equinetransportuk.com";
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20",
@@ -6531,7 +6531,7 @@ async function sendAdminBookingLinksEmail(env, booking) {
 async function enrichBookingLinks(env, booking) {
   const SITE_BASE =
     env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://kvwebservices.co.uk/equinetransportuk";
+    "https://www.equinetransportuk.com";
 
   let requiredFormType = "long";
 
@@ -7816,7 +7816,7 @@ async function handleAdminBookingUpdate(request, env) {
 async function handleStripeWebhook(request, env) {
   const SITE_BASE =
     env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://kvwebservices.co.uk/equinetransportuk";
+    "https://www.equinetransportuk.com";
 
   const payload = await request.text();
   const sig = request.headers.get("stripe-signature");
@@ -9922,7 +9922,7 @@ const EMAIL_BRAND_BLOCK = `
 
         <td width="18%" style="vertical-align:middle;text-align:right;">
           <img
-            src="https://kvwebservices.co.uk/equinetransportuk/images/logo.png"
+            src="https://www.equinetransportuk.com/images/logo.png"
             alt="Equine Transport UK"
             style="
               display:block;
@@ -11675,7 +11675,7 @@ async function handleAdminHandoverCustomerLink(request, env) {
   );
 
   const publicSiteUrl = String(
-    env.PUBLIC_SITE_URL || "https://kvwebservices.co.uk/equinetransportuk",
+    env.PUBLIC_SITE_URL || "https://www.equinetransportuk.com",
   ).replace(/\/+$/, "");
 
   const customerLink = `${publicSiteUrl}/handover-copy.html?token=${encodeURIComponent(
