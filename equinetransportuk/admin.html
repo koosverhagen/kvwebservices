@@ -17022,6 +17022,21 @@ Equine Transport UK`;
 =============================== */
 
           el.addEventListener("click", (event) => {
+            const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+            // ✅ Mobile month view:
+            // First tap anywhere in the day — even directly on a bar —
+            // opens the full-screen day view first.
+            if (isMobile) {
+              event.preventDefault();
+              event.stopPropagation();
+
+              openMobileCalendarDay(el);
+              return;
+            }
+
+            // ✅ Desktop:
+            // Bars remain directly clickable.
             const bar = event.target.closest(".cal-lorry-bar");
 
             if (bar) {
@@ -17034,13 +17049,6 @@ Equine Transport UK`;
                 slotName: bar.dataset.slot,
                 state: bar.dataset.state,
               });
-
-              return;
-            }
-
-            // Mobile: first press opens the selected day full-screen.
-            if (window.matchMedia("(max-width: 768px)").matches) {
-              openMobileCalendarDay(el);
             }
           });
 
