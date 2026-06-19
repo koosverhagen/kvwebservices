@@ -16702,6 +16702,33 @@ Equine Transport UK`;
         }
       }
 
+      let RETURN_TO_MOBILE_CALENDAR_DAY_HTML = "";
+
+      function rememberMobileCalendarDayOverlay() {
+        if (!window.matchMedia("(max-width: 768px)").matches) return;
+
+        const overlay = document.getElementById("mobile-calendar-day-overlay");
+        const content = document.getElementById("mobile-calendar-day-content");
+
+        if (!overlay || !content || overlay.classList.contains("hidden"))
+          return;
+
+        RETURN_TO_MOBILE_CALENDAR_DAY_HTML = content.innerHTML;
+      }
+
+      function restoreMobileCalendarDayOverlay() {
+        if (!window.matchMedia("(max-width: 768px)").matches) return;
+        if (!RETURN_TO_MOBILE_CALENDAR_DAY_HTML) return;
+
+        const overlay = ensureMobileCalendarDayOverlay();
+        const content = overlay.querySelector("#mobile-calendar-day-content");
+
+        if (!content) return;
+
+        content.innerHTML = RETURN_TO_MOBILE_CALENDAR_DAY_HTML;
+        overlay.classList.remove("hidden");
+      }
+
       function ensureMobileCalendarDayOverlay() {
         let overlay = document.getElementById("mobile-calendar-day-overlay");
 
@@ -16741,6 +16768,9 @@ Equine Transport UK`;
           event.preventDefault();
           event.stopPropagation();
 
+          // Remember the full-screen day so closing Edit/Add returns here.
+          rememberMobileCalendarDayOverlay();
+
           handleCalendarBarClick({
             dateStr: bar.dataset.date,
             vehicleId: bar.dataset.vehicleId,
@@ -16748,6 +16778,7 @@ Equine Transport UK`;
             state: bar.dataset.state,
           });
 
+          // Hide the day overlay while Edit/Add is open.
           overlay.classList.add("hidden");
         });
 
@@ -17981,6 +18012,7 @@ Equine Transport UK`;
             editModal.classList.add("hidden");
           }
 
+          restoreMobileCalendarDayOverlay();
           if (typeof loadAdminCalendar === "function") {
             await loadAdminCalendar();
           }
