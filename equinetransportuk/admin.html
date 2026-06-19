@@ -881,82 +881,186 @@
       }
 
       /* ===============================
-   ADMIN CALENDAR — GREEN / RED BAR VIEW
+   ADMIN CALENDAR — LORRY BAR VIEW
 =============================== */
 
-      .cal-bar-system {
+      .cal-lorry-bars {
         display: flex;
         flex-direction: column;
-        gap: 7px;
-        margin-top: 8px;
+        gap: 5px;
+        margin-top: 7px;
       }
 
-      .cal-bar-row {
+      .cal-lorry-row {
         display: grid;
-        grid-template-columns: 26px 1fr;
-        gap: 6px;
+        grid-template-columns: 34px 1fr;
+        gap: 5px;
         align-items: center;
       }
 
-      .cal-bar-label {
-        font-size: 10px;
+      .cal-lorry-label {
+        font-size: 9px;
         font-weight: 900;
         color: #475569;
+        line-height: 1;
         text-align: right;
+        white-space: nowrap;
       }
 
-      .cal-bars {
+      .cal-lorry-slots {
         display: grid;
         gap: 4px;
       }
 
-      .cal-bars.all-lorries {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+      .cal-lorry-slots.half-day {
+        grid-template-columns: 1fr 1fr;
       }
 
-      .cal-bars.single-lorry {
+      .cal-lorry-slots.full-day {
         grid-template-columns: 1fr;
       }
 
-      .cal-bar {
-        min-height: 24px;
+      .cal-lorry-bar {
+        min-height: 16px;
+        border: none;
         border-radius: 999px;
 
         display: flex;
         align-items: center;
         justify-content: center;
 
-        padding: 3px 4px;
+        padding: 0 4px;
 
-        font-size: 9px;
-        font-weight: 900;
-        line-height: 1.05;
+        font-size: 8px;
+        font-weight: 950;
+        line-height: 1;
+
+        cursor: pointer;
 
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+
+        transition:
+          transform 0.12s ease,
+          box-shadow 0.12s ease;
       }
 
-      .cal-bar.free {
-        background: #bbf7d0;
-        color: #166534;
+      .cal-lorry-bar:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(15, 23, 42, 0.14);
       }
 
-      .cal-bar.busy {
-        background: #fecaca;
-        color: #991b1b;
+      .cal-lorry-bar.free {
+        background: #22c55e;
+        color: #ffffff;
       }
 
-      .cal-bar.blocked {
-        background: #fed7aa;
-        color: #9a3412;
+      .cal-lorry-bar.busy {
+        background: #ef4444;
+        color: #ffffff;
       }
 
+      .cal-lorry-bar.blocked {
+        background: #f59e0b;
+        color: #ffffff;
+      }
+
+      .cal-lorry-bar.disabled {
+        background: #e5e7eb;
+        color: #94a3b8;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .cal-lorry-bar span {
+        pointer-events: none;
+      }
+
+      /* Remove old confusing meta/name text if cached */
+      .cal-meta,
+      .cal-note,
       .cal-bar-legend {
-        margin-top: 6px;
-        font-size: 10px;
-        font-weight: 800;
-        color: #64748b;
+        display: none !important;
+      }
+
+      /* Mobile day zoom overlay */
+      .mobile-calendar-day-overlay.hidden {
+        display: none !important;
+      }
+
+      .mobile-calendar-day-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10000000;
+
+        background: rgba(15, 23, 42, 0.45);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 18px;
+      }
+
+      .mobile-calendar-day-card {
+        width: min(420px, calc(100vw - 28px));
+        max-height: calc(100vh - 48px);
+
+        overflow-y: auto;
+
+        background: #ffffff;
+        border-radius: 28px;
+        border: 1px solid #dbe1e8;
+
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.28);
+
+        padding: 18px;
+      }
+
+      .mobile-calendar-day-card .cal-day {
+        border: none !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+
+      .mobile-calendar-day-card .cal-date {
+        font-size: 24px;
+        margin-bottom: 14px;
+      }
+
+      .mobile-calendar-day-card .cal-lorry-bars {
+        gap: 10px;
+      }
+
+      .mobile-calendar-day-card .cal-lorry-row {
+        grid-template-columns: 58px 1fr;
+        gap: 8px;
+      }
+
+      .mobile-calendar-day-card .cal-lorry-label {
+        font-size: 13px;
+      }
+
+      .mobile-calendar-day-card .cal-lorry-bar {
+        min-height: 34px;
+        font-size: 12px;
+      }
+
+      .mobile-calendar-close {
+        width: 100%;
+        min-height: 46px;
+
+        margin-top: 16px;
+
+        border: none;
+        border-radius: 16px;
+
+        background: #111827;
+        color: #ffffff;
+
+        font-weight: 900;
+        font-size: 15px;
       }
 
       /* MOBILE */
@@ -16537,6 +16641,180 @@ Equine Transport UK`;
          RENDER DAYS
       =============================== */
 
+      function getBookingForVehicleSlot(dateStr, vehicleId, slotName) {
+        const bookings = window.ALL_BOOKINGS || [];
+
+        const slotStart =
+          slotName === "pm" ? `${dateStr}T13:00:00` : `${dateStr}T07:00:00`;
+
+        const slotEnd =
+          slotName === "am" ? `${dateStr}T13:00:00` : `${dateStr}T19:00:00`;
+
+        const slotStartTime = new Date(slotStart).getTime();
+        const slotEndTime = new Date(slotEnd).getTime();
+
+        return bookings.find((booking) => {
+          if (String(booking.vehicleId) !== String(vehicleId)) return false;
+
+          const status = String(booking.status || booking.bookingStatus || "")
+            .trim()
+            .toLowerCase();
+
+          if (
+            status === "cancelled" ||
+            status === "canceled" ||
+            booking.cancelled === true ||
+            booking.isCancelled === true
+          ) {
+            return false;
+          }
+
+          const pickupValue =
+            booking.pickupAtLocal ||
+            booking.pickup_at_local ||
+            booking.pickupAt ||
+            booking.pickup_at;
+
+          const dropoffValue =
+            booking.dropoffAtLocal ||
+            booking.dropoff_at_local ||
+            booking.dropoffAt ||
+            booking.dropoff_at ||
+            pickupValue;
+
+          const start = new Date(
+            String(pickupValue).replace(" ", "T"),
+          ).getTime();
+          const end = new Date(
+            String(dropoffValue).replace(" ", "T"),
+          ).getTime();
+
+          if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+
+          return start < slotEndTime && end > slotStartTime;
+        });
+      }
+
+      function openCalendarAddBooking({ dateStr, vehicleId, slotName }) {
+        const is35 = String(vehicleId).startsWith("v35");
+        const isPm = slotName === "pm";
+        const isHalfDay = is35 && (slotName === "am" || slotName === "pm");
+
+        openEditBooking({
+          id: null,
+          vehicleId,
+          pickupAt: `${dateStr}T${isPm ? "13:00:00" : "07:00:00"}`,
+          pickupTime: isPm ? "13:00" : "07:00",
+          durationDays: isHalfDay ? 0.5 : 1,
+          extras: {
+            dartford: 0,
+            earlyPickup: false,
+          },
+          hireTotal: 0,
+          customerId: null,
+          customerName: "",
+        });
+      }
+
+      function handleCalendarBarClick({ dateStr, vehicleId, slotName, state }) {
+        if (!dateStr || !vehicleId || !slotName) return;
+
+        if (state === "blocked") {
+          calVehicle.value = vehicleId;
+          openBlockModal(dateStr);
+          return;
+        }
+
+        if (state === "busy") {
+          const booking = getBookingForVehicleSlot(
+            dateStr,
+            vehicleId,
+            slotName,
+          );
+
+          if (booking) {
+            openEditBooking(booking);
+            return;
+          }
+
+          alert(
+            "This slot is unavailable, but I could not find the matching booking. Select the lorry and refresh bookings.",
+          );
+          return;
+        }
+
+        if (state === "free") {
+          openCalendarAddBooking({ dateStr, vehicleId, slotName });
+        }
+      }
+
+      function ensureMobileCalendarDayOverlay() {
+        let overlay = document.getElementById("mobile-calendar-day-overlay");
+
+        if (overlay) return overlay;
+
+        overlay = document.createElement("div");
+        overlay.id = "mobile-calendar-day-overlay";
+        overlay.className = "mobile-calendar-day-overlay hidden";
+
+        overlay.innerHTML = `
+    <div class="mobile-calendar-day-card">
+      <div id="mobile-calendar-day-content"></div>
+      <button type="button" class="mobile-calendar-close">
+        Close
+      </button>
+    </div>
+  `;
+
+        document.body.appendChild(overlay);
+
+        overlay
+          .querySelector(".mobile-calendar-close")
+          ?.addEventListener("click", () => {
+            overlay.classList.add("hidden");
+          });
+
+        overlay.addEventListener("click", (event) => {
+          if (event.target === overlay) {
+            overlay.classList.add("hidden");
+          }
+        });
+
+        overlay.addEventListener("click", (event) => {
+          const bar = event.target.closest(".cal-lorry-bar");
+          if (!bar) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          handleCalendarBarClick({
+            dateStr: bar.dataset.date,
+            vehicleId: bar.dataset.vehicleId,
+            slotName: bar.dataset.slot,
+            state: bar.dataset.state,
+          });
+
+          overlay.classList.add("hidden");
+        });
+
+        return overlay;
+      }
+
+      function openMobileCalendarDay(dayEl) {
+        const overlay = ensureMobileCalendarDayOverlay();
+        const content = overlay.querySelector("#mobile-calendar-day-content");
+
+        if (!content) return;
+
+        const clone = dayEl.cloneNode(true);
+        clone.classList.add("mobile-calendar-day-expanded");
+
+        content.innerHTML = "";
+        content.appendChild(clone);
+
+        overlay.classList.remove("hidden");
+      }
+
       function renderCalendarDays(daysData) {
         calGrid.innerHTML = "";
 
@@ -16653,58 +16931,26 @@ Equine Transport UK`;
           if (dateStr < todayStr) cls += " past";
 
           /* ===============================
-             🔥 BUILD CELL
-          =============================== */
+   🔥 BUILD CELL — LORRY BAR VIEW
+=============================== */
 
           const el = document.createElement("div");
           el.className = `cal-day ${cls}`;
           el.dataset.date = dateStr;
 
-          const isAllLorriesView = vehicleFilter === "all";
+          const isWeekend = dayObj.getDay() === 0 || dayObj.getDay() === 6;
 
           const shortVehicleLabel = (vehicle) =>
             String(vehicle.name || vehicle.id || "")
-              .replace("3.5T ", "3.5 ")
-              .replace("7.5T ", "7.5 ")
+              .replace("3.5T ", "3.5")
+              .replace("7.5T ", "7.5")
               .replace("Safety Bar", "SB")
               .replace("Stallion", "ST")
               .replace("Breast Bar", "BB")
-              .replace("Living", "L")
-              .replace("No Living", "NL");
+              .replace("No Living", "NL")
+              .replace("Living", "L");
 
           const getVehicleBlock = (vehicleId) => blocks?.[vehicleId] || null;
-
-          const isVehicleSlotBusy = (vehicleId, slotName) => {
-            const status = dayData?.[vehicleId] || {};
-            const block = getVehicleBlock(vehicleId);
-
-            if (status.full) return true;
-            if (slotName === "am" && status.am) return true;
-            if (slotName === "pm" && status.pm) return true;
-
-            if (block) {
-              const blockSlot = block.slot || "full";
-
-              if (blockSlot === "full") return true;
-              if (slotName === "am" && blockSlot === "am") return true;
-              if (slotName === "pm" && blockSlot === "pm") return true;
-
-              if (blockSlot === "range") {
-                const from = block.fromTime || "07:00";
-                const until = block.untilTime || "19:00";
-
-                if (slotName === "am" && from < "13:00" && until > "07:00") {
-                  return true;
-                }
-
-                if (slotName === "pm" && from < "19:00" && until > "13:00") {
-                  return true;
-                }
-              }
-            }
-
-            return false;
-          };
 
           const isVehicleSlotBlocked = (vehicleId, slotName) => {
             const block = getVehicleBlock(vehicleId);
@@ -16720,43 +16966,89 @@ Equine Transport UK`;
               const from = block.fromTime || "07:00";
               const until = block.untilTime || "19:00";
 
-              if (slotName === "am" && from < "13:00" && until > "07:00") {
+              if (slotName === "am" && from < "13:00" && until > "07:00")
                 return true;
-              }
-
-              if (slotName === "pm" && from < "19:00" && until > "13:00") {
+              if (slotName === "pm" && from < "19:00" && until > "13:00")
                 return true;
-              }
+              if (slotName === "full" && from < "19:00" && until > "07:00")
+                return true;
             }
 
             return false;
           };
 
-          const buildAvailabilityBars = (slotName) =>
-            visibleVehicles
-              .map((vehicle) => {
-                const busy = isVehicleSlotBusy(vehicle.id, slotName);
-                const blocked = isVehicleSlotBlocked(vehicle.id, slotName);
-                const label = isAllLorriesView
-                  ? shortVehicleLabel(vehicle)
-                  : busy
-                    ? "Unavailable"
-                    : "Available";
+          const isVehicleSlotBusy = (vehicleId, slotName) => {
+            const status = dayData?.[vehicleId] || {};
 
-                const fullTitle = `${vehicle.name} ${slotName.toUpperCase()} ${
-                  busy ? "unavailable" : "available"
-                }`;
+            if (status.full) return true;
 
-                return `
-        <span
-          class="cal-bar ${busy ? "busy" : "free"} ${blocked ? "blocked" : ""}"
-          title="${escapeHtml(fullTitle)}"
-        >
-          ${escapeHtml(label)}
-        </span>
-      `;
-              })
-              .join("");
+            if (slotName === "full") {
+              return status.full || status.am || status.pm;
+            }
+
+            if (slotName === "am" && status.am) return true;
+            if (slotName === "pm" && status.pm) return true;
+
+            return false;
+          };
+
+          const buildBar = ({ vehicle, slotName, text }) => {
+            const blocked = isVehicleSlotBlocked(vehicle.id, slotName);
+            const busy = isVehicleSlotBusy(vehicle.id, slotName);
+            const state = blocked ? "blocked" : busy ? "busy" : "free";
+
+            const title = `${vehicle.name} ${slotName.toUpperCase()} ${
+              state === "free"
+                ? "available"
+                : state === "blocked"
+                  ? "admin blocked"
+                  : "booked"
+            }`;
+
+            return `
+    <button
+      type="button"
+      class="cal-lorry-bar ${state}"
+      data-date="${escapeHtml(dateStr)}"
+      data-vehicle-id="${escapeHtml(vehicle.id)}"
+      data-slot="${escapeHtml(slotName)}"
+      data-state="${escapeHtml(state)}"
+      title="${escapeHtml(title)}"
+    >
+      <span>${escapeHtml(text)}</span>
+    </button>
+  `;
+          };
+
+          const buildVehicleRow = (vehicle) => {
+            const is35 = String(vehicle.id).startsWith("v35");
+            const label = shortVehicleLabel(vehicle);
+
+            // 3.5T lorries allow half days Monday-Friday only.
+            // Weekends are full-day bars.
+            if (is35 && !isWeekend) {
+              return `
+      <div class="cal-lorry-row">
+        <div class="cal-lorry-label">${escapeHtml(label)}</div>
+        <div class="cal-lorry-slots half-day">
+          ${buildBar({ vehicle, slotName: "am", text: "AM" })}
+          ${buildBar({ vehicle, slotName: "pm", text: "PM" })}
+        </div>
+      </div>
+    `;
+            }
+
+            // 7.5T lorries are always full-day only.
+            // 3.5T weekends are also full-day only.
+            return `
+    <div class="cal-lorry-row">
+      <div class="cal-lorry-label">${escapeHtml(label)}</div>
+      <div class="cal-lorry-slots full-day">
+        ${buildBar({ vehicle, slotName: "full", text: "Full" })}
+      </div>
+    </div>
+  `;
+          };
 
           el.innerHTML = `
   <div class="cal-date">
@@ -16766,109 +17058,36 @@ Equine Transport UK`;
     })}
   </div>
 
-  <div class="cal-bar-system">
-    <div class="cal-bar-row">
-      <div class="cal-bar-label">AM</div>
-      <div class="cal-bars ${isAllLorriesView ? "all-lorries" : "single-lorry"}">
-        ${buildAvailabilityBars("am")}
-      </div>
-    </div>
-
-    <div class="cal-bar-row">
-      <div class="cal-bar-label">PM</div>
-      <div class="cal-bars ${isAllLorriesView ? "all-lorries" : "single-lorry"}">
-        ${buildAvailabilityBars("pm")}
-      </div>
-    </div>
+  <div class="cal-lorry-bars">
+    ${ADMIN_VEHICLES.map(buildVehicleRow).join("")}
   </div>
-
-  ${
-    isAllLorriesView
-      ? `<div class="cal-bar-legend">Green = free · Red = unavailable</div>`
-      : ""
-  }
-
-  ${
-    bookingsForDay.length
-      ? `<div class="cal-note">
-          ${escapeHtml(bookingsForDay[0].customerName || "Booking")}
-        </div>`
-      : ""
-  }
-
-  ${
-    blockNotes.length
-      ? `<div class="cal-note">${escapeHtml(blockNotes[0])}</div>`
-      : ""
-  }
 `;
 
           /* ===============================
-             🔥 CLICK (SAFE)
-          =============================== */
+   BAR CLICK HANDLING
+=============================== */
 
-          el.addEventListener("click", () => {
-            const vehicleId = calVehicle.value;
+          el.addEventListener("click", (event) => {
+            const bar = event.target.closest(".cal-lorry-bar");
 
-            // In All Lorries view this calendar is overview-only.
-            // This prevents accidentally opening the first booking on that date.
-            if (!vehicleId || vehicleId === "all") {
-              alert(
-                "Select one lorry first to open, edit, block, or add a booking.",
-              );
+            if (bar) {
+              event.preventDefault();
+              event.stopPropagation();
+
+              handleCalendarBarClick({
+                dateStr: bar.dataset.date,
+                vehicleId: bar.dataset.vehicleId,
+                slotName: bar.dataset.slot,
+                state: bar.dataset.state,
+              });
+
               return;
             }
 
-            const bookings = getBookingsForDate(dateStr);
-
-            /* ===============================
-     📅 EXISTING BOOKING
-  =============================== */
-
-            if (bookings.length) {
-              openEditBooking(bookings[0]);
-              return;
+            // Mobile: first press opens the selected day full-screen.
+            if (window.matchMedia("(max-width: 768px)").matches) {
+              openMobileCalendarDay(el);
             }
-
-            /* ===============================
-               🚫 EXISTING ADMIN BLOCK
-               Open availability modal so admin can restore.
-            =============================== */
-
-            if (hasBlock) {
-              const vehicleId = calVehicle.value;
-
-              if (!vehicleId || vehicleId === "all") {
-                alert("Select the blocked lorry first.");
-                return;
-              }
-
-              openBlockModal(dateStr);
-              return;
-            }
-
-            /* ===============================
-               ➕ NEW BOOKING
-            =============================== */
-            if (!vehicleId) {
-              alert("Select a vehicle first");
-              return;
-            }
-
-            openEditBooking({
-              id: null,
-              vehicleId,
-              pickupAt: `${dateStr}T07:00:00`,
-              pickupTime: "07:00",
-              durationDays: 1,
-              extras: {
-                dartford: 0,
-                earlyPickup: false,
-              },
-              hireTotal: 0,
-              customerId: null,
-              customerName: "",
-            });
           });
 
           calGrid.appendChild(el);
