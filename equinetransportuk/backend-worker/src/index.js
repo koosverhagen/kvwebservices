@@ -10529,6 +10529,7 @@ function buildResendCardEmail({
       background:#ffffff;
       border:none;
       border-radius:0;
+      margin:0 -24px;
       padding:5px;
       box-shadow:none;
     ">
