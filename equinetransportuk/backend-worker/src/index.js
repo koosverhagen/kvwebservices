@@ -9925,65 +9925,84 @@ function toLondonLocalISOString(date) {
 
 const EMAIL_BRAND_BLOCK = `
   <div style="
-    margin:0 0 24px;
-    padding:18px 22px;
-    background:#ffffff;
-    border:1px solid #dbe1e8;
-    border-radius:22px;
+    margin:0 0 30px;
+    padding:0;
   ">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
-      <tr>
-        <td width="18%" style="vertical-align:middle;font-size:0;line-height:0;">
-          &nbsp;
-        </td>
+    <div style="
+      position:relative;
+      overflow:hidden;
+      background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%);
+      border:1px solid #dbe1e8;
+      border-radius:28px;
+      padding:30px 28px;
+    ">
+      <img
+        src="https://www.equinetransportuk.com/images/logo.png"
+        alt=""
+        style="
+          position:absolute;
+          right:-18px;
+          top:16px;
+          width:210px;
+          max-width:210px;
+          height:auto;
+          opacity:0.12;
+          display:block;
+        "
+      >
 
-        <td width="64%" style="vertical-align:middle;text-align:center;">
-          <div style="
-            font-size:30px;
-            font-weight:900;
-            color:#1d2530;
-            line-height:1.12;
-            letter-spacing:0.5px;
-          ">
-            Equine Transport UK
-          </div>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;position:relative;z-index:2;">
+        <tr>
+          <td style="vertical-align:middle;padding-right:18px;">
+            <div style="
+              font-size:38px;
+              font-weight:900;
+              line-height:1.03;
+              letter-spacing:-0.5px;
+              color:#111827;
+              margin:0;
+            ">
+              Equine<br>Transport<br>UK
+            </div>
 
-          <div style="
-            margin-top:8px;
-            font-size:15px;
-            font-weight:800;
-            color:#5a6675;
-            line-height:1.35;
-          ">
-            Part of the East Grinstead Tyre Service Group
-          </div>
+            <div style="
+              margin-top:16px;
+              font-size:16px;
+              line-height:1.45;
+              font-weight:800;
+              color:#5f6b7d;
+              max-width:340px;
+            ">
+              Part of the East Grinstead Tyre Service Group
+            </div>
 
-          <div style="
-            margin-top:8px;
-            font-size:17px;
-            font-weight:900;
-            color:#2f6fe4;
-            line-height:1.35;
-          ">
-            Self Drive or Driven
-          </div>
-        </td>
+            <div style="
+              margin-top:14px;
+              font-size:19px;
+              line-height:1.35;
+              font-weight:900;
+              color:#4169e1;
+            ">
+              Self Drive or Driven
+            </div>
+          </td>
 
-        <td width="18%" style="vertical-align:middle;text-align:right;">
-          <img
-            src="https://www.equinetransportuk.com/images/logo.png"
-            alt="Equine Transport UK"
-            style="
-              display:block;
-              width:104px;
-              max-width:104px;
-              height:auto;
-              margin-left:auto;
-            "
-          >
-        </td>
-      </tr>
-    </table>
+          <td width="110" style="vertical-align:middle;text-align:right;">
+            <img
+              src="https://www.equinetransportuk.com/images/logo.png"
+              alt="Equine Transport UK"
+              style="
+                display:block;
+                width:108px;
+                max-width:108px;
+                height:auto;
+                margin-left:auto;
+              "
+            >
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
 `;
 
@@ -10430,14 +10449,15 @@ function buildResendCardEmail({
 
   const hasOutstanding = Number(booking.outstandingAmount || 0) > 0;
 
-  // ✅ SAFE LINKS (prevents crashes)
   const safeFormLink = formLink || "#";
   const safeDepositLink = depositLink || "#";
   const safeOutstandingLink = outstandingLink || "#";
 
   const formatDate = (value) => {
     if (!value) return "—";
+
     const d = new Date(value);
+
     if (isNaN(d)) return value;
 
     return d.toLocaleString("en-GB", {
@@ -10457,158 +10477,345 @@ function buildResendCardEmail({
       ? "Deposit Required"
       : "Outstanding Balance";
 
+  const eyebrow = showForm
+    ? "Hire form"
+    : showDeposit
+      ? "Security deposit"
+      : "Payment required";
+
+  const introText = showForm
+    ? "Please complete your hire form before collection."
+    : showDeposit
+      ? "Please secure your booking with the £200 deposit hold before collection."
+      : "Your booking still has an outstanding balance to be paid.";
+
+  const ctaHref = showForm
+    ? safeFormLink
+    : showDeposit
+      ? safeDepositLink
+      : safeOutstandingLink;
+
+  const ctaLabel = showForm
+    ? "Complete Form"
+    : showDeposit
+      ? "Secure Deposit"
+      : "Pay Outstanding";
+
+  const formTypeLabel =
+    (booking.requiredFormType || booking.formType) === "short"
+      ? "Short form"
+      : "Long form";
+
+  const statusValue = showForm
+    ? formTypeLabel
+    : showDeposit
+      ? "£200 hold required"
+      : `£${Number(booking.outstandingAmount || 0).toFixed(2)} due`;
+
+  const actionTitle = showForm
+    ? "Complete your form"
+    : showDeposit
+      ? "Secure your booking"
+      : "Pay your remaining balance";
+
+  const actionText = showForm
+    ? "Use the button below to complete the required hire form."
+    : showDeposit
+      ? "Use the button below to complete the £200 card hold. This is a pre-authorisation, not an immediate charge."
+      : "Use the button below to pay the remaining balance securely.";
+
+  const finalNote =
+    showOutstanding && hasOutstanding
+      ? "Please complete this before collection."
+      : "If you need help, just reply to this email or contact us below.";
+
   return `
-<div style="font-family:Arial,sans-serif;background:#f5f7fa;padding:20px;">
+<div style="margin:0;padding:0;background:#eef3f8;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+  <div style="max-width:720px;margin:0 auto;padding:28px 14px;">
 
-  <div style="max-width:600px;margin:0 auto;">
+    <div style="
+      background:#ffffff;
+      border:1px solid #dbe1e8;
+      border-radius:30px;
+      padding:22px;
+      box-shadow:0 16px 42px rgba(15,23,42,0.10);
+    ">
 
-    <div style="background:#ffffff;border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
-
-  ${EMAIL_BRAND_BLOCK}
-
-  <h2 style="margin-top:0;">${title}</h2>
-
-      <p>Dear ${firstName},</p>
-
-      <!-- ===============================
-           BOOKING SUMMARY
-      =============================== -->
-
-      <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;">
-        <strong>Booking Summary</strong><br><br>
-
-        Reference: #${(booking.id || "").slice(-8)}<br>
-        Lorry: ${booking.vehicleSnapshot?.name || "Horsebox Hire"}<br>
-        From: ${formatDate(booking.pickupAt)}<br>
-        Until: ${formatDate(booking.dropoffAt)}
-      </div>
-
-      <!-- ===============================
-           PAYMENT SUMMARY
-      =============================== -->
-
-      <div style="margin-top:16px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#ffffff;">
-        <strong>Payment Summary</strong><br><br>
-
-        Total hire: £${Number(booking.hireTotal || 0).toFixed(2)}<br>
-        Paid now: £${Number(booking.confirmationFee || 0).toFixed(2)}<br>
-        Outstanding: £${Number(booking.outstandingAmount || 0).toFixed(2)}
-      </div>
-
-      <!-- ===============================
-           ACTION BLOCK
-      =============================== -->
-
-      ${
-        showForm
-          ? `
-      <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;">
-        <strong>Form Required</strong>
-        <p>Please complete your hire form before collection.</p>
-
-        <a href="${safeFormLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
-          Complete Form
-        </a>
-
-        <p style="margin-top:10px;font-size:13px;color:#555;">
-          Required before your hire can proceed.
-        </p>
-      </div>
-      `
-          : ""
-      }
-
-      ${
-        showDeposit
-          ? `
-      <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;">
-        <strong>Deposit Hold (£200)</strong>
-
-        <p>This secures your booking.</p>
-
-        <a href="${safeDepositLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
-          Pay Deposit
-        </a>
-
-        <p style="margin-top:10px;font-size:13px;color:#555;">
-          Must be completed before collection.
-        </p>
-      </div>
-      `
-          : ""
-      }
-
-      ${
-        showOutstanding && hasOutstanding
-          ? `
-      <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;">
-        <strong>Outstanding Balance</strong>
-
-        <p>Your remaining balance is:</p>
-
-        <div style="font-size:20px;font-weight:700;margin:10px 0;">
-          £${Number(booking.outstandingAmount || 0).toFixed(2)}
-        </div>
-
-        <a href="${safeOutstandingLink}" style="display:inline-block;margin-top:10px;padding:12px 18px;background:#1f6feb;color:#fff;border-radius:8px;text-decoration:none;">
-          Pay Outstanding
-        </a>
-
-        <p style="margin-top:10px;font-size:13px;color:#b45309;">
-          ⚠ Please complete before collection
-        </p>
-      </div>
-      `
-          : ""
-      }
-
-          <!-- ===============================
-           WHATSAPP CTA
-      =============================== -->
-
-      <div style="margin-top:24px;text-align:center;">
-        <a href="https://wa.me/447584578654"
-           style="display:inline-block;padding:10px 16px;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
-          💬 Message us on WhatsApp
-        </a>
-      </div>
-
-      <!-- ===============================
-           PICKUP LOCATION
-      =============================== -->
+      ${EMAIL_BRAND_BLOCK}
 
       <div style="
-        margin-top:28px;
-        padding:18px;
-        border:1px solid #dbe1e8;
-        border-radius:16px;
         background:#f8fafc;
+        border:1px solid #dbe1e8;
+        border-radius:26px;
+        padding:30px 24px;
       ">
-        <h3 style="
-          margin:0 0 10px;
-          font-size:20px;
-          color:#1d2530;
+        <div style="
+          font-size:14px;
+          font-weight:900;
+          color:#64748b;
+          letter-spacing:1px;
+          text-transform:uppercase;
+          margin:0 0 14px;
         ">
-          Location
-        </h3>
+          ${eyebrow}
+        </div>
+
+        <h1 style="
+          margin:0 0 18px;
+          font-size:44px;
+          line-height:1.06;
+          font-weight:900;
+          letter-spacing:-1.2px;
+          color:#111827;
+        ">
+          ${title}
+        </h1>
 
         <p style="
+          margin:0;
+          font-size:18px;
+          line-height:1.75;
+          color:#4b5563;
+        ">
+          Dear ${firstName},<br><br>
+          ${introText}
+        </p>
+
+        <div style="
+          margin-top:24px;
+          display:inline-block;
+          background:#ffffff;
+          border:1px solid #dbe1e8;
+          border-radius:18px;
+          padding:14px 18px;
+        ">
+          <div style="
+            font-size:13px;
+            line-height:1.2;
+            font-weight:900;
+            color:#64748b;
+            text-transform:uppercase;
+            letter-spacing:0.7px;
+          ">
+            Status
+          </div>
+
+          <div style="
+            margin-top:6px;
+            font-size:22px;
+            line-height:1.2;
+            font-weight:900;
+            color:#1d2530;
+          ">
+            ${statusValue}
+          </div>
+        </div>
+      </div>
+
+      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+
+      <div style="
+        background:#ffffff;
+        border:1px solid #dbe1e8;
+        border-radius:26px;
+        padding:24px;
+      ">
+        <div style="
+          font-size:30px;
+          line-height:1.1;
+          font-weight:900;
+          color:#111827;
+          margin:0 0 20px;
+          letter-spacing:-0.5px;
+        ">
+          Booking Summary
+        </div>
+
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
+          <tr>
+            <td style="padding:0 0 13px;font-size:15px;line-height:1.5;color:#64748b;width:42%;vertical-align:top;">
+              Booking reference
+            </td>
+            <td style="padding:0 0 13px;font-size:16px;line-height:1.5;color:#111827;font-weight:900;vertical-align:top;">
+              #${(booking.id || "").slice(-8)}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:0 0 13px;font-size:15px;line-height:1.5;color:#64748b;vertical-align:top;">
+              Lorry
+            </td>
+            <td style="padding:0 0 13px;font-size:16px;line-height:1.5;color:#111827;font-weight:900;vertical-align:top;">
+              ${booking.vehicleSnapshot?.name || "Horsebox Hire"}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:0 0 13px;font-size:15px;line-height:1.5;color:#64748b;vertical-align:top;">
+              From
+            </td>
+            <td style="padding:0 0 13px;font-size:16px;line-height:1.5;color:#111827;font-weight:900;vertical-align:top;">
+              ${formatDate(booking.pickupAt || booking.pickupAtLocal)}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:0;font-size:15px;line-height:1.5;color:#64748b;vertical-align:top;">
+              Until
+            </td>
+            <td style="padding:0;font-size:16px;line-height:1.5;color:#111827;font-weight:900;vertical-align:top;">
+              ${formatDate(booking.dropoffAt || booking.dropoffAtLocal)}
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+
+      <div style="
+        background:#ffffff;
+        border:1px solid #dbe1e8;
+        border-radius:26px;
+        padding:24px;
+      ">
+        <div style="
+          font-size:30px;
+          line-height:1.1;
+          font-weight:900;
+          color:#111827;
+          margin:0 0 20px;
+          letter-spacing:-0.5px;
+        ">
+          Payment Summary
+        </div>
+
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
+          <tr>
+            <td style="padding:0 0 13px;font-size:15px;line-height:1.5;color:#64748b;width:42%;vertical-align:top;">
+              Total hire
+            </td>
+            <td style="padding:0 0 13px;font-size:16px;line-height:1.5;color:#111827;font-weight:900;vertical-align:top;">
+              £${Number(booking.hireTotal || booking.priceTotal || 0).toFixed(2)}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:0 0 13px;font-size:15px;line-height:1.5;color:#64748b;vertical-align:top;">
+              Paid now
+            </td>
+            <td style="padding:0 0 13px;font-size:16px;line-height:1.5;color:#111827;font-weight:900;vertical-align:top;">
+              £${Number(booking.paidNow || booking.confirmationFee || 0).toFixed(2)}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:0;font-size:15px;line-height:1.5;color:#64748b;vertical-align:top;">
+              Outstanding
+            </td>
+            <td style="
+              padding:0;
+              font-size:16px;
+              line-height:1.5;
+              color:${Number(booking.outstandingAmount || 0) > 0 ? "#b45309" : "#137a3d"};
+              font-weight:900;
+              vertical-align:top;
+            ">
+              £${Number(booking.outstandingAmount || 0).toFixed(2)}
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+
+      <div style="
+        background:#f8fafc;
+        border:1px solid #dbe1e8;
+        border-radius:26px;
+        padding:30px 24px;
+        text-align:center;
+      ">
+        <div style="
+          font-size:31px;
+          line-height:1.15;
+          font-weight:900;
+          color:#111827;
           margin:0 0 14px;
-          font-size:15px;
-          line-height:1.6;
-          color:#374151;
+          letter-spacing:-0.6px;
+        ">
+          ${actionTitle}
+        </div>
+
+        <p style="
+          margin:0 0 24px;
+          font-size:17px;
+          line-height:1.7;
+          color:#5a6675;
+        ">
+          ${actionText}
+        </p>
+
+        <a href="${ctaHref}" style="
+          display:inline-block;
+          padding:17px 30px;
+          background:#1f6feb;
+          color:#ffffff;
+          text-decoration:none;
+          border-radius:17px;
+          font-size:17px;
+          line-height:1.2;
+          font-weight:900;
+        ">
+          ${ctaLabel}
+        </a>
+
+        <p style="
+          margin:18px 0 0;
+          font-size:14px;
+          line-height:1.7;
+          color:${showOutstanding && hasOutstanding ? "#b45309" : "#64748b"};
+          font-weight:800;
+        ">
+          ${finalNote}
+        </p>
+      </div>
+
+      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+
+      <div style="
+        background:#ffffff;
+        border:1px solid #dbe1e8;
+        border-radius:26px;
+        padding:24px;
+      ">
+        <div style="
+          font-size:30px;
+          line-height:1.1;
+          font-weight:900;
+          color:#111827;
+          margin:0 0 14px;
+          letter-spacing:-0.5px;
+        ">
+          Collection Location
+        </div>
+
+        <p style="
+          margin:0 0 16px;
+          font-size:16px;
+          line-height:1.7;
+          color:#5a6675;
         ">
           Please collect the lorry from:
         </p>
 
         <div style="
-          padding:16px;
-          border-radius:14px;
-          background:#ffffff;
+          background:#f8fafc;
           border:1px solid #e5e7eb;
-          line-height:1.6;
-          color:#1f2937;
+          border-radius:18px;
+          padding:18px;
           font-size:15px;
+          line-height:1.75;
+          color:#1f2937;
         ">
           <strong>Equine Transport UK</strong><br>
           Upper Broadreed Farm<br>
@@ -10619,27 +10826,18 @@ function buildResendCardEmail({
           <strong>Tel:</strong> 07812 188871
         </div>
 
-        <p style="
-          margin:14px 0 0;
-          font-size:14px;
-          line-height:1.6;
-          color:#5a6675;
-        ">
-          Tap the button below for directions. Please come to the yard.
-        </p>
-
-        <div style="margin-top:16px;">
+        <div style="margin-top:18px;">
           <a
             href="https://www.google.com/maps/search/?api=1&query=Equine%20Transport%20UK%2C%20Upper%20Broadreed%20Farm%2C%20Stonehurst%20Lane%2C%20Five%20Ashes%2C%20TN20%206LL"
             target="_blank"
             style="
               display:inline-block;
-              padding:13px 18px;
-              border-radius:12px;
+              padding:14px 20px;
+              border-radius:14px;
               background:#1f6feb;
               color:#ffffff;
               text-decoration:none;
-              font-weight:700;
+              font-weight:900;
               font-size:15px;
             "
           >
@@ -10648,19 +10846,64 @@ function buildResendCardEmail({
         </div>
       </div>
 
-      <!-- ===============================
-           FOOTER
-      =============================== -->
+      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
 
-      <p style="margin-top:30px;">
-  With kind regards,<br>
-  Koos & Avril<br>
-  Equine Transport UK<br>
-  <span style="color:#5a6675;font-size:13px;">
-    Part of the East Grinstead Tyre Service Group<br>
-    Self Drive or Driven
-  </span>
-</p>
+      <div style="
+        background:#f8fafc;
+        border:1px solid #dbe1e8;
+        border-radius:26px;
+        padding:24px;
+        text-align:center;
+      ">
+        <div style="
+          font-size:28px;
+          line-height:1.15;
+          font-weight:900;
+          color:#111827;
+          margin:0 0 14px;
+          letter-spacing:-0.4px;
+        ">
+          Need help?
+        </div>
+
+        <p style="
+          margin:0 0 18px;
+          font-size:16px;
+          line-height:1.7;
+          color:#5a6675;
+        ">
+          If you have any questions, send us a WhatsApp message.
+        </p>
+
+        <a href="https://wa.me/447584578654"
+           style="
+             display:inline-block;
+             padding:14px 20px;
+             background:#25D366;
+             color:#ffffff;
+             border-radius:14px;
+             text-decoration:none;
+             font-weight:900;
+             font-size:15px;
+           ">
+          Message us on WhatsApp
+        </a>
+      </div>
+
+      <p style="
+        margin:30px 6px 0;
+        font-size:16px;
+        line-height:1.75;
+        color:#374151;
+      ">
+        With kind regards,<br>
+        <strong>Koos & Avril</strong><br>
+        Equine Transport UK<br>
+        <span style="color:#6b7280;font-size:14px;">
+          Part of the East Grinstead Tyre Service Group<br>
+          Self Drive or Driven
+        </span>
+      </p>
 
     </div>
   </div>
