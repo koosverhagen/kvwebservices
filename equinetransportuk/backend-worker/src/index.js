@@ -9925,83 +9925,75 @@ function toLondonLocalISOString(date) {
 
 const EMAIL_BRAND_BLOCK = `
   <div style="
-    margin:0 0 30px;
+    margin:0 0 22px;
     padding:0;
   ">
     <div style="
       position:relative;
       overflow:hidden;
-      background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%);
+      background:#ffffff;
       border:1px solid #dbe1e8;
-      border-radius:28px;
-      padding:30px 28px;
+      border-radius:24px;
+      padding:28px 22px;
+      min-height:210px;
+      text-align:center;
     ">
       <img
         src="https://www.equinetransportuk.com/images/logo.png"
         alt=""
         style="
           position:absolute;
-          right:-18px;
-          top:16px;
-          width:210px;
-          max-width:210px;
+          left:50%;
+          top:50%;
+          width:310px;
+          max-width:310px;
           height:auto;
-          opacity:0.12;
+          opacity:0.10;
           display:block;
+          transform:translate(-50%,-50%);
         "
       >
 
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;position:relative;z-index:2;">
-        <tr>
-          <td style="vertical-align:middle;padding-right:18px;">
-            <div style="
-              font-size:38px;
-              font-weight:900;
-              line-height:1.03;
-              letter-spacing:-0.5px;
-              color:#111827;
-              margin:0;
-            ">
-              Equine<br>Transport<br>UK
-            </div>
+      <div style="
+        position:relative;
+        z-index:2;
+        font-size:30px;
+        font-weight:900;
+        line-height:1.1;
+        letter-spacing:-0.6px;
+        color:#111827;
+        margin:0;
+        text-align:center;
+      ">
+        Equine Transport UK
+      </div>
 
-            <div style="
-              margin-top:16px;
-              font-size:16px;
-              line-height:1.45;
-              font-weight:800;
-              color:#5f6b7d;
-              max-width:340px;
-            ">
-              Part of the East Grinstead Tyre Service Group
-            </div>
+      <div style="
+        position:relative;
+        z-index:2;
+        margin:14px auto 0;
+        font-size:15px;
+        line-height:1.45;
+        font-weight:800;
+        color:#5f6b7d;
+        max-width:420px;
+        text-align:center;
+      ">
+        Part of the East Grinstead Tyre Service Group
+      </div>
 
-            <div style="
-              margin-top:14px;
-              font-size:19px;
-              line-height:1.35;
-              font-weight:900;
-              color:#4169e1;
-            ">
-              Self Drive or Driven
-            </div>
-          </td>
-
-          <td width="110" style="vertical-align:middle;text-align:right;">
-            <img
-              src="https://www.equinetransportuk.com/images/logo.png"
-              alt="Equine Transport UK"
-              style="
-                display:block;
-                width:108px;
-                max-width:108px;
-                height:auto;
-                margin-left:auto;
-              "
-            >
-          </td>
-        </tr>
-      </table>
+      <div style="
+        position:relative;
+        z-index:2;
+        margin:14px auto 0;
+        font-size:17px;
+        line-height:1.35;
+        font-weight:900;
+        color:#4169e1;
+        text-align:center;
+      ">
+        Self Drive or Driven
+      </div>
     </div>
   </div>
 `;
@@ -10530,15 +10522,15 @@ function buildResendCardEmail({
       : "If you need help, just reply to this email or contact us below.";
 
   return `
-<div style="margin:0;padding:0;background:#eef3f8;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-  <div style="max-width:720px;margin:0 auto;padding:28px 14px;">
+<div style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+  <div style="width:100%;max-width:720px;margin:0 auto;padding:0;">
 
-    <div style="
+   <div style="
       background:#ffffff;
-      border:1px solid #dbe1e8;
-      border-radius:30px;
-      padding:22px;
-      box-shadow:0 16px 42px rgba(15,23,42,0.10);
+      border:none;
+      border-radius:0;
+      padding:18px;
+      box-shadow:none;
     ">
 
       ${EMAIL_BRAND_BLOCK}
@@ -10562,7 +10554,7 @@ function buildResendCardEmail({
 
         <h1 style="
           margin:0 0 18px;
-          font-size:44px;
+          font-size:34px;
           line-height:1.06;
           font-weight:900;
           letter-spacing:-1.2px;
@@ -10602,7 +10594,7 @@ function buildResendCardEmail({
 
           <div style="
             margin-top:6px;
-            font-size:22px;
+            font-size:18px;
             line-height:1.2;
             font-weight:900;
             color:#1d2530;
@@ -10621,7 +10613,7 @@ function buildResendCardEmail({
         padding:24px;
       ">
         <div style="
-          font-size:30px;
+          font-size:24px;
           line-height:1.1;
           font-weight:900;
           color:#111827;
@@ -10679,7 +10671,7 @@ function buildResendCardEmail({
         padding:24px;
       ">
         <div style="
-          font-size:30px;
+          font-size:24px;
           line-height:1.1;
           font-weight:900;
           color:#111827;
@@ -10736,7 +10728,7 @@ function buildResendCardEmail({
         text-align:center;
       ">
         <div style="
-          font-size:31px;
+          font-size:24px;
           line-height:1.15;
           font-weight:900;
           color:#111827;
@@ -10789,7 +10781,7 @@ function buildResendCardEmail({
         padding:24px;
       ">
         <div style="
-          font-size:30px;
+          font-size:24px;
           line-height:1.1;
           font-weight:900;
           color:#111827;
@@ -10856,7 +10848,7 @@ function buildResendCardEmail({
         text-align:center;
       ">
         <div style="
-          font-size:28px;
+          font-size:23px;
           line-height:1.15;
           font-weight:900;
           color:#111827;
