@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin.html
+Disallow: /pay-deposit.html
+Disallow: /pay-outstanding.html
+Disallow: /forms/
+
+Sitemap: https://www.equinetransportuk.com/sitemap.xml
