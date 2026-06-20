@@ -9925,7 +9925,7 @@ function toLondonLocalISOString(date) {
 
 const EMAIL_BRAND_BLOCK = `
   <div style="
-    margin:0 0 22px;
+    margin:0 0 5px;;
     padding:0;
   ">
     <div style="
@@ -10058,7 +10058,7 @@ function buildModernEmail({
 
       <!-- TITLE -->
       <h1 style="
-        margin:0 0 22px;
+        margin:0 0 5px;;
         text-align:center;
         color:#1673ea;
         font-size:28px;
@@ -10525,11 +10525,11 @@ function buildResendCardEmail({
 <div style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
   <div style="width:100%;max-width:720px;margin:0 auto;padding:0;">
 
-   <div style="
+    <div style="
       background:#ffffff;
       border:none;
       border-radius:0;
-      padding:18px;
+      padding:5px;
       box-shadow:none;
     ">
 
@@ -10538,7 +10538,7 @@ function buildResendCardEmail({
       <div style="
         background:#f8fafc;
         border:1px solid #dbe1e8;
-        border-radius:26px;
+        border-radius:20px;
         padding:30px 24px;
       ">
         <div style="
@@ -10604,12 +10604,12 @@ function buildResendCardEmail({
         </div>
       </div>
 
-      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+      <div style="height:5px;line-height:5px;font-size:5px;">&nbsp;</div>
 
       <div style="
         background:#ffffff;
         border:1px solid #dbe1e8;
-        border-radius:26px;
+        border-radius:20px;
         padding:24px;
       ">
         <div style="
@@ -10662,12 +10662,12 @@ function buildResendCardEmail({
         </table>
       </div>
 
-      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+      <div style="height:5px;line-height:5px;font-size:5px;">&nbsp;</div>
 
       <div style="
         background:#ffffff;
         border:1px solid #dbe1e8;
-        border-radius:26px;
+        border-radius:20px;
         padding:24px;
       ">
         <div style="
@@ -10718,12 +10718,12 @@ function buildResendCardEmail({
         </table>
       </div>
 
-      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+      <div style="height:5px;line-height:5px;font-size:5px;">&nbsp;</div>
 
       <div style="
         background:#f8fafc;
         border:1px solid #dbe1e8;
-        border-radius:26px;
+        border-radius:20px;
         padding:30px 24px;
         text-align:center;
       ">
@@ -10772,12 +10772,12 @@ function buildResendCardEmail({
         </p>
       </div>
 
-      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+      <div style="height:5px;line-height:5px;font-size:5px;">&nbsp;</div>
 
       <div style="
         background:#ffffff;
         border:1px solid #dbe1e8;
-        border-radius:26px;
+        border-radius:20px;
         padding:24px;
       ">
         <div style="
@@ -10838,12 +10838,12 @@ function buildResendCardEmail({
         </div>
       </div>
 
-      <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>
+      <div style="height:5px;line-height:5px;font-size:5px;">&nbsp;</div>
 
       <div style="
         background:#f8fafc;
         border:1px solid #dbe1e8;
-        border-radius:26px;
+        border-radius:20px;
         padding:24px;
         text-align:center;
       ">
@@ -11442,7 +11442,7 @@ function buildHandoverCopyEmailHtml({
     ${EMAIL_BRAND_BLOCK}
 
     <div style="
-      margin:0 0 22px;
+      margin:0 0 5px;
       text-align:center;
       color:#5a6675;
       font-size:15px;
