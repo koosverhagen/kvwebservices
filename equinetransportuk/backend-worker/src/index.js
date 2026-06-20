@@ -9935,7 +9935,7 @@ const EMAIL_BRAND_BLOCK = `
       border:1px solid #dbe1e8;
       border-radius:24px;
       padding:28px 22px;
-      min-height:210px;
+      min-height:170px;
       text-align:center;
     ">
       <img
