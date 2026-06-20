@@ -518,6 +518,35 @@ export default {
       }
 
       /* ===============================
+         PUBLIC GOOGLE MAPS BROWSER KEY
+         Used for address autocomplete on booking/admin forms.
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/maps-key") {
+        const mapsKey = String(
+          env.GOOGLE_MAPS_BROWSER_KEY || env.GOOGLE_MAPS_API_KEY || "",
+        ).trim();
+
+        if (!mapsKey) {
+          return withCors(
+            json({ error: "Google Maps key is not configured" }, 500),
+            corsHeaders,
+          );
+        }
+
+        return withCors(
+          new Response(mapsKey, {
+            status: 200,
+            headers: {
+              "content-type": "text/plain; charset=utf-8",
+              "cache-control": "public, max-age=86400",
+            },
+          }),
+          corsHeaders,
+        );
+      }
+
+      /* ===============================
      DEPOSIT STRIPE SESSION
   =============================== */
 
