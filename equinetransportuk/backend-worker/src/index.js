@@ -9925,7 +9925,7 @@ function toLondonLocalISOString(date) {
 
 const EMAIL_BRAND_BLOCK = `
   <div style="
-    margin:0 0 5px;;
+    margin:0 0 5px;
     padding:0;
   ">
     <div style="
@@ -10058,7 +10058,7 @@ function buildModernEmail({
 
       <!-- TITLE -->
       <h1 style="
-        margin:0 0 5px;;
+        margin:0 0 22px;
         text-align:center;
         color:#1673ea;
         font-size:28px;
@@ -11442,7 +11442,7 @@ function buildHandoverCopyEmailHtml({
     ${EMAIL_BRAND_BLOCK}
 
     <div style="
-      margin:0 0 5px;
+      margin:0 0 22px;
       text-align:center;
       color:#5a6675;
       font-size:15px;
