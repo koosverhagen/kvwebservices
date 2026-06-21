@@ -11937,7 +11937,7 @@ async function handleAdminHandoverEmailCopy(request, env) {
 
     All 3 conditions must be correct before a SendGrid call is allowed.
   */
-  const HANDOVER_EMAIL_DRY_RUN = true;
+  const HANDOVER_EMAIL_DRY_RUN = false;
 
   let body;
 

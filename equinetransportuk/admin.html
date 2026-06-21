@@ -14440,10 +14440,27 @@ ${mobileOutstandingText}
             );
           }
 
-          setHandoverStatus(
-            `Customer email preview prepared but NOT sent. Link copied if browser allowed it: ${customerLink}`,
-            "warn",
-          );
+          if (emailData.sent === true) {
+            setHandoverStatus(
+              `Customer handover email sent to ${customerEmail}. Link copied if browser allowed it: ${customerLink}`,
+              "ok",
+            );
+          } else if (emailData.alreadySent === true) {
+            setHandoverStatus(
+              `Customer handover email was already sent before. Duplicate send skipped. Link copied if browser allowed it: ${customerLink}`,
+              "warn",
+            );
+          } else {
+            const reason =
+              emailData.reason ||
+              emailData.blockedReasons?.join(", ") ||
+              "EMAIL_NOT_SENT";
+
+            setHandoverStatus(
+              `Customer email preview prepared but NOT sent (${reason}). Link copied if browser allowed it: ${customerLink}`,
+              "warn",
+            );
+          }
         } catch (err) {
           console.error("❌ Handover email/link preparation failed:", err);
 
