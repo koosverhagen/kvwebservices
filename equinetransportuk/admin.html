@@ -5809,9 +5809,9 @@
       }
 
       /* ======================================================
-         MOBILE DATE INPUT FIX — FIND BOOKINGS + EDIT/ADD BOOKING
-         iPhone Safari can render type=date much taller than normal fields.
-         This keeps date fields same width/height as selects on mobile only.
+         MOBILE DATE INPUTS — FINAL UNIFIED SIZE
+         Mobile only.
+         Keeps iPhone date fields the same height/font as other admin fields.
       ====================================================== */
 
       @media (max-width: 768px) {
@@ -5830,15 +5830,15 @@
           max-width: 100% !important;
           min-width: 0 !important;
 
-          height: 62px !important;
-          min-height: 62px !important;
-          max-height: 62px !important;
+          height: 56px !important;
+          min-height: 56px !important;
+          max-height: 56px !important;
 
           margin: 0 !important;
-          padding: 0 20px !important;
+          padding: 0 15px !important;
 
           border: 1px solid #cbd5e1 !important;
-          border-radius: 20px !important;
+          border-radius: 15px !important;
 
           background-color: #ffffff !important;
           color: #111827 !important;
@@ -5853,9 +5853,9 @@
             Roboto,
             sans-serif !important;
 
-          font-size: 19px !important;
-          line-height: 62px !important;
-          font-weight: 800 !important;
+          font-size: 17px !important;
+          line-height: 1.25 !important;
+          font-weight: 650 !important;
 
           box-shadow: none !important;
           box-sizing: border-box !important;
@@ -5869,12 +5869,16 @@
 
         #edit-modal #edit-date,
         #edit-modal input[type="date"] {
-          height: 62px !important;
-          min-height: 62px !important;
-          max-height: 62px !important;
-          line-height: 62px !important;
+          height: 56px !important;
+          min-height: 56px !important;
+          max-height: 56px !important;
+
           padding-top: 0 !important;
           padding-bottom: 0 !important;
+
+          font-size: 17px !important;
+          line-height: 1.25 !important;
+          font-weight: 650 !important;
         }
 
         #range-from::-webkit-date-and-time-value,
@@ -5886,13 +5890,30 @@
         #block-date-until::-webkit-date-and-time-value,
         #from-date::-webkit-date-and-time-value,
         #to-date::-webkit-date-and-time-value {
-          min-height: 62px !important;
-          height: 62px !important;
-          line-height: 62px !important;
+          min-height: 0 !important;
+          height: auto !important;
+          line-height: normal !important;
+
           text-align: left !important;
+
           padding: 0 !important;
           margin: 0 !important;
+
           display: block !important;
+
+          font-family:
+            "SF Pro Display",
+            "SF Pro Text",
+            Inter,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            sans-serif !important;
+
+          font-size: 17px !important;
+          font-weight: 650 !important;
+          color: #111827 !important;
         }
 
         #range-from::-webkit-datetime-edit,
@@ -5906,6 +5927,27 @@
         #to-date::-webkit-datetime-edit {
           padding: 0 !important;
           margin: 0 !important;
+
+          font-size: 17px !important;
+          line-height: normal !important;
+          font-weight: 650 !important;
+        }
+
+        #range-from::-webkit-datetime-edit-fields-wrapper,
+        #range-to::-webkit-datetime-edit-fields-wrapper,
+        #edit-date::-webkit-datetime-edit-fields-wrapper,
+        #voucher-expires::-webkit-datetime-edit-fields-wrapper,
+        #customer-edit-dob::-webkit-datetime-edit-fields-wrapper,
+        #block-date-from::-webkit-datetime-edit-fields-wrapper,
+        #block-date-until::-webkit-datetime-edit-fields-wrapper,
+        #from-date::-webkit-datetime-edit-fields-wrapper,
+        #to-date::-webkit-datetime-edit-fields-wrapper {
+          padding: 0 !important;
+          margin: 0 !important;
+
+          font-size: 17px !important;
+          line-height: normal !important;
+          font-weight: 650 !important;
         }
 
         #range-from::-webkit-calendar-picker-indicator,
@@ -5917,8 +5959,8 @@
         #block-date-until::-webkit-calendar-picker-indicator,
         #from-date::-webkit-calendar-picker-indicator,
         #to-date::-webkit-calendar-picker-indicator {
-          width: 22px !important;
-          height: 22px !important;
+          width: 20px !important;
+          height: 20px !important;
           margin: 0 !important;
           padding: 0 !important;
         }
