@@ -5807,6 +5807,132 @@
           min-width: 0 !important;
         }
       }
+
+      /* ======================================================
+         MOBILE DATE INPUT FIX — FIND BOOKINGS + EDIT/ADD BOOKING
+         iPhone Safari can render type=date much taller than normal fields.
+         This keeps date fields same width/height as selects on mobile only.
+      ====================================================== */
+
+      @media (max-width: 768px) {
+        #range-from,
+        #range-to,
+        #edit-date,
+        #voucher-expires,
+        #customer-edit-dob,
+        #block-date-from,
+        #block-date-until,
+        #from-date,
+        #to-date {
+          display: block !important;
+
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+
+          height: 62px !important;
+          min-height: 62px !important;
+          max-height: 62px !important;
+
+          margin: 0 !important;
+          padding: 0 20px !important;
+
+          border: 1px solid #cbd5e1 !important;
+          border-radius: 20px !important;
+
+          background-color: #ffffff !important;
+          color: #111827 !important;
+
+          font-family:
+            "SF Pro Display",
+            "SF Pro Text",
+            Inter,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            sans-serif !important;
+
+          font-size: 19px !important;
+          line-height: 62px !important;
+          font-weight: 800 !important;
+
+          box-shadow: none !important;
+          box-sizing: border-box !important;
+
+          appearance: none !important;
+          -webkit-appearance: none !important;
+
+          overflow: hidden !important;
+          -webkit-text-size-adjust: 100% !important;
+        }
+
+        #edit-modal #edit-date,
+        #edit-modal input[type="date"] {
+          height: 62px !important;
+          min-height: 62px !important;
+          max-height: 62px !important;
+          line-height: 62px !important;
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+        }
+
+        #range-from::-webkit-date-and-time-value,
+        #range-to::-webkit-date-and-time-value,
+        #edit-date::-webkit-date-and-time-value,
+        #voucher-expires::-webkit-date-and-time-value,
+        #customer-edit-dob::-webkit-date-and-time-value,
+        #block-date-from::-webkit-date-and-time-value,
+        #block-date-until::-webkit-date-and-time-value,
+        #from-date::-webkit-date-and-time-value,
+        #to-date::-webkit-date-and-time-value {
+          min-height: 62px !important;
+          height: 62px !important;
+          line-height: 62px !important;
+          text-align: left !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          display: block !important;
+        }
+
+        #range-from::-webkit-datetime-edit,
+        #range-to::-webkit-datetime-edit,
+        #edit-date::-webkit-datetime-edit,
+        #voucher-expires::-webkit-datetime-edit,
+        #customer-edit-dob::-webkit-datetime-edit,
+        #block-date-from::-webkit-datetime-edit,
+        #block-date-until::-webkit-datetime-edit,
+        #from-date::-webkit-datetime-edit,
+        #to-date::-webkit-datetime-edit {
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        #range-from::-webkit-calendar-picker-indicator,
+        #range-to::-webkit-calendar-picker-indicator,
+        #edit-date::-webkit-calendar-picker-indicator,
+        #voucher-expires::-webkit-calendar-picker-indicator,
+        #customer-edit-dob::-webkit-calendar-picker-indicator,
+        #block-date-from::-webkit-calendar-picker-indicator,
+        #block-date-until::-webkit-calendar-picker-indicator,
+        #from-date::-webkit-calendar-picker-indicator,
+        #to-date::-webkit-calendar-picker-indicator {
+          width: 22px !important;
+          height: 22px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        #edit-modal .field,
+        #edit-modal .field input,
+        #edit-modal .field select,
+        #edit-modal .field textarea {
+          max-width: 100% !important;
+          min-width: 0 !important;
+          box-sizing: border-box !important;
+        }
+      }
+
     </style>
 
     <link rel="icon" href="images/favicon.png" />
