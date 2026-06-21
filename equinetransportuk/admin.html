@@ -5663,6 +5663,151 @@
           align-self: end !important;
         }
       }
+
+
+      /* ======================================================
+         MOBILE ADMIN FILTER / VOUCHER FORM POLISH
+         - keeps date inputs inside the card
+         - taller and larger mobile fields
+         - visible Reset filters button
+      ====================================================== */
+
+      @media (max-width: 768px) {
+        .hero-card .field,
+        #vouchers-section .field,
+        #customers-section .field {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+        }
+
+        .hero-card .field input,
+        .hero-card .field select,
+        .hero-card .field textarea,
+        #vouchers-section input,
+        #vouchers-section select,
+        #customers-section input,
+        #customers-section select {
+          display: block !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+
+          min-height: 56px !important;
+          height: 56px !important;
+
+          padding: 14px 15px !important;
+          border-radius: 15px !important;
+          border: 1px solid #cbd5e1 !important;
+
+          background-color: #ffffff !important;
+          color: #111827 !important;
+
+          font-size: 17px !important;
+          line-height: 1.25 !important;
+          font-weight: 650 !important;
+
+          box-shadow: none !important;
+          box-sizing: border-box !important;
+          -webkit-text-size-adjust: 100%;
+        }
+
+        .hero-card .field select,
+        #vouchers-section select,
+        #customers-section select {
+          -webkit-appearance: menulist !important;
+          appearance: menulist !important;
+          padding-right: 38px !important;
+        }
+
+        /* iPhone/Safari date inputs can overflow unless hard-reset */
+        #range-from,
+        #range-to,
+        #voucher-expires,
+        input[type="date"] {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          -webkit-appearance: none !important;
+          appearance: none !important;
+          overflow: hidden !important;
+        }
+
+        #range-from::-webkit-date-and-time-value,
+        #range-to::-webkit-date-and-time-value,
+        #voucher-expires::-webkit-date-and-time-value,
+        input[type="date"]::-webkit-date-and-time-value {
+          text-align: left !important;
+          min-height: 56px !important;
+          line-height: 56px !important;
+        }
+
+        #range-from::-webkit-calendar-picker-indicator,
+        #range-to::-webkit-calendar-picker-indicator,
+        #voucher-expires::-webkit-calendar-picker-indicator,
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          margin-right: 0 !important;
+          padding-left: 4px !important;
+        }
+
+        .hero-card .field label,
+        #vouchers-section .field label,
+        #customers-section .field label {
+          margin-bottom: 7px !important;
+          font-size: 14px !important;
+          line-height: 1.2 !important;
+          font-weight: 850 !important;
+          color: #334155 !important;
+        }
+
+        .filter-actions {
+          display: grid !important;
+          grid-template-columns: 1fr !important;
+          gap: 10px !important;
+          width: 100% !important;
+        }
+
+        #apply-filters-btn,
+        #clear-filters-btn,
+        #voucher-save-btn,
+        #voucher-clear-btn,
+        #voucher-refresh-btn,
+        #customer-add-btn {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+
+          width: 100% !important;
+          max-width: 100% !important;
+          min-height: 56px !important;
+
+          padding: 14px 16px !important;
+          border-radius: 16px !important;
+
+          font-size: 17px !important;
+          line-height: 1.15 !important;
+          font-weight: 900 !important;
+          text-align: center !important;
+          white-space: normal !important;
+        }
+
+        #clear-filters-btn {
+          display: inline-flex !important;
+        }
+
+        #vouchers-section .toolbar {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 12px !important;
+          width: 100% !important;
+        }
+
+        #vouchers-section .toolbar > * {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+        }
+      }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -5866,7 +6011,7 @@
             <div class="field">
               <label>&nbsp;</label>
 
-              <div style="display: flex; gap: 10px">
+              <div class="filter-actions" style="display: flex; gap: 10px">
                 <button
                   class="btn primary"
                   id="apply-filters-btn"
@@ -5882,7 +6027,7 @@
                   type="button"
                   style="flex: 1"
                 >
-                  Clear
+                  Reset filters
                 </button>
               </div>
             </div>
@@ -14759,15 +14904,11 @@ ${mobileOutstandingText}
       }
 
       function updateClearButton() {
-        const hasFilters =
-          searchInput.value ||
-          statusFilter.value !== "all" ||
-          (timeFilter?.value || "upcoming") !== "upcoming" ||
-          (bookingVehicleFilter?.value || "all") !== "all" ||
-          (voucherFilter?.value || "all") !== "all" ||
-          (depositFilter?.value || "all") !== "all";
-
-        clearFiltersBtn.style.display = hasFilters ? "block" : "none";
+        // Keep the Reset filters button visible on mobile and desktop.
+        // It also resets the date range back to the default window.
+        if (clearFiltersBtn) {
+          clearFiltersBtn.style.display = "inline-flex";
+        }
       }
 
       function normaliseUKPhone(phone) {
