@@ -5,6 +5,14 @@ const JSON_HEADERS = {
 };
 const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
 
+const GOOGLE_REVIEW_LINK = "https://g.page/r/CUTVuCXkntpdEAE/review";
+const GOOGLE_REVIEW_QR_URL =
+  "https://www.equinetransportuk.com/images/google-review-qr.png";
+
+// Send review request this many hours after return.
+// Use 0 for exactly at return time, 1 gives a nicer small delay.
+const REVIEW_EMAIL_DELAY_HOURS = 1;
+
 /* ===============================
    RESERVATION CLEANUP
 ================================ */
@@ -159,6 +167,341 @@ async function processReminders(env) {
     // ✅ DELETE AFTER SEND
     await env.BOOKINGS_KV.delete(key.name);
   }
+}
+
+/* ===============================
+   ⭐ REVIEW REQUEST EMAILS
+   Sent after lorry return time
+=============================== */
+
+async function scheduleReviewRequest(env, booking) {
+  if (!booking?.id || !booking?.dropoffAt) return;
+
+  const dropoffDate = new Date(booking.dropoffAt);
+
+  if (Number.isNaN(dropoffDate.getTime())) return;
+
+  const sendAt = new Date(
+    dropoffDate.getTime() + REVIEW_EMAIL_DELAY_HOURS * 60 * 60 * 1000,
+  );
+
+  // Do not schedule old/past bookings here.
+  // Existing bookings can be backfilled separately if needed.
+  if (sendAt.getTime() <= Date.now()) {
+    console.log(
+      "⭐ Review request not scheduled — return time already passed",
+      {
+        bookingId: booking.id,
+        sendAt: sendAt.toISOString(),
+      },
+    );
+    return;
+  }
+
+  const reviewKey = `review:${booking.id}`;
+
+  await env.BOOKINGS_KV.put(
+    reviewKey,
+    JSON.stringify({
+      bookingId: booking.id,
+      sendAt: sendAt.toISOString(),
+      createdAt: new Date().toISOString(),
+    }),
+    {
+      expirationTtl: 60 * 60 * 24 * 180, // 180 days safety
+    },
+  );
+
+  console.log("⭐ Review request scheduled:", reviewKey, sendAt.toISOString());
+}
+
+async function processReviewRequests(env) {
+  const now = new Date();
+
+  const emailsEnabled =
+    String(env.EMAILS_ENABLED || "")
+      .trim()
+      .toLowerCase() === "true";
+
+  const migrationMode =
+    String(env.MIGRATION_MODE || "")
+      .trim()
+      .toLowerCase() === "true";
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "review:" });
+
+  for (const key of list.keys) {
+    const data = await env.BOOKINGS_KV.get(key.name);
+    if (!data) continue;
+
+    let review;
+
+    try {
+      review = JSON.parse(data);
+    } catch {
+      await env.BOOKINGS_KV.delete(key.name);
+      continue;
+    }
+
+    if (!review.sendAt || !review.bookingId) {
+      await env.BOOKINGS_KV.delete(key.name);
+      continue;
+    }
+
+    const sendTime = new Date(review.sendAt);
+
+    if (now < sendTime) continue;
+
+    const booking = await findBookingById(env, review.bookingId);
+
+    if (!booking || !booking.customerEmail) {
+      console.log(
+        "⭐ Review skipped — booking/email missing:",
+        review.bookingId,
+      );
+      await env.BOOKINGS_KV.delete(key.name);
+      continue;
+    }
+
+    const status = String(booking.status || "").toLowerCase();
+
+    if (status === "cancelled" || booking.cancelled === true) {
+      console.log("⭐ Review skipped — booking cancelled:", booking.id);
+      await env.BOOKINGS_KV.delete(key.name);
+      continue;
+    }
+
+    const sentKey = `review_sent:${booking.id}`;
+    const alreadySent = await env.BOOKINGS_KV.get(sentKey);
+
+    if (alreadySent) {
+      console.log("⭐ Review already sent — skipping duplicate:", booking.id);
+      await env.BOOKINGS_KV.delete(key.name);
+      continue;
+    }
+
+    // If emails are disabled/migration mode is on, leave the review key in place
+    // so it can send later when emails are enabled again.
+    if (!emailsEnabled || migrationMode) {
+      console.log("⭐ Review email paused:", {
+        bookingId: booking.id,
+        emailsEnabled,
+        migrationMode,
+      });
+      continue;
+    }
+
+    try {
+      const emailHtml = buildReviewRequestEmail(booking);
+
+      await sendBookingEmail(env, {
+        to: booking.customerEmail,
+        subject: "Thank you for using Equine Transport UK",
+        html: emailHtml,
+      });
+
+      await env.BOOKINGS_KV.put(
+        sentKey,
+        JSON.stringify({
+          bookingId: booking.id,
+          customerEmail: booking.customerEmail,
+          sentAt: new Date().toISOString(),
+          reviewLink: GOOGLE_REVIEW_LINK,
+        }),
+        {
+          expirationTtl: 60 * 60 * 24 * 730, // 2 years dedupe
+        },
+      );
+
+      await env.BOOKINGS_KV.delete(key.name);
+
+      console.log("✅ Review request email sent:", booking.id);
+    } catch (err) {
+      console.error("❌ Review request email failed:", booking.id, err);
+    }
+  }
+}
+
+function buildReviewRequestEmail(booking) {
+  const safeCustomerName = escapeHtml(booking.customerName || "Customer");
+  const firstName = safeCustomerName.split(" ")[0] || "Customer";
+
+  const vehicleName = escapeHtml(
+    booking.vehicleSnapshot?.name || booking.vehicleName || "your horsebox",
+  );
+
+  const returnDate = booking.dropoffAtLocal
+    ? formatEmailDateTime(booking.dropoffAtLocal)
+    : formatEmailDateTime(booking.dropoffAt);
+
+  const reviewLink = escapeHtml(GOOGLE_REVIEW_LINK);
+  const qrUrl = escapeHtml(GOOGLE_REVIEW_QR_URL);
+
+  return `
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#eef1f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#1d2530;">
+    <div style="width:100%;padding:18px 0;background:#eef1f6;">
+      <div style="max-width:720px;margin:0 auto;padding:0 12px;">
+
+        ${EMAIL_BRAND_BLOCK}
+
+        <div style="
+          background:#ffffff;
+          border:1px solid #dbe1e8;
+          border-radius:24px;
+          box-shadow:0 18px 44px rgba(15,23,42,0.08);
+          padding:24px;
+          overflow:hidden;
+        ">
+          <h1 style="
+            margin:0 0 12px;
+            font-size:28px;
+            line-height:1.15;
+            letter-spacing:-0.03em;
+            color:#1d2530;
+          ">
+            Thank you for choosing Equine Transport UK
+          </h1>
+
+          <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#334155;">
+            Dear ${firstName},
+          </p>
+
+          <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#334155;">
+            Thank you for using Equine Transport UK. We hope everything went smoothly with
+            <strong>${vehicleName}</strong>.
+          </p>
+
+          <div style="
+            margin:18px 0;
+            padding:16px 18px;
+            background:#f8fafc;
+            border:1px solid #dbe1e8;
+            border-radius:16px;
+          ">
+            <div style="font-size:13px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;">
+              Booking reference
+            </div>
+            <div style="margin-top:4px;font-size:16px;font-weight:800;color:#1d2530;">
+              ${escapeHtml(booking.id || "Booking")}
+            </div>
+
+            <div style="margin-top:14px;font-size:13px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;">
+              Return time
+            </div>
+            <div style="margin-top:4px;font-size:16px;font-weight:800;color:#1d2530;">
+              ${escapeHtml(returnDate || "Recently returned")}
+            </div>
+          </div>
+
+          <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#334155;">
+            If you were happy with the service, a short Google review would really help our
+            family business. Mentioning what you used us for — self-drive horsebox hire,
+            driven transport, a vet trip or show transport — is especially helpful for future customers.
+          </p>
+
+          <div style="text-align:center;margin:24px 0 18px;">
+            <a href="${reviewLink}"
+               style="
+                 display:inline-block;
+                 background:#1673ea;
+                 color:#ffffff;
+                 text-decoration:none;
+                 font-weight:900;
+                 font-size:17px;
+                 line-height:1;
+                 padding:17px 30px;
+                 border-radius:12px;
+               ">
+              Leave a Google Review
+            </a>
+          </div>
+
+          <div style="text-align:center;margin:20px 0 16px;">
+            <img
+              src="${qrUrl}"
+              alt="Google review QR code"
+              width="170"
+              height="170"
+              style="
+                display:inline-block;
+                width:170px;
+                height:170px;
+                border:1px solid #dbe1e8;
+                border-radius:16px;
+                padding:10px;
+                background:#ffffff;
+              "
+            >
+          </div>
+
+          <p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#64748b;text-align:center;">
+            Or copy this link:
+          </p>
+
+          <p style="margin:0 0 22px;font-size:14px;line-height:1.6;text-align:center;">
+            <a href="${reviewLink}" style="color:#1673ea;word-break:break-all;">
+              ${reviewLink}
+            </a>
+          </p>
+
+          <div style="
+            margin:22px 0 0;
+            padding:16px 18px;
+            background:#f4ecd8;
+            border:1px solid #e5b54a;
+            border-radius:14px;
+            color:#6f4c00;
+            font-size:14px;
+            line-height:1.65;
+          ">
+            Please only leave a review if you are happy to do so. We appreciate honest feedback from real customers.
+          </div>
+
+          <p style="margin:24px 0 0;font-size:15px;line-height:1.65;color:#334155;">
+            With kind regards,<br>
+            <strong>Koos & Avril</strong><br>
+            Equine Transport UK
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>
+`;
+}
+
+function formatEmailDateTime(value) {
+  if (!value) return "";
+
+  let v = String(value);
+
+  if (v.includes("T") && !/[zZ]|[+-]\d\d:\d\d$/.test(v)) {
+    // Treat local booking strings as Europe/London display text.
+    const [datePart, timePart = ""] = v.split("T");
+    const [y, m, d] = datePart.split("-");
+    const [hh = "", mm = ""] = timePart.split(":");
+
+    if (y && m && d) {
+      return `${d}/${m}/${String(y).slice(-2)} ${hh}:${mm}`;
+    }
+  }
+
+  const d = new Date(v);
+
+  if (Number.isNaN(d.getTime())) return "";
+
+  return d.toLocaleString("en-GB", {
+    timeZone: "Europe/London",
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 export default {
@@ -2365,6 +2708,7 @@ It is only a security hold.
   },
 
   /* ===============================
+    /* ===============================
      CRON JOB — RESERVATION CLEANUP
   ================================ */
 
@@ -2372,9 +2716,8 @@ It is only a security hold.
     console.log("🧹 Running scheduled jobs");
 
     ctx.waitUntil(cleanupExpiredReservations(env));
-
-    // 🔥 NEW
     ctx.waitUntil(processReminders(env));
+    ctx.waitUntil(processReviewRequests(env));
   },
 };
 
@@ -6875,8 +7218,16 @@ async function handleAdminBookingUpdate(request, env) {
 
       await upsertBookingInKv(env, booking);
 
-      let emailSent = false;
+      try {
+        await scheduleReviewRequest(env, booking);
+      } catch (err) {
+        console.warn(
+          "⚠️ Failed to schedule admin booking review request:",
+          err,
+        );
+      }
 
+      let emailSent = false;
       try {
         emailSent = await sendAdminBookingLinksEmail(env, booking);
       } catch (err) {
@@ -8440,6 +8791,17 @@ async function handleStripeWebhook(request, env) {
         );
       } catch (err) {
         console.warn("⚠️ Failed to schedule reminder:", err);
+      }
+
+      /* ===============================
+         ⭐ SCHEDULE REVIEW REQUEST
+         After lorry return time
+      =============================== */
+
+      try {
+        await scheduleReviewRequest(env, booking);
+      } catch (err) {
+        console.warn("⚠️ Failed to schedule review request:", err);
       }
 
       if (!finalCustomerName) {
