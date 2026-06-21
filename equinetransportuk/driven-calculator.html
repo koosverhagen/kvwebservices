@@ -784,12 +784,19 @@
             );
 
             const rate = rates[lorryType];
+
             const mileageCost = totalMiles * rate.perMile;
+            const baseTransportCost = Math.max(
+              rate.minimumCharge,
+              mileageCost,
+            );
+
             const waitingCost = waitingHours * rate.waitingPerHour;
             const extraHorseCost =
               Math.max(0, horseCount - 1) * rate.horseExtra;
+
             const rawGuideTotal =
-              rate.callout + mileageCost + waitingCost + extraHorseCost;
+              baseTransportCost + waitingCost + extraHorseCost;
 
             // Customer-facing guide price rounded to the nearest £5.
             const guideTotal = Math.round(rawGuideTotal / 5) * 5;
