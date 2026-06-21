@@ -587,18 +587,19 @@
 
         const rates = {
           "3.5t": {
-            // Calibrated so:
-            // Base → Peppers Farm House, Ashurst → Frythe Barn, Eye → Base
-            // with 1 horse and no waiting is approximately £350.
-            perMile: 1.032,
-            callout: 35,
+            // Driven transport guide logic:
+            // guide total = callout + (route miles × per-mile rate)
+            //              + waiting + extra horses, then rounded to nearest £5.
+            // Calibrated so the example 71.88 mile route shows about £90.
+            perMile: 1.1,
+            callout: 10,
             waitingPerHour: 25,
             horseExtra: 10,
           },
           "7.5t": {
             // Keeps the 7.5T guide rate proportionally higher than 3.5T.
-            perMile: 1.38,
-            callout: 55,
+            perMile: 1.45,
+            callout: 20,
             waitingPerHour: 35,
             horseExtra: 15,
           },
