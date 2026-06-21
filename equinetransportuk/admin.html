@@ -14242,6 +14242,14 @@ ${mobileOutstandingText}
         const booking = CURRENT_HANDOVER_BOOKING;
         const bookingId = handoverBookingIdInput?.value || "";
 
+        const safeEmailText = (value) =>
+          String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
         if (!booking || !bookingId) {
           setHandoverStatus("No booking loaded for email copy.", "bad");
           return;
@@ -14274,59 +14282,58 @@ ${mobileOutstandingText}
         }
 
         /*
-    STEP 3H:
-    Open preview tab immediately while still inside the click event.
-    This prevents Safari/Chrome from blocking the popup after async work.
-  */
+          Open preview tab immediately while still inside the click event.
+          This prevents Safari/Chrome from blocking the popup after async work.
+        */
         const previewWindow = window.open("", "_blank");
 
         if (previewWindow) {
           previewWindow.document.open();
           previewWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <title>Preparing email preview...</title>
-          <meta name="viewport" content="width=device-width,initial-scale=1" />
-          <style>
-            body {
-              margin: 0;
-              padding: 24px;
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-              background: #f8fafc;
-              color: #111827;
-            }
+            <!doctype html>
+            <html>
+              <head>
+                <title>Preparing handover email...</title>
+                <meta name="viewport" content="width=device-width,initial-scale=1" />
+                <style>
+                  body {
+                    margin: 0;
+                    padding: 24px;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                    background: #f8fafc;
+                    color: #111827;
+                  }
 
-            .box {
-              max-width: 680px;
-              margin: 40px auto;
-              background: #fff;
-              border: 1px solid #dbe1e8;
-              border-radius: 18px;
-              padding: 24px;
-              box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-            }
+                  .box {
+                    max-width: 680px;
+                    margin: 40px auto;
+                    background: #fff;
+                    border: 1px solid #dbe1e8;
+                    border-radius: 18px;
+                    padding: 24px;
+                    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+                  }
 
-            h1 {
-              margin: 0 0 8px;
-              font-size: 24px;
-            }
+                  h1 {
+                    margin: 0 0 8px;
+                    font-size: 24px;
+                  }
 
-            p {
-              margin: 0;
-              color: #64748b;
-              font-weight: 700;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="box">
-            <h1>Preparing email preview…</h1>
-            <p>No email is being sent.</p>
-          </div>
-        </body>
-      </html>
-    `);
+                  p {
+                    margin: 0;
+                    color: #64748b;
+                    font-weight: 700;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="box">
+                  <h1>Preparing handover email…</h1>
+                  <p>Please wait while the customer report link is created.</p>
+                </div>
+              </body>
+            </html>
+          `);
           previewWindow.document.close();
         }
 
@@ -14384,7 +14391,7 @@ ${mobileOutstandingText}
           }
 
           if (handoverEmailBtn) {
-            handoverEmailBtn.textContent = "Preparing email…";
+            handoverEmailBtn.textContent = "Sending email…";
           }
 
           const emailRes = await fetch(
@@ -14412,14 +14419,205 @@ ${mobileOutstandingText}
           console.log("📧 Backend handover email-copy response:", emailData);
 
           const emailHtml = emailData.htmlPreview || "";
+          const sentTo = emailData.customerEmail || customerEmail;
 
-          if (previewWindow && emailHtml) {
+          if (previewWindow) {
             previewWindow.document.open();
-            previewWindow.document.write(emailHtml);
+
+            if (emailData.sent === true) {
+              previewWindow.document.write(`
+                <!doctype html>
+                <html>
+                  <head>
+                    <title>Handover email sent</title>
+                    <meta name="viewport" content="width=device-width,initial-scale=1" />
+                    <style>
+                      body {
+                        margin: 0;
+                        padding: 24px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                        background: #f0fdf4;
+                        color: #14532d;
+                      }
+
+                      .box {
+                        max-width: 720px;
+                        margin: 50px auto;
+                        background: #ffffff;
+                        border: 1px solid #bbf7d0;
+                        border-radius: 22px;
+                        padding: 28px;
+                        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+                      }
+
+                      h1 {
+                        margin: 0 0 10px;
+                        font-size: 28px;
+                        color: #14532d;
+                      }
+
+                      p {
+                        margin: 8px 0;
+                        color: #166534;
+                        font-size: 16px;
+                        line-height: 1.5;
+                      }
+
+                      a {
+                        color: #1673ea;
+                        word-break: break-all;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="box">
+                      <h1>✅ Handover email sent</h1>
+                      <p>The signed handover / damage report email was sent to:</p>
+                      <p><strong>${safeEmailText(sentTo)}</strong></p>
+                      <p>Customer report link:</p>
+                      <p>
+                        <a href="${safeEmailText(customerLink)}" target="_blank">
+                          ${safeEmailText(customerLink)}
+                        </a>
+                      </p>
+                    </div>
+                  </body>
+                </html>
+              `);
+
+              previewWindow.document.title = "Handover email sent";
+            } else if (emailData.alreadySent === true) {
+              previewWindow.document.write(`
+                <!doctype html>
+                <html>
+                  <head>
+                    <title>Handover email already sent</title>
+                    <meta name="viewport" content="width=device-width,initial-scale=1" />
+                    <style>
+                      body {
+                        margin: 0;
+                        padding: 24px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                        background: #fffbeb;
+                        color: #92400e;
+                      }
+
+                      .box {
+                        max-width: 720px;
+                        margin: 50px auto;
+                        background: #ffffff;
+                        border: 1px solid #fde68a;
+                        border-radius: 22px;
+                        padding: 28px;
+                        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+                      }
+
+                      h1 {
+                        margin: 0 0 10px;
+                        font-size: 28px;
+                      }
+
+                      p {
+                        margin: 8px 0;
+                        font-size: 16px;
+                        line-height: 1.5;
+                      }
+
+                      a {
+                        color: #1673ea;
+                        word-break: break-all;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="box">
+                      <h1>⚠️ Handover email already sent</h1>
+                      <p>The system skipped a duplicate email for:</p>
+                      <p><strong>${safeEmailText(sentTo)}</strong></p>
+                      <p>Customer report link:</p>
+                      <p>
+                        <a href="${safeEmailText(customerLink)}" target="_blank">
+                          ${safeEmailText(customerLink)}
+                        </a>
+                      </p>
+                    </div>
+                  </body>
+                </html>
+              `);
+
+              previewWindow.document.title = "Handover email already sent";
+            } else if (emailHtml) {
+              previewWindow.document.write(emailHtml);
+              previewWindow.document.title =
+                emailData.subject || "Handover email preview";
+            } else {
+              const reason =
+                emailData.reason ||
+                emailData.blockedReasons?.join(", ") ||
+                "EMAIL_NOT_SENT";
+
+              previewWindow.document.write(`
+                <!doctype html>
+                <html>
+                  <head>
+                    <title>Handover email not sent</title>
+                    <meta name="viewport" content="width=device-width,initial-scale=1" />
+                    <style>
+                      body {
+                        margin: 0;
+                        padding: 24px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                        background: #fff7ed;
+                        color: #9a3412;
+                      }
+
+                      .box {
+                        max-width: 720px;
+                        margin: 50px auto;
+                        background: #ffffff;
+                        border: 1px solid #fed7aa;
+                        border-radius: 22px;
+                        padding: 28px;
+                        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+                      }
+
+                      h1 {
+                        margin: 0 0 10px;
+                        font-size: 28px;
+                      }
+
+                      p {
+                        margin: 8px 0;
+                        font-size: 16px;
+                        line-height: 1.5;
+                      }
+
+                      a {
+                        color: #1673ea;
+                        word-break: break-all;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="box">
+                      <h1>⚠️ Handover email not sent</h1>
+                      <p>Reason: <strong>${safeEmailText(reason)}</strong></p>
+                      <p>Customer report link was still created:</p>
+                      <p>
+                        <a href="${safeEmailText(customerLink)}" target="_blank">
+                          ${safeEmailText(customerLink)}
+                        </a>
+                      </p>
+                    </div>
+                  </body>
+                </html>
+              `);
+
+              previewWindow.document.title = "Handover email not sent";
+            }
+
             previewWindow.document.close();
-            previewWindow.document.title =
-              emailData.subject || "Handover email preview";
-          } else if (!previewWindow) {
+          } else {
             console.warn("Email preview popup was blocked by the browser.");
           }
 
@@ -14442,7 +14640,7 @@ ${mobileOutstandingText}
 
           if (emailData.sent === true) {
             setHandoverStatus(
-              `Customer handover email sent to ${customerEmail}. Link copied if browser allowed it: ${customerLink}`,
+              `Customer handover email sent to ${sentTo}. Link copied if browser allowed it: ${customerLink}`,
               "ok",
             );
           } else if (emailData.alreadySent === true) {
@@ -14457,7 +14655,7 @@ ${mobileOutstandingText}
               "EMAIL_NOT_SENT";
 
             setHandoverStatus(
-              `Customer email preview prepared but NOT sent (${reason}). Link copied if browser allowed it: ${customerLink}`,
+              `Customer email prepared but NOT sent (${reason}). Link copied if browser allowed it: ${customerLink}`,
               "warn",
             );
           }
@@ -14467,48 +14665,48 @@ ${mobileOutstandingText}
           if (previewWindow) {
             previewWindow.document.open();
             previewWindow.document.write(`
-        <!doctype html>
-        <html>
-          <head>
-            <title>Email preview failed</title>
-            <meta name="viewport" content="width=device-width,initial-scale=1" />
-            <style>
-              body {
-                margin: 0;
-                padding: 24px;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                background: #fff1f2;
-                color: #991b1b;
-              }
+              <!doctype html>
+              <html>
+                <head>
+                  <title>Email preview failed</title>
+                  <meta name="viewport" content="width=device-width,initial-scale=1" />
+                  <style>
+                    body {
+                      margin: 0;
+                      padding: 24px;
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                      background: #fff1f2;
+                      color: #991b1b;
+                    }
 
-              .box {
-                max-width: 680px;
-                margin: 40px auto;
-                background: #fff;
-                border: 1px solid #fecdd3;
-                border-radius: 18px;
-                padding: 24px;
-              }
+                    .box {
+                      max-width: 680px;
+                      margin: 40px auto;
+                      background: #fff;
+                      border: 1px solid #fecdd3;
+                      border-radius: 18px;
+                      padding: 24px;
+                    }
 
-              h1 {
-                margin: 0 0 8px;
-                font-size: 24px;
-              }
+                    h1 {
+                      margin: 0 0 8px;
+                      font-size: 24px;
+                    }
 
-              p {
-                margin: 0;
-                line-height: 1.5;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="box">
-              <h1>Email preview failed</h1>
-              <p>${escapeHtml(err.message || "Failed to prepare customer handover email.")}</p>
-            </div>
-          </body>
-        </html>
-      `);
+                    p {
+                      margin: 0;
+                      line-height: 1.5;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="box">
+                    <h1>Email preview failed</h1>
+                    <p>${safeEmailText(err.message || "Failed to prepare customer handover email.")}</p>
+                  </div>
+                </body>
+              </html>
+            `);
             previewWindow.document.close();
           }
 
@@ -14523,7 +14721,6 @@ ${mobileOutstandingText}
           }
         }
       }
-
       function showModalLoading() {
         modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
         modalFields.innerHTML = "";
