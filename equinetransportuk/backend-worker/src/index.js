@@ -13345,7 +13345,7 @@ async function handlePublicResendLinks(request, env) {
       return json({ error: "Missing bookingId" }, 400);
     }
 
-    const booking = await findBookingById(env, bookingId);
+    let booking = await findBookingById(env, bookingId);
 
     if (!booking) {
       return json({ error: "Booking not found" }, 404);
