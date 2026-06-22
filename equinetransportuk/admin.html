@@ -5809,9 +5809,9 @@
       }
 
       /* ======================================================
-         MOBILE DATE INPUTS — FINAL UNIFIED SIZE
+         MOBILE DATE INPUTS — FINAL COMPACT / CENTERED
          Mobile only.
-         Keeps iPhone date fields the same height/font as other admin fields.
+         Makes iPhone date inputs match other admin fields.
       ====================================================== */
 
       @media (max-width: 768px) {
@@ -5823,7 +5823,10 @@
         #block-date-from,
         #block-date-until,
         #from-date,
-        #to-date {
+        #to-date,
+        #edit-modal input[type="date"],
+        .hero-card input[type="date"],
+        #vouchers-section input[type="date"] {
           display: block !important;
 
           width: 100% !important;
@@ -5854,8 +5857,8 @@
             sans-serif !important;
 
           font-size: 17px !important;
-          line-height: 1.25 !important;
-          font-weight: 650 !important;
+          line-height: 56px !important;
+          font-weight: 500 !important;
 
           box-shadow: none !important;
           box-sizing: border-box !important;
@@ -5867,20 +5870,6 @@
           -webkit-text-size-adjust: 100% !important;
         }
 
-        #edit-modal #edit-date,
-        #edit-modal input[type="date"] {
-          height: 56px !important;
-          min-height: 56px !important;
-          max-height: 56px !important;
-
-          padding-top: 0 !important;
-          padding-bottom: 0 !important;
-
-          font-size: 17px !important;
-          line-height: 1.25 !important;
-          font-weight: 650 !important;
-        }
-
         #range-from::-webkit-date-and-time-value,
         #range-to::-webkit-date-and-time-value,
         #edit-date::-webkit-date-and-time-value,
@@ -5889,17 +5878,23 @@
         #block-date-from::-webkit-date-and-time-value,
         #block-date-until::-webkit-date-and-time-value,
         #from-date::-webkit-date-and-time-value,
-        #to-date::-webkit-date-and-time-value {
-          min-height: 0 !important;
-          height: auto !important;
-          line-height: normal !important;
+        #to-date::-webkit-date-and-time-value,
+        #edit-modal input[type="date"]::-webkit-date-and-time-value,
+        .hero-card input[type="date"]::-webkit-date-and-time-value,
+        #vouchers-section input[type="date"]::-webkit-date-and-time-value {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
 
-          text-align: left !important;
+          width: 100% !important;
+          height: 56px !important;
+          min-height: 56px !important;
+          max-height: 56px !important;
 
           padding: 0 !important;
           margin: 0 !important;
 
-          display: block !important;
+          text-align: left !important;
 
           font-family:
             "SF Pro Display",
@@ -5912,7 +5907,8 @@
             sans-serif !important;
 
           font-size: 17px !important;
-          font-weight: 650 !important;
+          line-height: 56px !important;
+          font-weight: 500 !important;
           color: #111827 !important;
         }
 
@@ -5924,15 +5920,10 @@
         #block-date-from::-webkit-datetime-edit,
         #block-date-until::-webkit-datetime-edit,
         #from-date::-webkit-datetime-edit,
-        #to-date::-webkit-datetime-edit {
-          padding: 0 !important;
-          margin: 0 !important;
-
-          font-size: 17px !important;
-          line-height: normal !important;
-          font-weight: 650 !important;
-        }
-
+        #to-date::-webkit-datetime-edit,
+        #edit-modal input[type="date"]::-webkit-datetime-edit,
+        .hero-card input[type="date"]::-webkit-datetime-edit,
+        #vouchers-section input[type="date"]::-webkit-datetime-edit,
         #range-from::-webkit-datetime-edit-fields-wrapper,
         #range-to::-webkit-datetime-edit-fields-wrapper,
         #edit-date::-webkit-datetime-edit-fields-wrapper,
@@ -5941,13 +5932,23 @@
         #block-date-from::-webkit-datetime-edit-fields-wrapper,
         #block-date-until::-webkit-datetime-edit-fields-wrapper,
         #from-date::-webkit-datetime-edit-fields-wrapper,
-        #to-date::-webkit-datetime-edit-fields-wrapper {
+        #to-date::-webkit-datetime-edit-fields-wrapper,
+        #edit-modal input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+        .hero-card input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+        #vouchers-section input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+          display: flex !important;
+          align-items: center !important;
+
+          height: 56px !important;
+          min-height: 56px !important;
+          max-height: 56px !important;
+
           padding: 0 !important;
           margin: 0 !important;
 
           font-size: 17px !important;
-          line-height: normal !important;
-          font-weight: 650 !important;
+          line-height: 56px !important;
+          font-weight: 500 !important;
         }
 
         #range-from::-webkit-calendar-picker-indicator,
@@ -5958,7 +5959,10 @@
         #block-date-from::-webkit-calendar-picker-indicator,
         #block-date-until::-webkit-calendar-picker-indicator,
         #from-date::-webkit-calendar-picker-indicator,
-        #to-date::-webkit-calendar-picker-indicator {
+        #to-date::-webkit-calendar-picker-indicator,
+        #edit-modal input[type="date"]::-webkit-calendar-picker-indicator,
+        .hero-card input[type="date"]::-webkit-calendar-picker-indicator,
+        #vouchers-section input[type="date"]::-webkit-calendar-picker-indicator {
           width: 20px !important;
           height: 20px !important;
           margin: 0 !important;
