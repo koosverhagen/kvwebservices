@@ -8624,7 +8624,7 @@ Equine Transport UK`;
         return "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate";
       }
 
-      function showCopyHelper(licence, code, options = {}) {
+      function showCopyHelper(licence, code) {
         let el = document.getElementById("dvla-helper");
 
         if (!el) {
@@ -8643,7 +8643,7 @@ Equine Transport UK`;
           el.style.lineHeight = "1.5";
           el.style.boxShadow = "0 12px 30px rgba(0,0,0,0.25)";
           el.style.zIndex = "999999";
-          el.style.maxWidth = "340px";
+          el.style.maxWidth = "320px";
           el.style.textAlign = "center";
           el.style.opacity = "0";
           el.style.transition = "all 0.25s ease";
@@ -8651,38 +8651,20 @@ Equine Transport UK`;
           document.body.appendChild(el);
         }
 
-        const mobileBlocked = options.mobileBlocked === true;
-
-        el.innerHTML = mobileBlocked
-          ? `
-            <div style="font-weight:800; margin-bottom:6px;">
-              DVLA details copied ✓
-            </div>
-            <div style="opacity:.9; font-size:12px;">
-              The GOV/DVLA Start button is being rejected on this iPhone/network.
-              Use the desktop checker, or try another browser/network.
-            </div>
-            <div style="margin-top:8px; opacity:.85; font-size:12px;">
-              Licence & code copied:
-            </div>
-            <div style="margin-top:6px; font-family:monospace; font-size:13px;">
-              ${licence}<br>${code || ""}
-            </div>
-          `
-          : `
-            <div style="font-weight:600; margin-bottom:6px;">
-              DVLA page opened
-            </div>
-            <div style="opacity:.85; font-size:12px;">
-              Paste licence & code:
-            </div>
-            <div style="margin-top:6px; font-family:monospace;">
-              ${licence}<br>${code || ""}
-            </div>
-            <div style="margin-top:8px; opacity:.7; font-size:11px;">
-              Press ⌘+V / long-press paste
-            </div>
-          `;
+        el.innerHTML = `
+          <div style="font-weight:600; margin-bottom:6px;">
+            DVLA page opened
+          </div>
+          <div style="opacity:.85; font-size:12px;">
+            Paste licence & code:
+          </div>
+          <div style="margin-top:6px; font-family:monospace;">
+            ${licence}<br>${code || ""}
+          </div>
+          <div style="margin-top:8px; opacity:.7; font-size:11px;">
+            Press ⌘+V / long-press paste
+          </div>
+        `;
 
         el.style.opacity = "1";
         el.style.transform = "translateX(-50%) translateY(0)";
@@ -8690,7 +8672,7 @@ Equine Transport UK`;
         setTimeout(() => {
           el.style.opacity = "0";
           el.style.transform = "translateX(-50%) translateY(10px)";
-        }, mobileBlocked ? 8500 : 4000);
+        }, 4000);
       }
 
       function formatDateTime(value) {
@@ -15499,45 +15481,16 @@ ${mobileOutstandingText}
           const combined = dvlaCode ? `${licence} ${dvlaCode}` : licence;
 
           try {
+            const dvlaUrl = getDvlaCheckUrl();
+
             // ✅ Start copy immediately while still inside the tap/click action.
+            // This is more reliable on iPhone Safari than copying after the new
+            // GOV.UK tab has taken focus.
             const copyPromise = navigator.clipboard?.writeText
               ? navigator.clipboard.writeText(combined)
               : Promise.reject(new Error("Clipboard unavailable"));
 
-            const isMobileDvla = isMobileDvlaBrowser();
-
-            // GOV.UK opens on mobile, but its Start button can still be blocked
-            // by the DVLA/F5 service on some iPhones/networks. Do not send the
-            // admin into that broken mobile flow; copy the details and show a
-            // clear helper instead. Desktop still opens DVLA directly.
-            if (isMobileDvla) {
-              try {
-                await copyPromise;
-                showCopySuccess("Licence + code copied ✓");
-              } catch (copyErr) {
-                console.warn("DVLA copy failed:", copyErr);
-              }
-
-              showCopyHelper(licence, dvlaCode, {
-                mobileBlocked: true,
-              });
-
-              const originalText = dvlaBtn.innerText;
-
-              dvlaBtn.classList.add("success");
-              dvlaBtn.innerText = "✓";
-
-              setTimeout(() => {
-                dvlaBtn.innerText = originalText || "Licence";
-                dvlaBtn.classList.remove("success");
-              }, 1200);
-
-              return;
-            }
-
-            const dvlaUrl = getDvlaCheckUrl();
-
-            // ✅ OPEN DVLA PAGE (desktop popup-safe)
+            // ✅ OPEN GOV/DVLA PAGE (popup-safe)
             const dvlaWindow = window.open(dvlaUrl, "_blank");
 
             if (!dvlaWindow) {
