@@ -10361,6 +10361,9 @@ const EMAIL_BRAND_BLOCK = `
   <div style="
     margin:0 0 5px;
     padding:0;
+    width:100%;
+    text-align:center;
+    box-sizing:border-box;
   ">
     <div style="
       position:relative;
@@ -10368,23 +10371,30 @@ const EMAIL_BRAND_BLOCK = `
       background:#ffffff;
       border:1px solid #dbe1e8;
       border-radius:24px;
-      padding:28px 22px;
+      padding:28px 18px;
       min-height:170px;
       text-align:center;
+      width:100%;
+      max-width:100%;
+      margin:0 auto;
+      box-sizing:border-box;
     ">
       <img
         src="https://www.equinetransportuk.com/images/logo.png"
         alt=""
+        width="310"
         style="
           position:absolute;
-          left:50%;
+          left:0;
+          right:0;
           top:50%;
           width:310px;
-          max-width:310px;
+          max-width:78%;
           height:auto;
           opacity:0.10;
           display:block;
-          transform:translate(-50%,-50%);
+          margin:0 auto;
+          transform:translateY(-50%);
         "
       >
 
@@ -10396,8 +10406,9 @@ const EMAIL_BRAND_BLOCK = `
         line-height:1.1;
         letter-spacing:-0.6px;
         color:#111827;
-        margin:0;
+        margin:0 auto;
         text-align:center;
+        max-width:560px;
       ">
         Equine Transport UK
       </div>
@@ -10479,15 +10490,12 @@ function buildModernEmail({
   return `
   <div style="margin:0;padding:0;background:#ffffff;">
     <div style="
-      width:100%;
       max-width:760px;
       margin:0 auto;
-      padding:20px 5px 34px;
-      box-sizing:border-box;
+      padding:34px 5px 40px;
       font-family:Arial,sans-serif;
       color:#2b2b2b;
       line-height:1.6;
-      background:#ffffff;
     ">
 
 
