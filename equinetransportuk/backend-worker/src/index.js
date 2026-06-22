@@ -5,7 +5,7 @@ const JSON_HEADERS = {
 };
 const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
 
-const GOOGLE_REVIEW_LINK = "https://g.page/r/CUTVuCXkntpdEAE/review";
+const GOOGLE_REVIEW_LINK = "https://g.page/r/CUTVuCXkntpdEBM/review";
 const GOOGLE_REVIEW_QR_URL =
   "https://www.equinetransportuk.com/images/google-review-qr.png";
 
