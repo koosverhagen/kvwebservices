@@ -10477,14 +10477,17 @@ function buildModernEmail({
   const showDeposit = !depositPaid;
 
   return `
-  <div style="margin:0;padding:0;background:#f3f4f6;">
+  <div style="margin:0;padding:0;background:#ffffff;">
     <div style="
+      width:100%;
       max-width:760px;
       margin:0 auto;
-      padding:34px 22px 40px;
+      padding:20px 5px 34px;
+      box-sizing:border-box;
       font-family:Arial,sans-serif;
       color:#2b2b2b;
       line-height:1.6;
+      background:#ffffff;
     ">
 
 
