@@ -8606,6 +8606,24 @@ Equine Transport UK`;
         }, 1500);
       }
 
+      function isMobileDvlaBrowser() {
+        return (
+          window.matchMedia?.("(max-width: 768px)")?.matches ||
+          /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "")
+        );
+      }
+
+      function getDvlaCheckUrl() {
+        // Mobile Safari can be rejected by the DVLA deep service URL.
+        // On mobile, open the official GOV.UK landing page first; its
+        // "Start now" button creates the correct DVLA session.
+        if (isMobileDvlaBrowser()) {
+          return "https://www.gov.uk/check-driving-information";
+        }
+
+        return "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate";
+      }
+
       function showCopyHelper(licence, code) {
         let el = document.getElementById("dvla-helper");
 
@@ -15463,11 +15481,17 @@ ${mobileOutstandingText}
           const combined = dvlaCode ? `${licence} ${dvlaCode}` : licence;
 
           try {
-            // ✅ OPEN FIRST (popup-safe)
-            const dvlaWindow = window.open(
-              "https://www.viewdrivingrecord.service.gov.uk/lang/en/driving-record/validate",
-              "_blank",
-            );
+            const dvlaUrl = getDvlaCheckUrl();
+
+            // ✅ Start copy immediately while still inside the tap/click action.
+            // This is more reliable on iPhone Safari than copying after the new
+            // GOV.UK tab has taken focus.
+            const copyPromise = navigator.clipboard?.writeText
+              ? navigator.clipboard.writeText(combined)
+              : Promise.reject(new Error("Clipboard unavailable"));
+
+            // ✅ OPEN GOV/DVLA PAGE (popup-safe)
+            const dvlaWindow = window.open(dvlaUrl, "_blank");
 
             if (!dvlaWindow) {
               alert("Please allow popups for DVLA check.");
@@ -15476,8 +15500,12 @@ ${mobileOutstandingText}
               dvlaWindow.focus();
             }
 
-            // ✅ COPY (still safe)
-            await navigator.clipboard.writeText(combined);
+            try {
+              await copyPromise;
+              showCopySuccess("Licence + code copied ✓");
+            } catch (copyErr) {
+              console.warn("DVLA copy failed:", copyErr);
+            }
 
             // ✅ HELPER UI
             showCopyHelper(licence, dvlaCode);
