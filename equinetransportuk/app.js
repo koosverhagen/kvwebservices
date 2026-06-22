@@ -4402,6 +4402,19 @@ function getFleetImagesForVehicle(vehicle) {
   }).filter(Boolean);
 }
 
+function getVehiclePreviewImage(vehicle) {
+  const images = typeof getFleetImagesForVehicle === "function"
+    ? getFleetImagesForVehicle(vehicle)
+    : [];
+
+  if (images.length) {
+    return images[0];
+  }
+
+  return vehicle?.image || "";
+}
+
+
 function getFleetDetail(vehicle) {
   const fallbackHorses = vehicle?.horses || (String(vehicle?.id || "").startsWith("v35") ? 2 : "");
   const fallbackSubtitle = [
