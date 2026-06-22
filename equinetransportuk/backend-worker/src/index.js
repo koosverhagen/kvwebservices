@@ -79,6 +79,96 @@ async function clearBookingReservations(env, bookingId) {
   }
 }
 
+
+function getPublicSiteBase(env) {
+  const fallback = "https://www.equinetransportuk.com";
+  const value = String(env?.PUBLIC_SITE_URL || "").trim();
+
+  if (!value) return fallback;
+
+  // Email links must be absolute public URLs.
+  // If a relative/staging path is configured, fall back to the live domain.
+  if (!/^https?:\/\//i.test(value)) return fallback;
+
+  return value.replace(/\/+$/, "");
+}
+
+function getBookingLinkId(booking = {}) {
+  const directId = String(booking.id || "").trim();
+
+  if (directId) return directId;
+
+  const possibleLinks = [
+    booking.requiredFormLink,
+    booking.depositLink,
+    booking.outstandingLink,
+  ];
+
+  for (const link of possibleLinks) {
+    try {
+      const url = new URL(String(link || ""));
+      const id =
+        url.searchParams.get("bookingId") ||
+        url.searchParams.get("bookingID") ||
+        url.searchParams.get("bookingid") ||
+        "";
+
+      if (String(id || "").trim()) return String(id).trim();
+    } catch {}
+  }
+
+  return "";
+}
+
+function getCanonicalFormType(booking = {}) {
+  const explicitType = String(
+    booking.requiredFormType || booking.formType || "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (explicitType === "short") return "short";
+  if (explicitType === "long") return "long";
+
+  const existingFormLink = String(booking.requiredFormLink || "").toLowerCase();
+
+  if (
+    existingFormLink.includes("short-form") ||
+    existingFormLink.includes("shortform")
+  ) {
+    return "short";
+  }
+
+  return "long";
+}
+
+function withCanonicalBookingLinks(env, booking = {}) {
+  const bookingId = getBookingLinkId(booking);
+
+  if (!bookingId) return booking;
+
+  const SITE_BASE = getPublicSiteBase(env);
+  const formType = getCanonicalFormType(booking);
+
+  const vehicleName =
+    booking.vehicleSnapshot?.name || booking.vehicleName || booking.vehicleId || "";
+
+  const encodedBookingId = encodeURIComponent(bookingId);
+  const encodedVehicleName = encodeURIComponent(vehicleName);
+
+  const formPath =
+    formType === "short" ? "/forms/short-form.html" : "/forms/long-form.html";
+
+  return {
+    ...booking,
+    id: booking.id || bookingId,
+    requiredFormType: formType,
+    requiredFormLink: `${SITE_BASE}${formPath}?bookingId=${encodedBookingId}&vehicleName=${encodedVehicleName}`,
+    depositLink: `${SITE_BASE}/pay-deposit.html?bookingId=${encodedBookingId}`,
+    outstandingLink: `${SITE_BASE}/pay-outstanding.html?bookingId=${encodedBookingId}`,
+  };
+}
+
 /* ===============================
    ⏰ PROCESS REMINDERS
 =============================== */
@@ -108,12 +198,20 @@ async function processReminders(env) {
 
     console.log("📨 Sending reminder:", reminder.bookingId);
 
-    const booking = await findBookingById(env, reminder.bookingId);
+    let booking = await findBookingById(env, reminder.bookingId);
 
     if (!booking || !booking.customerEmail) {
       console.log("⚠️ Booking/email missing");
       await env.BOOKINGS_KV.delete(key.name);
       continue;
+    }
+
+    booking = withCanonicalBookingLinks(env, booking);
+
+    try {
+      await upsertBookingInKv(env, booking);
+    } catch (err) {
+      console.warn("⚠️ Could not save refreshed reminder links:", err);
     }
 
     try {
@@ -6903,6 +7001,8 @@ async function sendAdminBookingLinksEmail(env, booking) {
     return false;
   }
 
+  booking = withCanonicalBookingLinks(env, booking);
+
   const emailHtml = buildModernEmail({
     title: "Equine Transport UK – Booking Links",
     customerName: booking.customerName,
@@ -13146,6 +13246,14 @@ async function handleResendEmail(request, env) {
       return json({ error: "No customer email" }, 400);
     }
 
+    booking = withCanonicalBookingLinks(env, booking);
+
+    try {
+      await upsertBookingInKv(env, booking);
+    } catch (err) {
+      console.warn("⚠️ Could not save refreshed resend links:", err);
+    }
+
     /* ===============================
        EMAIL TYPE LOGIC
     =============================== */
@@ -13245,6 +13353,14 @@ async function handlePublicResendLinks(request, env) {
 
     if (!booking.customerEmail) {
       return json({ error: "No customer email found" }, 400);
+    }
+
+    booking = withCanonicalBookingLinks(env, booking);
+
+    try {
+      await upsertBookingInKv(env, booking);
+    } catch (err) {
+      console.warn("⚠️ Could not save refreshed public resend links:", err);
     }
 
     // simple abuse protection
