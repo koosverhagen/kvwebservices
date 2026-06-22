@@ -293,11 +293,13 @@ async function processReviewRequests(env) {
 
     try {
       const emailHtml = buildReviewRequestEmail(booking);
+      const emailText = buildReviewRequestPlainText(booking);
 
       await sendBookingEmail(env, {
         to: booking.customerEmail,
         subject: "Thank you for using Equine Transport UK",
         html: emailHtml,
+        text: emailText,
       });
 
       await env.BOOKINGS_KV.put(
@@ -322,155 +324,196 @@ async function processReviewRequests(env) {
   }
 }
 
-function buildReviewRequestEmail(booking) {
-  const safeCustomerName = escapeHtml(booking.customerName || "Customer");
-  const firstName = safeCustomerName.split(" ")[0] || "Customer";
+function getReviewEmailDisplayData(booking = {}) {
+  const customerName = String(booking.customerName || "Customer").trim();
+  const firstName = customerName.split(/\s+/)[0] || "Customer";
 
-  const vehicleName = escapeHtml(
-    booking.vehicleSnapshot?.name || booking.vehicleName || "your horsebox",
-  );
+  const vehicleName =
+    booking.vehicleSnapshot?.name ||
+    booking.vehicleName ||
+    "your horsebox";
 
   const returnDate = booking.dropoffAtLocal
     ? formatEmailDateTime(booking.dropoffAtLocal)
     : formatEmailDateTime(booking.dropoffAt);
 
-  const reviewLink = escapeHtml(GOOGLE_REVIEW_LINK);
-  const qrUrl = escapeHtml(GOOGLE_REVIEW_QR_URL);
+  return {
+    firstName,
+    vehicleName,
+    bookingId: booking.id || "Booking",
+    returnDate: returnDate || "Recently returned",
+    reviewLink: GOOGLE_REVIEW_LINK,
+    qrUrl: GOOGLE_REVIEW_QR_URL,
+  };
+}
 
-  return `
-<!doctype html>
+function buildReviewRequestPlainText(booking) {
+  const data = getReviewEmailDisplayData(booking);
+
+  return [
+    "Equine Transport UK",
+    "Part of the East Grinstead Tyre Service Group",
+    "Self Drive or Driven",
+    "",
+    "Thank you for choosing Equine Transport UK",
+    "",
+    `Dear ${data.firstName},`,
+    "",
+    `Thank you for using Equine Transport UK. We hope everything went smoothly with ${data.vehicleName}.`,
+    "",
+    `Booking reference: ${data.bookingId}`,
+    `Return time: ${data.returnDate}`,
+    "",
+    "If you were happy with the service, a short Google review would really help our family business.",
+    "Mentioning what you used us for — self-drive horsebox hire, driven transport, a vet trip or show transport — is especially helpful for future customers.",
+    "",
+    `Leave a Google Review: ${data.reviewLink}`,
+    "",
+    "Please only leave a review if you are happy to do so. We appreciate honest feedback from real customers.",
+    "",
+    "With kind regards,",
+    "Koos & Avril",
+    "Equine Transport UK",
+  ].join("\n");
+}
+
+function buildReviewRequestEmail(booking) {
+  const data = getReviewEmailDisplayData(booking);
+
+  const firstName = escapeHtml(data.firstName);
+  const vehicleName = escapeHtml(data.vehicleName);
+  const bookingId = escapeHtml(data.bookingId);
+  const returnDate = escapeHtml(data.returnDate);
+  const reviewLink = escapeHtml(data.reviewLink);
+  const qrUrl = escapeHtml(data.qrUrl);
+
+  // Use a conservative table-based layout for better support in Apple Mail,
+  // iCloud Mail, Gmail, Outlook and mobile clients.
+  return `<!doctype html>
 <html>
-  <body style="margin:0;padding:0;background:#eef1f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#1d2530;">
-    <div style="width:100%;padding:18px 0;background:#eef1f6;">
-      <div style="max-width:720px;margin:0 auto;padding:0 12px;">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Thank you for using Equine Transport UK</title>
+  </head>
+  <body style="margin:0;padding:0;background:#eef1f6;font-family:Arial,Helvetica,sans-serif;color:#1d2530;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#eef1f6;margin:0;padding:0;">
+      <tr>
+        <td align="center" style="padding:22px 12px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:680px;background:#ffffff;border:1px solid #dbe1e8;border-radius:20px;overflow:hidden;">
+            <tr>
+              <td align="center" style="padding:26px 20px 18px;background:#ffffff;border-bottom:1px solid #e5e7eb;">
+                <img src="https://www.equinetransportuk.com/images/logo.png" alt="Equine Transport UK" width="130" style="display:block;width:130px;max-width:130px;height:auto;margin:0 auto 14px;">
+                <div style="font-size:26px;line-height:1.15;font-weight:800;color:#1d2530;">
+                  Equine Transport UK
+                </div>
+                <div style="margin-top:7px;font-size:14px;line-height:1.4;font-weight:700;color:#64748b;">
+                  Part of the East Grinstead Tyre Service Group
+                </div>
+                <div style="margin-top:5px;font-size:15px;line-height:1.4;font-weight:800;color:#1673ea;">
+                  Self Drive or Driven
+                </div>
+              </td>
+            </tr>
 
-        ${EMAIL_BRAND_BLOCK}
+            <tr>
+              <td style="padding:26px 24px 8px;">
+                <h1 style="margin:0 0 16px;font-size:27px;line-height:1.18;color:#1d2530;font-weight:800;">
+                  Thank you for choosing Equine Transport UK
+                </h1>
 
-        <div style="
-          background:#ffffff;
-          border:1px solid #dbe1e8;
-          border-radius:24px;
-          box-shadow:0 18px 44px rgba(15,23,42,0.08);
-          padding:24px;
-          overflow:hidden;
-        ">
-          <h1 style="
-            margin:0 0 12px;
-            font-size:28px;
-            line-height:1.15;
-            letter-spacing:-0.03em;
-            color:#1d2530;
-          ">
-            Thank you for choosing Equine Transport UK
-          </h1>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#334155;">
+                  Dear ${firstName},
+                </p>
 
-          <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#334155;">
-            Dear ${firstName},
-          </p>
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#334155;">
+                  Thank you for using Equine Transport UK. We hope everything went smoothly with
+                  <strong>${vehicleName}</strong>.
+                </p>
 
-          <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#334155;">
-            Thank you for using Equine Transport UK. We hope everything went smoothly with
-            <strong>${vehicleName}</strong>.
-          </p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:18px 0;border:1px solid #dbe1e8;border-radius:14px;background:#f8fafc;">
+                  <tr>
+                    <td style="padding:14px 16px;border-bottom:1px solid #e5e7eb;">
+                      <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">
+                        Booking reference
+                      </div>
+                      <div style="margin-top:4px;font-size:16px;font-weight:800;color:#1d2530;">
+                        ${bookingId}
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:14px 16px;">
+                      <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">
+                        Return time
+                      </div>
+                      <div style="margin-top:4px;font-size:16px;font-weight:800;color:#1d2530;">
+                        ${returnDate}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
 
-          <div style="
-            margin:18px 0;
-            padding:16px 18px;
-            background:#f8fafc;
-            border:1px solid #dbe1e8;
-            border-radius:16px;
-          ">
-            <div style="font-size:13px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;">
-              Booking reference
-            </div>
-            <div style="margin-top:4px;font-size:16px;font-weight:800;color:#1d2530;">
-              ${escapeHtml(booking.id || "Booking")}
-            </div>
+                <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#334155;">
+                  If you were happy with the service, a short Google review would really help our family business.
+                  Mentioning what you used us for — self-drive horsebox hire, driven transport, a vet trip or show
+                  transport — is especially helpful for future customers.
+                </p>
 
-            <div style="margin-top:14px;font-size:13px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;">
-              Return time
-            </div>
-            <div style="margin-top:4px;font-size:16px;font-weight:800;color:#1d2530;">
-              ${escapeHtml(returnDate || "Recently returned")}
-            </div>
+                <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0" style="margin:24px auto 18px;">
+                  <tr>
+                    <td align="center" bgcolor="#1673ea" style="border-radius:12px;">
+                      <a href="${reviewLink}" style="display:inline-block;padding:16px 28px;font-size:17px;line-height:1;font-weight:800;color:#ffffff;text-decoration:none;border-radius:12px;">
+                        Leave a Google Review
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <div style="text-align:center;margin:18px 0 12px;">
+                  <img src="${qrUrl}" alt="Google review QR code" width="160" height="160" style="display:inline-block;width:160px;height:160px;border:1px solid #dbe1e8;border-radius:14px;padding:10px;background:#ffffff;">
+                </div>
+
+                <p style="margin:0 0 8px;font-size:14px;line-height:1.5;color:#64748b;text-align:center;">
+                  Or copy this link:
+                </p>
+
+                <p style="margin:0 0 20px;font-size:14px;line-height:1.5;text-align:center;">
+                  <a href="${reviewLink}" style="color:#1673ea;word-break:break-all;">
+                    ${reviewLink}
+                  </a>
+                </p>
+
+                <div style="margin:22px 0 0;padding:14px 16px;background:#fff7e0;border:1px solid #e5b54a;border-radius:12px;color:#6f4c00;font-size:14px;line-height:1.55;">
+                  Please only leave a review if you are happy to do so. We appreciate honest feedback from real customers.
+                </div>
+
+                <p style="margin:24px 0 20px;font-size:15px;line-height:1.6;color:#334155;">
+                  With kind regards,<br>
+                  <strong>Koos & Avril</strong><br>
+                  Equine Transport UK
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:18px 24px;background:#f8fafc;border-top:1px solid #e5e7eb;color:#64748b;font-size:13px;line-height:1.5;">
+                <strong>Equine Transport UK</strong><br>
+                Part of the East Grinstead Tyre Service Group<br>
+                Self Drive or Driven<br>
+                info@equinetransportuk.com
+              </td>
+            </tr>
+          </table>
+
+          <div style="font-size:12px;line-height:1.5;color:#94a3b8;margin-top:12px;">
+            This email was sent after your hire return time.
           </div>
-
-          <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#334155;">
-            If you were happy with the service, a short Google review would really help our
-            family business. Mentioning what you used us for — self-drive horsebox hire,
-            driven transport, a vet trip or show transport — is especially helpful for future customers.
-          </p>
-
-          <div style="text-align:center;margin:24px 0 18px;">
-            <a href="${reviewLink}"
-               style="
-                 display:inline-block;
-                 background:#1673ea;
-                 color:#ffffff;
-                 text-decoration:none;
-                 font-weight:900;
-                 font-size:17px;
-                 line-height:1;
-                 padding:17px 30px;
-                 border-radius:12px;
-               ">
-              Leave a Google Review
-            </a>
-          </div>
-
-          <div style="text-align:center;margin:20px 0 16px;">
-            <img
-              src="${qrUrl}"
-              alt="Google review QR code"
-              width="170"
-              height="170"
-              style="
-                display:inline-block;
-                width:170px;
-                height:170px;
-                border:1px solid #dbe1e8;
-                border-radius:16px;
-                padding:10px;
-                background:#ffffff;
-              "
-            >
-          </div>
-
-          <p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#64748b;text-align:center;">
-            Or copy this link:
-          </p>
-
-          <p style="margin:0 0 22px;font-size:14px;line-height:1.6;text-align:center;">
-            <a href="${reviewLink}" style="color:#1673ea;word-break:break-all;">
-              ${reviewLink}
-            </a>
-          </p>
-
-          <div style="
-            margin:22px 0 0;
-            padding:16px 18px;
-            background:#f4ecd8;
-            border:1px solid #e5b54a;
-            border-radius:14px;
-            color:#6f4c00;
-            font-size:14px;
-            line-height:1.65;
-          ">
-            Please only leave a review if you are happy to do so. We appreciate honest feedback from real customers.
-          </div>
-
-          <p style="margin:24px 0 0;font-size:15px;line-height:1.65;color:#334155;">
-            With kind regards,<br>
-            <strong>Koos & Avril</strong><br>
-            Equine Transport UK
-          </p>
-        </div>
-
-      </div>
-    </div>
+        </td>
+      </tr>
+    </table>
   </body>
-</html>
-`;
+</html>`;
 }
 
 function formatEmailDateTime(value) {
@@ -11304,9 +11347,56 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-async function sendBookingEmail(env, { to, subject, html }) {
+function makeEmailTextFallback(subject, html) {
+  const fallback = String(html || "")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return fallback || String(subject || "Equine Transport UK");
+}
+
+async function sendBookingEmail(env, { to, subject, html, text }) {
   if (!env.SENDGRID_API_KEY) {
     throw new Error("Missing SENDGRID_API_KEY");
+  }
+
+  const safeHtml = String(html || "").trim();
+  const safeText = String(text || makeEmailTextFallback(subject, safeHtml)).trim();
+
+  if (!safeHtml && !safeText) {
+    throw new Error("Email body is empty");
+  }
+
+  const content = [];
+
+  // Send plain text first so Apple Mail/iCloud/Outlook always have a readable fallback.
+  if (safeText) {
+    content.push({
+      type: "text/plain",
+      value: safeText,
+    });
+  }
+
+  if (safeHtml) {
+    content.push({
+      type: "text/html",
+      value: safeHtml,
+    });
   }
 
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -11325,13 +11415,12 @@ async function sendBookingEmail(env, { to, subject, html }) {
         email: "info@equinetransportuk.com",
         name: "Equine Transport UK",
       },
+      reply_to: {
+        email: "info@equinetransportuk.com",
+        name: "Equine Transport UK",
+      },
       subject,
-      content: [
-        {
-          type: "text/html",
-          value: html,
-        },
-      ],
+      content,
     }),
   });
 
