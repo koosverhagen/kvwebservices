@@ -93,10 +93,74 @@ function getPublicSiteBase(env) {
   return value.replace(/\/+$/, "");
 }
 
+function normaliseLegacyBookingNumber(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const cleaned = raw
+    .replace(/^book_planyo_/i, "")
+    .replace(/^[RP](?=\d+$)/i, "");
+
+  return /^\d+$/.test(cleaned) ? cleaned : "";
+}
+
+function getBookingLookupCandidates(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+
+  const out = [raw];
+  const legacyNumber = normaliseLegacyBookingNumber(raw);
+
+  if (legacyNumber) {
+    out.push(`book_planyo_R${legacyNumber}`);
+    out.push(`book_planyo_P${legacyNumber}`);
+    out.push(legacyNumber);
+  }
+
+  if (/^[RP]\d+$/i.test(raw)) {
+    out.push(`book_planyo_${raw.toUpperCase()}`);
+  }
+
+  return [...new Set(out.filter(Boolean))];
+}
+
+function bookingMatchesLookupId(booking = {}, rawId = "", candidates = null) {
+  const lookupIds = candidates || getBookingLookupCandidates(rawId);
+  const ids = new Set(lookupIds.map((id) => String(id)));
+
+  const directId = String(booking.id || "").trim();
+  if (directId && ids.has(directId)) return true;
+
+  const legacyValues = [
+    booking.legacyReservationId,
+    booking.legacyBookingId,
+    booking.planyoReservationId,
+    booking.planyoBookingId,
+    booking.reservationId,
+    booking.bookingID,
+  ];
+
+  const rawLegacyNumber = normaliseLegacyBookingNumber(rawId);
+
+  for (const value of legacyValues) {
+    const valueText = String(value || "").trim();
+    if (!valueText) continue;
+
+    if (ids.has(valueText)) return true;
+
+    const valueLegacyNumber = normaliseLegacyBookingNumber(valueText);
+    if (rawLegacyNumber && valueLegacyNumber === rawLegacyNumber) return true;
+  }
+
+  return false;
+}
+
 function getBookingLinkId(booking = {}) {
   const directId = String(booking.id || "").trim();
 
-  if (directId) return directId;
+  // New system and imported Planyo bookings use an internal id beginning with book_.
+  // Always prefer this because payment/form endpoints use it as the source of truth.
+  if (/^book_/i.test(directId)) return directId;
 
   const possibleLinks = [
     booking.requiredFormLink,
@@ -113,9 +177,24 @@ function getBookingLinkId(booking = {}) {
         url.searchParams.get("bookingid") ||
         "";
 
-      if (String(id || "").trim()) return String(id).trim();
+      const cleanId = String(id || "").trim();
+      if (/^book_/i.test(cleanId)) return cleanId;
     } catch {}
   }
+
+  // If the booking object only carries a Planyo-style legacy id, keep it only as
+  // a fallback. findBookingById / payment endpoints will try to resolve it to
+  // book_planyo_R... or book_planyo_P... first.
+  if (directId) return directId;
+
+  const legacyId = String(booking.legacyBookingId || "").trim();
+  if (/^[RP]\d+$/i.test(legacyId)) return `book_planyo_${legacyId.toUpperCase()}`;
+
+  const legacyNumber = normaliseLegacyBookingNumber(
+    booking.legacyReservationId || booking.reservationId || booking.planyoReservationId,
+  );
+
+  if (legacyNumber) return `book_planyo_R${legacyNumber}`;
 
   return "";
 }
@@ -1064,8 +1143,9 @@ export default {
               const parsed = JSON.parse(data);
 
               if (Array.isArray(parsed)) {
-                const found = parsed.find(
-                  (b) => String(b.id) === String(bookingId),
+                const lookupIds = getBookingLookupCandidates(bookingId);
+                const found = parsed.find((b) =>
+                  bookingMatchesLookupId(b, bookingId, lookupIds),
                 );
 
                 if (found) {
@@ -1102,6 +1182,7 @@ export default {
         // CREATE PAYMENT INTENT (HOLD)
         // ===============================
 
+        const canonicalBookingId = String(booking.id || bookingId).trim();
         const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
         const paymentIntent = await stripe.paymentIntents.create({
@@ -1113,7 +1194,7 @@ export default {
           receipt_email: booking.customerEmail,
 
           metadata: {
-            bookingId: bookingId,
+            bookingId: canonicalBookingId,
             paymentType: "deposit",
           },
         });
@@ -1181,7 +1262,10 @@ export default {
             const parsed = JSON.parse(data);
 
             if (Array.isArray(parsed)) {
-              const found = parsed.find((b) => b.id === bookingId);
+              const lookupIds = getBookingLookupCandidates(bookingId);
+              const found = parsed.find((b) =>
+                bookingMatchesLookupId(b, bookingId, lookupIds),
+              );
               if (found) {
                 booking = found;
                 break;
@@ -1209,6 +1293,7 @@ export default {
         // CREATE STRIPE SESSION
         // ===============================
 
+        const canonicalBookingId = String(booking.id || bookingId).trim();
         const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
         const session = await stripe.checkout.sessions.create({
@@ -1231,12 +1316,12 @@ export default {
 
           // ✅ ADD THIS BLOCK
           metadata: {
-            bookingId: bookingId,
+            bookingId: canonicalBookingId,
             paymentType: "outstanding",
           },
 
-          success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${bookingId}`,
-          cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
+          success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${canonicalBookingId}`,
+          cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${canonicalBookingId}`,
         });
 
         return withCors(json({ url: session.url }), corsHeaders);
@@ -6441,6 +6526,7 @@ async function findBookingById(env, bookingId) {
      3) FALLBACK TO KV
   =============================== */
 
+  const lookupIds = getBookingLookupCandidates(safeBookingId);
   const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
   for (const key of list.keys) {
@@ -6451,7 +6537,9 @@ async function findBookingById(env, bookingId) {
       const parsed = JSON.parse(data);
 
       if (Array.isArray(parsed)) {
-        const found = parsed.find((b) => String(b.id) === safeBookingId);
+        const found = parsed.find((b) =>
+          bookingMatchesLookupId(b, safeBookingId, lookupIds),
+        );
         if (found) return found;
       }
     } catch {}
@@ -7533,6 +7621,25 @@ async function handleAdminBookingUpdate(request, env) {
         updated.outstandingAmount = outstanding;
         updated.outstanding = outstanding;
         updated.outstandingPaid = outstanding === 0;
+
+        // Keep D1 in sync as well as KV.
+        // Admin booking cards and some fallback reads can use D1 paid_now,
+        // so manual payments must update both stores.
+        try {
+          await env.DB.prepare(
+            `
+            UPDATE bookings
+            SET paid_now = ?,
+                price_total = ?,
+                updated_at = ?
+            WHERE id = ?
+          `,
+          )
+            .bind(totalPaid, total, now, updated.id)
+            .run();
+        } catch (err) {
+          console.warn("⚠️ Manual payment D1 update failed:", err.message);
+        }
 
         try {
           const auditKey = `audit:${updated.id}`;
@@ -13215,28 +13322,11 @@ async function handleResendEmail(request, env) {
     }
 
     /* ===============================
-       FIND BOOKING IN KV
+       FIND BOOKING
+       Accepts both internal book_ ids and old Planyo reservation numbers.
     =============================== */
 
-    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-    let booking = null;
-
-    for (const key of list.keys) {
-      const data = await env.BOOKINGS_KV.get(key.name);
-      if (!data) continue;
-
-      try {
-        const parsed = JSON.parse(data);
-        if (!Array.isArray(parsed)) continue;
-
-        const found = parsed.find((b) => String(b.id) === bookingId);
-        if (found) {
-          booking = found;
-          break;
-        }
-      } catch {}
-    }
+    let booking = await findBookingById(env, bookingId);
 
     if (!booking) {
       return json({ error: "Booking not found" }, 404);
