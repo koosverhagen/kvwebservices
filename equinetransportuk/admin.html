@@ -9498,9 +9498,8 @@ Equine Transport UK`;
          🔥 BASE PAID
       =============================== */
 
-        const basePaid = Number(
-          booking.paidNow || booking.confirmationFee || 0,
-        );
+        const paidNowTotal = Number(booking.paidNow || 0);
+        const confirmationPaid = Number(booking.confirmationFee || 0);
 
         const manualPaid = Number(
           booking.manualPayments || booking.manualPaymentsTotal || 0,
@@ -9508,9 +9507,15 @@ Equine Transport UK`;
 
         /* ===============================
          🔥 TRUE PAID
+         paidNow is the total paid on newer bookings.
+         confirmationFee + manualPayments is kept only as a legacy fallback.
       =============================== */
 
-        const paid = outstandingPaid ? total : basePaid + manualPaid;
+        const legacyPaidTotal = confirmationPaid + manualPaid;
+
+        const paid = outstandingPaid
+          ? total
+          : Math.max(paidNowTotal, legacyPaidTotal);
 
         /* ===============================
          🔥 TRUE OUTSTANDING
@@ -16772,7 +16777,7 @@ Equine Transport UK`;
           if (!amount) return alert("Enter payment amount");
 
           try {
-            await fetch(`${API_BASE}/api/admin/booking-update`, {
+            const response = await fetch(`${API_BASE}/api/admin/booking-update`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -16781,6 +16786,15 @@ Equine Transport UK`;
                 manualPayment: amount,
               }),
             });
+
+            let result = {};
+            try {
+              result = await response.json();
+            } catch {}
+
+            if (!response.ok || result?.ok === false) {
+              throw new Error(result?.error || "Failed to add payment");
+            }
 
             showCopySuccess(`£${amount} payment added`);
             await loadBookings();

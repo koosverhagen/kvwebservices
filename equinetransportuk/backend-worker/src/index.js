@@ -79,175 +79,6 @@ async function clearBookingReservations(env, bookingId) {
   }
 }
 
-
-function getPublicSiteBase(env) {
-  const fallback = "https://www.equinetransportuk.com";
-  const value = String(env?.PUBLIC_SITE_URL || "").trim();
-
-  if (!value) return fallback;
-
-  // Email links must be absolute public URLs.
-  // If a relative/staging path is configured, fall back to the live domain.
-  if (!/^https?:\/\//i.test(value)) return fallback;
-
-  return value.replace(/\/+$/, "");
-}
-
-function normaliseLegacyBookingNumber(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-
-  const cleaned = raw
-    .replace(/^book_planyo_/i, "")
-    .replace(/^[RP](?=\d+$)/i, "");
-
-  return /^\d+$/.test(cleaned) ? cleaned : "";
-}
-
-function getBookingLookupCandidates(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return [];
-
-  const out = [raw];
-  const legacyNumber = normaliseLegacyBookingNumber(raw);
-
-  if (legacyNumber) {
-    out.push(`book_planyo_R${legacyNumber}`);
-    out.push(`book_planyo_P${legacyNumber}`);
-    out.push(legacyNumber);
-  }
-
-  if (/^[RP]\d+$/i.test(raw)) {
-    out.push(`book_planyo_${raw.toUpperCase()}`);
-  }
-
-  return [...new Set(out.filter(Boolean))];
-}
-
-function bookingMatchesLookupId(booking = {}, rawId = "", candidates = null) {
-  const lookupIds = candidates || getBookingLookupCandidates(rawId);
-  const ids = new Set(lookupIds.map((id) => String(id)));
-
-  const directId = String(booking.id || "").trim();
-  if (directId && ids.has(directId)) return true;
-
-  const legacyValues = [
-    booking.legacyReservationId,
-    booking.legacyBookingId,
-    booking.planyoReservationId,
-    booking.planyoBookingId,
-    booking.reservationId,
-    booking.bookingID,
-  ];
-
-  const rawLegacyNumber = normaliseLegacyBookingNumber(rawId);
-
-  for (const value of legacyValues) {
-    const valueText = String(value || "").trim();
-    if (!valueText) continue;
-
-    if (ids.has(valueText)) return true;
-
-    const valueLegacyNumber = normaliseLegacyBookingNumber(valueText);
-    if (rawLegacyNumber && valueLegacyNumber === rawLegacyNumber) return true;
-  }
-
-  return false;
-}
-
-function getBookingLinkId(booking = {}) {
-  const directId = String(booking.id || "").trim();
-
-  // New system and imported Planyo bookings use an internal id beginning with book_.
-  // Always prefer this because payment/form endpoints use it as the source of truth.
-  if (/^book_/i.test(directId)) return directId;
-
-  const possibleLinks = [
-    booking.requiredFormLink,
-    booking.depositLink,
-    booking.outstandingLink,
-  ];
-
-  for (const link of possibleLinks) {
-    try {
-      const url = new URL(String(link || ""));
-      const id =
-        url.searchParams.get("bookingId") ||
-        url.searchParams.get("bookingID") ||
-        url.searchParams.get("bookingid") ||
-        "";
-
-      const cleanId = String(id || "").trim();
-      if (/^book_/i.test(cleanId)) return cleanId;
-    } catch {}
-  }
-
-  // If the booking object only carries a Planyo-style legacy id, keep it only as
-  // a fallback. findBookingById / payment endpoints will try to resolve it to
-  // book_planyo_R... or book_planyo_P... first.
-  if (directId) return directId;
-
-  const legacyId = String(booking.legacyBookingId || "").trim();
-  if (/^[RP]\d+$/i.test(legacyId)) return `book_planyo_${legacyId.toUpperCase()}`;
-
-  const legacyNumber = normaliseLegacyBookingNumber(
-    booking.legacyReservationId || booking.reservationId || booking.planyoReservationId,
-  );
-
-  if (legacyNumber) return `book_planyo_R${legacyNumber}`;
-
-  return "";
-}
-
-function getCanonicalFormType(booking = {}) {
-  const explicitType = String(
-    booking.requiredFormType || booking.formType || "",
-  )
-    .trim()
-    .toLowerCase();
-
-  if (explicitType === "short") return "short";
-  if (explicitType === "long") return "long";
-
-  const existingFormLink = String(booking.requiredFormLink || "").toLowerCase();
-
-  if (
-    existingFormLink.includes("short-form") ||
-    existingFormLink.includes("shortform")
-  ) {
-    return "short";
-  }
-
-  return "long";
-}
-
-function withCanonicalBookingLinks(env, booking = {}) {
-  const bookingId = getBookingLinkId(booking);
-
-  if (!bookingId) return booking;
-
-  const SITE_BASE = getPublicSiteBase(env);
-  const formType = getCanonicalFormType(booking);
-
-  const vehicleName =
-    booking.vehicleSnapshot?.name || booking.vehicleName || booking.vehicleId || "";
-
-  const encodedBookingId = encodeURIComponent(bookingId);
-  const encodedVehicleName = encodeURIComponent(vehicleName);
-
-  const formPath =
-    formType === "short" ? "/forms/short-form.html" : "/forms/long-form.html";
-
-  return {
-    ...booking,
-    id: booking.id || bookingId,
-    requiredFormType: formType,
-    requiredFormLink: `${SITE_BASE}${formPath}?bookingId=${encodedBookingId}&vehicleName=${encodedVehicleName}`,
-    depositLink: `${SITE_BASE}/pay-deposit.html?bookingId=${encodedBookingId}`,
-    outstandingLink: `${SITE_BASE}/pay-outstanding.html?bookingId=${encodedBookingId}`,
-  };
-}
-
 /* ===============================
    ⏰ PROCESS REMINDERS
 =============================== */
@@ -277,20 +108,12 @@ async function processReminders(env) {
 
     console.log("📨 Sending reminder:", reminder.bookingId);
 
-    let booking = await findBookingById(env, reminder.bookingId);
+    const booking = await findBookingById(env, reminder.bookingId);
 
     if (!booking || !booking.customerEmail) {
       console.log("⚠️ Booking/email missing");
       await env.BOOKINGS_KV.delete(key.name);
       continue;
-    }
-
-    booking = withCanonicalBookingLinks(env, booking);
-
-    try {
-      await upsertBookingInKv(env, booking);
-    } catch (err) {
-      console.warn("⚠️ Could not save refreshed reminder links:", err);
     }
 
     try {
@@ -1143,9 +966,8 @@ export default {
               const parsed = JSON.parse(data);
 
               if (Array.isArray(parsed)) {
-                const lookupIds = getBookingLookupCandidates(bookingId);
-                const found = parsed.find((b) =>
-                  bookingMatchesLookupId(b, bookingId, lookupIds),
+                const found = parsed.find(
+                  (b) => String(b.id) === String(bookingId),
                 );
 
                 if (found) {
@@ -1182,7 +1004,6 @@ export default {
         // CREATE PAYMENT INTENT (HOLD)
         // ===============================
 
-        const canonicalBookingId = String(booking.id || bookingId).trim();
         const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
         const paymentIntent = await stripe.paymentIntents.create({
@@ -1194,7 +1015,7 @@ export default {
           receipt_email: booking.customerEmail,
 
           metadata: {
-            bookingId: canonicalBookingId,
+            bookingId: bookingId,
             paymentType: "deposit",
           },
         });
@@ -1262,10 +1083,7 @@ export default {
             const parsed = JSON.parse(data);
 
             if (Array.isArray(parsed)) {
-              const lookupIds = getBookingLookupCandidates(bookingId);
-              const found = parsed.find((b) =>
-                bookingMatchesLookupId(b, bookingId, lookupIds),
-              );
+              const found = parsed.find((b) => b.id === bookingId);
               if (found) {
                 booking = found;
                 break;
@@ -1293,7 +1111,6 @@ export default {
         // CREATE STRIPE SESSION
         // ===============================
 
-        const canonicalBookingId = String(booking.id || bookingId).trim();
         const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
         const session = await stripe.checkout.sessions.create({
@@ -1316,12 +1133,12 @@ export default {
 
           // ✅ ADD THIS BLOCK
           metadata: {
-            bookingId: canonicalBookingId,
+            bookingId: bookingId,
             paymentType: "outstanding",
           },
 
-          success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${canonicalBookingId}`,
-          cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${canonicalBookingId}`,
+          success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${bookingId}`,
+          cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${bookingId}`,
         });
 
         return withCors(json({ url: session.url }), corsHeaders);
@@ -6526,7 +6343,6 @@ async function findBookingById(env, bookingId) {
      3) FALLBACK TO KV
   =============================== */
 
-  const lookupIds = getBookingLookupCandidates(safeBookingId);
   const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
 
   for (const key of list.keys) {
@@ -6537,9 +6353,7 @@ async function findBookingById(env, bookingId) {
       const parsed = JSON.parse(data);
 
       if (Array.isArray(parsed)) {
-        const found = parsed.find((b) =>
-          bookingMatchesLookupId(b, safeBookingId, lookupIds),
-        );
+        const found = parsed.find((b) => String(b.id) === safeBookingId);
         if (found) return found;
       }
     } catch {}
@@ -7089,8 +6903,6 @@ async function sendAdminBookingLinksEmail(env, booking) {
     return false;
   }
 
-  booking = withCanonicalBookingLinks(env, booking);
-
   const emailHtml = buildModernEmail({
     title: "Equine Transport UK – Booking Links",
     customerName: booking.customerName,
@@ -7606,6 +7418,10 @@ async function handleAdminBookingUpdate(request, env) {
 
         const paymentAmount = Number(manualPayment || 0);
 
+        if (!paymentAmount || paymentAmount <= 0) {
+          return json({ error: "Invalid payment amount" }, 400);
+        }
+
         const newManual = existingManual + paymentAmount;
 
         updated.manualPayments = newManual;
@@ -7621,21 +7437,19 @@ async function handleAdminBookingUpdate(request, env) {
         updated.outstandingAmount = outstanding;
         updated.outstanding = outstanding;
         updated.outstandingPaid = outstanding === 0;
+        updated.paymentStatus = outstanding === 0 ? "fully_paid" : "confirmation_paid";
 
-        // Keep D1 in sync as well as KV.
-        // Admin booking cards and some fallback reads can use D1 paid_now,
-        // so manual payments must update both stores.
         try {
           await env.DB.prepare(
             `
             UPDATE bookings
             SET paid_now = ?,
-                price_total = ?,
+                status = ?,
                 updated_at = ?
             WHERE id = ?
           `,
           )
-            .bind(totalPaid, total, now, updated.id)
+            .bind(totalPaid, updated.status || "admin_confirmed", now, updated.id)
             .run();
         } catch (err) {
           console.warn("⚠️ Manual payment D1 update failed:", err.message);
@@ -9573,6 +9387,7 @@ async function handleListBookings(request, env) {
   const ids = bookings.map((b) => b.id).filter(Boolean);
 
   let dvlaMap = {};
+  let d1FinanceMap = {};
 
   if (ids.length) {
     const chunkSize = 80;
@@ -9586,7 +9401,11 @@ async function handleListBookings(request, env) {
           `
         SELECT
           id,
-          dvla_verified
+          dvla_verified,
+          paid_now,
+          price_total,
+          status,
+          form_completed
         FROM bookings
         WHERE id IN (${placeholders})
       `,
@@ -9596,6 +9415,12 @@ async function handleListBookings(request, env) {
 
         for (const row of result.results || []) {
           dvlaMap[row.id] = row.dvla_verified === 1;
+          d1FinanceMap[row.id] = {
+            paidNow: Number(row.paid_now || 0),
+            priceTotal: Number(row.price_total || 0),
+            status: row.status || null,
+            formCompleted: row.form_completed === 1,
+          };
         }
       } catch (err) {
         console.warn("⚠️ DVLA chunk load failed:", err.message);
@@ -9630,8 +9455,34 @@ async function handleListBookings(request, env) {
   }
 
   const transformedBookings = bookings.map((booking) => {
+    const d1 = d1FinanceMap[booking.id] || null;
+
+    const kvPaidNow = Number(booking.paidNow || 0);
+    const d1PaidNow = Number(d1?.paidNow || 0);
+    const paidNow = Math.max(kvPaidNow, d1PaidNow);
+
+    const total = Number(
+      booking.hireTotal || booking.priceTotal || d1?.priceTotal || 0,
+    );
+
+    const outstandingPaid =
+      booking.outstandingPaid === true ||
+      booking.outstandingPaid === "true" ||
+      (total > 0 && paidNow >= total);
+
+    const outstandingAmount = outstandingPaid
+      ? 0
+      : Math.max(0, total - paidNow);
+
     return {
       ...booking,
+
+      hireTotal: total || Number(booking.hireTotal || 0),
+      priceTotal: total || Number(booking.priceTotal || 0),
+      paidNow,
+      outstandingAmount,
+      outstanding: outstandingAmount,
+      outstandingPaid,
 
       extrasTotal: Number(booking.extrasTotal || 0),
       extras: booking.extras || null,
@@ -9640,6 +9491,11 @@ async function handleListBookings(request, env) {
       dvlaVerified:
         dvlaMap[booking.id] ??
         (booking.dvla_verified === 1 || booking.dvlaVerified === true),
+
+      formCompleted:
+        booking.formCompleted === true ||
+        booking.form_completed === 1 ||
+        d1?.formCompleted === true,
     };
   });
 
@@ -13322,11 +13178,28 @@ async function handleResendEmail(request, env) {
     }
 
     /* ===============================
-       FIND BOOKING
-       Accepts both internal book_ ids and old Planyo reservation numbers.
+       FIND BOOKING IN KV
     =============================== */
 
-    let booking = await findBookingById(env, bookingId);
+    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+    let booking = null;
+
+    for (const key of list.keys) {
+      const data = await env.BOOKINGS_KV.get(key.name);
+      if (!data) continue;
+
+      try {
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed)) continue;
+
+        const found = parsed.find((b) => String(b.id) === bookingId);
+        if (found) {
+          booking = found;
+          break;
+        }
+      } catch {}
+    }
 
     if (!booking) {
       return json({ error: "Booking not found" }, 404);
@@ -13334,14 +13207,6 @@ async function handleResendEmail(request, env) {
 
     if (!booking.customerEmail) {
       return json({ error: "No customer email" }, 400);
-    }
-
-    booking = withCanonicalBookingLinks(env, booking);
-
-    try {
-      await upsertBookingInKv(env, booking);
-    } catch (err) {
-      console.warn("⚠️ Could not save refreshed resend links:", err);
     }
 
     /* ===============================
@@ -13435,7 +13300,7 @@ async function handlePublicResendLinks(request, env) {
       return json({ error: "Missing bookingId" }, 400);
     }
 
-    let booking = await findBookingById(env, bookingId);
+    const booking = await findBookingById(env, bookingId);
 
     if (!booking) {
       return json({ error: "Booking not found" }, 404);
@@ -13443,14 +13308,6 @@ async function handlePublicResendLinks(request, env) {
 
     if (!booking.customerEmail) {
       return json({ error: "No customer email found" }, 400);
-    }
-
-    booking = withCanonicalBookingLinks(env, booking);
-
-    try {
-      await upsertBookingInKv(env, booking);
-    } catch (err) {
-      console.warn("⚠️ Could not save refreshed public resend links:", err);
     }
 
     // simple abuse protection
