@@ -9326,6 +9326,184 @@ async function handleStripeWebhook(request, env) {
 }
 
 /* ===============================
+   D1 → KV LIST SAFETY NET
+   Prevents paid/confirmed D1 bookings from becoming invisible
+   if a KV month bucket is stale or missed a write.
+================================ */
+
+function safeParseObjectJson(value) {
+  if (!value || typeof value !== "string") return {};
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+async function buildListBookingFromD1Row(env, row) {
+  const pickupAt = row.pickup_at || null;
+  const dropoffAt = row.dropoff_at || null;
+
+  const pickupLocal = pickupAt
+    ? toLondonLocalISOString(new Date(pickupAt))
+    : null;
+  const dropoffLocal = dropoffAt
+    ? toLondonLocalISOString(new Date(dropoffAt))
+    : null;
+
+  const vehicleName = getVehicleNameFromId(row.vehicle_id);
+  const priceTotal = Number(row.price_total || 0);
+  const paidNow = Number(row.paid_now || 0);
+  const outstandingAmount = Math.max(0, priceTotal - paidNow);
+  const extras = safeParseObjectJson(row.extras_json);
+
+  let booking = {
+    id: row.id,
+    customerId: row.customer_id || null,
+    vehicleId: row.vehicle_id,
+    vehicleSnapshot: {
+      id: row.vehicle_id,
+      name: vehicleName,
+      type: getVehicleTypeFromId(row.vehicle_id),
+    },
+
+    pickupAt,
+    dropoffAt,
+    pickupAtLocal: pickupLocal,
+    dropoffAtLocal: dropoffLocal,
+    durationDays: Number(row.duration_days || 0),
+    pickupTime: pickupLocal ? pickupLocal.slice(11, 16) : "07:00",
+
+    customerName: row.full_name || "",
+    customerEmail: row.email || "",
+    customerMobile: row.mobile || "",
+
+    hireTotal: priceTotal,
+    priceTotal,
+    priceBase: priceTotal,
+    priceExtras: 0,
+    confirmationFee: paidNow,
+    paidNow,
+    outstandingAmount,
+    outstanding: outstandingAmount,
+    outstandingPaid: priceTotal > 0 && paidNow >= priceTotal,
+
+    extras,
+    extrasTotal: 0,
+    dartfordTotal: 0,
+    earlyPickupTotal: 0,
+
+    depositAmount: 200,
+    depositPaid: row.deposit_paid === 1,
+    depositStatus: row.deposit_paid === 1 ? "paid" : "not_secured",
+    depositCapturedAmount: 0,
+
+    formCompleted: row.form_completed === 1,
+    formSubmitted: row.form_completed === 1,
+    formType: row.form_completed === 1 ? "short" : undefined,
+    formRecordId: row.form_completed === 1 ? `form_${row.id}` : undefined,
+    dvlaVerified: row.dvla_verified === 1,
+
+    status: row.status || "confirmed",
+    adminCreated: row.status === "admin_confirmed",
+    paymentMode: String(row.id || "").startsWith("book_planyo_")
+      ? "legacy_import"
+      : row.status === "admin_confirmed"
+        ? "admin_no_payment"
+        : "stripe_checkout",
+
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+
+    restoredFromD1: true,
+    restoreNote:
+      "Auto-restored from D1 source-of-truth because the KV month bucket was missing this booking.",
+  };
+
+  try {
+    booking = await enrichBookingLinks(env, booking);
+  } catch (err) {
+    console.warn("⚠️ D1 fallback link enrichment failed:", err.message);
+  }
+
+  return booking;
+}
+
+async function repairKvMonthBucketsFromD1Bookings(env, bookings) {
+  const byMonth = new Map();
+
+  for (const booking of bookings || []) {
+    const month = String(booking.pickupAt || "").slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(month)) continue;
+
+    if (!byMonth.has(month)) byMonth.set(month, []);
+    byMonth.get(month).push(booking);
+  }
+
+  let repaired = 0;
+
+  for (const [month, monthBookings] of byMonth.entries()) {
+    const key = `bookings:${month}`;
+
+    try {
+      const raw = await env.BOOKINGS_KV.get(key);
+      let bucket = [];
+
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          bucket = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          bucket = [];
+        }
+      }
+
+      let changed = false;
+
+      for (const booking of monthBookings) {
+        const id = String(booking.id || "");
+        if (!id) continue;
+
+        const index = bucket.findIndex((b) => String(b.id || "") === id);
+
+        if (index === -1) {
+          bucket.push(booking);
+          changed = true;
+          repaired += 1;
+        }
+      }
+
+      if (changed) {
+        bucket.sort((a, b) => {
+          const aTime = new Date(a.pickupAt || a.pickup_at || 0).getTime();
+          const bTime = new Date(b.pickupAt || b.pickup_at || 0).getTime();
+          return aTime - bTime;
+        });
+
+        await env.BOOKINGS_KV.put(key, JSON.stringify(bucket));
+        await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+        console.warn("🛟 Repaired missing D1 bookings into KV bucket:", {
+          key,
+          count: monthBookings.length,
+        });
+      }
+    } catch (err) {
+      console.warn("⚠️ KV self-heal failed:", {
+        key,
+        message: err.message,
+      });
+    }
+  }
+
+  return repaired;
+}
+
+/* ===============================
    LIST BOOKINGS API (MONTH BASED)
 ================================ */
 
@@ -9370,6 +9548,75 @@ async function handleListBookings(request, env) {
 
       bookings = bookings.concat(parsed);
     } catch {}
+  }
+
+  /* ===============================
+     🛟 D1 SOURCE-OF-TRUTH SAFETY NET
+     If a booking exists in D1 but the KV month bucket missed it,
+     add it to this response and repair the KV bucket.
+  ================================ */
+
+  try {
+    const existingIds = new Set(
+      bookings.map((booking) => String(booking?.id || "")).filter(Boolean),
+    );
+
+    const d1Result = await env.DB.prepare(
+      `
+      SELECT
+        b.id,
+        b.customer_id,
+        b.vehicle_id,
+        b.pickup_at,
+        b.dropoff_at,
+        b.duration_days,
+        b.price_total,
+        b.paid_now,
+        b.extras_json,
+        b.status,
+        b.created_at,
+        b.updated_at,
+        b.form_completed,
+        b.deposit_paid,
+        b.dvla_verified,
+        c.full_name,
+        c.email,
+        c.mobile
+      FROM bookings b
+      LEFT JOIN customers c
+        ON c.id = b.customer_id
+      WHERE b.pickup_at < ?
+        AND b.dropoff_at > ?
+        AND LOWER(COALESCE(b.status, '')) NOT IN ('cancelled', 'canceled')
+      ORDER BY b.pickup_at ASC
+      `,
+    )
+      .bind(to.toISOString(), from.toISOString())
+      .all();
+
+    const missingD1Bookings = [];
+
+    for (const row of d1Result.results || []) {
+      const id = String(row.id || "");
+      if (!id || existingIds.has(id)) continue;
+
+      const booking = await buildListBookingFromD1Row(env, row);
+      missingD1Bookings.push(booking);
+      existingIds.add(id);
+    }
+
+    if (missingD1Bookings.length) {
+      console.warn("🛟 D1 bookings missing from KV month buckets:", {
+        count: missingD1Bookings.length,
+        ids: missingD1Bookings.map((booking) => booking.id),
+      });
+
+      bookings = bookings.concat(missingD1Bookings);
+
+      await repairKvMonthBucketsFromD1Bookings(env, missingD1Bookings);
+    }
+  } catch (err) {
+    console.warn("⚠️ D1 source-of-truth safety net failed:", err.message);
   }
 
   /* ===============================
