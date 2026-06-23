@@ -5447,7 +5447,7 @@ async function handlePricingQuote(request, env) {
   ================================ */
 
   const safeEarlyPickup =
-    extras.earlyPickup === true && canUseEarlyPickup(durationDays, pickupTime);
+    isEarlyPickupRequested(extras.earlyPickup) && canUseEarlyPickup(durationDays, pickupTime);
 
   const dartfordTotal = (extras.dartford || 0) * 4.2;
   const earlyPickupTotal = safeEarlyPickup ? 20 : 0;
@@ -5608,6 +5608,16 @@ function isWeekendDate(dateStr) {
 
 function canUseEarlyPickup(durationDays, pickupTime) {
   return Number(durationDays) !== 0.5 || String(pickupTime) === "07:00";
+}
+
+function isEarlyPickupRequested(value) {
+  return (
+    value === true ||
+    value === 1 ||
+    value === "1" ||
+    String(value || "").toLowerCase() === "true" ||
+    String(value || "").toLowerCase() === "yes"
+  );
 }
 
 async function getActiveDiscountCodes(env) {
@@ -7038,7 +7048,7 @@ async function handleAdminBookingUpdate(request, env) {
       const customerId = String(body.customerId || "").trim();
       const extras = body.extras || {};
       if (
-        extras.earlyPickup === true &&
+        isEarlyPickupRequested(extras.earlyPickup) &&
         !canUseEarlyPickup(durationDays, pickupTime)
       ) {
         return json(
@@ -7536,7 +7546,7 @@ async function handleAdminBookingUpdate(request, env) {
     const extras = body.extras || {};
 
     if (
-      extras.earlyPickup === true &&
+      isEarlyPickupRequested(extras.earlyPickup) &&
       !canUseEarlyPickup(durationDays, pickupTime)
     ) {
       return json(
@@ -7556,7 +7566,7 @@ async function handleAdminBookingUpdate(request, env) {
     const dartfordTotal = (extras.dartford || 0) * 4.2;
 
     const safeEarlyPickup =
-      extras.earlyPickup === true &&
+      isEarlyPickupRequested(extras.earlyPickup) &&
       canUseEarlyPickup(durationDays, pickupTime);
 
     const earlyPickupTotal = safeEarlyPickup ? 20 : 0;
