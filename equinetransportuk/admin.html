@@ -8702,9 +8702,49 @@ Equine Transport UK`;
       }
 
       function normaliseBookingsResponse(data) {
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data?.bookings)) return data.bookings;
-        return [];
+        const bookings = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.bookings)
+            ? data.bookings
+            : [];
+
+        return bookings.map(normaliseBookingForDisplay);
+      }
+
+      function normaliseBookingForDisplay(booking) {
+        if (!booking || typeof booking !== "object") return booking;
+
+        const next = { ...booking };
+        const bookingId = String(next.id || next.bookingId || "");
+
+        if (bookingId && isDepositCancelledRemembered(bookingId)) {
+          const status = String(
+            next.depositStatus || next.deposit_status || "",
+          ).toLowerCase();
+
+          const hasFreshActiveDeposit =
+            (status === "paid" ||
+              status === "secured" ||
+              status === "requires_capture") &&
+            !!(next.depositPaymentIntentId || next.deposit_payment_intent_id);
+
+          const hasFinalCapturedDeposit =
+            getDepositCapturedAmount(next) > 0 ||
+            next.depositReleased === true ||
+            next.deposit_released === 1 ||
+            status === "captured" ||
+            status === "captured_remainder_released" ||
+            status === "released";
+
+          if (!hasFreshActiveDeposit && !hasFinalCapturedDeposit) {
+            next.depositCancelled = true;
+            next.depositStatus = "canceled";
+            next.depositPaid = false;
+            next.deposit_paid = 0;
+          }
+        }
+
+        return next;
       }
 
       const ADMIN_VEHICLES = [
@@ -8952,6 +8992,21 @@ Equine Transport UK`;
         return `£${Number(value || 0).toFixed(2)}`;
       }
 
+      function getRefundedTotal(booking) {
+        const value = Number(
+          booking?.refundedTotal ??
+            booking?.refundTotal ??
+            booking?.refundedAmount ??
+            booking?.refundAmount ??
+            booking?.totalRefunded ??
+            booking?.total_refunded ??
+            booking?.refund_amount ??
+            0,
+        );
+
+        return Number.isFinite(value) ? value : 0;
+      }
+
       function getDepositCapturedAmount(booking) {
         const value = Number(
           booking?.depositCapturedAmount ??
@@ -8966,18 +9021,108 @@ Equine Transport UK`;
         return Number.isFinite(value) ? value : 0;
       }
 
+      const DEPOSIT_CANCELLED_CACHE_KEY =
+        "etuk_deposit_cancelled_bookings_v1";
+
+      function getDepositCancelledCache() {
+        try {
+          const parsed = JSON.parse(
+            localStorage.getItem(DEPOSIT_CANCELLED_CACHE_KEY) || "[]",
+          );
+
+          return Array.isArray(parsed) ? parsed.map(String) : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function setDepositCancelledCache(ids) {
+        try {
+          localStorage.setItem(
+            DEPOSIT_CANCELLED_CACHE_KEY,
+            JSON.stringify(Array.from(new Set((ids || []).map(String)))),
+          );
+        } catch {}
+      }
+
+      function rememberDepositCancelledLocally(bookingId) {
+        if (!bookingId) return;
+
+        const ids = getDepositCancelledCache();
+
+        if (!ids.includes(String(bookingId))) {
+          ids.push(String(bookingId));
+          setDepositCancelledCache(ids);
+        }
+      }
+
+      function forgetDepositCancelledLocally(bookingId) {
+        if (!bookingId) return;
+
+        setDepositCancelledCache(
+          getDepositCancelledCache().filter(
+            (id) => id !== String(bookingId),
+          ),
+        );
+      }
+
+      function isDepositCancelledRemembered(bookingId) {
+        if (!bookingId) return false;
+
+        return getDepositCancelledCache().includes(String(bookingId));
+      }
+
       function isDepositCancelled(booking) {
+        const bookingId = String(booking?.id || booking?.bookingId || "");
+
         const status = String(
           booking?.depositStatus || booking?.deposit_status || "",
         ).toLowerCase();
 
-        return (
+        const hasDepositIntent = !!(
+          booking?.depositPaymentIntentId || booking?.deposit_payment_intent_id
+        );
+
+        const cancelledByData =
           booking?.depositCancelled === true ||
           booking?.deposit_cancelled === true ||
           booking?.deposit_cancelled === 1 ||
+          !!(booking?.depositCancelledAt || booking?.deposit_cancelled_at) ||
           status === "cancelled" ||
-          status === "canceled"
-        );
+          status === "canceled";
+
+        if (cancelledByData) return true;
+
+        const hasFreshActiveDeposit =
+          (status === "paid" ||
+            status === "secured" ||
+            status === "requires_capture") &&
+          hasDepositIntent;
+
+        const hasFinalCapturedDeposit =
+          getDepositCapturedAmount(booking) > 0 ||
+          booking?.depositReleased === true ||
+          booking?.deposit_released === 1 ||
+          status === "captured" ||
+          status === "captured_remainder_released" ||
+          status === "released";
+
+        if (hasFreshActiveDeposit || hasFinalCapturedDeposit) {
+          forgetDepositCancelledLocally(bookingId);
+          return false;
+        }
+
+        const looksLikeCancelledStripeDeposit =
+          hasDepositIntent &&
+          booking?.depositPaid !== true &&
+          booking?.deposit_paid !== 1 &&
+          status !== "payment_intent_created";
+
+        if (looksLikeCancelledStripeDeposit) return true;
+
+        if (!isDepositCancelledRemembered(bookingId)) return false;
+
+        return true;
       }
 
       function depositStatusPillHtml(booking, options = {}) {
@@ -9492,7 +9637,7 @@ Equine Transport UK`;
 
         const total = Number(booking.hireTotal || booking.total || 0);
 
-        const refunded = Number(booking.refundedTotal || 0);
+        const refunded = getRefundedTotal(booking);
 
         /* ===============================
          🔥 BASE PAID
@@ -9595,7 +9740,11 @@ Equine Transport UK`;
         const extras = booking.extras || {};
 
         const dartfordCount = Number(extras.dartford || 0);
-        const earlyPickup = extras.earlyPickup === true;
+        const earlyPickup =
+          extras.earlyPickup === true ||
+          extras.earlyPickup === 1 ||
+          extras.earlyPickup === "1" ||
+          String(extras.earlyPickup || "").toLowerCase() === "true";
 
         const lines = [];
 
@@ -10515,6 +10664,28 @@ Equine Transport UK`;
             booking.outstandingAmount || booking.outstanding || 0,
           );
 
+          const refunded = getRefundedTotal(booking);
+
+          const mobileRefundPill =
+            refunded > 0
+              ? `<span class="pill bad">${booking.fullyRefunded ? "Fully refunded" : "Refunded"} ${formatMoney(refunded)}</span>`
+              : "";
+
+          const mobileRefundBox =
+            refunded > 0
+              ? `
+          <div class="mobile-info-box">
+            <div class="mobile-info-label">
+              Refunded
+            </div>
+
+            <div class="mobile-info-value" style="color:#b42318;">
+              ${formatMoney(refunded)}
+            </div>
+          </div>
+        `
+              : "";
+
           const mobileFormText =
             phone && !formDone
               ? `
@@ -10647,6 +10818,8 @@ Equine Transport UK`;
                     ? '<span class="pill ok">Outstanding Paid</span>'
                     : `<span class="pill warn">Outstanding £${outstandingAmount.toFixed(2)}</span>`
                 }
+
+                ${mobileRefundPill}
               </div>
 
             </div>
@@ -10747,6 +10920,8 @@ Equine Transport UK`;
               £${Number(booking.outstandingAmount || 0).toFixed(2)}
             </div>
           </div>
+
+          ${mobileRefundBox}
 
       ${mobileDvlaBox}
 
@@ -16744,6 +16919,18 @@ Equine Transport UK`;
 
             if (!res.ok) {
               throw new Error(data.error || "Cancel failed");
+            }
+
+            rememberDepositCancelledLocally(bookingId);
+
+            const existingBooking = allBookings.find(
+              (booking) => String(booking.id) === String(bookingId),
+            );
+
+            if (existingBooking) {
+              existingBooking.depositCancelled = true;
+              existingBooking.depositPaid = false;
+              existingBooking.depositStatus = "canceled";
             }
 
             alert("✅ Deposit cancelled");
