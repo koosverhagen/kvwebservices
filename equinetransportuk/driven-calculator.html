@@ -831,8 +831,15 @@
               })
               .join("");
 
+            const horseLabel =
+              horseCount === 1 ? "1 horse" : `${horseCount} horses`;
+            const waitingLabel =
+              waitingHours > 0
+                ? `Up to ${waitingHours} hour${waitingHours === 1 ? "" : "s"}`
+                : "No extra waiting";
+
             const quoteText = encodeURIComponent(
-              `Driven transport quote request\nVehicle: ${lorryType === "3.5t" ? "3.5T" : "7.5T"}\nPickup: ${pickupAddress}\nDestination: ${destinationAddress}\nDestination 2: ${destinationAddress2 || "None"}\nGuide miles: ${totalMiles.toFixed(2)}\nGuide estimate: £${guideTotal.toFixed(2)}`,
+              `Driven transport quote request\nVehicle: ${lorryType === "3.5t" ? "3.5T" : "7.5T"}\nHorses: ${horseLabel}\nPickup: ${pickupAddress}\nDestination: ${destinationAddress}\nDestination 2: ${destinationAddress2 || "None"}\nWaiting / loading time: ${waitingLabel}\nGuide miles: ${totalMiles.toFixed(2)}\nGuide estimate: £${guideTotal.toFixed(2)}`,
             );
             document.getElementById("quote-link").href =
               `contact.html?message=${quoteText}`;
