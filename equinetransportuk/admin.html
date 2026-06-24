@@ -5264,6 +5264,8 @@
         html.safari-desktop #vehicle-filter,
         html.safari-desktop #voucher-filter,
         html.safari-desktop #deposit-filter,
+        html.safari-desktop #notes-filter,
+        html.safari-desktop #notes-search,
         html.safari-desktop #from-date,
         html.safari-desktop #to-date {
           width: 100% !important;
@@ -5548,6 +5550,8 @@
         html.safari-desktop #booking-vehicle-filter,
         html.safari-desktop #voucher-filter,
         html.safari-desktop #deposit-filter,
+        html.safari-desktop #notes-filter,
+        html.safari-desktop #notes-search,
         html.safari-desktop #range-from,
         html.safari-desktop #range-to {
           width: 100% !important;
@@ -6104,7 +6108,7 @@
           <h1>Find Bookings</h1>
           <p>
             Search bookings by customer, reference, email, date, vehicle, form
-            status, payment status, and hire period.
+            status, payment status, notes, and hire period.
           </p>
 
           <div class="toolbar">
@@ -6167,6 +6171,24 @@
                 <option value="active_deposit">Deposit on hold</option>
                 <option value="no_active_deposit">No live deposit</option>
               </select>
+            </div>
+
+            <div class="field">
+              <label for="notes-filter">Notes</label>
+              <select id="notes-filter">
+                <option value="all">All bookings</option>
+                <option value="with_notes">With notes</option>
+                <option value="without_notes">Without notes</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="notes-search">Search notes</label>
+              <input
+                id="notes-search"
+                type="text"
+                placeholder="Keyword in notes..."
+              />
             </div>
 
             <div class="field">
@@ -7483,6 +7505,8 @@
       );
       const voucherFilter = document.getElementById("voucher-filter");
       const depositFilter = document.getElementById("deposit-filter");
+      const notesFilter = document.getElementById("notes-filter");
+      const notesSearchInput = document.getElementById("notes-search");
       const applyFiltersBtn = document.getElementById("apply-filters-btn");
 
       const availDateInput = document.getElementById("avail-date");
@@ -9941,6 +9965,22 @@ Equine Transport UK`;
         return true;
       }
 
+      function bookingMatchesNotesFilter(booking, notesMode, notesSearch) {
+        const notes = getBookingNotes(booking);
+        const hasNotes = !!notes;
+
+        if (notesMode === "with_notes" && !hasNotes) return false;
+        if (notesMode === "without_notes" && hasNotes) return false;
+
+        const keyword = String(notesSearch || "").trim().toLowerCase();
+
+        if (keyword && !notes.toLowerCase().includes(keyword)) {
+          return false;
+        }
+
+        return true;
+      }
+
       function getBookingPickupTime(booking) {
         return new Date(
           booking?.pickupAt ||
@@ -10014,6 +10054,8 @@ Equine Transport UK`;
         const vehicleFilter = bookingVehicleFilter?.value || "all";
         const voucherMode = voucherFilter?.value || "all";
         const depositMode = depositFilter?.value || "all";
+        const notesMode = notesFilter?.value || "all";
+        const notesKeyword = notesSearchInput?.value || "";
 
         const now = new Date();
 
@@ -10038,6 +10080,7 @@ Equine Transport UK`;
           .filter((b) => bookingMatchesVehicleFilter(b, vehicleFilter))
           .filter((b) => bookingMatchesVoucherFilter(b, voucherMode))
           .filter((b) => bookingMatchesDepositFilter(b, depositMode))
+          .filter((b) => bookingMatchesNotesFilter(b, notesMode, notesKeyword))
           .filter((b) => {
             const mode = timeFilter?.value || "upcoming";
 
@@ -15396,6 +15439,14 @@ ${mobileOutstandingText}
       bookingVehicleFilter?.addEventListener("change", updateClearButton);
       voucherFilter?.addEventListener("change", updateClearButton);
       depositFilter?.addEventListener("change", updateClearButton);
+      notesFilter?.addEventListener("change", updateClearButton);
+      notesSearchInput?.addEventListener("input", updateClearButton);
+      notesSearchInput?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          applyFiltersBtn?.click();
+        }
+      });
 
       timeFilter.addEventListener("change", () => {
         renderBookings();
@@ -16114,6 +16165,10 @@ Equine Transport UK`;
         if (voucherFilter) voucherFilter.value = "all";
 
         if (depositFilter) depositFilter.value = "all";
+
+        if (notesFilter) notesFilter.value = "all";
+
+        if (notesSearchInput) notesSearchInput.value = "";
 
         defaultRanges();
 
