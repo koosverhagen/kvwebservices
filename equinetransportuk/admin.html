@@ -6313,7 +6313,7 @@
           <div class="section-head">
             <h2>Vouchers</h2>
             <div class="muted">
-              Create customer voucher codes without editing code.
+              Create customer voucher codes without editing code. New vouchers are one-use by default and automatically disable after one successful booking.
             </div>
           </div>
 
@@ -11262,8 +11262,15 @@ ${mobileOutstandingText}
             voucher.type === "percent"
               ? `${voucher.value}% off`
               : `£${Number(voucher.value || 0).toFixed(2)} off`;
-          const status = voucher.enabled === false ? "Disabled" : "Active";
-          const pillClass = voucher.enabled === false ? "bad" : "ok";
+          const maxUses = Number(voucher.maxUses || 1);
+          const usedCount = Number(voucher.usedCount || 0);
+          const isUsed = maxUses > 0 && usedCount >= maxUses;
+          const status = isUsed
+            ? "Used"
+            : voucher.enabled === false
+              ? "Disabled"
+              : "Active";
+          const pillClass = isUsed || voucher.enabled === false ? "bad" : "ok";
           const source = voucher.source === "code" ? "Code file" : "Admin";
 
           return `
@@ -11277,6 +11284,12 @@ ${mobileOutstandingText}
             <div class="tiny">${escapeHtml(typeLabel)}</div>
             <div class="tiny">Vehicles: ${escapeHtml(getVehicleLabelForVoucher(voucher))}</div>
             <div class="tiny">Min duration: ${escapeHtml(String(voucher.minDuration || 0))} day(s)</div>
+            <div class="tiny">Uses: ${escapeHtml(String(usedCount))} / ${escapeHtml(String(maxUses))}</div>
+            ${
+              voucher.usedByBookingId
+                ? `<div class="tiny">Used by booking: ${escapeHtml(String(voucher.usedByBookingId))}</div>`
+                : ""
+            }
             <div class="tiny">Expires: ${escapeHtml(voucher.expires || "No expiry")}</div>
             <div class="tiny">Source: ${escapeHtml(source)}</div>
           </div>
@@ -11350,6 +11363,7 @@ ${mobileOutstandingText}
           expires: voucherExpiresInput.value,
           vehicleGroup: voucherVehiclesInput.value,
           minDuration: Number(voucherMinDurationInput.value || 1),
+          maxUses: 1,
           enabled: voucherEnabledInput.value === "true",
         };
 

@@ -5686,9 +5686,16 @@ function normaliseVoucherPayload(input) {
   const expires = String(input.expires || "").trim();
   const vehicleGroup = String(input.vehicleGroup || "all").trim();
   const minDuration = Number(input.minDuration || 0);
-  const enabled = input.enabled !== false;
-  const maxUses = Number(input.maxUses || 1);
-  const usedCount = Number(input.usedCount || 0);
+
+  // Admin-created vouchers are one-use by default.
+  // After one successful booking uses the code, the voucher is disabled.
+  const maxUsesRaw = Number(input.maxUses || 1);
+  const usedCountRaw = Number(input.usedCount || 0);
+  const maxUses = Number.isFinite(maxUsesRaw) && maxUsesRaw > 0 ? maxUsesRaw : 1;
+  const usedCount =
+    Number.isFinite(usedCountRaw) && usedCountRaw >= 0 ? usedCountRaw : 0;
+  const enabled = usedCount >= maxUses ? false : input.enabled !== false;
+
   if (!code) throw new Error("Voucher code required");
   if (!["fixed", "percent"].includes(type)) {
     throw new Error("Voucher type must be fixed or percent");
@@ -5727,8 +5734,8 @@ function normaliseVoucherPayload(input) {
     minDuration,
 
     // ✅ one-use voucher by default
-    maxUses: Number.isFinite(maxUses) && maxUses > 0 ? maxUses : 1,
-    usedCount: Number.isFinite(usedCount) && usedCount >= 0 ? usedCount : 0,
+    maxUses,
+    usedCount,
     usedAt: input.usedAt || null,
     usedByBookingId: input.usedByBookingId || null,
 
@@ -5757,7 +5764,38 @@ async function handleAdminSaveVoucher(request, env) {
 
   try {
     const body = await request.json();
-    const voucher = normaliseVoucherPayload(body);
+
+    const safeCode = String(body.code || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_-]/g, "");
+
+    let existing = {};
+
+    if (safeCode) {
+      const rawExisting = await env.BOOKINGS_KV.get(`voucher:${safeCode}`);
+
+      if (rawExisting) {
+        try {
+          existing = JSON.parse(rawExisting) || {};
+        } catch {
+          existing = {};
+        }
+      }
+    }
+
+    // Preserve use history when editing an existing voucher.
+    // Otherwise an already-used one-use voucher could accidentally be reset.
+    const voucher = normaliseVoucherPayload({
+      ...existing,
+      ...body,
+      code: safeCode || body.code,
+      maxUses: body.maxUses ?? existing.maxUses ?? 1,
+      usedCount: existing.usedCount ?? body.usedCount ?? 0,
+      usedAt: existing.usedAt ?? body.usedAt ?? null,
+      usedByBookingId: existing.usedByBookingId ?? body.usedByBookingId ?? null,
+      createdAt: existing.createdAt,
+    });
 
     await env.BOOKINGS_KV.put(
       `voucher:${voucher.code}`,
