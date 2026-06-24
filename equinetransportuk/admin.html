@@ -11257,7 +11257,8 @@ ${mobileOutstandingText}
         }
 
         vouchersList.innerHTML = ALL_VOUCHERS.map((voucher) => {
-          const code = escapeHtml(voucher.code || "");
+          const rawCode = String(voucher.code || "");
+          const code = escapeHtml(rawCode);
           const typeLabel =
             voucher.type === "percent"
               ? `${voucher.value}% off`
@@ -11280,7 +11281,28 @@ ${mobileOutstandingText}
       >
         <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
           <div>
-            <h4 style="margin:0 0 6px">${code}</h4>
+            <h4 style="margin:0 0 6px">
+              <button
+                class="voucher-code-copy"
+                type="button"
+                data-voucher-code="${code}"
+                title="Click to copy voucher code"
+                style="
+                  appearance:none;
+                  -webkit-appearance:none;
+                  border:0;
+                  background:#eff6ff;
+                  color:#1d4ed8;
+                  border-radius:999px;
+                  padding:6px 10px;
+                  font:inherit;
+                  font-weight:950;
+                  cursor:pointer;
+                  letter-spacing:0.02em;
+                "
+              >${code}</button>
+            </h4>
+            <div class="tiny">Click voucher code to copy</div>
             <div class="tiny">${escapeHtml(typeLabel)}</div>
             <div class="tiny">Vehicles: ${escapeHtml(getVehicleLabelForVoucher(voucher))}</div>
             <div class="tiny">Min duration: ${escapeHtml(String(voucher.minDuration || 0))} day(s)</div>
@@ -11315,6 +11337,51 @@ ${mobileOutstandingText}
     `;
         }).join("");
       }
+
+      async function copyVoucherCodeFromButton(button) {
+        const code = String(button?.dataset?.voucherCode || "").trim();
+
+        if (!code) return;
+
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(code);
+          } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = code;
+            textarea.setAttribute("readonly", "");
+            textarea.style.position = "fixed";
+            textarea.style.left = "-9999px";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            textarea.remove();
+          }
+
+          showCopySuccess("Code copied ✓");
+
+          const originalText = button.textContent;
+
+          button.textContent = "Copied ✓";
+
+          setTimeout(() => {
+            button.textContent = originalText;
+          }, 1200);
+        } catch (err) {
+          console.warn("Voucher code copy failed:", err);
+          showCopySuccess("Copy failed");
+        }
+      }
+
+      vouchersList?.addEventListener("click", (event) => {
+        const button = event.target.closest(".voucher-code-copy");
+
+        if (!button) return;
+
+        event.preventDefault();
+
+        copyVoucherCodeFromButton(button);
+      });
 
       function editVoucher(code) {
         const voucher = ALL_VOUCHERS.find(
