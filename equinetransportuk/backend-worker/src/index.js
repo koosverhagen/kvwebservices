@@ -108,7 +108,7 @@ async function processReminders(env) {
 
     console.log("📨 Sending reminder:", reminder.bookingId);
 
-    const booking = await findBookingById(env, reminder.bookingId);
+    let booking = await findBookingById(env, reminder.bookingId);
 
     if (!booking || !booking.customerEmail) {
       console.log("⚠️ Booking/email missing");
@@ -117,42 +117,43 @@ async function processReminders(env) {
     }
 
     try {
-      const linkBooking = await refreshCustomerFacingBookingLinks(env, booking);
-      const reminderType = linkBooking.formCompleted ? "outstanding" : "form";
+      booking = await refreshCustomerSafeBookingLinks(env, booking);
+
+      const reminderType = booking.formCompleted ? "outstanding" : "form";
       const emailHtml = buildModernEmail({
         title:
           reminderType === "form"
             ? "Reminder – Form required before your hire"
             : "Reminder – Outstanding balance due",
 
-        customerName: linkBooking.customerName,
+        customerName: booking.customerName,
 
         booking: {
-          id: linkBooking.id,
-          vehicle: linkBooking.vehicleSnapshot?.name,
-          from: linkBooking.pickupAtLocal,
-          to: linkBooking.dropoffAtLocal,
-          email: linkBooking.customerEmail,
-          mobile: linkBooking.customerMobile,
-          paid: linkBooking.confirmationFee,
-          outstanding: linkBooking.outstandingAmount,
-          total: linkBooking.hireTotal,
-          formType: linkBooking.requiredFormType || linkBooking.formType,
+          id: booking.id,
+          vehicle: booking.vehicleSnapshot?.name,
+          from: booking.pickupAtLocal,
+          to: booking.dropoffAtLocal,
+          email: booking.customerEmail,
+          mobile: booking.customerMobile,
+          paid: booking.confirmationFee,
+          outstanding: booking.outstandingAmount,
+          total: booking.hireTotal,
+          formType: booking.requiredFormType || booking.formType,
           formCompleted:
-            linkBooking.formCompleted === true ||
-            linkBooking.form_completed === 1 ||
-            linkBooking.paperFormReceived === true ||
-            linkBooking.formSource === "paper",
-          depositPaid: linkBooking.depositPaid,
+            booking.formCompleted === true ||
+            booking.form_completed === 1 ||
+            booking.paperFormReceived === true ||
+            booking.formSource === "paper",
+          depositPaid: booking.depositPaid,
         },
 
-        formLink: linkBooking.requiredFormLink,
-        depositLink: linkBooking.depositLink,
-        outstandingLink: linkBooking.outstandingLink,
+        formLink: booking.requiredFormLink,
+        depositLink: booking.depositLink,
+        outstandingLink: booking.outstandingLink,
       });
 
       await sendBookingEmail(env, {
-        to: linkBooking.customerEmail,
+        to: booking.customerEmail,
         subject:
           reminderType === "form"
             ? "Reminder: Please complete your form"
@@ -548,6 +549,185 @@ function formatEmailDateTime(value) {
   });
 }
 
+/* ===============================
+   CUSTOMER-SAFE BOOKING LINK HELPERS
+   Keeps old Planyo internal IDs working, but does not expose them in new links.
+================================ */
+
+function getPublicSiteBase(env) {
+  return (
+    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://www.equinetransportuk.com"
+  );
+}
+
+function stableBookingAlias(value) {
+  const raw = String(value || "").trim();
+
+  let hash = 2166136261;
+
+  for (let i = 0; i < raw.length; i += 1) {
+    hash ^= raw.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return (hash >>> 0).toString(36);
+}
+
+function getCustomerFacingBookingId(bookingOrId) {
+  const internalId = String(
+    typeof bookingOrId === "object" ? bookingOrId?.id : bookingOrId || "",
+  ).trim();
+
+  if (!internalId) return "";
+
+  // Existing custom bookings are already customer-safe.
+  if (!internalId.startsWith("book_planyo_")) return internalId;
+
+  const legacyPart = internalId
+    .replace(/^book_planyo_/i, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(-10);
+
+  return `book_legacy_${legacyPart}_${stableBookingAlias(internalId)}`;
+}
+
+function buildBookingIdCandidates(value) {
+  const raw = String(value || "").trim();
+  const candidates = new Set();
+
+  if (!raw) return [];
+
+  candidates.add(raw);
+
+  const withoutBookPlanyo = raw.replace(/^book_planyo_/i, "");
+  const withoutBookLegacy = raw.replace(/^book_legacy_/i, "");
+
+  candidates.add(withoutBookPlanyo);
+  candidates.add(withoutBookLegacy);
+
+  const compact = withoutBookPlanyo.replace(/[^a-zA-Z0-9]/g, "");
+  const digits = compact.match(/\d+/)?.[0] || "";
+
+  if (digits) {
+    candidates.add(digits);
+    candidates.add(`R${digits}`);
+    candidates.add(`P${digits}`);
+    candidates.add(`book_planyo_R${digits}`);
+    candidates.add(`book_planyo_P${digits}`);
+    candidates.add(`book_planyo_${digits}`);
+  }
+
+  return Array.from(candidates).filter(Boolean);
+}
+
+function bookingMatchesBookingId(booking, candidates) {
+  if (!booking || !Array.isArray(candidates) || !candidates.length) {
+    return false;
+  }
+
+  const values = new Set();
+
+  const add = (value) => {
+    const clean = String(value || "").trim();
+    if (clean) values.add(clean);
+  };
+
+  add(booking.id);
+  add(booking.bookingId);
+  add(booking.legacyBookingId);
+  add(booking.legacyReservationId);
+  add(booking.legacyReservationID);
+  add(booking.reservationId);
+  add(booking.reservationID);
+
+  const legacy = String(
+    booking.legacyBookingId ||
+      booking.legacyReservationId ||
+      booking.legacyReservationID ||
+      booking.reservationId ||
+      "",
+  ).trim();
+
+  if (legacy) {
+    add(legacy);
+    add(`book_planyo_${legacy}`);
+
+    const digits = legacy.match(/\d+/)?.[0] || "";
+    if (digits) {
+      add(digits);
+      add(`R${digits}`);
+      add(`P${digits}`);
+      add(`book_planyo_R${digits}`);
+      add(`book_planyo_P${digits}`);
+      add(`book_planyo_${digits}`);
+    }
+  }
+
+  add(getCustomerFacingBookingId(booking));
+
+  return candidates.some((candidate) => values.has(String(candidate || "")));
+}
+
+function buildCustomerSafeBookingLinks(env, booking) {
+  const SITE_BASE = getPublicSiteBase(env);
+  const linkBookingId = getCustomerFacingBookingId(booking);
+
+  let formType = String(
+    booking.requiredFormType || booking.formType || "long",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (formType !== "short" && formType !== "long") {
+    formType = "long";
+  }
+
+  const formPath =
+    formType === "short" ? "/forms/short-form.html" : "/forms/long-form.html";
+
+  return {
+    ...booking,
+    requiredFormType: formType,
+    customerFacingBookingId: linkBookingId,
+    requiredFormLink: `${SITE_BASE}${formPath}?bookingId=${encodeURIComponent(
+      linkBookingId,
+    )}&vehicleName=${encodeURIComponent(
+      booking.vehicleSnapshot?.name || booking.vehicleName || booking.vehicleId || "",
+    )}`,
+    depositLink: `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
+      linkBookingId,
+    )}`,
+    outstandingLink: `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(
+      linkBookingId,
+    )}`,
+  };
+}
+
+async function refreshCustomerSafeBookingLinks(env, booking) {
+  if (!booking) return booking;
+
+  const updated = buildCustomerSafeBookingLinks(env, booking);
+
+  if (
+    updated.requiredFormLink !== booking.requiredFormLink ||
+    updated.depositLink !== booking.depositLink ||
+    updated.outstandingLink !== booking.outstandingLink ||
+    updated.customerFacingBookingId !== booking.customerFacingBookingId
+  ) {
+    try {
+      await moveBookingInKv(env, booking, {
+        ...updated,
+        updatedAt: booking.updatedAt || updated.updatedAt,
+      });
+    } catch (err) {
+      console.warn("⚠️ Could not refresh booking links in KV:", err.message);
+    }
+  }
+
+  return updated;
+}
+
 export default {
   /* ===============================
      HTTP REQUEST HANDLER
@@ -797,12 +977,15 @@ export default {
             return withCors(json({ found: false }), corsHeaders);
           }
 
-          const linkBooking = await refreshCustomerFacingBookingLinks(env, booking);
+          const linkedBooking = await refreshCustomerSafeBookingLinks(
+            env,
+            await enrichBookingLinks(env, booking),
+          );
 
           return withCors(
             json({
               found: true,
-              booking: linkBooking,
+              booking: linkedBooking,
             }),
             corsHeaders,
           );
@@ -948,14 +1131,13 @@ export default {
         }
 
         // ===============================
-        // FIND BOOKING (WITH LEGACY/PLANYO ALIAS SUPPORT)
+        // FIND BOOKING (D1 + KV + LEGACY ALIAS SAFE)
         // ===============================
 
-        const requestedBookingId = String(bookingId || "").trim();
         let booking = null;
 
         for (let attempt = 0; attempt < 5; attempt++) {
-          booking = await findBookingById(env, requestedBookingId);
+          booking = await findBookingById(env, bookingId);
 
           if (booking) break;
 
@@ -970,6 +1152,10 @@ export default {
             corsHeaders,
           );
         }
+
+        const internalBookingId = booking.id || bookingId;
+
+        booking = await refreshCustomerSafeBookingLinks(env, booking);
 
         // ✅ prevent double hold
         if (booking.depositPaid) {
@@ -994,8 +1180,7 @@ export default {
           receipt_email: booking.customerEmail,
 
           metadata: {
-            bookingId: booking.id,
-            requestedBookingId,
+            bookingId: internalBookingId,
             paymentType: "deposit",
           },
         });
@@ -1047,11 +1232,10 @@ export default {
         }
 
         // ===============================
-        // FIND BOOKING (WITH LEGACY/PLANYO ALIAS SUPPORT)
+        // FIND BOOKING (D1 + KV + LEGACY ALIAS SAFE)
         // ===============================
 
-        const requestedBookingId = String(bookingId || "").trim();
-        const booking = await findBookingById(env, requestedBookingId);
+        let booking = await findBookingById(env, bookingId);
 
         if (!booking) {
           return withCors(
@@ -1059,6 +1243,10 @@ export default {
             corsHeaders,
           );
         }
+
+        const internalBookingId = booking.id || bookingId;
+
+        booking = await refreshCustomerSafeBookingLinks(env, booking);
 
         // ===============================
         // PREVENT DOUBLE PAYMENT
@@ -1094,13 +1282,12 @@ export default {
 
           // ✅ ADD THIS BLOCK
           metadata: {
-            bookingId: booking.id,
-            requestedBookingId,
+            bookingId: internalBookingId,
             paymentType: "outstanding",
           },
 
-          success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${booking.id}`,
-          cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${booking.id}`,
+          success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${encodeURIComponent(internalBookingId)}`,
+          cancel_url: `${env.PUBLIC_SITE_URL}/booking-cancelled?bookingId=${encodeURIComponent(internalBookingId)}`,
         });
 
         return withCors(json({ url: session.url }), corsHeaders);
@@ -6204,222 +6391,15 @@ function getDatesBetween(start, end) {
   return dates;
 }
 
-function getBookingIdMatchTokens(value) {
-  const raw = String(value || "").trim();
-  const tokens = new Set();
-
-  if (!raw) return tokens;
-
-  const add = (v) => {
-    const s = String(v || "").trim();
-    if (!s) return;
-    tokens.add(s);
-    tokens.add(s.toLowerCase());
-    tokens.add(s.toUpperCase());
-  };
-
-  add(raw);
-
-  const withoutPrefix = raw.replace(/^book_planyo_/i, "").trim();
-  add(withoutPrefix);
-  add(`book_planyo_${withoutPrefix}`);
-
-  const withoutLeadingLetter = withoutPrefix.replace(/^[PR]/i, "").trim();
-  add(withoutLeadingLetter);
-
-  if (/^\d+$/.test(withoutLeadingLetter)) {
-    add(`R${withoutLeadingLetter}`);
-    add(`P${withoutLeadingLetter}`);
-    add(`book_planyo_R${withoutLeadingLetter}`);
-    add(`book_planyo_P${withoutLeadingLetter}`);
-  }
-
-  return tokens;
-}
-
-function bookingMatchesIdOrLegacy(booking, bookingId) {
-  if (!booking || !bookingId) return false;
-
-  const tokens = getBookingIdMatchTokens(bookingId);
-
-  const values = [
-    booking.id,
-    booking.bookingId,
-    booking.bookingID,
-    booking.legacyBookingId,
-    booking.legacyReservationId,
-    booking.legacyId,
-    booking.reservationId,
-    booking.planyoReservationId,
-    booking.planyoId,
-    booking.sourceBookingId,
-    booking.originalBookingId,
-  ];
-
-  for (const value of values) {
-    if (!value) continue;
-
-    for (const token of getBookingIdMatchTokens(value)) {
-      if (tokens.has(token)) return true;
-    }
-  }
-
-  return false;
-}
-
-async function findBookingInKvByAnyId(env, bookingId) {
-  const safeBookingId = String(bookingId || "").trim();
-
-  if (!safeBookingId) return null;
-
-  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-  let legacyMatch = null;
-
-  for (const key of list.keys) {
-    const data = await env.BOOKINGS_KV.get(key.name);
-    if (!data) continue;
-
-    try {
-      const parsed = JSON.parse(data);
-
-      if (!Array.isArray(parsed)) continue;
-
-      for (const booking of parsed) {
-        if (String(booking?.id || "") === safeBookingId) {
-          return booking;
-        }
-
-        if (!legacyMatch && bookingMatchesIdOrLegacy(booking, safeBookingId)) {
-          legacyMatch = booking;
-        }
-      }
-    } catch {}
-  }
-
-  return legacyMatch;
-}
-
-function getBookingDateOnly(value) {
-  const raw = String(value || "").trim();
-
-  if (!raw) return "";
-
-  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
-    return raw.slice(0, 10);
-  }
-
-  const d = new Date(raw);
-
-  if (Number.isNaN(d.getTime())) return "";
-
-  return d.toISOString().slice(0, 10);
-}
-
-function isBookingCancelled(booking) {
-  const status = String(booking?.status || "").toLowerCase();
-
-  return status === "cancelled" || booking?.cancelled === true;
-}
-
-async function findCustomerFacingBookingForLinks(env, booking) {
-  if (!booking) return booking;
-
-  const currentId = String(booking.id || "").trim();
-
-  // Normal bookings already use the current booking id.
-  // Legacy Planyo ids sometimes exist as older imported/admin records.
-  if (!/^book_planyo_/i.test(currentId)) return booking;
-
-  const email = String(booking.customerEmail || "").trim().toLowerCase();
-  const vehicleId = String(booking.vehicleId || booking.vehicleSnapshot?.id || "").trim();
-  const pickupDate =
-    getBookingDateOnly(booking.pickupAtLocal) || getBookingDateOnly(booking.pickupAt);
-
-  if (!email || !vehicleId || !pickupDate) return booking;
-
-  try {
-    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-    for (const key of list.keys) {
-      const data = await env.BOOKINGS_KV.get(key.name);
-      if (!data) continue;
-
-      let parsed;
-
-      try {
-        parsed = JSON.parse(data);
-      } catch {
-        continue;
-      }
-
-      if (!Array.isArray(parsed)) continue;
-
-      const found = parsed.find((candidate) => {
-        const candidateId = String(candidate?.id || "").trim();
-
-        if (!candidateId || candidateId === currentId) return false;
-        if (/^book_planyo_/i.test(candidateId)) return false;
-        if (isBookingCancelled(candidate)) return false;
-
-        const candidateEmail = String(candidate.customerEmail || "")
-          .trim()
-          .toLowerCase();
-        const candidateVehicleId = String(
-          candidate.vehicleId || candidate.vehicleSnapshot?.id || "",
-        ).trim();
-        const candidateDate =
-          getBookingDateOnly(candidate.pickupAtLocal) ||
-          getBookingDateOnly(candidate.pickupAt);
-
-        return (
-          candidateEmail === email &&
-          candidateVehicleId === vehicleId &&
-          candidateDate === pickupDate
-        );
-      });
-
-      if (found) {
-        console.log("🔗 Using current booking id for old Planyo link:", {
-          oldId: currentId,
-          currentId: found.id,
-        });
-
-        return found;
-      }
-    }
-  } catch (err) {
-    console.warn("⚠️ Current booking link lookup failed:", err.message);
-  }
-
-  return booking;
-}
-
-async function refreshCustomerFacingBookingLinks(env, booking) {
-  if (!booking) return booking;
-
-  const linkBooking = await findCustomerFacingBookingForLinks(env, booking);
-
-  await enrichBookingLinks(env, linkBooking);
-
-  try {
-    await upsertBookingInKv(env, linkBooking);
-  } catch (err) {
-    console.warn("⚠️ Could not persist refreshed booking links:", err.message);
-  }
-
-  return linkBooking;
-}
-
 async function findBookingById(env, bookingId) {
   const safeBookingId = String(bookingId || "").trim();
 
   if (!safeBookingId) return null;
 
+  const bookingIdCandidates = buildBookingIdCandidates(safeBookingId);
+
   /* ===============================
      1) D1 FIRST (SOURCE OF TRUTH)
-     Exact id lookup. Legacy aliases are resolved through KV below because D1
-     only stores the booking id and not the richer legacy fields.
   =============================== */
 
   try {
@@ -6461,7 +6441,7 @@ async function findBookingById(env, bookingId) {
 
         vehicleSnapshot: {
           id: row.vehicle_id,
-          name: getVehicleNameFromId(row.vehicle_id),
+          name: "",
           type: String(row.vehicle_id || "").startsWith("v35")
             ? "3.5 tonne"
             : "7.5 tonne",
@@ -6519,8 +6499,8 @@ async function findBookingById(env, bookingId) {
           const parsed = JSON.parse(monthData);
 
           if (Array.isArray(parsed)) {
-            const kvBooking = parsed.find((b) =>
-              bookingMatchesIdOrLegacy(b, safeBookingId),
+            const kvBooking = parsed.find(
+              (b) => String(b.id) === String(safeBookingId),
             );
 
             if (kvBooking) {
@@ -6560,11 +6540,27 @@ async function findBookingById(env, bookingId) {
 
   /* ===============================
      3) FALLBACK TO KV
-     Exact id first, then legacy/Planyo aliases such as:
-     book_planyo_R19747824, R19747824, 19747824.
   =============================== */
 
-  return findBookingInKvByAnyId(env, safeBookingId);
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  for (const key of list.keys) {
+    const data = await env.BOOKINGS_KV.get(key.name);
+    if (!data) continue;
+
+    try {
+      const parsed = JSON.parse(data);
+
+      if (Array.isArray(parsed)) {
+        const found = parsed.find((b) =>
+          bookingMatchesBookingId(b, bookingIdCandidates),
+        );
+        if (found) return found;
+      }
+    } catch {}
+  }
+
+  return null;
 }
 
 /* ===============================
@@ -7108,8 +7104,6 @@ async function sendAdminBookingLinksEmail(env, booking) {
     return false;
   }
 
-  booking = await refreshCustomerFacingBookingLinks(env, booking);
-
   const emailHtml = buildModernEmail({
     title: "Equine Transport UK – Booking Links",
     customerName: booking.customerName,
@@ -7153,65 +7147,57 @@ async function sendAdminBookingLinksEmail(env, booking) {
 ================================ */
 
 async function enrichBookingLinks(env, booking) {
-  const SITE_BASE =
-    env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://www.equinetransportuk.com";
+  if (!booking) return booking;
 
-  let requiredFormType = "long";
+  let requiredFormType = String(
+    booking.requiredFormType || booking.formType || "",
+  )
+    .trim()
+    .toLowerCase();
 
-  try {
-    if (booking.customerId) {
-      const previous = await env.DB.prepare(
-        `
-        SELECT pickup_at
-        FROM bookings
-        WHERE customer_id = ?
-          AND id != ?
-          AND pickup_at < ?
-        ORDER BY pickup_at DESC
-        LIMIT 1
-      `,
-      )
-        .bind(booking.customerId, booking.id, booking.pickupAt)
-        .first();
+  const hasStoredFormType =
+    requiredFormType === "short" || requiredFormType === "long";
 
-      if (previous?.pickup_at) {
-        const previousPickup = new Date(previous.pickup_at);
-        const currentPickup = new Date(booking.pickupAt);
+  if (!hasStoredFormType) {
+    requiredFormType = "long";
 
-        const diffDays =
-          (currentPickup.getTime() - previousPickup.getTime()) /
-          (1000 * 60 * 60 * 24);
+    try {
+      if (booking.customerId) {
+        const previous = await env.DB.prepare(
+          `
+          SELECT pickup_at
+          FROM bookings
+          WHERE customer_id = ?
+            AND id != ?
+            AND pickup_at < ?
+          ORDER BY pickup_at DESC
+          LIMIT 1
+        `,
+        )
+          .bind(booking.customerId, booking.id, booking.pickupAt)
+          .first();
 
-        if (diffDays >= 0 && diffDays <= 90) {
-          requiredFormType = "short";
+        if (previous?.pickup_at) {
+          const previousPickup = new Date(previous.pickup_at);
+          const currentPickup = new Date(booking.pickupAt);
+
+          const diffDays =
+            (currentPickup.getTime() - previousPickup.getTime()) /
+            (1000 * 60 * 60 * 24);
+
+          if (diffDays >= 0 && diffDays <= 90) {
+            requiredFormType = "short";
+          }
         }
       }
+    } catch (err) {
+      console.warn("⚠️ Admin form type check failed:", err);
     }
-  } catch (err) {
-    console.warn("⚠️ Admin form type check failed:", err);
   }
-
-  const formBase =
-    requiredFormType === "short"
-      ? `${SITE_BASE}/forms/short-form.html`
-      : `${SITE_BASE}/forms/long-form.html`;
 
   booking.requiredFormType = requiredFormType;
 
-  booking.requiredFormLink = `${formBase}?bookingId=${encodeURIComponent(
-    booking.id,
-  )}&vehicleName=${encodeURIComponent(booking.vehicleSnapshot?.name || "")}`;
-
-  booking.depositLink = `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
-    booking.id,
-  )}`;
-
-  booking.outstandingLink = `${SITE_BASE}/pay-outstanding.html?bookingId=${encodeURIComponent(
-    booking.id,
-  )}`;
-
-  return booking;
+  return buildCustomerSafeBookingLinks(env, booking);
 }
 
 async function handleAdminBookingUpdate(request, env) {
@@ -11984,7 +11970,7 @@ async function handleFormSubmit(request, env) {
   try {
     const data = await request.json();
 
-    const bookingId = String(data.bookingId || data.bookingID || "").trim();
+    let bookingId = String(data.bookingId || data.bookingID || "").trim();
 
     /* ===============================
    🔥 NORMALISE BOOKING ID (FIX)
@@ -12016,12 +12002,16 @@ async function handleFormSubmit(request, env) {
    🔥 FIND BOOKING (D1 + KV SAFE)
 =============================== */
 
-    const booking = await findBookingById(env, bookingId);
+    let booking = await findBookingById(env, bookingId);
 
     if (!booking) {
       console.log("❌ FORM: booking not found", bookingId);
       return json({ error: "Booking not found" }, 404);
     }
+
+    // A customer-safe link may use an alias. Save the form against the real internal booking ID.
+    bookingId = String(booking.id || bookingId).trim();
+    data.bookingId = bookingId;
 
     /* ===============================
        NORMALISE + BASIC VALIDATION
@@ -13632,8 +13622,7 @@ async function handleResendEmail(request, env) {
     }
 
     /* ===============================
-       FIND BOOKING
-       Uses findBookingById so old Planyo aliases and current ids both work.
+       FIND BOOKING (D1 + KV + LEGACY ALIAS SAFE)
     =============================== */
 
     let booking = await findBookingById(env, bookingId);
@@ -13642,11 +13631,11 @@ async function handleResendEmail(request, env) {
       return json({ error: "Booking not found" }, 404);
     }
 
-    booking = await refreshCustomerFacingBookingLinks(env, booking);
-
     if (!booking.customerEmail) {
       return json({ error: "No customer email" }, 400);
     }
+
+    booking = await refreshCustomerSafeBookingLinks(env, booking);
 
     /* ===============================
        EMAIL TYPE LOGIC
@@ -13745,14 +13734,14 @@ async function handlePublicResendLinks(request, env) {
       return json({ error: "Booking not found" }, 404);
     }
 
-    booking = await refreshCustomerFacingBookingLinks(env, booking);
-
     if (!booking.customerEmail) {
       return json({ error: "No customer email found" }, 400);
     }
 
+    booking = await refreshCustomerSafeBookingLinks(env, booking);
+
     // simple abuse protection
-    const resendKey = `resend_links:${bookingId}`;
+    const resendKey = `resend_links:${booking.id || bookingId}`;
     const alreadySent = await env.BOOKINGS_KV.get(resendKey);
 
     if (alreadySent) {
