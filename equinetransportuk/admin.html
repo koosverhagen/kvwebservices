@@ -372,48 +372,166 @@
         transform: translateY(-1px);
       }
 
-      .resend-confirmation-panel {
-        margin-top: 8px;
-        padding: 10px;
-        border: 1px solid #dbeafe;
-        border-radius: 14px;
-        background: #f8fbff;
-      }
-
-      .resend-confirmation-panel.hidden {
+      .resend-confirmation-modal.hidden {
         display: none !important;
       }
 
-      .resend-confirmation-panel label {
-        display: block;
-        margin-bottom: 6px;
-        color: #475569;
-        font-size: 11px;
-        font-weight: 900;
+      .resend-confirmation-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 10000002;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 18px;
       }
 
-      .resend-confirmation-panel input {
+      .resend-confirmation-backdrop {
+        position: absolute;
+        inset: 0;
+
+        border: none;
+        background: rgba(15, 23, 42, 0.46);
+
+        cursor: pointer;
+      }
+
+      .resend-confirmation-card {
+        position: relative;
+        z-index: 2;
+
+        width: min(520px, calc(100vw - 30px));
+
+        background: #ffffff;
+
+        border: 1px solid #dbe1e8;
+        border-radius: 24px;
+
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+
+        overflow: hidden;
+      }
+
+      .resend-confirmation-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+
+        padding: 18px 20px;
+
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+      }
+
+      .resend-confirmation-head h3 {
+        margin: 0;
+
+        color: #111827;
+
+        font-size: 20px;
+        font-weight: 950;
+        line-height: 1.15;
+        letter-spacing: -0.04em;
+      }
+
+      .resend-confirmation-close {
+        appearance: none;
+        -webkit-appearance: none;
+
+        width: 40px;
+        height: 40px;
+
+        border: 1px solid #dbe1e8;
+        border-radius: 14px;
+
+        background: #ffffff;
+        color: #111827;
+
+        font-size: 20px;
+        font-weight: 900;
+        line-height: 1;
+
+        cursor: pointer;
+      }
+
+      .resend-confirmation-body {
+        padding: 20px;
+      }
+
+      .resend-confirmation-booking {
+        margin: 0 0 14px;
+
+        color: #64748b;
+
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.4;
+      }
+
+      .resend-confirmation-body label {
+        display: block;
+
+        margin: 0 0 8px;
+
+        color: #475569;
+
+        font-size: 13px;
+        font-weight: 950;
+      }
+
+      .resend-confirmation-body input {
         width: 100%;
-        min-height: 38px;
-        padding: 8px 10px;
+        min-height: 50px;
+
+        padding: 12px 14px;
+
         border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        font-size: 14px;
+        border-radius: 14px;
+
+        background: #ffffff;
+        color: #111827;
+
+        font-size: 17px;
+        font-weight: 800;
+      }
+
+      .resend-confirmation-body input:focus {
+        outline: none;
+        border-color: #1f6feb;
+        box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.12);
+      }
+
+      .resend-confirmation-help {
+        margin: 8px 0 0;
+
+        color: #64748b;
+
+        font-size: 12px;
+        line-height: 1.4;
       }
 
       .resend-confirmation-actions {
-        display: flex;
-        gap: 6px;
-        margin-top: 8px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+
+        margin-top: 16px;
       }
 
       .resend-confirmation-actions button {
-        min-height: 34px;
-        padding: 7px 10px;
+        min-height: 48px;
+
+        padding: 10px 12px;
+
         border: none;
-        border-radius: 10px;
-        font-size: 12px;
-        font-weight: 900;
+        border-radius: 14px;
+
+        font-size: 15px;
+        font-weight: 950;
+
         cursor: pointer;
       }
 
@@ -428,11 +546,15 @@
       }
 
       .resend-confirmation-status {
-        margin-top: 7px;
+        min-height: 18px;
+
+        margin-top: 12px;
+
         color: #64748b;
-        font-size: 12px;
-        font-weight: 800;
-        line-height: 1.3;
+
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1.35;
       }
 
       @media (max-width: 768px) {
@@ -443,8 +565,26 @@
           font-size: 13px;
         }
 
-        .resend-confirmation-panel {
-          margin-top: 10px;
+        .resend-confirmation-modal {
+          align-items: flex-end;
+          padding: 12px;
+        }
+
+        .resend-confirmation-card {
+          width: 100%;
+          border-radius: 28px;
+        }
+
+        .resend-confirmation-head {
+          padding: 18px;
+        }
+
+        .resend-confirmation-body {
+          padding: 18px;
+        }
+
+        .resend-confirmation-actions {
+          grid-template-columns: 1fr;
         }
       }
 
@@ -7556,6 +7696,89 @@
       </div>
     </div>
 
+
+    <div
+      id="resend-confirmation-modal"
+      class="resend-confirmation-modal hidden"
+      aria-hidden="true"
+    >
+      <button
+        class="resend-confirmation-backdrop js-close-confirmation-resend"
+        type="button"
+        aria-label="Close resend confirmation popup"
+      ></button>
+
+      <div
+        class="resend-confirmation-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resend-confirmation-title"
+      >
+        <div class="resend-confirmation-head">
+          <h3 id="resend-confirmation-title">Resend booking confirmation</h3>
+
+          <button
+            class="resend-confirmation-close js-close-confirmation-resend"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="resend-confirmation-body">
+          <input id="resend-confirmation-booking-id" type="hidden" />
+
+          <p id="resend-confirmation-booking" class="resend-confirmation-booking">
+            Booking confirmation email
+          </p>
+
+          <label for="resend-confirmation-email">
+            Send booking confirmation to:
+          </label>
+
+          <input
+            id="resend-confirmation-email"
+            class="resend-confirmation-email"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
+            placeholder="customer@email.com"
+          />
+
+          <p class="resend-confirmation-help">
+            Check or correct the email address before sending. The email will be
+            lowercased automatically.
+          </p>
+
+          <div
+            id="resend-confirmation-status"
+            class="resend-confirmation-status"
+          ></div>
+
+          <div class="resend-confirmation-actions">
+            <button
+              id="resend-confirmation-send"
+              class="resend-confirmation-send js-send-confirmation-resend"
+              type="button"
+            >
+              Send
+            </button>
+
+            <button
+              class="resend-confirmation-cancel js-close-confirmation-resend"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
 
@@ -8411,7 +8634,10 @@ Equine Transport UK`;
       function buildResendConfirmationPanel(booking, options = {}) {
         const bookingId = String(booking?.id || "").trim();
         const email = normaliseAdminEmail(booking?.customerEmail || "");
-        const buttonText = options.compact ? "Resend Confirmation" : "Resend Confirmation";
+        const customerName = getCustomerName(booking);
+        const buttonText = options.compact
+          ? "Resend Confirmation"
+          : "Resend Confirmation";
 
         if (!bookingId) return "";
 
@@ -8421,45 +8647,13 @@ Equine Transport UK`;
             type="button"
             data-id="${escapeHtml(bookingId)}"
             data-email="${escapeHtml(email)}"
+            data-name="${escapeHtml(customerName)}"
           >
             ${escapeHtml(buttonText)}
           </button>
-
-          <div class="resend-confirmation-panel hidden">
-            <label>Send booking confirmation to:</label>
-            <input
-              class="resend-confirmation-email"
-              type="email"
-              inputmode="email"
-              autocomplete="email"
-              autocapitalize="none"
-              autocorrect="off"
-              spellcheck="false"
-              value="${escapeHtml(email)}"
-              placeholder="customer@email.com"
-            />
-
-            <div class="resend-confirmation-actions">
-              <button
-                class="resend-confirmation-send js-send-confirmation-resend"
-                type="button"
-                data-id="${escapeHtml(bookingId)}"
-              >
-                Send
-              </button>
-
-              <button
-                class="resend-confirmation-cancel js-cancel-confirmation-resend"
-                type="button"
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div class="resend-confirmation-status"></div>
-          </div>
         `;
       }
+
 
       function pad(n) {
         return String(n).padStart(2, "0");
@@ -16217,8 +16411,27 @@ Equine Transport UK`;
         }
 
         /* ===============================
-         📧 RESEND BOOKING CONFIRMATION
+         📧 RESEND BOOKING CONFIRMATION POPUP
       =============================== */
+
+        const closeConfirmationResend = () => {
+          const modal = document.getElementById("resend-confirmation-modal");
+          const status = document.getElementById("resend-confirmation-status");
+          const sendBtn = document.getElementById("resend-confirmation-send");
+
+          if (status) {
+            status.textContent = "";
+            status.style.color = "#64748b";
+          }
+
+          if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = "Send";
+          }
+
+          modal?.classList.add("hidden");
+          modal?.setAttribute("aria-hidden", "true");
+        };
 
         const openConfirmationResendBtn = e.target.closest(
           ".js-open-confirmation-resend",
@@ -16227,58 +16440,63 @@ Equine Transport UK`;
         if (openConfirmationResendBtn) {
           e.preventDefault();
 
-          const wrapper =
-            openConfirmationResendBtn.closest(".customer-block") ||
-            openConfirmationResendBtn.closest(".mobile-booking-top") ||
-            openConfirmationResendBtn.closest(".mobile-booking-card") ||
-            openConfirmationResendBtn.parentElement;
+          const modal = document.getElementById("resend-confirmation-modal");
+          const bookingIdInput = document.getElementById(
+            "resend-confirmation-booking-id",
+          );
+          const emailInput = document.getElementById(
+            "resend-confirmation-email",
+          );
+          const bookingText = document.getElementById(
+            "resend-confirmation-booking",
+          );
+          const status = document.getElementById("resend-confirmation-status");
+          const sendBtn = document.getElementById("resend-confirmation-send");
 
-          const panel = wrapper?.querySelector(".resend-confirmation-panel");
+          const bookingId = openConfirmationResendBtn.dataset.id || "";
+          const email = normaliseAdminEmail(
+            openConfirmationResendBtn.dataset.email || "",
+          );
+          const customerName =
+            openConfirmationResendBtn.dataset.name || "Customer";
 
-          if (!panel) return;
+          if (!modal || !bookingIdInput || !emailInput) return;
 
-          document
-            .querySelectorAll(".resend-confirmation-panel")
-            .forEach((otherPanel) => {
-              if (otherPanel !== panel) {
-                otherPanel.classList.add("hidden");
-              }
-            });
+          bookingIdInput.value = bookingId;
+          emailInput.value = email;
 
-          panel.classList.toggle("hidden");
-
-          const input = panel.querySelector(".resend-confirmation-email");
-          const status = panel.querySelector(".resend-confirmation-status");
-
-          if (status) status.textContent = "";
-
-          if (!panel.classList.contains("hidden") && input) {
-            input.value = normaliseAdminEmail(
-              input.value || openConfirmationResendBtn.dataset.email || "",
-            );
-
-            setTimeout(() => {
-              input.focus();
-              input.select();
-            }, 60);
+          if (bookingText) {
+            bookingText.textContent = `${customerName} · ${bookingId}`;
           }
+
+          if (status) {
+            status.textContent = "";
+            status.style.color = "#64748b";
+          }
+
+          if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = "Send";
+          }
+
+          modal.classList.remove("hidden");
+          modal.setAttribute("aria-hidden", "false");
+
+          setTimeout(() => {
+            emailInput.focus();
+            emailInput.select();
+          }, 80);
 
           return;
         }
 
-        const cancelConfirmationResendBtn = e.target.closest(
-          ".js-cancel-confirmation-resend",
+        const closeConfirmationResendBtn = e.target.closest(
+          ".js-close-confirmation-resend",
         );
 
-        if (cancelConfirmationResendBtn) {
+        if (closeConfirmationResendBtn) {
           e.preventDefault();
-
-          const panel = cancelConfirmationResendBtn.closest(
-            ".resend-confirmation-panel",
-          );
-
-          panel?.classList.add("hidden");
-
+          closeConfirmationResend();
           return;
         }
 
@@ -16289,14 +16507,14 @@ Equine Transport UK`;
         if (sendConfirmationResendBtn) {
           e.preventDefault();
 
-          const panel = sendConfirmationResendBtn.closest(
-            ".resend-confirmation-panel",
-          );
+          const bookingId = String(
+            document.getElementById("resend-confirmation-booking-id")?.value ||
+              "",
+          ).trim();
 
-          const input = panel?.querySelector(".resend-confirmation-email");
-          const status = panel?.querySelector(".resend-confirmation-status");
+          const input = document.getElementById("resend-confirmation-email");
+          const status = document.getElementById("resend-confirmation-status");
 
-          const bookingId = sendConfirmationResendBtn.dataset.id || "";
           const email = normaliseAdminEmail(input?.value || "");
 
           if (input) input.value = email;
@@ -16311,8 +16529,6 @@ Equine Transport UK`;
             input?.focus();
             return;
           }
-
-          const originalText = sendConfirmationResendBtn.textContent;
 
           sendConfirmationResendBtn.disabled = true;
           sendConfirmationResendBtn.textContent = "Sending...";
@@ -16351,10 +16567,8 @@ Equine Transport UK`;
             sendConfirmationResendBtn.textContent = "Sent ✓";
 
             setTimeout(() => {
-              panel?.classList.add("hidden");
-              sendConfirmationResendBtn.disabled = false;
-              sendConfirmationResendBtn.textContent = originalText || "Send";
-            }, 1800);
+              closeConfirmationResend();
+            }, 1400);
           } catch (err) {
             console.error(err);
 
@@ -16366,7 +16580,7 @@ Equine Transport UK`;
             }
 
             sendConfirmationResendBtn.disabled = false;
-            sendConfirmationResendBtn.textContent = originalText || "Send";
+            sendConfirmationResendBtn.textContent = "Send";
           }
 
           return;
@@ -19362,6 +19576,25 @@ Equine Transport UK`;
 
       // Calendar is always All Lorries now.
       // No dropdown change listener needed.
+
+      document.addEventListener("keydown", (event) => {
+        const modal = document.getElementById("resend-confirmation-modal");
+
+        if (!modal || modal.classList.contains("hidden")) return;
+
+        if (event.key === "Escape") {
+          event.preventDefault();
+          document.querySelector(".js-close-confirmation-resend")?.click();
+        }
+
+        if (
+          event.key === "Enter" &&
+          event.target?.id === "resend-confirmation-email"
+        ) {
+          event.preventDefault();
+          document.getElementById("resend-confirmation-send")?.click();
+        }
+      });
 
       /* ===============================
          INIT (FINAL)
