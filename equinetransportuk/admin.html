@@ -17706,7 +17706,13 @@ Equine Transport UK`;
               existingBooking.depositStatus = "canceled";
             }
 
-            alert("✅ Deposit cancelled");
+            const reviewEmailSent = data?.reviewEmailSent === true;
+
+            alert(
+              reviewEmailSent
+                ? "✅ Deposit Cancelled.\nThank you email sent."
+                : "✅ Deposit Cancelled.",
+            );
 
             editModal.classList.add("hidden");
 
