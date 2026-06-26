@@ -627,6 +627,10 @@ removed duplicate, script is loaded at end of body -->
                           id="customer-email"
                           type="email"
                           autocomplete="email"
+                          inputmode="email"
+                          autocapitalize="none"
+                          autocorrect="off"
+                          spellcheck="false"
                           required
                         />
                         <div
@@ -1007,6 +1011,24 @@ removed duplicate, script is loaded at end of body -->
       })();
     </script>
 
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const emailInput = document.getElementById("customer-email");
+
+        if (!emailInput) return;
+
+        emailInput.setAttribute("autocapitalize", "none");
+        emailInput.setAttribute("autocorrect", "off");
+        emailInput.setAttribute("spellcheck", "false");
+        emailInput.setAttribute("inputmode", "email");
+
+        emailInput.addEventListener("blur", function () {
+          emailInput.value = String(emailInput.value || "")
+            .trim()
+            .toLowerCase();
+        });
+      });
+    </script>
     <script src="app.js?v=68"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
   </body>

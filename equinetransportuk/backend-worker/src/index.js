@@ -1830,6 +1830,14 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/resend-confirmation-email"
+      ) {
+        const response = await handleAdminResendConfirmationEmail(request, env);
+        return withCors(response, corsHeaders);
+      }
+
       /* ===============================
    DVLA VERIFY TOGGLE (NEW)
 =============================== */
@@ -6028,9 +6036,17 @@ async function handleCreateCheckoutSession(request, env) {
   const booking = await request.json();
   const ignoreBookingId = booking.ignoreBookingId || null;
   const customerNotes = String(booking.customerNotes || "").slice(0, 500);
+  const customerEmail = String(booking.customerEmail || "")
+    .trim()
+    .toLowerCase()
+    .slice(0, 100);
   const customerAddress = String(booking.customerAddress || "")
     .trim()
     .slice(0, 250);
+
+  if (!customerEmail) {
+    return json({ error: "Customer email is required" }, 400);
+  }
 
   if (!customerAddress) {
     return json({ error: "Customer address is required" }, 400);
@@ -6306,6 +6322,7 @@ async function handleCreateCheckoutSession(request, env) {
     session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
+      customer_email: customerEmail,
 
       success_url: `${siteBase}/index.html?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteBase}/index.html?checkout=cancelled`,
@@ -6334,7 +6351,7 @@ async function handleCreateCheckoutSession(request, env) {
         durationDays: String(durationDays),
 
         customerName: cleanCustomerName,
-        customerEmail: (booking.customerEmail || "").slice(0, 100),
+        customerEmail,
         customerMobile: (booking.customerMobile || "").slice(0, 30),
         customerAddress,
         customerNotes,
@@ -13602,6 +13619,241 @@ async function handleAdminContactCustomerEmail(request, env) {
     return json(
       {
         error: err.message || "Failed to send contact email",
+      },
+      500,
+    );
+  }
+}
+
+function normaliseCustomerEmail(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+async function findLatestBookingByEmail(env, email) {
+  const safeEmail = normaliseCustomerEmail(email);
+
+  if (!safeEmail) return null;
+
+  /* ===============================
+     1) D1 FIRST
+     Source of truth for paid bookings
+  =============================== */
+
+  try {
+    const row = await env.DB.prepare(
+      `
+      SELECT
+        b.id,
+        b.customer_id,
+        b.vehicle_id,
+        b.pickup_at,
+        b.dropoff_at,
+        b.duration_days,
+        b.price_total,
+        b.paid_now,
+        b.extras_json,
+        b.status,
+        b.created_at,
+        b.updated_at,
+        b.form_completed,
+        b.deposit_paid,
+        b.dvla_verified,
+        c.full_name,
+        c.email,
+        c.mobile
+      FROM bookings b
+      LEFT JOIN customers c
+        ON c.id = b.customer_id
+      WHERE LOWER(COALESCE(c.email, '')) = ?
+      ORDER BY COALESCE(b.created_at, b.pickup_at) DESC
+      LIMIT 1
+      `,
+    )
+      .bind(safeEmail)
+      .first();
+
+    if (row) {
+      return await buildListBookingFromD1Row(env, row);
+    }
+  } catch (err) {
+    console.warn("⚠️ D1 booking lookup by email failed:", err.message);
+  }
+
+  /* ===============================
+     2) KV FALLBACK
+  =============================== */
+
+  try {
+    const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+    const matches = [];
+
+    for (const key of list.keys) {
+      const raw = await env.BOOKINGS_KV.get(key.name);
+      if (!raw) continue;
+
+      let parsed;
+
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        continue;
+      }
+
+      if (!Array.isArray(parsed)) continue;
+
+      for (const booking of parsed) {
+        const bookingEmail = normaliseCustomerEmail(booking.customerEmail);
+
+        if (bookingEmail === safeEmail) {
+          matches.push(booking);
+        }
+      }
+    }
+
+    matches.sort((a, b) => {
+      const da = new Date(a.createdAt || a.pickupAt || 0).getTime();
+      const db = new Date(b.createdAt || b.pickupAt || 0).getTime();
+      return db - da;
+    });
+
+    return matches[0] || null;
+  } catch (err) {
+    console.warn("⚠️ KV booking lookup by email failed:", err.message);
+  }
+
+  return null;
+}
+
+async function sendBookingConfirmationEmailForBooking(env, booking, options = {}) {
+  const force = options.force === true;
+
+  if (!booking?.id) {
+    throw new Error("Booking not found");
+  }
+
+  let linkedBooking = await enrichBookingLinks(env, booking);
+  linkedBooking = await refreshCustomerSafeBookingLinks(env, linkedBooking);
+
+  const customerEmail = normaliseCustomerEmail(linkedBooking.customerEmail);
+
+  if (!customerEmail) {
+    throw new Error("No customer email");
+  }
+
+  linkedBooking.customerEmail = customerEmail;
+
+  const emailKey = `email_sent:${linkedBooking.id}`;
+
+  if (!force) {
+    const alreadySent = await env.BOOKINGS_KV.get(emailKey);
+
+    if (alreadySent) {
+      return {
+        sent: false,
+        skipped: true,
+        reason: "already_sent",
+        booking: linkedBooking,
+      };
+    }
+  }
+
+  const emailHtml = buildModernEmail({
+    title: "Equine Transport UK – Booking Confirmation",
+    customerName: linkedBooking.customerName,
+    booking: {
+      id: linkedBooking.id,
+      vehicle: linkedBooking.vehicleSnapshot?.name || "Horsebox Hire",
+      from: linkedBooking.pickupAtLocal,
+      to: linkedBooking.dropoffAtLocal,
+      email: linkedBooking.customerEmail,
+      mobile: linkedBooking.customerMobile,
+      paid: linkedBooking.confirmationFee || linkedBooking.paidNow || 0,
+      outstanding: linkedBooking.outstandingAmount,
+      total: linkedBooking.hireTotal || linkedBooking.priceTotal || 0,
+      formType: linkedBooking.requiredFormType || linkedBooking.formType,
+      formCompleted:
+        linkedBooking.formCompleted === true ||
+        linkedBooking.form_completed === 1 ||
+        linkedBooking.paperFormReceived === true ||
+        linkedBooking.formSource === "paper",
+      depositPaid: linkedBooking.depositPaid,
+    },
+    formLink: linkedBooking.requiredFormLink,
+    depositLink: linkedBooking.depositLink,
+    outstandingLink: linkedBooking.outstandingLink,
+  });
+
+  await sendBookingEmail(env, {
+    to: customerEmail,
+    subject: "Your Equine Transport UK booking is confirmed",
+    html: emailHtml,
+  });
+
+  await env.BOOKINGS_KV.put(
+    emailKey,
+    JSON.stringify({
+      bookingId: linkedBooking.id,
+      to: customerEmail,
+      sentAt: new Date().toISOString(),
+      mode: force ? "admin_resend" : "automatic",
+    }),
+    {
+      expirationTtl: 60 * 60 * 24 * 730,
+    },
+  );
+
+  return {
+    sent: true,
+    skipped: false,
+    booking: linkedBooking,
+  };
+}
+
+async function handleAdminResendConfirmationEmail(request, env) {
+  try {
+    const body = await request.json();
+
+    const bookingId = String(body.bookingId || "").trim();
+    const email = normaliseCustomerEmail(body.email);
+
+    if (!bookingId && !email) {
+      return json({ error: "Send bookingId or email" }, 400);
+    }
+
+    let booking = null;
+
+    if (bookingId) {
+      booking = await findBookingById(env, bookingId);
+    }
+
+    if (!booking && email) {
+      booking = await findLatestBookingByEmail(env, email);
+    }
+
+    if (!booking) {
+      return json({ error: "Booking not found" }, 404);
+    }
+
+    const result = await sendBookingConfirmationEmailForBooking(env, booking, {
+      force: true,
+    });
+
+    return json({
+      ok: true,
+      sent: result.sent,
+      bookingId: result.booking.id,
+      to: result.booking.customerEmail,
+      customerName: result.booking.customerName || "",
+    });
+  } catch (err) {
+    console.error("❌ ADMIN RESEND CONFIRMATION ERROR:", err);
+
+    return json(
+      {
+        error: "Failed to resend confirmation email",
+        detail: err.message || "Unknown error",
       },
       500,
     );
