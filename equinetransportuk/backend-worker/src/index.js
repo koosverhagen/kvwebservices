@@ -12,14 +12,6 @@ const GOOGLE_REVIEW_QR_URL =
 // Send review request this many hours after return.
 // Use 0 for exactly at return time, 1 gives a nicer small delay.
 const REVIEW_EMAIL_DELAY_HOURS = 1;
-const REVIEW_EMAIL_SUBJECT =
-  "Thanks for using Equine Transport UK | Please leave us a Review";
-
-// Safety net: if cron triggers are missing or a review key was not created,
-// the Worker can still find recent returned bookings and send/retry reviews.
-const REVIEW_BACKFILL_LOOKBACK_DAYS = 21;
-const REVIEW_BACKFILL_LOOKAHEAD_DAYS = 120;
-const REVIEW_BACKGROUND_THROTTLE_MINUTES = 15;
 
 /* ===============================
    RESERVATION CLEANUP
@@ -181,96 +173,51 @@ async function processReminders(env) {
 
 /* ===============================
    ⭐ REVIEW REQUEST EMAILS
-   Sent after lorry return time
-=============================== */
+   Sent only when admin cancels the customer deposit
+================================ */
 
-function getReviewDropoffDate(booking = {}) {
-  const value =
-    booking.dropoffAt ||
-    booking.dropoff_at ||
-    booking.dropoffAtLocal ||
-    booking.dropoff_at_local ||
-    booking.returnAt ||
-    booking.return_at ||
-    "";
+const DEPOSIT_CANCELLED_REVIEW_SUBJECT =
+  "Thanks for using Equine Transport UK | Deposit Cancelled | Please leave us a Review";
 
-  if (!value) return null;
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date;
-}
-
-function getReviewSendDate(booking = {}) {
-  const dropoffDate = getReviewDropoffDate(booking);
-
-  if (!dropoffDate) return null;
-
-  return new Date(
-    dropoffDate.getTime() + REVIEW_EMAIL_DELAY_HOURS * 60 * 60 * 1000,
-  );
-}
-
+// Review emails are now sent from the admin deposit-cancel action.
+// Keep this function name so existing booking-creation code remains safe,
+// but do not queue return-time review emails anymore.
 async function scheduleReviewRequest(env, booking) {
-  if (!booking?.id) return { scheduled: false, reason: "missing_booking_id" };
+  if (!booking?.id) return;
 
-  const sendAt = getReviewSendDate(booking);
-
-  if (!sendAt || Number.isNaN(sendAt.getTime())) {
-    console.log("⭐ Review request not scheduled — return time missing/invalid", {
-      bookingId: booking.id,
-      dropoffAt: booking.dropoffAt,
-      dropoffAtLocal: booking.dropoffAtLocal,
-    });
-
-    return { scheduled: false, reason: "missing_return_time" };
-  }
-
-  const status = String(booking.status || "").trim().toLowerCase();
-
-  if (status === "cancelled" || booking.cancelled === true) {
-    console.log("⭐ Review request not scheduled — booking cancelled", {
-      bookingId: booking.id,
-    });
-
-    return { scheduled: false, reason: "cancelled" };
-  }
-
-  const sentKey = `review_sent:${booking.id}`;
-  const alreadySent = await env.BOOKINGS_KV.get(sentKey);
-
-  if (alreadySent) {
-    return { scheduled: false, reason: "already_sent" };
-  }
-
-  const reviewKey = `review:${booking.id}`;
-  const existing = await env.BOOKINGS_KV.get(reviewKey);
-
-  if (existing) {
-    return { scheduled: false, reason: "already_scheduled" };
-  }
-
-  await env.BOOKINGS_KV.put(
-    reviewKey,
-    JSON.stringify({
-      bookingId: booking.id,
-      sendAt: sendAt.toISOString(),
-      createdAt: new Date().toISOString(),
-    }),
-    {
-      expirationTtl: 60 * 60 * 24 * 180, // 180 days safety
-    },
+  console.log(
+    "⭐ Review request not queued — sent when deposit is cancelled:",
+    booking.id,
   );
-
-  console.log("⭐ Review request scheduled:", reviewKey, sendAt.toISOString());
-
-  return { scheduled: true, sendAt: sendAt.toISOString() };
 }
 
+// Clear any old return-time review queue items so customers do not receive
+// a separate/duplicate thanks-review email later.
 async function processReviewRequests(env) {
-  const now = new Date();
+  const list = await env.BOOKINGS_KV.list({ prefix: "review:" });
+
+  let cleared = 0;
+
+  for (const key of list.keys) {
+    await env.BOOKINGS_KV.delete(key.name);
+    cleared += 1;
+  }
+
+  if (cleared) {
+    console.log(
+      "⭐ Cleared old return-time review queue items:",
+      cleared,
+    );
+  }
+}
+
+async function sendDepositCancelledReviewEmail(env, booking) {
+  if (!booking?.id || !booking?.customerEmail) {
+    return {
+      sent: false,
+      reason: "booking_or_email_missing",
+    };
+  }
 
   const emailsEnabled =
     String(env.EMAILS_ENABLED || "")
@@ -282,242 +229,69 @@ async function processReviewRequests(env) {
       .trim()
       .toLowerCase() === "true";
 
-  const list = await env.BOOKINGS_KV.list({ prefix: "review:" });
-
-  for (const key of list.keys) {
-    const data = await env.BOOKINGS_KV.get(key.name);
-    if (!data) continue;
-
-    let review;
-
-    try {
-      review = JSON.parse(data);
-    } catch {
-      await env.BOOKINGS_KV.delete(key.name);
-      continue;
-    }
-
-    if (!review.sendAt || !review.bookingId) {
-      await env.BOOKINGS_KV.delete(key.name);
-      continue;
-    }
-
-    const sendTime = new Date(review.sendAt);
-
-    if (now < sendTime) continue;
-
-    const booking = await findBookingById(env, review.bookingId);
-
-    if (!booking || !booking.customerEmail) {
-      console.log(
-        "⭐ Review skipped — booking/email missing:",
-        review.bookingId,
-      );
-      await env.BOOKINGS_KV.delete(key.name);
-      continue;
-    }
-
-    const status = String(booking.status || "").toLowerCase();
-
-    if (status === "cancelled" || booking.cancelled === true) {
-      console.log("⭐ Review skipped — booking cancelled:", booking.id);
-      await env.BOOKINGS_KV.delete(key.name);
-      continue;
-    }
-
-    const sentKey = `review_sent:${booking.id}`;
-    const alreadySent = await env.BOOKINGS_KV.get(sentKey);
-
-    if (alreadySent) {
-      console.log("⭐ Review already sent — skipping duplicate:", booking.id);
-      await env.BOOKINGS_KV.delete(key.name);
-      continue;
-    }
-
-    // If emails are disabled/migration mode is on, leave the review key in place
-    // so it can send later when emails are enabled again.
-    if (!emailsEnabled || migrationMode) {
-      console.log("⭐ Review email paused:", {
-        bookingId: booking.id,
-        emailsEnabled,
-        migrationMode,
-      });
-      continue;
-    }
-
-    try {
-      const emailHtml = buildReviewRequestEmail(booking);
-      const emailText = buildReviewRequestPlainText(booking);
-
-      await sendBookingEmail(env, {
-        to: booking.customerEmail,
-        subject: REVIEW_EMAIL_SUBJECT,
-        html: emailHtml,
-        text: emailText,
-      });
-
-      await env.BOOKINGS_KV.put(
-        sentKey,
-        JSON.stringify({
-          bookingId: booking.id,
-          customerEmail: booking.customerEmail,
-          sentAt: new Date().toISOString(),
-          reviewLink: GOOGLE_REVIEW_LINK,
-        }),
-        {
-          expirationTtl: 60 * 60 * 24 * 730, // 2 years dedupe
-        },
-      );
-
-      await env.BOOKINGS_KV.delete(key.name);
-
-      console.log("✅ Review request email sent:", booking.id);
-    } catch (err) {
-      console.error("❌ Review request email failed:", booking.id, err);
-    }
-  }
-}
-
-async function ensureReviewRequestsForRecentReturnedBookings(env) {
-  const now = Date.now();
-  const lookbackMs = REVIEW_BACKFILL_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
-  const lookaheadMs = REVIEW_BACKFILL_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000;
-
-  let checked = 0;
-  let scheduled = 0;
-  let skipped = 0;
-
-  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
-
-  for (const key of list.keys) {
-    const raw = await env.BOOKINGS_KV.get(key.name);
-    if (!raw) continue;
-
-    let bookings;
-
-    try {
-      bookings = JSON.parse(raw);
-    } catch {
-      continue;
-    }
-
-    if (!Array.isArray(bookings)) continue;
-
-    for (const booking of bookings) {
-      checked += 1;
-
-      if (!booking?.id || !booking?.customerEmail) {
-        skipped += 1;
-        continue;
-      }
-
-      const status = String(booking.status || "").trim().toLowerCase();
-
-      if (status === "cancelled" || booking.cancelled === true) {
-        skipped += 1;
-        continue;
-      }
-
-      const sendAt = getReviewSendDate(booking);
-
-      if (!sendAt || Number.isNaN(sendAt.getTime())) {
-        skipped += 1;
-        continue;
-      }
-
-      const sendAtMs = sendAt.getTime();
-
-      // Avoid accidentally emailing old imported bookings, but also schedule
-      // upcoming bookings if their review key was missed.
-      if (sendAtMs < now - lookbackMs || sendAtMs > now + lookaheadMs) {
-        skipped += 1;
-        continue;
-      }
-
-      const sentKey = `review_sent:${booking.id}`;
-      const reviewKey = `review:${booking.id}`;
-
-      const [alreadySent, alreadyQueued] = await Promise.all([
-        env.BOOKINGS_KV.get(sentKey),
-        env.BOOKINGS_KV.get(reviewKey),
-      ]);
-
-      if (alreadySent || alreadyQueued) {
-        skipped += 1;
-        continue;
-      }
-
-      await env.BOOKINGS_KV.put(
-        reviewKey,
-        JSON.stringify({
-          bookingId: booking.id,
-          sendAt: sendAt.toISOString(),
-          createdAt: new Date().toISOString(),
-          source: "auto_review_backfill",
-        }),
-        {
-          expirationTtl: 60 * 60 * 24 * 180,
-        },
-      );
-
-      scheduled += 1;
-    }
-  }
-
-  if (scheduled) {
-    console.log("⭐ Review safety net queued missing review emails:", {
-      checked,
-      scheduled,
-      skipped,
+  if (!emailsEnabled || migrationMode) {
+    console.log("⭐ Deposit-cancel review email paused:", {
+      bookingId: booking.id,
+      emailsEnabled,
+      migrationMode,
     });
+
+    return {
+      sent: false,
+      reason: "emails_disabled_or_migration_mode",
+    };
   }
 
-  return { checked, scheduled, skipped };
-}
+  const sentKey = `review_sent:${booking.id}`;
+  const alreadySent = await env.BOOKINGS_KV.get(sentKey);
 
-async function shouldRunReviewEmailJobs(env) {
-  const key = "review_jobs:last_run";
-  const now = Date.now();
+  if (alreadySent) {
+    console.log(
+      "⭐ Deposit-cancel review email already sent — skipping:",
+      booking.id,
+    );
 
-  let lastRun = 0;
-
-  try {
-    lastRun = Number(await env.BOOKINGS_KV.get(key)) || 0;
-  } catch {}
-
-  if (
-    lastRun &&
-    now - lastRun < REVIEW_BACKGROUND_THROTTLE_MINUTES * 60 * 1000
-  ) {
-    return false;
+    return {
+      sent: false,
+      reason: "already_sent",
+    };
   }
 
-  try {
-    await env.BOOKINGS_KV.put(key, String(now), {
-      expirationTtl: REVIEW_BACKGROUND_THROTTLE_MINUTES * 60 * 2,
-    });
-  } catch {}
+  const emailHtml = buildReviewRequestEmail(booking, {
+    depositCancelled: true,
+  });
 
-  return true;
-}
+  const emailText = buildReviewRequestPlainText(booking, {
+    depositCancelled: true,
+  });
 
-async function runReviewEmailJobs(env, options = {}) {
-  const force = options.force === true;
+  await sendBookingEmail(env, {
+    to: booking.customerEmail,
+    subject: DEPOSIT_CANCELLED_REVIEW_SUBJECT,
+    html: emailHtml,
+    text: emailText,
+  });
 
-  if (!force) {
-    const shouldRun = await shouldRunReviewEmailJobs(env);
+  await env.BOOKINGS_KV.put(
+    sentKey,
+    JSON.stringify({
+      bookingId: booking.id,
+      customerEmail: booking.customerEmail,
+      sentAt: new Date().toISOString(),
+      reviewLink: GOOGLE_REVIEW_LINK,
+      trigger: "deposit_cancelled",
+      subject: DEPOSIT_CANCELLED_REVIEW_SUBJECT,
+    }),
+    {
+      expirationTtl: 60 * 60 * 24 * 730, // 2 years dedupe
+    },
+  );
 
-    if (!shouldRun) {
-      return { ok: true, skipped: true, reason: "throttled" };
-    }
-  }
-
-  const queued = await ensureReviewRequestsForRecentReturnedBookings(env);
-  await processReviewRequests(env);
+  console.log("✅ Deposit-cancel review email sent:", booking.id);
 
   return {
-    ok: true,
-    queued,
+    sent: true,
+    reason: "sent",
   };
 }
 
@@ -544,10 +318,10 @@ function getReviewEmailDisplayData(booking = {}) {
   };
 }
 
-function buildReviewRequestPlainText(booking) {
+function buildReviewRequestPlainText(booking, options = {}) {
   const data = getReviewEmailDisplayData(booking);
 
-  return [
+  const lines = [
     "Equine Transport UK",
     "Part of the East Grinstead Tyre Service Group",
     "Self Drive or Driven",
@@ -556,6 +330,16 @@ function buildReviewRequestPlainText(booking) {
     "",
     `Dear ${data.firstName},`,
     "",
+  ];
+
+  if (options.depositCancelled) {
+    lines.push(
+      "Your Deposit has been cancelled.",
+      "",
+    );
+  }
+
+  lines.push(
     `Thank you for using Equine Transport UK. We hope everything went smoothly with ${data.vehicleName}.`,
     "",
     `Booking reference: ${data.bookingId}`,
@@ -571,10 +355,12 @@ function buildReviewRequestPlainText(booking) {
     "With kind regards,",
     "Koos & Avril",
     "Equine Transport UK",
-  ].join("\n");
+  );
+
+  return lines.join("\n");
 }
 
-function buildReviewRequestEmail(booking) {
+function buildReviewRequestEmail(booking, options = {}) {
   const data = getReviewEmailDisplayData(booking);
 
   const firstName = escapeHtml(data.firstName);
@@ -584,6 +370,14 @@ function buildReviewRequestEmail(booking) {
   const reviewLink = escapeHtml(data.reviewLink);
   const qrUrl = escapeHtml(data.qrUrl);
 
+  const depositCancelledNotice = options.depositCancelled
+    ? `
+                <div style="margin:0 0 20px;padding:16px 18px;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;color:#14532d;font-size:16px;line-height:1.55;font-weight:800;">
+                  Your Deposit has been cancelled.
+                </div>
+      `
+    : "";
+
   // Use a conservative table-based layout for better support in Apple Mail,
   // iCloud Mail, Gmail, Outlook and mobile clients.
   return `<!doctype html>
@@ -591,7 +385,7 @@ function buildReviewRequestEmail(booking) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Thanks for using Equine Transport UK | Please leave us a Review</title>
+    <title>Thanks for using Equine Transport UK</title>
   </head>
   <body style="margin:0;padding:0;background:#eef1f6;font-family:Arial,Helvetica,sans-serif;color:#1d2530;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#eef1f6;margin:0;padding:0;">
@@ -622,6 +416,8 @@ function buildReviewRequestEmail(booking) {
                 <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#334155;">
                   Dear ${firstName},
                 </p>
+
+                ${depositCancelledNotice}
 
                 <p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#334155;">
                   Thank you for using Equine Transport UK. We hope everything went smoothly with
@@ -704,7 +500,7 @@ function buildReviewRequestEmail(booking) {
           </table>
 
           <div style="font-size:12px;line-height:1.5;color:#94a3b8;margin-top:12px;">
-            This email was sent after your hire return time.
+            This email was sent after your deposit was cancelled.
           </div>
         </td>
       </tr>
@@ -712,6 +508,7 @@ function buildReviewRequestEmail(booking) {
   </body>
 </html>`;
 }
+
 
 function formatEmailDateTime(value) {
   if (!value) return "";
@@ -947,14 +744,6 @@ export default {
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
-    }
-
-    try {
-      // Safety net: cron should run this, but this also covers missed/missing
-      // cron triggers. It is throttled so normal traffic does not overwork KV.
-      ctx.waitUntil(runReviewEmailJobs(env));
-    } catch (err) {
-      console.warn("⚠️ Could not start review email background job:", err);
     }
 
     try {
@@ -2041,14 +1830,6 @@ export default {
         return withCors(response, corsHeaders);
       }
 
-      if (
-        request.method === "POST" &&
-        url.pathname === "/api/admin/process-review-requests"
-      ) {
-        const result = await runReviewEmailJobs(env, { force: true });
-        return withCors(json(result), corsHeaders);
-      }
-
       /* ===============================
    DVLA VERIFY TOGGLE (NEW)
 =============================== */
@@ -2757,9 +2538,45 @@ It is only a security hold.
             await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
           } catch {}
 
+          let reviewEmailSent = false;
+
+          try {
+            const reviewResult = await sendDepositCancelledReviewEmail(
+              env,
+              booking,
+            );
+
+            reviewEmailSent = reviewResult.sent === true;
+
+            try {
+              const auditKey = `audit:${booking.id}`;
+
+              let audit = [];
+
+              try {
+                audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+              } catch {}
+
+              audit.unshift({
+                type: "deposit_cancelled_review_email",
+                sent: reviewEmailSent,
+                reason: reviewResult.reason,
+                at: new Date().toISOString(),
+              });
+
+              await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+            } catch {}
+          } catch (err) {
+            console.warn(
+              "⚠️ Deposit-cancel review email failed:",
+              err.message || err,
+            );
+          }
+
           return withCors(
             json({
               ok: true,
+              reviewEmailSent,
             }),
             corsHeaders,
           );
@@ -3128,7 +2945,7 @@ It is only a security hold.
 
     ctx.waitUntil(cleanupExpiredReservations(env));
     ctx.waitUntil(processReminders(env));
-    ctx.waitUntil(runReviewEmailJobs(env, { force: true }));
+    ctx.waitUntil(processReviewRequests(env));
   },
 };
 
