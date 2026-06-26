@@ -8930,6 +8930,75 @@ Equine Transport UK`;
         return `sms:${phone}${separator}body=${encodedMessage}`;
       }
 
+      function buildSmsFriendlyLink(type, bookingId, formType = "long") {
+        const BASE = "https://www.equinetransportuk.com";
+
+        const cleanType = String(type || "").trim().toLowerCase();
+        const cleanFormType =
+          String(formType || "").trim().toLowerCase() === "short"
+            ? "short"
+            : "long";
+
+        const cleanBookingId = String(bookingId || "").trim();
+
+        if (!cleanBookingId) return BASE;
+
+        let token = "";
+
+        if (cleanType === "form") {
+          token = `form-${cleanFormType}-${cleanBookingId}`;
+        } else if (cleanType === "deposit") {
+          token = `deposit-${cleanBookingId}`;
+        } else if (cleanType === "outstanding") {
+          token = `balance-${cleanBookingId}`;
+        } else {
+          token = `booking-${cleanBookingId}`;
+        }
+
+        return `${BASE}/go.html?to=${encodeURIComponent(token)}`;
+      }
+
+      async function getSmsSafeBookingLinkData(bookingId, fallbackFormType) {
+        const fallback = {
+          bookingId: String(bookingId || "").trim(),
+          formType: String(fallbackFormType || "long").trim().toLowerCase(),
+        };
+
+        if (!fallback.bookingId) return fallback;
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/bookings/by-id?bookingId=${encodeURIComponent(
+              fallback.bookingId,
+            )}`,
+            { cache: "no-store" },
+          );
+
+          if (!res.ok) return fallback;
+
+          const data = await res.json();
+          const booking = data?.booking || {};
+
+          return {
+            bookingId:
+              booking.customerFacingBookingId ||
+              booking.customer_facing_booking_id ||
+              booking.publicBookingId ||
+              booking.public_booking_id ||
+              booking.id ||
+              fallback.bookingId,
+            formType:
+              booking.requiredFormType ||
+              booking.required_form_type ||
+              booking.formType ||
+              fallback.formType,
+          };
+        } catch (err) {
+          console.warn("Could not refresh SMS-safe booking link:", err);
+          return fallback;
+        }
+      }
+
       function getBookingNotes(booking) {
         return String(
           booking?.customerNotes ||
@@ -15885,11 +15954,24 @@ ${mobileOutstandingText}
           const name = smsBtn.dataset.name || "Customer";
           const formType = smsBtn.dataset.formtype || "long";
 
-          const BASE = "https://www.equinetransportuk.com";
+          const smsLinkData = await getSmsSafeBookingLinkData(
+            bookingId,
+            formType,
+          );
 
-          const formLink = `${BASE}/forms/${formType}-form.html?bookingId=${bookingId}`;
-          const depositLink = `${BASE}/pay-deposit.html?bookingId=${bookingId}`;
-          const outstandingLink = `${BASE}/pay-outstanding.html?bookingId=${bookingId}`;
+          const smsBookingId = smsLinkData.bookingId || bookingId;
+          const smsFormType = smsLinkData.formType || formType;
+
+          const formLink = buildSmsFriendlyLink(
+            "form",
+            smsBookingId,
+            smsFormType,
+          );
+          const depositLink = buildSmsFriendlyLink("deposit", smsBookingId);
+          const outstandingLink = buildSmsFriendlyLink(
+            "outstanding",
+            smsBookingId,
+          );
 
           let message = "";
 
@@ -15909,9 +15991,13 @@ ${mobileOutstandingText}
           if (type === "form") {
             message = `Dear ${name},
 
-Please complete your ${formType.toUpperCase()} form before your hire:
+Please complete your ${String(smsFormType).toUpperCase()} form before your hire.
+
+Tap this link:
 
 ${formLink}
+
+If the link is not clickable, please copy and paste it into Safari.
 
 Kind regards,
 Koos & Avril
@@ -15921,9 +16007,13 @@ Equine Transport UK`;
           if (type === "deposit") {
             message = `Dear ${name},
 
-Please secure your £200 deposit here:
+Please secure your £200 deposit.
+
+Tap this link:
 
 ${depositLink}
+
+If the link is not clickable, please copy and paste it into Safari.
 
 Kind regards,
 Koos & Avril
@@ -15933,9 +16023,13 @@ Equine Transport UK`;
           if (type === "outstanding") {
             message = `Dear ${name},
 
-Your outstanding balance can be paid here:
+Your outstanding balance can be paid here.
+
+Tap this link:
 
 ${outstandingLink}
+
+If the link is not clickable, please copy and paste it into Safari.
 
 Kind regards,
 Koos & Avril
