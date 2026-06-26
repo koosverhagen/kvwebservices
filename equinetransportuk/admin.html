@@ -1546,6 +1546,25 @@
         background: #f59e0b;
       }
 
+      .mobile-booking-card.cancelled::before {
+        width: 6px;
+        background: #ef4444;
+      }
+
+      .mobile-cancelled-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: fit-content;
+        margin-top: 8px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: #fee2e2;
+        color: #991b1b;
+        font-size: 14px;
+        font-weight: 950;
+      }
+
       /* HEADER */
 
       .mobile-booking-top {
@@ -10649,13 +10668,21 @@ Equine Transport UK`;
 
           const paymentStatus = booking.paymentStatus || "";
 
+          const isCancelled =
+            String(booking.status || "").trim().toLowerCase() ===
+              "cancelled" ||
+            booking.cancelled === true ||
+            !!booking.cancelledAt;
+
           mobileCard.className =
             "mobile-booking-card " +
-            (paymentStatus.includes("fully")
-              ? ""
-              : paymentStatus.includes("deposit")
-                ? "deposit"
-                : "unpaid");
+            (isCancelled
+              ? "cancelled"
+              : paymentStatus.includes("fully")
+                ? ""
+                : paymentStatus.includes("deposit")
+                  ? "deposit"
+                  : "unpaid");
 
           const pickupDate = formatDateTime(booking.pickupAt);
 
@@ -10905,6 +10932,12 @@ Equine Transport UK`;
                   ${escapeHtml(vehicleName)}
                 </div>
 
+                ${
+                  isCancelled
+                    ? '<div class="mobile-cancelled-badge">Cancelled booking</div>'
+                    : ""
+                }
+
               </div>
 
                            <div
@@ -10915,6 +10948,12 @@ Equine Transport UK`;
                   align-items: flex-end;
                 "
               >
+                ${
+                  isCancelled
+                    ? '<span class="pill bad">Cancelled Booking</span>'
+                    : ""
+                }
+
                 ${
                   formDone
                     ? isPaperForm(booking)
@@ -11102,9 +11141,6 @@ ${notesBox}
       : "Handover pending"
   }
 </span>
-
-  ${mobileFormText}
-  ${mobileFormEmail}
 
  ${mobileDepositText}
   ${mobileDepositEmail}
