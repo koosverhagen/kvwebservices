@@ -12,6 +12,14 @@ const GOOGLE_REVIEW_QR_URL =
 // Send review request this many hours after return.
 // Use 0 for exactly at return time, 1 gives a nicer small delay.
 const REVIEW_EMAIL_DELAY_HOURS = 1;
+const REVIEW_EMAIL_SUBJECT =
+  "Thanks for using Equine Transport UK | Please leave us a Review";
+
+// Safety net: if cron triggers are missing or a review key was not created,
+// the Worker can still find recent returned bookings and send/retry reviews.
+const REVIEW_BACKFILL_LOOKBACK_DAYS = 21;
+const REVIEW_BACKFILL_LOOKAHEAD_DAYS = 120;
+const REVIEW_BACKGROUND_THROTTLE_MINUTES = 15;
 
 /* ===============================
    RESERVATION CLEANUP
@@ -176,31 +184,73 @@ async function processReminders(env) {
    Sent after lorry return time
 =============================== */
 
-async function scheduleReviewRequest(env, booking) {
-  if (!booking?.id || !booking?.dropoffAt) return;
+function getReviewDropoffDate(booking = {}) {
+  const value =
+    booking.dropoffAt ||
+    booking.dropoff_at ||
+    booking.dropoffAtLocal ||
+    booking.dropoff_at_local ||
+    booking.returnAt ||
+    booking.return_at ||
+    "";
 
-  const dropoffDate = new Date(booking.dropoffAt);
+  if (!value) return null;
 
-  if (Number.isNaN(dropoffDate.getTime())) return;
+  const date = new Date(value);
 
-  const sendAt = new Date(
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date;
+}
+
+function getReviewSendDate(booking = {}) {
+  const dropoffDate = getReviewDropoffDate(booking);
+
+  if (!dropoffDate) return null;
+
+  return new Date(
     dropoffDate.getTime() + REVIEW_EMAIL_DELAY_HOURS * 60 * 60 * 1000,
   );
+}
 
-  // Do not schedule old/past bookings here.
-  // Existing bookings can be backfilled separately if needed.
-  if (sendAt.getTime() <= Date.now()) {
-    console.log(
-      "⭐ Review request not scheduled — return time already passed",
-      {
-        bookingId: booking.id,
-        sendAt: sendAt.toISOString(),
-      },
-    );
-    return;
+async function scheduleReviewRequest(env, booking) {
+  if (!booking?.id) return { scheduled: false, reason: "missing_booking_id" };
+
+  const sendAt = getReviewSendDate(booking);
+
+  if (!sendAt || Number.isNaN(sendAt.getTime())) {
+    console.log("⭐ Review request not scheduled — return time missing/invalid", {
+      bookingId: booking.id,
+      dropoffAt: booking.dropoffAt,
+      dropoffAtLocal: booking.dropoffAtLocal,
+    });
+
+    return { scheduled: false, reason: "missing_return_time" };
+  }
+
+  const status = String(booking.status || "").trim().toLowerCase();
+
+  if (status === "cancelled" || booking.cancelled === true) {
+    console.log("⭐ Review request not scheduled — booking cancelled", {
+      bookingId: booking.id,
+    });
+
+    return { scheduled: false, reason: "cancelled" };
+  }
+
+  const sentKey = `review_sent:${booking.id}`;
+  const alreadySent = await env.BOOKINGS_KV.get(sentKey);
+
+  if (alreadySent) {
+    return { scheduled: false, reason: "already_sent" };
   }
 
   const reviewKey = `review:${booking.id}`;
+  const existing = await env.BOOKINGS_KV.get(reviewKey);
+
+  if (existing) {
+    return { scheduled: false, reason: "already_scheduled" };
+  }
 
   await env.BOOKINGS_KV.put(
     reviewKey,
@@ -215,6 +265,8 @@ async function scheduleReviewRequest(env, booking) {
   );
 
   console.log("⭐ Review request scheduled:", reviewKey, sendAt.toISOString());
+
+  return { scheduled: true, sendAt: sendAt.toISOString() };
 }
 
 async function processReviewRequests(env) {
@@ -299,7 +351,7 @@ async function processReviewRequests(env) {
 
       await sendBookingEmail(env, {
         to: booking.customerEmail,
-        subject: "Thank you for using Equine Transport UK",
+        subject: REVIEW_EMAIL_SUBJECT,
         html: emailHtml,
         text: emailText,
       });
@@ -324,6 +376,149 @@ async function processReviewRequests(env) {
       console.error("❌ Review request email failed:", booking.id, err);
     }
   }
+}
+
+async function ensureReviewRequestsForRecentReturnedBookings(env) {
+  const now = Date.now();
+  const lookbackMs = REVIEW_BACKFILL_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+  const lookaheadMs = REVIEW_BACKFILL_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000;
+
+  let checked = 0;
+  let scheduled = 0;
+  let skipped = 0;
+
+  const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+
+  for (const key of list.keys) {
+    const raw = await env.BOOKINGS_KV.get(key.name);
+    if (!raw) continue;
+
+    let bookings;
+
+    try {
+      bookings = JSON.parse(raw);
+    } catch {
+      continue;
+    }
+
+    if (!Array.isArray(bookings)) continue;
+
+    for (const booking of bookings) {
+      checked += 1;
+
+      if (!booking?.id || !booking?.customerEmail) {
+        skipped += 1;
+        continue;
+      }
+
+      const status = String(booking.status || "").trim().toLowerCase();
+
+      if (status === "cancelled" || booking.cancelled === true) {
+        skipped += 1;
+        continue;
+      }
+
+      const sendAt = getReviewSendDate(booking);
+
+      if (!sendAt || Number.isNaN(sendAt.getTime())) {
+        skipped += 1;
+        continue;
+      }
+
+      const sendAtMs = sendAt.getTime();
+
+      // Avoid accidentally emailing old imported bookings, but also schedule
+      // upcoming bookings if their review key was missed.
+      if (sendAtMs < now - lookbackMs || sendAtMs > now + lookaheadMs) {
+        skipped += 1;
+        continue;
+      }
+
+      const sentKey = `review_sent:${booking.id}`;
+      const reviewKey = `review:${booking.id}`;
+
+      const [alreadySent, alreadyQueued] = await Promise.all([
+        env.BOOKINGS_KV.get(sentKey),
+        env.BOOKINGS_KV.get(reviewKey),
+      ]);
+
+      if (alreadySent || alreadyQueued) {
+        skipped += 1;
+        continue;
+      }
+
+      await env.BOOKINGS_KV.put(
+        reviewKey,
+        JSON.stringify({
+          bookingId: booking.id,
+          sendAt: sendAt.toISOString(),
+          createdAt: new Date().toISOString(),
+          source: "auto_review_backfill",
+        }),
+        {
+          expirationTtl: 60 * 60 * 24 * 180,
+        },
+      );
+
+      scheduled += 1;
+    }
+  }
+
+  if (scheduled) {
+    console.log("⭐ Review safety net queued missing review emails:", {
+      checked,
+      scheduled,
+      skipped,
+    });
+  }
+
+  return { checked, scheduled, skipped };
+}
+
+async function shouldRunReviewEmailJobs(env) {
+  const key = "review_jobs:last_run";
+  const now = Date.now();
+
+  let lastRun = 0;
+
+  try {
+    lastRun = Number(await env.BOOKINGS_KV.get(key)) || 0;
+  } catch {}
+
+  if (
+    lastRun &&
+    now - lastRun < REVIEW_BACKGROUND_THROTTLE_MINUTES * 60 * 1000
+  ) {
+    return false;
+  }
+
+  try {
+    await env.BOOKINGS_KV.put(key, String(now), {
+      expirationTtl: REVIEW_BACKGROUND_THROTTLE_MINUTES * 60 * 2,
+    });
+  } catch {}
+
+  return true;
+}
+
+async function runReviewEmailJobs(env, options = {}) {
+  const force = options.force === true;
+
+  if (!force) {
+    const shouldRun = await shouldRunReviewEmailJobs(env);
+
+    if (!shouldRun) {
+      return { ok: true, skipped: true, reason: "throttled" };
+    }
+  }
+
+  const queued = await ensureReviewRequestsForRecentReturnedBookings(env);
+  await processReviewRequests(env);
+
+  return {
+    ok: true,
+    queued,
+  };
 }
 
 function getReviewEmailDisplayData(booking = {}) {
@@ -396,7 +591,7 @@ function buildReviewRequestEmail(booking) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Thank you for using Equine Transport UK</title>
+    <title>Thanks for using Equine Transport UK | Please leave us a Review</title>
   </head>
   <body style="margin:0;padding:0;background:#eef1f6;font-family:Arial,Helvetica,sans-serif;color:#1d2530;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#eef1f6;margin:0;padding:0;">
@@ -752,6 +947,14 @@ export default {
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    try {
+      // Safety net: cron should run this, but this also covers missed/missing
+      // cron triggers. It is throttled so normal traffic does not overwork KV.
+      ctx.waitUntil(runReviewEmailJobs(env));
+    } catch (err) {
+      console.warn("⚠️ Could not start review email background job:", err);
     }
 
     try {
@@ -1838,6 +2041,14 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/process-review-requests"
+      ) {
+        const result = await runReviewEmailJobs(env, { force: true });
+        return withCors(json(result), corsHeaders);
+      }
+
       /* ===============================
    DVLA VERIFY TOGGLE (NEW)
 =============================== */
@@ -2917,7 +3128,7 @@ It is only a security hold.
 
     ctx.waitUntil(cleanupExpiredReservations(env));
     ctx.waitUntil(processReminders(env));
-    ctx.waitUntil(processReviewRequests(env));
+    ctx.waitUntil(runReviewEmailJobs(env, { force: true }));
   },
 };
 
