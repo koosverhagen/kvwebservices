@@ -1550,21 +1550,6 @@
         width: 6px;
         background: #ef4444;
       }
-
-      .mobile-cancelled-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: fit-content;
-        margin-top: 8px;
-        padding: 7px 12px;
-        border-radius: 999px;
-        background: #fee2e2;
-        color: #991b1b;
-        font-size: 14px;
-        font-weight: 950;
-      }
-
       /* HEADER */
 
       .mobile-booking-top {
@@ -10932,12 +10917,6 @@ Equine Transport UK`;
                   ${escapeHtml(vehicleName)}
                 </div>
 
-                ${
-                  isCancelled
-                    ? '<div class="mobile-cancelled-badge">Cancelled booking</div>'
-                    : ""
-                }
-
               </div>
 
                            <div
@@ -11113,9 +11092,6 @@ ${notesBox}
       >
         ✅ Paper Received
       </button>
-
-      ${mobileFormText}
-      ${mobileFormEmail}
     `
   }
 
