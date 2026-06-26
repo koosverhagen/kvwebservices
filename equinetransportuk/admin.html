@@ -349,6 +349,105 @@
         text-decoration: underline;
       }
 
+      .resend-confirmation-btn {
+        appearance: none;
+        -webkit-appearance: none;
+        width: fit-content;
+        max-width: 100%;
+        min-height: 30px;
+        margin-top: 4px;
+        padding: 6px 10px;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 11px;
+        font-weight: 900;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .resend-confirmation-btn:hover {
+        background: #dbeafe;
+        transform: translateY(-1px);
+      }
+
+      .resend-confirmation-panel {
+        margin-top: 8px;
+        padding: 10px;
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        background: #f8fbff;
+      }
+
+      .resend-confirmation-panel.hidden {
+        display: none !important;
+      }
+
+      .resend-confirmation-panel label {
+        display: block;
+        margin-bottom: 6px;
+        color: #475569;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .resend-confirmation-panel input {
+        width: 100%;
+        min-height: 38px;
+        padding: 8px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+
+      .resend-confirmation-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .resend-confirmation-actions button {
+        min-height: 34px;
+        padding: 7px 10px;
+        border: none;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .resend-confirmation-send {
+        background: #1f6feb;
+        color: #ffffff;
+      }
+
+      .resend-confirmation-cancel {
+        background: #e5e7eb;
+        color: #111827;
+      }
+
+      .resend-confirmation-status {
+        margin-top: 7px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.3;
+      }
+
+      @media (max-width: 768px) {
+        .resend-confirmation-btn {
+          min-height: 36px;
+          margin-top: 10px;
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+
+        .resend-confirmation-panel {
+          margin-top: 10px;
+        }
+      }
+
       /* ===============================
    TEXT
 =============================== */
@@ -8303,6 +8402,65 @@ Equine Transport UK`;
   `;
       }
 
+      function normaliseAdminEmail(value) {
+        return String(value || "")
+          .trim()
+          .toLowerCase();
+      }
+
+      function buildResendConfirmationPanel(booking, options = {}) {
+        const bookingId = String(booking?.id || "").trim();
+        const email = normaliseAdminEmail(booking?.customerEmail || "");
+        const buttonText = options.compact ? "Resend Confirmation" : "Resend Confirmation";
+
+        if (!bookingId) return "";
+
+        return `
+          <button
+            class="resend-confirmation-btn js-open-confirmation-resend"
+            type="button"
+            data-id="${escapeHtml(bookingId)}"
+            data-email="${escapeHtml(email)}"
+          >
+            ${escapeHtml(buttonText)}
+          </button>
+
+          <div class="resend-confirmation-panel hidden">
+            <label>Send booking confirmation to:</label>
+            <input
+              class="resend-confirmation-email"
+              type="email"
+              inputmode="email"
+              autocomplete="email"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              value="${escapeHtml(email)}"
+              placeholder="customer@email.com"
+            />
+
+            <div class="resend-confirmation-actions">
+              <button
+                class="resend-confirmation-send js-send-confirmation-resend"
+                type="button"
+                data-id="${escapeHtml(bookingId)}"
+              >
+                Send
+              </button>
+
+              <button
+                class="resend-confirmation-cancel js-cancel-confirmation-resend"
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div class="resend-confirmation-status"></div>
+          </div>
+        `;
+      }
+
       function pad(n) {
         return String(n).padStart(2, "0");
       }
@@ -10448,6 +10606,7 @@ Equine Transport UK`;
       ${escapeHtml(getCustomerName(booking))}
       ${isCancelled ? '<span class="badge-cancelled">Cancelled</span>' : ""}
     </div>
+    ${buildResendConfirmationPanel(booking)}
     ${buildContactButtons(booking)}
     ${notesHtml}
   </div>
@@ -10916,6 +11075,8 @@ Equine Transport UK`;
                   ·
                   ${escapeHtml(vehicleName)}
                 </div>
+
+                ${buildResendConfirmationPanel(booking, { compact: true })}
 
               </div>
 
@@ -16051,6 +16212,162 @@ Equine Transport UK`;
           const smsUrl = buildSmsUrl(phone, message);
 
           window.location.href = smsUrl;
+
+          return;
+        }
+
+        /* ===============================
+         📧 RESEND BOOKING CONFIRMATION
+      =============================== */
+
+        const openConfirmationResendBtn = e.target.closest(
+          ".js-open-confirmation-resend",
+        );
+
+        if (openConfirmationResendBtn) {
+          e.preventDefault();
+
+          const wrapper =
+            openConfirmationResendBtn.closest(".customer-block") ||
+            openConfirmationResendBtn.closest(".mobile-booking-top") ||
+            openConfirmationResendBtn.closest(".mobile-booking-card") ||
+            openConfirmationResendBtn.parentElement;
+
+          const panel = wrapper?.querySelector(".resend-confirmation-panel");
+
+          if (!panel) return;
+
+          document
+            .querySelectorAll(".resend-confirmation-panel")
+            .forEach((otherPanel) => {
+              if (otherPanel !== panel) {
+                otherPanel.classList.add("hidden");
+              }
+            });
+
+          panel.classList.toggle("hidden");
+
+          const input = panel.querySelector(".resend-confirmation-email");
+          const status = panel.querySelector(".resend-confirmation-status");
+
+          if (status) status.textContent = "";
+
+          if (!panel.classList.contains("hidden") && input) {
+            input.value = normaliseAdminEmail(
+              input.value || openConfirmationResendBtn.dataset.email || "",
+            );
+
+            setTimeout(() => {
+              input.focus();
+              input.select();
+            }, 60);
+          }
+
+          return;
+        }
+
+        const cancelConfirmationResendBtn = e.target.closest(
+          ".js-cancel-confirmation-resend",
+        );
+
+        if (cancelConfirmationResendBtn) {
+          e.preventDefault();
+
+          const panel = cancelConfirmationResendBtn.closest(
+            ".resend-confirmation-panel",
+          );
+
+          panel?.classList.add("hidden");
+
+          return;
+        }
+
+        const sendConfirmationResendBtn = e.target.closest(
+          ".js-send-confirmation-resend",
+        );
+
+        if (sendConfirmationResendBtn) {
+          e.preventDefault();
+
+          const panel = sendConfirmationResendBtn.closest(
+            ".resend-confirmation-panel",
+          );
+
+          const input = panel?.querySelector(".resend-confirmation-email");
+          const status = panel?.querySelector(".resend-confirmation-status");
+
+          const bookingId = sendConfirmationResendBtn.dataset.id || "";
+          const email = normaliseAdminEmail(input?.value || "");
+
+          if (input) input.value = email;
+
+          if (!bookingId) {
+            alert("Booking ID missing.");
+            return;
+          }
+
+          if (!email || !email.includes("@")) {
+            alert("Please enter a valid email address.");
+            input?.focus();
+            return;
+          }
+
+          const originalText = sendConfirmationResendBtn.textContent;
+
+          sendConfirmationResendBtn.disabled = true;
+          sendConfirmationResendBtn.textContent = "Sending...";
+
+          if (status) {
+            status.textContent = `Sending to ${email}...`;
+            status.style.color = "#64748b";
+          }
+
+          try {
+            const res = await fetch(
+              `${API_BASE}/api/admin/resend-confirmation-email`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  bookingId,
+                  email,
+                }),
+              },
+            );
+
+            const data = await res.json();
+
+            if (!res.ok || !data.ok) {
+              throw new Error(data.error || data.detail || "Failed to send");
+            }
+
+            if (status) {
+              status.textContent = `Sent ✓ to ${data.to || email}`;
+              status.style.color = "#137a3d";
+            }
+
+            sendConfirmationResendBtn.textContent = "Sent ✓";
+
+            setTimeout(() => {
+              panel?.classList.add("hidden");
+              sendConfirmationResendBtn.disabled = false;
+              sendConfirmationResendBtn.textContent = originalText || "Send";
+            }, 1800);
+          } catch (err) {
+            console.error(err);
+
+            if (status) {
+              status.textContent = err.message || "Failed to send.";
+              status.style.color = "#b42318";
+            } else {
+              alert(err.message || "Failed to send.");
+            }
+
+            sendConfirmationResendBtn.disabled = false;
+            sendConfirmationResendBtn.textContent = originalText || "Send";
+          }
 
           return;
         }

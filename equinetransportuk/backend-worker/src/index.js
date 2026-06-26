@@ -13736,7 +13736,12 @@ async function sendBookingConfirmationEmailForBooking(env, booking, options = {}
   let linkedBooking = await enrichBookingLinks(env, booking);
   linkedBooking = await refreshCustomerSafeBookingLinks(env, linkedBooking);
 
-  const customerEmail = normaliseCustomerEmail(linkedBooking.customerEmail);
+  const overrideEmail = normaliseCustomerEmail(
+    options.email || options.toEmail || options.targetEmail,
+  );
+
+  const customerEmail =
+    overrideEmail || normaliseCustomerEmail(linkedBooking.customerEmail);
 
   if (!customerEmail) {
     throw new Error("No customer email");
@@ -13838,6 +13843,7 @@ async function handleAdminResendConfirmationEmail(request, env) {
 
     const result = await sendBookingConfirmationEmailForBooking(env, booking, {
       force: true,
+      email,
     });
 
     return json({
