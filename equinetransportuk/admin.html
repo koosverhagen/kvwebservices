@@ -637,6 +637,10 @@
         color: var(--accent);
       }
 
+      .contact-review {
+        color: #92400e;
+      }
+
       /* ===============================
    PILLS
 =============================== */
@@ -1889,6 +1893,12 @@
         color: #1d4ed8;
       }
 
+      .mobile-action-btn.review {
+        grid-column: 1 / -1;
+        background: #fef3c7;
+        color: #92400e;
+      }
+
       /* EXPAND */
 
       .mobile-expand {
@@ -2554,6 +2564,12 @@
           background: #dbeafe !important;
           color: #1d4ed8 !important;
           border-color: #bfdbfe !important;
+        }
+
+        .contact-review {
+          background: #fef3c7 !important;
+          color: #92400e !important;
+          border-color: #fde68a !important;
         }
 
         /* Shared button/pill sizing */
@@ -7781,6 +7797,7 @@
 
     <script>
       const API_BASE = "https://equine-bookings-api.kverhagen.workers.dev";
+      const GOOGLE_REVIEW_LINK = "https://g.page/r/CUTVuCXkntpdEBM/review";
 
       /* ===============================
          ADMIN CALENDAR STATE
@@ -8596,6 +8613,21 @@ Equine Transport UK`;
          </button>`
             : "";
 
+        const reviewTextBtn =
+          smsPhone && smsPhone.length >= 10
+            ? `<button
+           class="contact-btn contact-review js-sms"
+           type="button"
+           data-phone="${escapeHtml(smsPhone)}"
+           data-type="review"
+           data-name="${escapeHtml(firstName)}"
+           data-id="${escapeHtml(bookingId)}"
+           title="Text review request to ${escapeHtml(formatUKDisplay(phone))}"
+         >
+           <span>⭐</span>Review
+         </button>`
+            : "";
+
         const phoneBtn = phone
           ? `<a
          href="tel:${escapeHtml(phone)}"
@@ -8621,6 +8653,7 @@ Equine Transport UK`;
       ${phoneBtn}
       ${textBtn}
       ${emailBtn}
+      ${reviewTextBtn}
     </div>
   `;
       }
@@ -11352,6 +11385,21 @@ Equine Transport UK`;
 >
   ✉️ Email
 </button>
+
+  ${
+    phone
+      ? `<button
+          class="mobile-action-btn review js-sms"
+          type="button"
+          data-phone="${escapeHtml(phone)}"
+          data-type="review"
+          data-name="${escapeHtml(firstName)}"
+          data-id="${escapeHtml(bookingId)}"
+        >
+          ⭐ Review Text
+        </button>`
+      : ""
+  }
 
 </div>
 
@@ -16404,6 +16452,27 @@ If the link is not clickable, please copy and paste it into Safari.
 Kind regards,
 Koos & Avril
 Equine Transport UK`;
+          }
+
+          if (type === "review") {
+            message = `Dear ${name},
+
+Thank you for using Equine Transport UK.
+
+If you were happy with the service, please could you leave us a Google review? It really helps our family business.
+
+Tap this link:
+
+${GOOGLE_REVIEW_LINK}
+
+Kind regards,
+Koos & Avril
+Equine Transport UK`;
+          }
+
+          if (!message) {
+            alert("Text message template missing.");
+            return;
           }
 
           const smsUrl = buildSmsUrl(phone, message);
