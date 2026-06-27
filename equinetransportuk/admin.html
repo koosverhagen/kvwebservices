@@ -10589,6 +10589,11 @@ Equine Transport UK`;
               return getBookingCreatedTime(b) - getBookingCreatedTime(a);
             }
 
+            // ✅ Past bookings = latest hire first, down to oldest
+            if (mode === "past") {
+              return getBookingPickupTime(b) - getBookingPickupTime(a);
+            }
+
             // ✅ Other searches = hire/pickup date, oldest first
             return getBookingPickupTime(a) - getBookingPickupTime(b);
           });
@@ -10779,6 +10784,10 @@ Equine Transport UK`;
         const sortFn = (a, b) =>
           new Date(a.pickupAt || 0).getTime() -
           new Date(b.pickupAt || 0).getTime();
+
+        const sortDescFn = (a, b) =>
+          new Date(b.pickupAt || 0).getTime() -
+          new Date(a.pickupAt || 0).getTime();
 
         inProgress.sort(sortFn);
         today.sort(sortFn);
@@ -10989,13 +10998,27 @@ Equine Transport UK`;
 
         // 📆 WEEKS (ONLY IF BOOKINGS EXIST)
         Object.keys(byWeek)
-          .sort((a, b) => new Date(a.split("_")[0]) - new Date(b.split("_")[0]))
+          .sort((a, b) => {
+            const aTime = new Date(a.split("_")[0]).getTime();
+            const bTime = new Date(b.split("_")[0]).getTime();
+
+            // ✅ Past bookings should show latest week first.
+            if (mode === "past") {
+              return bTime - aTime;
+            }
+
+            return aTime - bTime;
+          })
           .forEach((key) => {
+            const sectionBookings = byWeek[key].sort(
+              mode === "past" ? sortDescFn : sortFn,
+            );
+
             html += `
             <tr class="section-header">
               <td colspan="6">📆 ${formatWeekHeader(key)}</td>
             </tr>
-            ${byWeek[key].sort(sortFn).map(renderRow).join("")}
+            ${sectionBookings.map(renderRow).join("")}
           `;
           });
 
