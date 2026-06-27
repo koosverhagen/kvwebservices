@@ -7149,39 +7149,45 @@ async function sendAdminBookingLinksEmail(env, booking) {
     return false;
   }
 
+  // ✅ Admin-created bookings must use the same customer-safe link builder as
+  // the resend-confirmation flow. enrichBookingLinks() returns a new linked
+  // booking object, so do not rely on the original object being mutated.
+  let linkedBooking = await enrichBookingLinks(env, booking);
+  linkedBooking = await refreshCustomerSafeBookingLinks(env, linkedBooking);
+
   const emailHtml = buildModernEmail({
-    title: "Equine Transport UK – Booking Links",
-    customerName: booking.customerName,
+    title: "Equine Transport UK – Booking Confirmation",
+    customerName: linkedBooking.customerName,
     booking: {
-      id: booking.id,
-      vehicle: booking.vehicleSnapshot?.name || "Horsebox Hire",
-      from: booking.pickupAtLocal,
-      to: booking.dropoffAtLocal,
-      email: booking.customerEmail,
-      mobile: booking.customerMobile,
-      paid: 0,
-      outstanding: booking.outstandingAmount,
-      total: booking.hireTotal,
-      formType: booking.requiredFormType || booking.formType,
+      id: linkedBooking.id,
+      vehicle: linkedBooking.vehicleSnapshot?.name || "Horsebox Hire",
+      from: linkedBooking.pickupAtLocal,
+      to: linkedBooking.dropoffAtLocal,
+      email: linkedBooking.customerEmail,
+      mobile: linkedBooking.customerMobile,
+      paid: linkedBooking.confirmationFee || linkedBooking.paidNow || 0,
+      outstanding: linkedBooking.outstandingAmount,
+      total: linkedBooking.hireTotal || linkedBooking.priceTotal || 0,
+      formType: linkedBooking.requiredFormType || linkedBooking.formType,
       formCompleted:
-        booking.formCompleted === true ||
-        booking.form_completed === 1 ||
-        booking.paperFormReceived === true ||
-        booking.formSource === "paper",
-      depositPaid: booking.depositPaid,
+        linkedBooking.formCompleted === true ||
+        linkedBooking.form_completed === 1 ||
+        linkedBooking.paperFormReceived === true ||
+        linkedBooking.formSource === "paper",
+      depositPaid: linkedBooking.depositPaid,
     },
-    formLink: booking.requiredFormLink,
-    depositLink: booking.depositLink,
-    outstandingLink: booking.outstandingLink,
+    formLink: linkedBooking.requiredFormLink,
+    depositLink: linkedBooking.depositLink,
+    outstandingLink: linkedBooking.outstandingLink,
   });
 
   await sendBookingEmail(env, {
-    to: booking.customerEmail,
-    subject: "Your Equine Transport UK booking links",
+    to: linkedBooking.customerEmail,
+    subject: "Your Equine Transport UK booking is confirmed",
     html: emailHtml,
   });
 
-  console.log("📧 Admin booking links email sent:", booking.id);
+  console.log("📧 Admin booking confirmation email sent:", linkedBooking.id);
 
   return true;
 }
@@ -7495,7 +7501,9 @@ async function handleAdminBookingUpdate(request, env) {
         console.warn("⚠️ Customer stats update failed:", err);
       }
 
-      await enrichBookingLinks(env, booking);
+      // ✅ enrichBookingLinks() returns a linked copy; assign it back so the
+      // auto confirmation email and saved KV booking both contain real links.
+      Object.assign(booking, await enrichBookingLinks(env, booking));
 
       await upsertBookingInKv(env, booking);
 
