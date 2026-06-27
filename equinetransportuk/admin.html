@@ -641,6 +641,24 @@
         color: #92400e;
       }
 
+      .admin-booking-card-target {
+        outline: 4px solid rgba(31, 111, 235, 0.75) !important;
+        outline-offset: 3px !important;
+      }
+
+      .bookings-table tbody tr.admin-booking-card-target td {
+        border-color: #1f6feb !important;
+        background: #eff6ff !important;
+        box-shadow: inset 0 0 0 2px rgba(31, 111, 235, 0.18) !important;
+      }
+
+      .mobile-booking-card.admin-booking-card-target {
+        border-color: #1f6feb !important;
+        box-shadow:
+          0 0 0 4px rgba(31, 111, 235, 0.18),
+          0 18px 44px rgba(15, 23, 42, 0.18) !important;
+      }
+
       /* ===============================
    PILLS
 =============================== */
@@ -10867,11 +10885,14 @@ Equine Transport UK`;
           const dvlaCell = dvlaCellHtml(booking);
 
           return `
-      <tr class="
-        ${isUrgentBooking(booking) ? "urgent-booking" : ""}
-        ${returnsToday ? "returns-today" : ""}
-        ${isCancelled ? "cancelled-booking" : ""}
-      ">
+      <tr
+        class="
+          ${isUrgentBooking(booking) ? "urgent-booking" : ""}
+          ${returnsToday ? "returns-today" : ""}
+          ${isCancelled ? "cancelled-booking" : ""}
+        "
+        data-booking-card-id="${escapeHtml(booking.id || "")}"
+      >
               <td data-label="Customer">${customerCell}</td>
               <td data-label="Vehicle">${vehicleCell}</td>
               <td data-label="Hire">${hireCell}</td>
@@ -11089,6 +11110,8 @@ Equine Transport UK`;
           const ref = shortRef(booking.id);
 
           const bookingId = booking.id || "";
+
+          mobileCard.dataset.bookingCardId = String(bookingId || "");
 
           const bookingNotes = getBookingNotes(booking);
 
@@ -12307,18 +12330,7 @@ ${mobileOutstandingText}
                   return;
                 }
 
-                /* Keep editable even if outside current loaded range */
-                const existsInAllBookings = allBookings.some(
-                  (b) => String(b.id) === String(booking.id),
-                );
-
-                if (!existsInAllBookings) {
-                  allBookings.push(booking);
-                }
-
-                closeCustomerModal();
-
-                openEditBooking(booking);
+                showBookingCardFromCustomerHistory(booking);
               });
             });
         } catch (err) {
@@ -17308,6 +17320,154 @@ Equine Transport UK`;
           top: Math.max(0, y),
           behavior: "smooth",
         });
+      }
+
+      function getBookingDateInputValue(booking) {
+        const raw =
+          booking?.pickupAtLocal ||
+          booking?.pickupAt ||
+          booking?.pickupDate ||
+          "";
+
+        if (!raw) return "";
+
+        const value = String(raw);
+
+        const directDate = value.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (directDate) return directDate[1];
+
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return "";
+
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        const day = String(parsed.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+      }
+
+      function getBookingListModeForBooking(booking) {
+        const pickupTime = getBookingPickupTime(booking);
+        const dropoffTime = new Date(
+          booking?.dropoffAt || booking?.dropoffAtLocal || pickupTime || 0,
+        ).getTime();
+
+        if (!pickupTime || Number.isNaN(pickupTime)) {
+          return "all";
+        }
+
+        const now = Date.now();
+
+        if (!Number.isNaN(dropoffTime) && pickupTime <= now && dropoffTime >= now) {
+          return "inprogress";
+        }
+
+        if (!Number.isNaN(dropoffTime) && dropoffTime < now) {
+          return "past";
+        }
+
+        return "upcoming";
+      }
+
+      function getRenderedBookingCardElement(bookingId) {
+        const id = String(bookingId || "");
+        if (!id) return null;
+
+        const matches = Array.from(
+          document.querySelectorAll("[data-booking-card-id]"),
+        ).filter((el) => String(el.dataset.bookingCardId || "") === id);
+
+        if (!matches.length) return null;
+
+        return (
+          matches.find((el) => el.offsetParent !== null) ||
+          matches[0] ||
+          null
+        );
+      }
+
+      function scrollToBookingCardElement(bookingId) {
+        const target = getRenderedBookingCardElement(bookingId);
+
+        if (!target) {
+          scrollToFirstBooking();
+          return;
+        }
+
+        document
+          .querySelectorAll(".admin-booking-card-target")
+          .forEach((el) => el.classList.remove("admin-booking-card-target"));
+
+        target.classList.add("admin-booking-card-target");
+
+        const headerOffset = window.innerWidth <= 768 ? 92 : 126;
+        const y =
+          target.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+        window.scrollTo({
+          top: Math.max(0, y),
+          behavior: "smooth",
+        });
+
+        setTimeout(() => {
+          target.classList.remove("admin-booking-card-target");
+        }, 4500);
+      }
+
+      function showBookingCardFromCustomerHistory(booking) {
+        if (!booking?.id) {
+          alert("Booking not found");
+          return;
+        }
+
+        const bookingId = String(booking.id);
+
+        const existsInAllBookings = allBookings.some(
+          (b) => String(b.id) === bookingId,
+        );
+
+        if (!existsInAllBookings) {
+          allBookings.push(booking);
+          window.ALL_BOOKINGS = allBookings || [];
+        }
+
+        if (searchInput) {
+          searchInput.value = bookingId;
+        }
+
+        if (statusFilter) statusFilter.value = "all";
+        if (bookingVehicleFilter) bookingVehicleFilter.value = "all";
+        if (voucherFilter) voucherFilter.value = "all";
+        if (depositFilter) depositFilter.value = "all";
+        if (notesFilter) notesFilter.value = "all";
+        if (notesSearchInput) notesSearchInput.value = "";
+
+        const bookingDate = getBookingDateInputValue(booking);
+
+        if (bookingDate) {
+          if (rangeFromInput) rangeFromInput.value = bookingDate;
+          if (rangeToInput) rangeToInput.value = bookingDate;
+        } else {
+          if (rangeFromInput) rangeFromInput.value = "";
+          if (rangeToInput) rangeToInput.value = "";
+        }
+
+        if (timeFilter) {
+          timeFilter.value = getBookingListModeForBooking(booking);
+        }
+
+        closeCustomerModal();
+        renderBookings();
+        updateClearButton();
+
+        setStatus(
+          `Showing booking ${escapeHtml(shortRef(bookingId))}.`,
+          "loading",
+        );
+
+        setTimeout(() => {
+          scrollToBookingCardElement(bookingId);
+        }, 120);
       }
 
       /* ===============================
