@@ -18705,7 +18705,11 @@ Equine Transport UK`;
           );
 
           if (booking) {
-            openEditBooking(booking);
+            // Booked calendar slots should take admin to the booking card,
+            // not the edit modal. This keeps the calendar useful as a
+            // quick "find booking" shortcut while free/blocked slots still
+            // open the edit/block tools.
+            showBookingCardFromCustomerHistory(booking);
             return;
           }
 
