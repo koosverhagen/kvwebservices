@@ -9702,244 +9702,6 @@ Equine Transport UK`;
         return raw.slice(-8);
       }
 
-      const DVLA_FORM_HYDRATE_ATTEMPTED = new Set();
-      let DVLA_FORM_HYDRATE_TOKEN = 0;
-
-      function getSubmittedFormPayload(formData) {
-        if (formData?.payload && typeof formData.payload === "object") {
-          return formData.payload;
-        }
-
-        if (formData?.form?.payload && typeof formData.form.payload === "object") {
-          return formData.form.payload;
-        }
-
-        if (formData?.fields && typeof formData.fields === "object") {
-          return formData.fields;
-        }
-
-        if (formData && typeof formData === "object") {
-          return formData;
-        }
-
-        return {};
-      }
-
-      function getCaseInsensitiveValue(source, keys = []) {
-        if (!source || typeof source !== "object") return "";
-
-        for (const key of keys) {
-          const value = source[key];
-
-          if (value !== undefined && value !== null && String(value).trim()) {
-            return String(value).trim();
-          }
-        }
-
-        const lookup = {};
-        Object.keys(source).forEach((key) => {
-          lookup[key.toLowerCase()] = key;
-        });
-
-        for (const key of keys) {
-          const realKey = lookup[String(key).toLowerCase()];
-          if (!realKey) continue;
-
-          const value = source[realKey];
-
-          if (value !== undefined && value !== null && String(value).trim()) {
-            return String(value).trim();
-          }
-        }
-
-        return "";
-      }
-
-      function mergeSubmittedFormIntoBooking(bookingId, formData) {
-        const booking = allBookings.find(
-          (b) => String(b.id || b.bookingId || "") === String(bookingId),
-        );
-
-        if (!booking || !formData || typeof formData !== "object") {
-          return false;
-        }
-
-        const payload = getSubmittedFormPayload(formData);
-
-        if (!payload || typeof payload !== "object") {
-          return false;
-        }
-
-        let changed = false;
-
-        const currentPayload =
-          booking.formPayload && typeof booking.formPayload === "object"
-            ? booking.formPayload
-            : {};
-
-        booking.formPayload = {
-          ...currentPayload,
-          ...payload,
-        };
-        changed = true;
-
-        const licence = getCaseInsensitiveValue(payload, [
-          "drivingLicenceNumber",
-          "drivingLicenceNo",
-          "driverLicenceNumber",
-          "driverLicenseNumber",
-          "licenceNumber",
-          "licenseNumber",
-          "licence",
-          "license",
-        ]);
-
-        if (licence) {
-          const cleanLicence = String(licence).replace(/\s+/g, "").toUpperCase();
-
-          booking.drivingLicenceNumber = cleanLicence;
-          booking.licenceNumber = cleanLicence;
-          booking.dvlaLicenceLast8 = cleanLicence.slice(-8);
-          changed = true;
-        }
-
-        const dvlaCode = getCaseInsensitiveValue(payload, [
-          "dvlaCheckCode",
-          "dvlaCode",
-          "dvlaAccessCode",
-          "accessCode",
-          "dvla_check_code",
-          "dvla_access_code",
-        ]);
-
-        if (dvlaCode) {
-          const cleanCode = String(dvlaCode).replace(/\s+/g, "").trim();
-
-          booking.dvlaCode = cleanCode;
-          booking.dvlaCheckCode = cleanCode;
-          booking.dvlaAccessCode = cleanCode;
-          changed = true;
-        }
-
-        const submittedAt =
-          formData.submittedAt ||
-          formData.submitted_at ||
-          payload.submittedAt ||
-          payload.submitted_at ||
-          "";
-
-        if (submittedAt && !booking.formSubmittedAt) {
-          booking.formSubmittedAt = submittedAt;
-          changed = true;
-        }
-
-        const formType =
-          formData.formType ||
-          formData.form_type ||
-          payload.formType ||
-          payload.form_type ||
-          "";
-
-        if (formType && !booking.formType) {
-          booking.formType = formType;
-          changed = true;
-        }
-
-        if (!booking.formCompleted) {
-          booking.formCompleted = true;
-          changed = true;
-        }
-
-        return changed;
-      }
-
-      async function hydrateDvlaFromSubmittedFormsForRenderedBookings() {
-        const token = ++DVLA_FORM_HYDRATE_TOKEN;
-
-        const renderedIds = Array.from(
-          document.querySelectorAll("[data-booking-card-id]"),
-        )
-          .map((el) => el.getAttribute("data-booking-card-id"))
-          .filter(Boolean);
-
-        const uniqueIds = Array.from(new Set(renderedIds));
-
-        const candidates = uniqueIds
-          .map((bookingId) =>
-            allBookings.find(
-              (b) => String(b.id || b.bookingId || "") === String(bookingId),
-            ),
-          )
-          .filter(Boolean)
-          .filter((booking) => isFormComplete(booking))
-          .filter((booking) => !isPaperForm(booking))
-          .filter(
-            (booking) =>
-              !getLicenceLast8(booking) || !getDvlaCodeValue(booking),
-          )
-          .filter((booking) => {
-            const id = String(booking.id || booking.bookingId || "");
-            return id && !DVLA_FORM_HYDRATE_ATTEMPTED.has(id);
-          })
-          .slice(0, 30);
-
-        if (!candidates.length) return;
-
-        let changed = false;
-
-        const chunkSize = 4;
-
-        for (let i = 0; i < candidates.length; i += chunkSize) {
-          if (token !== DVLA_FORM_HYDRATE_TOKEN) return;
-
-          const chunk = candidates.slice(i, i + chunkSize);
-
-          await Promise.allSettled(
-            chunk.map(async (booking) => {
-              const bookingId = String(booking.id || booking.bookingId || "");
-
-              if (!bookingId) return;
-
-              DVLA_FORM_HYDRATE_ATTEMPTED.add(bookingId);
-
-              try {
-                const res = await fetch(
-                  `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
-                  { cache: "no-store" },
-                );
-
-                if (res.status === 404) return;
-
-                let data = {};
-                try {
-                  data = await res.json();
-                } catch {
-                  data = {};
-                }
-
-                if (!res.ok) return;
-
-                const formData = data.form || data;
-
-                if (mergeSubmittedFormIntoBooking(bookingId, formData)) {
-                  changed = true;
-                }
-              } catch (err) {
-                console.warn("Could not hydrate DVLA details:", bookingId, err);
-              }
-            }),
-          );
-        }
-
-        if (changed && token === DVLA_FORM_HYDRATE_TOKEN) {
-          renderBookings();
-
-          if (typeof hydrateCompletedHandoversForRenderedBookings === "function") {
-            hydrateCompletedHandoversForRenderedBookings();
-          }
-        }
-      }
-
       function buildPaperFormUrl(booking) {
         const formType = getRequiredFormType(booking) || "long";
         const fileName =
@@ -10916,10 +10678,7 @@ Equine Transport UK`;
 
           renderMobileCards(recentSorted);
 
-          setTimeout(() => {
-            hydrateDvlaFromSubmittedFormsForRenderedBookings();
-            syncScroll();
-          }, 0);
+          setTimeout(syncScroll, 0);
           return;
         }
 
@@ -11303,11 +11062,11 @@ Equine Transport UK`;
 
           /* ===============================
      🔥 FIXED DVLA LOADING (FINAL)
-     Pulls DVLA details from submitted form records when /bookings/list
-     only returns formCompleted without the form payload.
+     (no index bug + grouping safe)
   =============================== */
 
-          hydrateDvlaFromSubmittedFormsForRenderedBookings();
+          hydrateVisibleDvlaFromSubmittedForms(filteredBookings);
+
           syncScroll();
         }, 0);
       }
@@ -12848,6 +12607,231 @@ ${mobileOutstandingText}
         }
 
         return entries;
+      }
+
+
+      /* ===============================
+   DVLA SYNC FROM SUBMITTED FORM
+   Some booking list records only contain "form completed".
+   This hydrates licence/code from /api/admin/form when needed.
+================================ */
+
+      const dvlaSubmittedFormCache = new Map();
+      let dvlaSubmittedFormHydrating = false;
+
+      function normaliseFormKey(key) {
+        return String(key || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
+      }
+
+      function cleanFormString(value) {
+        if (value === null || value === undefined) return "";
+        if (typeof value === "object") return "";
+        return String(value).trim();
+      }
+
+      function findFormValueByAliases(formData, aliases = [], fallbackMatcher) {
+        const normalAliases = aliases.map(normaliseFormKey);
+        const sources = [
+          formData,
+          formData?.payload,
+          formData?.form,
+          formData?.form?.payload,
+        ].filter((source) => source && typeof source === "object");
+
+        for (const source of sources) {
+          for (const [key, value] of Object.entries(source)) {
+            const cleanKey = normaliseFormKey(key);
+            if (normalAliases.includes(cleanKey)) {
+              const cleanValue = cleanFormString(value);
+              if (cleanValue) return cleanValue;
+            }
+          }
+        }
+
+        const entries = buildFieldEntries(formData);
+
+        for (const [key, value] of entries) {
+          const cleanKey = normaliseFormKey(key);
+          const cleanValue = cleanFormString(value);
+
+          if (!cleanValue) continue;
+
+          if (normalAliases.includes(cleanKey)) return cleanValue;
+
+          if (typeof fallbackMatcher === "function" && fallbackMatcher(cleanKey)) {
+            return cleanValue;
+          }
+        }
+
+        return "";
+      }
+
+      function extractDvlaFromSubmittedForm(formData) {
+        const licenceRaw = findFormValueByAliases(
+          formData,
+          [
+            "drivingLicenceNumber",
+            "drivingLicenseNumber",
+            "driverLicenceNumber",
+            "driverLicenseNumber",
+            "licenceNumber",
+            "licenseNumber",
+            "driving_licence_number",
+          ],
+          (key) =>
+            (key.includes("licence") || key.includes("license")) &&
+            (key.includes("number") || key.includes("no")),
+        );
+
+        const dvla = findFormValueByAliases(
+          formData,
+          [
+            "dvlaCheckCode",
+            "dvlaCode",
+            "dvlaAccessCode",
+            "accessCode",
+            "dvla_check_code",
+            "dvla_access_code",
+          ],
+          (key) =>
+            key.includes("dvla") &&
+            (key.includes("code") || key.includes("access")),
+        );
+
+        const last8 = String(licenceRaw || "")
+          .replace(/\s+/g, "")
+          .toUpperCase()
+          .slice(-8);
+
+        return {
+          licenceRaw: String(licenceRaw || "").replace(/\s+/g, "").toUpperCase(),
+          last8,
+          dvla: String(dvla || "").replace(/\s+/g, "").slice(0, 8),
+        };
+      }
+
+      function mergeSubmittedFormDvlaIntoBooking(bookingId, formData) {
+        const safeBookingId = String(bookingId || "").trim();
+        if (!safeBookingId || !formData) return false;
+
+        const booking = allBookings.find(
+          (b) => String(b.id || "") === safeBookingId,
+        );
+
+        if (!booking) return false;
+
+        const info = extractDvlaFromSubmittedForm(formData);
+        if (!info.last8 && !info.dvla) return false;
+
+        const beforeLicence = getLicenceLast8(booking);
+        const beforeDvla = getDvlaCodeValue(booking);
+
+        if (formData.payload && typeof formData.payload === "object") {
+          booking.formPayload = {
+            ...(booking.formPayload || {}),
+            ...formData.payload,
+          };
+        } else {
+          booking.formPayload = {
+            ...(booking.formPayload || {}),
+            ...Object.fromEntries(
+              buildFieldEntries(formData).filter(([, value]) => {
+                return value !== null && typeof value !== "object";
+              }),
+            ),
+          };
+        }
+
+        if (info.licenceRaw) {
+          booking.drivingLicenceNumber = info.licenceRaw;
+          booking.dvlaLicenceLast8 = info.last8;
+        }
+
+        if (info.dvla) {
+          booking.dvlaCheckCode = info.dvla;
+          booking.dvlaCode = info.dvla;
+        }
+
+        booking.formCompleted = true;
+        booking.formType = formData.formType || formData.form_type || booking.formType;
+        booking.formSubmittedAt =
+          formData.submittedAt ||
+          formData.submitted_at ||
+          booking.formSubmittedAt ||
+          booking.formCompletedAt;
+
+        return (
+          beforeLicence !== getLicenceLast8(booking) ||
+          beforeDvla !== getDvlaCodeValue(booking)
+        );
+      }
+
+      async function fetchSubmittedFormForDvla(bookingId) {
+        const safeBookingId = String(bookingId || "").trim();
+        if (!safeBookingId) return null;
+
+        if (dvlaSubmittedFormCache.has(safeBookingId)) {
+          return dvlaSubmittedFormCache.get(safeBookingId);
+        }
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(safeBookingId)}`,
+          );
+
+          if (res.status === 404) {
+            dvlaSubmittedFormCache.set(safeBookingId, null);
+            return null;
+          }
+
+          if (!res.ok) return null;
+
+          const data = await res.json();
+          const formData = data.form || data;
+
+          dvlaSubmittedFormCache.set(safeBookingId, formData);
+          return formData;
+        } catch (err) {
+          console.warn("⚠️ Could not hydrate DVLA from submitted form:", err);
+          return null;
+        }
+      }
+
+      async function hydrateVisibleDvlaFromSubmittedForms(bookings = []) {
+        if (dvlaSubmittedFormHydrating) return;
+
+        const targets = bookings
+          .filter((booking) => {
+            if (!booking || !booking.id) return false;
+            if (!isFormComplete(booking)) return false;
+            return !getLicenceLast8(booking) || !getDvlaCodeValue(booking);
+          })
+          .slice(0, 25);
+
+        if (!targets.length) return;
+
+        dvlaSubmittedFormHydrating = true;
+
+        try {
+          let changed = false;
+
+          for (const booking of targets) {
+            const formData = await fetchSubmittedFormForDvla(booking.id);
+            if (!formData) continue;
+
+            if (mergeSubmittedFormDvlaIntoBooking(booking.id, formData)) {
+              changed = true;
+            }
+          }
+
+          if (changed) {
+            renderBookings();
+          }
+        } finally {
+          dvlaSubmittedFormHydrating = false;
+        }
       }
 
       function getSignatureData(formData) {
@@ -17294,17 +17278,10 @@ Equine Transport UK`;
           // ✅ NORMAL FLOW
           const formData = data.form || data;
 
-          // ✅ Keep the booking card DVLA section in sync with the submitted form.
-          // Some /bookings/list responses only say formCompleted=true and do not
-          // include the full form payload, so we merge the fetched form details here.
-          const mergedFormDetails = mergeSubmittedFormIntoBooking(bookingId, formData);
-
-          if (mergedFormDetails) {
+          if (mergeSubmittedFormDvlaIntoBooking(bookingId, formData)) {
+            // Refresh the booking card behind the modal immediately, so the
+            // Licence and Code pills update as soon as the form is viewed.
             renderBookings();
-
-            if (typeof hydrateCompletedHandoversForRenderedBookings === "function") {
-              hydrateCompletedHandoversForRenderedBookings();
-            }
           }
 
           modalSummary.innerHTML = `
