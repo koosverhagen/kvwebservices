@@ -836,3 +836,124 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
+
+/* =========================
+   ABBIE AT HEART CASE STUDY OVERLAY
+========================= */
+document.addEventListener("DOMContentLoaded", () => {
+  const artistCaseUrl = "artist-store/index.html";
+  let overlay = null;
+  let lastFocusedElement = null;
+
+  const isModifiedClick = (event) => (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  );
+
+  const isArtistCaseLink = (link) => {
+    const href = link.getAttribute("href") || "";
+    return href === artistCaseUrl || href.endsWith("/artist-store/index.html");
+  };
+
+  const createOverlay = () => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "case-overlay";
+    wrapper.hidden = true;
+    wrapper.setAttribute("role", "dialog");
+    wrapper.setAttribute("aria-modal", "true");
+    wrapper.setAttribute("aria-labelledby", "case-overlay-title");
+
+    wrapper.innerHTML = `
+      <div class="case-overlay__backdrop" data-case-overlay-close></div>
+      <div class="case-overlay__panel">
+        <div class="case-overlay__header">
+          <h2 class="case-overlay__title" id="case-overlay-title">Abbie at Heart | Equine Art</h2>
+          <div class="case-overlay__header-actions">
+            <a class="case-overlay__external-link" href="${artistCaseUrl}" data-case-overlay-ignore>Open full page</a>
+            <button class="case-overlay__close" type="button" aria-label="Close case study" data-case-overlay-close>&times;</button>
+          </div>
+        </div>
+        <div class="case-overlay__frame-wrap">
+          <iframe class="case-overlay__frame" title="Abbie at Heart | Equine Art case study" loading="lazy"></iframe>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(wrapper);
+    wrapper.querySelectorAll("[data-case-overlay-close]").forEach((el) => {
+      el.addEventListener("click", closeOverlay);
+    });
+    return wrapper;
+  };
+
+  const getOverlay = () => {
+    if (!overlay) overlay = createOverlay();
+    return overlay;
+  };
+
+  const openOverlay = (url = artistCaseUrl) => {
+    const modal = getOverlay();
+    const frame = modal.querySelector(".case-overlay__frame");
+    const externalLink = modal.querySelector(".case-overlay__external-link");
+
+    lastFocusedElement = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
+    if (frame instanceof HTMLIFrameElement && frame.getAttribute("src") !== url) {
+      frame.setAttribute("src", url);
+    }
+
+    if (externalLink instanceof HTMLAnchorElement) {
+      externalLink.href = url;
+    }
+
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("case-overlay-open");
+
+    const closeButton = modal.querySelector(".case-overlay__close");
+    if (closeButton instanceof HTMLButtonElement) {
+      closeButton.focus({ preventScroll: true });
+    }
+  };
+
+  function closeOverlay() {
+    if (!overlay) return;
+    overlay.hidden = true;
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("case-overlay-open");
+
+    if (lastFocusedElement) {
+      lastFocusedElement.focus({ preventScroll: true });
+      lastFocusedElement = null;
+    }
+  }
+
+  document.addEventListener("click", (event) => {
+    if (isModifiedClick(event)) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const ignoredLink = target.closest("[data-case-overlay-ignore]");
+    if (ignoredLink) return;
+
+    const link = target.closest("a[href]");
+    if (!(link instanceof HTMLAnchorElement)) return;
+    if (!isArtistCaseLink(link)) return;
+
+    event.preventDefault();
+    openOverlay(link.getAttribute("href") || artistCaseUrl);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && overlay && !overlay.hidden) {
+      closeOverlay();
+    }
+  });
+});
