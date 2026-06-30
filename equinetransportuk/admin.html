@@ -6338,11 +6338,7 @@
 
       <button
         class="mobile-menu-item"
-        onclick="
-          document
-            .querySelector('.calendar-grid')
-            ?.scrollIntoView({ behavior: 'smooth' })
-        "
+        onclick="scrollToCalendar()"
       >
         📅 Calendar
       </button>
@@ -12076,14 +12072,20 @@ ${mobileOutstandingText}
       }
 
       function scrollToCalendar() {
-        const el = document.querySelector(".calendar-grid");
+        closeMobileMenu?.();
 
-        if (!el) return;
+        // Prefer today's card on mobile. If today's date is not in the
+        // currently displayed month, fall back to the calendar grid.
+        if (!scrollAdminCalendarToToday({ allowRepeat: true })) {
+          const el = document.querySelector(".calendar-grid");
 
-        el.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+          if (!el) return;
+
+          el.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
 
         setActiveMobileTab(1);
       }
@@ -19213,6 +19215,60 @@ Equine Transport UK`;
         overlay.classList.remove("hidden");
       }
 
+      let ADMIN_CALENDAR_DID_AUTO_SCROLL_TODAY = false;
+
+      function isAdminMobileView() {
+        return window.matchMedia("(max-width: 768px)").matches;
+      }
+
+      function getAdminStickyHeaderOffset() {
+        const header = document.querySelector(".site-header");
+        return (header?.offsetHeight || 78) + 12;
+      }
+
+      function scrollAdminCalendarToToday(options = {}) {
+        if (!isAdminMobileView()) return false;
+
+        const allowRepeat = options.allowRepeat === true;
+        const once = options.once === true;
+
+        if (once && ADMIN_CALENDAR_DID_AUTO_SCROLL_TODAY && !allowRepeat) {
+          return false;
+        }
+
+        const run = () => {
+          const todayEl = document.querySelector("#calendar-grid .cal-day.today");
+          const fallbackEl = document.getElementById("calendar-grid");
+          const target = todayEl || fallbackEl;
+
+          if (!target) return;
+
+          const top =
+            target.getBoundingClientRect().top +
+            window.scrollY -
+            getAdminStickyHeaderOffset();
+
+          window.scrollTo({
+            top: Math.max(0, top),
+            behavior: options.smooth === false ? "auto" : "smooth",
+          });
+
+          if (todayEl) {
+            ADMIN_CALENDAR_DID_AUTO_SCROLL_TODAY = true;
+          }
+        };
+
+        const delay = Number(options.delay || 0);
+
+        if (delay > 0) {
+          setTimeout(() => requestAnimationFrame(run), delay);
+        } else {
+          requestAnimationFrame(run);
+        }
+
+        return true;
+      }
+
       function renderCalendarDays(daysData) {
         calGrid.innerHTML = "";
 
@@ -19498,6 +19554,10 @@ Equine Transport UK`;
 
           calGrid.appendChild(el);
         }
+
+        // On mobile, jump down to today's calendar card after the month has rendered.
+        // This avoids always landing at the first week of the month.
+        scrollAdminCalendarToToday({ once: true, delay: 180 });
       }
 
       function getBookingsForDate(dateStr) {
