@@ -843,6 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
   const artistCaseUrl = "artist-store/index.html";
+  const overlayCacheVersion = "34";
   let overlay = null;
   let lastFocusedElement = null;
 
@@ -858,6 +859,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const isArtistCaseLink = (link) => {
     const href = link.getAttribute("href") || "";
     return href === artistCaseUrl || href.endsWith("/artist-store/index.html");
+  };
+
+  const withOverlayCacheBust = (url) => {
+    try {
+      const parsed = new URL(url, window.location.href);
+      parsed.searchParams.set("kvOverlay", overlayCacheVersion);
+      return parsed.pathname.replace(/^\//, "") + parsed.search + parsed.hash;
+    } catch (error) {
+      const joiner = url.includes("?") ? "&" : "?";
+      return `${url}${joiner}kvOverlay=${overlayCacheVersion}`;
+    }
   };
 
   const createOverlay = () => {
@@ -896,30 +908,21 @@ document.addEventListener("DOMContentLoaded", () => {
     return overlay;
   };
 
+  const normaliseText = (value) => String(value || "").replace(/\s+/g, " ").trim();
+
   const findTextMatch = (root, selector, pattern) => {
     return Array.from(root.querySelectorAll(selector)).find((el) => {
-      const text = String(el.textContent || "").replace(/\s+/g, " ").trim();
-      return pattern.test(text);
+      return pattern.test(normaliseText(el.textContent));
     });
   };
 
-  const getClosestSharedParent = (a, b) => {
-    if (!a || !b) return null;
-    const ancestors = [];
-    let current = a.parentElement;
-
-    while (current) {
-      ancestors.push(current);
-      current = current.parentElement;
-    }
-
-    current = b.parentElement;
-    while (current) {
-      if (ancestors.includes(current)) return current;
-      current = current.parentElement;
-    }
-
-    return null;
+  const getMenuButton = (doc) => {
+    return (
+      doc.querySelector("button.menu-toggle") ||
+      doc.querySelector(".menu-toggle") ||
+      doc.querySelector("button[aria-controls='site-menu']") ||
+      findTextMatch(doc, "button, [role='button']", /menu/i)
+    );
   };
 
   const applyArtistFramePolish = (frame) => {
@@ -944,7 +947,7 @@ document.addEventListener("DOMContentLoaded", () => {
             flex-direction: column !important;
             align-items: flex-end !important;
             justify-content: flex-start !important;
-            gap: 5px !important;
+            gap: 6px !important;
             margin-left: auto !important;
             position: relative !important;
             width: max-content !important;
@@ -952,22 +955,30 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           body.kv-embedded-in-case-overlay .kv-overlay-abbie-menu-label {
-            display: block !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 22px !important;
+            padding: 3px 9px !important;
+            border: 1px solid rgba(37, 99, 235, 0.24) !important;
+            border-radius: 999px !important;
+            background: rgba(37, 99, 235, 0.06) !important;
+            color: #2563eb !important;
             font-size: 11px !important;
             line-height: 1.2 !important;
             font-weight: 800 !important;
             letter-spacing: 0.08em !important;
             text-transform: uppercase !important;
-            color: #64748b !important;
-            margin: 0 5px 1px 0 !important;
+            margin: 0 !important;
             pointer-events: none !important;
             white-space: nowrap !important;
           }
 
           body.kv-embedded-in-case-overlay .kv-overlay-abbie-menu-toggle {
             margin: 0 !important;
-            border-color: rgba(37, 99, 235, 0.28) !important;
-            background: rgba(37, 99, 235, 0.06) !important;
+            border-color: rgba(37, 99, 235, 0.35) !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
             box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
           }
 
@@ -982,18 +993,12 @@ document.addEventListener("DOMContentLoaded", () => {
               align-items: stretch !important;
               width: 100% !important;
             }
-
-            body.kv-embedded-in-case-overlay .kv-overlay-abbie-menu-label {
-              margin-left: 4px !important;
-            }
           }
         `;
         doc.head.appendChild(style);
       }
 
       const backLink = findTextMatch(doc, "a, button", /kv\s*web\s*services/i);
-      const menuButton = findTextMatch(doc, "button, [role='button']", /(^|\s)menu(\s|$)/i);
-
       if (backLink instanceof HTMLElement) {
         backLink.classList.add("kv-overlay-abbie-back-link");
         backLink.setAttribute("aria-hidden", "true");
@@ -1001,16 +1006,13 @@ document.addEventListener("DOMContentLoaded", () => {
         backLink.style.setProperty("display", "none", "important");
       }
 
+      const menuButton = getMenuButton(doc);
       if (!(menuButton instanceof HTMLElement)) return;
 
       menuButton.classList.add("kv-overlay-abbie-menu-toggle");
       menuButton.setAttribute("aria-label", "Open Abbie at Heart website menu");
       menuButton.setAttribute("title", "Abbie at Heart website menu");
-
-      const currentButtonText = String(menuButton.textContent || "").replace(/\s+/g, " ").trim();
-      if (!/abbie/i.test(currentButtonText)) {
-        menuButton.textContent = "☰ Abbie Menu";
-      }
+      menuButton.textContent = "☰ Abbie Menu";
 
       const controlledMenuId = menuButton.getAttribute("aria-controls");
       const controlledMenu = controlledMenuId ? doc.getElementById(controlledMenuId) : null;
@@ -1033,18 +1035,32 @@ document.addEventListener("DOMContentLoaded", () => {
       menuWrap.style.setProperty("display", "flex", "important");
       menuWrap.style.setProperty("flex-direction", "column", "important");
       menuWrap.style.setProperty("align-items", "flex-end", "important");
-      menuWrap.style.setProperty("gap", "5px", "important");
+      menuWrap.style.setProperty("gap", "6px", "important");
       menuWrap.style.setProperty("margin-left", "auto", "important");
 
       if (!menuWrap.querySelector(".kv-overlay-abbie-menu-label")) {
         const label = doc.createElement("span");
         label.className = "kv-overlay-abbie-menu-label";
-        label.textContent = "Abbie at Heart website";
+        label.textContent = "Abbie website menu";
         menuWrap.insertBefore(label, menuButton);
       }
     } catch (error) {
       // If the iframe ever becomes cross-origin, the overlay still works normally.
     }
+  };
+
+  const runArtistFramePolish = (frame) => {
+    applyArtistFramePolish(frame);
+    window.setTimeout(() => applyArtistFramePolish(frame), 80);
+    window.setTimeout(() => applyArtistFramePolish(frame), 250);
+    window.setTimeout(() => applyArtistFramePolish(frame), 700);
+
+    let attempts = 0;
+    const interval = window.setInterval(() => {
+      attempts += 1;
+      applyArtistFramePolish(frame);
+      if (attempts >= 10) window.clearInterval(interval);
+    }, 300);
   };
 
   const openOverlay = (url = artistCaseUrl) => {
@@ -1057,18 +1073,13 @@ document.addEventListener("DOMContentLoaded", () => {
       : null;
 
     if (frame instanceof HTMLIFrameElement) {
-      const runArtistFramePolish = () => {
-        applyArtistFramePolish(frame);
-        window.setTimeout(() => applyArtistFramePolish(frame), 120);
-        window.setTimeout(() => applyArtistFramePolish(frame), 450);
-      };
+      const iframeUrl = withOverlayCacheBust(url);
+      frame.addEventListener("load", () => runArtistFramePolish(frame), { once: true });
 
-      frame.addEventListener("load", runArtistFramePolish, { once: true });
-
-      if (frame.getAttribute("src") !== url) {
-        frame.setAttribute("src", url);
+      if (frame.getAttribute("src") !== iframeUrl) {
+        frame.setAttribute("src", iframeUrl);
       } else {
-        runArtistFramePolish();
+        runArtistFramePolish(frame);
       }
     }
 
