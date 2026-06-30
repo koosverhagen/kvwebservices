@@ -9723,19 +9723,19 @@ Equine Transport UK`;
           dropoffAt: booking.dropoffAtLocal || booking.dropoffAt || "",
         });
 
-        return `${window.location.origin}/${fileName}?${params.toString()}`;
+        return `https://www.equinetransportuk.com/${fileName}?${params.toString()}`;
       }
 
       function buildSubmittedFormPrintUrl(bookingId) {
         const params = new URLSearchParams({
           bookingId: bookingId || "",
           print: "1",
-          v: "4",
+          v: "5",
         });
 
         // Dedicated admin print page. This avoids the customer form's
         // "already submitted" redirect/success-card logic completely.
-        return `${window.location.origin}/admin-form-print.html?${params.toString()}`;
+        return `https://www.equinetransportuk.com/admin-form-print.html?${params.toString()}`;
       }
 
       async function openSubmittedFormPrint(bookingId) {
