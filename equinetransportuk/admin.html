@@ -9723,19 +9723,270 @@ Equine Transport UK`;
           dropoffAt: booking.dropoffAtLocal || booking.dropoffAt || "",
         });
 
-        return `https://www.equinetransportuk.com/${fileName}?${params.toString()}`;
+        return `${window.location.origin}/${fileName}?${params.toString()}`;
       }
 
-      function buildSubmittedFormPrintUrl(bookingId) {
-        const params = new URLSearchParams({
-          bookingId: bookingId || "",
-          print: "1",
-          v: "5",
+      function adminPrintNormaliseKey(key) {
+        return String(key || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      }
+
+      function adminPrintIsEmpty(value) {
+        return value === undefined || value === null || String(value).trim() === "";
+      }
+
+      function adminPrintFormatValue(value) {
+        if (typeof value === "boolean") return value ? "Yes" : "No";
+        if (Array.isArray(value)) return value.map(adminPrintFormatValue).join(", ");
+        if (value && typeof value === "object") return JSON.stringify(value, null, 2);
+        return String(value ?? "").trim();
+      }
+
+      function adminPrintFormatDate(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+
+        const isoDate = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoDate) return `${isoDate[3]}/${isoDate[2]}/${isoDate[1]}`;
+
+        const ukDate = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+        if (ukDate) return raw;
+
+        const d = new Date(raw);
+        if (!Number.isNaN(d.getTime())) {
+          return d.toLocaleDateString("en-GB");
+        }
+
+        return raw;
+      }
+
+      function adminPrintFormatDateTime(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+
+        const d = new Date(raw);
+        if (!Number.isNaN(d.getTime())) {
+          return d.toLocaleString("en-GB", {
+            timeZone: "Europe/London",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        }
+
+        return raw.replace("T", " ");
+      }
+
+      function adminPrintMakeLookup(form, booking = {}) {
+        const payload = form?.payload && typeof form.payload === "object" ? form.payload : {};
+        const combined = { ...booking, ...payload, ...form };
+        const lookup = new Map();
+
+        Object.entries(combined).forEach(([key, value]) => {
+          lookup.set(adminPrintNormaliseKey(key), value);
         });
 
-        // Dedicated admin print page. This avoids the customer form's
-        // "already submitted" redirect/success-card logic completely.
-        return `https://www.equinetransportuk.com/admin-form-print.html?${params.toString()}`;
+        return { payload, combined, lookup };
+      }
+
+      function adminPrintGet(lookup, keys) {
+        for (const key of keys) {
+          const value = lookup.get(adminPrintNormaliseKey(key));
+          if (!adminPrintIsEmpty(value)) return value;
+        }
+        return "";
+      }
+
+      function adminPrintField(label, value, formatter) {
+        const formatted = formatter ? formatter(value) : adminPrintFormatValue(value);
+        const clean = String(formatted || "").trim();
+
+        return `
+          <div class="field">
+            <span class="label">${escapeHtml(label)}</span>
+            <div class="value${clean ? "" : " empty"}">${clean ? escapeHtml(clean) : "—"}</div>
+          </div>
+        `;
+      }
+
+      function adminPrintGrid(items) {
+        const visible = items.filter((item) => !item.hide);
+        const hasValue = visible.some((item) => !adminPrintIsEmpty(item.value));
+
+        if (!visible.length || !hasValue) return "";
+
+        return visible
+          .map((item) => adminPrintField(item.label, item.value, item.formatter))
+          .join("");
+      }
+
+      function adminPrintSection(title, items, columns = "two") {
+        const grid = adminPrintGrid(items);
+        if (!grid) return "";
+
+        return `
+          <section class="section">
+            <h2>${escapeHtml(title)}</h2>
+            <div class="grid ${escapeHtml(columns)}">${grid}</div>
+          </section>
+        `;
+      }
+
+      function buildSubmittedFormPrintHtml({ bookingId, booking, form }) {
+        const { payload, lookup } = adminPrintMakeLookup(form, booking);
+        const formType = String(
+          form?.formType ||
+            form?.form_type ||
+            adminPrintGet(lookup, ["formType", "form_type"]) ||
+            booking?.requiredFormType ||
+            booking?.formType ||
+            ""
+        ).toLowerCase();
+        const isShort = formType === "short";
+
+        const submittedAt =
+          form?.submittedAt ||
+          form?.submitted_at ||
+          form?.updatedAt ||
+          booking?.formSubmittedAt ||
+          booking?.formCompletedAt ||
+          "";
+
+        const displayBookingId = form?.bookingId || bookingId;
+        const customerName =
+          booking?.customerName ||
+          [
+            adminPrintGet(lookup, ["firstName", "customerFirstName"]),
+            adminPrintGet(lookup, ["lastName", "customerLastName"]),
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+        const vehicleName =
+          booking?.vehicleSnapshot?.name ||
+          booking?.vehicleName ||
+          adminPrintGet(lookup, ["vehicleName", "vehicle"]);
+
+        const signature =
+          form?.signatureData ||
+          form?.signature_data ||
+          adminPrintGet(lookup, ["signatureData", "signature"]);
+
+        const rawEntries = Object.entries(payload || {})
+          .filter(([key]) => !["signatureData", "signature"].includes(key))
+          .sort(([a], [b]) => a.localeCompare(b));
+
+        const rawHtml = rawEntries.length
+          ? `<details class="raw-details"><summary>Show all submitted fields</summary><div class="raw-grid">${rawEntries
+              .map(([key, value]) => adminPrintField(key, value))
+              .join("")}</div></details>`
+          : "";
+
+        const sections = [
+          adminPrintSection("Driver Information", [
+            { label: "First Name of Hirer / Driver", value: adminPrintGet(lookup, ["firstName", "customerFirstName"]) },
+            { label: "Last Name of Hirer / Driver", value: adminPrintGet(lookup, ["lastName", "customerLastName"]) },
+            { label: "Email", value: adminPrintGet(lookup, ["email", "customerEmail"]) || booking?.customerEmail },
+            { label: "Mobile Number", value: adminPrintGet(lookup, ["mobile", "mobileNumber", "customerMobile"]) || booking?.customerMobile },
+            { label: "Address", value: adminPrintGet(lookup, ["address", "customerAddress"]) || booking?.customerAddress, hide: isShort },
+            { label: "How long have you lived here for?", value: adminPrintGet(lookup, ["howLongHere"]), hide: isShort },
+            { label: "Occupation", value: adminPrintGet(lookup, ["occupation"]), hide: isShort },
+            { label: "Nationality", value: adminPrintGet(lookup, ["nationality"]), hide: isShort },
+          ]),
+          adminPrintSection("Hire Details", [
+            { label: "Vehicle", value: vehicleName },
+            { label: "Hire From", value: adminPrintGet(lookup, ["hireFrom", "pickupAt", "pickupAtLocal", "hireFromDate"]) || booking?.pickupAtLocal || booking?.pickupAt, formatter: adminPrintFormatDateTime },
+            { label: "Hire Until", value: adminPrintGet(lookup, ["hireUntil", "dropoffAt", "dropoffAtLocal", "hireUntilDate"]) || booking?.dropoffAtLocal || booking?.dropoffAt, formatter: adminPrintFormatDateTime },
+            { label: "Pickup Time", value: adminPrintGet(lookup, ["hireFromTime", "pickupTime"]) },
+            { label: "Return Time", value: adminPrintGet(lookup, ["hireUntilTime", "returnTime", "dropoffTime"]) },
+            { label: "Reason for this Journey", value: adminPrintGet(lookup, ["journeyReason"]), hide: isShort },
+            { label: "Where are you travelling to?", value: adminPrintGet(lookup, ["destination"]), hide: isShort },
+            { label: "Overnight Parking Arrangement", value: adminPrintGet(lookup, ["overnightParking"]), hide: isShort },
+          ]),
+          adminPrintSection("Licence & DVLA", [
+            { label: "Driving Licence Number", value: adminPrintGet(lookup, ["drivingLicenceNumber", "licenceNumber", "driverLicenceNumber"]) || booking?.drivingLicenceNumber },
+            { label: "Date of the Last Long Form", value: adminPrintGet(lookup, ["lastLongFormDate"]), formatter: adminPrintFormatDate },
+            { label: "DVLA Access / Check Code", value: adminPrintGet(lookup, ["dvlaCode", "dvlaCheckCode", "dvlaAccessCode"]) || getDvlaCodeValue(booking) },
+            { label: "Date of Last DVLA Access Code", value: adminPrintGet(lookup, ["dvlaCodeDate", "dvlaAccessCodeDate"]), formatter: adminPrintFormatDate },
+          ]),
+          adminPrintSection("Medical", [
+            { label: "Medical Condition / Disability", value: adminPrintGet(lookup, ["medicalCondition"]), hide: isShort },
+            { label: "If yes, notified DVLA?", value: adminPrintGet(lookup, ["notifiedDvla"]), hide: isShort },
+            { label: "If yes, issued with licence?", value: adminPrintGet(lookup, ["issuedLicence"]), hide: isShort },
+            { label: "Medical Details", value: adminPrintGet(lookup, ["medicalDetails"]), hide: isShort },
+          ]),
+          adminPrintSection("Driving Experience", [
+            { label: "How often do you drive a motor vehicle in the UK?", value: adminPrintGet(lookup, ["howOftenDrive"]), hide: isShort },
+            { label: "How long have you been driving this regularly?", value: adminPrintGet(lookup, ["howLongDriving"]), hide: isShort },
+            { label: "Horsebox experience", value: adminPrintGet(lookup, ["horseboxExperience"]), hide: isShort },
+          ]),
+          adminPrintSection("Insurance & Convictions", [
+            { label: "Insurance refused or declined?", value: adminPrintGet(lookup, ["insuranceRefused"]), hide: isShort },
+            { label: "Insurance cover cancelled?", value: adminPrintGet(lookup, ["insuranceCancelled"]), hide: isShort },
+            { label: "Special terms / exclusions / restrictions?", value: adminPrintGet(lookup, ["restrictionsApplied"]), hide: isShort },
+            { label: "Non-motoring or criminal convictions?", value: adminPrintGet(lookup, ["criminalConvictions"]), hide: isShort },
+            { label: "Insurance / conviction details", value: adminPrintGet(lookup, ["insuranceDetails"]), hide: isShort },
+          ]),
+          adminPrintSection("Documents & Declaration", [
+            { label: "DVLA Licence Holder", value: adminPrintGet(lookup, ["dvlaLicenceHolder"]), hide: isShort },
+            { label: "Non DVLA Licence Holder", value: adminPrintGet(lookup, ["nonDvlaLicenceHolder"]), hide: isShort },
+            { label: "Proof of Address 1", value: adminPrintGet(lookup, ["proofAddress1"]), hide: isShort },
+            { label: "Proof of Address 2", value: adminPrintGet(lookup, ["proofAddress2"]), hide: isShort },
+            { label: "Photo ID", value: adminPrintGet(lookup, ["photoId"]), hide: isShort },
+            { label: "Declaration confirmed", value: adminPrintGet(lookup, ["confirmTrue", "declarationConfirmed"]) || (isShort ? "No change confirmed" : "" ) },
+          ]),
+        ].join("");
+
+        const signedDate = adminPrintGet(lookup, ["signedDate", "todayDate"]);
+        const signatureHtml = `
+          <section class="section">
+            <h2>Signature</h2>
+            <div class="grid two">
+              ${adminPrintField("Signed Date", adminPrintFormatDate(signedDate) || adminPrintFormatDate(submittedAt))}
+              <div class="field">
+                <span class="label">Signature</span>
+                <div class="signature-box">${signature ? `<img alt="Customer signature" src="${escapeHtml(signature)}">` : "No signature found"}</div>
+              </div>
+            </div>
+          </section>
+        `;
+
+        return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Print Millens Form | ${escapeHtml(customerName || displayBookingId)}</title>
+    <style>
+      :root{--bg:#eef1f6;--card:#fff;--text:#111827;--muted:#5f6b7a;--line:#dbe1e8;--accent:#1f6feb;--dark:#6b7280}
+      *{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#f8f9fb 0%,var(--bg) 100%);color:var(--text);line-height:1.35;padding:18px 14px 44px}.wrap{max-width:900px;margin:0 auto}.toolbar{position:sticky;top:0;z-index:5;margin:0 auto 14px;max-width:900px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.08)}.toolbar strong{display:block;font-size:14px}.toolbar span{display:block;color:var(--muted);font-size:12px;margin-top:2px}.toolbar button{appearance:none;border:none;border-radius:12px;background:var(--accent);color:#fff;min-height:42px;padding:0 16px;font-weight:900;cursor:pointer;white-space:nowrap}.header-card,.section{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(15,23,42,.08);padding:18px;margin:12px 0}.brand-title{margin:0;font-size:25px;line-height:1.1;font-weight:950;letter-spacing:-.04em;text-transform:uppercase}.brand-title span{color:#4b5563}.brand-sub{margin:8px 0 0;color:var(--muted);font-size:14px}.top-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px}.pill{display:inline-flex;align-items:center;background:#eef2ff;border:1px solid #dbeafe;color:#1e3a8a;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}h2{margin:0 0 12px;color:#fff;background:var(--dark);border-radius:12px;padding:10px 12px;font-size:16px;font-weight:900}.grid{display:grid;grid-template-columns:1fr;gap:10px 14px}@media(min-width:760px){.grid.two{grid-template-columns:repeat(2,1fr)}.grid.three{grid-template-columns:repeat(3,1fr)}}.field{min-height:54px;padding:9px 10px;border:1px solid var(--line);background:#f8fafc;border-radius:12px}.label{display:block;margin-bottom:4px;color:var(--muted);font-size:11px;font-weight:900}.value{min-height:20px;white-space:pre-wrap;word-break:break-word;font-size:14px;font-weight:750}.value.empty{color:#9ca3af;font-weight:600}.signature-box{min-height:150px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}.signature-box img{max-width:100%;max-height:170px;display:block}.raw-details{margin-top:12px}.raw-details summary{cursor:pointer;color:var(--accent);font-weight:900}.raw-grid{margin-top:10px;display:grid;grid-template-columns:1fr;gap:8px}@media(min-width:760px){.raw-grid{grid-template-columns:repeat(2,1fr)}}@page{size:A4;margin:8mm}@media print{html,body{width:210mm;margin:0!important;padding:0!important;background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:10.5pt}.toolbar,.raw-details{display:none!important}.wrap{width:100%;max-width:none;margin:0}.header-card,.section{box-shadow:none!important;border-color:#cbd5e1!important;border-radius:8px!important;padding:8px 9px!important;margin:0 0 6px!important;break-inside:avoid;page-break-inside:avoid}.brand-title{font-size:15.5pt!important}.brand-sub{font-size:8.5pt!important;margin-top:4px!important}.top-meta{margin-top:6px!important}.pill{font-size:8pt!important;padding:3px 6px!important}h2{font-size:10pt!important;padding:5px 7px!important;margin-bottom:6px!important}.grid{gap:5px 6px!important}.grid.two{grid-template-columns:repeat(2,1fr)!important}.grid.three{grid-template-columns:repeat(3,1fr)!important}.field{min-height:34px!important;padding:4px 6px!important;border-radius:7px!important}.label{font-size:7.5pt!important;margin-bottom:2px!important}.value{font-size:9pt!important;min-height:13px!important}.signature-box{min-height:70px!important;border-radius:7px!important}.signature-box img{max-height:80px!important}}
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <div>
+        <strong>Admin print copy</strong>
+        <span>${escapeHtml(isShort ? "Short form" : "Long form")} · ${escapeHtml(displayBookingId)}</span>
+      </div>
+      <button type="button" onclick="window.print()">Print / Save PDF</button>
+    </div>
+    <main class="wrap">
+      <div class="header-card">
+        <h1 class="brand-title">Millens Self Drive Hire Horsebox Insurance Proposal <span>${escapeHtml(isShort ? "Short Form" : "Long Form")}</span></h1>
+        <p class="brand-sub">${escapeHtml(isShort ? "Short form declaration copy: no change since the last long hire questionnaire." : "Long hire questionnaire copy submitted by the hirer / driver.")}</p>
+        <div class="top-meta">
+          <div class="pill">Booking ID: ${escapeHtml(displayBookingId)}</div>
+          <div class="pill">Submitted: ${escapeHtml(adminPrintFormatDateTime(submittedAt) || "—")}</div>
+        </div>
+      </div>
+      ${sections}
+      ${signatureHtml}
+      ${rawHtml}
+    </main>
+  </body>
+</html>`;
       }
 
       async function openSubmittedFormPrint(bookingId) {
@@ -9746,7 +9997,66 @@ Equine Transport UK`;
           return;
         }
 
-        window.open(buildSubmittedFormPrintUrl(safeBookingId), "_blank", "noopener");
+        // Open immediately during the click event so Safari/Chrome do not block it.
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) {
+          alert("Pop-up blocked. Please allow pop-ups for the admin page and try again.");
+          return;
+        }
+
+        printWindow.document.open();
+        printWindow.document.write(`<!doctype html><html><head><title>Loading Millens Form</title></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;padding:24px;"><strong>Loading submitted Millens form…</strong></body></html>`);
+        printWindow.document.close();
+
+        const booking = allBookings.find(
+          (b) => String(b.id || "") === safeBookingId,
+        ) || {};
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(safeBookingId)}`,
+            {
+              cache: "no-store",
+              credentials: "include",
+            },
+          );
+
+          let out = {};
+          try {
+            out = await res.json();
+          } catch {
+            out = {};
+          }
+
+          if (!res.ok || out.found === false) {
+            throw new Error(out.error || "No submitted form found for this booking.");
+          }
+
+          const form = out.form || out;
+          const html = buildSubmittedFormPrintHtml({
+            bookingId: safeBookingId,
+            booking,
+            form,
+          });
+
+          printWindow.document.open();
+          printWindow.document.write(html);
+          printWindow.document.close();
+
+          setTimeout(() => {
+            try {
+              printWindow.focus();
+              printWindow.print();
+            } catch (printErr) {
+              console.warn("Print dialog could not be opened automatically:", printErr);
+            }
+          }, 700);
+        } catch (err) {
+          console.error("Failed to open submitted form print view:", err);
+          printWindow.document.open();
+          printWindow.document.write(`<!doctype html><html><head><title>Form print error</title></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;padding:24px;line-height:1.45;"><h1>Could not load submitted form</h1><p>${escapeHtml(err.message || "Failed to load submitted form.")}</p><button onclick="window.close()" style="padding:12px 16px;border-radius:10px;border:0;background:#1f6feb;color:white;font-weight:800;">Close</button></body></html>`);
+          printWindow.document.close();
+        }
       }
 
 
