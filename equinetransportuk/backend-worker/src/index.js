@@ -989,6 +989,19 @@ export default {
       }
 
       /* ===============================
+   REQUIRED FORM AUTO-DETECT
+   Used by the public booking summary before checkout.
+================================ */
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/bookings/form-requirement"
+      ) {
+        const response = await handleBookingFormRequirement(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
    RESEND LINKS (PUBLIC)
 ================================ */
 
@@ -6057,6 +6070,133 @@ async function markVoucherUsed(env, code, bookingId) {
 }
 
 /* ===============================
+   REQUIRED FORM AUTO-DETECTION
+   Short form only if the customer had a previous non-cancelled hire
+   before the selected pickup date and within the last 90 days.
+================================ */
+
+function normaliseRequiredFormType(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase() === "short"
+    ? "short"
+    : "long";
+}
+
+async function resolveBookingFormRequirement(
+  env,
+  { email = "", mobile = "", pickupAt = "", pickupDate = "", customerId = "", excludeBookingId = "" } = {},
+) {
+  const cleanEmail = String(email || "")
+    .trim()
+    .toLowerCase();
+  const cleanMobile = String(mobile || "").trim();
+
+  const pickupValue = pickupAt || pickupDate;
+  const currentPickup = new Date(pickupValue);
+
+  if (Number.isNaN(currentPickup.getTime())) {
+    return {
+      ok: true,
+      requiredFormType: "long",
+      requiredFormLabel: "Long Form",
+      reason: "invalid_or_missing_pickup_date",
+    };
+  }
+
+  let customer = null;
+
+  if (customerId) {
+    customer = { id: customerId };
+  } else if (cleanEmail || cleanMobile) {
+    customer = await findCustomerByEmailOrMobile(env, cleanEmail, cleanMobile);
+  }
+
+  if (!customer?.id) {
+    return {
+      ok: true,
+      requiredFormType: "long",
+      requiredFormLabel: "Long Form",
+      reason: "no_previous_customer_found",
+    };
+  }
+
+  const previous = await env.DB.prepare(
+    `
+    SELECT id, pickup_at
+    FROM bookings
+    WHERE customer_id = ?
+      AND id != ?
+      AND pickup_at < ?
+      AND COALESCE(status, '') != 'cancelled'
+    ORDER BY pickup_at DESC
+    LIMIT 1
+  `,
+  )
+    .bind(customer.id, String(excludeBookingId || ""), currentPickup.toISOString())
+    .first();
+
+  if (!previous?.pickup_at) {
+    return {
+      ok: true,
+      requiredFormType: "long",
+      requiredFormLabel: "Long Form",
+      reason: "no_previous_hire_found",
+      customerId: customer.id,
+    };
+  }
+
+  const previousPickup = new Date(previous.pickup_at);
+
+  const diffDays =
+    (currentPickup.getTime() - previousPickup.getTime()) /
+    (1000 * 60 * 60 * 24);
+
+  const requiredFormType = diffDays >= 0 && diffDays <= 90 ? "short" : "long";
+
+  return {
+    ok: true,
+    requiredFormType,
+    requiredFormLabel: requiredFormType === "short" ? "Short Form" : "Long Form",
+    reason: requiredFormType === "short" ? "previous_hire_within_90_days" : "previous_hire_outside_90_days",
+    customerId: customer.id,
+    previousBookingId: previous.id,
+    previousPickup: previous.pickup_at,
+    diffDays: Math.round(diffDays * 10) / 10,
+  };
+}
+
+async function handleBookingFormRequirement(request, env) {
+  try {
+    const url = new URL(request.url);
+
+    const email = url.searchParams.get("email") || "";
+    const mobile = url.searchParams.get("mobile") || "";
+    const pickupAt = url.searchParams.get("pickupAt") || "";
+    const pickupDate = url.searchParams.get("pickupDate") || "";
+
+    const result = await resolveBookingFormRequirement(env, {
+      email,
+      mobile,
+      pickupAt,
+      pickupDate,
+    });
+
+    return json(result);
+  } catch (err) {
+    console.error("❌ FORM REQUIREMENT CHECK ERROR:", err);
+
+    // Safe fallback: if the check fails, require the full long form.
+    return json({
+      ok: true,
+      requiredFormType: "long",
+      requiredFormLabel: "Long Form",
+      reason: "fallback_error",
+    });
+  }
+}
+
+/* ===============================
    STRIPE CHECKOUT SESSION
 ================================ */
 
@@ -6180,6 +6320,16 @@ async function handleCreateCheckoutSession(request, env) {
   const confirmationFee = Math.min(rawConfirmationFee, totalHire);
 
   const outstandingAmount = Math.max(0, totalHire - confirmationFee);
+
+  const formRequirement = await resolveBookingFormRequirement(env, {
+    email: customerEmail,
+    mobile: booking.customerMobile || "",
+    pickupDate: booking.pickupDate,
+  });
+
+  const requiredFormType = normaliseRequiredFormType(
+    formRequirement.requiredFormType,
+  );
 
   /* ===============================
    🔒 LIVE AVAILABILITY CHECK
@@ -6398,6 +6548,7 @@ async function handleCreateCheckoutSession(request, env) {
         totalHire: String(totalHire),
         confirmationFee: String(confirmationFee),
         outstandingAmount: String(outstandingAmount),
+        requiredFormType,
       },
     });
   } catch (err) {
@@ -9305,7 +9456,9 @@ async function handleStripeWebhook(request, env) {
    before this booking and within the last 90 days.
 =============================== */
 
-      let requiredFormType = "long";
+      let requiredFormType = normaliseRequiredFormType(
+        session.metadata.requiredFormType || "long",
+      );
 
       try {
         if (booking.customerId) {

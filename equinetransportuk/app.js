@@ -797,6 +797,162 @@ const discountMessage = document.getElementById("discount-message");
 
 let selectedAvailability = null;
 
+/* ===============================
+   Required form auto-detection
+   Source of truth is the Worker.
+   Short form is only shown when the backend finds a previous hire
+   for this customer within 90 days of the selected pickup date.
+================================ */
+
+const REQUIRED_FORM_STATE = {
+  key: "",
+  type: "long",
+  loading: false,
+  checked: false,
+  reason: "default",
+};
+
+let requiredFormCheckTimer = null;
+
+function normaliseRequiredFormType(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase() === "short"
+    ? "short"
+    : "long";
+}
+
+function getCurrentRequiredFormType() {
+  return normaliseRequiredFormType(
+    REQUIRED_FORM_STATE.type || selectedAvailability?.requiredFormType || "long",
+  );
+}
+
+function getCurrentRequiredFormLabel() {
+  if (REQUIRED_FORM_STATE.loading) {
+    return "Checking automatically…";
+  }
+
+  return getCurrentRequiredFormType() === "short"
+    ? "Short Form"
+    : "Long Form";
+}
+
+function setDetectedRequiredFormType(type, reason = "auto") {
+  const normalised = normaliseRequiredFormType(type);
+
+  REQUIRED_FORM_STATE.type = normalised;
+  REQUIRED_FORM_STATE.loading = false;
+  REQUIRED_FORM_STATE.checked = true;
+  REQUIRED_FORM_STATE.reason = reason;
+
+  // Legacy compatibility: older code used this checkbox if present.
+  if (hiredWithin3MonthsInput) {
+    hiredWithin3MonthsInput.checked = normalised === "short";
+  }
+
+  if (selectedAvailability) {
+    selectedAvailability.requiredFormType = normalised;
+  }
+
+  return normalised;
+}
+
+function buildRequiredFormCheckKey() {
+  const email = String(customerEmailInput?.value || "")
+    .trim()
+    .toLowerCase();
+
+  const mobile = String(customerMobileInput?.value || "").trim();
+
+  const pickupDate =
+    selectedPickupInput?.value ||
+    selectedAvailability?.pickupDate ||
+    pickupDateInput?.value ||
+    "";
+
+  return `${email}|${mobile}|${pickupDate}`;
+}
+
+async function checkRequiredFormRequirement({ force = false } = {}) {
+  const email = String(customerEmailInput?.value || "")
+    .trim()
+    .toLowerCase();
+
+  const mobile = String(customerMobileInput?.value || "").trim();
+
+  const pickupDate =
+    selectedPickupInput?.value ||
+    selectedAvailability?.pickupDate ||
+    pickupDateInput?.value ||
+    "";
+
+  const key = buildRequiredFormCheckKey();
+
+  if (!email && !mobile) {
+    REQUIRED_FORM_STATE.key = key;
+    setDetectedRequiredFormType("long", "missing_customer_contact");
+    updateCheckoutSummary();
+    return getCurrentRequiredFormType();
+  }
+
+  if (!pickupDate) {
+    REQUIRED_FORM_STATE.key = key;
+    setDetectedRequiredFormType("long", "missing_pickup_date");
+    updateCheckoutSummary();
+    return getCurrentRequiredFormType();
+  }
+
+  if (!force && REQUIRED_FORM_STATE.checked && REQUIRED_FORM_STATE.key === key) {
+    return getCurrentRequiredFormType();
+  }
+
+  REQUIRED_FORM_STATE.key = key;
+  REQUIRED_FORM_STATE.loading = true;
+  updateCheckoutSummary();
+
+  try {
+    const url = new URL(`${BACKEND_API_BASE}/api/bookings/form-requirement`);
+    url.searchParams.set("pickupDate", pickupDate);
+    url.searchParams.set("_", String(Date.now()));
+
+    if (email) url.searchParams.set("email", email);
+    if (mobile) url.searchParams.set("mobile", mobile);
+
+    const res = await fetch(url.toString());
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || data?.ok === false) {
+      throw new Error(data?.error || `Form check failed: ${res.status}`);
+    }
+
+    const type = setDetectedRequiredFormType(
+      data.requiredFormType || data.formType || "long",
+      data.reason || "backend",
+    );
+
+    updateCheckoutSummary();
+    return type;
+  } catch (err) {
+    console.warn("Required form auto-detection failed:", err);
+
+    // Safe fallback: use the full long form if the check cannot run.
+    const type = setDetectedRequiredFormType("long", "fallback_error");
+    updateCheckoutSummary();
+    return type;
+  }
+}
+
+function scheduleRequiredFormCheck(delay = 450) {
+  clearTimeout(requiredFormCheckTimer);
+
+  requiredFormCheckTimer = setTimeout(() => {
+    checkRequiredFormRequirement().catch((err) => {
+      console.warn("Required form scheduled check failed:", err);
+    });
+  }, delay);
+}
+
 let BOOKING_WEEKEND_HALF_DAY_NOTICE = false;
 
 /* ===============================
@@ -3985,9 +4141,7 @@ async function updateCheckoutSummary() {
 
   const outstandingAmount = Math.max(0, hireTotal - confirmationFee);
 
-  const requiredFormType = hiredWithin3MonthsInput?.checked
-    ? "Short Form"
-    : "Long Form";
+  const requiredFormType = getCurrentRequiredFormLabel();
 
   /* ===============================
      🔥 GET CUSTOMER NOTES
@@ -5151,6 +5305,7 @@ async function checkBookingFormAvailability() {
     if (bookingSubmitBtn) bookingSubmitBtn.disabled = false;
 
     updateCheckoutSummary();
+    scheduleRequiredFormCheck(250);
 
     /* ===============================
        🔥 CRITICAL FIX
@@ -5764,6 +5919,12 @@ async function createStripeCheckoutSession(booking) {
 =============================== */
     console.log("🧪 SENDING NAME:", customerNameInput?.value);
 
+    const requiredFormType = await checkRequiredFormRequirement({ force: true });
+    booking.requiredFormType = requiredFormType;
+    booking.requiredFormLink =
+      requiredFormType === "short" ? booking.formLinkA : booking.formLinkB;
+    booking.hiredWithinLast3Months = requiredFormType === "short";
+
     const { response, data } = await fetchJsonWithTimeout(
       apiUrl("/api/bookings/create-checkout-session"),
       {
@@ -5784,6 +5945,8 @@ async function createStripeCheckoutSession(booking) {
           customerEmail: booking.customerEmail,
           customerMobile: booking.customerMobile,
           customerAddress: booking.customerAddress,
+
+          requiredFormType: booking.requiredFormType,
 
           bookingId: booking.id,
           confirmationFee: booking.confirmationFee,
@@ -5869,6 +6032,13 @@ function resetBookingCustomerFields() {
   =============================== */
 
   if (hiredWithin3MonthsInput) hiredWithin3MonthsInput.checked = false;
+
+  REQUIRED_FORM_STATE.key = "";
+  REQUIRED_FORM_STATE.type = "long";
+  REQUIRED_FORM_STATE.loading = false;
+  REQUIRED_FORM_STATE.checked = false;
+  REQUIRED_FORM_STATE.reason = "reset";
+  clearTimeout(requiredFormCheckTimer);
 
   if (dartfordEnabledInput) dartfordEnabledInput.checked = false;
 
@@ -6405,7 +6575,18 @@ earlyPickupEnabledInput?.addEventListener("change", () => {
   updateEarlyPickupAvailability(); // ✅ ensure UI stays correct
 });
 
-hiredWithin3MonthsInput?.addEventListener("change", updateCheckoutSummary);
+[customerEmailInput, customerMobileInput].forEach((input) => {
+  input?.addEventListener("input", () => scheduleRequiredFormCheck(650));
+  input?.addEventListener("blur", () => scheduleRequiredFormCheck(80));
+});
+
+hiredWithin3MonthsInput?.addEventListener("change", () => {
+  setDetectedRequiredFormType(
+    hiredWithin3MonthsInput.checked ? "short" : "long",
+    "manual_legacy_checkbox",
+  );
+  updateCheckoutSummary();
+});
 
 /* ===============================
    BOOKING SELECTION EVENTS
@@ -6433,6 +6614,7 @@ selectedPickupInput?.addEventListener("change", async () => {
   }
 
   await checkBookingFormAvailability();
+  await checkRequiredFormRequirement({ force: true });
 
   updateEarlyPickupAvailability();
 });
@@ -6456,6 +6638,7 @@ selectedDurationInput?.addEventListener("change", async () => {
   }
 
   await checkBookingFormAvailability();
+  scheduleRequiredFormCheck(250);
 
   updateEarlyPickupAvailability();
 });
@@ -6557,8 +6740,8 @@ if (bookingForm) {
        FORMS
     =============================== */
 
-    const hiredWithinLast3Months = hiredWithin3MonthsInput?.checked || false;
-    const requiredFormType = hiredWithinLast3Months ? "short" : "long";
+    const requiredFormType = await checkRequiredFormRequirement({ force: true });
+    const hiredWithinLast3Months = requiredFormType === "short";
 
     const shortFormLink = buildFormUrl(FORM_LINK_A, bookingId);
     const longFormLink = buildFormUrl(FORM_LINK_B, bookingId);
