@@ -6,6 +6,57 @@
   <title>Abbie at Heart | Equine Art</title>
   <meta name="description" content="Abbie at Heart — expressive equine artwork, featured works, and commission enquiries.">
   <link rel="stylesheet" href="style.css?v=20260222-2">
+
+  <style>
+    .header-links {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .abbie-site-menu-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      position: relative;
+    }
+
+    .abbie-site-menu-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 22px;
+      padding: 3px 9px;
+      border: 1px solid rgba(37, 99, 235, 0.24);
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.06);
+      color: #2563eb;
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .abbie-site-menu-wrap .abbie-menu-toggle {
+      margin: 0;
+    }
+
+    @media (max-width: 720px) {
+      .header-links {
+        align-items: stretch;
+      }
+
+      .abbie-site-menu-wrap {
+        width: 100%;
+        align-items: stretch;
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="header">
@@ -16,16 +67,19 @@
       </a>
       <div class="header-links">
         <a href="../index.html" class="kv-home-link">← KV Web Services</a>
-        <nav class="abbie-nav" aria-label="Abbie site navigation">
-          <button class="abbie-menu-toggle" type="button" aria-label="Open Abbie menu" aria-expanded="false" aria-controls="abbie-menu">☰ Menu</button>
-          <div class="abbie-menu" id="abbie-menu">
-            <a href="index.html">Gallery</a>
-            <a href="about.html">About Abbie</a>
-            <a href="store.html">Buy Art</a>
-            <a href="commission.html">Commission Enquiry</a>
-            <a href="studio.html">Artist Studio</a>
-          </div>
-        </nav>
+        <div class="abbie-site-menu-wrap">
+          <span class="abbie-site-menu-label">Abbie at Heart website</span>
+          <nav class="abbie-nav" aria-label="Abbie site navigation">
+            <button class="abbie-menu-toggle" type="button" aria-label="Open Abbie menu" aria-expanded="false" aria-controls="abbie-menu">☰ Abbie Menu</button>
+            <div class="abbie-menu" id="abbie-menu">
+              <a href="index.html">Gallery</a>
+              <a href="about.html">About Abbie</a>
+              <a href="store.html">Buy Art</a>
+              <a href="commission.html">Commission Enquiry</a>
+              <a href="studio.html">Artist Studio</a>
+            </div>
+          </nav>
+        </div>
       </div>
     </div>
   </header>

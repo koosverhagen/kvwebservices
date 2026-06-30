@@ -843,7 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
   const artistCaseUrl = "artist-store/index.html";
-  const overlayCacheVersion = "34";
+  const overlayCacheVersion = "35";
   let overlay = null;
   let lastFocusedElement = null;
 
@@ -865,7 +865,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const parsed = new URL(url, window.location.href);
       parsed.searchParams.set("kvOverlay", overlayCacheVersion);
-      return parsed.pathname.replace(/^\//, "") + parsed.search + parsed.hash;
+
+      const relativePath = parsed.pathname.replace(/^\//, "");
+      return `${relativePath}${parsed.search}${parsed.hash}`;
     } catch (error) {
       const joiner = url.includes("?") ? "&" : "?";
       return `${url}${joiner}kvOverlay=${overlayCacheVersion}`;
@@ -897,9 +899,11 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     document.body.appendChild(wrapper);
+
     wrapper.querySelectorAll("[data-case-overlay-close]").forEach((el) => {
       el.addEventListener("click", closeOverlay);
     });
+
     return wrapper;
   };
 
@@ -916,10 +920,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const isFrameElement = (doc, el) => {
+    if (!el) return false;
+    const win = doc.defaultView || doc.parentWindow;
+    if (win && win.HTMLElement) return el instanceof win.HTMLElement;
+    return el.nodeType === 1;
+  };
+
   const getMenuButton = (doc) => {
     return (
+      doc.querySelector(".abbie-menu-toggle") ||
       doc.querySelector("button.menu-toggle") ||
       doc.querySelector(".menu-toggle") ||
+      doc.querySelector("button[aria-controls='abbie-menu']") ||
       doc.querySelector("button[aria-controls='site-menu']") ||
       findTextMatch(doc, "button, [role='button']", /menu/i)
     );
@@ -940,6 +953,13 @@ document.addEventListener("DOMContentLoaded", () => {
         style.textContent = `
           body.kv-embedded-in-case-overlay .kv-overlay-abbie-back-link {
             display: none !important;
+          }
+
+          body.kv-embedded-in-case-overlay .header-links {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 14px !important;
           }
 
           body.kv-embedded-in-case-overlay .kv-overlay-abbie-menu-wrap {
@@ -989,6 +1009,10 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           @media (max-width: 720px) {
+            body.kv-embedded-in-case-overlay .header-links {
+              align-items: stretch !important;
+            }
+
             body.kv-embedded-in-case-overlay .kv-overlay-abbie-menu-wrap {
               align-items: stretch !important;
               width: 100% !important;
@@ -998,8 +1022,11 @@ document.addEventListener("DOMContentLoaded", () => {
         doc.head.appendChild(style);
       }
 
-      const backLink = findTextMatch(doc, "a, button", /kv\s*web\s*services/i);
-      if (backLink instanceof HTMLElement) {
+      const backLink =
+        doc.querySelector(".kv-home-link") ||
+        findTextMatch(doc, "a, button", /kv\s*web\s*services/i);
+
+      if (isFrameElement(doc, backLink)) {
         backLink.classList.add("kv-overlay-abbie-back-link");
         backLink.setAttribute("aria-hidden", "true");
         backLink.setAttribute("tabindex", "-1");
@@ -1007,7 +1034,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const menuButton = getMenuButton(doc);
-      if (!(menuButton instanceof HTMLElement)) return;
+      if (!isFrameElement(doc, menuButton)) return;
 
       menuButton.classList.add("kv-overlay-abbie-menu-toggle");
       menuButton.setAttribute("aria-label", "Open Abbie at Heart website menu");
@@ -1016,21 +1043,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const controlledMenuId = menuButton.getAttribute("aria-controls");
       const controlledMenu = controlledMenuId ? doc.getElementById(controlledMenuId) : null;
-      if (controlledMenu instanceof HTMLElement) {
+      if (isFrameElement(doc, controlledMenu)) {
         controlledMenu.classList.add("kv-overlay-abbie-menu-panel");
       }
 
       let menuWrap = menuButton.closest(".kv-overlay-abbie-menu-wrap");
-      if (!(menuWrap instanceof HTMLElement)) {
+      if (!isFrameElement(doc, menuWrap)) {
         menuWrap = doc.createElement("div");
         menuWrap.className = "kv-overlay-abbie-menu-wrap";
-        menuButton.parentElement?.insertBefore(menuWrap, menuButton);
-        menuWrap.appendChild(menuButton);
 
-        if (controlledMenu instanceof HTMLElement && controlledMenu.parentElement === menuWrap.parentElement) {
-          menuWrap.appendChild(controlledMenu);
+        const originalParent = menuButton.parentElement;
+        if (originalParent) {
+          originalParent.insertBefore(menuWrap, menuButton);
+          menuWrap.appendChild(menuButton);
+
+          if (isFrameElement(doc, controlledMenu) && controlledMenu.parentElement === originalParent) {
+            menuWrap.appendChild(controlledMenu);
+          }
         }
       }
+
+      if (!isFrameElement(doc, menuWrap)) return;
 
       menuWrap.style.setProperty("display", "flex", "important");
       menuWrap.style.setProperty("flex-direction", "column", "important");
@@ -1059,8 +1092,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const interval = window.setInterval(() => {
       attempts += 1;
       applyArtistFramePolish(frame);
-      if (attempts >= 10) window.clearInterval(interval);
+      if (attempts >= 12) window.clearInterval(interval);
     }, 300);
+  };
+
+  const bindFramePolish = (frame) => {
+    if (!(frame instanceof HTMLIFrameElement)) return;
+    if (frame.dataset.kvAbbiePolishBound === "true") return;
+
+    frame.dataset.kvAbbiePolishBound = "true";
+    frame.addEventListener("load", () => runArtistFramePolish(frame));
   };
 
   const openOverlay = (url = artistCaseUrl) => {
@@ -1073,8 +1114,8 @@ document.addEventListener("DOMContentLoaded", () => {
       : null;
 
     if (frame instanceof HTMLIFrameElement) {
+      bindFramePolish(frame);
       const iframeUrl = withOverlayCacheBust(url);
-      frame.addEventListener("load", () => runArtistFramePolish(frame), { once: true });
 
       if (frame.getAttribute("src") !== iframeUrl) {
         frame.setAttribute("src", iframeUrl);
