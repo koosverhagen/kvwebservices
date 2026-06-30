@@ -636,6 +636,84 @@
           page-break-inside: avoid;
         }
       }
+
+      /* ==========================================
+   ADMIN PRINT OF SUBMITTED FORM
+========================================== */
+
+      body.admin-print-mode {
+        background: #ffffff !important;
+      }
+
+      body.admin-print-mode .admin-print-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        max-width: 820px;
+        margin: 0 auto 12px;
+        padding: 12px 14px;
+        border: 1px solid #dbe1e8;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      }
+
+      body.admin-print-mode .admin-print-toolbar strong {
+        display: block;
+        font-size: 14px;
+      }
+
+      body.admin-print-mode .admin-print-toolbar span {
+        display: block;
+        margin-top: 2px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      body.admin-print-mode .admin-print-toolbar button {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 14px;
+        background: #1f6feb;
+        color: #ffffff;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      body.admin-print-mode .dvla-section,
+      body.admin-print-mode #clearSignature,
+      body.admin-print-mode .signature-actions,
+      body.admin-print-mode button[type="submit"],
+      body.admin-print-mode #status,
+      body.admin-print-mode .dvla-help {
+        display: none !important;
+      }
+
+      body.admin-print-mode input,
+      body.admin-print-mode select,
+      body.admin-print-mode textarea {
+        background: #ffffff !important;
+      }
+
+      @media print {
+        body.admin-print-mode .admin-print-toolbar {
+          display: none !important;
+        }
+
+        body.admin-print-mode {
+          padding: 0 !important;
+          background: #ffffff !important;
+        }
+
+        body.admin-print-mode .section,
+        body.admin-print-mode .header-card {
+          box-shadow: none !important;
+        }
+      }
+
     </style>
     <link rel="icon" href="/equinetransportuk/images/favicon.png" />
   </head>
@@ -931,6 +1009,7 @@
 ================================ */
 
       const PAPER_MODE = params.get("paper") === "1";
+      const ADMIN_PRINT_MODE = params.get("adminPrint") === "1";
       const AUTO_PRINT = params.get("print") === "1";
 
       function addPaperFormHeader() {
@@ -1121,7 +1200,7 @@
    🚀 AUTO SUCCESS SCREEN
 =============================== */
 
-          if (!PAPER_MODE && booking.formCompleted) {
+          if (!PAPER_MODE && !ADMIN_PRINT_MODE && booking.formCompleted) {
             console.log("✅ Form already completed → skipping form");
 
             renderSuccessCard({
@@ -1155,7 +1234,9 @@
         document.body.classList.remove("loading");
       }
 
-      prefillFromBooking();
+      if (!ADMIN_PRINT_MODE) {
+        prefillFromBooking();
+      }
 
       // 🔒 keep times locked when user changes input
       document
@@ -1237,6 +1318,372 @@
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           signatureInput.value = "";
         });
+
+
+        /* ==========================================
+   ADMIN PRINT OF SUBMITTED MILLENS FORM
+========================================== */
+
+        function normaliseAdminPrintValue(value) {
+          if (value === null || value === undefined) return "";
+          if (typeof value === "boolean") return value ? "yes" : "";
+          if (Array.isArray(value)) return value.join(", ");
+          if (typeof value === "object") return "";
+          return String(value);
+        }
+
+        function getAdminPrintSources(formData) {
+          return [
+            formData?.payload,
+            formData?.form?.payload,
+            formData,
+            formData?.form,
+          ].filter((source) => source && typeof source === "object");
+        }
+
+        function getAdminPrintValue(formData, keys = []) {
+          const sources = getAdminPrintSources(formData);
+
+          for (const key of keys) {
+            for (const source of sources) {
+              if (Object.prototype.hasOwnProperty.call(source, key)) {
+                const value = normaliseAdminPrintValue(source[key]);
+                if (value) return value;
+              }
+            }
+          }
+
+          const wanted = keys.map((key) =>
+            String(key || "").toLowerCase().replace(/[^a-z0-9]/g, ""),
+          );
+
+          for (const source of sources) {
+            for (const [key, rawValue] of Object.entries(source)) {
+              const cleanKey = String(key || "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, "");
+
+              if (wanted.includes(cleanKey)) {
+                const value = normaliseAdminPrintValue(rawValue);
+                if (value) return value;
+              }
+            }
+          }
+
+          return "";
+        }
+
+        function formatAdminPrintDate(value) {
+          const raw = String(value || "").trim();
+          if (!raw) return "";
+
+          const ddmmyyyy = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (ddmmyyyy) {
+            return `${ddmmyyyy[3]}-${ddmmyyyy[2]}-${ddmmyyyy[1]}`;
+          }
+
+          if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+            return raw.slice(0, 10);
+          }
+
+          const parsed = new Date(raw);
+          if (Number.isNaN(parsed.getTime())) return raw;
+
+          return parsed.toLocaleDateString("en-CA", {
+            timeZone: "Europe/London",
+          });
+        }
+
+        function formatAdminPrintTime(value) {
+          const raw = String(value || "").trim();
+          if (!raw) return "";
+
+          const timeMatch = raw.match(/T(\d{2}):(\d{2})/);
+          if (timeMatch) return `${timeMatch[1]}:${timeMatch[2]}`;
+
+          const plainTime = raw.match(/^(\d{1,2}):(\d{2})/);
+          if (plainTime) {
+            return `${plainTime[1].padStart(2, "0")}:${plainTime[2]}`;
+          }
+
+          const parsed = new Date(raw);
+          if (Number.isNaN(parsed.getTime())) return "";
+
+          return parsed.toLocaleTimeString("en-GB", {
+            timeZone: "Europe/London",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        }
+
+        function setAdminPrintFieldValue(name, value) {
+          const fields = Array.from(document.querySelectorAll("[name]")).filter(
+            (field) => field.getAttribute("name") === name,
+          );
+
+          if (!fields.length) return false;
+
+          fields.forEach((field) => {
+            const cleanValue = normaliseAdminPrintValue(value);
+
+            if (field.type === "checkbox") {
+              const lower = cleanValue.toLowerCase();
+              field.checked =
+                lower === "yes" ||
+                lower === "true" ||
+                lower === "on" ||
+                lower === "1" ||
+                cleanValue === field.value ||
+                cleanValue.split(",").map((v) => v.trim()).includes(field.value);
+              return;
+            }
+
+            if (field.type === "radio") {
+              field.checked = String(field.value) === cleanValue;
+              return;
+            }
+
+            if (field.type === "date") {
+              field.value = formatAdminPrintDate(cleanValue);
+              return;
+            }
+
+            if (field.tagName === "SELECT") {
+              const exists = Array.from(field.options).some(
+                (option) => option.value === cleanValue,
+              );
+
+              if (cleanValue && !exists) {
+                const option = document.createElement("option");
+                option.value = cleanValue;
+                option.textContent = cleanValue;
+                field.appendChild(option);
+              }
+
+              field.value = cleanValue;
+              return;
+            }
+
+            field.value = cleanValue;
+          });
+
+          return true;
+        }
+
+        function setAdminPrintIdValue(id, value, type = "") {
+          const el = document.getElementById(id);
+          if (!el) return;
+
+          if (type === "date") {
+            el.value = formatAdminPrintDate(value);
+            return;
+          }
+
+          if (type === "time") {
+            el.value = formatAdminPrintTime(value);
+            return;
+          }
+
+          el.value = normaliseAdminPrintValue(value);
+        }
+
+        function applySubmittedFormToFields(formData) {
+          const payload =
+            formData?.payload && typeof formData.payload === "object"
+              ? formData.payload
+              : formData || {};
+
+          for (const [key, value] of Object.entries(payload)) {
+            setAdminPrintFieldValue(key, value);
+          }
+
+          const aliases = {
+            firstName: ["firstName", "customerFirstName"],
+            lastName: ["lastName", "customerLastName"],
+            email: ["email", "customerEmail"],
+            mobile: ["mobile", "customerMobile"],
+            address: ["address", "customerAddress"],
+            licenceNumber: [
+              "licenceNumber",
+              "drivingLicenceNumber",
+              "drivingLicenseNumber",
+              "driverLicenceNumber",
+            ],
+            drivingLicenceNumber: [
+              "drivingLicenceNumber",
+              "licenceNumber",
+              "drivingLicenseNumber",
+              "driverLicenceNumber",
+            ],
+            dvlaCode: ["dvlaCode", "dvlaCheckCode", "dvlaAccessCode"],
+            dvlaCheckCode: ["dvlaCheckCode", "dvlaCode", "dvlaAccessCode"],
+            todayDate: ["todayDate", "signedDate"],
+            signedDate: ["signedDate", "todayDate"],
+            dvlaCodeDate: ["dvlaCodeDate", "dvlaAccessCodeDate"],
+          };
+
+          for (const [fieldName, keys] of Object.entries(aliases)) {
+            const value = getAdminPrintValue(formData, keys);
+            if (value) setAdminPrintFieldValue(fieldName, value);
+          }
+
+          const hireFrom =
+            getAdminPrintValue(formData, ["hireFrom", "pickupAt"]) ||
+            getAdminPrintValue(formData, ["hireFromDate"]);
+          const hireUntil =
+            getAdminPrintValue(formData, ["hireUntil", "dropoffAt"]) ||
+            getAdminPrintValue(formData, ["hireUntilDate"]);
+
+          if (hireFrom) {
+            setAdminPrintIdValue("hireFrom", hireFrom);
+            setAdminPrintIdValue("hireFromDate", hireFrom, "date");
+            setAdminPrintIdValue(
+              "hireFromTime",
+              getAdminPrintValue(formData, ["hireFromTime"]) || hireFrom,
+              "time",
+            );
+          }
+
+          if (hireUntil) {
+            setAdminPrintIdValue("hireUntil", hireUntil);
+            setAdminPrintIdValue("hireUntilDate", hireUntil, "date");
+            setAdminPrintIdValue(
+              "hireUntilTime",
+              getAdminPrintValue(formData, ["hireUntilTime"]) || hireUntil,
+              "time",
+            );
+          }
+
+          if (typeof lockHireTimes === "function") {
+            lockHireTimes();
+          }
+        }
+
+        function drawAdminPrintSignature(formData) {
+          const signature =
+            formData?.signatureData ||
+            formData?.signature_data ||
+            formData?.payload?.signatureData ||
+            formData?.payload?.signature ||
+            "";
+
+          if (!signature || !canvas || !ctx) return;
+
+          signatureInput.value = signature;
+
+          const img = new Image();
+
+          img.onload = () => {
+            if (typeof resizeCanvas === "function") resizeCanvas();
+            if (typeof setupCanvas === "function") setupCanvas();
+
+            window.setTimeout(() => {
+              const rect = canvas.getBoundingClientRect();
+              ctx.clearRect(0, 0, rect.width, rect.height);
+              ctx.drawImage(img, 0, 0, rect.width, rect.height);
+            }, 80);
+          };
+
+          img.src = signature;
+        }
+
+        function addAdminPrintToolbar(formData) {
+          if (document.querySelector(".admin-print-toolbar")) return;
+
+          document.body.classList.add("admin-print-mode", "paper-mode");
+
+          const formType =
+            formData?.formType ||
+            formData?.form_type ||
+            formData?.payload?.formType ||
+            "form";
+
+          const submitted =
+            formData?.submittedAt ||
+            formData?.submitted_at ||
+            formData?.updatedAt ||
+            "";
+
+          const toolbar = document.createElement("div");
+          toolbar.className = "admin-print-toolbar";
+          toolbar.innerHTML = `
+            <div>
+              <strong>Submitted Millens ${String(formType).toUpperCase()} form</strong>
+              <span>Booking: ${bookingId || "—"}${submitted ? ` · Submitted: ${submitted}` : ""}</span>
+            </div>
+            <button type="button" onclick="window.print()">Print / Save PDF</button>
+          `;
+
+          const wrap = document.querySelector(".wrap") || document.body.firstElementChild;
+          if (wrap) {
+            wrap.parentNode.insertBefore(toolbar, wrap);
+          }
+        }
+
+        async function loadAdminSubmittedFormForPrint() {
+          if (!ADMIN_PRINT_MODE) return;
+
+          document.body.classList.add("admin-print-mode", "paper-mode");
+
+          try {
+            const res = await fetch(
+              `https://equine-bookings-api.kverhagen.workers.dev/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
+              { cache: "no-store" },
+            );
+
+            let data = {};
+            try {
+              data = await res.json();
+            } catch {
+              data = {};
+            }
+
+            if (!res.ok || data?.found === false) {
+              throw new Error(data?.error || "Submitted form was not found.");
+            }
+
+            const formData = data.form || data;
+
+            document.getElementById("bookingIdPill").textContent =
+              formData.bookingId || bookingId || "—";
+
+            addAdminPrintToolbar(formData);
+            applySubmittedFormToFields(formData);
+            drawAdminPrintSignature(formData);
+
+            document
+              .querySelectorAll("input, select, textarea")
+              .forEach((field) => {
+                field.setAttribute("data-admin-print", "true");
+              });
+
+            document.body.classList.remove("loading");
+
+            if (AUTO_PRINT) {
+              window.setTimeout(() => window.print(), 1200);
+            }
+          } catch (err) {
+            console.error("Admin submitted form print failed:", err);
+
+            document.body.classList.remove("loading");
+
+            const status = document.getElementById("status");
+            if (status) {
+              status.className = "status err";
+              status.style.display = "block";
+              status.textContent =
+                err.message || "Could not load submitted form for printing.";
+            } else {
+              alert(err.message || "Could not load submitted form for printing.");
+            }
+          }
+        }
+
+        if (ADMIN_PRINT_MODE) {
+          loadAdminSubmittedFormForPrint();
+        }
+
 
       const form = document.getElementById("shortForm");
       const statusEl = document.getElementById("status");

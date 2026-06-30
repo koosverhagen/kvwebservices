@@ -9726,6 +9726,72 @@ Equine Transport UK`;
         return `https://www.equinetransportuk.com/forms/${fileName}?${params.toString()}`;
       }
 
+      function buildSubmittedFormPrintUrl(bookingId, formType) {
+        const cleanFormType = String(formType || "long")
+          .trim()
+          .toLowerCase() === "short"
+          ? "short"
+          : "long";
+
+        const fileName =
+          cleanFormType === "short" ? "short-form.html" : "long-form.html";
+
+        const params = new URLSearchParams({
+          bookingId: bookingId || "",
+          adminPrint: "1",
+          print: "1",
+        });
+
+        return `https://www.equinetransportuk.com/forms/${fileName}?${params.toString()}`;
+      }
+
+      async function openSubmittedFormPrint(bookingId) {
+        const safeBookingId = String(bookingId || "").trim();
+
+        if (!safeBookingId) {
+          alert("Missing booking reference.");
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(safeBookingId)}`,
+            { cache: "no-store" },
+          );
+
+          let data = {};
+          try {
+            data = await res.json();
+          } catch {
+            data = {};
+          }
+
+          if (res.status === 404 || data?.found === false) {
+            alert("No submitted form found for this booking yet.");
+            return;
+          }
+
+          if (!res.ok) {
+            throw new Error(data?.error || `Could not load form (${res.status})`);
+          }
+
+          const formData = data.form || data;
+          const formType =
+            formData.formType ||
+            formData.form_type ||
+            formData.payload?.formType ||
+            formData.payload?.form_type ||
+            "long";
+
+          const url = buildSubmittedFormPrintUrl(safeBookingId, formType);
+          window.open(url, "_blank", "noopener");
+        } catch (err) {
+          console.error("Submitted form print failed:", err);
+          alert(err.message || "Could not open submitted form for printing.");
+        }
+      }
+
+
       function hireCellHtml(booking) {
         const now = new Date();
 
@@ -9907,7 +9973,16 @@ Equine Transport UK`;
   ${
     complete
       ? paperForm
-        ? `<span class="pill ok">Paper form received</span>`
+        ? `
+          <span class="pill ok">Paper form received</span>
+          <button
+            class="btn ghost btn-small"
+            type="button"
+            data-print-paper-form="${escapeHtml(bookingId)}"
+          >
+            Print paper
+          </button>
+        `
         : `
           <button
             class="btn ghost btn-small"
@@ -9915,6 +9990,13 @@ Equine Transport UK`;
             data-view-form="${escapeHtml(bookingId)}"
           >
             View Form
+          </button>
+          <button
+            class="btn primary btn-small"
+            type="button"
+            data-print-submitted-form="${escapeHtml(bookingId)}"
+          >
+            Print Form PDF
           </button>
         `
       : `
@@ -11517,13 +11599,30 @@ ${notesBox}
   ${
     formDone
       ? isPaperForm(booking)
-        ? `<span class="pill ok">Paper form received</span>`
+        ? `
+            <span class="pill ok">Paper form received</span>
+            <button
+              class="mobile-link-btn"
+              type="button"
+              data-print-paper-form="${escapeHtml(bookingId)}"
+            >
+              🖨️ Print Paper Form
+            </button>
+          `
         : `
             <button
               class="mobile-link-btn"
               onclick="openMobileForm('${booking.id}')"
             >
               📝 View Form
+            </button>
+
+            <button
+              class="mobile-link-btn"
+              type="button"
+              data-print-submitted-form="${escapeHtml(bookingId)}"
+            >
+              🖨️ Print Form PDF
             </button>
           `
       : `
@@ -17401,6 +17500,30 @@ Equine Transport UK`;
         }
 
         loadForm(bookingId);
+      });
+
+      /* ===============================
+   PRINT SUBMITTED FORM AS PDF
+================================ */
+
+      document.addEventListener("click", async (event) => {
+        const btn = event.target.closest("[data-print-submitted-form]");
+        if (!btn) return;
+
+        event.preventDefault();
+
+        const bookingId = btn.getAttribute("data-print-submitted-form");
+
+        const oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Opening...";
+
+        try {
+          await openSubmittedFormPrint(bookingId);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = oldText;
+        }
       });
 
       /* ===============================
