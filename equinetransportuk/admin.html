@@ -10013,12 +10013,12 @@ Equine Transport UK`;
         ) || {};
 
         try {
-          const res = await fetch(
-            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(safeBookingId)}`,
-            {
-              cache: "no-store",
-            },
-          );
+          const formUrl = `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(safeBookingId)}&_=${Date.now()}`;
+
+          // Keep this as a simple GET, matching the existing View Form request.
+          // Do not pass cache/credentials options here: those can add browser
+          // request headers that trigger a CORS preflight on some browsers.
+          const res = await fetch(formUrl);
 
           let out = {};
           try {
