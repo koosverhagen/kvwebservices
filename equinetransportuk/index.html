@@ -628,7 +628,7 @@ removed duplicate, script is loaded at end of body -->
                           type="email"
                           autocomplete="email"
                           inputmode="email"
-                          autocapitalize="none"
+                          autocapitalize="sentences"
                           autocorrect="off"
                           spellcheck="false"
                           required
@@ -1029,19 +1029,19 @@ removed duplicate, script is loaded at end of body -->
 
         if (!emailInput) return;
 
-        emailInput.setAttribute("autocapitalize", "none");
+        // Keep the email exactly as typed, including capitals.
+        // Only trim accidental spaces on blur.
+        emailInput.setAttribute("autocapitalize", "sentences");
         emailInput.setAttribute("autocorrect", "off");
         emailInput.setAttribute("spellcheck", "false");
         emailInput.setAttribute("inputmode", "email");
 
         emailInput.addEventListener("blur", function () {
-          emailInput.value = String(emailInput.value || "")
-            .trim()
-            .toLowerCase();
+          emailInput.value = String(emailInput.value || "").trim();
         });
       });
     </script>
-    <script src="app.js?v=69"></script>
+    <script src="app.js?v=70"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
   </body>
 </html>

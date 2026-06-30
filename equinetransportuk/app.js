@@ -6807,7 +6807,7 @@ if (bookingForm) {
       durationHours: selectedAvailability.durationHours,
       pickupTime: bookingPickupTime,
       customerName: (customerNameInput?.value || "").trim(),
-      customerEmail: customerEmailInput?.value || "",
+      customerEmail: (customerEmailInput?.value || "").trim(),
       customerMobile: customerMobileInput?.value || "",
       customerAddress,
       customerDob: customerDobInput?.value || "",
