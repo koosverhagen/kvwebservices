@@ -7825,8 +7825,7 @@
           />
 
           <p class="resend-confirmation-help">
-            Check or correct the email address before sending. The email will be
-            lowercased automatically.
+            Check or correct the email address before sending. Capital letters are kept exactly as typed.
           </p>
 
           <div
@@ -8721,9 +8720,7 @@ Equine Transport UK`;
       }
 
       function normaliseAdminEmail(value) {
-        return String(value || "")
-          .trim()
-          .toLowerCase();
+        return String(value || "").trim();
       }
 
       function buildResendConfirmationPanel(booking, options = {}) {

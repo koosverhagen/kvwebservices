@@ -14005,6 +14005,10 @@ function normaliseCustomerEmail(value) {
     .toLowerCase();
 }
 
+function trimCustomerEmail(value) {
+  return String(value || "").trim();
+}
+
 async function findLatestBookingByEmail(env, email) {
   const safeEmail = normaliseCustomerEmail(email);
 
@@ -14110,12 +14114,12 @@ async function sendBookingConfirmationEmailForBooking(env, booking, options = {}
   let linkedBooking = await enrichBookingLinks(env, booking);
   linkedBooking = await refreshCustomerSafeBookingLinks(env, linkedBooking);
 
-  const overrideEmail = normaliseCustomerEmail(
+  const overrideEmail = trimCustomerEmail(
     options.email || options.toEmail || options.targetEmail,
   );
 
   const customerEmail =
-    overrideEmail || normaliseCustomerEmail(linkedBooking.customerEmail);
+    overrideEmail || trimCustomerEmail(linkedBooking.customerEmail);
 
   if (!customerEmail) {
     throw new Error("No customer email");
@@ -14195,7 +14199,7 @@ async function handleAdminResendConfirmationEmail(request, env) {
     const body = await request.json();
 
     const bookingId = String(body.bookingId || "").trim();
-    const email = normaliseCustomerEmail(body.email);
+    const email = trimCustomerEmail(body.email);
 
     if (!bookingId && !email) {
       return json({ error: "Send bookingId or email" }, 400);
