@@ -843,7 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
   const artistCaseUrl = "artist-store/index.html";
-  const overlayCacheVersion = "35";
+  const overlayCacheVersion = "36";
   let overlay = null;
   let lastFocusedElement = null;
 
