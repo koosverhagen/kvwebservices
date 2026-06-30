@@ -6260,6 +6260,45 @@
         }
       }
 
+
+      /* =========================================
+         ADMIN MOBILE CALENDAR NAV POLISH
+         Adds lower month controls and keeps controls
+         5px away from the calendar cards.
+      ========================================= */
+
+      .calendar-footer {
+        display: none;
+      }
+
+      @media (max-width: 768px) {
+        .calendar-header {
+          margin-bottom: 5px !important;
+        }
+
+        .calendar-footer {
+          display: flex !important;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 5px !important;
+        }
+
+        .calendar-footer .calendar-title {
+          flex: 1;
+          text-align: center;
+        }
+
+        .calendar-header .btn-small,
+        .calendar-footer .btn-small {
+          width: 66px;
+          min-height: 56px;
+          border-radius: 18px;
+          font-size: 24px;
+          font-weight: 950;
+        }
+      }
+
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -6547,6 +6586,12 @@
           </div>
 
           <div id="calendar-grid" class="calendar-grid"></div>
+
+          <div class="calendar-header calendar-footer" aria-label="Calendar month navigation bottom">
+            <button class="btn ghost btn-small" id="cal-prev-bottom" type="button" aria-label="Previous month">←</button>
+            <div id="cal-title-bottom" class="calendar-title" aria-hidden="true"></div>
+            <button class="btn ghost btn-small" id="cal-next-bottom" type="button" aria-label="Next month">→</button>
+          </div>
         </div>
       </section>
 
@@ -7821,8 +7866,11 @@
 
       const calGrid = document.getElementById("calendar-grid");
       const calTitle = document.getElementById("cal-title");
+      const calTitleBottom = document.getElementById("cal-title-bottom");
       const calPrev = document.getElementById("cal-prev");
       const calNext = document.getElementById("cal-next");
+      const calPrevBottom = document.getElementById("cal-prev-bottom");
+      const calNextBottom = document.getElementById("cal-next-bottom");
       const calVehicle = document.getElementById("cal-vehicle");
       if (calVehicle) {
         calVehicle.value = "all";
@@ -18950,11 +18998,14 @@ Equine Transport UK`;
         const month = CAL_DATE.getMonth() + 1;
         const monthStr = `${year}-${String(month).padStart(2, "0")}`;
 
-        calTitle.textContent =
+        const calendarTitleText =
           CAL_DATE.toLocaleString("en-GB", {
             month: "long",
             year: "numeric",
           }) + " · All Lorries";
+
+        calTitle.textContent = calendarTitleText;
+        if (calTitleBottom) calTitleBottom.textContent = calendarTitleText;
 
         calGrid.innerHTML = "Loading…";
 
@@ -20512,14 +20563,25 @@ Equine Transport UK`;
          CONTROLS
       =============================== */
 
-      calPrev?.addEventListener("click", () => {
-        CAL_DATE.setMonth(CAL_DATE.getMonth() - 1);
+      function changeAdminCalendarMonth(delta) {
+        CAL_DATE.setMonth(CAL_DATE.getMonth() + delta);
         loadAdminCalendar();
+      }
+
+      calPrev?.addEventListener("click", () => {
+        changeAdminCalendarMonth(-1);
       });
 
       calNext?.addEventListener("click", () => {
-        CAL_DATE.setMonth(CAL_DATE.getMonth() + 1);
-        loadAdminCalendar();
+        changeAdminCalendarMonth(1);
+      });
+
+      calPrevBottom?.addEventListener("click", () => {
+        changeAdminCalendarMonth(-1);
+      });
+
+      calNextBottom?.addEventListener("click", () => {
+        changeAdminCalendarMonth(1);
       });
 
       // Calendar is always All Lorries now.
