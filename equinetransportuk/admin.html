@@ -9443,6 +9443,11 @@ Equine Transport UK`;
               booking.required_form_type ||
               booking.formType ||
               fallback.formType,
+            formLink:
+              booking.requiredFormLink ||
+              booking.required_form_link ||
+              booking.formLink ||
+              "",
           };
         } catch (err) {
           console.warn("Could not refresh SMS-safe booking link:", err);
@@ -10293,6 +10298,15 @@ Equine Transport UK`;
           >
             Print paper
           </button>
+
+          <button
+            class="btn ghost btn-small"
+            type="button"
+            data-reset-submitted-form="${escapeHtml(bookingId)}"
+            style="border-color:#b45309;color:#92400e;"
+          >
+            Reset form
+          </button>
         `
         : `
           <button
@@ -10308,6 +10322,15 @@ Equine Transport UK`;
             data-print-submitted-form="${escapeHtml(bookingId)}"
           >
             Print Form PDF
+          </button>
+
+          <button
+            class="btn ghost btn-small"
+            type="button"
+            data-reset-submitted-form="${escapeHtml(bookingId)}"
+            style="border-color:#b45309;color:#92400e;"
+          >
+            Reset form
           </button>
         `
       : `
@@ -11919,6 +11942,14 @@ ${notesBox}
             >
               🖨️ Print Paper Form
             </button>
+
+            <button
+              class="mobile-link-btn"
+              type="button"
+              data-reset-submitted-form="${escapeHtml(bookingId)}"
+            >
+              🔄 Reset Form
+            </button>
           `
         : `
             <button
@@ -11934,6 +11965,14 @@ ${notesBox}
               data-print-submitted-form="${escapeHtml(bookingId)}"
             >
               🖨️ Print Form PDF
+            </button>
+
+            <button
+              class="mobile-link-btn"
+              type="button"
+              data-reset-submitted-form="${escapeHtml(bookingId)}"
+            >
+              🔄 Reset Form
             </button>
           `
       : `
@@ -17058,11 +17097,13 @@ ${mobileOutstandingText}
           const smsBookingId = smsLinkData.bookingId || bookingId;
           const smsFormType = smsLinkData.formType || formType;
 
-          const formLink = buildSmsFriendlyLink(
-            "form",
-            smsBookingId,
-            smsFormType,
-          );
+          const formLink =
+            smsLinkData.formLink ||
+            buildSmsFriendlyLink(
+              "form",
+              smsBookingId,
+              smsFormType,
+            );
           const depositLink = buildSmsFriendlyLink("deposit", smsBookingId);
           const outstandingLink = buildSmsFriendlyLink(
             "outstanding",
@@ -17817,6 +17858,133 @@ Equine Transport UK`;
         }
 
         loadForm(bookingId);
+      });
+
+      /* ===============================
+   RESET SUBMITTED FORM
+================================ */
+
+      document.addEventListener("click", async (event) => {
+        const btn = event.target.closest("[data-reset-submitted-form]");
+        if (!btn) return;
+
+        event.preventDefault();
+
+        const bookingId = btn.getAttribute("data-reset-submitted-form");
+
+        const booking = allBookings.find(
+          (b) => String(b.id) === String(bookingId),
+        );
+
+        if (!booking) {
+          alert("Booking not found.");
+          return;
+        }
+
+        const customerName = getCustomerName(booking) || "this customer";
+        const ok = confirm(
+          `Reset the submitted form for ${customerName}?
+
+This clears the submitted form, DVLA verified tick, licence number and DVLA/access code. A fresh form link will be created so the customer can submit again.`,
+        );
+
+        if (!ok) return;
+
+        const oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Resetting...";
+
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/form-reset`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ bookingId }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || data.detail || "Failed to reset form");
+          }
+
+          const idx = allBookings.findIndex(
+            (b) => String(b.id) === String(data.bookingId || bookingId),
+          );
+
+          if (idx >= 0) {
+            allBookings[idx] = {
+              ...allBookings[idx],
+              ...(data.booking || {}),
+              formCompleted: false,
+              form_completed: false,
+              formSubmitted: false,
+              formSubmittedAt: "",
+              formCompletedAt: "",
+              formRecordId: "",
+              formSource: "",
+              paperFormReceived: false,
+              paperFormReceivedAt: "",
+              dvlaVerified: false,
+              dvlaLicenceLast8: "",
+              dvlaCode: "",
+              dvlaCheckCode: "",
+              drivingLicenceNumber: "",
+              licenceNumber: "",
+              requiredFormLink:
+                data.formLink ||
+                data.booking?.requiredFormLink ||
+                allBookings[idx].requiredFormLink,
+            };
+          }
+
+          renderBookings();
+
+          const shouldSend =
+            booking.customerEmail &&
+            confirm(
+              `Form reset ✓
+
+Send the fresh form link to ${booking.customerEmail} now?`,
+            );
+
+          if (shouldSend) {
+            btn.disabled = true;
+            btn.textContent = "Sending...";
+
+            const resendRes = await fetch(`${API_BASE}/api/admin/resend-email`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                bookingId: data.bookingId || bookingId,
+                type: "form",
+              }),
+            });
+
+            const resendData = await resendRes.json();
+
+            if (!resendRes.ok) {
+              throw new Error(
+                resendData.error || "Form reset, but email resend failed",
+              );
+            }
+
+            alert("Form reset and fresh form link sent ✓");
+          } else {
+            alert("Form reset ✓ Fresh form link is ready to resend.");
+          }
+
+          await loadBookings();
+        } catch (err) {
+          console.error("❌ Form reset failed:", err);
+          alert(err.message || "Failed to reset form.");
+
+          btn.disabled = false;
+          btn.textContent = oldText;
+        }
       });
 
       /* ===============================

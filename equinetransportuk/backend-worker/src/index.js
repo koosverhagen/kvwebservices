@@ -678,15 +678,31 @@ function buildCustomerSafeBookingLinks(env, booking) {
   const formPath =
     formType === "short" ? "/forms/short-form.html" : "/forms/long-form.html";
 
+  const formParams = new URLSearchParams({
+    bookingId: linkBookingId,
+    vehicleName:
+      booking.vehicleSnapshot?.name ||
+      booking.vehicleName ||
+      booking.vehicleId ||
+      "",
+  });
+
+  const formToken = String(
+    booking.formLinkToken ||
+      booking.formResetToken ||
+      booking.form_token ||
+      "",
+  ).trim();
+
+  if (formToken) {
+    formParams.set("formToken", formToken);
+  }
+
   return {
     ...booking,
     requiredFormType: formType,
     customerFacingBookingId: linkBookingId,
-    requiredFormLink: `${SITE_BASE}${formPath}?bookingId=${encodeURIComponent(
-      linkBookingId,
-    )}&vehicleName=${encodeURIComponent(
-      booking.vehicleSnapshot?.name || booking.vehicleName || booking.vehicleId || "",
-    )}`,
+    requiredFormLink: `${SITE_BASE}${formPath}?${formParams.toString()}`,
     depositLink: `${SITE_BASE}/pay-deposit.html?bookingId=${encodeURIComponent(
       linkBookingId,
     )}`,
@@ -1745,6 +1761,14 @@ export default {
         url.pathname === "/api/admin/form-paper-received"
       ) {
         const response = await handleAdminPaperFormReceived(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/form-reset"
+      ) {
+        const response = await handleAdminFormReset(request, env);
         return withCors(response, corsHeaders);
       }
 
@@ -13464,6 +13488,167 @@ async function handleAdminFormView(request, env) {
     console.error("❌ ADMIN FORM VIEW ERROR:", err);
 
     return json({ error: "Failed to load form" }, 500);
+  }
+}
+
+function clearSubmittedFormFieldsFromBooking(booking, now, formToken) {
+  const next = {
+    ...booking,
+    formCompleted: false,
+    form_completed: false,
+    formSubmitted: false,
+    formSubmittedAt: "",
+    formCompletedAt: "",
+    formRecordId: "",
+    formSource: "",
+    paperFormReceived: false,
+    paperFormReceivedAt: "",
+    dvlaVerified: false,
+    dvla_verified: 0,
+    dvlaLicenceLast8: "",
+    dvla_last_8: "",
+    dvlaCode: "",
+    dvlaCheckCode: "",
+    dvla_check_code: "",
+    drivingLicenceNumber: "",
+    licenceNumber: "",
+    dvlaCheckCodeDate: "",
+    dvlaLicenceHolderChecked: false,
+    formPayload: null,
+    formResetAt: now,
+    formLinkToken: formToken,
+    formResetToken: formToken,
+    updatedAt: now,
+  };
+
+  const clearPayload = (payload) => {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return payload;
+    }
+
+    const cleaned = { ...payload };
+
+    [
+      "dvlaCode",
+      "dvlaCheckCode",
+      "dvla_check_code",
+      "drivingLicenceNumber",
+      "licenceNumber",
+      "dvlaLicenceLast8",
+      "dvla_last_8",
+      "dvlaCheckCodeDate",
+      "dvlaLicenceHolderChecked",
+      "signatureData",
+      "signature",
+    ].forEach((key) => {
+      delete cleaned[key];
+    });
+
+    return cleaned;
+  };
+
+  next.form = clearPayload(next.form);
+  next.payload = clearPayload(next.payload);
+
+  return next;
+}
+
+async function handleAdminFormReset(request, env) {
+  try {
+    const body = await request.json();
+    const bookingId = String(body.bookingId || "").trim();
+
+    if (!bookingId) {
+      return json({ ok: false, error: "Missing bookingId" }, 400);
+    }
+
+    const booking = await findBookingById(env, bookingId);
+
+    if (!booking) {
+      return json({ ok: false, error: "Booking not found" }, 404);
+    }
+
+    const now = new Date().toISOString();
+    const formToken = `reset_${Date.now()}_${crypto.randomUUID()}`;
+
+    let updatedBooking = clearSubmittedFormFieldsFromBooking(
+      booking,
+      now,
+      formToken,
+    );
+
+    updatedBooking = buildCustomerSafeBookingLinks(env, updatedBooking);
+
+    try {
+      await env.DB.prepare(
+        `
+        DELETE FROM booking_forms
+        WHERE booking_id = ?
+      `,
+      )
+        .bind(updatedBooking.id || bookingId)
+        .run();
+    } catch (err) {
+      console.warn("⚠️ booking_forms reset delete failed:", err.message);
+    }
+
+    try {
+      await env.DB.prepare(
+        `
+        UPDATE bookings
+        SET
+          form_completed = 0,
+          dvla_verified = 0,
+          updated_at = ?
+        WHERE id = ?
+      `,
+      )
+        .bind(now, updatedBooking.id || bookingId)
+        .run();
+    } catch (err) {
+      console.warn("⚠️ bookings reset update skipped:", err.message);
+    }
+
+    await upsertBookingInKv(env, updatedBooking);
+
+    try {
+      const auditKey = `audit:${updatedBooking.id || bookingId}`;
+      let audit = [];
+
+      try {
+        audit = JSON.parse(await env.BOOKINGS_KV.get(auditKey)) || [];
+      } catch {}
+
+      audit.unshift({
+        type: "form_reset",
+        at: now,
+        formLinkToken: formToken,
+      });
+
+      await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
+    } catch (err) {
+      console.warn("⚠️ Form reset audit failed:", err.message);
+    }
+
+    await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+    return json({
+      ok: true,
+      bookingId: updatedBooking.id || bookingId,
+      formResetAt: now,
+      formLink: updatedBooking.requiredFormLink,
+      booking: updatedBooking,
+    });
+  } catch (err) {
+    console.error("❌ ADMIN FORM RESET ERROR:", err);
+    return json(
+      {
+        ok: false,
+        error: "Failed to reset submitted form",
+        detail: err.message || "Unknown error",
+      },
+      500,
+    );
   }
 }
 
