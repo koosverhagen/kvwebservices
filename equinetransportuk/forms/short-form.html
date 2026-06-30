@@ -1009,7 +1009,11 @@
 ================================ */
 
       const PAPER_MODE = params.get("paper") === "1";
-      const ADMIN_PRINT_MODE = params.get("adminPrint") === "1";
+      const ADMIN_PRINT_MODE =
+        params.get("adminPrint") === "1" ||
+        params.get("adminprint") === "1" ||
+        params.get("printSubmitted") === "1" ||
+        params.get("mode") === "admin-print";
       const AUTO_PRINT = params.get("print") === "1";
 
       function addPaperFormHeader() {
@@ -1157,6 +1161,11 @@
         .slice(0, 10);
 
       async function prefillFromBooking() {
+        if (ADMIN_PRINT_MODE) {
+          console.log("🖨️ Admin print mode → skipping customer already-submitted redirect");
+          return;
+        }
+
         if (!bookingId) {
           console.log("⚠️ No bookingId → showing empty form");
           lockHireTimes();
@@ -1625,6 +1634,13 @@
           if (!ADMIN_PRINT_MODE) return;
 
           document.body.classList.add("admin-print-mode", "paper-mode");
+
+          const success = document.getElementById("formSuccess");
+          const form = document.querySelector("form");
+          const header = document.getElementById("formHeader");
+          if (success) success.style.display = "none";
+          if (form) form.style.display = "block";
+          if (header) header.style.display = "";
 
           try {
             const res = await fetch(
@@ -2098,6 +2114,11 @@
       }
 
       function renderSuccessCard(data) {
+        if (ADMIN_PRINT_MODE) {
+          console.log("🖨️ Admin print mode → blocked success-card redirect");
+          return;
+        }
+
         const container = document.getElementById("formSuccess");
         const form = document.getElementById("shortForm");
         const header = document.getElementById("formHeader");

@@ -9739,7 +9739,10 @@ Equine Transport UK`;
         const params = new URLSearchParams({
           bookingId: bookingId || "",
           adminPrint: "1",
+          printSubmitted: "1",
+          mode: "admin-print",
           print: "1",
+          v: "2",
         });
 
         return `https://www.equinetransportuk.com/forms/${fileName}?${params.toString()}`;
