@@ -9726,26 +9726,16 @@ Equine Transport UK`;
         return `https://www.equinetransportuk.com/forms/${fileName}?${params.toString()}`;
       }
 
-      function buildSubmittedFormPrintUrl(bookingId, formType) {
-        const cleanFormType = String(formType || "long")
-          .trim()
-          .toLowerCase() === "short"
-          ? "short"
-          : "long";
-
-        const fileName =
-          cleanFormType === "short" ? "short-form.html" : "long-form.html";
-
+      function buildSubmittedFormPrintUrl(bookingId) {
         const params = new URLSearchParams({
           bookingId: bookingId || "",
-          adminPrint: "1",
-          printSubmitted: "1",
-          mode: "admin-print",
           print: "1",
-          v: "2",
+          v: "3",
         });
 
-        return `https://www.equinetransportuk.com/forms/${fileName}?${params.toString()}`;
+        // Dedicated admin print page. This avoids the customer form's
+        // "already submitted" redirect/success-card logic completely.
+        return `https://www.equinetransportuk.com/forms/admin-form-print.html?${params.toString()}`;
       }
 
       async function openSubmittedFormPrint(bookingId) {
@@ -9756,42 +9746,7 @@ Equine Transport UK`;
           return;
         }
 
-        try {
-          const res = await fetch(
-            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(safeBookingId)}`,
-            { cache: "no-store" },
-          );
-
-          let data = {};
-          try {
-            data = await res.json();
-          } catch {
-            data = {};
-          }
-
-          if (res.status === 404 || data?.found === false) {
-            alert("No submitted form found for this booking yet.");
-            return;
-          }
-
-          if (!res.ok) {
-            throw new Error(data?.error || `Could not load form (${res.status})`);
-          }
-
-          const formData = data.form || data;
-          const formType =
-            formData.formType ||
-            formData.form_type ||
-            formData.payload?.formType ||
-            formData.payload?.form_type ||
-            "long";
-
-          const url = buildSubmittedFormPrintUrl(safeBookingId, formType);
-          window.open(url, "_blank", "noopener");
-        } catch (err) {
-          console.error("Submitted form print failed:", err);
-          alert(err.message || "Could not open submitted form for printing.");
-        }
+        window.open(buildSubmittedFormPrintUrl(safeBookingId), "_blank", "noopener");
       }
 
 
