@@ -80,10 +80,10 @@ img { max-width: 100%; display: block; }
 
 .header-links {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
   flex-shrink: 0;
 }
 
@@ -100,32 +100,6 @@ img { max-width: 100%; display: block; }
   font-size: 13px;
   font-weight: 700;
   box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04);
-}
-
-.abbie-site-menu-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  position: relative;
-}
-
-.abbie-site-menu-label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 22px;
-  padding: 3px 9px;
-  border: 1px solid rgba(37, 99, 235, 0.24);
-  border-radius: 999px;
-  background: rgba(37, 99, 235, 0.06);
-  color: var(--accent);
-  font-size: 11px;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .abbie-nav {
@@ -380,7 +354,7 @@ body.kv-embedded-in-case-overlay .kv-home-link {
 }
 
 body.kv-embedded-in-case-overlay .header-inner {
-  min-height: 72px;
+  min-height: 78px;
 }
 
 body.kv-embedded-in-case-overlay .header-links {
@@ -401,7 +375,7 @@ body.kv-embedded-in-case-overlay .header-links {
   .header-inner {
     min-height: auto;
     padding: 14px 0;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .logo {
@@ -415,20 +389,18 @@ body.kv-embedded-in-case-overlay .header-links {
   }
 
   .header-links {
-    align-items: stretch;
-    width: min(190px, 46vw);
+    gap: 10px;
   }
 
-  .kv-home-link,
-  .abbie-menu-toggle,
-  .abbie-site-menu-label {
-    width: 100%;
+  .kv-home-link {
+    font-size: 12px;
+    padding: 7px 10px;
   }
 
-  .abbie-site-menu-wrap,
-  .abbie-nav {
-    width: 100%;
-    align-items: stretch;
+  .abbie-menu-toggle {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 13px;
   }
 
   .abbie-menu {
@@ -458,15 +430,27 @@ body.kv-embedded-in-case-overlay .header-links {
   .header-inner {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .header-links {
     width: 100%;
-    align-items: stretch;
+    justify-content: space-between;
+  }
+
+  body.kv-embedded-in-case-overlay .header-inner {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  body.kv-embedded-in-case-overlay .header-links {
+    width: auto;
+    margin-left: auto;
   }
 
   .logo {
-    width: 100%;
+    width: auto;
   }
 
   .art-showcase {

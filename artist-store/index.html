@@ -5,73 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Abbie at Heart | Equine Art</title>
   <meta name="description" content="Abbie at Heart — expressive equine artwork, featured works, and commission enquiries.">
-  <link rel="stylesheet" href="style.css?v=20260630-restore-v36">
-
-  <style>
-    /* Critical fallback, so the page does not break if external CSS is cached or missing. */
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; color: #0f172a; background: #ffffff; }
-    .container { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
-    .header { position: sticky; top: 0; z-index: 40; background: rgba(255,255,255,.94); border-bottom: 1px solid #e2e8f0; }
-    .header-inner { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-    .logo { display: inline-flex; align-items: center; gap: 12px; font-weight: 800; font-size: 20px; text-decoration: none; color: #0f172a; }
-    .logo-mark { width: 42px; height: 42px; flex: 0 0 42px; object-fit: cover; border-radius: 14px; border: 1px solid rgba(15,23,42,.10); }
-    .art-showcase { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; padding: 12px 0 48px; }
-    .art-tile { margin: 0; overflow: hidden; border-radius: 22px; border: 1px solid rgba(15,23,42,.08); box-shadow: 0 10px 28px rgba(15,23,42,.07); }
-    .art-tile img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
-    .art-tile figcaption { padding: 12px 14px; font-weight: 800; }
-    @media (max-width: 900px) { .art-showcase { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 560px) { .header-inner { flex-direction: column; align-items: stretch; } .art-showcase { grid-template-columns: 1fr; } }
-
-    .header-links {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-
-    .abbie-site-menu-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
-      position: relative;
-    }
-
-    .abbie-site-menu-label {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 22px;
-      padding: 3px 9px;
-      border: 1px solid rgba(37, 99, 235, 0.24);
-      border-radius: 999px;
-      background: rgba(37, 99, 235, 0.06);
-      color: #2563eb;
-      font-size: 11px;
-      line-height: 1.2;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .abbie-site-menu-wrap .abbie-menu-toggle {
-      margin: 0;
-    }
-
-    @media (max-width: 720px) {
-      .header-links {
-        align-items: stretch;
-      }
-
-      .abbie-site-menu-wrap {
-        width: 100%;
-        align-items: stretch;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css?v=20260630-clean-v37">
 </head>
 <body>
   <header class="header">
@@ -82,19 +16,16 @@
       </a>
       <div class="header-links">
         <a href="../index.html" class="kv-home-link">← KV Web Services</a>
-        <div class="abbie-site-menu-wrap">
-          <span class="abbie-site-menu-label">Abbie at Heart website</span>
-          <nav class="abbie-nav" aria-label="Abbie site navigation">
-            <button class="abbie-menu-toggle" type="button" aria-label="Open Abbie menu" aria-expanded="false" aria-controls="abbie-menu">☰ Abbie Menu</button>
-            <div class="abbie-menu" id="abbie-menu">
-              <a href="index.html">Gallery</a>
-              <a href="about.html">About Abbie</a>
-              <a href="store.html">Buy Art</a>
-              <a href="commission.html">Commission Enquiry</a>
-              <a href="studio.html">Artist Studio</a>
-            </div>
-          </nav>
-        </div>
+        <nav class="abbie-nav" aria-label="Abbie site navigation">
+          <button class="abbie-menu-toggle" type="button" aria-label="Open Abbie menu" aria-expanded="false" aria-controls="abbie-menu">☰ Abbie Menu</button>
+          <div class="abbie-menu" id="abbie-menu">
+            <a href="index.html">Gallery</a>
+            <a href="about.html">About Abbie</a>
+            <a href="store.html">Buy Art</a>
+            <a href="commission.html">Commission Enquiry</a>
+            <a href="studio.html">Artist Studio</a>
+          </div>
+        </nav>
       </div>
     </div>
   </header>
@@ -237,6 +168,6 @@
       }
     });
   </script>
-  <script src="menu.js?v=20260630-restore-v36"></script>
+  <script src="menu.js?v=20260222-2"></script>
 </body>
 </html>
