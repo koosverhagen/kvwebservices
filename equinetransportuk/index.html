@@ -625,12 +625,14 @@ removed duplicate, script is loaded at end of body -->
                         <label for="customer-email">Email</label>
                         <input
                           id="customer-email"
-                          type="email"
+                          type="text"
                           autocomplete="email"
                           inputmode="email"
                           autocapitalize="sentences"
                           autocorrect="off"
                           spellcheck="false"
+                          pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$"
+                          title="Please enter a valid email address"
                           required
                         />
                         <div
@@ -1031,17 +1033,21 @@ removed duplicate, script is loaded at end of body -->
 
         // Keep the email exactly as typed, including capitals.
         // Only trim accidental spaces on blur.
+        emailInput.setAttribute("type", "text");
+        emailInput.setAttribute("inputmode", "email");
+        emailInput.setAttribute("autocomplete", "email");
         emailInput.setAttribute("autocapitalize", "sentences");
         emailInput.setAttribute("autocorrect", "off");
         emailInput.setAttribute("spellcheck", "false");
-        emailInput.setAttribute("inputmode", "email");
+        emailInput.setAttribute("pattern", "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+        emailInput.setAttribute("title", "Please enter a valid email address");
 
         emailInput.addEventListener("blur", function () {
           emailInput.value = String(emailInput.value || "").trim();
         });
       });
     </script>
-    <script src="app.js?v=70"></script>
+    <script src="app.js?v=71"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
   </body>
 </html>

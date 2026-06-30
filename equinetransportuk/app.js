@@ -617,6 +617,18 @@ const selectedBaseInput = document.getElementById("selected-base");
 
 const customerNameInput = document.getElementById("customer-name");
 const customerEmailInput = document.getElementById("customer-email");
+if (customerEmailInput) {
+  // Use text + email keyboard so browsers do not force lowercase display.
+  // The pattern keeps normal email validation while preserving capitals as typed.
+  customerEmailInput.setAttribute("type", "text");
+  customerEmailInput.setAttribute("inputmode", "email");
+  customerEmailInput.setAttribute("autocomplete", "email");
+  customerEmailInput.setAttribute("autocapitalize", "sentences");
+  customerEmailInput.setAttribute("autocorrect", "off");
+  customerEmailInput.setAttribute("spellcheck", "false");
+  customerEmailInput.setAttribute("pattern", "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+  customerEmailInput.setAttribute("title", "Please enter a valid email address");
+}
 const customerMobileInput = document.getElementById("customer-mobile");
 const customerAddressInput = document.getElementById("customer-address");
 const customerDobInput = document.getElementById("customer-dob");
@@ -6180,14 +6192,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     let lookupInFlight = false; // 🔒 prevent spam calls
 
     customerEmailInput.addEventListener("change", async () => {
-      const email = customerEmailInput.value.trim().toLowerCase();
-      if (!email || lookupInFlight) return;
+      const typedEmail = String(customerEmailInput.value || "").trim();
+      const lookupEmail = typedEmail.toLowerCase();
+
+      // Keep the visible field exactly as typed apart from accidental spaces.
+      if (customerEmailInput.value !== typedEmail) {
+        customerEmailInput.value = typedEmail;
+      }
+
+      if (!typedEmail || lookupInFlight) return;
 
       lookupInFlight = true;
 
       try {
         const res = await fetch(
-          apiUrl(`/api/customers/lookup?email=${encodeURIComponent(email)}`),
+          apiUrl(`/api/customers/lookup?email=${encodeURIComponent(lookupEmail)}`),
         );
 
         const data = await res.json();
@@ -6215,7 +6234,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   full_name: customerNameInput?.value || "",
-                  email: email,
+                  email: typedEmail,
                   mobile: customerMobileInput?.value || "",
                   address: earlyAddress,
                 }),
@@ -6662,6 +6681,27 @@ if (bookingForm) {
       return;
     }
 
+    const customerEmail = String(customerEmailInput?.value || "").trim();
+
+    if (customerEmailInput && customerEmailInput.value !== customerEmail) {
+      customerEmailInput.value = customerEmail;
+    }
+
+    const emailLooksValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customerEmail);
+
+    if (!emailLooksValid) {
+      alert("Please enter a valid email address before continuing.");
+
+      customerEmailInput?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      customerEmailInput?.focus();
+
+      return;
+    }
+
     const customerAddress = (customerAddressInput?.value || "").trim();
 
     if (!customerAddress) {
@@ -6807,7 +6847,7 @@ if (bookingForm) {
       durationHours: selectedAvailability.durationHours,
       pickupTime: bookingPickupTime,
       customerName: (customerNameInput?.value || "").trim(),
-      customerEmail: (customerEmailInput?.value || "").trim(),
+      customerEmail,
       customerMobile: customerMobileInput?.value || "",
       customerAddress,
       customerDob: customerDobInput?.value || "",
