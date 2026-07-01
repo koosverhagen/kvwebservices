@@ -1633,6 +1633,15 @@ body.fleet-detail-open {
 .reviews-content {
   overflow: auto;
   padding: 12px 18px 20px 18px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+
+.reviews-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* Chrome/Safari */
 }
 
 
