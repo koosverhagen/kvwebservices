@@ -6191,29 +6191,70 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (customerEmailInput) {
     let lookupInFlight = false; // 🔒 prevent spam calls
 
+    function clearReturningCustomerBadge() {
+      const badge = document.getElementById("returning-customer-badge");
+
+      window.RETURNING_CUSTOMER = false;
+
+      if (badge) {
+        badge.textContent = "";
+        badge.classList.add("hidden");
+      }
+    }
+
     customerEmailInput.addEventListener("change", async () => {
       const typedEmail = String(customerEmailInput.value || "").trim();
       const lookupEmail = typedEmail.toLowerCase();
+      const typedMobile = String(customerMobileInput?.value || "").trim();
 
       // Keep the visible field exactly as typed apart from accidental spaces.
       if (customerEmailInput.value !== typedEmail) {
         customerEmailInput.value = typedEmail;
       }
 
+      clearReturningCustomerBadge();
+
       if (!typedEmail || lookupInFlight) return;
 
       lookupInFlight = true;
 
       try {
-        const res = await fetch(
-          apiUrl(`/api/customers/lookup?email=${encodeURIComponent(lookupEmail)}`),
-        );
+        const params = new URLSearchParams();
+        params.set("email", lookupEmail);
+
+        // Only include mobile when something real is typed.
+        // Sending an empty mobile made the backend match old customers with blank mobile fields.
+        if (typedMobile) {
+          params.set("mobile", typedMobile);
+        }
+
+        const res = await fetch(apiUrl(`/api/customers/lookup?${params}`));
 
         const data = await res.json();
 
         console.log("Customer lookup response:", data);
 
         const badge = document.getElementById("returning-customer-badge");
+
+        const returnedEmail = String(data?.customer?.email || "")
+          .trim()
+          .toLowerCase();
+        const returnedMobile = String(data?.customer?.mobile || "").trim();
+
+        const emailMatches = !!lookupEmail && returnedEmail === lookupEmail;
+        const mobileMatches = !!typedMobile && returnedMobile === typedMobile;
+
+        if (data.found && data.customer && !emailMatches && !mobileMatches) {
+          console.warn("Ignoring customer lookup mismatch:", {
+            typedEmail,
+            typedMobile,
+            returnedEmail: data.customer.email,
+            returnedMobile: data.customer.mobile,
+          });
+
+          data.found = false;
+          data.customer = null;
+        }
 
         /* ===============================
          NOT FOUND → CREATE CUSTOMER EARLY
@@ -6235,7 +6276,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 body: JSON.stringify({
                   full_name: customerNameInput?.value || "",
                   email: typedEmail,
-                  mobile: customerMobileInput?.value || "",
+                  mobile: typedMobile,
                   address: earlyAddress,
                 }),
               });
@@ -6248,13 +6289,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             );
           }
 
-          window.RETURNING_CUSTOMER = false;
-
-          if (badge) {
-            badge.classList.add("hidden");
-          }
-
-          lookupInFlight = false;
+          clearReturningCustomerBadge();
           return;
         }
 
@@ -6301,6 +6336,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       } catch (err) {
         console.warn("Customer lookup failed:", err);
+        clearReturningCustomerBadge();
       } finally {
         lookupInFlight = false;
       }

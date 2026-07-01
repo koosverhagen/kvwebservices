@@ -11083,27 +11083,45 @@ async function findCustomerByEmailOrMobile(env, email, mobile) {
        🔥 CLEAN INPUT
     =============================== */
 
-    const cleanEmail = email ? String(email).trim().toLowerCase() : null;
-    const cleanMobile = mobile ? String(mobile).trim() : null;
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanMobile = String(mobile || "").trim();
 
     console.log("🔎 LOOKUP INPUT:", { cleanEmail, cleanMobile });
 
     /* ===============================
-       🔥 SINGLE QUERY (FIXED)
+       SAFE EXACT QUERY
+       Do not bind empty mobile/email values.
+       Empty mobile used to match old imported customers with blank mobile fields.
     =============================== */
+
+    const where = [];
+    const params = [];
+
+    if (cleanEmail) {
+      where.push("(email IS NOT NULL AND TRIM(email) != '' AND LOWER(TRIM(email)) = ?)");
+      params.push(cleanEmail);
+    }
+
+    if (cleanMobile) {
+      where.push("(mobile IS NOT NULL AND TRIM(mobile) != '' AND TRIM(mobile) = ?)");
+      params.push(cleanMobile);
+    }
+
+    if (!where.length) {
+      console.log("🔎 LOOKUP RESULT: no usable email/mobile supplied");
+      return null;
+    }
 
     const result = await env.DB.prepare(
       `
       SELECT *
       FROM customers
-      WHERE
-        (email IS NOT NULL AND LOWER(email) = ?)
-        OR
-        (mobile IS NOT NULL AND mobile = ?)
+      WHERE ${where.join(" OR ")}
+      ORDER BY COALESCE(hire_count, 0) DESC, updated_at DESC, created_at DESC
       LIMIT 1
     `,
     )
-      .bind(cleanEmail || "", cleanMobile || "")
+      .bind(...params)
       .first();
 
     console.log("🔎 LOOKUP RESULT:", result);
