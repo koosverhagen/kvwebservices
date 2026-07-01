@@ -1297,6 +1297,11 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (request.method === "GET" && url.pathname === "/api/google-review-photo") {
+        const response = await handleGoogleReviewPhoto(request, env);
+        return withCors(response, corsHeaders);
+      }
+
       /* ===============================
      DEPOSIT STRIPE SESSION
   =============================== */
@@ -11188,7 +11193,7 @@ async function handleGoogleReviews(request, env) {
     );
   }
 
-  const cacheUrl = new URL("https://equine-internal-cache/google-reviews");
+  const cacheUrl = new URL("https://equine-internal-cache/google-reviews-v2");
   cacheUrl.searchParams.set("place", placeId);
   const cacheRequest = new Request(cacheUrl.toString(), {
     method: "GET",
@@ -11207,7 +11212,7 @@ async function handleGoogleReviews(request, env) {
   googleUrl.searchParams.set("place_id", placeId);
   googleUrl.searchParams.set(
     "fields",
-    "name,rating,user_ratings_total,reviews,url",
+    "name,rating,user_ratings_total,reviews,url,photos",
   );
   googleUrl.searchParams.set("language", "en-GB");
   googleUrl.searchParams.set("key", apiKey);
@@ -11263,6 +11268,8 @@ async function handleGoogleReviews(request, env) {
 
   const result = data.result || {};
   const reviews = Array.isArray(result.reviews) ? result.reviews : [];
+  const photos = Array.isArray(result.photos) ? result.photos : [];
+  const apiOrigin = new URL(request.url).origin;
 
   const payload = {
     ok: true,
@@ -11279,6 +11286,17 @@ async function handleGoogleReviews(request, env) {
       text: review.text || "",
       time: Number(review.time || 0),
     })),
+    photos: photos
+      .filter((photo) => photo?.photo_reference)
+      .slice(0, 8)
+      .map((photo) => ({
+        url: `${apiOrigin}/api/google-review-photo?ref=${encodeURIComponent(photo.photo_reference)}&w=720`,
+        width: Number(photo.width || 0),
+        height: Number(photo.height || 0),
+        attributionHtml: Array.isArray(photo.html_attributions)
+          ? photo.html_attributions.join(" ")
+          : "",
+      })),
     attribution: "Powered by Google",
     updatedAt: new Date().toISOString(),
   };
@@ -11288,6 +11306,100 @@ async function handleGoogleReviews(request, env) {
     "cache-control",
     "public, max-age=21600, s-maxage=21600",
   );
+
+  if (canUseCache) {
+    await caches.default.put(cacheRequest, response.clone());
+  }
+
+  return response;
+}
+
+
+async function handleGoogleReviewPhoto(request, env) {
+  const apiKey = String(
+    env.GOOGLE_PLACES_API_KEY ||
+      env.GOOGLE_MAPS_SERVER_KEY ||
+      env.GOOGLE_MAPS_API_KEY ||
+      env.GOOGLE_MAPS_BROWSER_KEY ||
+      "",
+  ).trim();
+
+  const url = new URL(request.url);
+  const photoRef = String(url.searchParams.get("ref") || "").trim();
+  const requestedWidth = Number(url.searchParams.get("w") || 720);
+  const maxWidth = Math.max(
+    160,
+    Math.min(1200, Number.isFinite(requestedWidth) ? requestedWidth : 720),
+  );
+
+  if (!apiKey || !photoRef) {
+    return new Response("Google photo unavailable", {
+      status: 404,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "public, max-age=300",
+      },
+    });
+  }
+
+  const cacheUrl = new URL("https://equine-internal-cache/google-review-photo-v1");
+  cacheUrl.searchParams.set("ref", photoRef);
+  cacheUrl.searchParams.set("w", String(maxWidth));
+  const cacheRequest = new Request(cacheUrl.toString(), { method: "GET" });
+  const canUseCache = typeof caches !== "undefined" && caches?.default;
+
+  if (canUseCache) {
+    const cached = await caches.default.match(cacheRequest);
+    if (cached) return cached;
+  }
+
+  const googlePhotoUrl = new URL("https://maps.googleapis.com/maps/api/place/photo");
+  googlePhotoUrl.searchParams.set("maxwidth", String(maxWidth));
+  googlePhotoUrl.searchParams.set("photo_reference", photoRef);
+  googlePhotoUrl.searchParams.set("key", apiKey);
+
+  let upstream;
+
+  try {
+    upstream = await fetch(googlePhotoUrl.toString(), {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      },
+    });
+  } catch (err) {
+    console.warn("Google review photo fetch failed:", err);
+    return new Response("Google photo unavailable", {
+      status: 502,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "public, max-age=300",
+      },
+    });
+  }
+
+  if (!upstream.ok) {
+    return new Response("Google photo unavailable", {
+      status: upstream.status,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "public, max-age=300",
+      },
+    });
+  }
+
+  const headers = new Headers();
+  headers.set(
+    "content-type",
+    upstream.headers.get("content-type") || "image/jpeg",
+  );
+  headers.set("cache-control", "public, max-age=604800, s-maxage=604800");
+
+  const response = new Response(upstream.body, {
+    status: 200,
+    headers,
+  });
 
   if (canUseCache) {
     await caches.default.put(cacheRequest, response.clone());

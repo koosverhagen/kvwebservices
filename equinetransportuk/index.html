@@ -9,7 +9,7 @@
       content="Book self-drive 3.5T and 7.5T horsebox hire from East Sussex or request professional driven horse transport across the whole of the UK."
     />
 
-    <link rel="stylesheet" href="styles.css?v=73" />
+    <link rel="stylesheet" href="styles.css?v=74" />
     <link rel="icon" href="images/favicon.png" />
   
     <link rel="canonical" href="https://www.equinetransportuk.com/" />
@@ -962,8 +962,41 @@ removed duplicate, script is loaded at end of body -->
           return `${"★".repeat(score)}${"☆".repeat(5 - score)}`;
         }
 
+        function sanitizeGoogleAttribution(value) {
+          const template = document.createElement("template");
+          template.innerHTML = String(value || "");
+
+          template.content.querySelectorAll("script, style").forEach((node) => node.remove());
+
+          Array.from(template.content.querySelectorAll("*")).forEach((el) => {
+            const tag = el.tagName.toLowerCase();
+
+            if (tag !== "a") {
+              el.replaceWith(...Array.from(el.childNodes));
+              return;
+            }
+
+            const href = el.getAttribute("href") || "";
+            if (!/^https?:\/\//i.test(href)) {
+              el.removeAttribute("href");
+            }
+
+            Array.from(el.attributes).forEach((attr) => {
+              if (!["href", "target", "rel"].includes(attr.name)) {
+                el.removeAttribute(attr.name);
+              }
+            });
+
+            el.setAttribute("target", "_blank");
+            el.setAttribute("rel", "noopener");
+          });
+
+          return template.innerHTML;
+        }
+
         function renderGoogleReviews(data) {
           const reviews = Array.isArray(data?.reviews) ? data.reviews : [];
+          const photos = Array.isArray(data?.photos) ? data.photos : [];
           const rating = Number(data?.rating || 0);
           const total = Number(data?.userRatingsTotal || 0);
           const placeUrl = data?.url || "https://www.google.com/search?q=Equine+Transport+UK+reviews";
@@ -992,6 +1025,35 @@ removed duplicate, script is loaded at end of body -->
               </div>
               <a class="google-reviews-google-link" href="${escapeAttr(placeUrl)}" target="_blank" rel="noopener">View on Google</a>
             </div>
+
+            ${photos.length ? `
+              <div class="google-reviews-photos-block">
+                <div class="google-reviews-photos-head">
+                  <div>
+                    <div class="google-reviews-kicker">Photos on Google</div>
+                    <h4>Customer photos and business photos</h4>
+                  </div>
+                  <a href="${escapeAttr(placeUrl)}" target="_blank" rel="noopener">See all photos</a>
+                </div>
+                <div class="google-reviews-photos">
+                  ${photos
+                    .map((photo, index) => {
+                      const imageUrl = photo?.url || "";
+                      if (!imageUrl) return "";
+
+                      const attributionHtml = sanitizeGoogleAttribution(photo?.attributionHtml || "");
+
+                      return `
+                        <figure class="google-review-photo-card">
+                          <img src="${escapeAttr(imageUrl)}" alt="Google photo ${index + 1} for Equine Transport UK" loading="lazy" decoding="async">
+                          ${attributionHtml ? `<figcaption>${attributionHtml}</figcaption>` : ""}
+                        </figure>
+                      `;
+                    })
+                    .join("")}
+                </div>
+              </div>
+            ` : ""}
 
             <div class="google-reviews-list">
               ${reviews
@@ -1026,7 +1088,7 @@ removed duplicate, script is loaded at end of body -->
 
             <div class="google-reviews-footer">
               <span>Powered by Google</span>
-              <a href="${escapeAttr(placeUrl)}" target="_blank" rel="noopener">Read more or leave a review</a>
+              <a href="${escapeAttr(placeUrl)}" target="_blank" rel="noopener">Read more, see photos or leave a review</a>
             </div>
           `;
         }
