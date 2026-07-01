@@ -9553,6 +9553,115 @@ Equine Transport UK`;
         return Number.isFinite(value) ? value : 0;
       }
 
+      function isBookingCancelled(booking) {
+        const status = String(
+          booking?.status || booking?.bookingStatus || "",
+        ).toLowerCase();
+
+        return (
+          booking?.cancelled === true ||
+          booking?.cancelled === 1 ||
+          booking?.cancelled === "1" ||
+          booking?.cancelled === "true" ||
+          !!booking?.cancelledAt ||
+          status === "cancelled" ||
+          status === "canceled"
+        );
+      }
+
+      function getHirePaymentSnapshot(booking) {
+        const total = Number(
+          booking?.hireTotal || booking?.priceTotal || booking?.total || 0,
+        );
+
+        const refunded = getRefundedTotal(booking);
+
+        const paidNowTotal = Number(
+          booking?.paidNow || booking?.paid_now || 0,
+        );
+
+        const confirmationPaid = Number(
+          booking?.confirmationFee || booking?.confirmation_fee || 0,
+        );
+
+        const manualPaid = Number(
+          booking?.manualPayments ||
+            booking?.manualPaymentsTotal ||
+            booking?.manual_payments ||
+            0,
+        );
+
+        const outstandingPaymentPaid = Number(
+          booking?.outstandingAmountPaid ||
+            booking?.outstandingPaidAmount ||
+            booking?.outstanding_amount_paid ||
+            0,
+        );
+
+        const paymentStatus = String(
+          booking?.paymentStatus || booking?.payment_status || "",
+        ).toLowerCase();
+
+        const status = String(booking?.status || "").toLowerCase();
+
+        const outstandingPaidFlag =
+          booking?.outstandingPaid === true ||
+          booking?.outstanding_paid === true ||
+          booking?.outstandingPaid === "true" ||
+          booking?.outstanding_paid === "true" ||
+          paymentStatus === "fully_paid" ||
+          status === "fully_paid";
+
+        const cancelled = isBookingCancelled(booking);
+
+        /*
+          Gross paid = money that was actually received before refunds.
+          Prefer payment components when they exist, because old refund logic
+          could accidentally write paidNow as total minus refund.
+        */
+        const componentGrossPaid =
+          confirmationPaid + manualPaid + outstandingPaymentPaid;
+
+        let grossPaid = componentGrossPaid > 0 ? componentGrossPaid : 0;
+
+        if (outstandingPaidFlag) {
+          grossPaid = Math.max(grossPaid, total);
+        }
+
+        if (grossPaid <= 0) {
+          grossPaid = paidNowTotal + refunded;
+        }
+
+        grossPaid = Math.min(
+          total,
+          Math.max(0, Number(grossPaid.toFixed(2))),
+        );
+
+        const paid = Math.max(
+          0,
+          Number((grossPaid - refunded).toFixed(2)),
+        );
+
+        const outstandingAmount = cancelled
+          ? 0
+          : Math.max(0, Number((total - paid).toFixed(2)));
+
+        const remainingRefundable = Math.max(
+          0,
+          Number((grossPaid - refunded).toFixed(2)),
+        );
+
+        return {
+          total,
+          refunded,
+          grossPaid,
+          paid,
+          outstandingAmount,
+          remainingRefundable,
+          cancelled,
+        };
+      }
+
       function getDepositCapturedAmount(booking) {
         const value = Number(
           booking?.depositCapturedAmount ??
@@ -10548,40 +10657,14 @@ Equine Transport UK`;
          💰 HIRE PAYMENT CALCULATION
       =============================== */
 
-        const total = Number(booking.hireTotal || booking.total || 0);
+        const paymentSnapshot = getHirePaymentSnapshot(booking);
 
-        const refunded = getRefundedTotal(booking);
-
-        /* ===============================
-         🔥 BASE PAID
-      =============================== */
-
-        const paidNowTotal = Number(booking.paidNow || 0);
-        const confirmationPaid = Number(booking.confirmationFee || 0);
-
-        const manualPaid = Number(
-          booking.manualPayments || booking.manualPaymentsTotal || 0,
-        );
-
-        /* ===============================
-         🔥 TRUE PAID
-         paidNow is the total paid on newer bookings.
-         confirmationFee + manualPayments is kept only as a legacy fallback.
-      =============================== */
-
-        const legacyPaidTotal = confirmationPaid + manualPaid;
-
-        const paid = outstandingPaid
-          ? total
-          : Math.max(paidNowTotal, legacyPaidTotal);
-
-        /* ===============================
-         🔥 TRUE OUTSTANDING
-      =============================== */
-
-        const outstandingAmount = outstandingPaid
-          ? 0
-          : Math.max(0, total - paid);
+        const total = paymentSnapshot.total;
+        const refunded = paymentSnapshot.refunded;
+        const paid = paymentSnapshot.paid;
+        const outstandingAmount = paymentSnapshot.outstandingAmount;
+        const bookingCancelled = paymentSnapshot.cancelled;
+        const outstandingClosed = bookingCancelled || outstandingAmount <= 0.005;
 
         /* ===============================
            🔒 DEPOSIT SYSTEM
@@ -10605,9 +10688,11 @@ Equine Transport UK`;
                  ${depositStatusPillHtml(booking)}
 
          ${
-           outstandingPaid
-             ? '<span class="pill ok">Outstanding paid</span>'
-             : textOutstanding
+           bookingCancelled
+             ? '<span class="pill neutral">Outstanding closed</span>'
+             : outstandingClosed
+               ? '<span class="pill ok">Outstanding paid</span>'
+               : textOutstanding
          }
 
           ${
@@ -20124,34 +20209,11 @@ Send the fresh form link to ${booking.customerEmail} now?`,
         const refundRemainingEl = document.getElementById("refund-remaining");
 
         /* ===============================
-     💰 TRUE TOTALS
+     💰 TRUE REFUNDABLE REMAINING
   =============================== */
 
-        const total = Number(booking.hireTotal || booking.total || 0);
-
-        const refunded = Number(booking.refundedTotal || 0);
-
-        const manualPaid = Number(
-          booking.manualPayments || booking.manualPaymentsTotal || 0,
-        );
-
-        const outstandingPaid =
-          booking.outstandingPaid === true ||
-          booking.outstandingPaid === "true";
-
-        /* ===============================
-     🔥 TRUE PAID
-  =============================== */
-
-        const paid = outstandingPaid
-          ? total
-          : Number(booking.paidNow || 0) + manualPaid;
-
-        /* ===============================
-     🔥 REMAINING
-  =============================== */
-
-        const remaining = Math.max(0, paid - refunded);
+        const paymentSnapshot = getHirePaymentSnapshot(booking);
+        const remaining = paymentSnapshot.remainingRefundable;
 
         /* ===============================
      UI

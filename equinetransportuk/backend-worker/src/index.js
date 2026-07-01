@@ -541,6 +541,156 @@ function formatEmailDateTime(value) {
   });
 }
 
+function bookingFlagIsTrue(value) {
+  return (
+    value === true ||
+    value === 1 ||
+    value === "1" ||
+    String(value || "").trim().toLowerCase() === "true"
+  );
+}
+
+function getHirePaymentSnapshot(booking = {}) {
+  const total = Number(
+    booking.hireTotal || booking.priceTotal || booking.total || 0,
+  );
+
+  const refunded = Number(
+    booking.refundedTotal ??
+      booking.refundTotal ??
+      booking.refundedAmount ??
+      booking.refundAmount ??
+      booking.totalRefunded ??
+      booking.total_refunded ??
+      booking.refund_amount ??
+      0,
+  );
+
+  const paidNow = Number(booking.paidNow || booking.paid_now || 0);
+
+  const confirmationPaid = Number(
+    booking.confirmationFee || booking.confirmation_fee || 0,
+  );
+
+  const manualPaid = Number(
+    booking.manualPayments ||
+      booking.manualPaymentsTotal ||
+      booking.manual_payments ||
+      0,
+  );
+
+  const outstandingPaymentPaid = Number(
+    booking.outstandingAmountPaid ||
+      booking.outstandingPaidAmount ||
+      booking.outstanding_amount_paid ||
+      0,
+  );
+
+  const paymentStatus = String(
+    booking.paymentStatus || booking.payment_status || "",
+  ).toLowerCase();
+
+  const status = String(booking.status || "").toLowerCase();
+
+  const outstandingPaidFlag =
+    bookingFlagIsTrue(booking.outstandingPaid) ||
+    bookingFlagIsTrue(booking.outstanding_paid) ||
+    paymentStatus === "fully_paid" ||
+    status === "fully_paid";
+
+  const cancelled =
+    bookingFlagIsTrue(booking.cancelled) ||
+    status === "cancelled" ||
+    status === "canceled" ||
+    !!booking.cancelledAt;
+
+  const componentGrossPaid =
+    confirmationPaid + manualPaid + outstandingPaymentPaid;
+
+  let grossPaid = componentGrossPaid > 0 ? componentGrossPaid : 0;
+
+  if (outstandingPaidFlag) {
+    grossPaid = Math.max(grossPaid, total);
+  }
+
+  if (grossPaid <= 0) {
+    grossPaid = paidNow + refunded;
+  }
+
+  grossPaid = Math.min(total, Math.max(0, Number(grossPaid.toFixed(2))));
+
+  const netPaid = Math.max(0, Number((grossPaid - refunded).toFixed(2)));
+
+  const outstandingAmount = cancelled
+    ? 0
+    : Math.max(0, Number((total - netPaid).toFixed(2)));
+
+  const remainingRefundable = Math.max(
+    0,
+    Number((grossPaid - refunded).toFixed(2)),
+  );
+
+  return {
+    total,
+    refunded,
+    grossPaid,
+    netPaid,
+    outstandingAmount,
+    remainingRefundable,
+    cancelled,
+  };
+}
+
+function applyRefundToBookingFinancials(booking, amount, nowIso) {
+  const before = getHirePaymentSnapshot(booking);
+  const refundAmount = Number(amount || 0);
+
+  const refundedTotal = Number((before.refunded + refundAmount).toFixed(2));
+  const netPaid = Math.max(
+    0,
+    Number((before.grossPaid - refundedTotal).toFixed(2)),
+  );
+
+  const outstandingAmount = before.cancelled
+    ? 0
+    : Math.max(0, Number((before.total - netPaid).toFixed(2)));
+
+  booking.refundedTotal = refundedTotal;
+  booking.paidNow = netPaid;
+  booking.outstandingAmount = outstandingAmount;
+  booking.outstanding = outstandingAmount;
+  booking.outstandingPaid = !before.cancelled && outstandingAmount <= 0.005;
+
+  if (before.cancelled) {
+    booking.outstandingWaived = true;
+    booking.outstandingWaivedAt = booking.outstandingWaivedAt || nowIso;
+  }
+
+  if (netPaid <= 0.005 && refundedTotal > 0) {
+    booking.fullyRefunded = true;
+  } else {
+    booking.fullyRefunded = false;
+  }
+
+  if (!before.cancelled) {
+    booking.paymentStatus =
+      outstandingAmount <= 0.005
+        ? "fully_paid"
+        : netPaid > 0
+          ? "confirmation_paid"
+          : "pending";
+  }
+
+  booking.updatedAt = nowIso;
+
+  return {
+    ...before,
+    refundedTotal,
+    netPaid,
+    outstandingAmount,
+  };
+}
+
 /* ===============================
    CUSTOMER-SAFE BOOKING LINK HELPERS
    Keeps old Planyo internal IDs working, but does not expose them in new links.
@@ -1966,8 +2116,9 @@ export default {
       ) {
         try {
           const { bookingId, amount } = await request.json();
+          const amountNumber = Number(amount);
 
-          if (!bookingId || !amount || amount <= 0) {
+          if (!bookingId || !Number.isFinite(amountNumber) || amountNumber <= 0) {
             return withCors(json({ error: "Invalid input" }, 400), corsHeaders);
           }
 
@@ -2020,37 +2171,16 @@ export default {
 
           /* ===============================
    🔒 PREVENT OVER-REFUND
+   Uses gross money received before refunds.
+   Do not infer full payment from outstandingAmount alone:
+   older refund logic could accidentally write outstandingAmount as 0.
 =============================== */
 
-          const total = Number(booking.hireTotal || booking.total || 0);
+          const paymentSnapshot = getHirePaymentSnapshot(booking);
 
-          const refunded = Number(booking.refundedTotal || 0);
+          const remaining = paymentSnapshot.remainingRefundable;
 
-          const manualPaid = Number(
-            booking.manualPayments || booking.manualPaymentsTotal || 0,
-          );
-
-          /* ===============================
-   🔥 TRUE PAID
-=============================== */
-
-          let paid = Number(booking.paidNow || 0) + manualPaid;
-
-          /* ===============================
-   🔥 FALLBACK:
-   FULLY PAID BOOKINGS
-=============================== */
-
-          if (Number(booking.outstandingAmount || 0) <= 0) {
-            paid = total;
-          }
-
-          /* ===============================
-   🔥 TRUE REMAINING
-=============================== */
-
-          const remaining = Math.max(0, paid - refunded);
-          if (amount > remaining) {
+          if (amountNumber > remaining + 0.005) {
             return withCors(
               json(
                 {
@@ -2058,16 +2188,6 @@ export default {
                 },
                 400,
               ),
-              corsHeaders,
-            );
-          }
-          /* ===============================
-       🔒 CANCEL SAFETY (IMPORTANT)
-    =============================== */
-
-          if (booking.status === "cancelled" || booking.cancelled === true) {
-            return withCors(
-              json({ error: "Cannot refund a cancelled booking" }, 400),
               corsHeaders,
             );
           }
@@ -2081,23 +2201,33 @@ export default {
 
             // 🔄 Just update booking (no Stripe call)
 
-            const newPaid = Math.max(0, (booking.paidNow || 0) - amount);
-            const outstanding = Math.max(0, (booking.hireTotal || 0) - newPaid);
-
-            booking.paidNow = newPaid;
-            booking.outstandingAmount = outstanding;
-            booking.outstanding = outstanding;
-
-            booking.refundedTotal =
-              (booking.refundedTotal || 0) + Number(amount);
-
-            if (booking.refundedTotal >= (booking.paidNow || 0)) {
-              booking.fullyRefunded = true;
-            }
-
-            booking.updatedAt = new Date().toISOString();
+            const nowIso = new Date().toISOString();
+            applyRefundToBookingFinancials(booking, amountNumber, nowIso);
 
             await moveBookingInKv(env, booking, booking);
+
+            try {
+              await env.DB.prepare(
+                `
+                UPDATE bookings
+                SET paid_now = ?,
+                    status = ?,
+                    updated_at = ?
+                WHERE id = ?
+              `,
+              )
+                .bind(
+                  booking.paidNow,
+                  booking.status || "confirmed",
+                  booking.updatedAt,
+                  booking.id,
+                )
+                .run();
+            } catch (err) {
+              console.warn("⚠️ Manual refund D1 update failed:", err.message);
+            }
+
+            await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
 
             // 🧾 audit log
             try {
@@ -2123,12 +2253,14 @@ export default {
    🔥 MULTI PAYMENT SUPPORT
 =============================== */
 
-          const originalPaid =
-            Number(booking.paidNow || 0) -
-            Number(booking.outstandingAmountPaid || 0);
+          const outstandingPaidAmount = Math.min(
+            paymentSnapshot.grossPaid,
+            Number(booking.outstandingAmountPaid || 0),
+          );
 
-          const outstandingPaidAmount = Number(
-            booking.outstandingAmountPaid || 0,
+          const originalPaid = Math.max(
+            0,
+            Number((paymentSnapshot.grossPaid - outstandingPaidAmount).toFixed(2)),
           );
 
           console.log("💰 originalPaid:", originalPaid);
@@ -2216,46 +2348,33 @@ export default {
    🔄 UPDATE BOOKING FINANCIALS
 =============================== */
 
-          booking.refundedTotal =
-            Number(booking.refundedTotal || 0) + Number(amount);
-
-          /* ===============================
-   💰 TRUE PAID TOTAL
-=============================== */
-
-          const totalPaid = Number(booking.hireTotal || booking.total || 0);
-
-          /* ===============================
-   💰 REMAINING AFTER REFUNDS
-=============================== */
-
-          const remainingPaid = Math.max(0, totalPaid - booking.refundedTotal);
-
-          /* ===============================
-   🔥 UPDATE DISPLAY VALUES
-=============================== */
-
-          booking.paidNow = remainingPaid;
-
-          booking.outstandingAmount = 0;
-
-          booking.outstanding = 0;
-
-          /* ===============================
-   🔥 FULLY REFUNDED
-=============================== */
-
-          if (remainingPaid <= 0) {
-            booking.fullyRefunded = true;
-          }
-
-          /* ===============================
-   UPDATED
-=============================== */
-
-          booking.updatedAt = new Date().toISOString();
+          const nowIso = new Date().toISOString();
+          applyRefundToBookingFinancials(booking, amountNumber, nowIso);
 
           await moveBookingInKv(env, booking, booking);
+
+          try {
+            await env.DB.prepare(
+              `
+              UPDATE bookings
+              SET paid_now = ?,
+                  status = ?,
+                  updated_at = ?
+              WHERE id = ?
+            `,
+            )
+              .bind(
+                booking.paidNow,
+                booking.status || "confirmed",
+                booking.updatedAt,
+                booking.id,
+              )
+              .run();
+          } catch (err) {
+            console.warn("⚠️ Stripe refund D1 update failed:", err.message);
+          }
+
+          await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
 
           return withCors(json({ ok: true, booking }), corsHeaders);
         } catch (err) {
