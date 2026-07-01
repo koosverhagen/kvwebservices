@@ -634,6 +634,387 @@ const customerAddressInput = document.getElementById("customer-address");
 const customerDobInput = document.getElementById("customer-dob");
 
 /* ===============================
+   APPLE STYLE DATE PICKER
+   Replaces the small native dropdown calendar for booking pickup dates.
+   Keeps the real input value as YYYY-MM-DD so existing pricing/availability
+   code continues to work unchanged.
+================================ */
+
+function formatApplePickerDisplay(value) {
+  const date = parseLocalDateValue(value);
+  if (!date) return "Choose date";
+
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function parseLocalDateValue(value) {
+  const parts = String(value || "").split("-").map(Number);
+  if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) {
+    return null;
+  }
+
+  const [year, month, day] = parts;
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+function localDateToValue(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function startOfLocalDay(date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    0,
+    0,
+    0,
+    0,
+  );
+}
+
+function addMonthsLocal(date, amount) {
+  const output = new Date(date);
+  output.setDate(1);
+  output.setMonth(output.getMonth() + amount);
+  return output;
+}
+
+function sameLocalDay(a, b) {
+  if (!a || !b) return false;
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+let appleDatePickerState = null;
+
+function ensureAppleDatePickerShell() {
+  let shell = document.getElementById("apple-date-picker-shell");
+  if (shell) return shell;
+
+  shell = document.createElement("div");
+  shell.id = "apple-date-picker-shell";
+  shell.className = "apple-date-picker-shell hidden";
+  shell.innerHTML = `
+    <button class="apple-date-picker-backdrop" type="button" aria-label="Close date picker"></button>
+    <section class="apple-date-picker-card" role="dialog" aria-modal="true" aria-labelledby="apple-date-picker-title">
+      <div class="apple-date-picker-grabber" aria-hidden="true"></div>
+      <div class="apple-date-picker-head">
+        <div>
+          <div class="apple-date-picker-kicker">Choose date</div>
+          <h3 id="apple-date-picker-title">Pickup date</h3>
+        </div>
+        <button class="apple-date-picker-close" type="button" aria-label="Close">×</button>
+      </div>
+
+      <div class="apple-date-picker-monthbar">
+        <button class="apple-date-picker-nav" type="button" data-apple-date-nav="prev" aria-label="Previous month">‹</button>
+        <div class="apple-date-picker-month" aria-live="polite"></div>
+        <button class="apple-date-picker-nav" type="button" data-apple-date-nav="next" aria-label="Next month">›</button>
+      </div>
+
+      <div class="apple-date-picker-weekdays" aria-hidden="true">
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+      </div>
+
+      <div class="apple-date-picker-grid" role="grid"></div>
+
+      <div class="apple-date-picker-actions">
+        <button class="apple-date-picker-today" type="button">Today</button>
+        <button class="apple-date-picker-done" type="button">Done</button>
+      </div>
+    </section>
+  `;
+
+  document.body.appendChild(shell);
+
+  shell
+    .querySelector(".apple-date-picker-backdrop")
+    ?.addEventListener("click", closeAppleDatePicker);
+  shell
+    .querySelector(".apple-date-picker-close")
+    ?.addEventListener("click", closeAppleDatePicker);
+  shell
+    .querySelector(".apple-date-picker-done")
+    ?.addEventListener("click", closeAppleDatePicker);
+
+  shell.querySelectorAll("[data-apple-date-nav]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!appleDatePickerState) return;
+      const direction = btn.dataset.appleDateNav === "prev" ? -1 : 1;
+      appleDatePickerState.viewDate = addMonthsLocal(
+        appleDatePickerState.viewDate,
+        direction,
+      );
+      renderAppleDatePicker();
+    });
+  });
+
+  shell
+    .querySelector(".apple-date-picker-today")
+    ?.addEventListener("click", () => {
+      if (!appleDatePickerState) return;
+      const today = startOfLocalDay(new Date());
+      const minDate = appleDatePickerState.minDate;
+      const maxDate = appleDatePickerState.maxDate;
+
+      if (minDate && today < minDate) return;
+      if (maxDate && today > maxDate) return;
+
+      setAppleDatePickerValue(today);
+    });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && appleDatePickerState) {
+      closeAppleDatePicker();
+    }
+  });
+
+  return shell;
+}
+
+function openAppleDatePicker(input, options = {}) {
+  if (!input) return;
+
+  const shell = ensureAppleDatePickerShell();
+  const selected = parseLocalDateValue(input.value);
+  const today = startOfLocalDay(new Date());
+
+  const minDate = options.minDate || null;
+  const maxDate = options.maxDate || null;
+
+  let viewDate = selected || options.initialDate || today;
+  if (minDate && viewDate < minDate) viewDate = minDate;
+  if (maxDate && viewDate > maxDate) viewDate = maxDate;
+  viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+
+  appleDatePickerState = {
+    input,
+    trigger: input.__appleDateTrigger,
+    title: options.title || "Choose date",
+    selectedDate: selected,
+    viewDate,
+    minDate,
+    maxDate,
+  };
+
+  shell.querySelector("#apple-date-picker-title").textContent =
+    appleDatePickerState.title;
+
+  renderAppleDatePicker();
+
+  shell.classList.remove("hidden");
+  document.body.classList.add("apple-date-picker-open");
+}
+
+function closeAppleDatePicker() {
+  const shell = document.getElementById("apple-date-picker-shell");
+  shell?.classList.add("hidden");
+  document.body.classList.remove("apple-date-picker-open");
+
+  const trigger = appleDatePickerState?.trigger;
+  appleDatePickerState = null;
+  trigger?.focus?.();
+}
+
+function renderAppleDatePicker() {
+  if (!appleDatePickerState) return;
+
+  const shell = ensureAppleDatePickerShell();
+  const grid = shell.querySelector(".apple-date-picker-grid");
+  const monthLabel = shell.querySelector(".apple-date-picker-month");
+  if (!grid || !monthLabel) return;
+
+  const view = appleDatePickerState.viewDate;
+  const selected = appleDatePickerState.selectedDate;
+  const today = startOfLocalDay(new Date());
+  const minDate = appleDatePickerState.minDate;
+  const maxDate = appleDatePickerState.maxDate;
+
+  monthLabel.textContent = view.toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const firstOfMonth = new Date(view.getFullYear(), view.getMonth(), 1);
+  const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // Monday = 0
+  const daysInMonth = new Date(
+    view.getFullYear(),
+    view.getMonth() + 1,
+    0,
+  ).getDate();
+
+  const cells = [];
+
+  for (let i = 0; i < firstWeekday; i += 1) {
+    cells.push('<span class="apple-date-picker-empty" aria-hidden="true"></span>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = new Date(view.getFullYear(), view.getMonth(), day);
+    const disabled = (minDate && date < minDate) || (maxDate && date > maxDate);
+    const iso = localDateToValue(date);
+
+    const classes = ["apple-date-picker-day"];
+    if (sameLocalDay(date, today)) classes.push("today");
+    if (sameLocalDay(date, selected)) classes.push("selected");
+    if (disabled) classes.push("disabled");
+
+    cells.push(`
+      <button
+        class="${classes.join(" ")}"
+        type="button"
+        data-apple-date="${iso}"
+        ${disabled ? "disabled" : ""}
+        aria-label="${date.toLocaleDateString("en-GB", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}"
+      >${day}</button>
+    `);
+  }
+
+  grid.innerHTML = cells.join("");
+
+  grid.querySelectorAll("[data-apple-date]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const date = parseLocalDateValue(button.dataset.appleDate);
+      if (date) setAppleDatePickerValue(date);
+    });
+  });
+}
+
+function setAppleDatePickerValue(date) {
+  if (!appleDatePickerState?.input || !date) return;
+
+  const input = appleDatePickerState.input;
+  const previous = input.value;
+  const next = localDateToValue(date);
+
+  input.value = next;
+
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+
+  if (previous !== next) {
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  appleDatePickerState.selectedDate = date;
+  updateAppleDateTrigger(input);
+  closeAppleDatePicker();
+}
+
+function updateAppleDateTrigger(input) {
+  const trigger = input?.__appleDateTrigger;
+  if (!input || !trigger) return;
+
+  const text = formatApplePickerDisplay(input.value);
+  const hasDate = !!parseLocalDateValue(input.value);
+
+  trigger.querySelector(".apple-date-trigger-text").textContent = text;
+  trigger.classList.toggle("empty", !hasDate);
+}
+
+function attachAppleDatePicker(input, options = {}) {
+  if (!input || input.__appleDatePickerAttached) return;
+
+  input.__appleDatePickerAttached = true;
+
+  const minDate = options.minToday ? startOfLocalDay(new Date()) : null;
+  const maxDate = options.maxToday ? startOfLocalDay(new Date()) : null;
+
+  input.classList.add("apple-date-source");
+  input.setAttribute("autocomplete", "off");
+  input.setAttribute("aria-hidden", "true");
+  input.setAttribute("tabindex", "-1");
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "apple-date-trigger empty";
+  trigger.setAttribute("aria-label", options.title || "Choose date");
+  trigger.innerHTML = `
+    <span class="apple-date-trigger-text">Choose date</span>
+    <span class="apple-date-trigger-icon" aria-hidden="true">⌄</span>
+  `;
+
+  input.insertAdjacentElement("afterend", trigger);
+  input.__appleDateTrigger = trigger;
+
+  const valueDescriptor = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  );
+
+  if (valueDescriptor?.get && valueDescriptor?.set) {
+    Object.defineProperty(input, "value", {
+      configurable: true,
+      get() {
+        return valueDescriptor.get.call(this);
+      },
+      set(nextValue) {
+        valueDescriptor.set.call(this, nextValue);
+        window.requestAnimationFrame(() => updateAppleDateTrigger(this));
+      },
+    });
+  }
+
+  trigger.addEventListener("click", () => {
+    openAppleDatePicker(input, {
+      title: options.title,
+      minDate,
+      maxDate,
+    });
+  });
+
+  input.addEventListener("input", () => updateAppleDateTrigger(input));
+  input.addEventListener("change", () => updateAppleDateTrigger(input));
+
+  // Label clicks may still focus the source input; route them to the custom picker.
+  input.addEventListener("focus", () => {
+    openAppleDatePicker(input, {
+      title: options.title,
+      minDate,
+      maxDate,
+    });
+  });
+
+  updateAppleDateTrigger(input);
+}
+
+function initAppleStyleBookingDatePickers() {
+  attachAppleDatePicker(pickupDateInput, {
+    title: "Pickup date",
+    minToday: true,
+  });
+
+  attachAppleDatePicker(selectedPickupInput, {
+    title: "Pickup date",
+    minToday: true,
+  });
+}
+
+initAppleStyleBookingDatePickers();
+
+
+/* ===============================
    CUSTOMER ADDRESS AUTOCOMPLETE
    Uses Worker Maps key endpoint
 ================================ */
