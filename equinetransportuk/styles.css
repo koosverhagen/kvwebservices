@@ -1570,7 +1570,7 @@ body.fleet-detail-open {
 
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Important */
+  overflow: hidden !important; /* Important */
   position: relative;
 }
 
@@ -1631,17 +1631,43 @@ body.fleet-detail-open {
 
 /* Scrollable content */
 .reviews-content {
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   padding: 12px 18px 20px 18px;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* old Edge/IE */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* old Edge/IE */
 }
 
-.reviews-content::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none; /* Chrome/Safari */
+html.reviews-scroll-lock,
+body.reviews-scroll-lock {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.reviews-overlay.active {
+  overflow: hidden !important;
+}
+
+.reviews-modal,
+.reviews-content,
+.google-reviews-widget,
+.google-reviews-list {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.reviews-modal::-webkit-scrollbar,
+.reviews-content::-webkit-scrollbar,
+.google-reviews-widget::-webkit-scrollbar,
+.google-reviews-list::-webkit-scrollbar,
+.reviews-modal *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
 }
 
 
