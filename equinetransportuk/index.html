@@ -9,7 +9,7 @@
       content="Book self-drive 3.5T and 7.5T horsebox hire from East Sussex or request professional driven horse transport across the whole of the UK."
     />
 
-    <link rel="stylesheet" href="styles.css?v=70" />
+    <link rel="stylesheet" href="styles.css?v=71" />
     <link rel="icon" href="images/favicon.png" />
   
     <link rel="canonical" href="https://www.equinetransportuk.com/" />
@@ -912,16 +912,18 @@ removed duplicate, script is loaded at end of body -->
       </div>
     </footer>
 
-    <!-- Reviews Overlay -->
+    <!-- Google Reviews Overlay -->
     <div class="reviews-overlay" id="reviewsOverlay">
       <div class="reviews-modal">
         <div class="reviews-header">
           <div class="reviews-drag"></div>
-          <button class="reviews-close" id="closeReviews">×</button>
+          <button class="reviews-close" id="closeReviews" type="button" aria-label="Close reviews">×</button>
         </div>
 
         <div class="reviews-content">
-          <div class="elfsight-app-08760789-afd9-4fa0-9275-cbac247e4400"></div>
+          <div class="google-reviews-widget" id="googleReviewsWidget" aria-live="polite">
+            <div class="google-reviews-loading">Loading Google reviews…</div>
+          </div>
         </div>
       </div>
     </div>
@@ -930,53 +932,157 @@ removed duplicate, script is loaded at end of body -->
         const overlay = document.getElementById("reviewsOverlay");
         const openBtn = document.querySelector(".reviews-open");
         const closeBtn = document.getElementById("closeReviews");
+        const widget = document.getElementById("googleReviewsWidget");
 
-        if (!overlay || !openBtn || !closeBtn) return;
+        if (!overlay || !openBtn || !closeBtn || !widget) return;
 
-        function loadReviewsWidget() {
-          if (document.querySelector('script[data-elfsight="true"]')) return;
+        const REVIEWS_API_BASE =
+          location.hostname === "127.0.0.1" || location.hostname === "localhost"
+            ? "http://localhost:8787"
+            : "https://equine-bookings-api.kverhagen.workers.dev";
 
-          const script = document.createElement("script");
-          script.src = "https://elfsightcdn.com/platform.js";
-          script.async = true;
-          script.dataset.elfsight = "true";
-          document.body.appendChild(script);
+        let reviewsLoaded = false;
+        let reviewsLoading = false;
+
+        function escapeHtml(value) {
+          return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
+
+        function escapeAttr(value) {
+          return escapeHtml(value).replace(/`/g, "&#096;");
+        }
+
+        function renderStars(rating) {
+          const score = Math.max(0, Math.min(5, Math.round(Number(rating || 0))));
+          return `${"★".repeat(score)}${"☆".repeat(5 - score)}`;
+        }
+
+        function renderGoogleReviews(data) {
+          const reviews = Array.isArray(data?.reviews) ? data.reviews : [];
+          const rating = Number(data?.rating || 0);
+          const total = Number(data?.userRatingsTotal || 0);
+          const placeUrl = data?.url || "https://www.google.com/search?q=Equine+Transport+UK+reviews";
+
+          if (!data?.ok || !reviews.length) {
+            widget.innerHTML = `
+              <div class="google-reviews-empty">
+                <div class="google-reviews-title">Google reviews</div>
+                <p>Reviews are temporarily unavailable here.</p>
+                <a class="btn" href="${escapeAttr(placeUrl)}" target="_blank" rel="noopener">Read reviews on Google</a>
+              </div>
+            `;
+            return;
+          }
+
+          widget.innerHTML = `
+            <div class="google-reviews-summary">
+              <div>
+                <div class="google-reviews-kicker">Google reviews</div>
+                <h3>${escapeHtml(data.name || "Equine Transport UK")}</h3>
+                <div class="google-reviews-rating-row">
+                  <span class="google-reviews-score">${rating.toFixed(1)}</span>
+                  <span class="google-reviews-stars" aria-label="${rating.toFixed(1)} out of 5 stars">${renderStars(rating)}</span>
+                  <span class="google-reviews-count">${total ? `${total} reviews` : "Customer reviews"}</span>
+                </div>
+              </div>
+              <a class="google-reviews-google-link" href="${escapeAttr(placeUrl)}" target="_blank" rel="noopener">View on Google</a>
+            </div>
+
+            <div class="google-reviews-list">
+              ${reviews
+                .map((review) => {
+                  const rawAuthorName = review.authorName || "Google reviewer";
+                  const authorName = escapeHtml(rawAuthorName);
+                  const authorInitial = escapeHtml(String(rawAuthorName).trim().slice(0, 1) || "G");
+                  const authorUrl = review.authorUrl || "";
+                  const photoUrl = review.profilePhotoUrl || "";
+                  const reviewRating = Number(review.rating || 0);
+                  const reviewText = escapeHtml(review.text || "");
+                  const timeText = escapeHtml(review.relativeTimeDescription || "");
+
+                  return `
+                    <article class="google-review-card">
+                      <div class="google-review-head">
+                        ${photoUrl ? `<img class="google-review-avatar" src="${escapeAttr(photoUrl)}" alt="">` : `<div class="google-review-avatar google-review-avatar-fallback">${authorInitial}</div>`}
+                        <div>
+                          ${authorUrl ? `<a class="google-review-author" href="${escapeAttr(authorUrl)}" target="_blank" rel="noopener">${authorName}</a>` : `<div class="google-review-author">${authorName}</div>`}
+                          <div class="google-review-meta">
+                            <span class="google-review-stars">${renderStars(reviewRating)}</span>
+                            ${timeText ? `<span>${timeText}</span>` : ""}
+                          </div>
+                        </div>
+                      </div>
+                      ${reviewText ? `<p class="google-review-text">${reviewText}</p>` : ""}
+                    </article>
+                  `;
+                })
+                .join("")}
+            </div>
+
+            <div class="google-reviews-footer">
+              <span>Powered by Google</span>
+              <a href="${escapeAttr(placeUrl)}" target="_blank" rel="noopener">Read more or leave a review</a>
+            </div>
+          `;
+        }
+
+        async function loadGoogleReviews() {
+          if (reviewsLoaded || reviewsLoading) return;
+          reviewsLoading = true;
+
+          widget.innerHTML = `<div class="google-reviews-loading">Loading Google reviews…</div>`;
+
+          try {
+            const res = await fetch(`${REVIEWS_API_BASE}/api/google-reviews`, {
+              cache: "no-store",
+            });
+
+            const data = await res.json().catch(() => ({}));
+            renderGoogleReviews(data);
+            reviewsLoaded = true;
+          } catch (err) {
+            console.warn("Google reviews unavailable:", err);
+            renderGoogleReviews({
+              ok: false,
+              url: "https://www.google.com/search?q=Equine+Transport+UK+reviews",
+              reviews: [],
+            });
+          } finally {
+            reviewsLoading = false;
+          }
         }
 
         function openOverlay() {
           overlay.classList.add("active");
           document.body.style.overflow = "hidden";
-          loadReviewsWidget();
+          loadGoogleReviews();
         }
+
         function closeOverlay() {
           overlay.classList.remove("active");
           document.body.style.overflow = "";
         }
 
-        // Open
         openBtn.addEventListener("click", function (e) {
           e.preventDefault();
           openOverlay();
         });
 
-        // Close via X
         closeBtn.addEventListener("click", closeOverlay);
 
-        // Close when tapping outside modal
         overlay.addEventListener("click", function (e) {
-          if (e.target === overlay) {
-            closeOverlay();
-          }
+          if (e.target === overlay) closeOverlay();
         });
 
-        // Close with ESC key
         document.addEventListener("keydown", function (e) {
-          if (e.key === "Escape") {
-            closeOverlay();
-          }
+          if (e.key === "Escape") closeOverlay();
         });
 
-        // Swipe down to close (mobile)
         let startY = 0;
 
         overlay.addEventListener(
@@ -991,9 +1097,7 @@ removed duplicate, script is loaded at end of body -->
           "touchmove",
           function (e) {
             const currentY = e.touches[0].clientY;
-            if (currentY - startY > 80) {
-              closeOverlay();
-            }
+            if (currentY - startY > 80) closeOverlay();
           },
           { passive: true },
         );

@@ -1288,6 +1288,16 @@ export default {
       }
 
       /* ===============================
+         GOOGLE REVIEWS
+         Server-side Places lookup so the API key is not exposed.
+      ================================ */
+
+      if (request.method === "GET" && url.pathname === "/api/google-reviews") {
+        const response = await handleGoogleReviews(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      /* ===============================
      DEPOSIT STRIPE SESSION
   =============================== */
 
@@ -11083,45 +11093,27 @@ async function findCustomerByEmailOrMobile(env, email, mobile) {
        🔥 CLEAN INPUT
     =============================== */
 
-    const cleanEmail = String(email || "").trim().toLowerCase();
-    const cleanMobile = String(mobile || "").trim();
+    const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+    const cleanMobile = mobile ? String(mobile).trim() : null;
 
     console.log("🔎 LOOKUP INPUT:", { cleanEmail, cleanMobile });
 
     /* ===============================
-       SAFE EXACT QUERY
-       Do not bind empty mobile/email values.
-       Empty mobile used to match old imported customers with blank mobile fields.
+       🔥 SINGLE QUERY (FIXED)
     =============================== */
-
-    const where = [];
-    const params = [];
-
-    if (cleanEmail) {
-      where.push("(email IS NOT NULL AND TRIM(email) != '' AND LOWER(TRIM(email)) = ?)");
-      params.push(cleanEmail);
-    }
-
-    if (cleanMobile) {
-      where.push("(mobile IS NOT NULL AND TRIM(mobile) != '' AND TRIM(mobile) = ?)");
-      params.push(cleanMobile);
-    }
-
-    if (!where.length) {
-      console.log("🔎 LOOKUP RESULT: no usable email/mobile supplied");
-      return null;
-    }
 
     const result = await env.DB.prepare(
       `
       SELECT *
       FROM customers
-      WHERE ${where.join(" OR ")}
-      ORDER BY COALESCE(hire_count, 0) DESC, updated_at DESC, created_at DESC
+      WHERE
+        (email IS NOT NULL AND LOWER(email) = ?)
+        OR
+        (mobile IS NOT NULL AND mobile = ?)
       LIMIT 1
     `,
     )
-      .bind(...params)
+      .bind(cleanEmail || "", cleanMobile || "")
       .first();
 
     console.log("🔎 LOOKUP RESULT:", result);
@@ -11158,6 +11150,150 @@ function slotsConflict(a, b) {
 
   // am + pm can share same day
   return false;
+}
+
+
+async function handleGoogleReviews(request, env) {
+  const placeId = String(
+    env.GOOGLE_PLACE_ID ||
+      env.GOOGLE_REVIEWS_PLACE_ID ||
+      env.GOOGLE_REVIEW_PLACE_ID ||
+      env.GOOGLE_BUSINESS_PLACE_ID ||
+      "",
+  ).trim();
+
+  const apiKey = String(
+    env.GOOGLE_PLACES_API_KEY ||
+      env.GOOGLE_MAPS_SERVER_KEY ||
+      env.GOOGLE_MAPS_API_KEY ||
+      env.GOOGLE_MAPS_BROWSER_KEY ||
+      "",
+  ).trim();
+
+  const fallbackUrl = "https://www.google.com/search?q=Equine+Transport+UK+reviews";
+
+  if (!placeId || !apiKey) {
+    return json(
+      {
+        ok: false,
+        configured: false,
+        error: "Google reviews are not configured",
+        name: "Equine Transport UK",
+        rating: 0,
+        userRatingsTotal: 0,
+        url: fallbackUrl,
+        reviews: [],
+      },
+      200,
+    );
+  }
+
+  const cacheUrl = new URL("https://equine-internal-cache/google-reviews");
+  cacheUrl.searchParams.set("place", placeId);
+  const cacheRequest = new Request(cacheUrl.toString(), {
+    method: "GET",
+  });
+
+  const canUseCache = typeof caches !== "undefined" && caches?.default;
+
+  if (canUseCache) {
+    const cached = await caches.default.match(cacheRequest);
+    if (cached) return cached;
+  }
+
+  const googleUrl = new URL(
+    "https://maps.googleapis.com/maps/api/place/details/json",
+  );
+  googleUrl.searchParams.set("place_id", placeId);
+  googleUrl.searchParams.set(
+    "fields",
+    "name,rating,user_ratings_total,reviews,url",
+  );
+  googleUrl.searchParams.set("language", "en-GB");
+  googleUrl.searchParams.set("key", apiKey);
+
+  let upstream;
+
+  try {
+    upstream = await fetch(googleUrl.toString(), {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+    });
+  } catch (err) {
+    console.warn("Google reviews fetch failed:", err);
+
+    return json(
+      {
+        ok: false,
+        error: "Google reviews could not be loaded",
+        name: "Equine Transport UK",
+        rating: 0,
+        userRatingsTotal: 0,
+        url: fallbackUrl,
+        reviews: [],
+      },
+      200,
+    );
+  }
+
+  const data = await upstream.json().catch(() => ({}));
+
+  if (!upstream.ok || data.status !== "OK") {
+    console.warn("Google reviews API issue:", {
+      status: upstream.status,
+      googleStatus: data.status,
+      message: data.error_message,
+    });
+
+    return json(
+      {
+        ok: false,
+        error: "Google reviews are temporarily unavailable",
+        name: "Equine Transport UK",
+        rating: 0,
+        userRatingsTotal: 0,
+        url: fallbackUrl,
+        reviews: [],
+      },
+      200,
+    );
+  }
+
+  const result = data.result || {};
+  const reviews = Array.isArray(result.reviews) ? result.reviews : [];
+
+  const payload = {
+    ok: true,
+    name: result.name || "Equine Transport UK",
+    rating: Number(result.rating || 0),
+    userRatingsTotal: Number(result.user_ratings_total || 0),
+    url: result.url || fallbackUrl,
+    reviews: reviews.slice(0, 5).map((review) => ({
+      authorName: review.author_name || "Google reviewer",
+      authorUrl: review.author_url || "",
+      profilePhotoUrl: review.profile_photo_url || "",
+      rating: Number(review.rating || 0),
+      relativeTimeDescription: review.relative_time_description || "",
+      text: review.text || "",
+      time: Number(review.time || 0),
+    })),
+    attribution: "Powered by Google",
+    updatedAt: new Date().toISOString(),
+  };
+
+  const response = json(payload);
+  response.headers.set(
+    "cache-control",
+    "public, max-age=21600, s-maxage=21600",
+  );
+
+  if (canUseCache) {
+    await caches.default.put(cacheRequest, response.clone());
+  }
+
+  return response;
 }
 
 function json(payload, status = 200) {
