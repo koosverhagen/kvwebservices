@@ -7488,8 +7488,36 @@ let bookingVersion = 0;
 ====================================================== */
 
 const vehiclePreview = document.getElementById("vehicle-preview");
+let vehiclePreviewHideTimer = null;
+
+function cancelVehiclePreviewHide() {
+  clearTimeout(vehiclePreviewHideTimer);
+  vehiclePreviewHideTimer = null;
+}
+
+function scheduleVehiclePreviewHide(delay = 180) {
+  cancelVehiclePreviewHide();
+
+  vehiclePreviewHideTimer = setTimeout(() => {
+    clearPreview();
+  }, delay);
+}
+
+vehiclePreview?.addEventListener("mouseenter", () => {
+  cancelVehiclePreviewHide();
+});
+
+vehiclePreview?.addEventListener("mouseleave", () => {
+  scheduleVehiclePreviewHide(120);
+});
+
+vehiclePreview?.addEventListener("mousedown", () => {
+  cancelVehiclePreviewHide();
+});
 
 function clearPreview() {
+  cancelVehiclePreviewHide();
+
   document
     .querySelectorAll(".cal-preview")
     .forEach((el) => el.classList.remove("cal-preview"));
@@ -7659,18 +7687,21 @@ async function showVehiclePreview(date, event) {
         const img = getVehiclePreviewImage(vehicle);
 
         rows.push(`
-          <div class="preview-item preview-select"
+          <button class="preview-item preview-select"
+            type="button"
             data-vehicle-id="${vehicle.id}"
             data-slot="${slotText}"
-            data-date="${dateKey}">
+            data-date="${dateKey}"
+            aria-label="Select ${escapeHtml(vehicle.name)} for ${escapeHtml(dateLabel)}">
 
-            ${img ? `<img src="${img}" class="preview-img">` : ""}
+            ${img ? `<img src="${img}" class="preview-img" alt="">` : ""}
 
-            <div class="preview-text">
+            <span class="preview-text">
               <strong>${vehicle.name}</strong><br>
               <span class="muted tiny">${slotText}</span>
-            </div>
-          </div>
+            </span>
+            <span class="preview-action" aria-hidden="true">Select</span>
+          </button>
         `);
       });
 
@@ -7688,6 +7719,8 @@ async function showVehiclePreview(date, event) {
   function bindPreviewClicks(panel) {
     panel.querySelectorAll(".preview-select").forEach((el) => {
       el.addEventListener("click", async () => {
+        if (el.dataset.selecting === "true") return;
+
         const vehicleId = el.dataset.vehicleId;
         const slot = (el.dataset.slot || "").toLowerCase();
         const selectedDateKey = el.dataset.date || dateKey;
@@ -7695,59 +7728,70 @@ async function showVehiclePreview(date, event) {
         const vehicle = vehicles.find((v) => v.id === vehicleId);
         if (!vehicle) return;
 
-        PRESELECTED_VEHICLE = vehicleId;
-        LOCKED_VEHICLE = true;
+        el.dataset.selecting = "true";
+        el.classList.add("selecting");
+        cancelVehiclePreviewHide();
 
-        updateCalendarVehicleLabel();
+        try {
+          PRESELECTED_VEHICLE = vehicleId;
+          LOCKED_VEHICLE = true;
 
-        if (pickupDateInput) {
-          pickupDateInput.value = selectedDateKey;
-        }
+          updateCalendarVehicleLabel();
 
-        if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
-        if (selectedBaseInput) selectedBaseInput.value = "";
-
-        selectedAvailability = null;
-
-        updateDurationOptionsForVehicle(vehicle);
-        enforceVehicleDurationRules(vehicle);
-
-        if (durationDaysInput) {
-          if (!is35T(vehicle)) {
-            durationDaysInput.value = "1";
-            if (pickupTimeInput) pickupTimeInput.value = "07:00";
-          } else if (slot.includes("morning") || slot.includes("afternoon")) {
-            durationDaysInput.value = "0.5";
-            if (pickupTimeInput) {
-              pickupTimeInput.value = slot.includes("afternoon")
-                ? "13:00"
-                : "07:00";
-            }
-          } else {
-            durationDaysInput.value = "1";
-            if (pickupTimeInput) pickupTimeInput.value = "07:00";
+          if (pickupDateInput) {
+            pickupDateInput.value = selectedDateKey;
+            pickupDateInput.dispatchEvent(new Event("input", { bubbles: true }));
+            pickupDateInput.dispatchEvent(new Event("change", { bubbles: true }));
           }
+
+          if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
+          if (selectedBaseInput) selectedBaseInput.value = "";
+
+          selectedAvailability = null;
+
+          updateDurationOptionsForVehicle(vehicle);
+          enforceVehicleDurationRules(vehicle);
+
+          if (durationDaysInput) {
+            if (!is35T(vehicle)) {
+              durationDaysInput.value = "1";
+              if (pickupTimeInput) pickupTimeInput.value = "07:00";
+            } else if (slot.includes("morning") || slot.includes("afternoon")) {
+              durationDaysInput.value = "0.5";
+              if (pickupTimeInput) {
+                pickupTimeInput.value = slot.includes("afternoon")
+                  ? "13:00"
+                  : "07:00";
+              }
+            } else {
+              durationDaysInput.value = "1";
+              if (pickupTimeInput) pickupTimeInput.value = "07:00";
+            }
+
+            durationDaysInput.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+
+          await syncPickupTimeOptions(selectedDateKey);
+          updatePickupTimeVisibility();
+          updateCheckoutSummary();
+
+          await selectAvailability(vehicleId);
+
+          if (selectedAvailability) {
+            clearPreview();
+            goToStep(3);
+
+            setTimeout(() => {
+              document.getElementById("step-3")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }, 120);
+          }
+        } finally {
+          el.dataset.selecting = "false";
+          el.classList.remove("selecting");
         }
-
-        await syncPickupTimeOptions(selectedDateKey);
-        updatePickupTimeVisibility();
-        updateCheckoutSummary();
-
-        panel.classList.add("hidden");
-
-        goToStep(1);
-
-        setTimeout(() => {
-          durationDaysInput?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-          durationDaysInput?.classList.add("duration-highlight");
-
-          setTimeout(() => {
-            durationDaysInput?.classList.remove("duration-highlight");
-          }, 1800);
-        }, 150);
       });
     });
   }
@@ -8187,6 +8231,8 @@ async function showVehiclePreview(date, event) {
       dayEl.addEventListener("mouseenter", (e) => {
         if (IS_RESETTING) return;
 
+        cancelVehiclePreviewHide();
+
         const dateStr = dayEl.dataset.date;
 
         if (dateStr) {
@@ -8214,9 +8260,20 @@ async function showVehiclePreview(date, event) {
         dayEl.addEventListener("mousemove", movePreview);
       }
 
-      dayEl.addEventListener("mouseleave", () => {
+      dayEl.addEventListener("mouseleave", (event) => {
         clearTimeout(hoverPreviewTimer);
-        clearPreview();
+
+        if (
+          !isMobile() &&
+          vehiclePreview &&
+          event.relatedTarget instanceof Node &&
+          vehiclePreview.contains(event.relatedTarget)
+        ) {
+          cancelVehiclePreviewHide();
+          return;
+        }
+
+        scheduleVehiclePreviewHide(180);
       });
 
       /* ===============================

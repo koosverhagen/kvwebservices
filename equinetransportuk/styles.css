@@ -3829,6 +3829,49 @@ textarea {
   transform: translateY(-1px);
 }
 
+#vehicle-preview .preview-select,
+#mobile-preview .preview-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#vehicle-preview .preview-select:focus-visible,
+#mobile-preview .preview-select:focus-visible {
+  outline: 3px solid rgba(31, 111, 235, 0.28);
+  outline-offset: 2px;
+}
+
+#vehicle-preview .preview-select.selecting,
+#mobile-preview .preview-select.selecting {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.preview-action {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(31, 111, 235, 0.1);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+#vehicle-preview .preview-select:hover .preview-action,
+#mobile-preview .preview-select:hover .preview-action {
+  background: var(--accent);
+  color: #ffffff;
+}
+
 #vehicle-preview .preview-img {
   width: 72px;
   height: 54px;
