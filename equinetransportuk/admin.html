@@ -8871,11 +8871,11 @@ Equine Transport UK`;
             timeSelect.value = "07:00";
           }
 
-          /* =====================================
-             🔥 FORCE STATE SYNC
-          ===================================== */
-
-          timeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+          /*
+             Do not dispatch a nested "change" event here.
+             The live listeners already call this function, and dispatching again
+             can recurse until Chrome/Safari hit "Maximum call stack size exceeded".
+          */
 
           console.log("⏰ Admin time rebuilt:", timeSelect.value);
         }
@@ -9522,11 +9522,43 @@ Equine Transport UK`;
       }
 
       function isConfirmationPaid(booking) {
-        if (booking?.status === "pending_confirmation_payment") return false;
-        if (booking?.paymentStatus === "confirmation_paid") return true;
-        if (booking?.paymentStatus === "deposit_paid") return true;
-        if (booking?.paymentStatus === "fully_paid") return true;
-        return true;
+        const status = String(
+          booking?.status || booking?.bookingStatus || "",
+        ).toLowerCase();
+
+        const paymentStatus = String(
+          booking?.paymentStatus || booking?.payment_status || "",
+        ).toLowerCase();
+
+        const paymentMode = String(
+          booking?.paymentMode || booking?.payment_mode || "",
+        ).toLowerCase();
+
+        const paidNow = Number(booking?.paidNow || booking?.paid_now || 0);
+        const confirmationFee = Number(
+          booking?.confirmationFee || booking?.confirmation_fee || 0,
+        );
+
+        const adminCreated =
+          booking?.adminCreated === true ||
+          booking?.adminCreated === 1 ||
+          booking?.adminCreated === "1" ||
+          booking?.adminCreated === "true" ||
+          paymentMode === "admin_no_payment" ||
+          status === "admin_confirmed";
+
+        if (status === "pending_confirmation_payment") return false;
+        if (paymentStatus === "pending_confirmation_payment") return false;
+
+        if (paymentStatus === "confirmation_paid") return true;
+        if (paymentStatus === "deposit_paid") return true;
+        if (paymentStatus === "fully_paid") return true;
+
+        if (adminCreated) {
+          return paidNow > 0.005 || confirmationFee > 0.005;
+        }
+
+        return paidNow > 0.005 || confirmationFee > 0.005;
       }
 
       function getFirstName(fullName) {

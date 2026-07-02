@@ -7746,6 +7746,8 @@ async function handleAdminBookingUpdate(request, env) {
 
         confirmationFee: 0,
         paidNow: 0,
+        paymentStatus: "pending_confirmation_payment",
+        confirmationPaid: false,
 
         outstandingAmount: hireTotal,
         outstanding: hireTotal,
