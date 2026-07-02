@@ -1383,7 +1383,11 @@ export default {
         // The card should only show "Deposit on Hold" after Stripe confirms requires_capture.
         booking.depositPaid = false;
         booking.depositCancelled = false;
+        booking.depositCancelledAt = null;
+        booking.deposit_cancelled = false;
+        booking.deposit_cancelled_at = null;
         booking.depositReleased = false;
+        booking.depositReleasedAt = null;
         booking.depositCapturedAmount = 0;
         booking.depositStatus = "payment_intent_created";
         booking.depositIntentCreatedAt = nowIso;
@@ -2510,6 +2514,10 @@ export default {
           const nowIso = new Date().toISOString();
 
           booking.depositPaid = false;
+          booking.depositCancelled = false;
+          booking.depositCancelledAt = null;
+          booking.deposit_cancelled = false;
+          booking.deposit_cancelled_at = null;
           booking.depositReleased = true;
           booking.depositReleasedAt = nowIso;
           booking.depositStatus = "captured_remainder_released";
@@ -7237,6 +7245,9 @@ function buildDepositPatchFromPaymentIntent(paymentIntent) {
     return {
       depositPaid: false,
       depositCancelled: false,
+      depositCancelledAt: null,
+      deposit_cancelled: false,
+      deposit_cancelled_at: null,
       depositReleased: true,
       depositReleasedAt: nowIso,
       depositCapturedAmount: amountReceivedPounds,
@@ -7253,7 +7264,11 @@ function buildDepositPatchFromPaymentIntent(paymentIntent) {
     return {
       depositPaid: true,
       depositCancelled: false,
+      depositCancelledAt: null,
+      deposit_cancelled: false,
+      deposit_cancelled_at: null,
       depositReleased: false,
+      depositReleasedAt: null,
       depositCapturedAmount: 0,
       depositStatus: "requires_capture",
       updatedAt: nowIso,
@@ -7319,25 +7334,21 @@ function bookingLooksLikeActiveDepositHold(booking) {
     booking.depositStatus || booking.deposit_status || "",
   ).toLowerCase();
 
-  const alreadyFinal =
+  const alreadyCapturedOrReleased =
     capturedAmount > 0 ||
-    booking.depositCancelled === true ||
-    booking.deposit_cancelled === 1 ||
     booking.depositReleased === true ||
     booking.deposit_released === 1 ||
-    depositStatus === "canceled" ||
-    depositStatus === "cancelled" ||
     depositStatus === "captured" ||
     depositStatus === "captured_remainder_released" ||
     depositStatus === "released";
 
-  if (alreadyFinal) return false;
+  if (alreadyCapturedOrReleased) return false;
 
   /*
     CRITICAL:
-    If the booking has a depositPaymentIntentId, we must ask Stripe.
-    A newly made deposit may only have the PaymentIntent ID in KV,
-    while depositPaid/depositStatus have not yet been updated by webhook.
+    If a booking has a depositPaymentIntentId, ask Stripe unless it is
+    already captured/released. This repairs stale local cancelled flags
+    when Stripe still has an active requires_capture hold.
   */
   return true;
 }

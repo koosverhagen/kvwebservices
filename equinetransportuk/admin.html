@@ -9194,11 +9194,7 @@ Equine Transport UK`;
             next.depositStatus || next.deposit_status || "",
           ).toLowerCase();
 
-          const hasFreshActiveDeposit =
-            (status === "paid" ||
-              status === "secured" ||
-              status === "requires_capture") &&
-            !!(next.depositPaymentIntentId || next.deposit_payment_intent_id);
+          const hasFreshActiveDeposit = bookingHasActiveDeposit(next);
 
           const hasFinalCapturedDeposit =
             getDepositCapturedAmount(next) > 0 ||
@@ -9208,7 +9204,11 @@ Equine Transport UK`;
             status === "captured_remainder_released" ||
             status === "released";
 
-          if (!hasFreshActiveDeposit && !hasFinalCapturedDeposit) {
+          if (hasFreshActiveDeposit || hasFinalCapturedDeposit) {
+            forgetDepositCancelledLocally(bookingId);
+            next.depositCancelled = false;
+            next.deposit_cancelled = false;
+          } else {
             next.depositCancelled = true;
             next.depositStatus = "canceled";
             next.depositPaid = false;
@@ -9759,6 +9759,15 @@ Equine Transport UK`;
         return getDepositCancelledCache().includes(String(bookingId));
       }
 
+      function isDepositFlagTrue(value) {
+        return (
+          value === true ||
+          value === 1 ||
+          value === "1" ||
+          String(value || "").trim().toLowerCase() === "true"
+        );
+      }
+
       function isDepositCancelled(booking) {
         const bookingId = String(booking?.id || booking?.bookingId || "");
 
@@ -9770,6 +9779,22 @@ Equine Transport UK`;
           booking?.depositPaymentIntentId || booking?.deposit_payment_intent_id
         );
 
+        const hasFreshActiveDeposit = bookingHasActiveDeposit(booking);
+
+        const hasFinalCapturedDeposit =
+          getDepositCapturedAmount(booking) > 0 ||
+          booking?.depositReleased === true ||
+          booking?.deposit_released === 1 ||
+          status === "captured" ||
+          status === "captured_remainder_released" ||
+          status === "released";
+
+        // Active/captured deposit state must win over old cancel flags/cache.
+        if (hasFreshActiveDeposit || hasFinalCapturedDeposit) {
+          forgetDepositCancelledLocally(bookingId);
+          return false;
+        }
+
         const cancelledByData =
           booking?.depositCancelled === true ||
           booking?.deposit_cancelled === true ||
@@ -9780,29 +9805,10 @@ Equine Transport UK`;
 
         if (cancelledByData) return true;
 
-        const hasFreshActiveDeposit =
-          (status === "paid" ||
-            status === "secured" ||
-            status === "requires_capture") &&
-          hasDepositIntent;
-
-        const hasFinalCapturedDeposit =
-          getDepositCapturedAmount(booking) > 0 ||
-          booking?.depositReleased === true ||
-          booking?.deposit_released === 1 ||
-          status === "captured" ||
-          status === "captured_remainder_released" ||
-          status === "released";
-
-        if (hasFreshActiveDeposit || hasFinalCapturedDeposit) {
-          forgetDepositCancelledLocally(bookingId);
-          return false;
-        }
-
         const looksLikeCancelledStripeDeposit =
           hasDepositIntent &&
-          booking?.depositPaid !== true &&
-          booking?.deposit_paid !== 1 &&
+          !isDepositFlagTrue(booking?.depositPaid) &&
+          !isDepositFlagTrue(booking?.deposit_paid) &&
           status !== "payment_intent_created";
 
         if (looksLikeCancelledStripeDeposit) return true;
@@ -10922,6 +10928,10 @@ Equine Transport UK`;
       }
 
       function bookingHasActiveDeposit(booking) {
+        const status = String(
+          booking?.depositStatus || booking?.deposit_status || "",
+        ).toLowerCase();
+
         const capturedAmount = Number(
           booking?.depositCapturedAmount ||
             booking?.deposit_captured_amount ||
@@ -10932,32 +10942,27 @@ Equine Transport UK`;
           capturedAmount > 0 ||
           booking?.depositReleased === true ||
           booking?.deposit_released === 1 ||
-          booking?.depositStatus === "captured" ||
-          booking?.depositStatus === "captured_remainder_released" ||
-          booking?.depositStatus === "released";
+          status === "captured" ||
+          status === "captured_remainder_released" ||
+          status === "released";
 
         if (depositCapturedOrReleased) {
           return false;
         }
 
-        const depositSecured =
-          booking?.depositPaid === true ||
-          booking?.deposit_paid === 1 ||
-          booking?.depositStatus === "paid" ||
-          booking?.depositStatus === "secured" ||
-          booking?.depositStatus === "requires_capture";
+        const depositSecuredByFlag =
+          isDepositFlagTrue(booking?.depositPaid) ||
+          isDepositFlagTrue(booking?.deposit_paid);
 
-        const depositCancelled =
-          booking?.depositCancelled === true ||
-          booking?.deposit_cancelled === 1 ||
-          booking?.depositStatus === "cancelled" ||
-          booking?.depositStatus === "canceled";
+        const depositSecuredByStatus =
+          status === "paid" ||
+          status === "secured" ||
+          status === "requires_capture" ||
+          status === "legacy_authorized";
 
-        const hasDepositIntent = !!(
-          booking?.depositPaymentIntentId || booking?.deposit_payment_intent_id
-        );
-
-        return depositSecured && hasDepositIntent && !depositCancelled;
+        // Do not require a PaymentIntent ID here: D1 fallback/legacy rows can
+        // have deposit_paid=1 but no Stripe ID in the admin response.
+        return depositSecuredByFlag || depositSecuredByStatus;
       }
 
       function bookingMatchesDepositFilter(booking, depositMode) {
