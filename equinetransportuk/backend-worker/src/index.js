@@ -11193,7 +11193,7 @@ async function handleGoogleReviews(request, env) {
     );
   }
 
-  const cacheUrl = new URL("https://equine-internal-cache/google-reviews-v3-newest");
+  const cacheUrl = new URL("https://equine-internal-cache/google-reviews-v4-newest-photo-match");
   cacheUrl.searchParams.set("place", placeId);
   const cacheRequest = new Request(cacheUrl.toString(), {
     method: "GET",
@@ -11272,13 +11272,81 @@ async function handleGoogleReviews(request, env) {
   const photos = Array.isArray(result.photos) ? result.photos : [];
   const apiOrigin = new URL(request.url).origin;
 
+  const topReviews = reviews.slice(0, 5);
+  const normaliseReviewPhotoName = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/&amp;/g, "&")
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+
+  const reviewAuthorNames = topReviews
+    .map((review) => normaliseReviewPhotoName(review.author_name))
+    .filter(Boolean);
+
+  const getPhotoAttributionNames = (photo) => {
+    const html = Array.isArray(photo?.html_attributions)
+      ? photo.html_attributions.join(" ")
+      : "";
+
+    const names = [];
+    const anchorPattern = /<a\b[^>]*>(.*?)<\/a>/gi;
+    let match;
+
+    while ((match = anchorPattern.exec(html))) {
+      names.push(
+        normaliseReviewPhotoName(
+          String(match[1] || "").replace(/<[^>]*>/g, " "),
+        ),
+      );
+    }
+
+    names.push(normaliseReviewPhotoName(html.replace(/<[^>]*>/g, " ")));
+
+    return Array.from(new Set(names.filter(Boolean)));
+  };
+
+  const rankedPhotos = photos
+    .filter((photo) => photo?.photo_reference)
+    .map((photo, originalIndex) => {
+      const attributionNames = getPhotoAttributionNames(photo);
+      const matchedReviewIndex = reviewAuthorNames.findIndex((reviewName) =>
+        attributionNames.some(
+          (photoName) =>
+            photoName === reviewName ||
+            photoName.includes(reviewName) ||
+            reviewName.includes(photoName),
+        ),
+      );
+
+      return {
+        photo,
+        originalIndex,
+        matchedReviewIndex,
+        isLatestReviewPhoto: matchedReviewIndex >= 0,
+      };
+    })
+    .sort((a, b) => {
+      if (a.isLatestReviewPhoto !== b.isLatestReviewPhoto) {
+        return a.isLatestReviewPhoto ? -1 : 1;
+      }
+
+      if (a.isLatestReviewPhoto && b.isLatestReviewPhoto) {
+        return a.matchedReviewIndex - b.matchedReviewIndex;
+      }
+
+      return a.originalIndex - b.originalIndex;
+    });
+
   const payload = {
     ok: true,
     name: result.name || "Equine Transport UK",
     rating: Number(result.rating || 0),
     userRatingsTotal: Number(result.user_ratings_total || 0),
     url: result.url || fallbackUrl,
-    reviews: reviews.slice(0, 5).map((review) => ({
+    reviews: topReviews.map((review) => ({
       authorName: review.author_name || "Google reviewer",
       authorUrl: review.author_url || "",
       profilePhotoUrl: review.profile_photo_url || "",
@@ -11287,17 +11355,19 @@ async function handleGoogleReviews(request, env) {
       text: review.text || "",
       time: Number(review.time || 0),
     })),
-    photos: photos
-      .filter((photo) => photo?.photo_reference)
-      .slice(0, 8)
-      .map((photo) => ({
-        url: `${apiOrigin}/api/google-review-photo?ref=${encodeURIComponent(photo.photo_reference)}&w=720`,
-        width: Number(photo.width || 0),
-        height: Number(photo.height || 0),
-        attributionHtml: Array.isArray(photo.html_attributions)
-          ? photo.html_attributions.join(" ")
+    photos: rankedPhotos.slice(0, 8).map(({ photo, isLatestReviewPhoto, matchedReviewIndex }) => ({
+      url: `${apiOrigin}/api/google-review-photo?ref=${encodeURIComponent(photo.photo_reference)}&w=720`,
+      width: Number(photo.width || 0),
+      height: Number(photo.height || 0),
+      attributionHtml: Array.isArray(photo.html_attributions)
+        ? photo.html_attributions.join(" ")
+        : "",
+      isLatestReviewPhoto,
+      matchedReviewAuthorName:
+        matchedReviewIndex >= 0
+          ? topReviews[matchedReviewIndex]?.author_name || ""
           : "",
-      })),
+    })),
     attribution: "Powered by Google",
     updatedAt: new Date().toISOString(),
   };
