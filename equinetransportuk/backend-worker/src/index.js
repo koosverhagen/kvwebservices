@@ -11193,7 +11193,7 @@ async function handleGoogleReviews(request, env) {
     );
   }
 
-  const cacheUrl = new URL("https://equine-internal-cache/google-reviews-v2");
+  const cacheUrl = new URL("https://equine-internal-cache/google-reviews-v3-newest");
   cacheUrl.searchParams.set("place", placeId);
   const cacheRequest = new Request(cacheUrl.toString(), {
     method: "GET",
@@ -11215,6 +11215,7 @@ async function handleGoogleReviews(request, env) {
     "name,rating,user_ratings_total,reviews,url,photos",
   );
   googleUrl.searchParams.set("language", "en-GB");
+  googleUrl.searchParams.set("reviews_sort", "newest");
   googleUrl.searchParams.set("key", apiKey);
 
   let upstream;
