@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Estimate fuel use, mileage and diesel cost for self-drive 3.5T and 7.5T horsebox hire routes from Equine Transport UK&#x27;s East Sussex base."
+    />
+    <title>Self-Drive Horsebox Fuel Calculator | Equine Transport UK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #5a6675;
+        --line: #cbd5e1;
+        --accent: #2563eb;
+        --soft: #f8fafc;
+        --ok: #137a3d;
+        --warn: #b45309;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        background: transparent;
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        color: var(--text);
+        line-height: 1.45;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar {
+        display: none;
+      }
+
+      body {
+        padding: 0;
+      }
+
+      .calculator-container {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      .premium-card {
+        width: 100%;
+        margin: 0;
+        background: rgba(255, 255, 255, 0.97);
+        border: 1px solid rgba(219, 225, 232, 0.9);
+        border-radius: 22px;
+        box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
+        padding: 28px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 26px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: clamp(24px, 4vw, 34px);
+        line-height: 1.08;
+        letter-spacing: -0.04em;
+        font-weight: 800;
+        color: #111827;
+      }
+
+      .header p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .header .blue-note {
+        margin-top: 10px;
+        color: #2563eb;
+        font-size: 12px;
+      }
+
+      .base-note {
+        display: inline-flex;
+        margin-top: 12px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e40af;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+      }
+
+      input,
+      select {
+        width: 100%;
+        height: 52px;
+        min-height: 52px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background-color: #ffffff;
+        color: #111827;
+        font-family: inherit;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 52px;
+        outline: none;
+        box-shadow: none;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+      }
+
+      input[type="datetime-local"] {
+        height: 52px !important;
+        min-height: 52px !important;
+        padding: 0 14px !important;
+        line-height: 52px !important;
+        color: #111827 !important;
+        background-color: #ffffff !important;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+
+      input[type="datetime-local"]::-webkit-date-and-time-value {
+        min-height: 52px;
+        line-height: 52px;
+        text-align: left;
+      }
+
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        margin-right: 0;
+      }
+
+      ::placeholder {
+        color: #9ca3af;
+        opacity: 1;
+      }
+
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+        align-items: center;
+      }
+
+      button {
+        appearance: none;
+        -webkit-appearance: none;
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 800;
+        min-height: 46px;
+        border-radius: 12px;
+        padding: 0 18px;
+        transition: all 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-primary {
+        flex: 1 1 260px;
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+      }
+
+      .btn-secondary {
+        flex: 0 0 150px;
+        background: #e5e7eb;
+        color: #111827;
+      }
+
+      #loading-indicator,
+      #results,
+      #error-message {
+        display: none;
+      }
+
+      #loading-indicator {
+        margin-top: 22px;
+        text-align: center;
+        color: var(--accent);
+        font-weight: 800;
+      }
+
+      .results-card {
+        margin-top: 22px;
+        padding: 18px;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border: 1px solid #bfdbfe;
+        border-radius: 18px;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+        color: #1e3a8a;
+      }
+
+      .results-card h3 {
+        margin: 0 0 10px;
+        font-size: 18px;
+      }
+      .results-card p {
+        margin: 7px 0;
+        color: #334155;
+        font-weight: 600;
+      }
+      .results-card span {
+        color: #1e40af;
+        font-weight: 800;
+      }
+
+      .leg-list {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 6px;
+      }
+
+      .leg-list li {
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.55);
+        color: #334155;
+        font-weight: 600;
+      }
+
+      .summary-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .summary-box {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .summary-box small {
+        display: block;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .summary-box strong {
+        display: block;
+        margin-top: 3px;
+        color: #1e40af;
+        font-size: 20px;
+        letter-spacing: -0.03em;
+      }
+
+      #error-message {
+        margin-top: 18px;
+        padding: 14px;
+        color: #991b1b;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 14px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      #map {
+        height: 340px;
+        width: 100%;
+        border-radius: 18px;
+        margin-top: 24px;
+        border: 1px solid #dbe1e8;
+        background: #eef1f6;
+        overflow: hidden;
+      }
+
+      .maps-note {
+        margin-top: 10px;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center;
+      }
+
+      @media (max-width: 760px) {
+        .premium-card {
+          padding: 14px;
+          border-radius: 18px;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        input,
+        select {
+          height: 52px;
+          min-height: 52px;
+          font-size: 16px;
+        }
+
+        input[type="datetime-local"] {
+          height: 52px !important;
+          line-height: 52px !important;
+        }
+        .btn-primary,
+        .btn-secondary {
+          flex: 1 1 100%;
+        }
+        .summary-row {
+          grid-template-columns: 1fr;
+        }
+        #map {
+          height: 310px;
+        }
+      }
+    </style>
+  
+    <link rel="canonical" href="https://www.equinetransportuk.com/fuel-calculator.html" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Equine Transport UK" />
+    <meta property="og:title" content="Self-Drive Horsebox Fuel Calculator | Equine Transport UK" />
+    <meta property="og:description" content="Estimate fuel use, mileage and diesel cost for self-drive 3.5T and 7.5T horsebox hire routes from Equine Transport UK&#x27;s East Sussex base." />
+    <meta property="og:url" content="https://www.equinetransportuk.com/fuel-calculator.html" />
+    <meta property="og:image" content="https://www.equinetransportuk.com/images/logo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Self-Drive Horsebox Fuel Calculator | Equine Transport UK" />
+    <meta name="twitter:description" content="Estimate fuel use, mileage and diesel cost for self-drive 3.5T and 7.5T horsebox hire routes from Equine Transport UK&#x27;s East Sussex base." />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": "https://www.equinetransportuk.com/fuel-calculator.html#webpage",
+          "url": "https://www.equinetransportuk.com/fuel-calculator.html",
+          "name": "Self-Drive Horsebox Fuel Calculator | Equine Transport UK",
+          "description": "Estimate fuel use, mileage and diesel cost for self-drive 3.5T and 7.5T horsebox hire routes from Equine Transport UK's East Sussex base.",
+          "publisher": {
+            "@id": "https://www.equinetransportuk.com/#business"
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+
+  <body>
+
+<div style="position:fixed;left:10px;bottom:10px;z-index:999999;background:#facc15;color:#111827;padding:8px 12px;border-radius:999px;font-weight:900;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);">
+  TEST DESIGN
+</div>
+
+    <div class="calculator-container">
+      <div class="premium-card">
+        <div class="header">
+          <h1>Self-Drive Horsebox Fuel Calculator</h1>
+          <p>
+            Professional fuel usage and cost estimate for your planned
+            self-drive journey.
+          </p>
+          <p class="blue-note">
+            Route starts and finishes at Equine Transport UK. Enter your horse
+            pickup, destination, optional second destination, and current diesel
+            price.
+          </p>
+        </div>
+
+        <div class="form-grid">
+          <div>
+            <label for="lorry-type">Lorry Type:</label>
+            <select id="lorry-type">
+              <option value="3.5t">3.5T Lorry</option>
+              <option value="7.5t">7.5T Lorry</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="departure-time"
+              >Departure Time (for traffic estimate):</label
+            >
+            <input type="datetime-local" id="departure-time" />
+          </div>
+
+          <div class="full">
+            <label for="pickup-address">1) Horse Pickup Address:</label>
+            <input
+              type="text"
+              id="pickup-address"
+              placeholder="Pickup postcode / address"
+              autocomplete="off"
+            />
+          </div>
+
+          <div>
+            <label for="destination-address"
+              >2) Destination / Event Address:</label
+            >
+            <input
+              type="text"
+              id="destination-address"
+              placeholder="Drop-off / event address"
+              autocomplete="off"
+            />
+          </div>
+
+          <div>
+            <label for="destination-address2"
+              >3) Destination 2 (Optional):</label
+            >
+            <input
+              type="text"
+              id="destination-address2"
+              placeholder="Optional second stop"
+              autocomplete="off"
+            />
+          </div>
+
+          <div>
+            <label for="payload">Weight of the horse(s) (kg):</label>
+            <input
+              type="number"
+              id="payload"
+              min="0"
+              step="1"
+              placeholder="e.g., 500"
+            />
+          </div>
+
+          <div>
+            <label for="diesel-price">Diesel price per litre (£):</label>
+            <input
+              type="number"
+              id="diesel-price"
+              min="0.01"
+              step="0.01"
+              value="1.90"
+              placeholder="e.g., 1.90"
+              inputmode="decimal"
+            />
+          </div>
+
+          <div>
+            <label for="weather-condition">Weather Condition:</label>
+            <select id="weather-condition">
+              <option value="sunny">Sunny / Clear</option>
+              <option value="rainy">Rainy</option>
+              <option value="windy">Windy</option>
+            </select>
+          </div>
+
+          <div class="full">
+            <label for="road-type">Typical Road Type:</label>
+            <select id="road-type">
+              <option value="mixed">Mixed (Motorway & Urban)</option>
+              <option value="motorway">Mostly Motorway</option>
+              <option value="urban">Mostly Urban</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="calculate-btn" class="btn-primary">
+            Calculate Estimate
+          </button>
+          <button id="reset-btn" class="btn-secondary">Reset</button>
+        </div>
+
+        <div id="loading-indicator">Calculating route and fuel estimate...</div>
+
+        <div id="results" class="results-card">
+          <h3>Calculation Results</h3>
+          <p>Lorry Type: <span id="lorry-type-display">—</span></p>
+          <ul id="leg-list" class="leg-list"></ul>
+          <div class="summary-row">
+            <div class="summary-box">
+              <small>Total miles</small
+              ><strong id="total-miles-display">0</strong>
+            </div>
+            <div class="summary-box">
+              <small>Travel time</small
+              ><strong id="travel-time-display">0</strong>
+            </div>
+            <div class="summary-box">
+              <small>Fuel cost</small
+              ><strong id="total-cost-display">£0.00</strong>
+            </div>
+          </div>
+          <p style="margin-top: 14px">
+            Estimated Fuel Used: <span id="fuel-used-display">0</span> litres
+          </p>
+          <p>
+            Diesel Price Used:
+            <span id="diesel-price-display">£1.90 per litre</span>
+          </p>
+        </div>
+
+        <div id="error-message">
+          Please enter valid horse pickup and destination addresses.
+        </div>
+
+        <div id="map"></div>
+        <p class="maps-note">
+          Route: Equine Transport UK → pickup → destination → optional
+          destination 2 → Equine Transport UK. Map and distance are provided by
+          Google Maps. The estimate is a guide only.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      const MAPS_KEY_ENDPOINT =
+        "https://equine-bookings-api.kverhagen.workers.dev/api/maps-key";
+      const BASE_ADDRESS =
+        "Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five Ashes, TN20 6LL";
+
+      function initCalculator() {
+        const lorryTypeSelect = document.getElementById("lorry-type");
+        const pickupAddressInput = document.getElementById("pickup-address");
+        const destinationAddressInput = document.getElementById(
+          "destination-address",
+        );
+        const destinationAddress2Input = document.getElementById(
+          "destination-address2",
+        );
+        const departureTimeInput = document.getElementById("departure-time");
+        const payloadInput = document.getElementById("payload");
+        const dieselPriceInput = document.getElementById("diesel-price");
+        const weatherSelect = document.getElementById("weather-condition");
+        const roadTypeSelect = document.getElementById("road-type");
+        const calculateBtn = document.getElementById("calculate-btn");
+        const resetBtn = document.getElementById("reset-btn");
+        const loadingIndicator = document.getElementById("loading-indicator");
+        const resultsDiv = document.getElementById("results");
+        const errorMessageDiv = document.getElementById("error-message");
+        const mapElement = document.getElementById("map");
+
+        const baseMPG = { "3.5t": 35, "7.5t": 20 };
+        const DEFAULT_DIESEL_PRICE_PER_LITRE = 1.9;
+        const litresPerGallon = 4.54609;
+
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer({
+          suppressMarkers: false,
+        });
+
+        const map = new google.maps.Map(mapElement, {
+          zoom: 9,
+          center: { lat: 51.0, lng: 0.25 },
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: true,
+        });
+
+        directionsRenderer.setMap(map);
+
+        [
+          pickupAddressInput,
+          destinationAddressInput,
+          destinationAddress2Input,
+        ].forEach((input) => {
+          new google.maps.places.Autocomplete(input, {
+            componentRestrictions: { country: "uk" },
+            fields: ["formatted_address", "geometry", "name"],
+          });
+        });
+
+        function showError(message) {
+          errorMessageDiv.textContent = message;
+          errorMessageDiv.style.display = "block";
+        }
+
+        function hideError() {
+          errorMessageDiv.style.display = "none";
+        }
+
+        function setBusy(isBusy) {
+          loadingIndicator.style.display = isBusy ? "block" : "none";
+          calculateBtn.disabled = isBusy;
+          resetBtn.disabled = isBusy;
+        }
+
+        function formatDuration(totalSeconds) {
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.round((totalSeconds % 3600) / 60);
+          if (hours <= 0) return `${minutes} mins`;
+          return `${hours} hours, ${minutes} mins`;
+        }
+
+        function getLegLabel(index, hasDestination2) {
+          const labels = hasDestination2
+            ? [
+                "Equine Transport UK to horse pickup",
+                "Pickup to destination",
+                "Destination to destination 2",
+                "Destination 2 back to Equine Transport UK",
+              ]
+            : [
+                "Equine Transport UK to horse pickup",
+                "Pickup to destination",
+                "Destination back to Equine Transport UK",
+              ];
+          return labels[index] || `Leg ${index + 1}`;
+        }
+
+        calculateBtn.addEventListener("click", () => {
+          hideError();
+          resultsDiv.style.display = "none";
+          setBusy(true);
+
+          const lorryType = lorryTypeSelect.value;
+          const pickupAddress = pickupAddressInput.value.trim();
+          const destinationAddress = destinationAddressInput.value.trim();
+          const destinationAddress2 = destinationAddress2Input.value.trim();
+          const payload = parseFloat(payloadInput.value) || 0;
+          const dieselPricePerLitre =
+            parseFloat(dieselPriceInput.value) ||
+            DEFAULT_DIESEL_PRICE_PER_LITRE;
+          const weatherCondition = weatherSelect.value;
+          const roadType = roadTypeSelect.value;
+          const departureTime = departureTimeInput.value;
+          const hasDestination2 = !!destinationAddress2;
+
+          if (!pickupAddress || !destinationAddress) {
+            setBusy(false);
+            showError(
+              "Please enter the horse pickup address and destination address.",
+            );
+            return;
+          }
+
+          if (
+            !Number.isFinite(dieselPricePerLitre) ||
+            dieselPricePerLitre <= 0
+          ) {
+            setBusy(false);
+            showError("Please enter a valid diesel price per litre.");
+            return;
+          }
+
+          const waypoints = [
+            { location: pickupAddress, stopover: true },
+            { location: destinationAddress, stopover: true },
+          ];
+
+          if (hasDestination2)
+            waypoints.push({ location: destinationAddress2, stopover: true });
+
+          const effectiveDepartureTime = departureTime
+            ? new Date(departureTime)
+            : new Date();
+          const now = new Date();
+
+          const request = {
+            origin: BASE_ADDRESS,
+            destination: BASE_ADDRESS,
+            waypoints,
+            travelMode: google.maps.TravelMode.DRIVING,
+            optimizeWaypoints: false,
+            drivingOptions: {
+              departureTime:
+                effectiveDepartureTime > now ? effectiveDepartureTime : now,
+              trafficModel: "optimistic",
+            },
+          };
+
+          const timeoutId = setTimeout(() => {
+            setBusy(false);
+            showError(
+              "Calculation timed out. Please check your connection and try again.",
+            );
+          }, 12000);
+
+          directionsService.route(request, (response, status) => {
+            clearTimeout(timeoutId);
+
+            if (status !== "OK") {
+              setBusy(false);
+              let message =
+                "An error occurred. Please check the addresses and try again.";
+              if (status === "ZERO_RESULTS" || status === "NOT_FOUND") {
+                message =
+                  "One or more addresses could not be found. Please check your inputs.";
+              }
+              if (status === "REQUEST_DENIED") {
+                message =
+                  "Google Maps rejected the request. Please check that the Maps API key allows Directions and Places.";
+              }
+              showError(message);
+              return;
+            }
+
+            directionsRenderer.setDirections(response);
+
+            const legs = response.routes[0].legs || [];
+            const totalMetres = legs.reduce(
+              (sum, leg) => sum + (leg.distance?.value || 0),
+              0,
+            );
+            const totalMiles = totalMetres * 0.000621371;
+            const totalDurationInSeconds = legs.reduce(
+              (sum, leg) =>
+                sum +
+                ((leg.duration_in_traffic && leg.duration_in_traffic.value) ||
+                  leg.duration?.value ||
+                  0),
+              0,
+            );
+
+            let fuelEfficiency = baseMPG[lorryType];
+            const payloadPenaltyFactor = lorryType === "3.5t" ? 0.05 : 0.08;
+            const payloadPenalty = (payload / 500) * payloadPenaltyFactor;
+            fuelEfficiency -= fuelEfficiency * payloadPenalty;
+
+            if (weatherCondition === "rainy")
+              fuelEfficiency -= fuelEfficiency * 0.05;
+            if (weatherCondition === "windy")
+              fuelEfficiency -= fuelEfficiency * 0.1;
+            if (roadType === "motorway") fuelEfficiency += 5;
+            if (roadType === "urban") fuelEfficiency -= 5;
+
+            fuelEfficiency = Math.max(fuelEfficiency, 10);
+
+            const totalLitres = (totalMiles / fuelEfficiency) * litresPerGallon;
+            const totalCost = totalLitres * dieselPricePerLitre;
+
+            document.getElementById("lorry-type-display").textContent =
+              lorryType === "3.5t" ? "3.5T Lorry" : "7.5T Lorry";
+            document.getElementById("total-miles-display").textContent =
+              totalMiles.toFixed(2);
+            document.getElementById("travel-time-display").textContent =
+              formatDuration(totalDurationInSeconds);
+            document.getElementById("fuel-used-display").textContent =
+              totalLitres.toFixed(2);
+            document.getElementById("total-cost-display").textContent =
+              `£${totalCost.toFixed(2)}`;
+            document.getElementById("diesel-price-display").textContent =
+              `£${dieselPricePerLitre.toFixed(2)} per litre`;
+
+            const legList = document.getElementById("leg-list");
+            legList.innerHTML = legs
+              .map((leg, index) => {
+                const miles = (
+                  (leg.distance?.value || 0) * 0.000621371
+                ).toFixed(2);
+                const duration = formatDuration(
+                  (leg.duration_in_traffic && leg.duration_in_traffic.value) ||
+                    leg.duration?.value ||
+                    0,
+                );
+                return `<li>${getLegLabel(index, hasDestination2)}: <strong>${miles} miles</strong> · ${duration}</li>`;
+              })
+              .join("");
+
+            resultsDiv.style.display = "block";
+            setBusy(false);
+          });
+        });
+
+        resetBtn.addEventListener("click", () => {
+          lorryTypeSelect.value = "3.5t";
+          pickupAddressInput.value = "";
+          destinationAddressInput.value = "";
+          destinationAddress2Input.value = "";
+          departureTimeInput.value = "";
+          payloadInput.value = "";
+          dieselPriceInput.value = DEFAULT_DIESEL_PRICE_PER_LITRE.toFixed(2);
+          weatherSelect.value = "sunny";
+          roadTypeSelect.value = "mixed";
+
+          resultsDiv.style.display = "none";
+          hideError();
+          setBusy(false);
+          directionsRenderer.setDirections({ routes: [] });
+          map.setCenter({ lat: 51.0, lng: 0.25 });
+          map.setZoom(9);
+        });
+      }
+
+      window.initCalculator = initCalculator;
+
+      (async function loadGoogleMaps() {
+        try {
+          const existingKey = new URLSearchParams(window.location.search).get(
+            "mapsKey",
+          );
+          let apiKey = existingKey;
+
+          if (!apiKey) {
+            const res = await fetch(MAPS_KEY_ENDPOINT, { cache: "no-store" });
+            if (!res.ok)
+              throw new Error(`Maps key request failed: ${res.status}`);
+            apiKey = (await res.text()).trim().replace(/^[\'\"]|[\'\"]$/g, "");
+          }
+
+          if (!apiKey) throw new Error("Maps API key is empty");
+
+          const script = document.createElement("script");
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&callback=initCalculator`;
+          script.async = true;
+          script.defer = true;
+          script.onerror = () => {
+            const errorDiv = document.getElementById("error-message");
+            errorDiv.textContent =
+              "Google Maps failed to load. Please check the Maps API key setup.";
+            errorDiv.style.display = "block";
+          };
+          document.head.appendChild(script);
+        } catch (err) {
+          console.error("Failed to load Maps API key:", err);
+          const errorDiv = document.getElementById("error-message");
+          errorDiv.textContent =
+            "Map service unavailable. Please try again later.";
+          errorDiv.style.display = "block";
+        }
+      })();
+    </script>
+  </body>
+</html>

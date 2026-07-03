@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Horse Transport Calculators | Fuel &amp; Driven Transport Cost Estimator</title>
+    <meta
+      name="description"
+      content="Use Equine Transport UK&#x27;s customer calculators to estimate self-drive horsebox fuel costs, mileage and driven horse transport route costs before booking."
+    />
+
+    <link rel="stylesheet" href="styles.css?v=dark-test-1" />
+    <link rel="icon" href="images/favicon.png" />
+
+    <style>
+      .calculators-page {
+        padding: 42px 0 56px;
+      }
+
+      .calculators-hero {
+        margin-bottom: 24px;
+      }
+
+      .calculators-hero h1 {
+        max-width: 900px;
+      }
+
+      .calculators-hero .lead {
+        max-width: 850px;
+      }
+
+      .calculator-card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 22px;
+      }
+
+      .calculator-card {
+        position: relative;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+
+        display: flex;
+        flex-direction: column;
+      }
+
+      .calculator-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at top right,
+          rgba(31, 111, 235, 0.12),
+          transparent 34%
+        );
+        pointer-events: none;
+      }
+
+      .calculator-card > * {
+        position: relative;
+        z-index: 1;
+      }
+      .calculator-card-actions {
+        margin-top: auto;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .calculator-card-actions .btn {
+        margin-top: 0 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 52px;
+        padding: 0 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1;
+        flex: 0 0 auto;
+      }
+
+      .calculator-icon {
+        width: 46px;
+        height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background: #eef4ff;
+        border: 1px solid #cfe0ff;
+        font-size: 22px;
+        margin-bottom: 14px;
+      }
+
+      .calculator-card h2 {
+        margin: 0 0 10px;
+        font-size: 26px;
+        letter-spacing: -0.03em;
+      }
+
+      .calculator-card p {
+        margin: 0 0 18px;
+      }
+
+      .calculator-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 22px;
+        background: rgba(15, 23, 42, 0.66);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      .calculator-modal.active {
+        display: flex;
+      }
+
+      .calculator-modal-card {
+        width: min(980px, 96vw);
+        height: min(88vh, 860px);
+        background: #fff;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 34px 90px rgba(15, 23, 42, 0.35);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .calculator-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .calculator-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .calculator-modal-close {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #fff;
+        cursor: pointer;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .calculator-frame {
+        flex: 1;
+        min-height: 0;
+        background: #f8fafc;
+      }
+
+      .calculator-frame iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }
+
+      @media (max-width: 760px) {
+        .calculator-card-grid {
+          grid-template-columns: 1fr;
+        }
+        .calculators-hero .terms-actions {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        .calculators-hero .terms-actions .btn {
+          width: 100%;
+        }
+
+        .calculator-card-actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .calculator-card-actions .btn {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .calculator-modal {
+          padding: 12px;
+        }
+
+        .calculator-modal-card {
+          width: 100%;
+          height: 90vh;
+          border-radius: 22px;
+        }
+      }
+    </style>
+  
+    <link rel="canonical" href="https://www.equinetransportuk.com/calculators.html" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Equine Transport UK" />
+    <meta property="og:title" content="Horse Transport Calculators | Fuel &amp; Driven Transport Cost Estimator" />
+    <meta property="og:description" content="Use Equine Transport UK&#x27;s customer calculators to estimate self-drive horsebox fuel costs, mileage and driven horse transport route costs before booking." />
+    <meta property="og:url" content="https://www.equinetransportuk.com/calculators.html" />
+    <meta property="og:image" content="https://www.equinetransportuk.com/images/logo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Horse Transport Calculators | Fuel &amp; Driven Transport Cost Estimator" />
+    <meta name="twitter:description" content="Use Equine Transport UK&#x27;s customer calculators to estimate self-drive horsebox fuel costs, mileage and driven horse transport route costs before booking." />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "LocalBusiness",
+          "@id": "https://www.equinetransportuk.com/#business",
+          "name": "Equine Transport UK",
+          "url": "https://www.equinetransportuk.com/",
+          "logo": "https://www.equinetransportuk.com/images/logo.png",
+          "image": "https://www.equinetransportuk.com/images/logo.png",
+          "telephone": "+447812188871",
+          "email": "info@equinetransportuk.com",
+          "parentOrganization": {
+            "@type": "Organization",
+            "name": "East Grinstead Tyre Service Group"
+          },
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Upper Broadreed Farm, Stonehurst Lane, Five Ashes",
+            "addressLocality": "Mayfield",
+            "addressRegion": "East Sussex",
+            "postalCode": "TN20 6LL",
+            "addressCountry": "GB"
+          },
+          "areaServed": [
+            "East Sussex",
+            "West Sussex",
+            "Kent",
+            "Surrey",
+            "London",
+            "South East England"
+          ],
+          "priceRange": "££",
+          "description": "Self-drive horsebox hire and driven horse transport from Five Ashes, East Sussex, serving Sussex, Kent, Surrey and the wider South East."
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://www.equinetransportuk.com/calculators.html#webpage",
+          "url": "https://www.equinetransportuk.com/calculators.html",
+          "name": "Horse Transport Calculators | Fuel & Driven Transport Cost Estimator",
+          "description": "Use Equine Transport UK's customer calculators to estimate self-drive horsebox fuel costs, mileage and driven horse transport route costs before booking.",
+          "publisher": {
+            "@id": "https://www.equinetransportuk.com/#business"
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+
+  <body>
+
+<div style="position:fixed;left:10px;bottom:10px;z-index:999999;background:#facc15;color:#111827;padding:8px 12px;border-radius:999px;font-weight:900;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);">
+  TEST DESIGN
+</div>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="#top" aria-label="Equine Transport UK home">
+          <img
+            class="brand-logo"
+            src="images/logo.png"
+            alt="Equine Transport UK logo"
+          />
+
+          <span class="brand-text">
+            <span class="brand-name">Equine Transport UK</span>
+            <span class="brand-group">
+              Part of the East Grinstead Tyre Service Group
+            </span>
+            <span class="brand-subtitle">Self Drive or Driven</span>
+          </span>
+        </a>
+
+        <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+          <a href="index.html#fleet">Self Drive</a>
+          <a href="driven-services.html">Driven Services</a>
+          <a href="index.html#booking">Book Self Drive</a>
+          <a href="pricing-terms.html">Pricing & Terms</a>
+          <a href="calculators.html">Calculators</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+
+        <button
+          class="nav-toggle"
+          id="nav-toggle"
+          aria-label="Open navigation"
+          aria-expanded="false"
+          aria-controls="main-nav"
+        >
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="container calculators-page">
+      <section class="calculators-hero">
+        <p class="kicker">Customer tools</p>
+        <h1>Horse transport calculators for self-drive fuel and driven transport estimates.</h1>
+
+        <p class="lead">
+          Estimate self-drive fuel and mileage before you book, or get a guide
+          estimate for driven horse transport. These tools are for guidance
+          only; final pricing is confirmed by Equine Transport UK.
+        </p>
+
+        <div class="terms-actions">
+          <a class="btn" href="index.html#booking">Check availability</a>
+          <a class="btn ghost" href="pricing-terms.html"
+            >View Pricing & Terms</a
+          >
+        </div>
+      </section>
+
+      <section class="calculator-card-grid" aria-label="Customer calculators">
+        <article class="calculator-card">
+          <div class="calculator-icon">⛽</div>
+          <p class="kicker">Self-drive customers</p>
+          <h2>Self-Drive Fuel Calculator</h2>
+          <p class="muted">
+            Estimate fuel cost, included mileage allowance and possible excess
+            mileage before returning the lorry.
+          </p>
+          <div class="calculator-card-actions">
+            <button
+              class="btn"
+              type="button"
+              data-calculator-title="Self-Drive Fuel Calculator"
+              data-calculator-src="fuel-calculator.html?v=3"
+            >
+              Open fuel calculator
+            </button>
+          </div>
+        </article>
+
+        <article class="calculator-card">
+          <div class="calculator-icon">🐴</div>
+          <p class="kicker">Driven transport</p>
+          <h2>Driven Transport Cost Estimator</h2>
+          <p class="muted">
+            Get a guide estimate for professional driven transport before
+            contacting us for a confirmed quote.
+          </p>
+          <div class="calculator-card-actions">
+            <button
+              class="btn"
+              type="button"
+              data-calculator-title="Driven Transport Cost Estimator"
+              data-calculator-src="driven-calculator.html?v=3"
+            >
+              Open driven estimator
+            </button>
+
+            <a class="btn ghost" href="driven-services.html">
+              View Driven Services
+            </a>
+          </div>
+        </article>
+      </section>
+
+      <section class="seo-content-section" aria-labelledby="calculator-seo-heading">
+        <div class="seo-panel">
+          <p class="kicker">Plan horse transport costs</p>
+          <h2 id="calculator-seo-heading">Estimate self-drive fuel costs and driven horse transport routes.</h2>
+          <p>
+            These calculators help horse owners plan journeys before booking.
+            The self-drive fuel calculator estimates fuel use and cost for a
+            lorry route from our East Sussex base. The driven transport estimator
+            gives a guide price for professional horse transport before you
+            request a confirmed quote.
+          </p>
+          <div class="seo-actions">
+            <a class="btn" href="index.html#booking">Check self-drive availability</a>
+            <a class="btn ghost" href="driven-services.html">Driven transport services</a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <h3>Equine Transport UK</h3>
+          <p class="muted">
+            Part of the East Grinstead Tyre Service Group.<br />
+            Self Drive or Driven horse transport services.
+          </p>
+          <small>© <span id="year"></span> Equine Transport UK</small>
+          <small
+            class="footer-credit"
+            style="display:block;margin-top:6px;color:#94a3b8;font-size:11px;line-height:1.4;"
+          >
+            Website by
+            <a
+              href="https://kvwebservices.co.uk/"
+              target="_blank"
+              rel="noopener"
+              style="color:inherit;text-decoration:none;font-weight:700;"
+            >KVWebservices</a>
+          </small>
+        </div>
+
+        <div>
+          <h4>Menu</h4>
+          <nav class="footer-menu" aria-label="Footer navigation">
+            <a href="index.html#fleet">Self Drive</a>
+            <a href="driven-services.html">Driven Services</a>
+            <a href="index.html#booking">Book Self Drive</a>
+            <a href="pricing-terms.html">Pricing & Terms</a>
+            <a href="calculators.html">Calculators</a>
+            <a href="contact.html">Contact</a>
+          </nav>
+        </div>
+
+        <div>
+          <h4>Contact</h4>
+          <p class="footer-contact">
+            <strong>Address:</strong><br />
+            Equine Transport UK, Upper Broadreed Farm, Stonehurst Lane, Five
+            Ashes, East Sussex TN20 6LL
+          </p>
+
+          <p class="footer-contact">
+            <strong>Email:</strong><br />
+            <a href="mailto:info@equinetransportuk.com">
+              info@equinetransportuk.com
+            </a>
+          </p>
+
+          <p class="footer-contact">
+            <strong>Phone:</strong><br />
+            <a href="tel:07812188871">07812 188871</a>
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <div
+      class="calculator-modal"
+      id="calculator-modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="calculator-modal-card">
+        <div class="calculator-modal-header">
+          <h3 id="calculator-modal-title">Calculator</h3>
+          <button
+            class="calculator-modal-close"
+            id="calculator-modal-close"
+            type="button"
+            aria-label="Close calculator"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="calculator-frame">
+          <iframe
+            id="calculator-frame"
+            title="Equine Transport UK calculator"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      /* ===============================
+         MOBILE HAMBURGER MENU
+      =============================== */
+
+      (function () {
+        const toggle = document.getElementById("nav-toggle");
+        const nav = document.getElementById("main-nav");
+
+        if (!toggle || !nav) return;
+
+        toggle.addEventListener("click", function () {
+          const isOpen = nav.classList.toggle("open");
+
+          toggle.classList.toggle("open", isOpen);
+          toggle.setAttribute("aria-expanded", String(isOpen));
+        });
+
+        nav.querySelectorAll("a").forEach((link) => {
+          link.addEventListener("click", function () {
+            nav.classList.remove("open");
+            toggle.classList.remove("open");
+            toggle.setAttribute("aria-expanded", "false");
+          });
+        });
+      })();
+
+      /* ===============================
+         CALCULATOR OVERLAY
+      =============================== */
+
+      (function () {
+        const modal = document.getElementById("calculator-modal");
+        const frame = document.getElementById("calculator-frame");
+        const title = document.getElementById("calculator-modal-title");
+        const closeBtn = document.getElementById("calculator-modal-close");
+
+        if (!modal || !frame || !title || !closeBtn) return;
+
+        function openCalculator(src, heading) {
+          frame.src = src;
+          title.textContent = heading || "Calculator";
+          modal.classList.add("active");
+          modal.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        }
+
+        function closeCalculator() {
+          modal.classList.remove("active");
+          modal.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+          frame.src = "";
+        }
+
+        document.querySelectorAll("[data-calculator-src]").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            openCalculator(
+              this.dataset.calculatorSrc,
+              this.dataset.calculatorTitle,
+            );
+          });
+        });
+
+        closeBtn.addEventListener("click", closeCalculator);
+
+        modal.addEventListener("click", function (e) {
+          if (e.target === modal) closeCalculator();
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && modal.classList.contains("active")) {
+            closeCalculator();
+          }
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const open = params.get("open");
+
+        if (open === "fuel") {
+          openCalculator("fuel-calculator.html", "Self-Drive Fuel Calculator");
+        }
+
+        if (open === "driven") {
+          openCalculator(
+            "driven-calculator.html",
+            "Driven Transport Cost Estimator",
+          );
+        }
+      })();
+    </script>
+  </body>
+</html>
