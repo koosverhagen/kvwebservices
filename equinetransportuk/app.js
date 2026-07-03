@@ -8167,42 +8167,12 @@ async function showVehiclePreview(date, event) {
       }
 
       /* ===============================
-     AVAILABILITY CHECK
+     DATE-ONLY CALENDAR
+     Do not show availability / non-availability on day tiles.
+     Live availability is checked only after date + duration are chosen.
   =============================== */
 
-      // remove unused dayKey
-
-      let status = checkDayLocalAvailability(dayDate, bookings);
-      let validStart = canStartRental(dayDate, bookings);
-
-      /*
-  Important:
-  The local calendar colouring is only a quick visual guide.
-  Live server availability is checked on hover/click via /api/vehicles/available,
-  because admin blocks and reservations are server-side.
-*/
-      if (PRESELECTED_VEHICLE) {
-        status = "available";
-        validStart = true;
-      }
-
-      // Per-lorry calendar lines removed.
-      // Availability is now shown only in the live preview popup/panel.
-
-      /* ===============================
-     STATUS COLOURING
-  =============================== */
-
-      if (status === "available") {
-        dayEl.classList.add("cal-available");
-      } else {
-        dayEl.classList.add("cal-unavailable");
-      }
-
-      if (!validStart) {
-        dayEl.classList.remove("cal-available");
-        dayEl.classList.add("cal-unavailable", "cal-no-start");
-      }
+      dayEl.classList.add("cal-date-only");
 
       /* ===============================
      🔥 TOUCHSTART PREFETCH (NEW)
@@ -8225,70 +8195,24 @@ async function showVehiclePreview(date, event) {
       );
 
       /* ===============================
-     PREVIEW + HOVER PREFETCH
+     NO PREVIEW POPUP
+     Date click now only selects the date. The customer chooses duration next,
+     then available lorries are shown in Step 2.
   =============================== */
-
-      dayEl.addEventListener("mouseenter", (e) => {
-        if (IS_RESETTING) return;
-
-        cancelVehiclePreviewHide();
-
-        const dateStr = dayEl.dataset.date;
-
-        if (dateStr) {
-          prefetchAvailabilityWindow(dateStr);
-        }
-
-        clearTimeout(hoverPreviewTimer);
-
-        hoverPreviewTimer = setTimeout(() => {
-          clearPreview();
-          previewRental(dayDate);
-
-          const desktopPanel = document.getElementById("vehicle-preview");
-          if (desktopPanel && !isMobile()) {
-            desktopPanel.innerHTML = `<strong>Checking live availability…</strong>`;
-            desktopPanel.classList.remove("hidden");
-            movePreview(e);
-          }
-
-          showVehiclePreview(dayDate, e);
-        }, 60);
-      });
-
-      if (!isMobile()) {
-        dayEl.addEventListener("mousemove", movePreview);
-      }
-
-      dayEl.addEventListener("mouseleave", (event) => {
-        clearTimeout(hoverPreviewTimer);
-
-        if (
-          !isMobile() &&
-          vehiclePreview &&
-          event.relatedTarget instanceof Node &&
-          vehiclePreview.contains(event.relatedTarget)
-        ) {
-          cancelVehiclePreviewHide();
-          return;
-        }
-
-        scheduleVehiclePreviewHide(180);
-      });
 
       /* ===============================
      SINGLE DAY SELECTION HANDLER
   =============================== */
 
-      if (validStart || PRESELECTED_VEHICLE) {
+      {
         let selecting = false;
 
-        const handleDaySelect = async (e) => {
+        const handleDaySelect = async () => {
           // 🔥 HARD GUARDS (VERY IMPORTANT)
           if (selecting) return;
           if (IS_RESETTING) return;
           if (calGrid.dataset.rendering === "true") return;
-          if (calWrap.dataset.rendering === "true") return; // 👈 ADD HERE
+          if (calWrap.dataset.rendering === "true") return;
 
           selecting = true;
 
@@ -8296,18 +8220,13 @@ async function showVehiclePreview(date, event) {
             const dateStr = dayEl.dataset.date;
             if (!dateStr) return;
 
+            // Prefetch quietly, but do not show any lorry/availability preview.
             prefetchAvailabilityWindow(dateStr);
             prefetchAvailabilityWindow(addDaysToDateStr(dateStr, 1));
 
             clearPreview();
 
             await selectDate(dateStr);
-
-            if (isMobile()) {
-              previewRental(dayDate);
-              await showVehiclePreview(dayDate, e);
-              scrollToMobileAvailableLorries();
-            }
           } finally {
             selecting = false;
           }

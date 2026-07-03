@@ -5092,3 +5092,53 @@ textarea {
     flex-direction: column;
   }
 }
+
+/* ======================================================
+   DATE-ONLY BOOKING CALENDAR
+   Calendar now chooses date only: no availability colours, no preview popup.
+====================================================== */
+
+#availability-calendar .cal-day,
+#availability-calendar .cal-day.cal-date-only,
+#availability-calendar .cal-day.cal-available,
+#availability-calendar .cal-day.cal-unavailable,
+#availability-calendar .cal-day.cal-weekend.cal-available,
+#availability-calendar .cal-day.cal-weekend.cal-unavailable {
+  background: #ffffff !important;
+  color: #1d2530 !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+}
+
+#availability-calendar .cal-day.cal-weekend,
+#availability-calendar .cal-day.cal-weekend.cal-date-only {
+  background: #f8fafc !important;
+}
+
+#availability-calendar .cal-day.cal-past {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+}
+
+#availability-calendar .cal-day.cal-selected {
+  border-color: var(--accent) !important;
+  background: linear-gradient(180deg, #eff6ff, #dbeafe) !important;
+  color: #1e40af !important;
+}
+
+#availability-calendar .cal-day.cal-preview {
+  background: inherit !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
+}
+
+#vehicle-preview,
+#mobile-preview,
+.vehicle-preview,
+.mobile-preview {
+  display: none !important;
+}
