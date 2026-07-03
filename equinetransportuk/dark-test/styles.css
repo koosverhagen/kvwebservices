@@ -6362,3 +6362,480 @@ textarea::placeholder {
     background: rgba(7,23,39,.48);
   }
 }
+
+/* ======================================================
+   DARK KEYNOTE TEST HOMEPAGE V7
+   Strong final overrides to match approved mockup image.
+   - Correct desktop proportions
+   - Both 3.5T and 7.5T visible
+   - Smaller glass card
+   - Compact date/duration bar visible under card
+====================================================== */
+@media (min-width: 981px) {
+  html,
+  body {
+    background: #06182c !important;
+    overflow-x: hidden !important;
+  }
+
+  .container {
+    width: min(1580px, calc(100vw - 76px)) !important;
+    max-width: none !important;
+  }
+
+  .site-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    background: rgba(3, 13, 26, 0.92) !important;
+    border-bottom: 1px solid rgba(215, 232, 255, 0.12) !important;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18) !important;
+    backdrop-filter: blur(24px) saturate(1.1) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.1) !important;
+  }
+
+  .header-inner {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    gap: clamp(22px, 2.4vw, 44px) !important;
+    min-height: 124px !important;
+    align-items: center !important;
+  }
+
+  .brand {
+    min-width: 0 !important;
+    flex-shrink: 0 !important;
+    gap: 18px !important;
+  }
+
+  .brand-logo {
+    width: 126px !important;
+    height: 94px !important;
+    padding: 8px !important;
+    border-radius: 28px !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(231, 242, 255, 0.30) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 16px 40px rgba(0,0,0,.20) !important;
+  }
+
+  .brand-name {
+    color: #ffffff !important;
+    font-size: clamp(22px, 1.55vw, 30px) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.045em !important;
+    white-space: nowrap !important;
+  }
+
+  .brand-group {
+    color: rgba(232, 240, 252, 0.78) !important;
+    font-size: clamp(13px, 0.9vw, 16px) !important;
+    line-height: 1.18 !important;
+    white-space: nowrap !important;
+  }
+
+  .brand-subtitle {
+    color: #2e7bff !important;
+    font-size: clamp(16px, 1.12vw, 22px) !important;
+    line-height: 1.1 !important;
+    font-weight: 950 !important;
+    white-space: nowrap !important;
+  }
+
+  .main-nav {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: clamp(24px, 2.45vw, 48px) !important;
+    min-width: 0 !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .main-nav a {
+    color: rgba(255, 255, 255, 0.94) !important;
+    font-size: clamp(15px, 1.05vw, 20px) !important;
+    font-weight: 750 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+  }
+
+  .site-header .phone-link {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    color: #2e7bff !important;
+    font-size: clamp(15px, 1.1vw, 20px) !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+  }
+
+  .site-header .phone-link::before {
+    content: "☎" !important;
+    font-size: 15px !important;
+  }
+
+  .nav-toggle {
+    display: none !important;
+  }
+
+  .keynote-hero {
+    min-height: calc(100vh - 124px) !important;
+    padding: 68px 0 28px !important;
+    background: #06182c !important;
+    overflow: hidden !important;
+  }
+
+  /* Key trick: don't cover by width. Use full image height and align right
+     so the 7.5T and 3.5T sit like the generated mockup. */
+  .keynote-hero .hero-photo {
+    inset: 0 !important;
+    background-image: url("images/hero5.webp") !important;
+    background-repeat: no-repeat !important;
+    background-size: auto 100% !important;
+    background-position: right center !important;
+    transform: none !important;
+    filter: saturate(1.14) contrast(1.055) brightness(0.92) !important;
+    opacity: 1 !important;
+  }
+
+  .keynote-hero .hero-photo::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background:
+      linear-gradient(90deg, rgba(5,17,31,0.82) 0%, rgba(5,17,31,0.38) 27%, rgba(5,17,31,0.05) 48%, rgba(5,17,31,0.10) 100%),
+      linear-gradient(180deg, rgba(2,8,16,0.18) 0%, rgba(2,8,16,0.02) 40%, rgba(2,8,16,0.62) 100%) !important;
+  }
+
+  .keynote-hero .hero-shade {
+    display: block !important;
+    background:
+      radial-gradient(circle at 13% 20%, rgba(255,255,255,.20), transparent 24rem),
+      linear-gradient(180deg, rgba(6,24,44,0) 60%, rgba(6,24,44,.92) 100%) !important;
+  }
+
+  .hero-stage {
+    display: grid !important;
+    grid-template-columns: minmax(520px, 610px) minmax(0, 1fr) !important;
+    grid-template-areas:
+      "copy spacer"
+      "availability spacer"
+      "trust trust" !important;
+    align-content: start !important;
+    align-items: start !important;
+    min-height: calc(100vh - 220px) !important;
+  }
+
+  .hero-copy-card {
+    grid-area: copy !important;
+    width: 610px !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    padding: 42px 44px 38px !important;
+    border-radius: 30px !important;
+    border: 1px solid rgba(231, 242, 255, 0.52) !important;
+    background:
+      linear-gradient(140deg, rgba(255,255,255,.26), rgba(255,255,255,.095) 44%, rgba(255,255,255,.06)),
+      rgba(12, 31, 50, 0.50) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.34),
+      0 34px 86px rgba(0,0,0,.25) !important;
+    backdrop-filter: blur(26px) saturate(1.16) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(1.16) !important;
+  }
+
+  .hero-copy-card .kicker,
+  .keynote-hero .kicker {
+    color: #ffe500 !important;
+    font-size: 14px !important;
+    font-weight: 950 !important;
+    letter-spacing: .25em !important;
+    margin: 0 0 24px !important;
+    line-height: 1.1 !important;
+  }
+
+  .hero-copy-card h1 {
+    max-width: 13.35ch !important;
+    color: #ffffff !important;
+    font-size: clamp(46px, 3.3vw, 58px) !important;
+    line-height: 1.09 !important;
+    letter-spacing: -0.065em !important;
+    margin: 0 !important;
+    text-wrap: balance !important;
+    text-shadow: 0 8px 30px rgba(0,0,0,.28) !important;
+  }
+
+  .hero-rule {
+    display: block !important;
+    width: 86px !important;
+    height: 2px !important;
+    margin: 22px 0 18px !important;
+    background: linear-gradient(90deg, transparent 0 42%, #ffe500 42% 100%) !important;
+  }
+
+  .hero-copy-card .lead {
+    color: rgba(246,250,255,.90) !important;
+    max-width: 48ch !important;
+    font-size: 18px !important;
+    line-height: 1.48 !important;
+    letter-spacing: -0.018em !important;
+    margin: 0 !important;
+  }
+
+  .hero-cta-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 20px !important;
+    margin-top: 30px !important;
+  }
+
+  .hero-cta-row .btn {
+    min-width: 164px !important;
+    min-height: 56px !important;
+    padding: 0 24px !important;
+    border-radius: 11px !important;
+    font-size: 17px !important;
+    font-weight: 850 !important;
+    justify-content: space-between !important;
+  }
+
+  .hero-cta-row .reviews-open {
+    min-width: 144px !important;
+    justify-content: center !important;
+  }
+
+  .hero-availability {
+    grid-area: availability !important;
+    justify-self: start !important;
+    width: 704px !important;
+    max-width: calc(100vw - 76px) !important;
+    margin: 18px 0 0 0 !important;
+    padding: 13px 16px !important;
+    display: grid !important;
+    grid-template-columns: 54px minmax(0, 1fr) minmax(0, 1fr) 182px !important;
+    gap: 12px !important;
+    align-items: center !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(231,242,255,.36) !important;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.055)),
+      rgba(8,25,42,.54) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 20px 52px rgba(0,0,0,.24) !important;
+    backdrop-filter: blur(22px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.08) !important;
+  }
+
+  .hero-availability-icon {
+    width: 42px !important;
+    height: 42px !important;
+    color: rgba(238,246,255,.92) !important;
+  }
+
+  .hero-availability-icon svg {
+    width: 29px !important;
+    height: 29px !important;
+  }
+
+  .hero-field label {
+    top: 7px !important;
+    left: 14px !important;
+    font-size: 11px !important;
+    letter-spacing: .06em !important;
+    color: rgba(231,240,255,.72) !important;
+  }
+
+  .hero-field input,
+  .hero-field select,
+  .hero-field .apple-date-trigger {
+    min-height: 54px !important;
+    height: 54px !important;
+    padding: 23px 34px 8px 14px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(211,230,255,.42) !important;
+    background: rgba(11,29,48,.44) !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    line-height: 1.1 !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.015em !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .hero-field select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,.78) 50%), linear-gradient(135deg, rgba(255,255,255,.78) 50%, transparent 50%) !important;
+    background-position: calc(100% - 20px) 29px, calc(100% - 13px) 29px !important;
+    background-size: 7px 7px, 7px 7px !important;
+    background-repeat: no-repeat !important;
+  }
+
+  .hero-field .apple-date-trigger {
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-between !important;
+  }
+
+  .hero-field .apple-date-trigger-icon {
+    right: 12px !important;
+    bottom: 11px !important;
+  }
+
+  .hero-check-btn {
+    min-height: 54px !important;
+    height: 54px !important;
+    border-radius: 10px !important;
+    font-size: 16px !important;
+    padding: 0 21px !important;
+    white-space: nowrap !important;
+  }
+
+  .hero-trust-strip {
+    grid-area: trust !important;
+    justify-self: center !important;
+    width: min(1360px, calc(100vw - 150px)) !important;
+    margin-top: 22px !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 20px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    overflow: visible !important;
+  }
+
+  .trust-item {
+    min-height: 94px !important;
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+    gap: 20px !important;
+    align-items: center !important;
+    padding: 18px 28px !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(231,242,255,.28) !important;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.05)),
+      rgba(7,23,39,.50) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 15px 42px rgba(0,0,0,.19) !important;
+    backdrop-filter: blur(20px) saturate(1.06) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(1.06) !important;
+    color: #ffffff !important;
+  }
+
+  .trust-item + .trust-item {
+    border-left: 1px solid rgba(231,242,255,.28) !important;
+  }
+
+  .trust-icon {
+    width: 54px !important;
+    height: 54px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 999px !important;
+    color: #ffffff !important;
+    background: radial-gradient(circle at 35% 30%, rgba(72,139,255,.72), rgba(15,65,172,.54) 70%) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 12px 30px rgba(31,111,235,.18) !important;
+  }
+
+  .trust-icon svg {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .trust-item strong {
+    font-size: 18px !important;
+    line-height: 1.16 !important;
+  }
+
+  .trust-item small {
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1450px) {
+  .header-inner {
+    gap: 24px !important;
+  }
+
+  .brand-logo {
+    width: 108px !important;
+    height: 80px !important;
+    border-radius: 24px !important;
+  }
+
+  .brand-name {
+    font-size: 23px !important;
+  }
+
+  .brand-group {
+    font-size: 13px !important;
+  }
+
+  .brand-subtitle {
+    font-size: 17px !important;
+  }
+
+  .main-nav {
+    gap: 24px !important;
+  }
+
+  .main-nav a,
+  .site-header .phone-link {
+    font-size: 16px !important;
+  }
+
+  .keynote-hero {
+    padding-top: 56px !important;
+  }
+
+  .hero-stage {
+    grid-template-columns: minmax(500px, 580px) minmax(0, 1fr) !important;
+  }
+
+  .hero-copy-card {
+    width: 580px !important;
+    padding: 38px 40px 34px !important;
+  }
+
+  .hero-copy-card h1 {
+    font-size: 50px !important;
+    max-width: 13.25ch !important;
+  }
+
+  .hero-copy-card .lead {
+    font-size: 16px !important;
+  }
+
+  .hero-cta-row .btn {
+    min-width: 150px !important;
+    font-size: 15px !important;
+  }
+
+  .hero-availability {
+    width: 680px !important;
+    grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr) 170px !important;
+  }
+
+  .hero-trust-strip {
+    width: min(1180px, calc(100vw - 90px)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .keynote-hero .hero-photo {
+    background-size: cover !important;
+    background-position: 53% top !important;
+  }
+
+  .hero-copy-card h1 {
+    max-width: 12.4ch !important;
+  }
+}
