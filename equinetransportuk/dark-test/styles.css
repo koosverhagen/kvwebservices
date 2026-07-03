@@ -6839,3 +6839,853 @@ textarea::placeholder {
     max-width: 12.4ch !important;
   }
 }
+
+/* ======================================================
+   DARK KEYNOTE TEST HOMEPAGE V8
+   New design based on desktop + iPhone mockup:
+   - no glass hero copy card on desktop, text sits on dark photo overlay
+   - compact availability card below hero text/image
+   - equal feature cards
+   - mobile image first, then readable text and compact booking
+====================================================== */
+body.dark-keynote-v8 {
+  --dk-bg: #031321;
+  --dk-bg-2: #061a2d;
+  --dk-card: rgba(9, 27, 46, 0.72);
+  --dk-card-soft: rgba(13, 35, 58, 0.72);
+  --dk-line: rgba(207, 226, 255, 0.22);
+  --dk-line-strong: rgba(220, 237, 255, 0.34);
+  --dk-text: #ffffff;
+  --dk-muted: rgba(231, 240, 252, 0.76);
+  --dk-blue: #1f6fff;
+  --dk-blue-2: #1558e8;
+  --dk-yellow: #ffe600;
+  background: var(--dk-bg) !important;
+  color: var(--dk-text) !important;
+}
+
+body.dark-keynote-v8 .test-badge,
+body.dark-keynote-v8 > div[style*="TEST DESIGN"] {
+  transform: scale(.86) !important;
+  transform-origin: left bottom !important;
+  opacity: .95 !important;
+}
+
+body.dark-keynote-v8 .site-header {
+  background: rgba(3, 13, 24, 0.92) !important;
+  border-bottom: 1px solid rgba(222,238,255,.10) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(28px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.12) !important;
+}
+
+body.dark-keynote-v8 .main-nav a,
+body.dark-keynote-v8 .brand-name,
+body.dark-keynote-v8 .site-header .phone-link {
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8 .brand-group {
+  color: rgba(235,244,255,.78) !important;
+}
+
+body.dark-keynote-v8 .brand-subtitle,
+body.dark-keynote-v8 .site-header .phone-link {
+  color: #2f7dff !important;
+}
+
+body.dark-keynote-v8 .btn {
+  background: linear-gradient(180deg, #2f82ff 0%, #1458e8 100%) !important;
+  border: 1px solid rgba(96, 156, 255, .78) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 14px 32px rgba(15,80,215,.28) !important;
+}
+
+body.dark-keynote-v8 .btn.ghost {
+  background: rgba(7, 22, 38, .55) !important;
+  border: 1px solid rgba(127, 174, 255, .48) !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+body.dark-keynote-v8 .btn:hover {
+  opacity: 1 !important;
+  transform: translateY(-1px) !important;
+}
+
+@media (min-width: 981px) {
+  body.dark-keynote-v8 .container {
+    width: min(1360px, calc(100vw - 88px)) !important;
+    max-width: 1360px !important;
+  }
+
+  body.dark-keynote-v8 .header-inner {
+    min-height: 104px !important;
+    grid-template-columns: auto minmax(460px, 1fr) auto !important;
+    gap: 28px !important;
+  }
+
+  body.dark-keynote-v8 .brand {
+    gap: 16px !important;
+  }
+
+  body.dark-keynote-v8 .brand-logo {
+    width: 112px !important;
+    height: 76px !important;
+    border-radius: 24px !important;
+    padding: 7px !important;
+    background: rgba(255,255,255,.11) !important;
+    border: 1px solid rgba(222,238,255,.24) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important;
+  }
+
+  body.dark-keynote-v8 .brand-name {
+    font-size: 24px !important;
+    line-height: 1.04 !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  body.dark-keynote-v8 .brand-group {
+    font-size: 14px !important;
+    line-height: 1.18 !important;
+    margin-top: 6px !important;
+  }
+
+  body.dark-keynote-v8 .brand-subtitle {
+    font-size: 18px !important;
+    line-height: 1.05 !important;
+    margin-top: 2px !important;
+  }
+
+  body.dark-keynote-v8 .main-nav {
+    gap: clamp(22px, 2.05vw, 36px) !important;
+    justify-content: center !important;
+    flex-wrap: nowrap !important;
+  }
+
+  body.dark-keynote-v8 .main-nav a,
+  body.dark-keynote-v8 .site-header .phone-link {
+    font-size: clamp(15px, .95vw, 17px) !important;
+    font-weight: 740 !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+  }
+
+  body.dark-keynote-v8 .nav-toggle {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero {
+    position: relative !important;
+    min-height: auto !important;
+    padding: 64px 0 50px !important;
+    background: #06182c !important;
+    overflow: hidden !important;
+  }
+
+  /* Photo fills hero like the mockup, with left side dark enough for text. */
+  body.dark-keynote-v8 .keynote-hero .hero-photo {
+    position: absolute !important;
+    inset: 0 !important;
+    background-image: url("images/hero5.webp") !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+    background-position: 58% 43% !important;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: saturate(1.16) contrast(1.05) brightness(.88) !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero .hero-photo::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background:
+      linear-gradient(90deg, rgba(3,13,24,.96) 0%, rgba(3,13,24,.78) 22%, rgba(3,13,24,.28) 46%, rgba(3,13,24,.12) 72%, rgba(3,13,24,.38) 100%),
+      linear-gradient(180deg, rgba(3,13,24,.16) 0%, rgba(3,13,24,.04) 48%, rgba(3,13,24,.88) 100%) !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero .hero-shade {
+    display: block !important;
+    background:
+      radial-gradient(circle at 9% 12%, rgba(105, 152, 208, .18), transparent 24rem),
+      radial-gradient(circle at 82% 22%, rgba(40, 109, 226, .10), transparent 28rem) !important;
+  }
+
+  body.dark-keynote-v8 .hero-stage {
+    position: relative !important;
+    z-index: 2 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 520px) minmax(0, 1fr) !important;
+    grid-template-areas:
+      "copy spacer"
+      "availability availability"
+      "trust trust" !important;
+    gap: 26px 36px !important;
+    min-height: 0 !important;
+    align-items: start !important;
+    align-content: start !important;
+  }
+
+  /* Remove the big card; this is what makes it look like the attached mockup. */
+  body.dark-keynote-v8 .hero-copy-card {
+    grid-area: copy !important;
+    width: auto !important;
+    max-width: 520px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card .kicker,
+  body.dark-keynote-v8 .keynote-hero .kicker {
+    color: var(--dk-yellow) !important;
+    font-size: 13px !important;
+    letter-spacing: .27em !important;
+    font-weight: 950 !important;
+    line-height: 1 !important;
+    margin: 0 0 22px !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card h1 {
+    color: #ffffff !important;
+    max-width: 12.3ch !important;
+    font-size: clamp(44px, 3.4vw, 57px) !important;
+    line-height: 1.06 !important;
+    letter-spacing: -0.065em !important;
+    margin: 0 !important;
+    text-shadow: 0 8px 30px rgba(0,0,0,.36) !important;
+  }
+
+  body.dark-keynote-v8 .hero-rule {
+    display: block !important;
+    width: 70px !important;
+    height: 2px !important;
+    margin: 24px 0 18px !important;
+    background: var(--dk-yellow) !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card .lead {
+    color: rgba(238,246,255,.86) !important;
+    font-size: 17px !important;
+    line-height: 1.48 !important;
+    letter-spacing: -0.015em !important;
+    max-width: 49ch !important;
+    margin: 0 !important;
+  }
+
+  body.dark-keynote-v8 .hero-cta-row {
+    display: flex !important;
+    gap: 14px !important;
+    flex-wrap: nowrap !important;
+    margin-top: 28px !important;
+  }
+
+  body.dark-keynote-v8 .hero-cta-row .btn {
+    min-height: 52px !important;
+    min-width: 152px !important;
+    border-radius: 10px !important;
+    padding: 0 20px !important;
+    font-size: 15px !important;
+    font-weight: 850 !important;
+    justify-content: space-between !important;
+  }
+
+  body.dark-keynote-v8 .hero-cta-row .reviews-open {
+    min-width: 136px !important;
+    justify-content: center !important;
+  }
+
+  /* Compact booking card: full-width under the hero, like attached mockup. */
+  body.dark-keynote-v8 .hero-availability {
+    grid-area: availability !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 8px 0 0 !important;
+    padding: 24px 26px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.15fr) 280px !important;
+    gap: 24px !important;
+    align-items: end !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(223,239,255,.25) !important;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.045)),
+      rgba(11,31,52,.66) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 22px 62px rgba(0,0,0,.26) !important;
+    backdrop-filter: blur(24px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.08) !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability::before {
+    content: "Check availability" !important;
+    grid-column: 1 / -1 !important;
+    color: #ffffff !important;
+    font-size: 24px !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.03em !important;
+    font-weight: 900 !important;
+    margin-bottom: -12px !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability::after {
+    content: "Get started in a few simple steps." !important;
+    grid-column: 1 / -1 !important;
+    color: rgba(226,235,246,.72) !important;
+    font-size: 15px !important;
+    line-height: 1.2 !important;
+    margin-top: -14px !important;
+    margin-bottom: 0 !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability-icon {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .hero-field {
+    position: relative !important;
+    min-width: 0 !important;
+  }
+
+  body.dark-keynote-v8 .hero-field label {
+    position: absolute !important;
+    z-index: 2 !important;
+    top: 10px !important;
+    left: 18px !important;
+    color: rgba(229,239,255,.70) !important;
+    font-size: 12px !important;
+    letter-spacing: .02em !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  body.dark-keynote-v8 .hero-field input,
+  body.dark-keynote-v8 .hero-field select,
+  body.dark-keynote-v8 .hero-field .apple-date-trigger {
+    width: 100% !important;
+    min-height: 62px !important;
+    height: 62px !important;
+    padding: 29px 48px 10px 18px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(200,223,255,.30) !important;
+    background: rgba(7,25,43,.64) !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+    line-height: 1.1 !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.015em !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body.dark-keynote-v8 .hero-field select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,.72) 50%), linear-gradient(135deg, rgba(255,255,255,.72) 50%, transparent 50%) !important;
+    background-position: calc(100% - 24px) 35px, calc(100% - 16px) 35px !important;
+    background-size: 8px 8px, 8px 8px !important;
+    background-repeat: no-repeat !important;
+  }
+
+  body.dark-keynote-v8 .hero-field .apple-date-trigger {
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-between !important;
+    text-align: left !important;
+  }
+
+  body.dark-keynote-v8 .hero-field .apple-date-trigger-icon {
+    right: 18px !important;
+    bottom: 15px !important;
+  }
+
+  body.dark-keynote-v8 .hero-pickup-time {
+    grid-column: auto !important;
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .hero-check-btn {
+    min-height: 62px !important;
+    height: 62px !important;
+    border-radius: 12px !important;
+    padding: 0 28px !important;
+    font-size: 17px !important;
+    font-weight: 850 !important;
+    justify-content: center !important;
+    gap: 20px !important;
+    white-space: nowrap !important;
+  }
+
+  body.dark-keynote-v8 .hero-trust-strip {
+    grid-area: trust !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+    margin-top: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 18px !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    overflow: visible !important;
+  }
+
+  body.dark-keynote-v8 .trust-item {
+    min-height: 102px !important;
+    padding: 22px 30px !important;
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+    gap: 22px !important;
+    align-items: center !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(222,238,255,.22) !important;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.035)),
+      rgba(9,27,46,.72) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 45px rgba(0,0,0,.20) !important;
+    color: #ffffff !important;
+  }
+
+  body.dark-keynote-v8 .trust-item + .trust-item {
+    border-left: 1px solid rgba(222,238,255,.22) !important;
+  }
+
+  body.dark-keynote-v8 .trust-icon {
+    width: 56px !important;
+    height: 56px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 999px !important;
+    color: #ffffff !important;
+    background: radial-gradient(circle at 34% 28%, rgba(64,137,255,.78), rgba(16,64,168,.52) 68%) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 13px 28px rgba(31,111,235,.17) !important;
+  }
+
+  body.dark-keynote-v8 .trust-icon svg {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  body.dark-keynote-v8 .trust-item strong {
+    font-size: 18px !important;
+    line-height: 1.12 !important;
+    font-weight: 900 !important;
+  }
+
+  body.dark-keynote-v8 .trust-item small {
+    color: rgba(226,235,246,.70) !important;
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+    margin-top: 6px !important;
+  }
+
+  body.dark-keynote-v8 #fleet {
+    padding-top: 42px !important;
+  }
+
+  body.dark-keynote-v8 .section-head {
+    display: flex !important;
+    align-items: end !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+  }
+
+  body.dark-keynote-v8 .section-head h2 {
+    font-size: 28px !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  body.dark-keynote-v8 .fleet-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 20px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-card {
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.025)),
+      rgba(8,27,47,.72) !important;
+    border: 1px solid rgba(222,238,255,.20) !important;
+    color: #fff !important;
+    min-height: 280px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-card img {
+    height: 170px !important;
+    filter: brightness(.78) saturate(1.08) !important;
+  }
+
+  body.dark-keynote-v8 .fleet-content h3 {
+    font-size: 18px !important;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1250px) {
+  body.dark-keynote-v8 .header-inner {
+    grid-template-columns: auto 1fr auto !important;
+    gap: 18px !important;
+  }
+
+  body.dark-keynote-v8 .brand-logo {
+    width: 92px !important;
+    height: 68px !important;
+  }
+
+  body.dark-keynote-v8 .brand-name {
+    font-size: 20px !important;
+  }
+
+  body.dark-keynote-v8 .brand-group {
+    font-size: 12px !important;
+  }
+
+  body.dark-keynote-v8 .brand-subtitle {
+    font-size: 15px !important;
+  }
+
+  body.dark-keynote-v8 .main-nav {
+    gap: 18px !important;
+  }
+
+  body.dark-keynote-v8 .main-nav a,
+  body.dark-keynote-v8 .site-header .phone-link {
+    font-size: 14px !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card h1 {
+    font-size: 44px !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability {
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr) 220px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 980px) {
+  body.dark-keynote-v8 {
+    background: #06182c !important;
+  }
+
+  body.dark-keynote-v8 .site-header {
+    background: rgba(3,13,24,.94) !important;
+  }
+
+  body.dark-keynote-v8 .header-inner {
+    min-height: 78px !important;
+    padding: 0 14px !important;
+  }
+
+  body.dark-keynote-v8 .container {
+    width: min(100%, calc(100vw - 24px)) !important;
+  }
+
+  body.dark-keynote-v8 .brand-logo {
+    width: 70px !important;
+    height: 50px !important;
+    border-radius: 16px !important;
+    padding: 4px !important;
+    background: rgba(255,255,255,.10) !important;
+    border: 1px solid rgba(222,238,255,.20) !important;
+  }
+
+  body.dark-keynote-v8 .brand-name {
+    font-size: 15px !important;
+    color: #fff !important;
+  }
+
+  body.dark-keynote-v8 .brand-group {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .brand-subtitle {
+    font-size: 12px !important;
+    color: #2f7dff !important;
+  }
+
+  body.dark-keynote-v8 .site-header .phone-link {
+    display: inline-flex !important;
+    margin-left: auto !important;
+    font-size: 14px !important;
+    color: #2f7dff !important;
+  }
+
+  body.dark-keynote-v8 .main-nav {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .nav-toggle {
+    display: inline-flex !important;
+  }
+
+  body.dark-keynote-v8 .nav-toggle-bar {
+    background: #fff !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero {
+    padding: 0 0 22px !important;
+    min-height: auto !important;
+    background: #06182c !important;
+    overflow: hidden !important;
+  }
+
+  body.dark-keynote-v8 .hero-stage {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "photo"
+      "copy"
+      "availability"
+      "trust" !important;
+    gap: 18px !important;
+    min-height: 0 !important;
+    width: 100% !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero .hero-photo {
+    position: relative !important;
+    inset: auto !important;
+    grid-area: photo !important;
+    display: block !important;
+    width: 100vw !important;
+    height: clamp(210px, 56vw, 310px) !important;
+    margin-left: calc(50% - 50vw) !important;
+    background-image: url("images/hero5.webp") !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+    background-position: 54% center !important;
+    filter: saturate(1.12) contrast(1.05) brightness(.82) !important;
+    opacity: 1 !important;
+    z-index: 0 !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero .hero-photo::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: linear-gradient(180deg, rgba(3,13,24,.08) 0%, rgba(3,13,24,.24) 55%, #06182c 100%) !important;
+  }
+
+  body.dark-keynote-v8 .hero-shade {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card {
+    grid-area: copy !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card .kicker {
+    color: var(--dk-yellow) !important;
+    font-size: 12px !important;
+    letter-spacing: .24em !important;
+    margin: 0 0 12px !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card h1 {
+    color: #fff !important;
+    font-size: clamp(34px, 9vw, 48px) !important;
+    line-height: 1.02 !important;
+    letter-spacing: -0.065em !important;
+    max-width: 12ch !important;
+    margin: 0 !important;
+  }
+
+  body.dark-keynote-v8 .hero-rule {
+    width: 48px !important;
+    height: 2px !important;
+    margin: 17px 0 13px !important;
+    background: var(--dk-yellow) !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card .lead {
+    color: rgba(238,246,255,.82) !important;
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+    margin: 0 !important;
+  }
+
+  body.dark-keynote-v8 .hero-cta-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+    margin-top: 20px !important;
+  }
+
+  body.dark-keynote-v8 .hero-cta-row .btn {
+    min-height: 46px !important;
+    border-radius: 9px !important;
+    font-size: 14px !important;
+    justify-content: center !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability {
+    grid-area: availability !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(222,238,255,.22) !important;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.035)),
+      rgba(9,27,46,.72) !important;
+    box-shadow: 0 18px 45px rgba(0,0,0,.20) !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability::before {
+    content: "Check availability" !important;
+    color: #fff !important;
+    font-size: 19px !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.03em !important;
+    margin-bottom: -3px !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability::after {
+    content: "Get started in a few simple steps." !important;
+    color: rgba(226,235,246,.70) !important;
+    font-size: 13px !important;
+    margin-top: -7px !important;
+    margin-bottom: 3px !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability-icon {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .hero-field label {
+    position: absolute !important;
+    top: 8px !important;
+    left: 14px !important;
+    z-index: 2 !important;
+    font-size: 11px !important;
+    color: rgba(229,239,255,.70) !important;
+  }
+
+  body.dark-keynote-v8 .hero-field {
+    position: relative !important;
+  }
+
+  body.dark-keynote-v8 .hero-field input,
+  body.dark-keynote-v8 .hero-field select,
+  body.dark-keynote-v8 .hero-field .apple-date-trigger {
+    height: 55px !important;
+    min-height: 55px !important;
+    padding: 25px 40px 8px 14px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(200,223,255,.26) !important;
+    background: rgba(7,25,43,.66) !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body.dark-keynote-v8 .hero-check-btn {
+    min-height: 50px !important;
+    height: 50px !important;
+    border-radius: 10px !important;
+  }
+
+  body.dark-keynote-v8 .hero-trust-strip {
+    grid-area: trust !important;
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  body.dark-keynote-v8 .trust-item {
+    min-height: 74px !important;
+    padding: 10px 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    text-align: center !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(222,238,255,.18) !important;
+    background: rgba(9,27,46,.72) !important;
+  }
+
+  body.dark-keynote-v8 .trust-icon {
+    width: 30px !important;
+    height: 30px !important;
+    color: #2f7dff !important;
+  }
+
+  body.dark-keynote-v8 .trust-icon svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  body.dark-keynote-v8 .trust-item strong {
+    font-size: 11px !important;
+    line-height: 1.13 !important;
+  }
+
+  body.dark-keynote-v8 .trust-item small {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 #fleet {
+    padding-top: 28px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-grid {
+    display: flex !important;
+    gap: 12px !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    padding-bottom: 10px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-card {
+    min-width: 205px !important;
+    scroll-snap-align: start !important;
+    border-radius: 12px !important;
+    background: rgba(9,27,46,.72) !important;
+    border: 1px solid rgba(222,238,255,.18) !important;
+  }
+
+  body.dark-keynote-v8 .fleet-card img {
+    height: 120px !important;
+    filter: brightness(.78) saturate(1.08) !important;
+  }
+
+  body.dark-keynote-v8 .fleet-content h3 {
+    font-size: 15px !important;
+  }
+}
