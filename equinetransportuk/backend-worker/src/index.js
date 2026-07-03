@@ -5835,46 +5835,50 @@ async function handlePricingQuote(request, env) {
    VEHICLE PRICING ENGINE
 ================================ */
 
-function parseLocalDateOnly(value) {
-  const [year, month, day] = String(value || "").split("-").map(Number);
+function parsePricingDate(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
 
   if (!year || !month || !day) return null;
 
-  const date = new Date(year, month - 1, day, 12, 0, 0, 0);
-
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date;
+  return new Date(year, month - 1, day, 12, 0, 0);
 }
 
-function calculate75TCalendarDayCost(
-  pickupDate,
-  durationDays,
-  weekdayRate,
-  weekendRate,
-) {
-  const numericDuration = Number(durationDays || 1);
-  const days = Math.max(1, Math.ceil(numericDuration));
-  const startDate = parseLocalDateOnly(pickupDate);
+function get75TRateForDate(vehicleId, value) {
+  const date = parsePricingDate(value);
+  const weekday = date ? date.getDay() : -1;
+  const weekend = weekday === 0 || weekday === 6;
 
-  if (!startDate) {
-    return weekdayRate * Math.max(1, numericDuration);
+  if (vehicleId === "v75-1") {
+    return weekend ? 200 : 175;
+  }
+
+  if (vehicleId === "v75-2") {
+    return weekend ? 175 : 165;
+  }
+
+  return 0;
+}
+
+function calculate75TServerBaseCostByDay(vehicleId, durationDays, pickupDate) {
+  const days = Math.max(1, Math.ceil(Number(durationDays || 1)));
+  const start = parsePricingDate(pickupDate);
+
+  if (!start) {
+    return get75TRateForDate(vehicleId, pickupDate) * days;
   }
 
   let total = 0;
 
   for (let offset = 0; offset < days; offset += 1) {
-    const date = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth(),
-      startDate.getDate() + offset,
-      12,
-      0,
-      0,
-      0,
-    );
-
-    total += isWeekendDate(date) ? weekendRate : weekdayRate;
+    const day = new Date(start);
+    day.setDate(start.getDate() + offset);
+    total += get75TRateForDate(vehicleId, day);
   }
 
   return total;
@@ -5900,16 +5904,10 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
     return prices[duration] ?? 105 * duration;
   }
 
-  /* 7.5T WITH LIVING */
+  /* 7.5T */
 
-  if (vehicleId === "v75-1") {
-    return calculate75TCalendarDayCost(pickupDate, duration, 175, 200);
-  }
-
-  /* 7.5T NO LIVING */
-
-  if (vehicleId === "v75-2") {
-    return calculate75TCalendarDayCost(pickupDate, duration, 165, 175);
+  if (vehicleId === "v75-1" || vehicleId === "v75-2") {
+    return calculate75TServerBaseCostByDay(vehicleId, duration, pickupDate);
   }
 
   return 0;

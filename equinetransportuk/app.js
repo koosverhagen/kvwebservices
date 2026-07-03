@@ -3585,38 +3585,35 @@ function supportsDuration(vehicle, durationDays) {
   return Boolean(DURATION_HOURS_75T[key]);
 }
 
-function calculate75TCalendarDayCost(
-  pickupDate,
-  durationDays,
-  weekdayRate,
-  weekendRate,
-) {
-  const numericDuration = Number(durationDays || 1);
-  const days = Math.max(1, Math.ceil(numericDuration));
+function get75TRateForDate(vehicle, date) {
+  const vehicleId = String(vehicle?.id || "");
+  const weekend = isWeekendDate(date);
 
-  let startDate =
-    pickupDate instanceof Date
-      ? new Date(pickupDate)
-      : parseLocalDateValue(pickupDate);
+  if (vehicleId === "v75-1" || vehicle?.pricingModel === "75_living_rules") {
+    return weekend ? 200 : 175;
+  }
 
-  if (!startDate || Number.isNaN(startDate.getTime())) {
-    return weekdayRate * Math.max(1, numericDuration);
+  if (vehicleId === "v75-2" || vehicle?.pricingModel === "75_no_living_rules") {
+    return weekend ? 175 : 165;
+  }
+
+  return Number(vehicle?.dayRate || 0);
+}
+
+function calculate75TBaseCostByDay(vehicle, durationDays, pickupDate) {
+  const days = Math.max(1, Math.ceil(Number(durationDays || 1)));
+  const start = parseLocalDateValue(pickupDate);
+
+  if (!start) {
+    return get75TRateForDate(vehicle, pickupDate) * days;
   }
 
   let total = 0;
 
   for (let offset = 0; offset < days; offset += 1) {
-    const date = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth(),
-      startDate.getDate() + offset,
-      12,
-      0,
-      0,
-      0,
-    );
-
-    total += isWeekendDate(date) ? weekendRate : weekdayRate;
+    const day = new Date(start);
+    day.setDate(start.getDate() + offset);
+    total += get75TRateForDate(vehicle, day);
   }
 
   return total;
@@ -3632,12 +3629,11 @@ function calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime) {
     return 105 * Math.max(1, duration);
   }
 
-  if (vehicle.pricingModel === "75_living_rules") {
-    return calculate75TCalendarDayCost(pickupDate, duration, 175, 200);
-  }
-
-  if (vehicle.pricingModel === "75_no_living_rules") {
-    return calculate75TCalendarDayCost(pickupDate, duration, 165, 175);
+  if (
+    vehicle.pricingModel === "75_living_rules" ||
+    vehicle.pricingModel === "75_no_living_rules"
+  ) {
+    return calculate75TBaseCostByDay(vehicle, duration, pickupDate);
   }
 
   return vehicle.dayRate * Math.max(1, duration);
