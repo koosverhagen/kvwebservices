@@ -7913,3 +7913,563 @@ body.dark-keynote-v8 .faq-section .section-head h2 {
     margin-bottom: 14px !important;
   }
 }
+
+
+/* ======================================================
+   DARK KEYNOTE — DETAILS / PREVIEW / CHECKOUT POLISH v12
+   Keeps the real booking flow, but restyles steps 2–4 to
+   match the dark Apple/Keynote homepage direction.
+====================================================== */
+
+body.dark-keynote-v8 #booking.booking-wrap {
+  padding: 28px 0 56px !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(47,125,255,.14), transparent 34rem),
+    linear-gradient(180deg, #06182c 0%, #051529 100%) !important;
+}
+
+body.dark-keynote-v8 #booking > .container {
+  width: min(1180px, calc(100vw - 44px)) !important;
+}
+
+/* Step cards */
+body.dark-keynote-v8 #step-2 .card,
+body.dark-keynote-v8 #step-3 .card,
+body.dark-keynote-v8 #step-4 .card {
+  border-radius: 24px !important;
+  border: 1px solid rgba(222, 238, 255, .24) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.105), rgba(255,255,255,.035)),
+    rgba(9, 27, 46, .76) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    0 24px 70px rgba(0,0,0,.26) !important;
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8 #step-3 .card,
+body.dark-keynote-v8 #step-4 .card {
+  padding: clamp(22px, 2.4vw, 34px) !important;
+}
+
+body.dark-keynote-v8 .booking-two-col {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 330px !important;
+  gap: 22px !important;
+  align-items: start !important;
+}
+
+body.dark-keynote-v8 .booking-main {
+  min-width: 0 !important;
+}
+
+body.dark-keynote-v8 .booking-summary {
+  min-width: 0 !important;
+}
+
+body.dark-keynote-v8 .summary-sticky-wrap {
+  top: 112px !important;
+}
+
+/* Headings */
+body.dark-keynote-v8 #step-3 .card > h3,
+body.dark-keynote-v8 #step-4 .card > h3 {
+  color: #ffffff !important;
+  font-size: clamp(24px, 2.1vw, 34px) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.045em !important;
+  margin: 0 0 18px !important;
+}
+
+/* Top action buttons in details */
+body.dark-keynote-v8 .details-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin: 0 0 24px !important;
+}
+
+body.dark-keynote-v8 .details-actions .btn,
+body.dark-keynote-v8 #step-4 .card > .btn.ghost {
+  min-height: 48px !important;
+  width: 100% !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(200, 223, 255, .35) !important;
+  background: rgba(6, 22, 38, .44) !important;
+  color: rgba(238,246,255,.94) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08) !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+body.dark-keynote-v8 .details-actions .btn:hover,
+body.dark-keynote-v8 #step-4 .card > .btn.ghost:hover {
+  transform: translateY(-1px) !important;
+  background: rgba(47, 125, 255, .16) !important;
+  border-color: rgba(72, 145, 255, .58) !important;
+}
+
+/* Details form layout */
+body.dark-keynote-v8 #booking-form {
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  display: grid !important;
+  gap: 20px !important;
+}
+
+body.dark-keynote-v8 .booking-form .form-grid,
+body.dark-keynote-v8 .booking-form .form-grid.two {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px 18px !important;
+  width: 100% !important;
+}
+
+body.dark-keynote-v8 .booking-form .form-field,
+body.dark-keynote-v8 #pickup-time-row .form-field {
+  min-width: 0 !important;
+}
+
+body.dark-keynote-v8 .booking-form .form-full,
+body.dark-keynote-v8 .booking-form .form-field.form-full,
+body.dark-keynote-v8 .booking-form .form-group {
+  grid-column: 1 / -1 !important;
+}
+
+body.dark-keynote-v8 #pickup-time-row {
+  margin: 0 !important;
+}
+
+body.dark-keynote-v8 #pickup-time-row[style*="grid"] {
+  display: grid !important;
+}
+
+body.dark-keynote-v8 .form-field label,
+body.dark-keynote-v8 .voucher-left label,
+body.dark-keynote-v8 .form-group label {
+  color: rgba(226,235,246,.78) !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  font-weight: 760 !important;
+  letter-spacing: .01em !important;
+  margin: 0 0 7px !important;
+}
+
+/* Inputs, selects and date triggers */
+body.dark-keynote-v8 #step-3 input,
+body.dark-keynote-v8 #step-3 select,
+body.dark-keynote-v8 #step-3 textarea,
+body.dark-keynote-v8 #step-3 .apple-date-trigger,
+body.dark-keynote-v8 #step-4 input,
+body.dark-keynote-v8 #step-4 select,
+body.dark-keynote-v8 #step-4 textarea,
+body.dark-keynote-v8 #step-4 .apple-date-trigger {
+  width: 100% !important;
+  min-height: 56px !important;
+  height: 56px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(200, 223, 255, .30) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.045)),
+    rgba(7, 25, 43, .72) !important;
+  color: #ffffff !important;
+  padding: 0 16px !important;
+  font-size: 15px !important;
+  font-weight: 650 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+body.dark-keynote-v8 #step-3 textarea,
+body.dark-keynote-v8 #step-4 textarea {
+  height: auto !important;
+  min-height: 112px !important;
+  padding: 14px 16px !important;
+  resize: vertical !important;
+}
+
+body.dark-keynote-v8 #step-3 input[readonly],
+body.dark-keynote-v8 #step-4 input[readonly] {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.026)),
+    rgba(7, 25, 43, .52) !important;
+  color: rgba(238,246,255,.78) !important;
+  border-color: rgba(200, 223, 255, .20) !important;
+}
+
+body.dark-keynote-v8 #step-3 input::placeholder,
+body.dark-keynote-v8 #step-3 textarea::placeholder,
+body.dark-keynote-v8 #step-4 input::placeholder,
+body.dark-keynote-v8 #step-4 textarea::placeholder {
+  color: rgba(226,235,246,.44) !important;
+}
+
+body.dark-keynote-v8 #step-3 input:focus,
+body.dark-keynote-v8 #step-3 select:focus,
+body.dark-keynote-v8 #step-3 textarea:focus,
+body.dark-keynote-v8 #step-3 .apple-date-trigger:focus-visible,
+body.dark-keynote-v8 #step-4 input:focus,
+body.dark-keynote-v8 #step-4 select:focus,
+body.dark-keynote-v8 #step-4 textarea:focus,
+body.dark-keynote-v8 #step-4 .apple-date-trigger:focus-visible {
+  outline: none !important;
+  border-color: rgba(47, 125, 255, .88) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    0 0 0 4px rgba(47, 125, 255, .16) !important;
+}
+
+body.dark-keynote-v8 #step-3 .apple-date-trigger {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  text-align: left !important;
+}
+
+body.dark-keynote-v8 #step-3 .apple-date-trigger-icon {
+  width: 24px !important;
+  height: 24px !important;
+  color: rgba(238,246,255,.84) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8 #step-3 .apple-date-trigger-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+/* Voucher and extras */
+body.dark-keynote-v8 .voucher-card {
+  margin: 0 !important;
+  padding: 14px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(222, 238, 255, .20) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.095), rgba(255,255,255,.035)),
+    rgba(7, 25, 43, .66) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+  align-items: end !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+body.dark-keynote-v8 .voucher-left input {
+  height: 48px !important;
+  min-height: 48px !important;
+  border-radius: 12px !important;
+}
+
+body.dark-keynote-v8 .voucher-right .btn,
+body.dark-keynote-v8 #apply-discount {
+  min-height: 48px !important;
+  height: 48px !important;
+  border-radius: 12px !important;
+  padding: 0 18px !important;
+  background: linear-gradient(180deg, #2f7dff, #1f5ff0) !important;
+  color: #ffffff !important;
+  border-color: rgba(93, 163, 255, .70) !important;
+}
+
+body.dark-keynote-v8 .extras-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin: 0 !important;
+}
+
+body.dark-keynote-v8 .check,
+body.dark-keynote-v8 .dartford-row {
+  min-height: 58px !important;
+  padding: 14px 16px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(222, 238, 255, .20) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.085), rgba(255,255,255,.032)),
+    rgba(7, 25, 43, .58) !important;
+  color: rgba(238,246,255,.90) !important;
+}
+
+body.dark-keynote-v8 .check input[type="checkbox"] {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(200,223,255,.46) !important;
+  background: rgba(255,255,255,.10) !important;
+}
+
+body.dark-keynote-v8 .check input[type="checkbox"]:checked {
+  background: #2f7dff !important;
+  border-color: #67a4ff !important;
+}
+
+body.dark-keynote-v8 .dartford-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 84px !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+body.dark-keynote-v8 .dartford-count input {
+  height: 44px !important;
+  min-height: 44px !important;
+  text-align: center !important;
+  padding: 0 8px !important;
+}
+
+/* Payment / confirm buttons */
+body.dark-keynote-v8 .form-actions {
+  margin-top: 4px !important;
+}
+
+body.dark-keynote-v8 .form-actions .btn,
+body.dark-keynote-v8 .confirm-btn,
+body.dark-keynote-v8 #booking-confirm-btn {
+  min-height: 58px !important;
+  height: 58px !important;
+  width: 100% !important;
+  border-radius: 14px !important;
+  background: linear-gradient(180deg, #2f7dff, #1f5ff0) !important;
+  color: #ffffff !important;
+  border-color: rgba(93, 163, 255, .70) !important;
+  font-size: 17px !important;
+  font-weight: 900 !important;
+  box-shadow: 0 16px 34px rgba(31, 111, 235, .26) !important;
+}
+
+body.dark-keynote-v8 .form-actions .btn:disabled {
+  opacity: .55 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* Summary / preview card */
+body.dark-keynote-v8 #checkout-summary,
+body.dark-keynote-v8 #checkout-summary-container {
+  width: 100% !important;
+}
+
+body.dark-keynote-v8 #checkout-summary .summary-card,
+body.dark-keynote-v8 #checkout-summary-container .summary-card,
+body.dark-keynote-v8 .summary-card {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 18px !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(222, 238, 255, .22) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.105), rgba(255,255,255,.035)),
+    rgba(9, 27, 46, .78) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.09),
+    0 22px 55px rgba(0,0,0,.22) !important;
+}
+
+body.dark-keynote-v8 .summary-vehicle {
+  display: grid !important;
+  grid-template-columns: 74px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: center !important;
+  margin-bottom: 14px !important;
+}
+
+body.dark-keynote-v8 .summary-vehicle-image {
+  width: 74px !important;
+  height: 58px !important;
+  border-radius: 12px !important;
+  object-fit: cover !important;
+  border: 1px solid rgba(222,238,255,.18) !important;
+}
+
+body.dark-keynote-v8 .summary-vehicle-name {
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 1.18 !important;
+  font-weight: 900 !important;
+}
+
+body.dark-keynote-v8 .summary-note {
+  color: rgba(226,235,246,.64) !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+body.dark-keynote-v8 .summary-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  margin: 8px 0 !important;
+  color: rgba(238,246,255,.82) !important;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+}
+
+body.dark-keynote-v8 .summary-row span:last-child {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+}
+
+body.dark-keynote-v8 .summary-row.total {
+  margin-top: 12px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid rgba(222,238,255,.16) !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+}
+
+body.dark-keynote-v8 .summary-row.pay-now {
+  color: #58a0ff !important;
+  font-weight: 900 !important;
+}
+
+body.dark-keynote-v8 .summary-row.pay-now span:last-child {
+  color: #58a0ff !important;
+}
+
+body.dark-keynote-v8 .summary-row.outstanding {
+  color: rgba(226,235,246,.56) !important;
+}
+
+body.dark-keynote-v8 .summary-divider {
+  background: rgba(222,238,255,.16) !important;
+}
+
+/* Review / checkout step */
+body.dark-keynote-v8 .requirements-box {
+  margin: 20px 0 22px !important;
+  padding: 20px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(222, 238, 255, .20) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.085), rgba(255,255,255,.032)),
+    rgba(7, 25, 43, .60) !important;
+  color: rgba(238,246,255,.88) !important;
+}
+
+body.dark-keynote-v8 .requirements-box h4 {
+  color: #ffffff !important;
+  font-size: 20px !important;
+  line-height: 1.1 !important;
+  margin: 0 0 12px !important;
+}
+
+body.dark-keynote-v8 .requirements-box ul {
+  margin: 0 !important;
+  padding-left: 20px !important;
+}
+
+body.dark-keynote-v8 .requirements-box li {
+  margin: 9px 0 !important;
+  color: rgba(226,235,246,.76) !important;
+}
+
+/* Availability result cards in step 2 */
+body.dark-keynote-v8 #step-2 .availability-item {
+  border-radius: 18px !important;
+  border: 1px solid rgba(222, 238, 255, .20) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.095), rgba(255,255,255,.032)),
+    rgba(9, 27, 46, .72) !important;
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8 #step-2 .availability-image {
+  border-radius: 14px !important;
+}
+
+body.dark-keynote-v8 #step-2 .availability-price,
+body.dark-keynote-v8 #step-2 .price-main {
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8 #step-2 .availability-price-note,
+body.dark-keynote-v8 #step-2 .price-confirm,
+body.dark-keynote-v8 #step-2 .availability-meta-pill {
+  color: rgba(226,235,246,.72) !important;
+}
+
+body.dark-keynote-v8 #step-2 .availability-meta-pill,
+body.dark-keynote-v8 #step-2 .search-chip {
+  border-color: rgba(222, 238, 255, .18) !important;
+  background: rgba(7,25,43,.54) !important;
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+  body.dark-keynote-v8 #booking > .container {
+    width: min(100%, calc(100vw - 24px)) !important;
+  }
+
+  body.dark-keynote-v8 .booking-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  body.dark-keynote-v8 .summary-sticky-wrap {
+    position: static !important;
+  }
+
+  body.dark-keynote-v8 .details-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.dark-keynote-v8 .booking-form .form-grid,
+  body.dark-keynote-v8 .booking-form .form-grid.two,
+  body.dark-keynote-v8 .extras-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.dark-keynote-v8 .voucher-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.dark-keynote-v8 .voucher-right,
+  body.dark-keynote-v8 .voucher-right .btn,
+  body.dark-keynote-v8 #apply-discount {
+    width: 100% !important;
+  }
+
+  body.dark-keynote-v8 .dartford-row {
+    grid-template-columns: 1fr 78px !important;
+  }
+
+  body.dark-keynote-v8 #step-3 .card,
+  body.dark-keynote-v8 #step-4 .card {
+    padding: 18px !important;
+    border-radius: 18px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  body.dark-keynote-v8 #booking.booking-wrap {
+    padding-top: 18px !important;
+  }
+
+  body.dark-keynote-v8 #step-3 input,
+  body.dark-keynote-v8 #step-3 select,
+  body.dark-keynote-v8 #step-3 .apple-date-trigger,
+  body.dark-keynote-v8 #step-4 input,
+  body.dark-keynote-v8 #step-4 select,
+  body.dark-keynote-v8 #step-4 .apple-date-trigger {
+    min-height: 52px !important;
+    height: 52px !important;
+    font-size: 14px !important;
+  }
+
+  body.dark-keynote-v8 .summary-vehicle {
+    grid-template-columns: 62px minmax(0, 1fr) !important;
+  }
+
+  body.dark-keynote-v8 .summary-vehicle-image {
+    width: 62px !important;
+    height: 50px !important;
+  }
+}
+
