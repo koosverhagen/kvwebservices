@@ -8137,6 +8137,10 @@
 
       let allBookings = [];
       let filteredBookings = [];
+      let lastLoadedBookingsRange = {
+        from: "",
+        to: "",
+      };
       let IS_EDIT_INITIALISING = false;
 
       /* ===============================
@@ -16757,6 +16761,12 @@ ${mobileOutstandingText}
       }
 
       searchInput.addEventListener("input", updateClearButton);
+      searchInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          applyFiltersBtn?.click();
+        }
+      });
       statusFilter.addEventListener("change", updateClearButton);
 
       bookingVehicleFilter?.addEventListener("change", updateClearButton);
@@ -17766,6 +17776,11 @@ Equine Transport UK`;
 
           allBookings = normaliseBookingsResponse(data);
 
+          lastLoadedBookingsRange = {
+            from,
+            to,
+          };
+
           console.log("ALL BOOKINGS:", allBookings);
 
           // ✅ FIXED LINE
@@ -18435,15 +18450,38 @@ Send the fresh form link to ${booking.customerEmail} now?`,
 =============================== */
 
       applyFiltersBtn?.addEventListener("click", async () => {
-        // ✅ Search should update bookings only.
-        // Do not refresh calendar here, because on mobile it shifts the page.
-        await loadBookings({ refreshCalendar: false });
+        // ✅ Fast search: use the bookings already loaded in memory.
+        // Only fetch again if the date range has actually changed or nothing
+        // has been loaded yet. This avoids the 5+ second wait on every search.
+        const from = rangeFromInput?.value || "";
+        const to = rangeToInput?.value || "";
 
-        await new Promise((r) => setTimeout(r, 120));
+        const needsFreshLoad =
+          !allBookings.length ||
+          from !== lastLoadedBookingsRange.from ||
+          to !== lastLoadedBookingsRange.to;
 
-        scrollToFirstBooking();
+        if (needsFreshLoad) {
+          await loadBookings({ refreshCalendar: false });
 
+          requestAnimationFrame(() => {
+            scrollToFirstBooking();
+            updateClearButton();
+          });
+
+          return;
+        }
+
+        setStatus("Search applied.", "loading");
+
+        renderBookings();
         updateClearButton();
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            scrollToFirstBooking();
+          });
+        });
       });
 
       /* ===============================
