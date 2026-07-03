@@ -226,7 +226,7 @@ function startBooking(vehicleId) {
   if (selectedLorryInput) selectedLorryInput.value = vehicle?.name || "";
   if (selectedBaseInput) selectedBaseInput.value = "";
 
-  const bookingSection = document.getElementById("booking");
+  const bookingSection = document.getElementById("availability-form") || document.getElementById("booking");
 
   bookingSection?.scrollIntoView({
     behavior: "smooth",
@@ -601,7 +601,7 @@ startBookingBtn?.addEventListener("click", () => {
   resetBookingFlow();
 
   setTimeout(() => {
-    document.getElementById("booking")?.scrollIntoView({
+    document.getElementById("availability-form")?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
@@ -2943,7 +2943,7 @@ function goBackToDates() {
 
   /* scroll to calendar */
 
-  const calendar = document.getElementById("availability-calendar");
+  const calendar = document.getElementById("availability-calendar") || document.getElementById("availability-form");
 
   if (calendar) {
     calendar.scrollIntoView({

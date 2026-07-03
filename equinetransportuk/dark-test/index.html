@@ -9,7 +9,7 @@
       content="Book self-drive 3.5T and 7.5T horsebox hire from East Sussex or request professional driven horse transport across the whole of the UK."
     />
 
-    <link rel="stylesheet" href="styles.css?v=dark-test-v3" />
+    <link rel="stylesheet" href="styles.css?v=dark-test-v4" />
     <link rel="icon" href="images/favicon.png" />
   
     <link rel="canonical" href="https://www.equinetransportuk.com/" />
@@ -184,7 +184,7 @@
           <a href="contact.html">Contact</a>
         </nav>
 
-        <a class="header-phone" href="tel:+447812188871" aria-label="Call Equine Transport UK">07812 188871</a>
+        <a class="phone-link" href="tel:07812188871">07812 188871</a>
 
         <button
           class="nav-toggle"
@@ -201,20 +201,16 @@
     </header>
 
     <main id="top">
-      
-      <section class="hero dark-keynote-hero" aria-labelledby="home-hero-title">
-        <div class="dark-hero-bg" aria-hidden="true"></div>
+      <section class="hero keynote-hero" aria-labelledby="hero-title">
+        <div class="hero-photo" aria-hidden="true"></div>
+        <div class="hero-shade" aria-hidden="true"></div>
 
-        <div class="container dark-hero-shell">
-          <div class="dark-hero-mobile-media" aria-hidden="true">
-            <img src="images/hero5.webp" alt="" />
-          </div>
-
-          <div class="dark-hero-copy">
+        <div class="container hero-stage">
+          <div class="hero-copy-card">
             <p class="kicker">Horsebox Rental</p>
-            <h1 id="home-hero-title">
-              Self-drive horsebox hire in East Sussex and across the UK.
-            </h1>
+            <h1 id="hero-title">Self-drive horsebox hire in East Sussex and driven horse transport across the UK.</h1>
+
+            <div class="hero-rule" aria-hidden="true"></div>
 
             <p class="lead">
               Book self-drive 3.5T and 7.5T horseboxes online from our East
@@ -223,15 +219,154 @@
             </p>
 
             <div class="hero-cta-row">
-              <a class="btn" href="#booking" id="start-booking-btn">Start booking <span>›</span></a>
-              <a class="btn ghost" href="#fleet">View fleet <span>›</span></a>
-              <a class="btn ghost reviews-open" href="#"><span class="google-mark">G</span> Reviews</a>
+              <a class="btn" href="#availability-form" id="start-booking-btn">
+                Start booking <span aria-hidden="true">›</span>
+              </a>
+              <a class="btn ghost" href="#fleet">View fleet <span aria-hidden="true">›</span></a>
+
+              <a class="btn ghost reviews-open" href="#">
+                <span class="google-mark" aria-hidden="true">G</span>
+                Reviews
+              </a>
+            </div>
+          </div>
+
+          <form id="availability-form" class="availability-form hero-availability">
+            <div class="hero-availability-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 2v3M17 2v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+
+            <div class="form-field hero-field">
+              <label for="pickup-date">Pick-up date</label>
+              <input id="pickup-date" type="date" required />
+            </div>
+
+            <div class="form-field hero-field hero-field-duration" id="duration-group">
+              <label for="duration-days">Duration</label>
+              <select id="duration-days" required>
+                <option value="0.5">1/2 day</option>
+                <option value="1" selected>1 day</option>
+                <option value="2">2 days</option>
+                <option value="3">3 days</option>
+                <option value="4">4 days</option>
+                <option value="5">5 days</option>
+                <option value="6">6 days</option>
+                <option value="7">Week</option>
+              </select>
+            </div>
+
+            <div class="form-field hero-field hero-pickup-time" id="pickup-time-group" style="display: none">
+              <label for="pickup-time">Pickup time</label>
+              <select id="pickup-time">
+                <option value="">Select pickup time</option>
+                <option value="07:00">07:00 — Morning</option>
+                <option value="13:00">13:00 — Afternoon</option>
+              </select>
+            </div>
+
+            <button class="btn hero-check-btn" type="submit">
+              Check availability <span aria-hidden="true">›</span>
+            </button>
+          </form>
+
+          <div class="hero-trust-strip" aria-label="Why choose Equine Transport UK">
+            <div class="trust-item">
+              <span class="trust-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.4 2.8 8.4 7 10 4.2-1.6 7-5.6 7-10V6l-7-3Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m8.5 12 2.2 2.2 4.8-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span><strong>Modern, safe &amp; reliable</strong><small>Regularly maintained for peace of mind</small></span>
+            </div>
+            <div class="trust-item">
+              <span class="trust-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 22s7-5.1 7-12a7 7 0 1 0-14 0c0 6.9 7 12 7 12Z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.4" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+              </span>
+              <span><strong>East Sussex based</strong><small>Easy access from the A23 &amp; M23</small></span>
+            </div>
+            <div class="trust-item">
+              <span class="trust-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 16.9 6.6 19.8l1-6.1-4.4-4.3 6.1-.9L12 3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+              </span>
+              <span><strong>Trusted by horse owners</strong><small>Professional service, every time</small></span>
             </div>
           </div>
         </div>
       </section>
 
-<section id="booking" class="section booking-wrap dark-booking-wrap">
+      <section class="section seo-content-section container" aria-labelledby="seo-horse-transport-east-sussex">
+        <div class="seo-panel">
+          <p class="kicker">Horse transport East Sussex</p>
+          <h2 id="seo-horse-transport-east-sussex">
+            Self-drive horsebox hire from Five Ashes and UK-wide driven horse transport.
+          </h2>
+          <p>
+            Equine Transport UK provides self-drive 3.5T and 7.5T horsebox hire
+            and professional driven horse transport from Upper Broadreed Farm,
+            Stonehurst Lane, Five Ashes, East Sussex TN20 6LL. We help owners
+            travelling to shows, vet appointments, clinics, sales, yards and new
+            homes. Self-drive hire is collected from our East Sussex base, and
+            our driven horse transport service is available across the whole of
+            the UK.
+          </p>
+
+          <div class="seo-grid">
+            <article class="seo-mini-card">
+              <h3>Self-drive horsebox hire</h3>
+              <p>
+                Book a 3.5 tonne or 7.5 tonne horsebox online, check live
+                availability, choose your hire duration and complete secure
+                checkout.
+              </p>
+            </article>
+
+            <article class="seo-mini-card">
+              <h3>Driven horse transport</h3>
+              <p>
+                Need transport without driving yourself? Our driven service is
+                available across the whole of the UK. Get a guide estimate
+                first, then we confirm the final quote with you directly.
+              </p>
+            </article>
+
+            <article class="seo-mini-card">
+              <h3>Local and UK-wide cover</h3>
+              <p>
+                Popular self-drive collection areas include East Grinstead,
+                Uckfield, Tunbridge Wells, Crowborough, Heathfield, Lewes and
+                Haywards Heath. Driven horse transport is available across the
+                UK.
+              </p>
+            </article>
+          </div>
+
+          <div class="service-area-list" aria-label="Horse transport service areas">
+            <span>East Sussex</span>
+            <span>West Sussex</span>
+            <span>Kent</span>
+            <span>Surrey</span>
+            <span>South East England</span>
+            <span>UK-wide driven transport</span>
+          </div>
+
+          <div class="seo-actions">
+            <a class="btn" href="#booking">Check self-drive availability</a>
+            <a class="btn ghost" href="driven-services.html">View driven horse transport</a>
+            <a class="btn ghost" href="horse-transport-east-sussex.html">Horse transport East Sussex</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="fleet" class="section container">
+        <div class="section-head">
+          <p class="kicker">Fleet</p>
+          <h2>5 layouts ready to book</h2>
+        </div>
+        <div id="fleet-grid" class="fleet-grid"></div>
+
+        <!--
+removed duplicate, script is loaded at end of body -->
+      </section>
+
+      <section id="booking" class="section booking-wrap">
         <div class="container">
           <!-- Step indicator -->
           <div class="booking-steps">
@@ -242,124 +377,8 @@
           </div>
 
           <div class="booking-flow">
-            <!-- STEP 1 -->
-            <div class="booking-step active" id="step-1">
-              <div class="card">
-                <h3>Check availability</h3>
-                <p class="muted">
-                  Choose date and duration to see available lorries.
-                </p>
-
-                <!-- =========================
-     Phase 4: Calendar UI (NEW)
-     ========================= -->
-                <!-- Selected vehicle label -->
-                <div
-                  id="calendar-vehicle-label"
-                  class="calendar-vehicle-label hidden"
-                ></div>
-
-                <div
-                  class="cal-wrap"
-                  id="availability-calendar"
-                  aria-label="Availability calendar"
-                >
-                  <div class="cal-head">
-                    <button
-                      class="cal-nav"
-                      type="button"
-                      data-cal-nav="prev"
-                      aria-label="Previous month"
-                    >
-                      ‹
-                    </button>
-                    <div class="cal-title-wrap">
-                      <div class="cal-title" id="cal-title">Month YYYY</div>
-                      <div class="cal-title-help">
-                        Hover or tap a date to see live lorry availability.
-                      </div>
-                    </div>
-                    <button
-                      class="cal-nav"
-                      type="button"
-                      data-cal-nav="next"
-                      aria-label="Next month"
-                    >
-                      ›
-                    </button>
-                  </div>
-
-                  <div class="cal-weekdays" aria-hidden="true">
-                    <div>Mon</div>
-                    <div>Tue</div>
-                    <div>Wed</div>
-                    <div>Thu</div>
-                    <div>Fri</div>
-                    <div>Sat</div>
-                    <div>Sun</div>
-                  </div>
-
-                  <div
-                    class="cal-grid"
-                    id="cal-grid"
-                    role="grid"
-                    aria-label="Calendar days"
-                  ></div>
-
-                  <!-- Availability is shown in the live preview only. -->
-                </div>
-
-                <div id="vehicle-preview" class="vehicle-preview hidden"></div>
-
-                <!-- ✅ MOBILE PREVIEW (UNDER CALENDAR) -->
-                <div id="mobile-preview" class="mobile-preview hidden"></div>
-
-                <div id="preselected-warning" class="preselected-warning"></div>
-              </div>
-              <form id="availability-form" class="availability-form">
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label for="pickup-date">Pickup date</label>
-                    <input id="pickup-date" type="date" required />
-                  </div>
-
-                  <div
-                    class="form-field"
-                    id="pickup-time-group"
-                    style="display: none"
-                  >
-                    <label for="pickup-time">Pickup time (½ day hire)</label>
-
-                    <select id="pickup-time">
-                      <option value="">Select pickup time</option>
-                      <option value="07:00">07:00 — Morning</option>
-                      <option value="13:00">13:00 — Afternoon</option>
-                    </select>
-                  </div>
-
-                  <div class="form-field">
-                    <label for="duration-days">Duration</label>
-                    <select id="duration-days" required>
-                      <option value="" selected>Select duration</option>
-                      <option value="0.5">1/2 day</option>
-                      <option value="1">1 day</option>
-                      <option value="2">2 days</option>
-                      <option value="3">3 days</option>
-                      <option value="4">4 days</option>
-                      <option value="5">5 days</option>
-                      <option value="6">6 days</option>
-                      <option value="7">Week</option>
-                    </select>
-                  </div>
-
-                  <div class="form-field form-field-actions">
-                    <button class="btn" type="submit">
-                      Check availability
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
+            <!-- STEP 1 is handled by the compact hero availability form on the dark test homepage. -->
+            <div class="booking-step active" id="step-1" aria-hidden="true"></div>
           </div>
 
           <!-- STEP 2 -->
@@ -675,99 +694,6 @@
 
               <div id="booking-confirmation"></div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      
-      <section class="dark-trust-strip container" aria-label="Why choose Equine Transport UK">
-        <article>
-          <span class="dark-trust-icon">◇</span>
-          <strong>Modern, safe & reliable</strong>
-          <small>Regularly maintained for peace of mind</small>
-        </article>
-        <article>
-          <span class="dark-trust-icon">⌖</span>
-          <strong>East Sussex based</strong>
-          <small>Easy access from the A23 & M23</small>
-        </article>
-        <article>
-          <span class="dark-trust-icon">☆</span>
-          <strong>Trusted by horse owners</strong>
-          <small>Professional service, every time</small>
-        </article>
-      </section>
-
-<section id="fleet" class="section container">
-        <div class="section-head">
-          <p class="kicker">Fleet</p>
-          <h2>5 layouts ready to book</h2>
-        </div>
-        <div id="fleet-grid" class="fleet-grid"></div>
-
-        <!--
-removed duplicate, script is loaded at end of body -->
-      </section>
-
-      <section class="section seo-content-section container" aria-labelledby="seo-horse-transport-east-sussex">
-        <div class="seo-panel">
-          <p class="kicker">Horse transport East Sussex</p>
-          <h2 id="seo-horse-transport-east-sussex">
-            Self-drive horsebox hire from Five Ashes and UK-wide driven horse transport.
-          </h2>
-          <p>
-            Equine Transport UK provides self-drive 3.5T and 7.5T horsebox hire
-            and professional driven horse transport from Upper Broadreed Farm,
-            Stonehurst Lane, Five Ashes, East Sussex TN20 6LL. We help owners
-            travelling to shows, vet appointments, clinics, sales, yards and new
-            homes. Self-drive hire is collected from our East Sussex base, and
-            our driven horse transport service is available across the whole of
-            the UK.
-          </p>
-
-          <div class="seo-grid">
-            <article class="seo-mini-card">
-              <h3>Self-drive horsebox hire</h3>
-              <p>
-                Book a 3.5 tonne or 7.5 tonne horsebox online, check live
-                availability, choose your hire duration and complete secure
-                checkout.
-              </p>
-            </article>
-
-            <article class="seo-mini-card">
-              <h3>Driven horse transport</h3>
-              <p>
-                Need transport without driving yourself? Our driven service is
-                available across the whole of the UK. Get a guide estimate
-                first, then we confirm the final quote with you directly.
-              </p>
-            </article>
-
-            <article class="seo-mini-card">
-              <h3>Local and UK-wide cover</h3>
-              <p>
-                Popular self-drive collection areas include East Grinstead,
-                Uckfield, Tunbridge Wells, Crowborough, Heathfield, Lewes and
-                Haywards Heath. Driven horse transport is available across the
-                UK.
-              </p>
-            </article>
-          </div>
-
-          <div class="service-area-list" aria-label="Horse transport service areas">
-            <span>East Sussex</span>
-            <span>West Sussex</span>
-            <span>Kent</span>
-            <span>Surrey</span>
-            <span>South East England</span>
-            <span>UK-wide driven transport</span>
-          </div>
-
-          <div class="seo-actions">
-            <a class="btn" href="#booking">Check self-drive availability</a>
-            <a class="btn ghost" href="driven-services.html">View driven horse transport</a>
-            <a class="btn ghost" href="horse-transport-east-sussex.html">Horse transport East Sussex</a>
           </div>
         </div>
       </section>
@@ -1183,7 +1109,7 @@ removed duplicate, script is loaded at end of body -->
         });
       });
     </script>
-    <script src="app.js?v=dark-test-v3"></script>
+    <script src="app.js?v=dark-test-v4"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
   </body>
 </html>
