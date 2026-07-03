@@ -4700,6 +4700,29 @@ function autoCheckAvailability() {
 pickupDateInput?.addEventListener("change", async () => {
   const pickupDate = pickupDateInput?.value;
 
+  // Date choice should NOT immediately jump to lorry availability.
+  // Customer chooses the date first, then chooses duration, then the availability
+  // search can run from the duration change or the Check availability button.
+  resetAvailabilityAutoSubmitState?.();
+
+  selectedAvailability = null;
+  LAST_AVAILABLE_VEHICLES = [];
+
+  if (availabilityResults) {
+    availabilityResults.innerHTML = "";
+  }
+
+  if (durationDaysInput) {
+    durationDaysInput.value = "";
+  }
+
+  if (pickupTimeInput) {
+    pickupTimeInput.value = "";
+  }
+
+  updatePickupTimeVisibility();
+  updateEarlyPickupAvailability();
+
   if (pickupDate) {
     window.__lastDurationCheck = "";
 
@@ -4723,7 +4746,9 @@ pickupDateInput?.addEventListener("change", async () => {
     }
   }
 
-  autoCheckAvailability();
+  setTimeout(() => {
+    durationDaysInput?.focus?.({ preventScroll: true });
+  }, 80);
 });
 
 /* trigger when duration changes */
