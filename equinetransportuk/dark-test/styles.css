@@ -5144,1369 +5144,778 @@ textarea {
 }
 
 
-
 /* ======================================================
-   DARK KEYNOTE TEST HOMEPAGE
-   Safe visual layer for /dark-test/ only.
-   Keeps existing IDs/classes for booking, calendar, reviews and checkout JS.
+   DARK KEYNOTE TEST V3
+   Test-only visual layer. Keeps original IDs/forms/app logic intact.
 ====================================================== */
 
-body.dark-keynote-test {
-  --bg: #061527;
-  --card: rgba(12, 31, 54, 0.78);
+:root {
+  --bg: #020b18;
+  --card: rgba(11, 30, 52, 0.72);
   --text: #f8fbff;
-  --muted: rgba(223, 232, 246, 0.76);
-  --line: rgba(150, 181, 224, 0.24);
-  --accent: #2478ff;
-  --accent-2: #1557ff;
-  --gold: #f9dd2f;
-  --glass: rgba(13, 34, 60, 0.68);
-  --glass-strong: rgba(11, 30, 53, 0.86);
-  --dark-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);
+  --muted: #b8c6d8;
+  --line: rgba(148, 163, 184, 0.28);
+  --accent: #1f6feb;
+  --accent-2: #2f7cff;
+  --gold: #f6e14d;
+  --radius: 20px;
+}
+
+html {
+  scroll-padding-top: 86px;
+  background: #020b18;
+}
+
+body {
   color: var(--text);
   background:
-    radial-gradient(circle at 70% 0%, rgba(36, 120, 255, 0.25), transparent 38%),
-    radial-gradient(circle at 20% 18%, rgba(251, 221, 47, 0.08), transparent 24%),
-    linear-gradient(180deg, #03101f 0%, #061527 48%, #07192d 100%);
+    radial-gradient(circle at 18% 0%, rgba(31, 111, 235, 0.22), transparent 28rem),
+    radial-gradient(circle at 86% 12%, rgba(37, 99, 235, 0.16), transparent 24rem),
+    linear-gradient(180deg, #020b18 0%, #04142a 45%, #06152a 100%) !important;
 }
 
-body.dark-keynote-test::before {
+body::before {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: -2;
-  background:
-    linear-gradient(90deg, rgba(3, 16, 31, 0.96) 0%, rgba(3, 16, 31, 0.72) 38%, rgba(3, 16, 31, 0.92) 100%),
-    url("images/hero5.webp") center top / cover no-repeat;
-  opacity: 0.55;
   pointer-events: none;
-}
-
-body.dark-keynote-test::after {
-  content: "";
-  position: fixed;
-  inset: 0;
   z-index: -1;
-  pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(3, 16, 31, 0.1) 0%, rgba(3, 16, 31, 0.68) 46%, rgba(3, 16, 31, 0.96) 100%),
-    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.08), transparent 26%);
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 90px 90px;
+  opacity: .25;
 }
 
-body.dark-keynote-test .container {
-  width: min(1380px, calc(100vw - 64px));
+.container {
+  width: min(1320px, calc(100vw - 64px));
 }
 
-body.dark-keynote-test .site-header {
-  background: rgba(4, 17, 32, 0.78);
-  border-bottom: 1px solid rgba(174, 205, 255, 0.13);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+.site-header {
+  background: rgba(2, 12, 26, 0.78) !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18) !important;
+  box-shadow: 0 18px 50px rgba(0,0,0,.24);
 }
 
-body.dark-keynote-test .header-inner {
-  min-height: 84px;
+.header-inner {
+  min-height: 82px;
+  gap: 20px;
 }
 
-body.dark-keynote-test .brand {
+.brand {
   color: #fff;
+  gap: 14px;
 }
 
-body.dark-keynote-test .brand-logo {
-  width: 92px;
-  height: 62px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.26));
+.brand-logo {
+  width: 94px;
+  height: 64px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.08);
+  padding: 6px;
 }
 
-body.dark-keynote-test .brand-name {
+.brand-name {
   color: #ffffff;
   font-size: 20px;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
 }
 
-body.dark-keynote-test .brand-group {
-  color: rgba(230, 238, 250, 0.78);
-}
-
-body.dark-keynote-test .brand-subtitle {
-  color: #3f8cff;
-}
-
-body.dark-keynote-test .main-nav a {
-  color: rgba(244, 248, 255, 0.88);
-  font-weight: 750;
-}
-
-body.dark-keynote-test .main-nav a:hover {
-  color: #ffffff;
-}
-
-body.dark-keynote-test .nav-toggle-bar {
-  background: #ffffff;
-}
-
-body.dark-keynote-test .hero {
-  position: relative;
-  padding: 48px 0 34px;
-  overflow: hidden;
-}
-
-body.dark-keynote-test .hero-grid {
-  position: relative;
-  grid-template-columns: minmax(420px, 0.74fr) minmax(520px, 1.06fr);
-  gap: 36px;
-  align-items: center;
-  min-height: min(620px, calc(100vh - 110px));
-}
-
-body.dark-keynote-test .hero-grid > div:first-child {
-  position: relative;
-  z-index: 2;
-  padding: 22px 0 22px;
-}
-
-body.dark-keynote-test .kicker {
-  color: var(--gold);
-  font-weight: 950;
-  letter-spacing: 0.28em;
+.brand-group {
+  color: rgba(236, 244, 255, 0.78);
   font-size: 13px;
 }
 
-body.dark-keynote-test h1 {
-  max-width: 760px;
-  color: #ffffff;
-  font-size: clamp(42px, 5.2vw, 82px);
-  line-height: 0.98;
-  letter-spacing: -0.07em;
-  text-wrap: balance;
-  text-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
-}
-
-body.dark-keynote-test .lead {
-  max-width: 640px;
-  color: rgba(236, 243, 255, 0.82);
-  font-size: clamp(18px, 1.45vw, 22px);
-  line-height: 1.55;
-}
-
-body.dark-keynote-test .hero-cta-row,
-body.dark-keynote-test .seo-actions,
-body.dark-keynote-test .reviews-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 24px;
-}
-
-body.dark-keynote-test .btn,
-body.dark-keynote-test button.btn,
-body.dark-keynote-test a.btn {
-  min-height: 58px;
-  padding: 0 28px;
-  border-radius: 16px;
-  border: 1px solid rgba(81, 150, 255, 0.74);
-  background: linear-gradient(180deg, #2f86ff 0%, #1057ef 100%);
-  color: #ffffff;
+.brand-subtitle {
+  color: #2f7cff;
+  font-size: 15px;
   font-weight: 900;
-  box-shadow:
-    0 18px 34px rgba(20, 95, 255, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
-body.dark-keynote-test .btn:hover {
-  opacity: 1;
-  transform: translateY(-2px);
-  box-shadow:
-    0 22px 42px rgba(20, 95, 255, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+.main-nav {
+  margin-left: auto;
+  gap: 28px;
+  align-items: center;
 }
 
-body.dark-keynote-test .btn.ghost,
-body.dark-keynote-test a.btn.ghost,
-body.dark-keynote-test button.btn.ghost {
-  background: rgba(4, 20, 38, 0.58);
+.main-nav a {
+  color: rgba(255,255,255,.88);
+  font-weight: 750;
+  font-size: 15px;
+}
+
+.main-nav a:hover {
   color: #ffffff;
-  border-color: rgba(115, 165, 238, 0.48);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-body.dark-keynote-test .hero-image-wrap {
-  height: min(520px, 56vh);
-  border-radius: 34px;
-  clip-path: inset(0 round 34px);
-  border: 1px solid rgba(190, 216, 255, 0.18);
-  background: #071426;
-  box-shadow: var(--dark-shadow);
-  transform: translateZ(0);
+.header-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #2f7cff;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-body.dark-keynote-test .hero-image-wrap::before {
+.header-phone::before {
+  content: "☎";
+  font-size: 16px;
+}
+
+.nav-toggle-bar {
+  background: #fff;
+}
+
+/* HERO — static image background, no slideshow */
+.dark-keynote-hero {
+  position: relative;
+  min-height: 610px;
+  padding: 92px 0 70px !important;
+  overflow: hidden;
+  isolation: isolate;
+  background: #061326;
+}
+
+.dark-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image: url("images/hero5.webp");
+  background-size: cover;
+  background-position: center 44%;
+  filter: saturate(1.04) contrast(1.03);
+}
+
+.dark-keynote-hero::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: -1;
   background:
-    linear-gradient(90deg, rgba(3, 16, 31, 0.55) 0%, transparent 42%, rgba(3, 16, 31, 0.2) 100%),
-    linear-gradient(180deg, transparent 42%, rgba(3, 16, 31, 0.88) 100%);
-  pointer-events: none;
+    linear-gradient(90deg,
+      rgba(2, 10, 22, .96) 0%,
+      rgba(2, 10, 22, .84) 31%,
+      rgba(2, 10, 22, .38) 57%,
+      rgba(2, 10, 22, .42) 100%),
+    linear-gradient(180deg, rgba(2, 10, 22, .4) 0%, rgba(2, 10, 22, .18) 45%, #020b18 100%);
 }
 
-body.dark-keynote-test .hero-image-wrap::after {
-  background:
-    radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.1), transparent 34%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0) 45%, rgba(0, 12, 28, 0.6) 100%);
-  z-index: 1;
+.dark-hero-shell {
+  display: block;
 }
 
-body.dark-keynote-test .hero-image {
-  min-height: 100%;
+.dark-hero-mobile-media {
+  display: none;
 }
 
-body.dark-keynote-test .hero-floating-cta,
-body.dark-keynote-test .apple-play-btn {
-  z-index: 3;
-  background: rgba(7, 23, 44, 0.74);
-  border: 1px solid rgba(197, 218, 255, 0.34);
-  color: #ffffff;
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28);
+.dark-hero-copy {
+  width: min(560px, 46vw);
 }
 
-body.dark-keynote-test .hero-floating-cta {
-  bottom: 24px;
-  left: 24px;
-  min-height: 54px;
-  padding: 0 22px;
-  font-weight: 900;
+.kicker {
+  color: var(--gold) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+  margin-bottom: 20px !important;
 }
 
-body.dark-keynote-test .apple-play-btn {
-  border-radius: 999px;
-  padding: 15px 24px;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+.dark-hero-copy h1,
+h1 {
+  color: #fff;
+  font-size: clamp(42px, 4.2vw, 72px);
+  line-height: .98;
+  letter-spacing: -0.065em;
+  text-wrap: balance;
+  text-shadow: 0 12px 40px rgba(0,0,0,.36);
 }
 
-body.dark-keynote-test .section {
-  padding: 34px 0;
+.dark-hero-copy .lead,
+.lead {
+  color: rgba(238, 246, 255, .86);
+  font-size: 20px;
+  line-height: 1.55;
+  max-width: 54ch;
 }
 
-body.dark-keynote-test .booking-wrap {
-  margin-top: -8px;
-  padding-top: 18px;
+.hero-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 30px;
 }
 
-body.dark-keynote-test .booking-wrap > .container,
-body.dark-keynote-test .seo-panel,
-body.dark-keynote-test .card,
-body.dark-keynote-test .faq-item,
-body.dark-keynote-test .fleet-card,
-body.dark-keynote-test .reviews-modal-card,
-body.dark-keynote-test .vehicle-detail-card {
-  background:
-    linear-gradient(180deg, rgba(23, 50, 83, 0.78), rgba(8, 25, 45, 0.82));
-  border: 1px solid rgba(165, 195, 239, 0.22);
-  box-shadow:
-    0 28px 72px rgba(0, 0, 0, 0.26),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(26px);
-  -webkit-backdrop-filter: blur(26px);
-}
-
-body.dark-keynote-test .booking-wrap > .container {
-  border-radius: 28px;
-  padding: 24px;
-}
-
-body.dark-keynote-test .booking-steps {
-  gap: 10px;
-}
-
-body.dark-keynote-test .step {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(166, 196, 239, 0.24);
-  color: rgba(231, 239, 253, 0.72);
-  font-weight: 850;
-}
-
-body.dark-keynote-test .step.active {
-  background: rgba(36, 120, 255, 0.22);
-  border-color: rgba(70, 145, 255, 0.76);
-  color: #ffffff;
-}
-
-body.dark-keynote-test .card {
-  border-radius: 24px;
-  color: #ffffff;
-}
-
-body.dark-keynote-test .card h3,
-body.dark-keynote-test .section-head h2,
-body.dark-keynote-test .seo-panel h2,
-body.dark-keynote-test .seo-panel h3,
-body.dark-keynote-test .faq-item h3,
-body.dark-keynote-test .fleet-content h3 {
-  color: #ffffff;
-  letter-spacing: -0.04em;
-}
-
-body.dark-keynote-test .muted,
-body.dark-keynote-test .tiny,
-body.dark-keynote-test .seo-panel p,
-body.dark-keynote-test .faq-item p,
-body.dark-keynote-test .fleet-content p,
-body.dark-keynote-test .cal-title-help {
-  color: rgba(225, 235, 249, 0.72);
-}
-
-body.dark-keynote-test input,
-body.dark-keynote-test select,
-body.dark-keynote-test textarea,
-body.dark-keynote-test .apple-date-trigger {
+.btn,
+button.btn,
+a.btn {
   min-height: 58px;
-  background: rgba(6, 20, 38, 0.66);
-  border: 1px solid rgba(160, 190, 235, 0.3);
-  color: #ffffff;
-  border-radius: 16px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-body.dark-keynote-test input::placeholder,
-body.dark-keynote-test textarea::placeholder {
-  color: rgba(223, 232, 246, 0.52);
-}
-
-body.dark-keynote-test select option {
-  color: #0f172a;
-}
-
-body.dark-keynote-test .form-field label {
-  color: rgba(226, 237, 254, 0.86);
+  border-radius: 14px;
+  border: 1px solid rgba(47, 124, 255, .72);
+  background: linear-gradient(180deg, #2f7cff, #0c4fe8);
+  color: #fff;
+  padding: 0 26px;
   font-weight: 900;
+  letter-spacing: -0.01em;
+  box-shadow: 0 16px 34px rgba(31, 111, 235, .25);
 }
 
-body.dark-keynote-test .availability-form {
-  margin-top: 18px;
+.btn span {
+  margin-left: 10px;
+  font-size: 24px;
+  line-height: 1;
 }
 
-body.dark-keynote-test .form-grid {
+.btn.ghost {
+  background: rgba(6, 20, 38, .42);
+  color: #ffffff;
+  border-color: rgba(85, 146, 255, .55);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.google-mark {
+  margin-right: 10px;
+  font-weight: 950;
+  font-size: 21px;
+}
+
+/* Booking card: compact only, no visible month calendar */
+.dark-booking-wrap {
+  margin-top: -44px;
+  padding: 0 0 24px !important;
+  position: relative;
+  z-index: 3;
+}
+
+.dark-booking-wrap .container {
+  width: min(1320px, calc(100vw - 64px));
+}
+
+.booking-steps,
+.cal-wrap,
+#availability-calendar,
+#vehicle-preview,
+#mobile-preview,
+#calendar-vehicle-label,
+#preselected-warning:empty {
+  display: none !important;
+}
+
+.booking-flow {
+  margin: 0 !important;
+}
+
+.booking-step {
+  display: none;
+}
+
+.booking-step.active {
+  display: block;
+}
+
+#step-1 .card {
+  margin: 0;
+  padding: 28px 32px 0;
+  border: 1px solid rgba(148,163,184,.25);
+  border-bottom: 0;
+  border-radius: 26px 26px 0 0;
+  background:
+    linear-gradient(135deg, rgba(26, 54, 86, .82), rgba(8, 25, 48, .78));
+  box-shadow: 0 24px 80px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+#step-1 .card h3 {
+  margin: 0 0 4px;
+  color: #ffffff;
+  font-size: 28px;
+  letter-spacing: -0.045em;
+}
+
+#step-1 .card .muted {
+  color: rgba(229, 238, 250, .74);
+  margin: 0;
+}
+
+.availability-form {
+  padding: 0 32px 28px;
+  border: 1px solid rgba(148,163,184,.25);
+  border-top: 0;
+  border-radius: 0 0 26px 26px;
+  background:
+    linear-gradient(135deg, rgba(26, 54, 86, .82), rgba(8, 25, 48, .78));
+  box-shadow: 0 24px 80px rgba(0,0,0,.32);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.availability-form .form-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(230px, .75fr);
+  gap: 18px;
   align-items: end;
 }
 
-body.dark-keynote-test #pickup-time-group:not([style*="display: none"]) {
-  display: block !important;
+#pickup-time-group {
+  grid-column: span 1;
 }
 
-body.dark-keynote-test .form-field-actions .btn {
-  min-width: 260px;
+.form-field label {
+  color: rgba(231, 240, 255, .78);
+  font-weight: 800;
 }
 
-body.dark-keynote-test .cal-wrap {
-  background: rgba(4, 17, 32, 0.54);
-  border-color: rgba(157, 189, 235, 0.24);
-  border-radius: 22px;
+input,
+select,
+textarea,
+.apple-date-trigger {
+  color: #ffffff !important;
+  background: rgba(2, 14, 30, .42) !important;
+  border: 1px solid rgba(161, 184, 215, .30) !important;
+  border-radius: 14px !important;
 }
 
-body.dark-keynote-test .cal-nav {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(174, 205, 255, 0.22);
+input::placeholder,
+textarea::placeholder {
+  color: rgba(218, 230, 246, .55);
 }
 
-body.dark-keynote-test .cal-title,
-body.dark-keynote-test .cal-weekdays,
-body.dark-keynote-test .cal-day {
-  color: #ffffff;
+.apple-date-trigger {
+  min-height: 58px !important;
+  text-align: left;
+  padding: 10px 14px !important;
 }
 
-body.dark-keynote-test .cal-day {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(161, 191, 235, 0.18);
+.apple-date-trigger-text {
+  color: #fff;
 }
 
-body.dark-keynote-test .cal-day.available,
-body.dark-keynote-test .cal-day.selected {
-  background: rgba(36, 120, 255, 0.24);
-  border-color: rgba(73, 147, 255, 0.72);
+.form-field-actions .btn {
+  width: 100%;
+  min-height: 58px;
 }
 
-body.dark-keynote-test .fleet-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 18px;
-}
-
-body.dark-keynote-test .fleet-card {
+/* Trust strip */
+.dark-trust-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 22px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(148,163,184,.24);
   border-radius: 24px;
+  background: linear-gradient(135deg, rgba(26, 54, 86, .62), rgba(8, 25, 48, .58));
+  box-shadow: 0 20px 60px rgba(0,0,0,.22);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
 }
 
-body.dark-keynote-test .fleet-card img {
-  height: 190px;
-  filter: saturate(1.12) contrast(1.03);
+.dark-trust-strip article {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  column-gap: 14px;
+  padding: 26px 34px;
+  align-items: center;
+  border-right: 1px solid rgba(148,163,184,.22);
 }
 
-body.dark-keynote-test .fleet-content {
-  background: linear-gradient(180deg, rgba(6, 19, 35, 0.08), rgba(3, 14, 27, 0.26));
+.dark-trust-strip article:last-child {
+  border-right: 0;
 }
 
-body.dark-keynote-test .fleet-card-book {
-  border-radius: 14px;
-  margin-top: 16px;
+.dark-trust-icon {
+  grid-row: span 2;
+  color: #2f7cff;
+  font-size: 46px;
+  line-height: 1;
+  text-align: center;
 }
 
-body.dark-keynote-test .seo-content-section {
-  padding-top: 38px;
+.dark-trust-strip strong {
+  color: #ffffff;
+  font-size: 18px;
+  letter-spacing: -0.02em;
 }
 
-body.dark-keynote-test .seo-panel {
-  border-radius: 28px;
+.dark-trust-strip small {
+  color: rgba(222, 233, 248, .74);
+  font-size: 15px;
 }
 
-body.dark-keynote-test .seo-mini-card {
-  background: rgba(255, 255, 255, 0.055);
-  border-color: rgba(169, 199, 243, 0.18);
+/* Fleet */
+#fleet {
+  padding-top: 24px;
+}
+
+.section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.section-head h2,
+#fleet h2,
+.faq-section h2,
+.seo-panel h2 {
+  color: #ffffff;
+  letter-spacing: -0.045em;
+}
+
+.fleet-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.fleet-card {
+  background: linear-gradient(180deg, rgba(18, 42, 70, .86), rgba(6, 22, 42, .90));
+  border: 1px solid rgba(148,163,184,.24);
   border-radius: 22px;
+  box-shadow: 0 18px 54px rgba(0,0,0,.26);
 }
 
-body.dark-keynote-test .service-area-list span,
-body.dark-keynote-test .availability-meta-pill,
-body.dark-keynote-test .search-chip,
-body.dark-keynote-test .hire-form-info,
-body.dark-keynote-test .requirements-box,
-body.dark-keynote-test .checkout-breakdown,
-body.dark-keynote-test .quote,
-body.dark-keynote-test .booking-item {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(169, 199, 243, 0.2);
-  color: rgba(239, 246, 255, 0.88);
+.fleet-card img {
+  height: 210px;
+  filter: saturate(1.06) contrast(1.02);
 }
 
-body.dark-keynote-test .availability-item {
-  background: rgba(5, 18, 34, 0.62);
-  border-color: rgba(166, 196, 239, 0.22);
+.fleet-content h3 {
   color: #ffffff;
 }
 
-body.dark-keynote-test .availability-price,
-body.dark-keynote-test .price-main {
-  color: #ffffff;
+.muted,
+.tiny,
+.fleet-content p,
+.card p {
+  color: rgba(226, 236, 250, .75);
 }
 
-body.dark-keynote-test .summary-card,
-body.dark-keynote-test #checkout-summary,
-body.dark-keynote-test .checkout-summary {
-  background: rgba(5, 18, 34, 0.72) !important;
-  border-color: rgba(166, 196, 239, 0.22) !important;
-  color: #ffffff !important;
+.fleet-card .btn,
+.fleet-card-book {
+  width: 100%;
 }
 
-body.dark-keynote-test .faq-grid {
-  gap: 16px;
+/* Lower sections keep content but fit the dark design */
+.seo-content-section,
+.faq-section,
+.booking-wrap + .section {
+  color: #e8f1ff;
 }
 
-body.dark-keynote-test .site-footer {
+.seo-panel,
+.seo-mini-card,
+.faq-item,
+.card,
+.booking-item,
+.hire-form-info,
+.availability-item,
+#step-2 .card,
+#step-3 .card,
+#step-4 .card,
+.checkout-summary,
+.summary-card {
+  background: linear-gradient(180deg, rgba(16, 38, 65, .90), rgba(7, 22, 43, .94)) !important;
+  color: #f8fbff;
+  border: 1px solid rgba(148,163,184,.24) !important;
+  box-shadow: 0 18px 54px rgba(0,0,0,.20);
+}
+
+.seo-panel {
+  border-radius: 26px;
+}
+
+.service-area-list span {
+  background: rgba(47,124,255,.12);
+  border: 1px solid rgba(47,124,255,.26);
+  color: #d8e8ff;
+}
+
+.site-footer {
   margin-top: 38px;
-  border-top: 1px solid rgba(174, 205, 255, 0.14);
-  color: rgba(226, 237, 254, 0.72);
-  background: rgba(2, 12, 24, 0.24);
+  background: rgba(2, 12, 26, .62);
+  border-top: 1px solid rgba(148,163,184,.18);
+  color: rgba(226,236,250,.78);
 }
 
-body.dark-keynote-test .site-footer a {
-  color: #57a0ff;
+.site-footer h3,
+.site-footer h4 {
+  color: #fff;
 }
 
-body.dark-keynote-test .apple-date-picker-card {
-  background: rgba(7, 22, 40, 0.96);
-  border-color: rgba(174, 205, 255, 0.24);
-  color: #ffffff;
+.footer-menu a,
+.footer-contact a,
+.site-footer a {
+  color: #60a5fa !important;
 }
 
-body.dark-keynote-test .apple-date-picker-day {
-  color: #ffffff;
+/* Keep test badge visible */
+body > div[style*="TEST DESIGN"] {
+  color: #111827 !important;
 }
 
-body.dark-keynote-test .apple-date-picker-day.selected {
-  background: linear-gradient(180deg, #2f86ff 0%, #1057ef 100%);
-}
-
-body.dark-keynote-test .apple-date-picker-empty,
-body.dark-keynote-test .apple-date-picker-weekdays {
-  color: rgba(226, 237, 254, 0.64);
-}
-
-body.dark-keynote-test .reviews-modal,
-body.dark-keynote-test .vehicle-detail-modal {
-  color: #ffffff;
-}
-
-body.dark-keynote-test .reviews-close,
-body.dark-keynote-test .vehicle-detail-close {
-  color: #ffffff;
-  background: rgba(255,255,255,.08);
-  border-color: rgba(174, 205, 255, 0.24);
-}
-
-body.dark-keynote-test .reviews-card,
-body.dark-keynote-test .google-review-card {
-  background: rgba(255,255,255,.06);
-  border-color: rgba(174, 205, 255, 0.18);
-}
-
-body.dark-keynote-test .test-design-badge,
-body.dark-keynote-test > div[style*="TEST DESIGN"] {
-  box-shadow: 0 12px 30px rgba(0,0,0,.3) !important;
-}
-
-/* Keep the test badge visible but lower profile on very small phones */
-body.dark-keynote-test > div[style*="TEST DESIGN"] {
-  left: 14px !important;
-  bottom: 14px !important;
-}
-
-@media (max-width: 1180px) {
-  body.dark-keynote-test .container {
-    width: min(1120px, calc(100vw - 36px));
+/* Mobile: real full-width vertical screen, image at top, readable text */
+@media (max-width: 980px) {
+  .container,
+  .dark-booking-wrap .container {
+    width: min(100% - 28px, 760px);
   }
 
-  body.dark-keynote-test .main-nav {
-    gap: 14px;
+  .main-nav {
+    display: none;
   }
 
-  body.dark-keynote-test .fleet-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  body.dark-keynote-test .form-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  body.dark-keynote-test .form-field-actions {
-    grid-column: 1 / -1;
-  }
-
-  body.dark-keynote-test .form-field-actions .btn {
-    width: 100%;
-  }
-}
-
-@media (max-width: 900px) {
-  body.dark-keynote-test .main-nav {
-    background: rgba(4, 17, 32, 0.96);
-    border-color: rgba(174, 205, 255, 0.18);
-  }
-
-  body.dark-keynote-test .main-nav a {
-    color: #ffffff;
-  }
-
-  body.dark-keynote-test .hero-grid {
-    display: flex;
-    flex-direction: column;
-    min-height: auto;
-    gap: 22px;
-  }
-
-  body.dark-keynote-test .hero-image-wrap {
-    order: -1;
-    width: 100%;
-    height: clamp(210px, 44vw, 390px);
-  }
-
-  body.dark-keynote-test .hero-grid > div:first-child {
-    width: 100%;
-  }
-}
-
-@media (max-width: 760px) {
-  body.dark-keynote-test .container {
-    width: calc(100vw - 24px);
-  }
-
-  body.dark-keynote-test .site-header {
-    position: sticky;
-  }
-
-  body.dark-keynote-test .header-inner {
-    min-height: 74px;
-  }
-
-  body.dark-keynote-test .brand {
-    max-width: calc(100% - 46px);
-  }
-
-  body.dark-keynote-test .brand-logo {
-    width: 64px;
-    height: 48px;
-  }
-
-  body.dark-keynote-test .brand-name {
+  .header-phone {
+    margin-left: auto;
     font-size: 15px;
   }
 
-  body.dark-keynote-test .brand-group {
-    max-width: 210px;
-    font-size: 9.5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .nav-toggle {
+    display: flex;
   }
 
-  body.dark-keynote-test .brand-subtitle {
+  .site-header {
+    position: sticky;
+  }
+
+  .header-inner {
+    min-height: 74px;
+  }
+
+  .brand-logo {
+    width: 76px;
+    height: 54px;
+    border-radius: 14px;
+  }
+
+  .brand-name {
+    font-size: 14px;
+  }
+
+  .brand-group {
+    font-size: 10px;
+    max-width: 195px;
+    white-space: normal;
+  }
+
+  .brand-subtitle {
     font-size: 11px;
   }
 
-  body.dark-keynote-test .hero {
-    padding: 16px 0 18px;
+  .dark-keynote-hero {
+    min-height: auto;
+    padding: 0 0 32px !important;
+    background: #061326;
   }
 
-  body.dark-keynote-test .hero-image-wrap {
-    border-radius: 24px;
-    clip-path: inset(0 round 24px);
-    height: min(54vw, 260px);
-    min-height: 188px;
+  .dark-hero-bg {
+    display: none;
   }
 
-  body.dark-keynote-test h1 {
-    font-size: clamp(34px, 10.5vw, 46px);
-    line-height: 1.02;
-    letter-spacing: -0.065em;
+  .dark-keynote-hero::before {
+    background:
+      linear-gradient(180deg, rgba(2,10,22,.1) 0%, #020b18 44%, #020b18 100%);
   }
 
-  body.dark-keynote-test .lead {
-    font-size: 16.5px;
-    line-height: 1.45;
+  .dark-hero-mobile-media {
+    display: block;
+    width: calc(100% + 28px);
+    margin-left: -14px;
+    height: clamp(210px, 50vw, 360px);
+    overflow: hidden;
+    border-bottom: 1px solid rgba(148,163,184,.18);
   }
 
-  body.dark-keynote-test .hero-cta-row {
+  .dark-hero-mobile-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .dark-hero-copy {
+    width: 100%;
+    padding-top: 30px;
+  }
+
+  .dark-hero-copy h1,
+  h1 {
+    font-size: clamp(36px, 10.6vw, 54px);
+    line-height: 1.03;
+    letter-spacing: -0.06em;
+  }
+
+  .dark-hero-copy .lead,
+  .lead {
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .hero-cta-row {
     display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+    margin-top: 24px;
+  }
+
+  .hero-cta-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dark-booking-wrap {
+    margin-top: 0;
+    padding-top: 4px !important;
+  }
+
+  #step-1 .card {
+    padding: 22px 18px 0;
+    border-radius: 22px 22px 0 0;
+  }
+
+  #step-1 .card h3 {
+    font-size: 22px;
+  }
+
+  .availability-form {
+    padding: 0 18px 18px;
+    border-radius: 0 0 22px 22px;
+  }
+
+  .availability-form .form-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  body.dark-keynote-test .btn,
-  body.dark-keynote-test a.btn,
-  body.dark-keynote-test button.btn {
-    width: 100%;
-    min-height: 54px;
-    border-radius: 14px;
+  .form-field-actions .btn {
+    margin-top: 0;
   }
 
-  body.dark-keynote-test .hero-floating-cta,
-  body.dark-keynote-test .apple-play-btn {
-    display: none;
-  }
-
-  body.dark-keynote-test .booking-wrap > .container {
-    width: calc(100vw - 24px);
-    padding: 14px;
-    border-radius: 24px;
-  }
-
-  body.dark-keynote-test .booking-steps {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  body.dark-keynote-test .step {
-    padding: 8px 6px;
-    font-size: 11px;
-    text-align: center;
-  }
-
-  body.dark-keynote-test .form-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  body.dark-keynote-test .cal-wrap {
-    padding: 12px;
-    border-radius: 18px;
-  }
-
-  body.dark-keynote-test .cal-weekdays,
-  body.dark-keynote-test .cal-grid {
-    gap: 4px;
-  }
-
-  body.dark-keynote-test .cal-day {
-    min-height: 46px;
-    padding: 6px 2px;
-    font-size: 11px;
-    border-radius: 12px;
-  }
-
-  body.dark-keynote-test .fleet-grid {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(238px, 78vw);
-    grid-template-columns: none;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 8px;
-    margin-right: -12px;
-    padding-right: 12px;
-  }
-
-  body.dark-keynote-test .fleet-card {
-    scroll-snap-align: start;
-  }
-
-  body.dark-keynote-test .fleet-card img {
-    height: 172px;
-  }
-
-  body.dark-keynote-test .seo-panel {
-    padding: 18px;
-    border-radius: 24px;
-  }
-
-  body.dark-keynote-test .seo-grid,
-  body.dark-keynote-test .faq-grid {
-    grid-template-columns: 1fr;
-  }
-
-  body.dark-keynote-test .service-area-list span {
-    width: 100%;
-    justify-content: center;
-  }
-
-  body.dark-keynote-test > div[style*="TEST DESIGN"] {
-    left: 10px !important;
-    bottom: 10px !important;
-    font-size: 11px !important;
-    padding: 7px 10px !important;
-  }
-}
-
-@media (max-width: 390px) {
-  body.dark-keynote-test .container {
-    width: calc(100vw - 18px);
-  }
-
-  body.dark-keynote-test .brand-group {
-    max-width: 170px;
-  }
-
-  body.dark-keynote-test h1 {
-    font-size: clamp(31px, 10.8vw, 40px);
-  }
-
-  body.dark-keynote-test .lead {
-    font-size: 15.5px;
-  }
-
-  body.dark-keynote-test .hero-image-wrap {
-    min-height: 170px;
-  }
-
-  body.dark-keynote-test .step {
-    font-size: 10px;
-    padding: 7px 4px;
-  }
-}
-
-/* ======================================================
-   DARK KEYNOTE TEST — V2 CLOSER TO APPROVED MOCKUP
-   Full-width cinematic hero, compact top availability card,
-   mobile hero image at top, and feature strip before fleet.
-====================================================== */
-
-body.dark-keynote-test {
-  background:
-    radial-gradient(circle at 82% 6%, rgba(36, 120, 255, 0.18), transparent 34%),
-    linear-gradient(180deg, #03101f 0%, #051426 42%, #06172b 100%) !important;
-}
-
-body.dark-keynote-test .site-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: rgba(4, 15, 29, 0.84) !important;
-  border-bottom: 1px solid rgba(174, 205, 255, 0.12) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
-}
-
-body.dark-keynote-test .header-inner {
-  min-height: 92px !important;
-  gap: 24px;
-}
-
-body.dark-keynote-test .brand {
-  gap: 16px;
-  flex: 0 0 auto;
-}
-
-body.dark-keynote-test .brand-logo {
-  width: 112px !important;
-  height: 72px !important;
-  object-fit: contain;
-}
-
-body.dark-keynote-test .main-nav {
-  flex: 1 1 auto;
-  justify-content: center;
-  gap: clamp(18px, 2vw, 34px) !important;
-}
-
-body.dark-keynote-test .main-nav a {
-  color: rgba(255, 255, 255, 0.92) !important;
-  font-size: 16px;
-  font-weight: 760 !important;
-}
-
-body.dark-keynote-test .header-phone {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #3c89ff;
-  text-decoration: none;
-  font-weight: 900;
-  white-space: nowrap;
-  letter-spacing: -0.015em;
-}
-
-body.dark-keynote-test .nav-toggle {
-  flex: 0 0 auto;
-}
-
-body.dark-keynote-test .hero {
-  position: relative;
-  min-height: 565px;
-  padding: 0 !important;
-  overflow: hidden;
-  background: #061527;
-  border-bottom: 1px solid rgba(174, 205, 255, 0.12);
-}
-
-body.dark-keynote-test .hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(3, 16, 31, 0.98) 0%, rgba(3, 16, 31, 0.9) 34%, rgba(3, 16, 31, 0.34) 58%, rgba(3, 16, 31, 0.72) 100%),
-    radial-gradient(circle at 78% 15%, rgba(255,255,255,.08), transparent 24%);
-  pointer-events: none;
-  z-index: 2;
-}
-
-body.dark-keynote-test .hero-grid {
-  position: relative;
-  min-height: 565px !important;
-  display: block !important;
-  width: min(1480px, calc(100vw - 80px));
-  margin: 0 auto;
-}
-
-body.dark-keynote-test .hero-grid > div:first-child {
-  position: relative;
-  z-index: 4;
-  width: min(560px, 48vw);
-  padding: 92px 0 82px !important;
-}
-
-body.dark-keynote-test .hero-image-wrap {
-  position: absolute !important;
-  z-index: 1;
-  inset: 0 0 0 auto;
-  width: min(860px, 68vw);
-  height: 100% !important;
-  min-height: 565px;
-  border: none !important;
-  border-radius: 0 !important;
-  clip-path: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-body.dark-keynote-test .hero-image-wrap::before {
-  background:
-    linear-gradient(90deg, rgba(3,16,31,.84) 0%, rgba(3,16,31,.28) 34%, rgba(3,16,31,.14) 68%, rgba(3,16,31,.42) 100%),
-    linear-gradient(180deg, rgba(3,16,31,.08) 0%, rgba(3,16,31,.24) 66%, rgba(3,16,31,.82) 100%) !important;
-}
-
-body.dark-keynote-test .hero-image-wrap::after {
-  background: linear-gradient(180deg, transparent 45%, rgba(3,16,31,.72) 100%) !important;
-}
-
-body.dark-keynote-test .hero-image {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center center;
-  filter: saturate(1.08) contrast(1.03);
-}
-
-body.dark-keynote-test h1 {
-  font-size: clamp(48px, 4.7vw, 76px) !important;
-  line-height: 1.02 !important;
-  letter-spacing: -0.065em !important;
-  max-width: 620px !important;
-}
-
-body.dark-keynote-test .lead {
-  max-width: 560px !important;
-  font-size: clamp(17px, 1.22vw, 21px) !important;
-  line-height: 1.55 !important;
-}
-
-body.dark-keynote-test .hero-cta-row {
-  margin-top: 30px !important;
-  gap: 18px !important;
-}
-
-body.dark-keynote-test .hero-cta-row .btn {
-  min-width: 160px;
-}
-
-body.dark-keynote-test .hero-floating-cta,
-body.dark-keynote-test .apple-play-btn,
-body.dark-keynote-test .hero-overlay {
-  display: none !important;
-}
-
-/* Compact availability card: hide old visible calendar on homepage */
-body.dark-keynote-test #step-1 .cal-wrap,
-body.dark-keynote-test #vehicle-preview,
-body.dark-keynote-test #mobile-preview,
-body.dark-keynote-test #preselected-warning {
-  display: none !important;
-}
-
-body.dark-keynote-test .booking-wrap {
-  margin-top: -54px !important;
-  position: relative;
-  z-index: 6;
-  padding: 0 0 26px !important;
-}
-
-body.dark-keynote-test .booking-wrap > .container {
-  width: min(1320px, calc(100vw - 80px)) !important;
-  border-radius: 26px !important;
-  padding: 0 !important;
-  background: linear-gradient(180deg, rgba(23, 50, 83, .76), rgba(8, 25, 45, .84)) !important;
-  border: 1px solid rgba(165, 195, 239, .25) !important;
-  box-shadow: 0 28px 78px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08) !important;
-  overflow: hidden;
-}
-
-body.dark-keynote-test .booking-steps {
-  display: none !important;
-}
-
-body.dark-keynote-test #step-1 {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
-}
-
-body.dark-keynote-test #step-1 > .card {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  padding: 28px 30px 8px !important;
-}
-
-body.dark-keynote-test #step-1 > .card h3 {
-  margin: 0 0 4px;
-  font-size: 30px;
-  letter-spacing: -0.05em;
-}
-
-body.dark-keynote-test #step-1 > .card .muted {
-  margin: 0;
-  color: rgba(224,236,255,.74) !important;
-  font-size: 17px;
-}
-
-body.dark-keynote-test #availability-form {
-  padding: 0 30px 30px !important;
-}
-
-body.dark-keynote-test #availability-form .form-grid {
-  display: grid !important;
-  grid-template-columns: minmax(230px, 1fr) minmax(230px, 1fr) minmax(260px, .82fr);
-  gap: 22px !important;
-  align-items: end;
-}
-
-body.dark-keynote-test #availability-form .form-field-actions {
-  grid-column: auto !important;
-}
-
-body.dark-keynote-test #availability-form label {
-  color: rgba(224,236,255,.72) !important;
-  font-weight: 850 !important;
-  font-size: 14px !important;
-}
-
-body.dark-keynote-test #availability-form input,
-body.dark-keynote-test #availability-form select,
-body.dark-keynote-test .apple-date-trigger {
-  min-height: 62px !important;
-  border-radius: 14px !important;
-  background: rgba(5, 21, 39, .58) !important;
-  border: 1px solid rgba(166,196,239,.28) !important;
-  color: #ffffff !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.08) !important;
-}
-
-body.dark-keynote-test #availability-form .btn {
-  width: 100%;
-  min-height: 62px !important;
-}
-
-body.dark-keynote-test .keynote-benefits {
-  width: min(1320px, calc(100vw - 80px));
-  margin: 0 auto 22px;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  background: linear-gradient(180deg, rgba(23, 50, 83, .72), rgba(8, 25, 45, .82));
-  border: 1px solid rgba(165, 195, 239, .22);
-  border-radius: 24px;
-  box-shadow: 0 22px 64px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.07);
-  overflow: hidden;
-}
-
-body.dark-keynote-test .keynote-benefit {
-  min-height: 112px;
-  padding: 24px 36px;
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  color: #ffffff;
-}
-
-body.dark-keynote-test .keynote-benefit + .keynote-benefit {
-  border-left: 1px solid rgba(165, 195, 239, .18);
-}
-
-body.dark-keynote-test .keynote-benefit-icon {
-  width: 50px;
-  height: 50px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #2478ff;
-  font-size: 42px;
-  line-height: 1;
-  flex: 0 0 auto;
-}
-
-body.dark-keynote-test .keynote-benefit h3 {
-  margin: 0 0 3px;
-  font-size: 18px;
-  letter-spacing: -0.035em;
-}
-
-body.dark-keynote-test .keynote-benefit p {
-  margin: 0;
-  color: rgba(226,238,255,.72);
-  font-size: 15px;
-  line-height: 1.35;
-}
-
-body.dark-keynote-test #fleet {
-  width: min(1320px, calc(100vw - 80px)) !important;
-  padding-top: 6px !important;
-}
-
-body.dark-keynote-test #fleet .section-head {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 14px;
-}
-
-body.dark-keynote-test #fleet .section-head::after {
-  content: "View all lorries  ›";
-  color: #3f8cff;
-  font-weight: 900;
-  font-size: 16px;
-  white-space: nowrap;
-}
-
-body.dark-keynote-test .fleet-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 24px !important;
-}
-
-body.dark-keynote-test .fleet-card {
-  border-radius: 18px !important;
-  overflow: hidden;
-}
-
-body.dark-keynote-test .fleet-card img {
-  height: 210px !important;
-  object-fit: cover !important;
-}
-
-/* Desktop: keep lower SEO/FAQ dark but less dominant */
-body.dark-keynote-test .seo-content-section,
-body.dark-keynote-test .faq-section {
-  width: min(1320px, calc(100vw - 80px)) !important;
-}
-
-@media (max-width: 1180px) {
-  body.dark-keynote-test .header-phone {
-    display: none;
-  }
-
-  body.dark-keynote-test .main-nav {
-    justify-content: flex-end;
-    gap: 14px !important;
-  }
-
-  body.dark-keynote-test h1 {
-    font-size: clamp(44px, 5.3vw, 66px) !important;
-  }
-}
-
-@media (max-width: 900px) {
-  body.dark-keynote-test .hero {
-    min-height: auto;
-  }
-
-  body.dark-keynote-test .hero::before {
-    background:
-      linear-gradient(180deg, rgba(3,16,31,.18) 0%, rgba(3,16,31,.55) 31%, rgba(3,16,31,.98) 56%, rgba(3,16,31,1) 100%);
-  }
-
-  body.dark-keynote-test .hero-grid {
-    min-height: auto !important;
-    width: calc(100vw - 24px) !important;
-    display: flex !important;
-    flex-direction: column;
-    gap: 0 !important;
-  }
-
-  body.dark-keynote-test .hero-image-wrap {
-    position: relative !important;
-    order: 0 !important;
-    width: 100% !important;
-    min-height: 0 !important;
-    height: clamp(178px, 48vw, 275px) !important;
-    margin: 14px auto 0;
-    border-radius: 18px !important;
-    clip-path: inset(0 round 18px) !important;
-    border: 1px solid rgba(165,195,239,.18) !important;
-    overflow: hidden;
-  }
-
-  body.dark-keynote-test .hero-grid > div:first-child {
-    order: 1;
-    width: 100% !important;
-    padding: 36px 0 30px !important;
-  }
-
-  body.dark-keynote-test .hero-image {
-    object-position: center center !important;
-  }
-
-  body.dark-keynote-test .main-nav {
-    justify-content: flex-start;
-  }
-
-  body.dark-keynote-test .booking-wrap {
-    margin-top: 0 !important;
-  }
-
-  body.dark-keynote-test .booking-wrap > .container,
-  body.dark-keynote-test .keynote-benefits,
-  body.dark-keynote-test #fleet,
-  body.dark-keynote-test .seo-content-section,
-  body.dark-keynote-test .faq-section {
-    width: calc(100vw - 24px) !important;
-  }
-
-  body.dark-keynote-test #availability-form .form-grid {
-    grid-template-columns: 1fr !important;
-    gap: 14px !important;
-  }
-
-  body.dark-keynote-test .keynote-benefits {
+  .dark-trust-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-radius: 20px;
+    margin-top: 18px;
+    overflow-x: auto;
   }
 
-  body.dark-keynote-test .keynote-benefit {
-    padding: 18px 12px;
-    gap: 8px;
-    justify-content: center;
+  .dark-trust-strip article {
+    min-width: 116px;
+    grid-template-columns: 1fr;
+    padding: 16px 12px;
     text-align: center;
-    flex-direction: column;
+    row-gap: 6px;
   }
 
-  body.dark-keynote-test .keynote-benefit-icon {
-    width: 38px;
-    height: 38px;
+  .dark-trust-icon {
+    grid-row: auto;
     font-size: 32px;
   }
 
-  body.dark-keynote-test .keynote-benefit h3 {
+  .dark-trust-strip strong {
     font-size: 13px;
-    line-height: 1.15;
+    line-height: 1.2;
   }
 
-  body.dark-keynote-test .keynote-benefit p {
+  .dark-trust-strip small {
     display: none;
   }
 
-  body.dark-keynote-test .fleet-grid {
-    display: grid !important;
-    grid-template-columns: none !important;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(238px, 78vw);
-    overflow-x: auto;
-    gap: 14px !important;
-  }
-}
-
-@media (max-width: 760px) {
-  body.dark-keynote-test .site-header {
-    background: rgba(4,15,29,.9) !important;
-  }
-
-  body.dark-keynote-test .header-inner {
-    min-height: 76px !important;
-    width: calc(100vw - 24px) !important;
-  }
-
-  body.dark-keynote-test .brand-logo {
-    width: 74px !important;
-    height: 52px !important;
-  }
-
-  body.dark-keynote-test .brand-text {
-    display: none !important;
-  }
-
-  body.dark-keynote-test .header-phone {
-    display: inline-flex !important;
-    margin-left: auto;
-    font-size: 14px;
-  }
-
-  body.dark-keynote-test .nav-toggle {
+  .fleet-grid {
     display: flex !important;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 2px 0 12px;
+    scroll-snap-type: x mandatory;
   }
 
-  body.dark-keynote-test .hero {
-    padding: 0 !important;
+  .fleet-card {
+    flex: 0 0 78%;
+    scroll-snap-align: start;
   }
 
-  body.dark-keynote-test .hero-image-wrap {
-    height: clamp(178px, 53vw, 245px) !important;
-    margin-top: 12px;
+  .fleet-card img {
+    height: 150px;
   }
 
-  body.dark-keynote-test .kicker {
-    font-size: 12px;
-    letter-spacing: .24em;
-  }
-
-  body.dark-keynote-test h1 {
-    font-size: clamp(31px, 8.8vw, 43px) !important;
-    line-height: 1.08 !important;
-    letter-spacing: -0.055em !important;
-    max-width: 100% !important;
-  }
-
-  body.dark-keynote-test .lead {
-    font-size: 15.5px !important;
-    line-height: 1.45 !important;
-  }
-
-  body.dark-keynote-test .hero-cta-row {
-    display: grid !important;
+  .seo-grid,
+  .booking-grid,
+  .form-grid.two,
+  .footer-grid {
     grid-template-columns: 1fr !important;
-    gap: 9px !important;
-    margin-top: 18px !important;
   }
 
-  body.dark-keynote-test .hero-cta-row .btn {
-    width: 100%;
-    min-height: 49px !important;
+  .section {
+    padding: 24px 0;
   }
 
-  body.dark-keynote-test .booking-wrap > .container {
-    border-radius: 22px !important;
-  }
-
-  body.dark-keynote-test #step-1 > .card {
-    padding: 18px 16px 8px !important;
-  }
-
-  body.dark-keynote-test #step-1 > .card h3 {
-    font-size: 22px;
-  }
-
-  body.dark-keynote-test #availability-form {
-    padding: 0 16px 16px !important;
-  }
-
-  body.dark-keynote-test #availability-form input,
-  body.dark-keynote-test #availability-form select,
-  body.dark-keynote-test .apple-date-trigger,
-  body.dark-keynote-test #availability-form .btn {
-    min-height: 50px !important;
-  }
-
-  body.dark-keynote-test .keynote-benefits {
-    margin-top: 14px;
-    border-radius: 18px;
-  }
-
-  body.dark-keynote-test .keynote-benefit {
-    min-height: 78px;
-    padding: 12px 8px;
-  }
-
-  body.dark-keynote-test #fleet .section-head h2 {
-    font-size: 24px;
-  }
-
-  body.dark-keynote-test #fleet .section-head::after {
-    content: "View all  ›";
-    font-size: 14px;
-  }
-
-  body.dark-keynote-test .fleet-card img {
-    height: 160px !important;
+  .seo-panel {
+    padding: 22px !important;
   }
 }
 
-@media (max-width: 390px) {
-  body.dark-keynote-test .header-phone {
-    font-size: 13px;
+@media (max-width: 420px) {
+  .container,
+  .dark-booking-wrap .container {
+    width: calc(100% - 20px);
   }
 
-  body.dark-keynote-test .brand-logo {
-    width: 66px !important;
+  .header-inner {
+    gap: 8px;
   }
 
-  body.dark-keynote-test .hero-image-wrap {
-    height: 170px !important;
+  .brand {
+    gap: 7px;
   }
 
-  body.dark-keynote-test h1 {
-    font-size: 30px !important;
+  .brand-logo {
+    width: 58px;
+    height: 43px;
+    padding: 3px;
   }
 
-  body.dark-keynote-test .lead {
-    font-size: 14.7px !important;
+  .brand-text {
+    max-width: 185px;
   }
 
-  body.dark-keynote-test .keynote-benefit h3 {
-    font-size: 12px;
+  .header-phone {
+    font-size: 0;
+  }
+
+  .header-phone::before {
+    font-size: 20px;
+  }
+
+  .dark-hero-mobile-media {
+    width: calc(100% + 20px);
+    margin-left: -10px;
+    height: 218px;
+  }
+
+  .dark-hero-copy {
+    padding-top: 24px;
+  }
+
+  .dark-hero-copy h1 {
+    font-size: clamp(33px, 11vw, 45px);
+  }
+
+  .kicker {
+    font-size: 11px !important;
+  }
+
+  .btn,
+  button.btn,
+  a.btn {
+    min-height: 52px;
+    border-radius: 12px;
+  }
+}
+
+/* Desktop browser mockup width behaviour: no max-width narrow hero */
+@media (min-width: 981px) {
+  .dark-keynote-hero .container {
+    width: min(1320px, calc(100vw - 96px));
   }
 }

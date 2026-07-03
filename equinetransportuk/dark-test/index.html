@@ -9,7 +9,7 @@
       content="Book self-drive 3.5T and 7.5T horsebox hire from East Sussex or request professional driven horse transport across the whole of the UK."
     />
 
-    <link rel="stylesheet" href="styles.css?v=dark-keynote-2" />
+    <link rel="stylesheet" href="styles.css?v=dark-test-v3" />
     <link rel="icon" href="images/favicon.png" />
   
     <link rel="canonical" href="https://www.equinetransportuk.com/" />
@@ -151,7 +151,7 @@
     }
     </script>
   </head>
-  <body class="dark-keynote-test">
+  <body>
 
 <div style="position:fixed;left:10px;bottom:10px;z-index:999999;background:#facc15;color:#111827;padding:8px 12px;border-radius:999px;font-weight:900;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);">
   TEST DESIGN
@@ -184,9 +184,7 @@
           <a href="contact.html">Contact</a>
         </nav>
 
-        <a class="header-phone" href="tel:07812188871" aria-label="Call Equine Transport UK">
-          <span aria-hidden="true">☎</span> 07812 188871
-        </a>
+        <a class="header-phone" href="tel:+447812188871" aria-label="Call Equine Transport UK">07812 188871</a>
 
         <button
           class="nav-toggle"
@@ -203,11 +201,20 @@
     </header>
 
     <main id="top">
-      <section class="hero">
-        <div class="container hero-grid">
-          <div>
+      
+      <section class="hero dark-keynote-hero" aria-labelledby="home-hero-title">
+        <div class="dark-hero-bg" aria-hidden="true"></div>
+
+        <div class="container dark-hero-shell">
+          <div class="dark-hero-mobile-media" aria-hidden="true">
+            <img src="images/hero5.webp" alt="" />
+          </div>
+
+          <div class="dark-hero-copy">
             <p class="kicker">Horsebox Rental</p>
-            <h1>Self-drive horsebox hire in East Sussex and driven horse transport across the UK.</h1>
+            <h1 id="home-hero-title">
+              Self-drive horsebox hire in East Sussex and across the UK.
+            </h1>
 
             <p class="lead">
               Book self-drive 3.5T and 7.5T horseboxes online from our East
@@ -216,89 +223,15 @@
             </p>
 
             <div class="hero-cta-row">
-              <a class="btn" href="#booking" id="start-booking-btn"
-                >Start booking</a
-              >
-              <a class="btn ghost" href="#fleet">View fleet</a>
-
-              <a class="btn ghost reviews-open" href="#">
-                <span style="margin-right: 8px">G</span>
-                Reviews
-              </a>
-            </div>
-          </div>
-
-          <!-- HERO IMAGE WITH PLAY OVERLAY -->
-
-          <div class="fleet-image-wrap hero-image-wrap">
-            <img
-              class="hero-image"
-              id="hero-slideshow"
-              src="images/hero5.webp"
-              alt="Horsebox on route"
-            />
-            <a href="#booking" class="hero-floating-cta">
-              Check availability
-              <span>→</span>
-            </a>
-
-            <div class="fleet-overlay hero-overlay">
-              <div class="apple-play-btn" id="heroPlayBtn">
-                <span>View gallery</span>
-
-                <svg viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"></path>
-                </svg>
-              </div>
+              <a class="btn" href="#booking" id="start-booking-btn">Start booking <span>›</span></a>
+              <a class="btn ghost" href="#fleet">View fleet <span>›</span></a>
+              <a class="btn ghost reviews-open" href="#"><span class="google-mark">G</span> Reviews</a>
             </div>
           </div>
         </div>
       </section>
 
-      <script>
-        document.addEventListener("DOMContentLoaded", function () {
-          const images = [
-            "images/hero1.webp",
-            "images/hero2.webp",
-            "images/hero3.webp",
-            "images/hero4.webp",
-            "images/hero5.webp",
-          ];
-
-          let idx = 0;
-          let interval = null;
-
-          const el = document.getElementById("hero-slideshow");
-          const playBtn = document.getElementById("heroPlayBtn");
-          const overlay = document.querySelector(".hero-overlay");
-
-          if (!el || !playBtn || !overlay) return;
-
-          function showNext() {
-            el.classList.add("fade-out");
-
-            setTimeout(() => {
-              idx = (idx + 1) % images.length;
-              el.src = images[idx];
-
-              el.classList.remove("fade-out");
-            }, 350);
-          }
-
-          playBtn.addEventListener("click", () => {
-            if (interval) return;
-
-            overlay.classList.add("playing");
-
-            interval = setInterval(showNext, 3200);
-          });
-        });
-      </script>
-
-
-      
-
-<section id="booking" class="section booking-wrap">
+<section id="booking" class="section booking-wrap dark-booking-wrap">
         <div class="container">
           <!-- Step indicator -->
           <div class="booking-steps">
@@ -407,8 +340,9 @@
                   <div class="form-field">
                     <label for="duration-days">Duration</label>
                     <select id="duration-days" required>
+                      <option value="" selected>Select duration</option>
                       <option value="0.5">1/2 day</option>
-                      <option value="1" selected>1 day</option>
+                      <option value="1">1 day</option>
                       <option value="2">2 days</option>
                       <option value="3">3 days</option>
                       <option value="4">4 days</option>
@@ -746,29 +680,21 @@
       </section>
 
       
-
-
-      <section class="keynote-benefits container" aria-label="Why choose Equine Transport UK">
-        <article class="keynote-benefit">
-          <span class="keynote-benefit-icon" aria-hidden="true">♢</span>
-          <div>
-            <h3>Modern, safe & reliable</h3>
-            <p>Regularly maintained for peace of mind</p>
-          </div>
+      <section class="dark-trust-strip container" aria-label="Why choose Equine Transport UK">
+        <article>
+          <span class="dark-trust-icon">◇</span>
+          <strong>Modern, safe & reliable</strong>
+          <small>Regularly maintained for peace of mind</small>
         </article>
-        <article class="keynote-benefit">
-          <span class="keynote-benefit-icon" aria-hidden="true">⌖</span>
-          <div>
-            <h3>East Sussex based</h3>
-            <p>Easy access from the A23 & M23</p>
-          </div>
+        <article>
+          <span class="dark-trust-icon">⌖</span>
+          <strong>East Sussex based</strong>
+          <small>Easy access from the A23 & M23</small>
         </article>
-        <article class="keynote-benefit">
-          <span class="keynote-benefit-icon" aria-hidden="true">☆</span>
-          <div>
-            <h3>Trusted by horse owners</h3>
-            <p>Professional service, every time</p>
-          </div>
+        <article>
+          <span class="dark-trust-icon">☆</span>
+          <strong>Trusted by horse owners</strong>
+          <small>Professional service, every time</small>
         </article>
       </section>
 
@@ -783,9 +709,7 @@
 removed duplicate, script is loaded at end of body -->
       </section>
 
-      
-
-<section class="section seo-content-section container" aria-labelledby="seo-horse-transport-east-sussex">
+      <section class="section seo-content-section container" aria-labelledby="seo-horse-transport-east-sussex">
         <div class="seo-panel">
           <p class="kicker">Horse transport East Sussex</p>
           <h2 id="seo-horse-transport-east-sussex">
@@ -848,9 +772,7 @@ removed duplicate, script is loaded at end of body -->
         </div>
       </section>
 
-      
-
-<section class="section faq-section container" aria-labelledby="home-faq-heading">
+      <section class="section faq-section container" aria-labelledby="home-faq-heading">
         <div class="section-head">
           <p class="kicker">Helpful answers</p>
           <h2 id="home-faq-heading">Horsebox hire and horse transport FAQs</h2>
@@ -1261,7 +1183,7 @@ removed duplicate, script is loaded at end of body -->
         });
       });
     </script>
-    <script src="app.js?v=dark-keynote-2"></script>
+    <script src="app.js?v=dark-test-v3"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
   </body>
 </html>
