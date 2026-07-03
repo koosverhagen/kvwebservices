@@ -952,7 +952,14 @@ function attachAppleDatePicker(input, options = {}) {
   trigger.setAttribute("aria-label", options.title || "Choose date");
   trigger.innerHTML = `
     <span class="apple-date-trigger-text">Choose date</span>
-    <span class="apple-date-trigger-icon" aria-hidden="true">⌄</span>
+    <span class="apple-date-trigger-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7 2V5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M17 2V5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M4 9H20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" stroke-width="1.9"/>
+      </svg>
+    </span>
   `;
 
   input.insertAdjacentElement("afterend", trigger);
