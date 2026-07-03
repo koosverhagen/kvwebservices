@@ -5142,3 +5142,772 @@ textarea {
 .mobile-preview {
   display: none !important;
 }
+
+
+
+/* ======================================================
+   DARK KEYNOTE TEST HOMEPAGE
+   Safe visual layer for /dark-test/ only.
+   Keeps existing IDs/classes for booking, calendar, reviews and checkout JS.
+====================================================== */
+
+body.dark-keynote-test {
+  --bg: #061527;
+  --card: rgba(12, 31, 54, 0.78);
+  --text: #f8fbff;
+  --muted: rgba(223, 232, 246, 0.76);
+  --line: rgba(150, 181, 224, 0.24);
+  --accent: #2478ff;
+  --accent-2: #1557ff;
+  --gold: #f9dd2f;
+  --glass: rgba(13, 34, 60, 0.68);
+  --glass-strong: rgba(11, 30, 53, 0.86);
+  --dark-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);
+  color: var(--text);
+  background:
+    radial-gradient(circle at 70% 0%, rgba(36, 120, 255, 0.25), transparent 38%),
+    radial-gradient(circle at 20% 18%, rgba(251, 221, 47, 0.08), transparent 24%),
+    linear-gradient(180deg, #03101f 0%, #061527 48%, #07192d 100%);
+}
+
+body.dark-keynote-test::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(90deg, rgba(3, 16, 31, 0.96) 0%, rgba(3, 16, 31, 0.72) 38%, rgba(3, 16, 31, 0.92) 100%),
+    url("images/hero5.webp") center top / cover no-repeat;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+body.dark-keynote-test::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(3, 16, 31, 0.1) 0%, rgba(3, 16, 31, 0.68) 46%, rgba(3, 16, 31, 0.96) 100%),
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.08), transparent 26%);
+}
+
+body.dark-keynote-test .container {
+  width: min(1380px, calc(100vw - 64px));
+}
+
+body.dark-keynote-test .site-header {
+  background: rgba(4, 17, 32, 0.78);
+  border-bottom: 1px solid rgba(174, 205, 255, 0.13);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+
+body.dark-keynote-test .header-inner {
+  min-height: 84px;
+}
+
+body.dark-keynote-test .brand {
+  color: #fff;
+}
+
+body.dark-keynote-test .brand-logo {
+  width: 92px;
+  height: 62px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.26));
+}
+
+body.dark-keynote-test .brand-name {
+  color: #ffffff;
+  font-size: 20px;
+  letter-spacing: -0.04em;
+}
+
+body.dark-keynote-test .brand-group {
+  color: rgba(230, 238, 250, 0.78);
+}
+
+body.dark-keynote-test .brand-subtitle {
+  color: #3f8cff;
+}
+
+body.dark-keynote-test .main-nav a {
+  color: rgba(244, 248, 255, 0.88);
+  font-weight: 750;
+}
+
+body.dark-keynote-test .main-nav a:hover {
+  color: #ffffff;
+}
+
+body.dark-keynote-test .nav-toggle-bar {
+  background: #ffffff;
+}
+
+body.dark-keynote-test .hero {
+  position: relative;
+  padding: 48px 0 34px;
+  overflow: hidden;
+}
+
+body.dark-keynote-test .hero-grid {
+  position: relative;
+  grid-template-columns: minmax(420px, 0.74fr) minmax(520px, 1.06fr);
+  gap: 36px;
+  align-items: center;
+  min-height: min(620px, calc(100vh - 110px));
+}
+
+body.dark-keynote-test .hero-grid > div:first-child {
+  position: relative;
+  z-index: 2;
+  padding: 22px 0 22px;
+}
+
+body.dark-keynote-test .kicker {
+  color: var(--gold);
+  font-weight: 950;
+  letter-spacing: 0.28em;
+  font-size: 13px;
+}
+
+body.dark-keynote-test h1 {
+  max-width: 760px;
+  color: #ffffff;
+  font-size: clamp(42px, 5.2vw, 82px);
+  line-height: 0.98;
+  letter-spacing: -0.07em;
+  text-wrap: balance;
+  text-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+}
+
+body.dark-keynote-test .lead {
+  max-width: 640px;
+  color: rgba(236, 243, 255, 0.82);
+  font-size: clamp(18px, 1.45vw, 22px);
+  line-height: 1.55;
+}
+
+body.dark-keynote-test .hero-cta-row,
+body.dark-keynote-test .seo-actions,
+body.dark-keynote-test .reviews-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+body.dark-keynote-test .btn,
+body.dark-keynote-test button.btn,
+body.dark-keynote-test a.btn {
+  min-height: 58px;
+  padding: 0 28px;
+  border-radius: 16px;
+  border: 1px solid rgba(81, 150, 255, 0.74);
+  background: linear-gradient(180deg, #2f86ff 0%, #1057ef 100%);
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow:
+    0 18px 34px rgba(20, 95, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+body.dark-keynote-test .btn:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow:
+    0 22px 42px rgba(20, 95, 255, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+body.dark-keynote-test .btn.ghost,
+body.dark-keynote-test a.btn.ghost,
+body.dark-keynote-test button.btn.ghost {
+  background: rgba(4, 20, 38, 0.58);
+  color: #ffffff;
+  border-color: rgba(115, 165, 238, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+body.dark-keynote-test .hero-image-wrap {
+  height: min(520px, 56vh);
+  border-radius: 34px;
+  clip-path: inset(0 round 34px);
+  border: 1px solid rgba(190, 216, 255, 0.18);
+  background: #071426;
+  box-shadow: var(--dark-shadow);
+  transform: translateZ(0);
+}
+
+body.dark-keynote-test .hero-image-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(3, 16, 31, 0.55) 0%, transparent 42%, rgba(3, 16, 31, 0.2) 100%),
+    linear-gradient(180deg, transparent 42%, rgba(3, 16, 31, 0.88) 100%);
+  pointer-events: none;
+}
+
+body.dark-keynote-test .hero-image-wrap::after {
+  background:
+    radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.1), transparent 34%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0) 45%, rgba(0, 12, 28, 0.6) 100%);
+  z-index: 1;
+}
+
+body.dark-keynote-test .hero-image {
+  min-height: 100%;
+}
+
+body.dark-keynote-test .hero-floating-cta,
+body.dark-keynote-test .apple-play-btn {
+  z-index: 3;
+  background: rgba(7, 23, 44, 0.74);
+  border: 1px solid rgba(197, 218, 255, 0.34);
+  color: #ffffff;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28);
+}
+
+body.dark-keynote-test .hero-floating-cta {
+  bottom: 24px;
+  left: 24px;
+  min-height: 54px;
+  padding: 0 22px;
+  font-weight: 900;
+}
+
+body.dark-keynote-test .apple-play-btn {
+  border-radius: 999px;
+  padding: 15px 24px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body.dark-keynote-test .section {
+  padding: 34px 0;
+}
+
+body.dark-keynote-test .booking-wrap {
+  margin-top: -8px;
+  padding-top: 18px;
+}
+
+body.dark-keynote-test .booking-wrap > .container,
+body.dark-keynote-test .seo-panel,
+body.dark-keynote-test .card,
+body.dark-keynote-test .faq-item,
+body.dark-keynote-test .fleet-card,
+body.dark-keynote-test .reviews-modal-card,
+body.dark-keynote-test .vehicle-detail-card {
+  background:
+    linear-gradient(180deg, rgba(23, 50, 83, 0.78), rgba(8, 25, 45, 0.82));
+  border: 1px solid rgba(165, 195, 239, 0.22);
+  box-shadow:
+    0 28px 72px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+}
+
+body.dark-keynote-test .booking-wrap > .container {
+  border-radius: 28px;
+  padding: 24px;
+}
+
+body.dark-keynote-test .booking-steps {
+  gap: 10px;
+}
+
+body.dark-keynote-test .step {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(166, 196, 239, 0.24);
+  color: rgba(231, 239, 253, 0.72);
+  font-weight: 850;
+}
+
+body.dark-keynote-test .step.active {
+  background: rgba(36, 120, 255, 0.22);
+  border-color: rgba(70, 145, 255, 0.76);
+  color: #ffffff;
+}
+
+body.dark-keynote-test .card {
+  border-radius: 24px;
+  color: #ffffff;
+}
+
+body.dark-keynote-test .card h3,
+body.dark-keynote-test .section-head h2,
+body.dark-keynote-test .seo-panel h2,
+body.dark-keynote-test .seo-panel h3,
+body.dark-keynote-test .faq-item h3,
+body.dark-keynote-test .fleet-content h3 {
+  color: #ffffff;
+  letter-spacing: -0.04em;
+}
+
+body.dark-keynote-test .muted,
+body.dark-keynote-test .tiny,
+body.dark-keynote-test .seo-panel p,
+body.dark-keynote-test .faq-item p,
+body.dark-keynote-test .fleet-content p,
+body.dark-keynote-test .cal-title-help {
+  color: rgba(225, 235, 249, 0.72);
+}
+
+body.dark-keynote-test input,
+body.dark-keynote-test select,
+body.dark-keynote-test textarea,
+body.dark-keynote-test .apple-date-trigger {
+  min-height: 58px;
+  background: rgba(6, 20, 38, 0.66);
+  border: 1px solid rgba(160, 190, 235, 0.3);
+  color: #ffffff;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.dark-keynote-test input::placeholder,
+body.dark-keynote-test textarea::placeholder {
+  color: rgba(223, 232, 246, 0.52);
+}
+
+body.dark-keynote-test select option {
+  color: #0f172a;
+}
+
+body.dark-keynote-test .form-field label {
+  color: rgba(226, 237, 254, 0.86);
+  font-weight: 900;
+}
+
+body.dark-keynote-test .availability-form {
+  margin-top: 18px;
+}
+
+body.dark-keynote-test .form-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+}
+
+body.dark-keynote-test #pickup-time-group:not([style*="display: none"]) {
+  display: block !important;
+}
+
+body.dark-keynote-test .form-field-actions .btn {
+  min-width: 260px;
+}
+
+body.dark-keynote-test .cal-wrap {
+  background: rgba(4, 17, 32, 0.54);
+  border-color: rgba(157, 189, 235, 0.24);
+  border-radius: 22px;
+}
+
+body.dark-keynote-test .cal-nav {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(174, 205, 255, 0.22);
+}
+
+body.dark-keynote-test .cal-title,
+body.dark-keynote-test .cal-weekdays,
+body.dark-keynote-test .cal-day {
+  color: #ffffff;
+}
+
+body.dark-keynote-test .cal-day {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(161, 191, 235, 0.18);
+}
+
+body.dark-keynote-test .cal-day.available,
+body.dark-keynote-test .cal-day.selected {
+  background: rgba(36, 120, 255, 0.24);
+  border-color: rgba(73, 147, 255, 0.72);
+}
+
+body.dark-keynote-test .fleet-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 18px;
+}
+
+body.dark-keynote-test .fleet-card {
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+body.dark-keynote-test .fleet-card img {
+  height: 190px;
+  filter: saturate(1.12) contrast(1.03);
+}
+
+body.dark-keynote-test .fleet-content {
+  background: linear-gradient(180deg, rgba(6, 19, 35, 0.08), rgba(3, 14, 27, 0.26));
+}
+
+body.dark-keynote-test .fleet-card-book {
+  border-radius: 14px;
+  margin-top: 16px;
+}
+
+body.dark-keynote-test .seo-content-section {
+  padding-top: 38px;
+}
+
+body.dark-keynote-test .seo-panel {
+  border-radius: 28px;
+}
+
+body.dark-keynote-test .seo-mini-card {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(169, 199, 243, 0.18);
+  border-radius: 22px;
+}
+
+body.dark-keynote-test .service-area-list span,
+body.dark-keynote-test .availability-meta-pill,
+body.dark-keynote-test .search-chip,
+body.dark-keynote-test .hire-form-info,
+body.dark-keynote-test .requirements-box,
+body.dark-keynote-test .checkout-breakdown,
+body.dark-keynote-test .quote,
+body.dark-keynote-test .booking-item {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(169, 199, 243, 0.2);
+  color: rgba(239, 246, 255, 0.88);
+}
+
+body.dark-keynote-test .availability-item {
+  background: rgba(5, 18, 34, 0.62);
+  border-color: rgba(166, 196, 239, 0.22);
+  color: #ffffff;
+}
+
+body.dark-keynote-test .availability-price,
+body.dark-keynote-test .price-main {
+  color: #ffffff;
+}
+
+body.dark-keynote-test .summary-card,
+body.dark-keynote-test #checkout-summary,
+body.dark-keynote-test .checkout-summary {
+  background: rgba(5, 18, 34, 0.72) !important;
+  border-color: rgba(166, 196, 239, 0.22) !important;
+  color: #ffffff !important;
+}
+
+body.dark-keynote-test .faq-grid {
+  gap: 16px;
+}
+
+body.dark-keynote-test .site-footer {
+  margin-top: 38px;
+  border-top: 1px solid rgba(174, 205, 255, 0.14);
+  color: rgba(226, 237, 254, 0.72);
+  background: rgba(2, 12, 24, 0.24);
+}
+
+body.dark-keynote-test .site-footer a {
+  color: #57a0ff;
+}
+
+body.dark-keynote-test .apple-date-picker-card {
+  background: rgba(7, 22, 40, 0.96);
+  border-color: rgba(174, 205, 255, 0.24);
+  color: #ffffff;
+}
+
+body.dark-keynote-test .apple-date-picker-day {
+  color: #ffffff;
+}
+
+body.dark-keynote-test .apple-date-picker-day.selected {
+  background: linear-gradient(180deg, #2f86ff 0%, #1057ef 100%);
+}
+
+body.dark-keynote-test .apple-date-picker-empty,
+body.dark-keynote-test .apple-date-picker-weekdays {
+  color: rgba(226, 237, 254, 0.64);
+}
+
+body.dark-keynote-test .reviews-modal,
+body.dark-keynote-test .vehicle-detail-modal {
+  color: #ffffff;
+}
+
+body.dark-keynote-test .reviews-close,
+body.dark-keynote-test .vehicle-detail-close {
+  color: #ffffff;
+  background: rgba(255,255,255,.08);
+  border-color: rgba(174, 205, 255, 0.24);
+}
+
+body.dark-keynote-test .reviews-card,
+body.dark-keynote-test .google-review-card {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(174, 205, 255, 0.18);
+}
+
+body.dark-keynote-test .test-design-badge,
+body.dark-keynote-test > div[style*="TEST DESIGN"] {
+  box-shadow: 0 12px 30px rgba(0,0,0,.3) !important;
+}
+
+/* Keep the test badge visible but lower profile on very small phones */
+body.dark-keynote-test > div[style*="TEST DESIGN"] {
+  left: 14px !important;
+  bottom: 14px !important;
+}
+
+@media (max-width: 1180px) {
+  body.dark-keynote-test .container {
+    width: min(1120px, calc(100vw - 36px));
+  }
+
+  body.dark-keynote-test .main-nav {
+    gap: 14px;
+  }
+
+  body.dark-keynote-test .fleet-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.dark-keynote-test .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  body.dark-keynote-test .form-field-actions {
+    grid-column: 1 / -1;
+  }
+
+  body.dark-keynote-test .form-field-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  body.dark-keynote-test .main-nav {
+    background: rgba(4, 17, 32, 0.96);
+    border-color: rgba(174, 205, 255, 0.18);
+  }
+
+  body.dark-keynote-test .main-nav a {
+    color: #ffffff;
+  }
+
+  body.dark-keynote-test .hero-grid {
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+    gap: 22px;
+  }
+
+  body.dark-keynote-test .hero-image-wrap {
+    order: -1;
+    width: 100%;
+    height: clamp(210px, 44vw, 390px);
+  }
+
+  body.dark-keynote-test .hero-grid > div:first-child {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  body.dark-keynote-test .container {
+    width: calc(100vw - 24px);
+  }
+
+  body.dark-keynote-test .site-header {
+    position: sticky;
+  }
+
+  body.dark-keynote-test .header-inner {
+    min-height: 74px;
+  }
+
+  body.dark-keynote-test .brand {
+    max-width: calc(100% - 46px);
+  }
+
+  body.dark-keynote-test .brand-logo {
+    width: 64px;
+    height: 48px;
+  }
+
+  body.dark-keynote-test .brand-name {
+    font-size: 15px;
+  }
+
+  body.dark-keynote-test .brand-group {
+    max-width: 210px;
+    font-size: 9.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  body.dark-keynote-test .brand-subtitle {
+    font-size: 11px;
+  }
+
+  body.dark-keynote-test .hero {
+    padding: 16px 0 18px;
+  }
+
+  body.dark-keynote-test .hero-image-wrap {
+    border-radius: 24px;
+    clip-path: inset(0 round 24px);
+    height: min(54vw, 260px);
+    min-height: 188px;
+  }
+
+  body.dark-keynote-test h1 {
+    font-size: clamp(34px, 10.5vw, 46px);
+    line-height: 1.02;
+    letter-spacing: -0.065em;
+  }
+
+  body.dark-keynote-test .lead {
+    font-size: 16.5px;
+    line-height: 1.45;
+  }
+
+  body.dark-keynote-test .hero-cta-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  body.dark-keynote-test .btn,
+  body.dark-keynote-test a.btn,
+  body.dark-keynote-test button.btn {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 14px;
+  }
+
+  body.dark-keynote-test .hero-floating-cta,
+  body.dark-keynote-test .apple-play-btn {
+    display: none;
+  }
+
+  body.dark-keynote-test .booking-wrap > .container {
+    width: calc(100vw - 24px);
+    padding: 14px;
+    border-radius: 24px;
+  }
+
+  body.dark-keynote-test .booking-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  body.dark-keynote-test .step {
+    padding: 8px 6px;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  body.dark-keynote-test .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  body.dark-keynote-test .cal-wrap {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  body.dark-keynote-test .cal-weekdays,
+  body.dark-keynote-test .cal-grid {
+    gap: 4px;
+  }
+
+  body.dark-keynote-test .cal-day {
+    min-height: 46px;
+    padding: 6px 2px;
+    font-size: 11px;
+    border-radius: 12px;
+  }
+
+  body.dark-keynote-test .fleet-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(238px, 78vw);
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+    margin-right: -12px;
+    padding-right: 12px;
+  }
+
+  body.dark-keynote-test .fleet-card {
+    scroll-snap-align: start;
+  }
+
+  body.dark-keynote-test .fleet-card img {
+    height: 172px;
+  }
+
+  body.dark-keynote-test .seo-panel {
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  body.dark-keynote-test .seo-grid,
+  body.dark-keynote-test .faq-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.dark-keynote-test .service-area-list span {
+    width: 100%;
+    justify-content: center;
+  }
+
+  body.dark-keynote-test > div[style*="TEST DESIGN"] {
+    left: 10px !important;
+    bottom: 10px !important;
+    font-size: 11px !important;
+    padding: 7px 10px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body.dark-keynote-test .container {
+    width: calc(100vw - 18px);
+  }
+
+  body.dark-keynote-test .brand-group {
+    max-width: 170px;
+  }
+
+  body.dark-keynote-test h1 {
+    font-size: clamp(31px, 10.8vw, 40px);
+  }
+
+  body.dark-keynote-test .lead {
+    font-size: 15.5px;
+  }
+
+  body.dark-keynote-test .hero-image-wrap {
+    min-height: 170px;
+  }
+
+  body.dark-keynote-test .step {
+    font-size: 10px;
+    padding: 7px 4px;
+  }
+}
