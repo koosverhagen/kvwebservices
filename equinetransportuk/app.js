@@ -1889,6 +1889,13 @@ function isHalfDayAvailable(dateStr, vehicleId, bookings, pickupTime) {
 async function updateDurationOptions(dateStr) {
   if (!durationDaysInput || !dateStr) return;
 
+  /* ===============================
+     FAST DATE → DURATION FLOW
+     Do not run full availability checks here.
+     After the customer chooses a duration, the lorry list performs the real
+     live availability check for that date + duration.
+  =============================== */
+
   const thisRunId = ++durationOptionsRunId;
 
   const vehicleId =
@@ -1898,17 +1905,6 @@ async function updateDurationOptions(dateStr) {
     ? vehicles.find((v) => v.id === vehicleId)
     : null;
 
-  const pickupTime = pickupTimeInput?.value || "";
-
-  /* ===============================
-     SMART SKIP
-  =============================== */
-
-  const cacheKey = `${dateStr}|${vehicleId || "any"}|${pickupTime}`;
-
-  if (cacheKey === window.__lastDurationCheck) return;
-  window.__lastDurationCheck = cacheKey;
-
   const options = Array.from(durationDaysInput.options);
 
   for (const opt of options) {
@@ -1917,98 +1913,25 @@ async function updateDurationOptions(dateStr) {
     const duration = Number(opt.value);
     if (!duration) continue;
 
-    let available = false;
-
-    /* ===============================
-       HALF DAY
-    =============================== */
+    let disabled = false;
 
     if (duration === 0.5) {
-      const hideHalfDay =
-        selectedVehicle &&
-        shouldHideHalfDayForDateAndVehicle(dateStr, selectedVehicle);
+      const hideHalfDay = selectedVehicle
+        ? shouldHideHalfDayForDateAndVehicle(dateStr, selectedVehicle)
+        : isWeekendDate(dateStr);
 
-      const weekendWithoutVehicle = !selectedVehicle && isWeekendDate(dateStr);
+      disabled = !!hideHalfDay;
 
-      if (hideHalfDay || weekendWithoutVehicle) {
-        available = false;
-      } else {
-        const { amData, pmData } = await getHalfDayAvailability(dateStr);
-
-        const filteredAM = (
-          vehicleId ? amData.filter((v) => v.vehicleId === vehicleId) : amData
-        ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
-
-        const filteredPM = (
-          vehicleId ? pmData.filter((v) => v.vehicleId === vehicleId) : pmData
-        ).filter((v) => is35T(vehicles.find((x) => x.id === v.vehicleId)));
-
-        const hasAM = filteredAM.some(
-          (v) => v.available || v.availableSlots?.includes("am"),
-        );
-
-        const hasPM = filteredPM.some(
-          (v) => v.available || v.availableSlots?.includes("pm"),
-        );
-
-        available = hasAM || hasPM;
-      }
-    } else {
-      /* ===============================
-         MULTI-DAY
-      =============================== */
-
-      const cached = getRangeAvailabilityFromCache(
-        dateStr,
-        duration,
-        vehicleId,
-      );
-
-      if (cached !== null) {
-        available = cached;
-      } else if (vehicleId) {
-        available = await isContinuousRangeAvailable(
-          dateStr,
-          duration,
-          vehicleId,
-          null,
-        );
-      } else {
-        let hasValidVehicle = false;
-
-        for (const v of vehicles) {
-          const ok = await isContinuousRangeAvailable(
-            dateStr,
-            duration,
-            v.id,
-            null,
-          );
-
-          if (ok) {
-            hasValidVehicle = true;
-            break;
-          }
-        }
-
-        available = hasValidVehicle;
-      }
-    }
-
-    opt.disabled = !available;
-    opt.style.color = available ? "" : "#999";
-
-    if (duration === 0.5) {
-      if (available) {
-        showHalfDayAsAvailable(opt);
-      } else {
+      if (disabled) {
         showHalfDayAsUnavailable(opt, dateStr, selectedVehicle);
+      } else {
+        showHalfDayAsAvailable(opt);
       }
     }
-  }
 
-  /* ===============================
-     VALIDATE SELECTED VALUE
-  =============================== */
+    opt.disabled = disabled;
+    opt.style.color = disabled ? "#999" : "";
+  }
 
   const selected = Number(durationDaysInput.value);
 
@@ -2020,14 +1943,6 @@ async function updateDurationOptions(dateStr) {
   }
 
   if (thisRunId !== durationOptionsRunId) return;
-
-  /* ===============================
-     HALF-DAY SYNC
-  =============================== */
-
-  if (Number(durationDaysInput?.value) === 0.5) {
-    await syncPickupTimeOptions(dateStr);
-  }
 }
 
 async function syncBookingPickupTimeOptions(dateStr, vehicleId) {
@@ -8280,6 +8195,37 @@ async function showVehiclePreview(date, event) {
     });
   }
 
+  function scrollToDurationAfterDateSelect(durationInput) {
+    if (BLOCK_AUTO_SCROLL || !durationInput) return;
+
+    const target =
+      document.getElementById("duration-group") ||
+      durationInput.closest(".form-field") ||
+      durationInput;
+
+    const offset = isMobile() ? 88 : 120;
+    const y = target.getBoundingClientRect().top + window.pageYOffset - offset;
+
+    window.scrollTo({
+      top: Math.max(0, y),
+      behavior: "smooth",
+    });
+
+    durationInput.classList.add("duration-highlight");
+    window.clearTimeout(durationInput.__durationHighlightTimer);
+    durationInput.__durationHighlightTimer = window.setTimeout(() => {
+      durationInput.classList.remove("duration-highlight");
+    }, 2200);
+
+    durationInput.addEventListener(
+      "change",
+      () => {
+        durationInput.classList.remove("duration-highlight");
+      },
+      { once: true },
+    );
+  }
+
   /* ======================================================
    Select date
 ====================================================== */
@@ -8388,6 +8334,10 @@ async function showVehiclePreview(date, event) {
     }
 
     updateCheckoutSummary();
+
+    // React immediately to the date click. Slow availability checks now run
+    // after the UI has already moved the customer to duration choice.
+    scrollToDurationAfterDateSelect(durationInput);
 
     /* ===============================
      PRESELECTED LORRY CHECK
@@ -8544,31 +8494,8 @@ async function showVehiclePreview(date, event) {
 
     /* ===============================
      SCROLL
+     Already handled immediately after date selection.
   =============================== */
-
-    setTimeout(() => {
-      if (BLOCK_AUTO_SCROLL) return;
-
-      if (!isMobile()) {
-        const y =
-          durationInput.getBoundingClientRect().top + window.pageYOffset - 120;
-
-        window.scrollTo({
-          top: y,
-          behavior: "smooth",
-        });
-      }
-
-      durationInput.classList.add("duration-highlight");
-
-      durationInput.addEventListener(
-        "change",
-        () => {
-          durationInput.classList.remove("duration-highlight");
-        },
-        { once: true },
-      );
-    }, 200);
   }
 
   /* 🔥 expose globally */
