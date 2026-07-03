@@ -8141,6 +8141,7 @@
         from: "",
         to: "",
       };
+      let bookingsDateRangeDirty = false;
       let IS_EDIT_INITIALISING = false;
 
       /* ===============================
@@ -17780,6 +17781,7 @@ Equine Transport UK`;
             from,
             to,
           };
+          bookingsDateRangeDirty = false;
 
           console.log("ALL BOOKINGS:", allBookings);
 
@@ -18451,17 +18453,17 @@ Send the fresh form link to ${booking.customerEmail} now?`,
 
       applyFiltersBtn?.addEventListener("click", async () => {
         // ✅ Fast search: use the bookings already loaded in memory.
-        // Only fetch again if the date range has actually changed or nothing
-        // has been loaded yet. This avoids the 5+ second wait on every search.
-        const from = rangeFromInput?.value || "";
-        const to = rangeToInput?.value || "";
-
-        const needsFreshLoad =
-          !allBookings.length ||
-          from !== lastLoadedBookingsRange.from ||
-          to !== lastLoadedBookingsRange.to;
+        // Do NOT reload from the Worker for normal name/email/lorry/form/deposit
+        // searches. Only reload when the date range was actually changed by the
+        // admin date inputs, or when no bookings have loaded yet.
+        const needsFreshLoad = !allBookings.length || bookingsDateRangeDirty;
 
         if (needsFreshLoad) {
+          setStatus(
+            `<span class="spinner"></span>Loading selected date range...`,
+            "loading",
+          );
+
           await loadBookings({ refreshCalendar: false });
 
           requestAnimationFrame(() => {
@@ -18472,7 +18474,7 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           return;
         }
 
-        setStatus("Search applied.", "loading");
+        setStatus("Search applied instantly.", "loading");
 
         renderBookings();
         updateClearButton();
@@ -18490,11 +18492,13 @@ Send the fresh form link to ${booking.customerEmail} now?`,
 =============================== */
 
       rangeFromInput?.addEventListener("change", () => {
+        bookingsDateRangeDirty = true;
         setStatus("Date range updated. Click Search to apply.", "loading");
         updateClearButton();
       });
 
       rangeToInput?.addEventListener("change", () => {
+        bookingsDateRangeDirty = true;
         setStatus("Date range updated. Click Search to apply.", "loading");
         updateClearButton();
       });
@@ -19326,6 +19330,7 @@ Send the fresh form link to ${booking.customerEmail} now?`,
         const month = CAL_DATE.getMonth() + 1;
         const monthStr = `${year}-${String(month).padStart(2, "0")}`;
         const useCachedFirst = options.useCachedFirst !== false;
+        const renderInBackground = options.background === true;
 
         const calendarTitleText =
           CAL_DATE.toLocaleString("en-GB", {
@@ -19415,7 +19420,23 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           try {
             sessionStorage.setItem(cacheKey, JSON.stringify(daysMap));
           } catch {}
-          renderCalendarDays(daysMap);
+
+          const renderFreshCalendar = () => {
+            if (loadToken !== ADMIN_CALENDAR_LOAD_TOKEN) return;
+            renderCalendarDays(daysMap);
+          };
+
+          // Keep the Find Bookings search responsive while the calendar is
+          // refreshing in the background on initial admin load.
+          if (renderInBackground) {
+            if ("requestIdleCallback" in window) {
+              window.requestIdleCallback(renderFreshCalendar, { timeout: 700 });
+            } else {
+              setTimeout(renderFreshCalendar, 80);
+            }
+          } else {
+            renderFreshCalendar();
+          }
         } catch (err) {
           console.error("❌ Calendar load failed:", err);
 
@@ -20971,15 +20992,15 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           updateClearButton();
           ensureAllLorriesCalendarOption();
 
-          // Load bookings and the availability calendar in parallel.
-          // Previously the calendar waited for the full bookings list first,
-          // which made the admin calendar feel very slow on page load.
-          const calendarPromise = loadAdminCalendar();
-          const bookingsPromise = loadBookings({ refreshCalendar: false });
-
-          await bookingsPromise;
+          // Load bookings first so Find Bookings is usable immediately.
+          // Start the availability calendar in the background so it no longer
+          // competes with booking search/rendering on first load.
+          await loadBookings({ refreshCalendar: false });
           window.__calendarReady = true;
-          await calendarPromise;
+
+          setTimeout(() => {
+            loadAdminCalendar({ useCachedFirst: true, background: true });
+          }, 80);
 
           try {
             const savedVoucherToken =
