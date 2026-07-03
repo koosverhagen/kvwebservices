@@ -3054,7 +3054,7 @@ It is only a security hold.
     =============================== */
 
           const list = await env.BOOKINGS_KV.list({
-            prefix: "block:",
+            prefix: `block:${month}`,
           });
 
           const result = {};
@@ -10913,9 +10913,11 @@ async function handleMonthAvailability(request, env) {
 
   let bookings = [];
 
-  for (const key of monthKeys) {
-    const raw = await env.BOOKINGS_KV.get(key);
+  const monthBookingPayloads = await Promise.all(
+    monthKeys.map((key) => env.BOOKINGS_KV.get(key)),
+  );
 
+  for (const raw of monthBookingPayloads) {
     try {
       const parsed = JSON.parse(raw || "[]");
       if (Array.isArray(parsed)) bookings.push(...parsed);
@@ -10927,7 +10929,7 @@ async function handleMonthAvailability(request, env) {
   =============================== */
 
   const blockList = await env.BOOKINGS_KV.list({
-    prefix: "block:",
+    prefix: `block:${month}`,
   });
 
   const blocks = [];

@@ -19316,12 +19316,16 @@ Send the fresh form link to ${booking.customerEmail} now?`,
          LOAD CALENDAR
       =============================== */
 
-      async function loadAdminCalendar() {
+      const ADMIN_CALENDAR_CACHE = new Map();
+      let ADMIN_CALENDAR_LOAD_TOKEN = 0;
+
+      async function loadAdminCalendar(options = {}) {
         if (!calGrid) return;
 
         const year = CAL_DATE.getFullYear();
         const month = CAL_DATE.getMonth() + 1;
         const monthStr = `${year}-${String(month).padStart(2, "0")}`;
+        const useCachedFirst = options.useCachedFirst !== false;
 
         const calendarTitleText =
           CAL_DATE.toLocaleString("en-GB", {
@@ -19332,30 +19336,45 @@ Send the fresh form link to ${booking.customerEmail} now?`,
         calTitle.textContent = calendarTitleText;
         if (calTitleBottom) calTitleBottom.textContent = calendarTitleText;
 
-        calGrid.innerHTML = "Loading…";
+        const cacheKey = `etuk_admin_calendar_${monthStr}`;
+        let cached = ADMIN_CALENDAR_CACHE.get(monthStr);
+
+        if (!cached && useCachedFirst) {
+          try {
+            const stored = sessionStorage.getItem(cacheKey);
+            if (stored) {
+              cached = JSON.parse(stored);
+              ADMIN_CALENDAR_CACHE.set(monthStr, cached);
+            }
+          } catch {}
+        }
+
+        if (useCachedFirst && cached) {
+          renderCalendarDays(cached, { cached: true });
+        } else {
+          calGrid.innerHTML = "Loading calendar…";
+        }
+
+        const loadToken = ++ADMIN_CALENDAR_LOAD_TOKEN;
 
         try {
-          const cacheBust = Date.now();
-
-          const [availabilityRes, blocksRes] = await Promise.all([
-            fetch(
-              `${API_BASE}/api/availability/month?month=${monthStr}&_=${cacheBust}`,
-              { cache: "no-store" },
-            ),
-            fetch(
-              `${API_BASE}/api/admin/blocks?month=${monthStr}&_=${cacheBust}`,
-              { cache: "no-store" },
-            ),
-          ]);
+          // The month availability endpoint already includes booking and admin-block
+          // slot status. Avoid the extra /api/admin/blocks request on page load.
+          const availabilityRes = await fetch(
+            `${API_BASE}/api/availability/month?month=${encodeURIComponent(monthStr)}`,
+            { cache: "no-store" },
+          );
 
           const availabilityData = await availabilityRes.json();
-          const blocksData = await blocksRes.json();
 
           if (!availabilityRes.ok) throw new Error("availability failed");
-          if (!blocksRes.ok) throw new Error("blocks failed");
 
+          // Ignore old responses when the admin quickly changes month.
+          if (loadToken !== ADMIN_CALENDAR_LOAD_TOKEN) return;
+
+          const serverBlocks = {};
           const daysMap = {};
-          const blocks = mergeBlockOverrides(blocksData.blocks || {});
+
           (availabilityData.days || []).forEach((day) => {
             daysMap[day.date] = {};
 
@@ -19364,16 +19383,45 @@ Send the fresh form link to ${booking.customerEmail} now?`,
                 full: v.full === true,
                 am: v.am === true,
                 pm: v.pm === true,
+                source: v.source || null,
+                bookingId: v.bookingId || null,
               };
-            });
 
-            daysMap[day.date].blocks = blocks[day.date] || {};
+              if (v.source === "block") {
+                if (!serverBlocks[day.date]) serverBlocks[day.date] = {};
+
+                const full = v.full === true;
+                const am = v.am === true;
+                const pm = v.pm === true;
+
+                serverBlocks[day.date][v.vehicleId] = {
+                  date: day.date,
+                  vehicleId: v.vehicleId,
+                  slot: full || (am && pm) ? "full" : am ? "am" : pm ? "pm" : "full",
+                  reason: v.reason || "service",
+                  note: v.note || "",
+                };
+              }
+            });
           });
 
+          const blocks = mergeBlockOverrides(serverBlocks);
+
+          Object.keys(daysMap).forEach((date) => {
+            daysMap[date].blocks = blocks[date] || {};
+          });
+
+          ADMIN_CALENDAR_CACHE.set(monthStr, daysMap);
+          try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(daysMap));
+          } catch {}
           renderCalendarDays(daysMap);
         } catch (err) {
           console.error("❌ Calendar load failed:", err);
-          calGrid.innerHTML = "Failed to load calendar";
+
+          if (!cached) {
+            calGrid.innerHTML = "Failed to load calendar";
+          }
         }
       }
 
@@ -19659,11 +19707,13 @@ Send the fresh form link to ${booking.customerEmail} now?`,
         const jsDay = firstDay.getDay();
         const mondayOffset = jsDay === 0 ? 6 : jsDay - 1;
 
+        const fragment = document.createDocumentFragment();
+
         for (let i = 0; i < mondayOffset; i++) {
           const blank = document.createElement("div");
           blank.className = "cal-day";
           blank.style.visibility = "hidden";
-          calGrid.appendChild(blank);
+          fragment.appendChild(blank);
         }
 
         for (let d = 1; d <= daysInMonth; d++) {
@@ -19671,7 +19721,6 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           const dayObj = new Date(`${dateStr}T00:00:00`);
 
           const dayData = daysData[dateStr] || {};
-          const bookingsForDay = getBookingsForDate(dateStr);
           const blocks = dayData.blocks || {};
 
           const vehicleFilter = calVehicle.value || "all";
@@ -19928,8 +19977,10 @@ Send the fresh form link to ${booking.customerEmail} now?`,
             }
           });
 
-          calGrid.appendChild(el);
+          fragment.appendChild(el);
         }
+
+        calGrid.appendChild(fragment);
 
         // On mobile, jump down to today's calendar card after the month has rendered.
         // This avoids always landing at the first week of the month.
@@ -20920,11 +20971,15 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           updateClearButton();
           ensureAllLorriesCalendarOption();
 
-          await loadBookings();
+          // Load bookings and the availability calendar in parallel.
+          // Previously the calendar waited for the full bookings list first,
+          // which made the admin calendar feel very slow on page load.
+          const calendarPromise = loadAdminCalendar();
+          const bookingsPromise = loadBookings({ refreshCalendar: false });
 
+          await bookingsPromise;
           window.__calendarReady = true;
-
-          await loadAdminCalendar();
+          await calendarPromise;
 
           try {
             const savedVoucherToken =
