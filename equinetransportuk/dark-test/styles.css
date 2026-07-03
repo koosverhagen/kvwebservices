@@ -7842,3 +7842,74 @@ body.dark-keynote-v8 .faq-item p {
     line-height: 1.45 !important;
   }
 }
+
+
+/* ======================================================
+   DARK TEST V11 PATCHES
+   - safer half-day pickup field visibility
+   - hero crop with full lorries visible
+   - FAQ heading aligned above cards
+====================================================== */
+
+body.dark-keynote-v8 .keynote-hero .hero-photo {
+  background-position: 62% 46% !important;
+  background-size: cover !important;
+  transform: none !important;
+}
+
+body.dark-keynote-v8 .keynote-hero .hero-photo::after {
+  background:
+    linear-gradient(90deg, rgba(3,13,24,.92) 0%, rgba(3,13,24,.66) 23%, rgba(3,13,24,.18) 48%, rgba(3,13,24,.08) 74%, rgba(3,13,24,.34) 100%),
+    linear-gradient(180deg, rgba(3,13,24,.10) 0%, rgba(3,13,24,.03) 54%, rgba(3,13,24,.88) 100%) !important;
+}
+
+body.dark-keynote-v8 .hero-pickup-time.is-visible {
+  display: block !important;
+}
+
+body.dark-keynote-v8 .hero-availability.has-pickup-time {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 260px !important;
+}
+
+body.dark-keynote-v8 .hero-availability.has-pickup-time .hero-check-btn {
+  grid-column: auto !important;
+}
+
+body.dark-keynote-v8 .hero-availability.has-pickup-time .hero-pickup-time {
+  grid-column: auto !important;
+}
+
+body.dark-keynote-v8 .faq-section .section-head {
+  display: block !important;
+  text-align: left !important;
+  align-items: initial !important;
+  justify-content: initial !important;
+  margin: 0 0 22px !important;
+}
+
+body.dark-keynote-v8 .faq-section .section-head h2 {
+  max-width: 100% !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+@media (max-width: 980px) {
+  body.dark-keynote-v8 .keynote-hero .hero-photo {
+    background-position: 61% 42% !important;
+    background-size: cover !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability.has-pickup-time {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.dark-keynote-v8 .hero-pickup-time.is-visible {
+    display: block !important;
+  }
+
+  body.dark-keynote-v8 .faq-section .section-head {
+    display: block !important;
+    text-align: left !important;
+    margin-bottom: 14px !important;
+  }
+}

@@ -3016,7 +3016,11 @@ function resetBookingFlow() {
   if (row) row.style.display = "none";
 
   const group = document.getElementById("pickup-time-group");
-  if (group) group.style.display = "none";
+  if (group) {
+    group.style.setProperty("display", "none", "important");
+    group.classList.remove("is-visible");
+  }
+  document.getElementById("availability-form")?.classList.remove("has-pickup-time");
 
   const warningBox = document.getElementById("preselected-warning");
   if (warningBox) {
@@ -4641,11 +4645,15 @@ async function updatePickupTimeVisibility() {
 
   const duration = Number(durationDaysInput?.value || 0);
   const group = document.getElementById("pickup-time-group");
+  const availabilityBox = document.getElementById("availability-form");
 
   if (!group || !pickupTimeInput) return;
 
   if (duration === 0.5) {
-    group.style.display = "block";
+    // Dark test CSS used !important to hide this field, so force the inline value too.
+    group.style.setProperty("display", "block", "important");
+    group.classList.add("is-visible");
+    availabilityBox?.classList.add("has-pickup-time");
 
     // ✅ FORCE manual user choice (prevents auto-submit flow)
     pickupTimeInput.value = "";
@@ -4675,7 +4683,9 @@ async function updatePickupTimeVisibility() {
       pickupTimeInput.focus();
     }, 150);
   } else {
-    group.style.display = "none";
+    group.style.setProperty("display", "none", "important");
+    group.classList.remove("is-visible");
+    availabilityBox?.classList.remove("has-pickup-time");
 
     // ✅ Full-day default (keeps existing behaviour)
     pickupTimeInput.value = "07:00";
