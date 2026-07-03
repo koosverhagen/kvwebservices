@@ -5288,9 +5288,9 @@ body::before {
   z-index: -3;
   background-image: url("images/hero5.webp");
   background-size: cover;
-  background-position: center 46%;
-  transform: scale(1.012);
-  filter: saturate(1.08) contrast(1.04);
+  background-position: 59% 47%;
+  transform: scale(1.004);
+  filter: saturate(1.12) contrast(1.055);
 }
 
 .keynote-hero .hero-photo::after {
@@ -5298,8 +5298,8 @@ body::before {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(4, 16, 30, 0.56) 0%, rgba(4, 16, 30, 0.16) 42%, rgba(4, 16, 30, 0.3) 100%),
-    linear-gradient(180deg, rgba(2, 9, 18, 0.5) 0%, rgba(2, 9, 18, 0.05) 36%, rgba(2, 9, 18, 0.76) 100%);
+    linear-gradient(90deg, rgba(4, 16, 30, 0.48) 0%, rgba(4, 16, 30, 0.08) 43%, rgba(4, 16, 30, 0.14) 100%),
+    linear-gradient(180deg, rgba(2, 9, 18, 0.42) 0%, rgba(2, 9, 18, 0.02) 36%, rgba(2, 9, 18, 0.62) 100%);
 }
 
 .keynote-hero .hero-shade {
@@ -5307,8 +5307,8 @@ body::before {
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(circle at 19% 30%, rgba(255,255,255,0.15), transparent 18rem),
-    linear-gradient(180deg, rgba(4, 17, 30, 0) 48%, #06182c 100%);
+    radial-gradient(circle at 19% 30%, rgba(255,255,255,0.18), transparent 19rem),
+    linear-gradient(180deg, rgba(4, 17, 30, 0) 52%, #06182c 100%);
 }
 
 .hero-stage {
@@ -5326,17 +5326,17 @@ body::before {
 .hero-copy-card {
   grid-area: copy;
   width: min(620px, 100%);
-  padding: clamp(30px, 3vw, 50px);
+  padding: clamp(30px, 3vw, 48px);
   border-radius: 30px;
-  border: 1px solid rgba(222, 238, 255, 0.43);
+  border: 1px solid rgba(231, 242, 255, 0.52);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.17), rgba(255,255,255,0.055)),
-    rgba(10, 27, 45, 0.58);
+    linear-gradient(135deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08)),
+    rgba(12, 31, 50, 0.50);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.22),
-    0 40px 90px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(22px) saturate(1.15);
-  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+    inset 0 1px 0 rgba(255,255,255,0.3),
+    0 40px 90px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(26px) saturate(1.18);
+  -webkit-backdrop-filter: blur(26px) saturate(1.18);
 }
 
 .hero-copy-card .kicker,
@@ -5424,10 +5424,10 @@ button.btn.ghost {
   gap: 16px;
   align-items: center;
   border-radius: 22px;
-  border: 1px solid rgba(222, 238, 255, 0.36);
+  border: 1px solid rgba(231, 242, 255, 0.42);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.055)),
-    rgba(8, 25, 42, 0.68);
+    linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.07)),
+    rgba(8, 25, 42, 0.56);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     0 20px 58px rgba(0, 0, 0, 0.28);
@@ -5473,10 +5473,10 @@ button.btn.ghost {
   min-height: 58px;
   padding: 24px 42px 9px 16px;
   border-radius: 9px;
-  border: 1px solid rgba(211, 230, 255, 0.36);
-  background: rgba(11, 29, 48, 0.62);
+  border: 1px solid rgba(211, 230, 255, 0.46);
+  background: rgba(11, 29, 48, 0.48);
   color: #ffffff;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.02em;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
@@ -5519,16 +5519,16 @@ button.btn.ghost {
 
 .hero-trust-strip {
   grid-area: trust;
-  width: min(1320px, 90vw);
+  width: min(1210px, 82vw);
   justify-self: center;
   margin-top: 10px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   border-radius: 18px;
-  border: 1px solid rgba(222, 238, 255, 0.27);
+  border: 1px solid rgba(231, 242, 255, 0.36);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.11), rgba(255,255,255,0.045)),
-    rgba(7, 23, 39, 0.64);
+    linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.055)),
+    rgba(7, 23, 39, 0.54);
   backdrop-filter: blur(24px) saturate(1.1);
   -webkit-backdrop-filter: blur(24px) saturate(1.1);
   overflow: hidden;
@@ -5571,6 +5571,54 @@ button.btn.ghost {
   color: rgba(226, 235, 246, 0.72);
   font-size: 15px;
   line-height: 1.25;
+}
+
+
+
+/* Dark test V5 alignment refinements */
+.hero-copy-card,
+.hero-availability,
+.hero-trust-strip {
+  box-sizing: border-box;
+}
+
+.hero-availability,
+.hero-trust-strip {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero-field input,
+.hero-field select,
+.hero-field .apple-date-trigger {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-field select option {
+  color: #0f172a;
+}
+
+.trust-item {
+  min-width: 0;
+}
+
+.fleet-grid {
+  align-items: stretch;
+}
+
+.fleet-card {
+  height: 100%;
+}
+
+.fleet-content {
+  height: 100%;
+}
+
+.fleet-card .btn,
+.fleet-card-book {
+  margin-top: auto;
 }
 
 /* Keep the test homepage clean like the approved mockup. */
@@ -5822,7 +5870,7 @@ textarea::placeholder {
     height: clamp(236px, 62vw, 330px);
     margin: 0;
     border-radius: 0 0 26px 26px;
-    background-position: center top;
+    background-position: 55% top;
     transform: none;
     z-index: -1;
   }
@@ -5915,7 +5963,8 @@ textarea::placeholder {
   .hero-field select,
   .hero-field .apple-date-trigger {
     min-height: 54px;
-    font-size: 16px;
+    padding: 23px 40px 8px 14px;
+    font-size: 14px;
     border-radius: 10px;
   }
 
