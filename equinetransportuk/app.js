@@ -3585,11 +3585,46 @@ function supportsDuration(vehicle, durationDays) {
   return Boolean(DURATION_HOURS_75T[key]);
 }
 
+function calculate75TCalendarDayCost(
+  pickupDate,
+  durationDays,
+  weekdayRate,
+  weekendRate,
+) {
+  const numericDuration = Number(durationDays || 1);
+  const days = Math.max(1, Math.ceil(numericDuration));
+
+  let startDate =
+    pickupDate instanceof Date
+      ? new Date(pickupDate)
+      : parseLocalDateValue(pickupDate);
+
+  if (!startDate || Number.isNaN(startDate.getTime())) {
+    return weekdayRate * Math.max(1, numericDuration);
+  }
+
+  let total = 0;
+
+  for (let offset = 0; offset < days; offset += 1) {
+    const date = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate() + offset,
+      12,
+      0,
+      0,
+      0,
+    );
+
+    total += isWeekendDate(date) ? weekendRate : weekdayRate;
+  }
+
+  return total;
+}
+
 function calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime) {
   const duration = Number(durationDays || 0);
   const durationKey = getDurationKey(duration);
-  const startDate = asDate(pickupDate, pickupTime);
-  const isWeekendStart = isWeekendDate(startDate);
 
   if (vehicle.pricingModel === "35_duration_rules") {
     const mapped = RATE_35T_TOTALS[durationKey];
@@ -3598,18 +3633,11 @@ function calculateBaseCost(vehicle, durationDays, pickupDate, pickupTime) {
   }
 
   if (vehicle.pricingModel === "75_living_rules") {
-    let total =
-      RATE_75_LIVING_TOTALS[durationKey] ?? 175 * Math.max(1, duration);
-    if (isWeekendStart && duration === 1) total = Math.max(total, 200);
-    if (isWeekendStart && duration === 2) total = Math.max(total, 400);
-    return total;
+    return calculate75TCalendarDayCost(pickupDate, duration, 175, 200);
   }
 
   if (vehicle.pricingModel === "75_no_living_rules") {
-    let total = 165 * Math.max(1, duration);
-    if (isWeekendStart && duration === 1) total = Math.max(total, 175);
-    if (isWeekendStart && duration === 2) total = Math.max(total, 350);
-    return total;
+    return calculate75TCalendarDayCost(pickupDate, duration, 165, 175);
   }
 
   return vehicle.dayRate * Math.max(1, duration);

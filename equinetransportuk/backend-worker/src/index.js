@@ -5835,12 +5835,53 @@ async function handlePricingQuote(request, env) {
    VEHICLE PRICING ENGINE
 ================================ */
 
+function parseLocalDateOnly(value) {
+  const [year, month, day] = String(value || "").split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date;
+}
+
+function calculate75TCalendarDayCost(
+  pickupDate,
+  durationDays,
+  weekdayRate,
+  weekendRate,
+) {
+  const numericDuration = Number(durationDays || 1);
+  const days = Math.max(1, Math.ceil(numericDuration));
+  const startDate = parseLocalDateOnly(pickupDate);
+
+  if (!startDate) {
+    return weekdayRate * Math.max(1, numericDuration);
+  }
+
+  let total = 0;
+
+  for (let offset = 0; offset < days; offset += 1) {
+    const date = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate() + offset,
+      12,
+      0,
+      0,
+      0,
+    );
+
+    total += isWeekendDate(date) ? weekendRate : weekdayRate;
+  }
+
+  return total;
+}
+
 function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
   const duration = Number(durationDays);
-  const date = new Date(pickupDate);
-  const day = date.getDay();
-
-  const isWeekend = day === 0 || day === 6;
 
   /* 3.5T */
 
@@ -5862,30 +5903,13 @@ function calculateServerBaseCost(vehicleId, durationDays, pickupDate) {
   /* 7.5T WITH LIVING */
 
   if (vehicleId === "v75-1") {
-    const prices = {
-      1: 175,
-      2: 350,
-      3: 525,
-      4: 700,
-      5: 875,
-      6: 1050,
-      7: 1225,
-    };
-
-    return prices[duration] ?? 175 * duration;
+    return calculate75TCalendarDayCost(pickupDate, duration, 175, 200);
   }
 
   /* 7.5T NO LIVING */
 
   if (vehicleId === "v75-2") {
-    let total = 165 * duration;
-
-    if (isWeekend) {
-      if (duration === 1) total = 175;
-      if (duration === 2) total = 350;
-    }
-
-    return total;
+    return calculate75TCalendarDayCost(pickupDate, duration, 165, 175);
   }
 
   return 0;
