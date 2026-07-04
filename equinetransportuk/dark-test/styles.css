@@ -8650,9 +8650,10 @@ body.dark-keynote-v8 .fleet-detail-overlay {
 }
 
 body.dark-keynote-v8 .fleet-detail-modal {
-  width: min(1240px, calc(100vw - 54px)) !important;
-  max-height: min(900px, calc(100vh - 52px)) !important;
+  width: min(1240px, 80vw) !important;
+  max-height: 80vh !important;
   overflow-y: auto !important;
+  margin: auto !important;
   border-radius: 30px !important;
   border: 1px solid rgba(222,238,255,.28) !important;
   background:
@@ -8836,13 +8837,15 @@ body.dark-keynote-v8 .fleet-detail-actions .btn.ghost {
   }
 
   body.dark-keynote-v8 .fleet-detail-overlay {
-    align-items: flex-start !important;
+    align-items: center !important;
+    justify-content: center !important;
     padding: 10px !important;
   }
 
   body.dark-keynote-v8 .fleet-detail-modal {
-    width: 100% !important;
-    max-height: none !important;
+    width: min(100%, 80vw) !important;
+    max-height: 80vh !important;
+    margin: auto !important;
     border-radius: 24px !important;
   }
 
@@ -8924,57 +8927,6 @@ html:has(body.dark-keynote-v8.fleet-detail-open)::-webkit-scrollbar,
 html:has(body.dark-keynote-v8.fleet-detail-open) body::-webkit-scrollbar,
 html:has(body.dark-keynote-v8.fleet-detail-open) .fleet-detail-overlay::-webkit-scrollbar,
 html:has(body.dark-keynote-v8.fleet-detail-open) .fleet-detail-modal::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  display: none !important;
-  background: transparent !important;
-}
-
-
-/* ======================================================
-   DARK KEYNOTE V18 — More Details popup clean scroll
-   The overlay scrolls, but all visible scrollbars are hidden.
-====================================================== */
-html.fleet-detail-open,
-html.fleet-detail-open body,
-html.fleet-detail-open body.dark-keynote-v8 {
-  overflow: hidden !important;
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
-
-html.fleet-detail-open::-webkit-scrollbar,
-html.fleet-detail-open body::-webkit-scrollbar,
-html.fleet-detail-open body.dark-keynote-v8::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  display: none !important;
-  background: transparent !important;
-}
-
-html.fleet-detail-open body.dark-keynote-v8 .fleet-detail-overlay,
-body.dark-keynote-v8.fleet-detail-open .fleet-detail-overlay {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch !important;
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
-
-html.fleet-detail-open body.dark-keynote-v8 .fleet-detail-modal,
-body.dark-keynote-v8.fleet-detail-open .fleet-detail-modal {
-  overflow: visible !important;
-  max-height: none !important;
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
-
-html.fleet-detail-open body.dark-keynote-v8 .fleet-detail-overlay::-webkit-scrollbar,
-html.fleet-detail-open body.dark-keynote-v8 .fleet-detail-modal::-webkit-scrollbar,
-html.fleet-detail-open body.dark-keynote-v8 .fleet-detail-body::-webkit-scrollbar,
-body.dark-keynote-v8.fleet-detail-open .fleet-detail-overlay::-webkit-scrollbar,
-body.dark-keynote-v8.fleet-detail-open .fleet-detail-modal::-webkit-scrollbar,
-body.dark-keynote-v8.fleet-detail-open .fleet-detail-body::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
   display: none !important;

@@ -3084,22 +3084,8 @@ function resetBookingFlow() {
 }
 
 function resetCalendarToToday() {
-  const hasCalendar =
-    document.getElementById("availability-calendar") ||
-    document.getElementById("cal-grid") ||
-    document.getElementById("cal-title");
-
-  // Some layouts, including the dark-test hero booking flow, do not render
-  // the public calendar. In that case this reset should be a silent no-op.
-  if (!hasCalendar) return;
-
   if (!window.renderCalendar || !window.__calendarState) {
-    // Calendar module may still be initialising. Try once more quietly.
-    requestAnimationFrame(() => {
-      if (window.renderCalendar && window.__calendarState) {
-        resetCalendarToToday();
-      }
-    });
+    console.warn("⚠️ Calendar not ready");
     return;
   }
 
@@ -5146,7 +5132,6 @@ function openFleetDetailOverlay(vehicleId) {
   }
 
   overlay.hidden = false;
-  document.documentElement.classList.add("fleet-detail-open");
   document.body.classList.add("fleet-detail-open");
 
   setTimeout(() => {
@@ -5165,7 +5150,6 @@ function closeFleetDetailOverlay() {
   }
 
   overlay.hidden = true;
-  document.documentElement.classList.remove("fleet-detail-open");
   document.body.classList.remove("fleet-detail-open");
 }
 
