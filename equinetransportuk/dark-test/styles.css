@@ -10215,3 +10215,36 @@ body.dark-keynote-v8 .hero-slide-dot.is-active {
   }
 }
 
+/* ======================================================
+   DARK KEYNOTE V28 — Extend hero slideshow further left
+   Keeps the visual height the same, only makes it wider/bleeds further left.
+====================================================== */
+
+@media (min-width: 901px) {
+  body.dark-keynote-v8 .hero-slideshow {
+    margin-left: clamp(-360px, -19vw, -240px) !important;
+    width: calc(100% + clamp(240px, 19vw, 360px)) !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow-frame {
+    height: clamp(420px, 37vw, 560px) !important;
+    min-height: 420px !important;
+    aspect-ratio: auto !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow-frame::after {
+    left: clamp(260px, 22vw, 390px) !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  body.dark-keynote-v8 .hero-slideshow {
+    margin-left: -220px !important;
+    width: calc(100% + 220px) !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow-frame::after {
+    left: 230px !important;
+  }
+}
+
