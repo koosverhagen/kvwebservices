@@ -8731,3 +8731,83 @@ async function showVehiclePreview(date, event) {
   watchBookingUpdates(); // run once immediately
   setInterval(watchBookingUpdates, 10000); // every 10 seconds
 })();
+
+
+/* ======================================================
+   DARK KEYNOTE V24 — Hero slideshow controller
+====================================================== */
+
+function initDarkHeroSlideshow() {
+  const root = document.querySelector(".hero-slideshow");
+  if (!root || root.dataset.heroSlideshowReady === "true") return;
+
+  const slides = Array.from(root.querySelectorAll(".hero-slide"));
+  const dots = Array.from(root.querySelectorAll("[data-hero-slide-dot]"));
+  const prev = root.querySelector('[data-hero-slide="prev"]');
+  const next = root.querySelector('[data-hero-slide="next"]');
+
+  if (!slides.length) return;
+
+  root.dataset.heroSlideshowReady = "true";
+
+  let index = Math.max(0, slides.findIndex((slide) => slide.classList.contains("is-active")));
+  if (index < 0) index = 0;
+  let timer = null;
+
+  function showSlide(nextIndex) {
+    index = (nextIndex + slides.length) % slides.length;
+
+    slides.forEach((slide, i) => {
+      slide.classList.toggle("is-active", i === index);
+    });
+
+    dots.forEach((dot, i) => {
+      dot.classList.toggle("is-active", i === index);
+      dot.setAttribute("aria-current", i === index ? "true" : "false");
+    });
+  }
+
+  function stop() {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  function start() {
+    stop();
+    timer = setInterval(() => showSlide(index + 1), 4500);
+  }
+
+  prev?.addEventListener("click", () => {
+    showSlide(index - 1);
+    start();
+  });
+
+  next?.addEventListener("click", () => {
+    showSlide(index + 1);
+    start();
+  });
+
+  dots.forEach((dot) => {
+    dot.addEventListener("click", () => {
+      const dotIndex = Number(dot.dataset.heroSlideDot);
+      if (Number.isFinite(dotIndex)) {
+        showSlide(dotIndex);
+        start();
+      }
+    });
+  });
+
+  root.addEventListener("mouseenter", stop);
+  root.addEventListener("mouseleave", start);
+
+  showSlide(index);
+  start();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDarkHeroSlideshow);
+} else {
+  initDarkHeroSlideshow();
+}

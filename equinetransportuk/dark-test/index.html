@@ -9,7 +9,7 @@
       content="Book self-drive 3.5T and 7.5T horsebox hire from East Sussex or request professional driven horse transport across the whole of the UK."
     />
 
-    <link rel="stylesheet" href="styles.css?v=dark-test-v23" />
+    <link rel="stylesheet" href="styles.css?v=dark-test-v24" />
     <link rel="icon" href="images/favicon.png" />
   
     <link rel="canonical" href="https://www.equinetransportuk.com/" />
@@ -227,13 +227,25 @@
               </a>
             </div>
           </div>
-          <div class="hero-slideshow" aria-hidden="true">
+          <div class="hero-slideshow" aria-label="Equine Transport UK fleet slideshow">
             <div class="hero-slideshow-frame">
-              <img class="hero-slide" src="images/hero5.webp" alt="" loading="eager" />
-              <img class="hero-slide" src="images/lorry-ls23.webp" alt="" loading="lazy" />
-              <img class="hero-slide" src="images/lorry-DL22.webp" alt="" loading="lazy" />
-              <img class="hero-slide" src="images/lorry-ca21.webp" alt="" loading="lazy" />
-              <img class="hero-slide" src="images/lorry-75-living.webp" alt="" loading="lazy" />
+              <img class="hero-slide is-active" src="images/hero5.webp" alt="Equine Transport UK horseboxes at the yard" loading="eager" />
+              <img class="hero-slide" src="images/lorry-ls23.webp" alt="3.5T safety bar horsebox" loading="lazy" />
+              <img class="hero-slide" src="images/lorry-DL22.webp" alt="3.5T stallion horsebox" loading="lazy" />
+              <img class="hero-slide" src="images/lorry-ca21.webp" alt="3.5T breast bar horsebox" loading="lazy" />
+              <img class="hero-slide" src="images/lorry-75-living.webp" alt="7.5T horsebox with living" loading="lazy" />
+
+              <div class="hero-slideshow-controls" aria-label="Slideshow controls">
+                <button class="hero-slide-btn" type="button" data-hero-slide="prev" aria-label="Previous image">‹</button>
+                <div class="hero-slide-dots" aria-label="Choose slideshow image">
+                  <button class="hero-slide-dot is-active" type="button" data-hero-slide-dot="0" aria-label="Show image 1"></button>
+                  <button class="hero-slide-dot" type="button" data-hero-slide-dot="1" aria-label="Show image 2"></button>
+                  <button class="hero-slide-dot" type="button" data-hero-slide-dot="2" aria-label="Show image 3"></button>
+                  <button class="hero-slide-dot" type="button" data-hero-slide-dot="3" aria-label="Show image 4"></button>
+                  <button class="hero-slide-dot" type="button" data-hero-slide-dot="4" aria-label="Show image 5"></button>
+                </div>
+                <button class="hero-slide-btn" type="button" data-hero-slide="next" aria-label="Next image">›</button>
+              </div>
             </div>
           </div>
 <form id="availability-form" class="availability-form hero-availability">
@@ -1115,7 +1127,7 @@ removed duplicate, script is loaded at end of body -->
         });
       });
     </script>
-    <script src="app.js?v=dark-test-v23"></script>
+    <script src="app.js?v=dark-test-v24"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
   </body>
 </html>
