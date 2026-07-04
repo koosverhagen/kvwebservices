@@ -1355,23 +1355,6 @@ body.fleet-detail-open {
   min-width: 170px;
 }
 
-
-
-/* Hide scrollbar in fleet detail / more details popup while keeping scroll */
-.fleet-detail-overlay,
-.fleet-detail-modal {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.fleet-detail-overlay::-webkit-scrollbar,
-.fleet-detail-modal::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
-  background: transparent;
-}
-
 @media (max-width: 820px) {
   .fleet-detail-overlay {
     align-items: flex-start;
@@ -8898,4 +8881,51 @@ body.dark-keynote-v8 .fleet-detail-actions .btn.ghost {
   body.dark-keynote-v8 .fleet-detail-intro {
     font-size: 16px !important;
   }
+}
+
+
+/* ======================================================
+   DARK KEYNOTE V16 — Hide More Details popup scrollbar
+   Keeps popup/page scroll working, but removes visible scrollbars.
+====================================================== */
+
+body.dark-keynote-v8.fleet-detail-open,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-overlay,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-modal,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-body,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-media,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-copy {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+body.dark-keynote-v8.fleet-detail-open::-webkit-scrollbar,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-overlay::-webkit-scrollbar,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-modal::-webkit-scrollbar,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-body::-webkit-scrollbar,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-media::-webkit-scrollbar,
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-copy::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
+}
+
+/* Chrome/Safari: also hide the root page scrollbar while modal is open. */
+html:has(body.dark-keynote-v8.fleet-detail-open),
+html:has(body.dark-keynote-v8.fleet-detail-open) body,
+html:has(body.dark-keynote-v8.fleet-detail-open) .fleet-detail-overlay,
+html:has(body.dark-keynote-v8.fleet-detail-open) .fleet-detail-modal {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+html:has(body.dark-keynote-v8.fleet-detail-open)::-webkit-scrollbar,
+html:has(body.dark-keynote-v8.fleet-detail-open) body::-webkit-scrollbar,
+html:has(body.dark-keynote-v8.fleet-detail-open) .fleet-detail-overlay::-webkit-scrollbar,
+html:has(body.dark-keynote-v8.fleet-detail-open) .fleet-detail-modal::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
 }
