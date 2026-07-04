@@ -9238,3 +9238,266 @@ body.dark-keynote-v8 .fleet-detail-modal {
     padding: 14px !important;
   }
 }
+
+
+/* ======================================================
+   DARK KEYNOTE V21 — Mobile header, dark reviews, hero slideshow
+====================================================== */
+
+/* Remove the full-photo hero background. The images now live in the right-hand slideshow. */
+body.dark-keynote-v8 .keynote-hero .hero-photo {
+  background-image: none !important;
+  background:
+    radial-gradient(circle at 70% 26%, rgba(47,125,255,.24), transparent 32rem),
+    radial-gradient(circle at 15% 14%, rgba(255,230,0,.06), transparent 22rem),
+    linear-gradient(135deg, #031321 0%, #06182c 58%, #08213a 100%) !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8 .keynote-hero .hero-photo::after {
+  background:
+    linear-gradient(90deg, rgba(3,13,24,.97) 0%, rgba(3,13,24,.78) 35%, rgba(3,13,24,.30) 100%),
+    linear-gradient(180deg, rgba(3,13,24,.12) 0%, rgba(3,13,24,.76) 100%) !important;
+}
+
+body.dark-keynote-v8 .hero-slideshow {
+  grid-area: visual;
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  align-self: stretch;
+  display: block;
+}
+
+body.dark-keynote-v8 .hero-slideshow-frame {
+  position: relative;
+  width: 100%;
+  height: clamp(420px, 37vw, 560px);
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid rgba(222,238,255,.22);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.03)),
+    rgba(7, 25, 43, .70);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 34px 84px rgba(0,0,0,.36);
+  backdrop-filter: blur(18px) saturate(1.05);
+  -webkit-backdrop-filter: blur(18px) saturate(1.05);
+}
+
+body.dark-keynote-v8 .hero-slideshow-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(90deg, rgba(3,13,24,.20), rgba(3,13,24,0) 42%, rgba(3,13,24,.18)),
+    linear-gradient(180deg, rgba(3,13,24,.10), rgba(3,13,24,.42));
+  pointer-events: none;
+}
+
+body.dark-keynote-v8 .hero-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  opacity: 0;
+  transform: scale(1.035);
+  animation: heroDarkSlide 25s infinite;
+  filter: saturate(1.14) contrast(1.04) brightness(.92);
+}
+
+body.dark-keynote-v8 .hero-slide:nth-child(1) { animation-delay: 0s; object-position: 62% 42%; }
+body.dark-keynote-v8 .hero-slide:nth-child(2) { animation-delay: 5s; object-position: 52% 46%; }
+body.dark-keynote-v8 .hero-slide:nth-child(3) { animation-delay: 10s; object-position: 56% 48%; }
+body.dark-keynote-v8 .hero-slide:nth-child(4) { animation-delay: 15s; object-position: 52% 48%; }
+body.dark-keynote-v8 .hero-slide:nth-child(5) { animation-delay: 20s; object-position: 56% 48%; }
+
+@keyframes heroDarkSlide {
+  0% { opacity: 0; transform: scale(1.045); }
+  5% { opacity: 1; }
+  20% { opacity: 1; transform: scale(1.015); }
+  25% { opacity: 0; transform: scale(1.0); }
+  100% { opacity: 0; }
+}
+
+@media (min-width: 701px) {
+  body.dark-keynote-v8 .hero-stage {
+    grid-template-columns: minmax(0, 540px) minmax(420px, 1fr) !important;
+    grid-template-areas:
+      "copy visual"
+      "availability availability"
+      "trust trust" !important;
+    align-items: center !important;
+    gap: 30px 46px !important;
+  }
+}
+
+/* Mobile: use the slideshow as the visual hero and remove the old circular hamburger treatment. */
+@media (max-width: 700px) {
+  body.dark-keynote-v8 .nav-toggle {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  body.dark-keynote-v8 .nav-toggle-bar {
+    width: 27px !important;
+    height: 3px !important;
+    background: rgba(255,255,255,.94) !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero .hero-photo {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .hero-stage {
+    grid-template-areas:
+      "visual"
+      "copy"
+      "availability"
+      "trust" !important;
+    grid-template-columns: 1fr !important;
+    padding-top: 12px !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow {
+    grid-area: visual !important;
+    width: 100% !important;
+    margin: 0 0 2px !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow-frame {
+    height: clamp(190px, 56vw, 260px) !important;
+    min-height: 190px !important;
+    border-radius: 22px !important;
+  }
+
+  body.dark-keynote-v8 .hero-slide:nth-child(1) { object-position: 65% 38%; }
+
+  body.dark-keynote-v8 .hero-copy-card h1 {
+    font-size: clamp(30px, 8.6vw, 38px) !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Dark Google reviews popup. */
+body.dark-keynote-v8 .reviews-overlay.active,
+body.dark-keynote-v8 .reviews-overlay {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(47,125,255,.24), transparent 34rem),
+    rgba(2, 10, 20, .86) !important;
+  backdrop-filter: blur(22px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.05) !important;
+}
+
+body.dark-keynote-v8 .reviews-modal {
+  border-radius: 30px !important;
+  border: 1px solid rgba(222,238,255,.24) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.11), rgba(255,255,255,.035)),
+    rgba(7, 25, 43, .96) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 36px 100px rgba(0,0,0,.54) !important;
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8 .reviews-header {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+body.dark-keynote-v8 .reviews-drag {
+  background: rgba(222,238,255,.42) !important;
+}
+
+body.dark-keynote-v8 .reviews-close {
+  border: 1px solid rgba(222,238,255,.28) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.04)),
+    rgba(7, 25, 43, .90) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 38px rgba(0,0,0,.30) !important;
+}
+
+body.dark-keynote-v8 .reviews-content {
+  background: transparent !important;
+}
+
+body.dark-keynote-v8 .google-reviews-summary,
+body.dark-keynote-v8 .google-reviews-photos-block,
+body.dark-keynote-v8 .google-review-card,
+body.dark-keynote-v8 .google-reviews-footer,
+body.dark-keynote-v8 .google-reviews-empty {
+  border: 1px solid rgba(222,238,255,.18) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.025)),
+    rgba(6, 22, 38, .62) !important;
+  color: rgba(226,235,246,.82) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+
+body.dark-keynote-v8 .google-reviews-kicker,
+body.dark-keynote-v8 .google-reviews-title {
+  color: rgba(142,181,235,.88) !important;
+}
+
+body.dark-keynote-v8 .google-reviews-summary h3,
+body.dark-keynote-v8 .google-reviews-photos-head h4,
+body.dark-keynote-v8 .google-review-author,
+body.dark-keynote-v8 .google-reviews-empty p {
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8 .google-reviews-score,
+body.dark-keynote-v8 .google-reviews-count,
+body.dark-keynote-v8 .google-review-meta,
+body.dark-keynote-v8 .google-review-text,
+body.dark-keynote-v8 .google-reviews-footer {
+  color: rgba(226,235,246,.76) !important;
+}
+
+body.dark-keynote-v8 .google-reviews-google-link,
+body.dark-keynote-v8 .google-reviews-footer a,
+body.dark-keynote-v8 .google-reviews-photos-head a {
+  color: #ffffff !important;
+  border-color: rgba(93,163,255,.48) !important;
+  background: linear-gradient(180deg, #2f82ff 0%, #1458e8 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 12px 30px rgba(15,80,215,.26) !important;
+}
+
+body.dark-keynote-v8 .google-review-photo-card {
+  background: rgba(2,10,20,.62) !important;
+  border: 1px solid rgba(222,238,255,.15) !important;
+}
+
+@media (max-width: 700px) {
+  body.dark-keynote-v8 .reviews-overlay {
+    align-items: center !important;
+    padding: 12px !important;
+  }
+
+  body.dark-keynote-v8 .reviews-modal {
+    width: calc(100vw - 24px) !important;
+    height: auto !important;
+    max-height: 86vh !important;
+    border-radius: 24px !important;
+  }
+
+  body.dark-keynote-v8 .google-reviews-summary,
+  body.dark-keynote-v8 .google-reviews-photos-head,
+  body.dark-keynote-v8 .google-reviews-footer {
+    align-items: flex-start !important;
+  }
+
+  body.dark-keynote-v8 .google-reviews-list {
+    grid-template-columns: 1fr !important;
+  }
+}
