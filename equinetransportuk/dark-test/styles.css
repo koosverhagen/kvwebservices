@@ -8932,3 +8932,309 @@ html:has(body.dark-keynote-v8.fleet-detail-open) .fleet-detail-modal::-webkit-sc
   display: none !important;
   background: transparent !important;
 }
+
+
+/* ======================================================
+   DARK KEYNOTE V20 — Mobile polish
+   Cleaner header/hero/fleet on small screens and hide empty booking band.
+====================================================== */
+
+/* The old booking section showed as an empty blue band before a search.
+   Step 1 is now the compact hero form, so hide the empty booking shell
+   until results/details/payment are active. */
+body.dark-keynote-v8 #booking:has(#step-1.active) {
+  display: none !important;
+}
+
+/* Keep the More Details modal centered with breathing room. */
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-overlay,
+body.dark-keynote-v8 .fleet-detail-overlay {
+  align-items: center !important;
+  justify-content: center !important;
+  padding: max(18px, 5vh) max(12px, 3vw) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-modal {
+  width: min(1240px, calc(100vw - 56px)) !important;
+  max-height: 80vh !important;
+  margin: auto !important;
+  overflow-y: auto !important;
+}
+
+@media (max-width: 700px) {
+  body.dark-keynote-v8 {
+    background: #06182c !important;
+    overflow-x: hidden !important;
+  }
+
+  body.dark-keynote-v8 .container {
+    width: min(100%, calc(100vw - 20px)) !important;
+  }
+
+  /* Mobile header: prevent logo/title/phone overlap. */
+  body.dark-keynote-v8 .site-header {
+    position: sticky !important;
+    top: 0 !important;
+  }
+
+  body.dark-keynote-v8 .header-inner {
+    min-height: 60px !important;
+    padding: 0 10px !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+
+  body.dark-keynote-v8 .brand {
+    min-width: 0 !important;
+    max-width: none !important;
+    gap: 8px !important;
+  }
+
+  body.dark-keynote-v8 .brand-logo {
+    width: 46px !important;
+    height: 38px !important;
+    border-radius: 13px !important;
+    padding: 3px !important;
+  }
+
+  body.dark-keynote-v8 .brand-text {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body.dark-keynote-v8 .brand-name {
+    max-width: 138px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  body.dark-keynote-v8 .brand-subtitle {
+    font-size: 10px !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+  }
+
+  body.dark-keynote-v8 .site-header .phone-link {
+    display: none !important;
+  }
+
+  body.dark-keynote-v8 .nav-toggle {
+    display: inline-flex !important;
+    width: 36px !important;
+    height: 36px !important;
+    justify-self: end !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(222,238,255,.18) !important;
+    background: rgba(255,255,255,.04) !important;
+  }
+
+  body.dark-keynote-v8 .main-nav.open {
+    display: flex !important;
+    top: 60px !important;
+    background: rgba(3,13,24,.98) !important;
+    border-color: rgba(222,238,255,.16) !important;
+  }
+
+  /* Hero: reduce empty space and make the title readable on mobile. */
+  body.dark-keynote-v8 .keynote-hero {
+    padding: 0 0 20px !important;
+    overflow: hidden !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero .hero-photo {
+    height: clamp(150px, 43vw, 210px) !important;
+    min-height: 150px !important;
+    margin-bottom: -8px !important;
+    background-size: cover !important;
+    background-position: 62% 43% !important;
+    filter: saturate(1.16) contrast(1.04) brightness(.96) !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero .hero-photo::after {
+    background: linear-gradient(180deg, rgba(3,13,24,.03) 0%, rgba(3,13,24,.20) 56%, #06182c 100%) !important;
+  }
+
+  body.dark-keynote-v8 .hero-stage {
+    gap: 14px !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card .kicker {
+    font-size: 10px !important;
+    letter-spacing: .22em !important;
+    margin: 0 0 8px !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card h1 {
+    max-width: 100% !important;
+    font-size: clamp(27px, 8.1vw, 34px) !important;
+    line-height: 1.02 !important;
+    letter-spacing: -0.052em !important;
+    text-wrap: balance !important;
+  }
+
+  body.dark-keynote-v8 .hero-rule {
+    width: 42px !important;
+    margin: 12px 0 10px !important;
+  }
+
+  body.dark-keynote-v8 .hero-copy-card .lead {
+    font-size: 13px !important;
+    line-height: 1.38 !important;
+    max-width: 100% !important;
+  }
+
+  body.dark-keynote-v8 .hero-cta-row {
+    gap: 8px !important;
+    margin-top: 15px !important;
+  }
+
+  body.dark-keynote-v8 .hero-cta-row .btn {
+    min-height: 42px !important;
+    height: 42px !important;
+    font-size: 13px !important;
+    border-radius: 9px !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability {
+    padding: 14px !important;
+    gap: 9px !important;
+    border-radius: 15px !important;
+  }
+
+  body.dark-keynote-v8 .hero-availability::before {
+    font-size: 18px !important;
+  }
+
+  body.dark-keynote-v8 .hero-field input,
+  body.dark-keynote-v8 .hero-field select,
+  body.dark-keynote-v8 .hero-field .apple-date-trigger {
+    height: 52px !important;
+    min-height: 52px !important;
+    padding-top: 24px !important;
+    font-size: 12px !important;
+  }
+
+  body.dark-keynote-v8 .hero-check-btn {
+    height: 48px !important;
+    min-height: 48px !important;
+    font-size: 13px !important;
+  }
+
+  body.dark-keynote-v8 .hero-trust-strip {
+    gap: 6px !important;
+  }
+
+  body.dark-keynote-v8 .trust-item {
+    min-height: 68px !important;
+    padding: 8px 6px !important;
+  }
+
+  body.dark-keynote-v8 .trust-icon,
+  body.dark-keynote-v8 .trust-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  body.dark-keynote-v8 .trust-item strong {
+    font-size: 9.5px !important;
+    line-height: 1.12 !important;
+  }
+
+  /* Fleet cards: use a proper one-column mobile layout, not a clipped carousel. */
+  body.dark-keynote-v8 #fleet {
+    padding-top: 22px !important;
+  }
+
+  body.dark-keynote-v8 #fleet .section-head h2 {
+    font-size: 25px !important;
+    line-height: 1.03 !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  body.dark-keynote-v8 .fleet-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    overflow: visible !important;
+    scroll-snap-type: none !important;
+    padding: 0 !important;
+  }
+
+  body.dark-keynote-v8 .fleet-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    scroll-snap-align: none !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+
+  body.dark-keynote-v8 .fleet-card .fleet-image-wrap,
+  body.dark-keynote-v8 .fleet-card img {
+    height: 176px !important;
+    min-height: 176px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-card img {
+    width: 100% !important;
+    object-fit: cover !important;
+    filter: brightness(.86) saturate(1.08) !important;
+  }
+
+  body.dark-keynote-v8 .fleet-content {
+    padding: 16px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-content h3 {
+    font-size: 18px !important;
+    line-height: 1.18 !important;
+  }
+
+  body.dark-keynote-v8 .fleet-content p,
+  body.dark-keynote-v8 .fleet-content .muted,
+  body.dark-keynote-v8 .fleet-content .tiny {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+  }
+
+  body.dark-keynote-v8 .fleet-card-book,
+  body.dark-keynote-v8 .fleet-card .btn {
+    min-height: 48px !important;
+    height: 48px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+  }
+
+  body.dark-keynote-v8 .faq-section {
+    padding-top: 26px !important;
+  }
+
+  body.dark-keynote-v8 .faq-section .section-head h2 {
+    font-size: 25px !important;
+    line-height: 1.04 !important;
+  }
+
+  /* Mobile More Details popup: centered with 80vh height, but full usable width. */
+  body.dark-keynote-v8 .fleet-detail-overlay {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 10vh 10px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-modal {
+    width: calc(100vw - 20px) !important;
+    max-height: 80vh !important;
+    margin: auto !important;
+    border-radius: 22px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-body {
+    padding: 14px !important;
+  }
+}
