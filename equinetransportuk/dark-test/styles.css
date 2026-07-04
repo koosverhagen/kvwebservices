@@ -8597,3 +8597,288 @@ body.dark-keynote-v8 #step-3 .dartford-count input {
     font-size: 15px !important;
   }
 }
+/* ======================================================
+   DARK KEYNOTE V14 — Fleet cards + More info modal
+   Removes black image gaps and brings the detail popup into the dark theme.
+====================================================== */
+
+/* Fleet card image: the wrapper was taller than the image, causing a black strip. */
+body.dark-keynote-v8 .fleet-card .fleet-image-wrap {
+  height: clamp(190px, 18vw, 230px) !important;
+  min-height: 0 !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.018)),
+    rgba(7, 25, 43, .72) !important;
+  border-bottom: 1px solid rgba(222,238,255,.14) !important;
+}
+
+body.dark-keynote-v8 .fleet-card .fleet-image-wrap > img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  filter: brightness(.78) saturate(1.08) !important;
+}
+
+body.dark-keynote-v8 .fleet-card .fleet-overlay {
+  background:
+    linear-gradient(180deg, rgba(3,13,24,.10), rgba(3,13,24,.50)) !important;
+}
+
+body.dark-keynote-v8 .fleet-card .apple-play-btn {
+  color: #ffffff !important;
+  border: 1px solid rgba(231,242,255,.48) !important;
+  background: rgba(75, 91, 130, .74) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.20),
+    0 14px 32px rgba(0,0,0,.32) !important;
+}
+
+/* More info modal — dark glass version */
+body.dark-keynote-v8.fleet-detail-open .fleet-detail-overlay,
+body.dark-keynote-v8 .fleet-detail-overlay {
+  padding: clamp(12px, 2vw, 28px) !important;
+  align-items: center !important;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(47,125,255,.24), transparent 38rem),
+    radial-gradient(circle at 82% 8%, rgba(255,255,255,.10), transparent 30rem),
+    rgba(2, 10, 20, .84) !important;
+  backdrop-filter: blur(22px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.05) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-modal {
+  width: min(1240px, calc(100vw - 54px)) !important;
+  max-height: min(900px, calc(100vh - 52px)) !important;
+  overflow-y: auto !important;
+  border-radius: 30px !important;
+  border: 1px solid rgba(222,238,255,.28) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.115), rgba(255,255,255,.035)),
+    rgba(7, 25, 43, .94) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 36px 100px rgba(0,0,0,.54) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-body {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, .88fr) !important;
+  gap: clamp(22px, 3vw, 34px) !important;
+  padding: clamp(22px, 3vw, 34px) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-close {
+  position: sticky !important;
+  top: 14px !important;
+  z-index: 5 !important;
+  width: 52px !important;
+  height: 52px !important;
+  margin: 14px 14px -66px 0 !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(222,238,255,.36) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.04)),
+    rgba(7, 25, 43, .88) !important;
+  color: rgba(238,246,255,.96) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    0 16px 36px rgba(0,0,0,.32) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-close:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(93,163,255,.75) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-main-image {
+  border-radius: 24px !important;
+  border: 1px solid rgba(222,238,255,.20) !important;
+  background: rgba(2,10,20,.76) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08) !important;
+  overflow: hidden !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-main-image img,
+body.dark-keynote-v8 .fleet-detail-thumb img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-gallery {
+  gap: 10px !important;
+  margin-top: 12px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-thumb {
+  border-radius: 14px !important;
+  border: 1px solid rgba(222,238,255,.20) !important;
+  background: rgba(2,10,20,.64) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-thumb:hover {
+  border-color: rgba(93,163,255,.72) !important;
+  transform: translateY(-1px) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-copy {
+  color: #ffffff !important;
+  padding: 4px 4px 4px 0 !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-copy .kicker {
+  color: rgba(142, 181, 235, .82) !important;
+  letter-spacing: .16em !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-copy h2 {
+  color: #ffffff !important;
+  font-size: clamp(32px, 3vw, 52px) !important;
+  line-height: .98 !important;
+  letter-spacing: -0.055em !important;
+  margin: 0 0 12px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-subtitle {
+  color: #5fa3ff !important;
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+  font-weight: 900 !important;
+  margin: 0 0 18px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-intro {
+  color: rgba(226,235,246,.76) !important;
+  font-size: 18px !important;
+  line-height: 1.48 !important;
+  margin: 0 0 22px !important;
+  max-width: 54ch !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-info-grid {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-info-grid > div,
+body.dark-keynote-v8 .fleet-detail-video {
+  border-radius: 20px !important;
+  border: 1px solid rgba(222,238,255,.18) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.026)),
+    rgba(6, 22, 38, .54) !important;
+  padding: 16px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-video {
+  margin-top: 14px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-info-grid h3,
+body.dark-keynote-v8 .fleet-detail-video h3 {
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 1.1 !important;
+  letter-spacing: .02em !important;
+  margin: 0 0 10px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-info-grid ul {
+  margin: 0 !important;
+  padding-left: 18px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-info-grid li {
+  color: rgba(226,235,246,.74) !important;
+  margin: 8px 0 !important;
+  line-height: 1.35 !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-video-placeholder {
+  border-radius: 16px !important;
+  border: 1px dashed rgba(222,238,255,.28) !important;
+  background: rgba(2,10,20,.42) !important;
+  color: rgba(226,235,246,.58) !important;
+  padding: 20px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-actions {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 14px !important;
+  margin-top: 20px !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-actions .btn {
+  min-width: 0 !important;
+  min-height: 58px !important;
+  border-radius: 14px !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+}
+
+body.dark-keynote-v8 .fleet-detail-actions .btn.ghost {
+  border-color: rgba(222,238,255,.24) !important;
+  background: rgba(123, 134, 148, .78) !important;
+  color: #ffffff !important;
+}
+
+@media (max-width: 900px) {
+  body.dark-keynote-v8 .fleet-card .fleet-image-wrap {
+    height: 220px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-overlay {
+    align-items: flex-start !important;
+    padding: 10px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-modal {
+    width: 100% !important;
+    max-height: none !important;
+    border-radius: 24px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-body {
+    grid-template-columns: 1fr !important;
+    padding: 18px !important;
+    gap: 18px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-copy h2 {
+    padding-right: 48px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 520px) {
+  body.dark-keynote-v8 .fleet-card .fleet-image-wrap {
+    height: 188px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-gallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-main-image {
+    aspect-ratio: 4 / 3 !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-copy h2 {
+    font-size: 30px !important;
+  }
+
+  body.dark-keynote-v8 .fleet-detail-intro {
+    font-size: 16px !important;
+  }
+}
