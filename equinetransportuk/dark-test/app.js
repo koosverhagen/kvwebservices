@@ -4973,6 +4973,41 @@ function renderFleetList(items) {
   `;
 }
 
+
+function ensureFleetDetailScrollbarStyle() {
+  if (document.getElementById("fleet-detail-scrollbar-hide-style")) return;
+
+  const style = document.createElement("style");
+  style.id = "fleet-detail-scrollbar-hide-style";
+  style.textContent = `
+    html.fleet-detail-open,
+    html.fleet-detail-open body,
+    html.fleet-detail-open .fleet-detail-overlay,
+    html.fleet-detail-open .fleet-detail-modal,
+    html.fleet-detail-open .fleet-detail-body,
+    html.fleet-detail-open .fleet-detail-media,
+    html.fleet-detail-open .fleet-detail-copy {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+
+    html.fleet-detail-open::-webkit-scrollbar,
+    html.fleet-detail-open body::-webkit-scrollbar,
+    html.fleet-detail-open .fleet-detail-overlay::-webkit-scrollbar,
+    html.fleet-detail-open .fleet-detail-modal::-webkit-scrollbar,
+    html.fleet-detail-open .fleet-detail-body::-webkit-scrollbar,
+    html.fleet-detail-open .fleet-detail-media::-webkit-scrollbar,
+    html.fleet-detail-open .fleet-detail-copy::-webkit-scrollbar {
+      width: 0 !important;
+      height: 0 !important;
+      display: none !important;
+      background: transparent !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
 function ensureFleetDetailOverlay() {
   let overlay = document.getElementById("fleet-detail-overlay");
 
@@ -5131,7 +5166,9 @@ function openFleetDetailOverlay(vehicleId) {
     bestFor.innerHTML = renderFleetList(detail.bestFor);
   }
 
+  ensureFleetDetailScrollbarStyle();
   overlay.hidden = false;
+  document.documentElement.classList.add("fleet-detail-open");
   document.body.classList.add("fleet-detail-open");
 
   setTimeout(() => {
@@ -5150,6 +5187,7 @@ function closeFleetDetailOverlay() {
   }
 
   overlay.hidden = true;
+  document.documentElement.classList.remove("fleet-detail-open");
   document.body.classList.remove("fleet-detail-open");
 }
 
