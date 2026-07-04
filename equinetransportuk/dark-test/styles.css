@@ -1355,6 +1355,23 @@ body.fleet-detail-open {
   min-width: 170px;
 }
 
+
+
+/* Hide scrollbar in fleet detail / more details popup while keeping scroll */
+.fleet-detail-overlay,
+.fleet-detail-modal {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.fleet-detail-overlay::-webkit-scrollbar,
+.fleet-detail-modal::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}
+
 @media (max-width: 820px) {
   .fleet-detail-overlay {
     align-items: flex-start;
