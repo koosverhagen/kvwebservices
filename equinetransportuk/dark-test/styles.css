@@ -10248,3 +10248,55 @@ body.dark-keynote-v8 .hero-slide-dot.is-active {
   }
 }
 
+
+/* ======================================================
+   DARK KEYNOTE V29 — Ensure slideshow images are clipped
+   to the rounded frame, especially on the right corners.
+====================================================== */
+
+@media (min-width: 901px) {
+  body.dark-keynote-v8 .hero-slideshow {
+    border-radius: 0 34px 34px 0 !important;
+    overflow: hidden !important;
+    isolation: isolate !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow-frame {
+    position: relative !important;
+    border-radius: 0 34px 34px 0 !important;
+    overflow: hidden !important;
+    isolation: isolate !important;
+    clip-path: inset(0 round 0 34px 34px 0) !important;
+    -webkit-clip-path: inset(0 round 0 34px 34px 0) !important;
+    -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
+    mask-image: radial-gradient(white, black) !important;
+  }
+
+  body.dark-keynote-v8 .hero-slide,
+  body.dark-keynote-v8 .hero-slideshow-frame > img,
+  body.dark-keynote-v8 .hero-slideshow-frame > picture,
+  body.dark-keynote-v8 .hero-slideshow-frame > picture > img {
+    border-radius: 0 34px 34px 0 !important;
+    overflow: hidden !important;
+    clip-path: inset(0 round 0 34px 34px 0) !important;
+    -webkit-clip-path: inset(0 round 0 34px 34px 0) !important;
+    backface-visibility: hidden !important;
+    transform-origin: center center !important;
+  }
+}
+
+@media (max-width: 900px) {
+  body.dark-keynote-v8 .hero-slideshow,
+  body.dark-keynote-v8 .hero-slideshow-frame,
+  body.dark-keynote-v8 .hero-slide,
+  body.dark-keynote-v8 .hero-slideshow-frame > img,
+  body.dark-keynote-v8 .hero-slideshow-frame > picture,
+  body.dark-keynote-v8 .hero-slideshow-frame > picture > img {
+    border-radius: 22px !important;
+    overflow: hidden !important;
+    clip-path: inset(0 round 22px) !important;
+    -webkit-clip-path: inset(0 round 22px) !important;
+    -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
+    mask-image: radial-gradient(white, black) !important;
+  }
+}
