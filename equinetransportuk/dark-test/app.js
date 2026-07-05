@@ -8811,3 +8811,38 @@ if (document.readyState === "loading") {
 } else {
   initDarkHeroSlideshow();
 }
+
+
+/* ======================================================
+   DARK KEYNOTE V32 — white DOB calendar overlay icon
+====================================================== */
+
+function initDobCalendarWhiteIcon() {
+  const input = document.getElementById("customer-dob");
+  if (!input || input.dataset.dobIconReady === "true") return;
+
+  const parent = input.closest(".form-field") || input.parentElement;
+  if (!parent) return;
+
+  input.dataset.dobIconReady = "true";
+  parent.classList.add("dob-calendar-wrap");
+
+  if (!parent.querySelector(".dob-calendar-icon")) {
+    const icon = document.createElement("span");
+    icon.className = "dob-calendar-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 3v3M17 3v3M4.5 9.2h15M6.2 5.5h11.6c1 0 1.7.8 1.7 1.7v10.6c0 1-.8 1.7-1.7 1.7H6.2c-1 0-1.7-.8-1.7-1.7V7.2c0-1 .8-1.7 1.7-1.7Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    parent.appendChild(icon);
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDobCalendarWhiteIcon);
+} else {
+  initDobCalendarWhiteIcon();
+}
+

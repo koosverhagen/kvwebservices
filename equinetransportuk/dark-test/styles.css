@@ -10348,3 +10348,298 @@ body.dark-keynote-v8 input#customer-dob[type="date"]::-webkit-calendar-picker-in
   }
 }
 
+
+/* ======================================================
+   DARK KEYNOTE V31 — Stronger DOB icon, mobile hero offset,
+   and driven-services dark theme.
+====================================================== */
+
+/* 1) DOB date box: use our own white calendar icon so Chrome/Safari cannot make it dark. */
+body.dark-keynote-v8 #customer-dob,
+body.dark-keynote-v8 input#customer-dob[type="date"] {
+  color: #ffffff !important;
+  color-scheme: dark !important;
+  padding-right: 48px !important;
+  background-color: rgba(7,25,43,.72) !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='22' height='22' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 3v3M17 3v3M4.5 9.2h15M6.2 5.5h11.6c1 0 1.7.8 1.7 1.7v10.6c0 1-.8 1.7-1.7 1.7H6.2c-1 0-1.7-.8-1.7-1.7V7.2c0-1 .8-1.7 1.7-1.7Z' stroke='%23ffffff' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 15px center !important;
+  background-size: 21px 21px !important;
+}
+
+body.dark-keynote-v8 #customer-dob::-webkit-calendar-picker-indicator,
+body.dark-keynote-v8 input#customer-dob[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0 !important;
+  cursor: pointer !important;
+  width: 46px !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-fields-wrapper,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-text,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-month-field,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-day-field,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-year-field {
+  color: #ffffff !important;
+}
+
+/* 2) Mobile: prevent slideshow from tucking underneath the sticky header.
+   Older mobile CSS used a negative hero-stage margin; this cancels it. */
+@media (max-width: 800px) {
+  body.dark-keynote-v8 .site-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 5000 !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero {
+    margin-top: 0 !important;
+    padding-top: 16px !important;
+    overflow: visible !important;
+  }
+
+  body.dark-keynote-v8 .hero-stage {
+    margin-top: 0 !important;
+    padding-top: calc(16px + env(safe-area-inset-top)) !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow {
+    margin-top: 0 !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow-frame {
+    transform: none !important;
+  }
+}
+
+@media (max-width: 430px) {
+  body.dark-keynote-v8 .keynote-hero {
+    padding-top: 18px !important;
+  }
+
+  body.dark-keynote-v8 .hero-stage {
+    margin-top: 0 !important;
+    padding-top: calc(18px + env(safe-area-inset-top)) !important;
+  }
+}
+
+/* 3) Driven services: global dark theme override, not just the page inline CSS. */
+body.dark-keynote-v8.driven-dark-page {
+  --bg: #031321;
+  --card: rgba(7,25,43,.82);
+  --text: #ffffff;
+  --muted: rgba(229,239,255,.76);
+  --line: rgba(222,238,255,.20);
+  --accent: #2f7dff;
+  color: #ffffff !important;
+  background:
+    radial-gradient(circle at 72% 8%, rgba(47,125,255,.20), transparent 34rem),
+    radial-gradient(circle at 12% 18%, rgba(255,230,0,.055), transparent 22rem),
+    linear-gradient(135deg, #031321 0%, #06182c 56%, #08213a 100%) !important;
+  overflow-x: hidden !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .site-header {
+  background: rgba(3, 14, 26, .76) !important;
+  border-bottom: 1px solid rgba(222,238,255,.10) !important;
+  backdrop-filter: blur(22px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.05) !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .brand-name,
+body.dark-keynote-v8.driven-dark-page .main-nav a,
+body.dark-keynote-v8.driven-dark-page h1,
+body.dark-keynote-v8.driven-dark-page h2,
+body.dark-keynote-v8.driven-dark-page h3 {
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .brand-group,
+body.dark-keynote-v8.driven-dark-page .lead,
+body.dark-keynote-v8.driven-dark-page .muted,
+body.dark-keynote-v8.driven-dark-page p,
+body.dark-keynote-v8.driven-dark-page li {
+  color: rgba(229,239,255,.76) !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .brand-subtitle,
+body.dark-keynote-v8.driven-dark-page .kicker {
+  color: #ffe600 !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .driven-page {
+  padding-top: clamp(38px, 5vw, 74px) !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .driven-hero {
+  align-items: stretch !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .driven-hero-card,
+body.dark-keynote-v8.driven-dark-page .driven-info-card,
+body.dark-keynote-v8.driven-dark-page .driven-calculator-section,
+body.dark-keynote-v8.driven-dark-page .seo-panel,
+body.dark-keynote-v8.driven-dark-page .seo-mini-card,
+body.dark-keynote-v8.driven-dark-page .faq-item {
+  color: #ffffff !important;
+  border: 1px solid rgba(222,238,255,.20) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.105), rgba(255,255,255,.035)),
+    rgba(7,25,43,.82) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    0 24px 70px rgba(0,0,0,.30) !important;
+  backdrop-filter: blur(18px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.05) !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .driven-hero-card:first-child {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .driven-hero-card:first-child::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: auto -14% -40% 38% !important;
+  height: 72% !important;
+  background: radial-gradient(circle, rgba(47,125,255,.18), transparent 58%) !important;
+  pointer-events: none !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .driven-actions,
+body.dark-keynote-v8.driven-dark-page .seo-actions {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .btn.ghost {
+  background: rgba(4,16,30,.46) !important;
+  color: #ffffff !important;
+  border-color: rgba(93,163,255,.54) !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .driven-calculator-frame {
+  border: 1px solid rgba(222,238,255,.18) !important;
+  background: rgba(3,13,24,.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+body.dark-keynote-v8.driven-dark-page .site-footer {
+  color: rgba(229,239,255,.72) !important;
+  border-top-color: rgba(222,238,255,.14) !important;
+}
+
+@media (max-width: 700px) {
+  body.dark-keynote-v8.driven-dark-page .driven-page {
+    padding-top: 24px !important;
+  }
+
+  body.dark-keynote-v8.driven-dark-page .driven-hero-card,
+  body.dark-keynote-v8.driven-dark-page .driven-info-card,
+  body.dark-keynote-v8.driven-dark-page .driven-calculator-section,
+  body.dark-keynote-v8.driven-dark-page .seo-panel,
+  body.dark-keynote-v8.driven-dark-page .seo-mini-card,
+  body.dark-keynote-v8.driven-dark-page .faq-item {
+    border-radius: 22px !important;
+  }
+}
+
+
+/* ======================================================
+   DARK KEYNOTE V32 — Desktop DOB icon + mid-width header fix
+====================================================== */
+
+/* 1) Strong DOB date icon fix:
+   hide the browser's dark native icon and draw our own white icon above it. */
+body.dark-keynote-v8 .dob-calendar-wrap,
+body.dark-keynote-v8 #customer-dob.closest-date-wrap {
+  position: relative !important;
+}
+
+body.dark-keynote-v8 #customer-dob,
+body.dark-keynote-v8 input#customer-dob[type="date"] {
+  color: #ffffff !important;
+  color-scheme: dark !important;
+  padding-right: 52px !important;
+  background-color: rgba(7,25,43,.72) !important;
+  background-image: none !important;
+}
+
+body.dark-keynote-v8 #customer-dob::-webkit-calendar-picker-indicator,
+body.dark-keynote-v8 input#customer-dob[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0 !important;
+  filter: opacity(0) !important;
+  background: transparent !important;
+  color: transparent !important;
+  cursor: pointer !important;
+  width: 52px !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.dark-keynote-v8 .dob-calendar-icon {
+  position: absolute !important;
+  right: 15px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 22px !important;
+  height: 22px !important;
+  z-index: 8 !important;
+  pointer-events: none !important;
+  display: block !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 5px rgba(255,255,255,.22)) !important;
+}
+
+body.dark-keynote-v8 .dob-calendar-icon svg {
+  display: block !important;
+  width: 22px !important;
+  height: 22px !important;
+  stroke: currentColor !important;
+}
+
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-fields-wrapper,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-text,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-month-field,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-day-field,
+body.dark-keynote-v8 #customer-dob::-webkit-datetime-edit-year-field {
+  color: #ffffff !important;
+}
+
+/* 2) Desktop/tablet header fix:
+   the blue phone number was too wide while the full menu was still visible.
+   Hide it in the squeeze range and tighten nav spacing. */
+@media (min-width: 981px) and (max-width: 1230px) {
+  body.dark-keynote-v8 .header-inner {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    gap: clamp(14px, 1.5vw, 22px) !important;
+  }
+
+  body.dark-keynote-v8 .main-nav {
+    gap: clamp(14px, 1.35vw, 22px) !important;
+    justify-content: flex-end !important;
+  }
+
+  body.dark-keynote-v8 .main-nav a {
+    font-size: clamp(13px, 1.22vw, 15px) !important;
+    letter-spacing: -0.035em !important;
+  }
+
+  body.dark-keynote-v8 .site-header .phone-link {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1231px) {
+  body.dark-keynote-v8 .site-header .phone-link {
+    display: inline-flex !important;
+  }
+}
+
