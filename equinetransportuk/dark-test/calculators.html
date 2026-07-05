@@ -10,7 +10,7 @@
       content="Use Equine Transport UK&#x27;s customer calculators to estimate self-drive horsebox fuel costs, mileage and driven horse transport route costs before booking."
     />
 
-    <link rel="stylesheet" href="styles.css?v=dark-test-v35" />
+    <link rel="stylesheet" href="styles.css?v=dark-test-v38" />
     <link rel="icon" href="images/favicon.png" />
 
     <style>
@@ -358,7 +358,7 @@
               class="btn"
               type="button"
               data-calculator-title="Self-Drive Fuel Calculator"
-              data-calculator-src="fuel-calculator.html?v=3"
+              data-calculator-src="fuel-calculator.html?v=dark-test-v38"
             >
               Open fuel calculator
             </button>
@@ -378,7 +378,7 @@
               class="btn"
               type="button"
               data-calculator-title="Driven Transport Cost Estimator"
-              data-calculator-src="driven-calculator.html?v=3"
+              data-calculator-src="driven-calculator.html?v=dark-test-v38"
             >
               Open driven estimator
             </button>
@@ -578,7 +578,7 @@
         const open = params.get("open");
 
         if (open === "fuel") {
-          openCalculator("fuel-calculator.html", "Self-Drive Fuel Calculator");
+          openCalculator("fuel-calculator.html?v=dark-test-v38", "Self-Drive Fuel Calculator");
         }
 
         if (open === "driven") {
