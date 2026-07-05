@@ -627,7 +627,10 @@ if (customerEmailInput) {
   customerEmailInput.setAttribute("autocorrect", "off");
   customerEmailInput.setAttribute("spellcheck", "false");
   customerEmailInput.setAttribute("pattern", "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
-  customerEmailInput.setAttribute("title", "Please enter a valid email address");
+  customerEmailInput.setAttribute(
+    "title",
+    "Please enter a valid email address",
+  );
 }
 const customerMobileInput = document.getElementById("customer-mobile");
 const customerAddressInput = document.getElementById("customer-address");
@@ -653,7 +656,9 @@ function formatApplePickerDisplay(value) {
 }
 
 function parseLocalDateValue(value) {
-  const parts = String(value || "").split("-").map(Number);
+  const parts = String(value || "")
+    .split("-")
+    .map(Number);
   if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) {
     return null;
   }
@@ -863,7 +868,9 @@ function renderAppleDatePicker() {
   const cells = [];
 
   for (let i = 0; i < firstWeekday; i += 1) {
-    cells.push('<span class="apple-date-picker-empty" aria-hidden="true"></span>');
+    cells.push(
+      '<span class="apple-date-picker-empty" aria-hidden="true"></span>',
+    );
   }
 
   for (let day = 1; day <= daysInMonth; day += 1) {
@@ -1012,7 +1019,6 @@ function initAppleStyleBookingDatePickers() {
 }
 
 initAppleStyleBookingDatePickers();
-
 
 /* ===============================
    CUSTOMER ADDRESS AUTOCOMPLETE
@@ -1217,7 +1223,9 @@ function normaliseRequiredFormType(value) {
 
 function getCurrentRequiredFormType() {
   return normaliseRequiredFormType(
-    REQUIRED_FORM_STATE.type || selectedAvailability?.requiredFormType || "long",
+    REQUIRED_FORM_STATE.type ||
+      selectedAvailability?.requiredFormType ||
+      "long",
   );
 }
 
@@ -1226,9 +1234,7 @@ function getCurrentRequiredFormLabel() {
     return "Checking automatically…";
   }
 
-  return getCurrentRequiredFormType() === "short"
-    ? "Short Form"
-    : "Long Form";
+  return getCurrentRequiredFormType() === "short" ? "Short Form" : "Long Form";
 }
 
 function setDetectedRequiredFormType(type, reason = "auto") {
@@ -1296,7 +1302,11 @@ async function checkRequiredFormRequirement({ force = false } = {}) {
     return getCurrentRequiredFormType();
   }
 
-  if (!force && REQUIRED_FORM_STATE.checked && REQUIRED_FORM_STATE.key === key) {
+  if (
+    !force &&
+    REQUIRED_FORM_STATE.checked &&
+    REQUIRED_FORM_STATE.key === key
+  ) {
     return getCurrentRequiredFormType();
   }
 
@@ -4851,7 +4861,6 @@ const FLEET_DETAIL_CONTENT = {
   },
 };
 
-
 function getVehicleImagePrefix(vehicle) {
   const prefixes = {
     "v35-1": "3.5T With Safety Bar (LS23)",
@@ -4880,18 +4889,21 @@ function getFleetImagesForVehicle(vehicle) {
     imageFiles = [vehicle.image.replace(/^images\//, "")];
   }
 
-  return imageFiles.map((file) => {
-    const value = String(file || "");
-    if (!value) return "";
-    if (/^https?:\/\//i.test(value)) return value;
-    return value.startsWith("images/") ? value : `images/${value}`;
-  }).filter(Boolean);
+  return imageFiles
+    .map((file) => {
+      const value = String(file || "");
+      if (!value) return "";
+      if (/^https?:\/\//i.test(value)) return value;
+      return value.startsWith("images/") ? value : `images/${value}`;
+    })
+    .filter(Boolean);
 }
 
 function getVehiclePreviewImage(vehicle) {
-  const images = typeof getFleetImagesForVehicle === "function"
-    ? getFleetImagesForVehicle(vehicle)
-    : [];
+  const images =
+    typeof getFleetImagesForVehicle === "function"
+      ? getFleetImagesForVehicle(vehicle)
+      : [];
 
   if (images.length) {
     return images[0];
@@ -4900,9 +4912,9 @@ function getVehiclePreviewImage(vehicle) {
   return vehicle?.image || "";
 }
 
-
 function getFleetDetail(vehicle) {
-  const fallbackHorses = vehicle?.horses || (String(vehicle?.id || "").startsWith("v35") ? 2 : "");
+  const fallbackHorses =
+    vehicle?.horses || (String(vehicle?.id || "").startsWith("v35") ? 2 : "");
   const fallbackSubtitle = [
     vehicle?.type,
     vehicle?.code,
@@ -4995,14 +5007,16 @@ function ensureFleetDetailOverlay() {
       }
     });
 
-    overlay.querySelector(".fleet-detail-book")?.addEventListener("click", () => {
-      const vehicleId = overlay.dataset.vehicleId;
-      closeFleetDetailOverlay();
+    overlay
+      .querySelector(".fleet-detail-book")
+      ?.addEventListener("click", () => {
+        const vehicleId = overlay.dataset.vehicleId;
+        closeFleetDetailOverlay();
 
-      if (vehicleId) {
-        startBooking(vehicleId);
-      }
-    });
+        if (vehicleId) {
+          startBooking(vehicleId);
+        }
+      });
   }
 
   return overlay;
@@ -6251,7 +6265,9 @@ async function createStripeCheckoutSession(booking) {
 =============================== */
     console.log("🧪 SENDING NAME:", customerNameInput?.value);
 
-    const requiredFormType = await checkRequiredFormRequirement({ force: true });
+    const requiredFormType = await checkRequiredFormRequirement({
+      force: true,
+    });
     booking.requiredFormType = requiredFormType;
     booking.requiredFormLink =
       requiredFormType === "short" ? booking.formLinkA : booking.formLinkB;
@@ -7136,7 +7152,9 @@ if (bookingForm) {
        FORMS
     =============================== */
 
-    const requiredFormType = await checkRequiredFormRequirement({ force: true });
+    const requiredFormType = await checkRequiredFormRequirement({
+      force: true,
+    });
     const hiredWithinLast3Months = requiredFormType === "short";
 
     const shortFormLink = buildFormUrl(FORM_LINK_A, bookingId);
@@ -7374,6 +7392,9 @@ window.fleetImages = window.fleetImages || [
   "3.5 T Stallion (DL22)3.webp",
   "3.5 T Stallion (DL22)4.webp",
   "3.5 T Stallion (DL22)5.webp",
+  "3.5 T Stallion (DL22)6.webp",
+  "3.5 T Stallion (DL22)7.webp",
+  "3.5 T Stallion (DL22)8.webp",
   "3.5 T With Breast Bar (CA21)1.webp",
   "3.5 T With Breast Bar (CA21)2.webp",
   "3.5 T With Breast Bar (CA21)3.webp",
@@ -7679,8 +7700,12 @@ async function showVehiclePreview(date, event) {
 
           if (pickupDateInput) {
             pickupDateInput.value = selectedDateKey;
-            pickupDateInput.dispatchEvent(new Event("input", { bubbles: true }));
-            pickupDateInput.dispatchEvent(new Event("change", { bubbles: true }));
+            pickupDateInput.dispatchEvent(
+              new Event("input", { bubbles: true }),
+            );
+            pickupDateInput.dispatchEvent(
+              new Event("change", { bubbles: true }),
+            );
           }
 
           if (selectedLorryInput) selectedLorryInput.value = vehicle.name;
@@ -7707,7 +7732,9 @@ async function showVehiclePreview(date, event) {
               if (pickupTimeInput) pickupTimeInput.value = "07:00";
             }
 
-            durationDaysInput.dispatchEvent(new Event("change", { bubbles: true }));
+            durationDaysInput.dispatchEvent(
+              new Event("change", { bubbles: true }),
+            );
           }
 
           await syncPickupTimeOptions(selectedDateKey);
