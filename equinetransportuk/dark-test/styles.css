@@ -11016,3 +11016,153 @@ html body.dark-keynote-v8.header-phone-collapsed .site-header .phone-link {
   }
 }
 
+
+/* ======================================================
+   DARK KEYNOTE V37 — Contact page dark theme
+====================================================== */
+
+body.dark-keynote-v8.contact-dark-page {
+  --bg: #031321;
+  --card: rgba(7,25,43,.82);
+  --text: #ffffff;
+  --muted: rgba(229,239,255,.76);
+  --line: rgba(222,238,255,.20);
+  --accent: #2f7dff;
+  min-height: 100vh !important;
+  color: #ffffff !important;
+  background:
+    radial-gradient(circle at 72% 8%, rgba(47,125,255,.20), transparent 34rem),
+    radial-gradient(circle at 12% 18%, rgba(255,230,0,.055), transparent 22rem),
+    linear-gradient(135deg, #031321 0%, #06182c 56%, #08213a 100%) !important;
+  background-attachment: fixed !important;
+  overflow-x: hidden !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .site-header {
+  background: rgba(3,14,26,.76) !important;
+  border-bottom: 1px solid rgba(222,238,255,.10) !important;
+  backdrop-filter: blur(22px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.05) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .contact-page {
+  padding-top: clamp(38px, 5vw, 74px) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .brand-name,
+body.dark-keynote-v8.contact-dark-page .main-nav a,
+body.dark-keynote-v8.contact-dark-page h1,
+body.dark-keynote-v8.contact-dark-page h2,
+body.dark-keynote-v8.contact-dark-page h3,
+body.dark-keynote-v8.contact-dark-page strong,
+body.dark-keynote-v8.contact-dark-page label {
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .brand-group,
+body.dark-keynote-v8.contact-dark-page .lead,
+body.dark-keynote-v8.contact-dark-page .muted,
+body.dark-keynote-v8.contact-dark-page p,
+body.dark-keynote-v8.contact-dark-page li,
+body.dark-keynote-v8.contact-dark-page .directions-section p {
+  color: rgba(229,239,255,.76) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .brand-subtitle,
+body.dark-keynote-v8.contact-dark-page .kicker {
+  color: #ffe600 !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .contact-panel,
+body.dark-keynote-v8.contact-dark-page .contact-detail,
+body.dark-keynote-v8.contact-dark-page .directions-section {
+  color: #ffffff !important;
+  border: 1px solid rgba(222,238,255,.20) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.105), rgba(255,255,255,.035)),
+    rgba(7,25,43,.82) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    0 24px 70px rgba(0,0,0,.30) !important;
+  backdrop-filter: blur(18px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.05) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .map-card {
+  overflow: hidden !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .contact-detail,
+body.dark-keynote-v8.contact-dark-page .directions-section {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 14px 34px rgba(0,0,0,.18) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .contact-detail a,
+body.dark-keynote-v8.contact-dark-page .footer-contact a,
+body.dark-keynote-v8.contact-dark-page .contact-panel a {
+  color: #8ec5ff !important;
+  text-decoration-color: rgba(142,197,255,.42) !important;
+  text-underline-offset: 3px !important;
+}
+
+body.dark-keynote-v8.contact-dark-page input,
+body.dark-keynote-v8.contact-dark-page select,
+body.dark-keynote-v8.contact-dark-page textarea {
+  color: #ffffff !important;
+  background: rgba(3,13,24,.62) !important;
+  border-color: rgba(222,238,255,.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page input::placeholder,
+body.dark-keynote-v8.contact-dark-page textarea::placeholder {
+  color: rgba(229,239,255,.46) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page input:focus,
+body.dark-keynote-v8.contact-dark-page select:focus,
+body.dark-keynote-v8.contact-dark-page textarea:focus {
+  outline: none !important;
+  border-color: rgba(93,163,255,.75) !important;
+  box-shadow:
+    0 0 0 4px rgba(47,125,255,.18),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .contact-actions-row .btn.ghost,
+body.dark-keynote-v8.contact-dark-page .btn.ghost {
+  color: #ffffff !important;
+  background: rgba(4,16,30,.46) !important;
+  border-color: rgba(93,163,255,.54) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .map-frame {
+  filter: saturate(.92) contrast(1.02) brightness(.88) !important;
+  border-bottom: 1px solid rgba(222,238,255,.14) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .site-footer {
+  color: rgba(229,239,255,.72) !important;
+  border-top-color: rgba(222,238,255,.14) !important;
+}
+
+body.dark-keynote-v8.contact-dark-page .footer-menu a,
+body.dark-keynote-v8.contact-dark-page .site-footer h3,
+body.dark-keynote-v8.contact-dark-page .site-footer h4 {
+  color: #ffffff !important;
+}
+
+@media (max-width: 860px) {
+  body.dark-keynote-v8.contact-dark-page .contact-page {
+    padding-top: 24px !important;
+  }
+
+  body.dark-keynote-v8.contact-dark-page .contact-panel,
+  body.dark-keynote-v8.contact-dark-page .contact-detail,
+  body.dark-keynote-v8.contact-dark-page .directions-section {
+    border-radius: 20px !important;
+  }
+}
+
