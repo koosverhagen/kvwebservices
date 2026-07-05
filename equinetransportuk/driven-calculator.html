@@ -456,7 +456,8 @@
           <p class="blue-note">
             Minimum charge: 3.5T driven transport £90, then £1.10 per mile after
             81.82 miles. 7.5T driven transport £100, then £1.50 per mile after
-            66.67 miles.
+            66.67 miles. Extra horses are charged at £50 each after the first
+            horse.
           </p>
         </div>
 
@@ -561,6 +562,9 @@
             <div class="summary-box">
               <small>Waiting</small><strong id="waiting-display">£0.00</strong>
             </div>
+            <div class="summary-box">
+              <small>Extra horses</small><strong id="horse-extra-display">£0.00</strong>
+            </div>
             <div class="summary-box total">
               <small>Guide transport estimate</small
               ><strong id="total-cost-display">£0.00</strong>
@@ -588,6 +592,7 @@
     </div>
 
     <script>
+      // HORSE PRICING V40 — £50 per extra horse, vehicle max enforced
       const MAPS_KEY_ENDPOINT =
         "https://equine-bookings-api.kverhagen.workers.dev/api/maps-key";
       const BASE_ADDRESS =
@@ -617,15 +622,37 @@
             perMile: 1.1,
             minimumCharge: 90,
             waitingPerHour: 25,
-            horseExtra: 10,
+            horseExtra: 50,
+            maxHorses: 2,
           },
           "7.5t": {
             perMile: 1.5,
             minimumCharge: 100,
             waitingPerHour: 35,
-            horseExtra: 15,
+            horseExtra: 50,
+            maxHorses: 4,
           },
         };
+
+        function syncHorseOptions() {
+          const rate = rates[lorryTypeSelect.value] || rates["3.5t"];
+          const currentValue = Number(horseCountSelect.value || 1);
+          const maxHorses = rate.maxHorses || 1;
+
+          horseCountSelect.innerHTML = "";
+
+          for (let count = 1; count <= maxHorses; count += 1) {
+            const option = document.createElement("option");
+            option.value = String(count);
+            option.textContent = count === 1 ? "1 horse" : `${count} horses`;
+            horseCountSelect.appendChild(option);
+          }
+
+          horseCountSelect.value = String(Math.min(currentValue, maxHorses));
+        }
+
+        lorryTypeSelect.addEventListener("change", syncHorseOptions);
+        syncHorseOptions();
 
         const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = new google.maps.DirectionsRenderer({
@@ -701,7 +728,7 @@
           const destinationAddress = destinationAddressInput.value.trim();
           const destinationAddress2 = destinationAddress2Input.value.trim();
           const departureTime = departureTimeInput.value;
-          const horseCount = Number(horseCountSelect.value || 1);
+          const requestedHorseCount = Number(horseCountSelect.value || 1);
           const waitingHours = Number(waitingHoursSelect.value || 0);
           const hasDestination2 = !!destinationAddress2;
 
@@ -784,6 +811,14 @@
             );
 
             const rate = rates[lorryType];
+            const horseCount = Math.min(
+              Math.max(1, requestedHorseCount),
+              rate.maxHorses,
+            );
+
+            if (horseCount !== requestedHorseCount) {
+              horseCountSelect.value = String(horseCount);
+            }
 
             const mileageCost = totalMiles * rate.perMile;
             const baseTransportCost = Math.max(
@@ -792,8 +827,7 @@
             );
 
             const waitingCost = waitingHours * rate.waitingPerHour;
-            const extraHorseCost =
-              Math.max(0, horseCount - 1) * rate.horseExtra;
+            const extraHorseCost = Math.max(0, horseCount - 1) * rate.horseExtra;
 
             const rawGuideTotal =
               baseTransportCost + waitingCost + extraHorseCost;
@@ -813,6 +847,8 @@
               `£${rate.perMile.toFixed(2)}/mile`;
             document.getElementById("waiting-display").textContent =
               `£${waitingCost.toFixed(2)}`;
+            document.getElementById("horse-extra-display").textContent =
+              `£${extraHorseCost.toFixed(2)}`;
             document.getElementById("total-cost-display").textContent =
               `£${guideTotal.toFixed(2)}`;
 
@@ -855,6 +891,7 @@
           destinationAddressInput.value = "";
           destinationAddress2Input.value = "";
           departureTimeInput.value = "";
+          syncHorseOptions();
           horseCountSelect.value = "1";
           waitingHoursSelect.value = "0";
           resultsDiv.style.display = "none";
