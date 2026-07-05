@@ -10300,3 +10300,51 @@ body.dark-keynote-v8 .hero-slide-dot.is-active {
     mask-image: radial-gradient(white, black) !important;
   }
 }
+
+/* ======================================================
+   DARK KEYNOTE V30 — Details DOB icon + mobile hero offset
+====================================================== */
+
+/* 1) Make date-picker calendar icons visible on the dark booking forms. */
+body.dark-keynote-v8 #customer-dob,
+body.dark-keynote-v8 input#customer-dob[type="date"] {
+  color-scheme: dark !important;
+}
+
+body.dark-keynote-v8 #customer-dob::-webkit-calendar-picker-indicator,
+body.dark-keynote-v8 input#customer-dob[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1 !important;
+  cursor: pointer !important;
+  filter: invert(1) brightness(2.4) contrast(1.15) drop-shadow(0 0 4px rgba(255,255,255,.25)) !important;
+}
+
+/* 2) Mobile: stop the hero slideshow sitting partly underneath the sticky header. */
+@media (max-width: 800px) {
+  body.dark-keynote-v8 .site-header {
+    z-index: 5000 !important;
+  }
+
+  body.dark-keynote-v8 .keynote-hero {
+    padding-top: max(18px, env(safe-area-inset-top)) !important;
+    overflow: visible !important;
+  }
+
+  body.dark-keynote-v8 .hero-stage {
+    padding-top: 18px !important;
+  }
+
+  body.dark-keynote-v8 .hero-slideshow {
+    margin-top: 8px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  body.dark-keynote-v8 .keynote-hero {
+    padding-top: 20px !important;
+  }
+
+  body.dark-keynote-v8 .hero-stage {
+    padding-top: 20px !important;
+  }
+}
+
