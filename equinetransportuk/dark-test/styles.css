@@ -10944,3 +10944,75 @@ body.dark-keynote-v8.calculators-dark-page .calculator-frame {
   background: rgba(3,13,24,.72) !important;
 }
 
+
+/* ======================================================
+   DARK KEYNOTE V36 — Robust phone number / menu overlap fix
+   Keeps the full menu clean while resizing. The phone number is hidden
+   before it can collide with the Contact link.
+====================================================== */
+
+/* Manual safety range found from resize testing/video:
+   Hide the phone number through the tight desktop widths. */
+@media (min-width: 981px) and (max-width: 1500px) {
+  html body.dark-keynote-v8 header.site-header a.phone-link,
+  html body.dark-keynote-v8 .site-header .phone-link {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  html body.dark-keynote-v8 .header-inner {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: clamp(12px, 1.35vw, 24px) !important;
+  }
+
+  html body.dark-keynote-v8 .main-nav {
+    justify-content: flex-end !important;
+    gap: clamp(12px, 1.45vw, 26px) !important;
+  }
+
+  html body.dark-keynote-v8 .main-nav a {
+    font-size: clamp(13px, 1.12vw, 16px) !important;
+    letter-spacing: -0.045em !important;
+  }
+}
+
+/* JS-backed guard for any odd browser width/font combination. */
+html body.dark-keynote-v8.header-phone-collapsed header.site-header a.phone-link,
+html body.dark-keynote-v8.header-phone-collapsed .site-header .phone-link {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+@media (min-width: 981px) {
+  html body.dark-keynote-v8.header-phone-collapsed .header-inner {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: clamp(12px, 1.35vw, 24px) !important;
+  }
+
+  html body.dark-keynote-v8.header-phone-collapsed .main-nav {
+    justify-content: flex-end !important;
+    gap: clamp(12px, 1.45vw, 26px) !important;
+  }
+
+  html body.dark-keynote-v8.header-phone-collapsed .main-nav a {
+    font-size: clamp(13px, 1.12vw, 16px) !important;
+    letter-spacing: -0.045em !important;
+  }
+}
+

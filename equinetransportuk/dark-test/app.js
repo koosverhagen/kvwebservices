@@ -8922,3 +8922,96 @@ if (document.readyState === "loading") {
 } else {
   initDobCalendarWhiteIconV33();
 }
+
+/* ======================================================
+   DARK KEYNOTE V36 — responsive header phone guard
+   Prevents the blue phone number from overlapping the menu while resizing.
+====================================================== */
+
+function initHeaderPhoneOverlapGuardV36() {
+  const body = document.body;
+  const header = document.querySelector(".site-header");
+  const inner = header?.querySelector(".header-inner");
+  const brand = header?.querySelector(".brand");
+  const nav = header?.querySelector(".main-nav");
+  const phone = header?.querySelector(".phone-link");
+
+  if (!body || !header || !inner || !brand || !nav || !phone) return;
+
+  const measurePhoneWidth = () => {
+    const wasCollapsed = body.classList.contains("header-phone-collapsed");
+    if (wasCollapsed) body.classList.remove("header-phone-collapsed");
+
+    const width = Math.max(
+      phone.scrollWidth || 0,
+      phone.getBoundingClientRect().width || 0,
+      128,
+    );
+
+    phone.dataset.phoneNaturalWidth = String(Math.ceil(width));
+
+    if (wasCollapsed) body.classList.add("header-phone-collapsed");
+    return width;
+  };
+
+  let naturalPhoneWidth = measurePhoneWidth();
+  let ticking = false;
+
+  const update = () => {
+    ticking = false;
+
+    const viewport = window.innerWidth || document.documentElement.clientWidth || 0;
+
+    if (viewport < 981) {
+      body.classList.remove("header-phone-collapsed");
+      return;
+    }
+
+    const innerWidth = inner.clientWidth || inner.getBoundingClientRect().width || viewport;
+    const brandWidth = brand.getBoundingClientRect().width || brand.scrollWidth || 0;
+    const navWidth = Math.max(nav.scrollWidth || 0, nav.getBoundingClientRect().width || 0);
+    const phoneWidth = Number(phone.dataset.phoneNaturalWidth || naturalPhoneWidth || 128);
+
+    /* Extra breathing room prevents the edge-case touch/overlap while dragging
+       the browser width. */
+    const safetyGap = 68;
+
+    const shouldHide =
+      viewport <= 1500 ||
+      brandWidth + navWidth + phoneWidth + safetyGap > innerWidth;
+
+    body.classList.toggle("header-phone-collapsed", shouldHide);
+  };
+
+  const requestUpdate = () => {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(update);
+  };
+
+  window.addEventListener("resize", requestUpdate, { passive: true });
+  window.addEventListener("orientationchange", requestUpdate, { passive: true });
+
+  if ("ResizeObserver" in window) {
+    const observer = new ResizeObserver(() => {
+      naturalPhoneWidth = measurePhoneWidth();
+      requestUpdate();
+    });
+    observer.observe(inner);
+    observer.observe(nav);
+    observer.observe(brand);
+  }
+
+  window.addEventListener("load", () => {
+    naturalPhoneWidth = measurePhoneWidth();
+    requestUpdate();
+  });
+
+  requestUpdate();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initHeaderPhoneOverlapGuardV36);
+} else {
+  initHeaderPhoneOverlapGuardV36();
+}
