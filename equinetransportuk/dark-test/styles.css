@@ -10854,100 +10854,17 @@ body.dark-keynote-v8.terms-dark-page .site-footer {
 
 
 /* ======================================================
-   DARK KEYNOTE V34 — wider header phone hide, PDF fix support,
-   and calculators dark theme.
+   DARK KEYNOTE V35 — Calculator cards dark glass fix
+   The calculators page had inline white card styles; these !important
+   overrides make the cards match the dark theme.
 ====================================================== */
 
-/* 1) Hide the blue phone number for the full squeeze range where it can overlap Contact. */
-@media (min-width: 981px) and (max-width: 1350px) {
-  html body.dark-keynote-v8 header.site-header a.phone-link,
-  html body.dark-keynote-v8 .site-header .phone-link,
-  html body.dark-keynote-v8 .header-inner > a.phone-link {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    max-width: 0 !important;
-    min-width: 0 !important;
-    flex: 0 0 0 !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    pointer-events: none !important;
-  }
-
-  html body.dark-keynote-v8 .header-inner {
-    grid-template-columns: auto minmax(0, 1fr) !important;
-    gap: clamp(12px, 1.25vw, 20px) !important;
-  }
-
-  html body.dark-keynote-v8 .main-nav {
-    justify-content: flex-end !important;
-    gap: clamp(12px, 1.22vw, 20px) !important;
-  }
-
-  html body.dark-keynote-v8 .main-nav a {
-    font-size: clamp(13px, 1.10vw, 15px) !important;
-    letter-spacing: -0.04em !important;
-  }
-}
-
-/* 2) Calculators page dark theme. */
-body.dark-keynote-v8.calculators-dark-page {
-  --bg: #031321;
-  --card: rgba(7,25,43,.82);
-  --text: #ffffff;
-  --muted: rgba(229,239,255,.76);
-  --line: rgba(222,238,255,.20);
-  --accent: #2f7dff;
+body.dark-keynote-v8.calculators-dark-page .calculator-card {
   color: #ffffff !important;
-  background:
-    radial-gradient(circle at 72% 8%, rgba(47,125,255,.20), transparent 34rem),
-    radial-gradient(circle at 12% 18%, rgba(255,230,0,.055), transparent 22rem),
-    linear-gradient(135deg, #031321 0%, #06182c 56%, #08213a 100%) !important;
-  overflow-x: hidden !important;
-}
-
-body.dark-keynote-v8.calculators-dark-page .site-header {
-  background: rgba(3,14,26,.76) !important;
-  border-bottom: 1px solid rgba(222,238,255,.10) !important;
-  backdrop-filter: blur(22px) saturate(1.05) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(1.05) !important;
-}
-
-body.dark-keynote-v8.calculators-dark-page .calculators-page {
-  padding-top: clamp(38px, 5vw, 74px) !important;
-}
-
-body.dark-keynote-v8.calculators-dark-page .brand-name,
-body.dark-keynote-v8.calculators-dark-page .main-nav a,
-body.dark-keynote-v8.calculators-dark-page h1,
-body.dark-keynote-v8.calculators-dark-page h2,
-body.dark-keynote-v8.calculators-dark-page h3,
-body.dark-keynote-v8.calculators-dark-page strong {
-  color: #ffffff !important;
-}
-
-body.dark-keynote-v8.calculators-dark-page .brand-group,
-body.dark-keynote-v8.calculators-dark-page .lead,
-body.dark-keynote-v8.calculators-dark-page .muted,
-body.dark-keynote-v8.calculators-dark-page p,
-body.dark-keynote-v8.calculators-dark-page li {
-  color: rgba(229,239,255,.76) !important;
-}
-
-body.dark-keynote-v8.calculators-dark-page .brand-subtitle,
-body.dark-keynote-v8.calculators-dark-page .kicker {
-  color: #ffe600 !important;
-}
-
-body.dark-keynote-v8.calculators-dark-page .calculator-card,
-body.dark-keynote-v8.calculators-dark-page .calculator-modal-card {
-  color: #ffffff !important;
-  border: 1px solid rgba(222,238,255,.20) !important;
   background:
     linear-gradient(135deg, rgba(255,255,255,.105), rgba(255,255,255,.035)),
     rgba(7,25,43,.82) !important;
+  border: 1px solid rgba(222,238,255,.20) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.10),
     0 24px 70px rgba(0,0,0,.30) !important;
@@ -10957,18 +10874,36 @@ body.dark-keynote-v8.calculators-dark-page .calculator-modal-card {
 
 body.dark-keynote-v8.calculators-dark-page .calculator-card::before {
   background:
-    radial-gradient(circle at top right, rgba(47,125,255,.24), transparent 38%),
-    radial-gradient(circle at bottom left, rgba(255,230,0,.055), transparent 28%) !important;
+    radial-gradient(circle at top right, rgba(47,125,255,.26), transparent 42%),
+    radial-gradient(circle at bottom left, rgba(255,230,0,.055), transparent 36%) !important;
+}
+
+body.dark-keynote-v8.calculators-dark-page .calculator-card h2,
+body.dark-keynote-v8.calculators-dark-page .calculator-card strong {
+  color: #ffffff !important;
+}
+
+body.dark-keynote-v8.calculators-dark-page .calculator-card p,
+body.dark-keynote-v8.calculators-dark-page .calculator-card .muted {
+  color: rgba(229,239,255,.76) !important;
+}
+
+body.dark-keynote-v8.calculators-dark-page .calculator-card .kicker {
+  color: #ffe600 !important;
 }
 
 body.dark-keynote-v8.calculators-dark-page .calculator-icon {
   color: #ffffff !important;
-  background: rgba(47,125,255,.22) !important;
-  border-color: rgba(93,163,255,.48) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.10) !important;
+  background:
+    linear-gradient(135deg, rgba(47,125,255,.30), rgba(47,125,255,.12)),
+    rgba(4,16,30,.52) !important;
+  border: 1px solid rgba(93,163,255,.46) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 12px 28px rgba(0,0,0,.20) !important;
 }
 
-body.dark-keynote-v8.calculators-dark-page .btn.ghost {
+body.dark-keynote-v8.calculators-dark-page .calculator-card-actions .btn.ghost {
   color: #ffffff !important;
   background: rgba(4,16,30,.46) !important;
   border-color: rgba(93,163,255,.54) !important;
@@ -10980,33 +10915,32 @@ body.dark-keynote-v8.calculators-dark-page .calculator-modal {
   -webkit-backdrop-filter: blur(16px) saturate(1.05) !important;
 }
 
+body.dark-keynote-v8.calculators-dark-page .calculator-modal-card {
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.105), rgba(255,255,255,.035)),
+    rgba(7,25,43,.88) !important;
+  border: 1px solid rgba(222,238,255,.20) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    0 34px 90px rgba(0,0,0,.42) !important;
+}
+
 body.dark-keynote-v8.calculators-dark-page .calculator-modal-header {
   border-bottom-color: rgba(222,238,255,.16) !important;
 }
 
+body.dark-keynote-v8.calculators-dark-page .calculator-modal-header h3 {
+  color: #ffffff !important;
+}
+
 body.dark-keynote-v8.calculators-dark-page .calculator-modal-close {
   color: #ffffff !important;
-  border-color: rgba(222,238,255,.24) !important;
   background: rgba(255,255,255,.09) !important;
+  border-color: rgba(222,238,255,.24) !important;
 }
 
 body.dark-keynote-v8.calculators-dark-page .calculator-frame {
   background: rgba(3,13,24,.72) !important;
-}
-
-body.dark-keynote-v8.calculators-dark-page .site-footer {
-  color: rgba(229,239,255,.72) !important;
-  border-top-color: rgba(222,238,255,.14) !important;
-}
-
-@media (max-width: 700px) {
-  body.dark-keynote-v8.calculators-dark-page .calculators-page {
-    padding-top: 24px !important;
-  }
-
-  body.dark-keynote-v8.calculators-dark-page .calculator-card,
-  body.dark-keynote-v8.calculators-dark-page .calculator-modal-card {
-    border-radius: 22px !important;
-  }
 }
 
