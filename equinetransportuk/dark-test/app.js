@@ -7465,6 +7465,8 @@ window.fleetImages = window.fleetImages || [
   "7.5 T 3 Horses with Living4.webp",
   "7.5 T 3 Horses with Living5.webp",
   "7.5 T 3 Horses with Living6.webp",
+  "7.5 T 3 Horses with Living7.webp",
+  "7.5 T 3 Horses with Living8.webp",
   "7.5 T 4 Horses No Living1.webp",
   "7.5 T 4 Horses No Living2.webp",
   "7.5 T 4 Horses No Living3.webp",
@@ -8960,17 +8962,25 @@ function initHeaderPhoneOverlapGuardV36() {
   const update = () => {
     ticking = false;
 
-    const viewport = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewport =
+      window.innerWidth || document.documentElement.clientWidth || 0;
 
     if (viewport < 981) {
       body.classList.remove("header-phone-collapsed");
       return;
     }
 
-    const innerWidth = inner.clientWidth || inner.getBoundingClientRect().width || viewport;
-    const brandWidth = brand.getBoundingClientRect().width || brand.scrollWidth || 0;
-    const navWidth = Math.max(nav.scrollWidth || 0, nav.getBoundingClientRect().width || 0);
-    const phoneWidth = Number(phone.dataset.phoneNaturalWidth || naturalPhoneWidth || 128);
+    const innerWidth =
+      inner.clientWidth || inner.getBoundingClientRect().width || viewport;
+    const brandWidth =
+      brand.getBoundingClientRect().width || brand.scrollWidth || 0;
+    const navWidth = Math.max(
+      nav.scrollWidth || 0,
+      nav.getBoundingClientRect().width || 0,
+    );
+    const phoneWidth = Number(
+      phone.dataset.phoneNaturalWidth || naturalPhoneWidth || 128,
+    );
 
     /* Extra breathing room prevents the edge-case touch/overlap while dragging
        the browser width. */
@@ -8990,7 +9000,9 @@ function initHeaderPhoneOverlapGuardV36() {
   };
 
   window.addEventListener("resize", requestUpdate, { passive: true });
-  window.addEventListener("orientationchange", requestUpdate, { passive: true });
+  window.addEventListener("orientationchange", requestUpdate, {
+    passive: true,
+  });
 
   if ("ResizeObserver" in window) {
     const observer = new ResizeObserver(() => {
