@@ -7417,6 +7417,8 @@ window.fleetImages = window.fleetImages || [
   "7.5 T 3 Horses with Living4.webp",
   "7.5 T 3 Horses with Living5.webp",
   "7.5 T 3 Horses with Living6.webp",
+  "7.5 T 3 Horses with Living7.webp",
+  "7.5 T 3 Horses with Living8.webp",
   "7.5 T 4 Horses No Living1.webp",
   "7.5 T 4 Horses No Living2.webp",
   "7.5 T 4 Horses No Living3.webp",
