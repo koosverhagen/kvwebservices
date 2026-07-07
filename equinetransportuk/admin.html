@@ -339,6 +339,41 @@
         font-weight: 700;
       }
 
+      .booking-customer-link {
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        background: transparent;
+        padding: 0;
+        margin: 0;
+        color: var(--accent);
+        font: inherit;
+        font-weight: 900;
+        line-height: inherit;
+        text-align: left;
+        cursor: pointer;
+        text-decoration: none;
+        border-bottom: 1px dashed rgba(31, 111, 235, 0.45);
+      }
+
+      .booking-customer-link:hover {
+        color: var(--accent-dark);
+        border-bottom-color: var(--accent-dark);
+      }
+
+      .booking-customer-link:focus-visible {
+        outline: 3px solid rgba(31, 111, 235, 0.25);
+        outline-offset: 3px;
+        border-radius: 6px;
+      }
+
+      .mobile-booking-name .booking-customer-link {
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        line-height: inherit;
+      }
+
       .booking-id {
         font-weight: 800;
         color: var(--accent);
@@ -9352,6 +9387,37 @@ Equine Transport UK`;
       function getCustomerEmail(booking) {
         return booking?.customerEmail || booking?.customer_email || "—";
       }
+
+      function getBookingCustomerEmailValue(booking = {}) {
+        return String(
+          booking.customerEmail ||
+            booking.customer_email ||
+            booking.email ||
+            booking.customer?.email ||
+            "",
+        ).trim();
+      }
+
+      function buildBookingCustomerLink(booking = {}, label = "") {
+        const bookingId = String(booking.id || "").trim();
+        const name = String(label || getCustomerName(booking) || "Customer").trim();
+
+        if (!bookingId || !name || name === "—") {
+          return escapeHtml(name || "Customer");
+        }
+
+        return `
+          <button
+            class="booking-customer-link js-open-customer-card"
+            type="button"
+            data-booking-id="${escapeHtml(bookingId)}"
+            title="Open customer card and booking history"
+          >
+            ${escapeHtml(name)}
+          </button>
+        `;
+      }
+
       function normaliseSmsPhone(value) {
         let phone = String(value || "").trim();
 
@@ -11397,7 +11463,7 @@ Equine Transport UK`;
           const customerCell = `
   <div class="customer-block">
     <div class="customer-name">
-      ${escapeHtml(getCustomerName(booking))}
+      ${buildBookingCustomerLink(booking, getCustomerName(booking))}
       ${isCancelled ? '<span class="badge-cancelled">Cancelled</span>' : ""}
     </div>
     ${buildResendConfirmationPanel(booking)}
@@ -11882,7 +11948,7 @@ Equine Transport UK`;
               <div>
 
                 <div class="mobile-booking-name">
-                  ${escapeHtml(customerName)}
+                  ${buildBookingCustomerLink(booking, customerName)}
                 </div>
 
                 <div class="mobile-booking-ref">
@@ -12818,6 +12884,144 @@ ${mobileOutstandingText}
         customerModal?.classList.add("hidden");
       }
 
+      function findRenderedBookingById(bookingId) {
+        const id = String(bookingId || "").trim();
+
+        if (!id) return null;
+
+        return (
+          (allBookings || []).find((booking) => String(booking.id) === id) ||
+          (filteredBookings || []).find((booking) => String(booking.id) === id) ||
+          CUSTOMER_BOOKING_CACHE[String(id)] ||
+          null
+        );
+      }
+
+      function customerFromBooking(booking = {}) {
+        const nestedCustomer = booking.customer || {};
+
+        return {
+          id:
+            booking.customerId ||
+            booking.customer_id ||
+            nestedCustomer.id ||
+            "",
+          full_name:
+            booking.customerName ||
+            booking.customer_name ||
+            nestedCustomer.full_name ||
+            nestedCustomer.name ||
+            "",
+          email: getBookingCustomerEmailValue(booking),
+          mobile:
+            booking.customerMobile ||
+            booking.customer_mobile ||
+            booking.mobile ||
+            nestedCustomer.mobile ||
+            "",
+          address:
+            booking.customerAddress ||
+            booking.customer_address ||
+            nestedCustomer.address ||
+            "",
+          dob:
+            booking.customerDob ||
+            booking.customer_dob ||
+            nestedCustomer.dob ||
+            "",
+          notes:
+            booking.customerNotes ||
+            booking.customer_notes ||
+            nestedCustomer.notes ||
+            "",
+        };
+      }
+
+      function findLoadedCustomerForBooking(booking = {}) {
+        const email = getBookingCustomerEmailValue(booking).toLowerCase();
+        const mobile = String(
+          booking.customerMobile || booking.customer_mobile || "",
+        )
+          .trim()
+          .replace(/\s+/g, "");
+        const name = String(getCustomerName(booking) || "")
+          .trim()
+          .toLowerCase();
+
+        return (ALL_CUSTOMERS || []).find((customer) => {
+          const customerEmail = String(customer.email || "").trim().toLowerCase();
+          const customerMobile = String(customer.mobile || "")
+            .trim()
+            .replace(/\s+/g, "");
+          const customerName = String(customer.full_name || "")
+            .trim()
+            .toLowerCase();
+
+          return (
+            (email && customerEmail === email) ||
+            (mobile && customerMobile === mobile) ||
+            (name && customerName === name)
+          );
+        });
+      }
+
+      async function openCustomerCardFromBooking(bookingOrId) {
+        const booking =
+          typeof bookingOrId === "string"
+            ? findRenderedBookingById(bookingOrId)
+            : bookingOrId;
+
+        if (!booking) {
+          alert("Booking not found");
+          return;
+        }
+
+        const fallbackCustomer = customerFromBooking(booking);
+        const loadedCustomer = findLoadedCustomerForBooking(booking);
+
+        openCustomerModal(loadedCustomer || fallbackCustomer);
+
+        const email = getBookingCustomerEmailValue(booking);
+
+        if (!email) return;
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/customers/search?q=${encodeURIComponent(email)}`,
+            { cache: "no-store" },
+          );
+
+          if (!res.ok) return;
+
+          const data = await res.json();
+          const exactCustomer = (data.results || []).find(
+            (customer) =>
+              String(customer.email || "").trim().toLowerCase() ===
+              email.trim().toLowerCase(),
+          );
+
+          if (exactCustomer) {
+            SELECTED_CRM_CUSTOMER = exactCustomer;
+
+            customerEditId.value = exactCustomer.id || "";
+            customerEditName.value = exactCustomer.full_name || "";
+            customerEditEmail.value = exactCustomer.email || "";
+            customerEditMobile.value = exactCustomer.mobile || "";
+            customerEditAddress.value = exactCustomer.address || "";
+            customerEditDob.value = exactCustomer.dob || "";
+            customerEditNotes.value = exactCustomer.notes || "";
+
+            customerModalTitle.textContent = `Customer — ${
+              exactCustomer.full_name || fallbackCustomer.full_name || ""
+            }`;
+
+            loadCustomerBookings(exactCustomer.email || email);
+          }
+        } catch (err) {
+          console.warn("Could not refresh customer card details:", err);
+        }
+      }
+
       async function loadCustomerBookings(email) {
         if (!customerBookingsList) return;
 
@@ -13022,6 +13226,17 @@ ${mobileOutstandingText}
       customerModalClose?.addEventListener("click", closeCustomerModal);
       customerCloseBtn?.addEventListener("click", closeCustomerModal);
       customerModalBackdrop?.addEventListener("click", closeCustomerModal);
+
+      document.addEventListener("click", (event) => {
+        const button = event.target.closest(".js-open-customer-card");
+
+        if (!button) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        openCustomerCardFromBooking(button.dataset.bookingId || "");
+      });
 
       function openAdminAddBooking() {
         closeMobileMenu();
