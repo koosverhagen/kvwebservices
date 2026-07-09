@@ -5419,12 +5419,12 @@
 
       /* ===============================
    STEP 3B — HANDOVER ACTION BUTTONS
-   Save / Complete / Print / Email / Close
+   Save / Complete / Sign Link / Print / Email / Close
 ================================ */
 
       #handover-modal .handover-inline-actions.handover-actions-5 {
         display: grid !important;
-        grid-template-columns: repeat(5, 1fr) !important;
+        grid-template-columns: repeat(6, 1fr) !important;
         gap: 10px !important;
 
         margin-left: 18px !important;
@@ -5458,6 +5458,12 @@
         background: #fff7ed !important;
         color: #b45309 !important;
         border: 1px solid #fed7aa !important;
+      }
+
+      #handover-modal #handover-send-sign-btn {
+        background: #eff6ff !important;
+        color: #1d4ed8 !important;
+        border: 1px solid #bfdbfe !important;
       }
 
       @media (max-width: 1100px) {
@@ -5537,6 +5543,17 @@
       .handover-complete-pill.is-complete {
         background: #e6f4ea;
         color: #137a3d;
+      }
+
+      .handover-complete-pill.is-customer-signed {
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+
+      [data-open-handover].handover-is-customer-signed {
+        background: #eff6ff !important;
+        color: #1d4ed8 !important;
+        border-color: #bfdbfe !important;
       }
 
       /* ===============================
@@ -6919,6 +6936,7 @@
               <select id="handover-status-select">
                 <option value="draft">Draft</option>
                 <option value="in_progress">In progress</option>
+                <option value="customer_signed">Customer signed digitally</option>
                 <option value="complete">Complete</option>
               </select>
             </div>
@@ -7167,6 +7185,10 @@
               type="button"
             >
               Complete handover
+            </button>
+
+            <button class="btn ghost" id="handover-send-sign-btn" type="button">
+              Send to sign
             </button>
 
             <button class="btn ghost" id="handover-print-btn" type="button">
@@ -7984,6 +8006,9 @@
         "handover-complete-btn",
       );
       const handoverPrintBtn = document.getElementById("handover-print-btn");
+      const handoverSendSignBtn = document.getElementById(
+        "handover-send-sign-btn",
+      );
 
       const handoverEmailBtn = document.getElementById("handover-email-btn");
 
@@ -8160,6 +8185,7 @@
       let CURRENT_HANDOVER_BOOKING = null;
 
       const COMPLETED_HANDOVERS = new Set();
+      const CUSTOMER_SIGNED_HANDOVERS = new Set();
 
       let HANDOVER_STATUS_HYDRATE_TOKEN = 0;
 
@@ -13834,58 +13860,88 @@ ${mobileOutstandingText}
         setHandoverCheckItem(handoverCheckCustomer, hasCustomerSignature);
       }
 
-      function updateHandoverCompleteUi(isComplete) {
+      function updateHandoverCompleteUi(isComplete, isCustomerSigned = false) {
         const complete = !!isComplete;
+        const customerSigned = !!isCustomerSigned && !complete;
 
         if (handoverCompleteBtn) {
           handoverCompleteBtn.disabled = complete;
           handoverCompleteBtn.textContent = complete
             ? "Handover completed ✓"
-            : "Complete handover";
+            : customerSigned
+              ? "Complete signed handover"
+              : "Complete handover";
 
           handoverCompleteBtn.classList.toggle("completed", complete);
         }
 
-        if (handoverStatusSelect && complete) {
-          handoverStatusSelect.value = "complete";
+        if (handoverStatusSelect) {
+          if (complete) {
+            handoverStatusSelect.value = "complete";
+          } else if (customerSigned) {
+            handoverStatusSelect.value = "customer_signed";
+          }
         }
       }
 
-      function markBookingHandoverComplete(bookingId, isComplete = true) {
+      function markBookingHandoverStatus(bookingId, status = "draft") {
         if (!bookingId) return;
 
+        const cleanId = String(bookingId);
+        const cleanStatus = String(status || "draft").toLowerCase();
+        const isComplete = cleanStatus === "complete";
+        const isCustomerSigned =
+          !isComplete &&
+          (cleanStatus === "customer_signed" || cleanStatus === "signed");
+
         if (isComplete) {
-          COMPLETED_HANDOVERS.add(String(bookingId));
+          COMPLETED_HANDOVERS.add(cleanId);
         } else {
-          COMPLETED_HANDOVERS.delete(String(bookingId));
+          COMPLETED_HANDOVERS.delete(cleanId);
+        }
+
+        if (isCustomerSigned) {
+          CUSTOMER_SIGNED_HANDOVERS.add(cleanId);
+        } else {
+          CUSTOMER_SIGNED_HANDOVERS.delete(cleanId);
         }
 
         document
           .querySelectorAll(
-            `[data-handover-complete-for="${CSS.escape(String(bookingId))}"]`,
+            `[data-handover-complete-for="${CSS.escape(cleanId)}"]`,
           )
           .forEach((el) => {
-            el.classList.toggle("is-complete", !!isComplete);
+            el.classList.toggle("is-complete", isComplete);
+            el.classList.toggle("is-customer-signed", isCustomerSigned);
             el.textContent = isComplete
               ? "Handover complete ✓"
-              : "Handover pending";
+              : isCustomerSigned
+                ? "Customer signed ✓"
+                : "Handover pending";
           });
 
         document
           .querySelectorAll(
-            `[data-open-handover="${CSS.escape(String(bookingId))}"]`,
+            `[data-open-handover="${CSS.escape(cleanId)}"]`,
           )
           .forEach((btn) => {
-            btn.classList.toggle("handover-is-complete", !!isComplete);
+            btn.classList.toggle("handover-is-complete", isComplete);
+            btn.classList.toggle("handover-is-customer-signed", isCustomerSigned);
 
             if (isComplete) {
               btn.textContent = "View completed handover ✓";
+            } else if (isCustomerSigned) {
+              btn.textContent = "Customer signed — complete";
             } else {
               btn.textContent = btn.classList.contains("mobile-link-btn")
                 ? "🧾 Handover"
                 : "🧾 Handover";
             }
           });
+      }
+
+      function markBookingHandoverComplete(bookingId, isComplete = true) {
+        markBookingHandoverStatus(bookingId, isComplete ? "complete" : "draft");
       }
 
       async function hydrateCompletedHandoversForRenderedBookings() {
@@ -13923,10 +13979,10 @@ ${mobileOutstandingText}
                   return;
                 }
 
-                const isComplete =
-                  data.found === true && data.handover?.status === "complete";
+                const handoverStatus =
+                  data.found === true ? data.handover?.status || "draft" : "draft";
 
-                markBookingHandoverComplete(bookingId, isComplete);
+                markBookingHandoverStatus(bookingId, handoverStatus);
               } catch (err) {
                 console.warn(
                   `Could not hydrate handover status for ${bookingId}:`,
@@ -15252,7 +15308,14 @@ ${mobileOutstandingText}
           return;
         }
 
-        const isComplete = COMPLETED_HANDOVERS.has(String(booking.id));
+        const bookingId = String(booking.id || "");
+        const isComplete = COMPLETED_HANDOVERS.has(bookingId);
+        const isCustomerSigned = CUSTOMER_SIGNED_HANDOVERS.has(bookingId);
+        const handoverLabel = isComplete
+          ? "Complete ✓"
+          : isCustomerSigned
+            ? "Customer signed ✓ — ready to complete"
+            : "Pending";
 
         handoverSummary.innerHTML = `
   ${makeDetailBox("Booking reference", shortRef(booking.id))}
@@ -15261,7 +15324,7 @@ ${mobileOutstandingText}
   ${makeDetailBox("Pickup", booking.pickupAt ? formatDateTime(booking.pickupAt) : "—")}
   ${makeDetailBox("Drop-off", booking.dropoffAt ? formatDateTime(booking.dropoffAt) : "—")}
   ${makeDetailBox("Form", isFormComplete(booking) ? "Complete" : "Pending")}
-  ${makeDetailBox("Handover", isComplete ? "Complete ✓" : "Pending")}
+  ${makeDetailBox("Handover", handoverLabel)}
 `;
       }
 
@@ -15315,14 +15378,27 @@ ${mobileOutstandingText}
           }
 
           const handover = data.handover || {};
-          const handoverIsComplete = handover.status === "complete";
+          const handoverStatus = String(handover.status || "draft").toLowerCase();
+          const handoverIsComplete = handoverStatus === "complete";
+          const handoverIsCustomerSigned =
+            !handoverIsComplete &&
+            (handoverStatus === "customer_signed" || !!handover.customerSignedAt);
 
-          markBookingHandoverComplete(bookingId, handoverIsComplete);
-          updateHandoverCompleteUi(handoverIsComplete);
+          markBookingHandoverStatus(
+            bookingId,
+            handoverIsComplete
+              ? "complete"
+              : handoverIsCustomerSigned
+                ? "customer_signed"
+                : handoverStatus,
+          );
+          updateHandoverCompleteUi(handoverIsComplete, handoverIsCustomerSigned);
           renderHandoverSummary(booking);
 
           if (handoverStatusSelect) {
-            handoverStatusSelect.value = handover.status || "draft";
+            handoverStatusSelect.value = handoverIsCustomerSigned
+              ? "customer_signed"
+              : handover.status || "draft";
           }
 
           if (handoverComments) {
@@ -15463,7 +15539,7 @@ ${mobileOutstandingText}
         }
 
         const ok = confirm(
-          "Mark this handover as complete? PDF generation and customer email will be added later.",
+          "Mark this handover as complete? You can still email the signed PDF copy afterwards.",
         );
 
         if (!ok) return;
@@ -15483,12 +15559,12 @@ ${mobileOutstandingText}
 
           await saveHandoverDraft();
 
-          markBookingHandoverComplete(bookingId, true);
+          markBookingHandoverStatus(bookingId, "complete");
           updateHandoverCompleteUi(true);
           renderHandoverSummary(CURRENT_HANDOVER_BOOKING);
 
           setHandoverStatus(
-            "Handover marked complete ✓ PDF/email will be added later.",
+            "Handover marked complete ✓ You can now email or print the signed PDF copy.",
             "ok",
           );
         } catch (err) {
@@ -16419,6 +16495,227 @@ ${mobileOutstandingText}
         setHandoverStatus("2-page print/PDF opened.", "ok");
       }
 
+
+      async function prepareUnsignedHandoverSignRequest() {
+        const booking = CURRENT_HANDOVER_BOOKING;
+        const bookingId = handoverBookingIdInput?.value || "";
+
+        const safeEmailText = (value) =>
+          String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+        if (!booking || !bookingId) {
+          setHandoverStatus("No booking loaded for signature request.", "bad");
+          return;
+        }
+
+        const customerEmail =
+          booking.customerEmail ||
+          booking.email ||
+          booking.customer_email ||
+          "";
+
+        if (!customerEmail) {
+          setHandoverStatus(
+            "No customer email found for this booking. Signature request not sent.",
+            "bad",
+          );
+          return;
+        }
+
+        const previewWindow = window.open("", "_blank");
+
+        if (previewWindow) {
+          previewWindow.document.open();
+          previewWindow.document.write(`
+            <!doctype html>
+            <html>
+              <head>
+                <title>Preparing signature request...</title>
+                <meta name="viewport" content="width=device-width,initial-scale=1" />
+                <style>
+                  body { margin:0; padding:24px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f8fafc; color:#111827; }
+                  .box { max-width:680px; margin:40px auto; background:#fff; border:1px solid #dbe1e8; border-radius:18px; padding:24px; box-shadow:0 12px 30px rgba(15,23,42,.08); }
+                  h1 { margin:0 0 8px; font-size:24px; }
+                  p { margin:0; color:#64748b; font-weight:700; }
+                </style>
+              </head>
+              <body>
+                <div class="box">
+                  <h1>Preparing customer signature request…</h1>
+                  <p>Please wait while the secure signing link is created.</p>
+                </div>
+              </body>
+            </html>
+          `);
+          previewWindow.document.close();
+        }
+
+        storeCurrentDamageDrawingTemp();
+
+        const originalText = handoverSendSignBtn?.textContent || "Send to sign";
+
+        if (handoverSendSignBtn) {
+          handoverSendSignBtn.disabled = true;
+          handoverSendSignBtn.textContent = "Sending…";
+        }
+
+        try {
+          if (handoverStatusSelect && handoverStatusSelect.value === "complete") {
+            handoverStatusSelect.value = "in_progress";
+          }
+
+          await saveHandoverDraft();
+
+          const payload = {
+            bookingId,
+            customerEmail,
+            customerName: booking.customerName || "",
+            vehicleName:
+              booking.vehicleSnapshot?.name ||
+              booking.vehicleName ||
+              booking.vehicleId ||
+              "",
+            pickupText: booking.pickupAtLocal || booking.pickupAt || "",
+            dropoffText: booking.dropoffAtLocal || booking.dropoffAt || "",
+          };
+
+          const res = await fetch(
+            `${API_BASE}/api/admin/handover/send-sign-link`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            },
+          );
+
+          const data = await res.json();
+
+          if (!res.ok || data.ok === false) {
+            throw new Error(
+              data?.error || "Failed to send customer signature request.",
+            );
+          }
+
+          const customerLink = data.customerLink || "";
+          const sentTo = data.customerEmail || customerEmail;
+
+          if (previewWindow) {
+            previewWindow.document.open();
+
+            if (data.sent === true) {
+              previewWindow.document.write(`
+                <!doctype html>
+                <html>
+                  <head>
+                    <title>Signature request sent</title>
+                    <meta name="viewport" content="width=device-width,initial-scale=1" />
+                    <style>
+                      body { margin:0; padding:24px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f0fdf4; color:#14532d; }
+                      .box { max-width:720px; margin:50px auto; background:#fff; border:1px solid #bbf7d0; border-radius:22px; padding:28px; box-shadow:0 18px 44px rgba(15,23,42,.08); }
+                      h1 { margin:0 0 10px; font-size:28px; color:#14532d; }
+                      p { margin:8px 0; color:#166534; font-size:16px; line-height:1.5; }
+                      a { color:#1673ea; word-break:break-all; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="box">
+                      <h1>✅ Signature request sent</h1>
+                      <p>The unsigned handover / damage report was sent to:</p>
+                      <p><strong>${safeEmailText(sentTo)}</strong></p>
+                      <p>Customer signing link:</p>
+                      <p><a href="${safeEmailText(customerLink)}" target="_blank">${safeEmailText(customerLink)}</a></p>
+                    </div>
+                  </body>
+                </html>
+              `);
+            } else if (data.htmlPreview) {
+              previewWindow.document.write(data.htmlPreview);
+            } else {
+              const reason =
+                data.reason || data.blockedReasons?.join(", ") || "EMAIL_NOT_SENT";
+              previewWindow.document.write(`
+                <!doctype html>
+                <html>
+                  <head><title>Signature request not sent</title></head>
+                  <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:24px;background:#fff7ed;color:#9a3412;">
+                    <div style="max-width:720px;margin:50px auto;background:#fff;border:1px solid #fed7aa;border-radius:22px;padding:28px;">
+                      <h1>⚠️ Signature request not sent</h1>
+                      <p>Reason: <strong>${safeEmailText(reason)}</strong></p>
+                      <p>Customer signing link was still created:</p>
+                      <p><a href="${safeEmailText(customerLink)}" target="_blank">${safeEmailText(customerLink)}</a></p>
+                    </div>
+                  </body>
+                </html>
+              `);
+            }
+
+            previewWindow.document.close();
+          }
+
+          if (
+            customerLink &&
+            navigator.clipboard?.writeText &&
+            document.hasFocus()
+          ) {
+            try {
+              await navigator.clipboard.writeText(customerLink);
+            } catch (err) {
+              console.warn("Clipboard copy skipped/failed:", err);
+            }
+          }
+
+          if (data.sent === true) {
+            setHandoverStatus(
+              `Unsigned handover sent to ${sentTo} for digital signature. Link copied if browser allowed it: ${customerLink}`,
+              "ok",
+            );
+          } else {
+            const reason =
+              data.reason || data.blockedReasons?.join(", ") || "EMAIL_NOT_SENT";
+            setHandoverStatus(
+              `Signature link created but email not sent (${reason}). Link copied if browser allowed it: ${customerLink}`,
+              "warn",
+            );
+          }
+        } catch (err) {
+          console.error("❌ Handover signature request failed:", err);
+
+          if (previewWindow) {
+            previewWindow.document.open();
+            previewWindow.document.write(`
+              <!doctype html>
+              <html>
+                <head><title>Signature request failed</title></head>
+                <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:24px;background:#fff1f2;color:#991b1b;">
+                  <div style="max-width:680px;margin:40px auto;background:#fff;border:1px solid #fecdd3;border-radius:18px;padding:24px;">
+                    <h1>Signature request failed</h1>
+                    <p>${safeEmailText(err.message || "Failed to send customer signature request.")}</p>
+                  </div>
+                </body>
+              </html>
+            `);
+            previewWindow.document.close();
+          }
+
+          setHandoverStatus(
+            err.message || "Failed to send customer signature request.",
+            "bad",
+          );
+        } finally {
+          if (handoverSendSignBtn) {
+            handoverSendSignBtn.disabled = false;
+            handoverSendSignBtn.textContent = originalText;
+          }
+        }
+      }
+
       async function prepareHandoverEmailCopy() {
         const booking = CURRENT_HANDOVER_BOOKING;
         const bookingId = handoverBookingIdInput?.value || "";
@@ -17011,6 +17308,10 @@ ${mobileOutstandingText}
       handoverSaveBtn?.addEventListener("click", saveHandoverDraft);
       handoverCompleteBtn?.addEventListener("click", completeHandover);
       handoverPrintBtn?.addEventListener("click", printHandoverTwoPageReport);
+      handoverSendSignBtn?.addEventListener(
+        "click",
+        prepareUnsignedHandoverSignRequest,
+      );
 
       handoverEmailBtn?.addEventListener("click", prepareHandoverEmailCopy);
 

@@ -1973,13 +1973,29 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/handover/send-sign-link"
+      ) {
+        const response = await handleAdminHandoverSendSignLink(request, env);
+        return withCors(response, corsHeaders);
+      }
+
       /* ===============================
-   PUBLIC HANDOVER COPY VIEW
-   STEP 3F — TOKEN ACCESS ONLY
+   PUBLIC HANDOVER COPY VIEW / SIGNING
+   Token access only
 ================================ */
 
       if (request.method === "GET" && url.pathname === "/api/handover-copy") {
         const response = await handlePublicHandoverCopy(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/handover-copy/sign"
+      ) {
+        const response = await handlePublicHandoverCopySign(request, env);
         return withCors(response, corsHeaders);
       }
 
@@ -13551,6 +13567,352 @@ async function handleAdminHandoverEmailCopy(request, env) {
   }
 }
 
+
+function buildHandoverSignRequestEmailHtml({
+  customerName,
+  bookingId,
+  vehicleName,
+  pickupText,
+  dropoffText,
+  customerLink,
+}) {
+  const safeName = escapeHtml(customerName || "Customer");
+  const safeBookingId = escapeHtml(bookingId || "");
+  const safeVehicleName = escapeHtml(vehicleName || "your lorry");
+  const safePickupText = escapeHtml(pickupText || "—");
+  const safeDropoffText = escapeHtml(dropoffText || "—");
+  const safeCustomerLink = escapeHtml(customerLink || "");
+
+  return `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe1e8;">
+            <tr>
+              <td style="padding:22px 24px 0;background:#ffffff;">
+                ${EMAIL_BRAND_BLOCK}
+
+                <div style="margin:0 0 22px;text-align:center;color:#5a6675;font-size:15px;font-weight:800;line-height:1.4;">
+                  Handover / damage report signature request
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:24px;">
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.5;">
+                  Dear ${safeName},
+                </p>
+
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.5;">
+                  Please review your Equine Transport UK handover / damage report for <strong>${safeVehicleName}</strong> and sign it digitally using the secure link below.
+                </p>
+
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.5;">
+                  Once you submit your signature, we can mark the handover as complete in the admin system. You can also use the page to print or save a PDF copy for your own records.
+                </p>
+
+                <p style="margin:22px 0;text-align:center;">
+                  <a href="${safeCustomerLink}"
+                     style="display:inline-block;background:#1f6feb;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:800;font-size:16px;">
+                    Review and sign handover
+                  </a>
+                </p>
+
+                <p style="margin:0 0 18px;font-size:13px;line-height:1.5;color:#64748b;word-break:break-all;">
+                  If the button does not work, copy and paste this link into your browser:<br>
+                  ${safeCustomerLink}
+                </p>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border:1px solid #dbe1e8;border-radius:14px;overflow:hidden;">
+                  <tr>
+                    <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#f8fafc;font-weight:800;">Booking</td>
+                    <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;">${safeBookingId}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#f8fafc;font-weight:800;">Vehicle</td>
+                    <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;">${safeVehicleName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#f8fafc;font-weight:800;">Pickup</td>
+                    <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;">${safePickupText}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 14px;background:#f8fafc;font-weight:800;">Drop-off</td>
+                    <td style="padding:12px 14px;">${safeDropoffText}</td>
+                  </tr>
+                </table>
+
+                <p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#64748b;">
+                  This link is private to your booking and expires automatically.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:18px 24px;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:13px;line-height:1.5;color:#64748b;">
+                Equine Transport UK<br>
+                Part of the East Grinstead Tyre Service Group<br>
+                info@equinetransportuk.com<br>
+                07812 188871 / 07584 578654
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+async function handleAdminHandoverSendSignLink(request, env) {
+  const HANDOVER_SIGN_EMAIL_DRY_RUN = false;
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: "Invalid JSON body" }, 400);
+  }
+
+  const bookingId = cleanHandoverBookingId(body.bookingId);
+
+  if (!bookingId) {
+    return json({ ok: false, error: "Missing bookingId" }, 400);
+  }
+
+  const handoverRaw = await env.BOOKINGS_KV.get(getHandoverKvKey(bookingId));
+
+  if (!handoverRaw) {
+    return json(
+      { ok: false, error: "Save the handover draft before sending it to the customer" },
+      404,
+    );
+  }
+
+  let handover;
+
+  try {
+    handover = JSON.parse(handoverRaw);
+  } catch {
+    return json(
+      { ok: false, error: "Saved handover data could not be read" },
+      500,
+    );
+  }
+
+  let booking = null;
+
+  try {
+    booking = await findBookingById(env, bookingId);
+  } catch (err) {
+    console.warn("⚠️ Could not load booking for handover sign link:", err);
+  }
+
+  const customerEmail = String(
+    body.customerEmail ||
+      booking?.customerEmail ||
+      booking?.email ||
+      booking?.customer_email ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  const customerName = String(
+    body.customerName ||
+      booking?.customerName ||
+      booking?.customer_name ||
+      "Customer",
+  ).trim();
+
+  const vehicleName = String(
+    body.vehicleName ||
+      booking?.vehicleSnapshot?.name ||
+      booking?.vehicleName ||
+      booking?.vehicleId ||
+      "Horsebox hire",
+  ).trim();
+
+  if (!customerEmail) {
+    return json(
+      { ok: false, error: "No customer email found for this booking" },
+      400,
+    );
+  }
+
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 14);
+
+  const tokenRecord = {
+    token,
+    bookingId,
+    customerEmail,
+    customerName,
+    vehicleName,
+    purpose: "handover_customer_sign",
+    createdAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+  };
+
+  await env.BOOKINGS_KV.put(
+    `handover-copy-token:${token}`,
+    JSON.stringify(tokenRecord),
+    {
+      expirationTtl: 60 * 60 * 24 * 14,
+    },
+  );
+
+  const publicSiteUrl = String(
+    env.PUBLIC_SITE_URL || "https://www.equinetransportuk.com",
+  ).replace(/\/+$/, "");
+
+  const customerLink = `${publicSiteUrl}/handover-copy.html?token=${encodeURIComponent(
+    token,
+  )}&sign=1`;
+
+  const pickupText =
+    body.pickupText || booking?.pickupAtLocal || booking?.pickupAt || "—";
+
+  const dropoffText =
+    body.dropoffText || booking?.dropoffAtLocal || booking?.dropoffAt || "—";
+
+  const subject = "Please sign your Equine Transport UK handover report";
+
+  const html = buildHandoverSignRequestEmailHtml({
+    customerName,
+    bookingId,
+    vehicleName,
+    pickupText,
+    dropoffText,
+    customerLink,
+  });
+
+  const emailsEnabled =
+    String(env.EMAILS_ENABLED || "")
+      .trim()
+      .toLowerCase() === "true";
+
+  const migrationMode =
+    String(env.MIGRATION_MODE || "")
+      .trim()
+      .toLowerCase() === "true";
+
+  const canSend =
+    HANDOVER_SIGN_EMAIL_DRY_RUN === false &&
+    emailsEnabled === true &&
+    migrationMode === false;
+
+  const blockedReasons = [];
+
+  if (HANDOVER_SIGN_EMAIL_DRY_RUN) blockedReasons.push("HANDOVER_SIGN_EMAIL_DRY_RUN");
+  if (!emailsEnabled) blockedReasons.push("EMAILS_DISABLED");
+  if (migrationMode) blockedReasons.push("MIGRATION_MODE");
+
+  if (!canSend) {
+    console.log("📧 Handover signature request prepared — NOT sent", {
+      bookingId,
+      customerEmail,
+      vehicleName,
+      customerLink,
+      blockedReasons,
+    });
+
+    return json({
+      ok: true,
+      sent: false,
+      dryRun: true,
+      reason: blockedReasons[0] || "EMAIL_BLOCKED",
+      blockedReasons,
+      message: "Customer signature request prepared, but not sent.",
+      bookingId,
+      customerEmail,
+      customerName,
+      vehicleName,
+      customerLink,
+      subject,
+      htmlPreview: html,
+      expiresAt: tokenRecord.expiresAt,
+      handoverStatus: handover.status || "draft",
+      emailsEnabled,
+      migrationMode,
+    });
+  }
+
+  try {
+    await sendBookingEmail(env, {
+      to: customerEmail,
+      subject,
+      html,
+    });
+
+    await env.BOOKINGS_KV.put(
+      `handover-sign-email-sent:${bookingId}:${token}`,
+      JSON.stringify({
+        bookingId,
+        customerEmail,
+        sentAt: new Date().toISOString(),
+        subject,
+        customerLink,
+      }),
+      {
+        expirationTtl: 60 * 60 * 24 * 90,
+      },
+    );
+
+    console.log("✅ Handover signature request email SENT", {
+      bookingId,
+      customerEmail,
+      vehicleName,
+    });
+
+    return json({
+      ok: true,
+      sent: true,
+      dryRun: false,
+      reason: "SENT",
+      message: "Customer signature request email sent.",
+      bookingId,
+      customerEmail,
+      customerName,
+      vehicleName,
+      customerLink,
+      subject,
+      htmlPreview: html,
+      expiresAt: tokenRecord.expiresAt,
+      handoverStatus: handover.status || "draft",
+      emailsEnabled,
+      migrationMode,
+    });
+  } catch (err) {
+    console.error("❌ Handover signature request email failed:", err);
+
+    return json(
+      {
+        ok: false,
+        sent: false,
+        dryRun: false,
+        reason: "SEND_FAILED",
+        error: err.message || "Failed to send customer signature request email.",
+        bookingId,
+        customerEmail,
+        customerName,
+        vehicleName,
+        customerLink,
+        subject,
+        expiresAt: tokenRecord.expiresAt,
+        emailsEnabled,
+        migrationMode,
+      },
+      500,
+    );
+  }
+}
+
 async function handleAdminHandoverCustomerLink(request, env) {
   let body;
 
@@ -13805,8 +14167,10 @@ async function handlePublicHandoverCopy(request, env) {
   }
 
   const status = String(handover?.status || "draft").toLowerCase();
+  const tokenPurpose = String(tokenRecord.purpose || "").toLowerCase();
+  const isCustomerSignToken = tokenPurpose === "handover_customer_sign";
 
-  if (status !== "complete") {
+  if (status !== "complete" && !isCustomerSignToken) {
     return json(
       {
         ok: false,
@@ -13904,16 +14268,157 @@ async function handlePublicHandoverCopy(request, env) {
     bookingId,
     booking: safeBooking,
     handover: {
-      status: handover.status || "complete",
+      status: handover.status || (isCustomerSignToken ? "in_progress" : "complete"),
       comments: handover.comments || "",
       termsSignature: handover.termsSignature || null,
       customerSignature: handover.customerSignature || null,
+      customerSignedAt: handover.customerSignedAt || "",
+      customerSignatureSource: handover.customerSignatureSource || "",
       drawings: handover.drawings || {},
       completedAt: handover.completedAt || handover.updatedAt || "",
       updatedAt: handover.updatedAt || "",
+      canSign:
+        isCustomerSignToken &&
+        status !== "complete" &&
+        !handover.customerSignature,
     },
+    mode: isCustomerSignToken ? "customer_sign" : "customer_copy",
     token: {
       expiresAt: tokenRecord.expiresAt,
+      purpose: tokenRecord.purpose || "handover_customer_copy",
+    },
+  });
+}
+
+async function handlePublicHandoverCopySign(request, env) {
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: "Invalid JSON body" }, 400);
+  }
+
+  const token = String(body.token || "").trim();
+  const customerSignature = String(body.customerSignature || "").trim();
+
+  if (!token) {
+    return json({ ok: false, error: "Missing token" }, 400);
+  }
+
+  if (!customerSignature || !customerSignature.startsWith("data:image/")) {
+    return json({ ok: false, error: "Please add your signature before submitting." }, 400);
+  }
+
+  if (customerSignature.length > 500 * 1024) {
+    return json({ ok: false, error: "Signature image is too large." }, 413);
+  }
+
+  const tokenRaw = await env.BOOKINGS_KV.get(`handover-copy-token:${token}`);
+
+  if (!tokenRaw) {
+    return json(
+      { ok: false, error: "This handover signing link is invalid or has expired." },
+      404,
+    );
+  }
+
+  let tokenRecord;
+
+  try {
+    tokenRecord = JSON.parse(tokenRaw);
+  } catch {
+    return json(
+      { ok: false, error: "This handover signing link could not be read." },
+      500,
+    );
+  }
+
+  if (String(tokenRecord.purpose || "") !== "handover_customer_sign") {
+    return json(
+      { ok: false, error: "This link is not a customer signing link." },
+      403,
+    );
+  }
+
+  const expiresAtMs = new Date(tokenRecord.expiresAt || 0).getTime();
+
+  if (!Number.isFinite(expiresAtMs) || Date.now() > expiresAtMs) {
+    return json({ ok: false, error: "This handover signing link has expired." }, 410);
+  }
+
+  const bookingId = cleanHandoverBookingId(tokenRecord.bookingId);
+
+  if (!bookingId) {
+    return json({ ok: false, error: "Missing booking reference." }, 400);
+  }
+
+  const handoverRaw = await env.BOOKINGS_KV.get(getHandoverKvKey(bookingId));
+
+  if (!handoverRaw) {
+    return json({ ok: false, error: "No handover report found for this booking." }, 404);
+  }
+
+  let handover;
+
+  try {
+    handover = JSON.parse(handoverRaw);
+  } catch {
+    return json({ ok: false, error: "The handover report could not be read." }, 500);
+  }
+
+  const status = String(handover?.status || "draft").toLowerCase();
+
+  if (status === "complete") {
+    return json(
+      { ok: false, error: "This handover has already been marked complete." },
+      409,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const updatedHandover = {
+    ...handover,
+    bookingId,
+    customerSignature,
+    customerSignedAt: now,
+    customerSignatureSource: "customer_digital_link",
+    status: "customer_signed",
+    updatedAt: now,
+  };
+
+  await env.BOOKINGS_KV.put(
+    getHandoverKvKey(bookingId),
+    JSON.stringify(updatedHandover),
+  );
+
+  await env.BOOKINGS_KV.put(
+    `handover-customer-signed:${bookingId}`,
+    JSON.stringify({
+      bookingId,
+      token,
+      customerEmail: tokenRecord.customerEmail || "",
+      signedAt: now,
+    }),
+    { expirationTtl: 60 * 60 * 24 * 365 },
+  );
+
+  console.log("✅ Customer digitally signed handover", {
+    bookingId,
+    customerEmail: tokenRecord.customerEmail || "",
+  });
+
+  return json({
+    ok: true,
+    signed: true,
+    bookingId,
+    message: "Thank you. Your signature has been submitted.",
+    handover: {
+      status: updatedHandover.status,
+      customerSignature: updatedHandover.customerSignature,
+      customerSignedAt: updatedHandover.customerSignedAt,
+      updatedAt: updatedHandover.updatedAt,
     },
   });
 }
