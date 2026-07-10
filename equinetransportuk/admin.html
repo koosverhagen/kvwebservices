@@ -13916,7 +13916,7 @@ ${mobileOutstandingText}
             el.textContent = isComplete
               ? "Handover complete ✓"
               : isCustomerSigned
-                ? "Customer signed ✓"
+                ? "Customer signed T&C + handover ✓"
                 : "Handover pending";
           });
 
@@ -13931,7 +13931,7 @@ ${mobileOutstandingText}
             if (isComplete) {
               btn.textContent = "View completed handover ✓";
             } else if (isCustomerSigned) {
-              btn.textContent = "Customer signed — complete";
+              btn.textContent = "Customer signed T&C + handover — complete";
             } else {
               btn.textContent = btn.classList.contains("mobile-link-btn")
                 ? "🧾 Handover"
@@ -13979,8 +13979,16 @@ ${mobileOutstandingText}
                   return;
                 }
 
-                const handoverStatus =
-                  data.found === true ? data.handover?.status || "draft" : "draft";
+                const handover = data.handover || {};
+                let handoverStatus =
+                  data.found === true ? handover.status || "draft" : "draft";
+
+                if (
+                  String(handoverStatus || "").toLowerCase() === "customer_signed" &&
+                  !(handover.termsSignature && handover.customerSignature)
+                ) {
+                  handoverStatus = "in_progress";
+                }
 
                 markBookingHandoverStatus(bookingId, handoverStatus);
               } catch (err) {
@@ -15314,7 +15322,7 @@ ${mobileOutstandingText}
         const handoverLabel = isComplete
           ? "Complete ✓"
           : isCustomerSigned
-            ? "Customer signed ✓ — ready to complete"
+            ? "Customer signed T&C + handover ✓ — ready to complete"
             : "Pending";
 
         handoverSummary.innerHTML = `
@@ -15380,8 +15388,12 @@ ${mobileOutstandingText}
           const handover = data.handover || {};
           const handoverStatus = String(handover.status || "draft").toLowerCase();
           const handoverIsComplete = handoverStatus === "complete";
+          const hasBothCustomerSignatures =
+            !!handover.termsSignature && !!handover.customerSignature;
+
           const handoverIsCustomerSigned =
             !handoverIsComplete &&
+            hasBothCustomerSignatures &&
             (handoverStatus === "customer_signed" || !!handover.customerSignedAt);
 
           markBookingHandoverStatus(

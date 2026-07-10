@@ -13607,11 +13607,11 @@ function buildHandoverSignRequestEmailHtml({
                 </p>
 
                 <p style="margin:0 0 14px;font-size:16px;line-height:1.5;">
-                  Please review your Equine Transport UK handover / damage report for <strong>${safeVehicleName}</strong> and sign it digitally using the secure link below.
+                  Please review your Equine Transport UK handover / damage report for <strong>${safeVehicleName}</strong>, accept the hire terms and conditions, and add both digital signatures using the secure link below.
                 </p>
 
                 <p style="margin:0 0 18px;font-size:16px;line-height:1.5;">
-                  Once you submit your signature, we can mark the handover as complete in the admin system. You can also use the page to print or save a PDF copy for your own records.
+                  Once you submit both signatures, we can mark the handover as complete in the admin system. You can also use the page to print or save a PDF copy for your own records.
                 </p>
 
                 <p style="margin:22px 0;text-align:center;">
@@ -14280,7 +14280,7 @@ async function handlePublicHandoverCopy(request, env) {
       canSign:
         isCustomerSignToken &&
         status !== "complete" &&
-        !handover.customerSignature,
+        (!handover.termsSignature || !handover.customerSignature),
     },
     mode: isCustomerSignToken ? "customer_sign" : "customer_copy",
     token: {
@@ -14300,18 +14300,23 @@ async function handlePublicHandoverCopySign(request, env) {
   }
 
   const token = String(body.token || "").trim();
+  const termsSignature = String(body.termsSignature || "").trim();
   const customerSignature = String(body.customerSignature || "").trim();
 
   if (!token) {
     return json({ ok: false, error: "Missing token" }, 400);
   }
 
-  if (!customerSignature || !customerSignature.startsWith("data:image/")) {
-    return json({ ok: false, error: "Please add your signature before submitting." }, 400);
+  if (!termsSignature || !termsSignature.startsWith("data:image/")) {
+    return json({ ok: false, error: "Please add the Terms & Conditions signature before submitting." }, 400);
   }
 
-  if (customerSignature.length > 500 * 1024) {
-    return json({ ok: false, error: "Signature image is too large." }, 413);
+  if (!customerSignature || !customerSignature.startsWith("data:image/")) {
+    return json({ ok: false, error: "Please add the handover / damage report signature before submitting." }, 400);
+  }
+
+  if (termsSignature.length > 500 * 1024 || customerSignature.length > 500 * 1024) {
+    return json({ ok: false, error: "One of the signature images is too large." }, 413);
   }
 
   const tokenRaw = await env.BOOKINGS_KV.get(`handover-copy-token:${token}`);
@@ -14381,6 +14386,9 @@ async function handlePublicHandoverCopySign(request, env) {
   const updatedHandover = {
     ...handover,
     bookingId,
+    termsSignature,
+    termsSignedAt: now,
+    termsSignatureSource: "customer_digital_link",
     customerSignature,
     customerSignedAt: now,
     customerSignatureSource: "customer_digital_link",
@@ -14400,6 +14408,8 @@ async function handlePublicHandoverCopySign(request, env) {
       token,
       customerEmail: tokenRecord.customerEmail || "",
       signedAt: now,
+      termsSignedAt: now,
+      customerSignedAt: now,
     }),
     { expirationTtl: 60 * 60 * 24 * 365 },
   );
@@ -14413,9 +14423,11 @@ async function handlePublicHandoverCopySign(request, env) {
     ok: true,
     signed: true,
     bookingId,
-    message: "Thank you. Your signature has been submitted.",
+    message: "Thank you. Your signatures have been submitted.",
     handover: {
       status: updatedHandover.status,
+      termsSignature: updatedHandover.termsSignature,
+      termsSignedAt: updatedHandover.termsSignedAt,
       customerSignature: updatedHandover.customerSignature,
       customerSignedAt: updatedHandover.customerSignedAt,
       updatedAt: updatedHandover.updatedAt,
