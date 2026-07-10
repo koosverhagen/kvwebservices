@@ -11156,7 +11156,7 @@ Equine Transport UK`;
         return diffHours <= 48;
       }
 
-      function renderBookings() {
+      function renderBookings(options = {}) {
         const search = searchInput.value.trim();
         const filter = statusFilter.value;
         const vehicleFilter = bookingVehicleFilter?.value || "all";
@@ -11164,6 +11164,7 @@ Equine Transport UK`;
         const depositMode = depositFilter?.value || "all";
         const notesMode = notesFilter?.value || "all";
         const notesKeyword = notesSearchInput?.value || "";
+        const skipBackgroundHydration = options.skipBackgroundHydration === true;
 
         const now = new Date();
 
@@ -11697,7 +11698,9 @@ Equine Transport UK`;
      (no index bug + grouping safe)
   =============================== */
 
-          hydrateVisibleDvlaFromSubmittedForms(filteredBookings);
+          if (!skipBackgroundHydration) {
+            hydrateVisibleDvlaFromSubmittedForms(filteredBookings);
+          }
 
           syncScroll();
         }, 0);
@@ -18780,51 +18783,63 @@ Send the fresh form link to ${booking.customerEmail} now?`,
    🔍 SEARCH / FILTERS
 =============================== */
 
+      function getFirstRenderedBookingCardElement() {
+        const cards = Array.from(
+          document.querySelectorAll("[data-booking-card-id]"),
+        );
+
+        if (!cards.length) return null;
+
+        const visibleCards = cards.filter((el) => {
+          const rect = el.getBoundingClientRect();
+          const style = window.getComputedStyle(el);
+
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            rect.width > 0 &&
+            rect.height > 0
+          );
+        });
+
+        return visibleCards[0] || cards[0] || null;
+      }
+
       function scrollToFirstBooking() {
         const bookingsSection = document.getElementById("bookings-section");
         const mobileResults = document.getElementById("mobile-bookings");
-        const firstMobileBooking = document.querySelector(
-          ".mobile-booking-card",
-        );
         const bookingsTable = document.querySelector(".bookings-table");
+        const firstBookingCard = getFirstRenderedBookingCardElement();
 
-        /* ===============================
-     📱 MOBILE
-     Always scroll to the bookings results area.
-     Never use calendar position.
-  =============================== */
-
-        if (window.innerWidth <= 768) {
-          const target = firstMobileBooking || mobileResults || bookingsSection;
-
-          if (!target) return;
-
-          const headerOffset = 86;
-          const y =
-            target.getBoundingClientRect().top + window.scrollY - headerOffset;
-
-          window.scrollTo({
-            top: Math.max(0, y),
-            behavior: "smooth",
-          });
-
-          return;
-        }
-
-        /* ===============================
-     🖥️ DESKTOP
-  =============================== */
-
-        const target = bookingsTable || bookingsSection;
+        // Always prefer the first actual rendered booking card/row.
+        // Only fall back to the results wrapper when there are no results.
+        const target =
+          firstBookingCard ||
+          (window.innerWidth <= 768 ? mobileResults : bookingsTable) ||
+          bookingsSection;
 
         if (!target) return;
 
-        const y = target.getBoundingClientRect().top + window.scrollY - 120;
+        const headerOffset = window.innerWidth <= 768 ? 92 : 126;
+        const y =
+          target.getBoundingClientRect().top + window.scrollY - headerOffset;
 
         window.scrollTo({
           top: Math.max(0, y),
           behavior: "smooth",
         });
+
+        if (firstBookingCard) {
+          document
+            .querySelectorAll(".admin-booking-card-target")
+            .forEach((el) => el.classList.remove("admin-booking-card-target"));
+
+          firstBookingCard.classList.add("admin-booking-card-target");
+
+          setTimeout(() => {
+            firstBookingCard.classList.remove("admin-booking-card-target");
+          }, 2600);
+        }
       }
 
       function getBookingDateInputValue(booking) {
@@ -18980,6 +18995,10 @@ Send the fresh form link to ${booking.customerEmail} now?`,
 =============================== */
 
       applyFiltersBtn?.addEventListener("click", async () => {
+        // Search results should never be stolen by the calendar auto-scroll
+        // that may still be finishing from the first admin page load.
+        suppressAdminCalendarAutoScroll(7000);
+
         // ✅ Fast search: use the bookings already loaded in memory.
         // Do NOT reload from the Worker for normal name/email/lorry/form/deposit
         // searches. Only reload when the date range was actually changed by the
@@ -18994,20 +19013,32 @@ Send the fresh form link to ${booking.customerEmail} now?`,
 
           await loadBookings({ refreshCalendar: false });
 
+          suppressAdminCalendarAutoScroll(7000);
+
           requestAnimationFrame(() => {
-            scrollToFirstBooking();
-            updateClearButton();
+            requestAnimationFrame(() => {
+              scrollToFirstBooking();
+              updateClearButton();
+            });
           });
 
           return;
         }
 
-        setStatus("Search applied instantly.", "loading");
+        setStatus("Applying search...", "loading");
 
-        renderBookings();
-        updateClearButton();
-
+        // Defer the heavy DOM update by one frame so the Search click feels
+        // immediate, and skip optional background DVLA hydration for filter-only
+        // searches. Full hydration still happens on Refresh/first load.
         requestAnimationFrame(() => {
+          renderBookings({ skipBackgroundHydration: true });
+          updateClearButton();
+
+          setStatus(
+            `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"} found.`,
+            "loading",
+          );
+
           requestAnimationFrame(() => {
             scrollToFirstBooking();
           });
@@ -20189,6 +20220,14 @@ Send the fresh form link to ${booking.customerEmail} now?`,
       }
 
       let ADMIN_CALENDAR_DID_AUTO_SCROLL_TODAY = false;
+      let ADMIN_SUPPRESS_CALENDAR_AUTO_SCROLL_UNTIL = 0;
+
+      function suppressAdminCalendarAutoScroll(ms = 5000) {
+        ADMIN_SUPPRESS_CALENDAR_AUTO_SCROLL_UNTIL = Math.max(
+          ADMIN_SUPPRESS_CALENDAR_AUTO_SCROLL_UNTIL,
+          Date.now() + Number(ms || 0),
+        );
+      }
 
       function isAdminMobileView() {
         return window.matchMedia("(max-width: 768px)").matches;
@@ -20204,6 +20243,13 @@ Send the fresh form link to ${booking.customerEmail} now?`,
 
         const allowRepeat = options.allowRepeat === true;
         const once = options.once === true;
+
+        if (
+          !allowRepeat &&
+          Date.now() < ADMIN_SUPPRESS_CALENDAR_AUTO_SCROLL_UNTIL
+        ) {
+          return false;
+        }
 
         if (once && ADMIN_CALENDAR_DID_AUTO_SCROLL_TODAY && !allowRepeat) {
           return false;
