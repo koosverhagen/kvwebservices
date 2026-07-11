@@ -13100,24 +13100,49 @@ async function handleAdminHandoverSave(request, env) {
   const incomingHandover =
     body.handover && typeof body.handover === "object" ? body.handover : {};
 
+  const hasIncomingField = (field) =>
+    Object.prototype.hasOwnProperty.call(incomingHandover, field);
+
+  // An explicit null/empty signature means the admin intentionally cleared it.
+  // Do not fall back to the previously stored signature in that case.
+  const termsSignature = hasIncomingField("termsSignature")
+    ? String(incomingHandover.termsSignature || "").trim() || null
+    : existing?.termsSignature || null;
+
+  const customerSignature = hasIncomingField("customerSignature")
+    ? String(incomingHandover.customerSignature || "").trim() || null
+    : existing?.customerSignature || null;
+
+  const signaturesCleared =
+    (hasIncomingField("termsSignature") && !termsSignature) ||
+    (hasIncomingField("customerSignature") && !customerSignature);
+
+  let status = String(
+    incomingHandover.status || existing?.status || "draft",
+  ).toLowerCase();
+
+  // A handover without both signatures cannot remain customer-signed/complete.
+  if (
+    (!termsSignature || !customerSignature) &&
+    (status === "customer_signed" || status === "complete")
+  ) {
+    status = "in_progress";
+  }
+
   const handover = {
     ...(existing || {}),
     ...incomingHandover,
 
     bookingId,
-
-    status: incomingHandover.status || existing?.status || "draft",
+    status,
 
     comments:
       typeof incomingHandover.comments === "string"
         ? incomingHandover.comments
         : existing?.comments || "",
 
-    termsSignature:
-      incomingHandover.termsSignature || existing?.termsSignature || null,
-
-    customerSignature:
-      incomingHandover.customerSignature || existing?.customerSignature || null,
+    termsSignature,
+    customerSignature,
 
     drawings:
       incomingHandover.drawings && typeof incomingHandover.drawings === "object"
@@ -13127,6 +13152,21 @@ async function handleAdminHandoverSave(request, env) {
     createdAt: existing?.createdAt || now,
     updatedAt: now,
   };
+
+  if (hasIncomingField("termsSignature") && !termsSignature) {
+    handover.termsSignedAt = null;
+    handover.termsSignatureSource = null;
+  }
+
+  if (hasIncomingField("customerSignature") && !customerSignature) {
+    handover.customerSignedAt = null;
+    handover.customerSignatureSource = null;
+  }
+
+  if (signaturesCleared) {
+    handover.completedAt = null;
+    handover.completedBy = null;
+  }
 
   const serialised = JSON.stringify(handover);
 
@@ -13143,6 +13183,10 @@ async function handleAdminHandoverSave(request, env) {
   }
 
   await env.BOOKINGS_KV.put(key, serialised);
+
+  if (signaturesCleared) {
+    await env.BOOKINGS_KV.delete(`handover-customer-signed:${bookingId}`);
+  }
 
   return json({
     ok: true,

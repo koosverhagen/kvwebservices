@@ -16580,7 +16580,12 @@ ${mobileOutstandingText}
         }
 
         try {
-          if (handoverStatusSelect && handoverStatusSelect.value === "complete") {
+          if (
+            handoverStatusSelect &&
+            ["complete", "customer_signed"].includes(
+              String(handoverStatusSelect.value || "").toLowerCase(),
+            )
+          ) {
             handoverStatusSelect.value = "in_progress";
           }
 
