@@ -2190,8 +2190,13 @@ export default {
       if (request.method === "POST" && url.pathname === "/api/admin/refund") {
         try {
           const { bookingId, amount } = await request.json();
+          const amountNumber = Number(amount);
 
-          if (!bookingId || !amount || amount <= 0) {
+          if (
+            !bookingId ||
+            !Number.isFinite(amountNumber) ||
+            amountNumber <= 0
+          ) {
             return withCors(json({ error: "Invalid input" }, 400), corsHeaders);
           }
 
@@ -2271,7 +2276,7 @@ export default {
 
               audit.unshift({
                 type: "refund_manual",
-                amount: Number(amount),
+                amount: amountNumber,
                 at: new Date().toISOString(),
               });
 
@@ -2304,7 +2309,7 @@ export default {
           const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
           try {
-            let remainingRefund = Number(amount);
+            let remainingRefund = amountNumber;
 
             /* ===============================
      1️⃣ REFUND OUTSTANDING PAYMENT

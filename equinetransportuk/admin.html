@@ -19631,7 +19631,8 @@ Send the fresh form link to ${booking.customerEmail} now?`,
             console.log("💸 Refund response:", data);
 
             if (!res.ok) {
-              alert(data.error || "Refund failed");
+              const detail = data?.detail ? `\n\n${data.detail}` : "";
+              alert(`${data?.error || "Refund failed"}${detail}`);
               return;
             }
 
