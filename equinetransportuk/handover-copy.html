@@ -893,6 +893,350 @@
           margin: 14px auto 0 !important;
         }
       }
+
+
+    /* =====================================================
+       HANDOVER PRINT FIT — EXACTLY TWO A4 PAGES
+       Final print overrides; screen/admin layout unchanged.
+    ====================================================== */
+    @page {
+      size: A4;
+      margin: 8mm;
+    }
+
+    @media print {
+      html,
+      body {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .page {
+        width: 194mm !important;
+        height: 281mm !important;
+        min-height: 281mm !important;
+        max-height: 281mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        position: relative !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid-page !important;
+        box-shadow: none !important;
+      }
+
+      .page:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+
+      /* ---------- Page 1: compact but fully readable ---------- */
+      .page-1 {
+        display: block !important;
+      }
+
+      .page-1 .top-row {
+        grid-template-columns: 1fr 30mm !important;
+        gap: 5mm !important;
+        margin-bottom: 3.5mm !important;
+      }
+
+      .page-1 .title {
+        font-size: 14.5pt !important;
+        line-height: 1.04 !important;
+      }
+
+      .page-1 .logo {
+        width: 27mm !important;
+        max-height: 24mm !important;
+        object-fit: contain !important;
+      }
+
+      .page-1 .section-title {
+        margin: 0 0 1.5mm !important;
+        font-size: 11.5pt !important;
+      }
+
+      .page-1 .booking-id-line {
+        grid-template-columns: 34mm 1fr !important;
+        min-height: 6.5mm !important;
+        padding: 1mm 3mm !important;
+        margin-bottom: 2.5mm !important;
+        font-size: 9.2pt !important;
+      }
+
+      .page-1 .booking-id-line strong {
+        padding-left: 0 !important;
+      }
+
+      .page-1 .info-table {
+        margin-bottom: 3mm !important;
+      }
+
+      .page-1 .info-table th {
+        width: 49mm !important;
+        padding: 0.65mm 1.5mm 0.65mm 0 !important;
+        font-size: 9pt !important;
+        line-height: 1.08 !important;
+      }
+
+      .page-1 .info-table td {
+        padding: 0.65mm 0 !important;
+        font-size: 9pt !important;
+        line-height: 1.08 !important;
+      }
+
+      .page-1 .status-grid {
+        gap: 2mm 4mm !important;
+        margin: 2.5mm 0 3mm !important;
+      }
+
+      .page-1 .status-item {
+        grid-template-columns: 35mm 1fr !important;
+        gap: 2mm !important;
+        min-height: 8mm !important;
+        padding: 1mm 2mm !important;
+        border-radius: 1.5mm !important;
+      }
+
+      .page-1 .status-label,
+      .page-1 .status-value {
+        font-size: 8.7pt !important;
+        line-height: 1.05 !important;
+      }
+
+      .page-1 .status-value {
+        gap: 2mm !important;
+      }
+
+      .page-1 .check-pair {
+        gap: 1mm !important;
+      }
+
+      .page-1 .tickbox {
+        width: 5.5mm !important;
+        height: 5.5mm !important;
+        font-size: 12pt !important;
+      }
+
+      .page-1 .dvla-details {
+        gap: 1mm !important;
+        font-size: 7.2pt !important;
+        line-height: 1.05 !important;
+      }
+
+      .page-1 .terms {
+        margin-top: 1.5mm !important;
+      }
+
+      .page-1 .terms h2 {
+        margin: 0 0 1.2mm !important;
+        font-size: 11.5pt !important;
+        line-height: 1.05 !important;
+      }
+
+      .page-1 .terms ul {
+        margin: 0 !important;
+        padding-left: 4mm !important;
+      }
+
+      .page-1 .terms li {
+        margin-bottom: 0.45mm !important;
+        font-size: 8.35pt !important;
+        line-height: 1.1 !important;
+      }
+
+      .page-1 .terms-signature-title {
+        margin: 2mm 0 0.8mm !important;
+        font-size: 10.2pt !important;
+        line-height: 1.05 !important;
+      }
+
+      .page-1 .terms-signature-title + p {
+        margin: 0 0 0.8mm !important;
+        font-size: 8.3pt !important;
+        line-height: 1.08 !important;
+      }
+
+      .page-1 .signature-row {
+        grid-template-columns: 70mm 1fr !important;
+        gap: 6mm !important;
+        margin-top: 0.8mm !important;
+        align-items: start !important;
+      }
+
+      .page-1 .signature-row > div,
+      .page-1 .signature-box {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .page-1 .signature-title {
+        margin-bottom: 0.6mm !important;
+        font-size: 8.5pt !important;
+        line-height: 1.05 !important;
+      }
+
+      .page-1 .signature-box img,
+      .page-1 .signature-empty {
+        width: 70mm !important;
+        height: 19mm !important;
+      }
+
+      .page-1 .signature-date {
+        margin-top: 0.5mm !important;
+        font-size: 8.1pt !important;
+        line-height: 1 !important;
+      }
+
+      /* ---------- Page 2: drawings + signature + fixed footer ---------- */
+      .page.page-2 {
+        display: block !important;
+        height: 281mm !important;
+        min-height: 281mm !important;
+        max-height: 281mm !important;
+        padding: 0 0 11mm !important;
+        overflow: hidden !important;
+      }
+
+      .page-2-header {
+        margin-bottom: 1.2mm !important;
+      }
+
+      .page-2-header h1 {
+        margin: 0 0 0.5mm !important;
+        font-size: 13pt !important;
+        line-height: 1.03 !important;
+      }
+
+      .page-2-meta-grid {
+        gap: 0.7mm 8mm !important;
+        margin-bottom: 1.5mm !important;
+        font-size: 9.2pt !important;
+        line-height: 1.05 !important;
+      }
+
+      .page-2-meta-item,
+      .page-2-meta-item.wide {
+        grid-template-columns: 27mm 1fr !important;
+        gap: 2mm !important;
+      }
+
+      .comments-block {
+        margin-bottom: 1.5mm !important;
+      }
+
+      .comments-block h2 {
+        margin: 0 0 0.4mm !important;
+        font-size: 10.5pt !important;
+        line-height: 1.03 !important;
+      }
+
+      .comments-text {
+        min-height: 3mm !important;
+        max-height: 8mm !important;
+        overflow: hidden !important;
+        font-size: 8.8pt !important;
+        line-height: 1.05 !important;
+      }
+
+      .page-2 .damage-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 2mm 4mm !important;
+        margin-top: 8mm !important;
+      }
+
+      .page-2 .damage-cell,
+      .page-2 .damage-image-wrap {
+        min-height: 0 !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .page-2 .damage-cell.side img {
+        width: 100% !important;
+        height: 55mm !important;
+        object-fit: contain !important;
+      }
+
+      .page-2 .damage-cell.front-rear img {
+        width: 100% !important;
+        height: 69mm !important;
+        object-fit: contain !important;
+      }
+
+      .page-2 .missing-drawing {
+        height: 36mm !important;
+        font-size: 8pt !important;
+      }
+
+      .page-2 .bottom-row {
+        grid-template-columns: 74mm 74mm !important;
+        gap: 10mm !important;
+        margin-top: 7mm !important;
+        padding-top: 0 !important;
+      }
+
+      .page-2 .bottom-row > div {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .page-2 .damage-cell.fuel {
+        padding-top: 4mm !important;
+      }
+
+      .page-2 .damage-cell.fuel img {
+        width: 74mm !important;
+        height: 27mm !important;
+      }
+
+      .page-2 .signature-title {
+        margin-bottom: 0.6mm !important;
+        font-size: 8.6pt !important;
+        line-height: 1 !important;
+      }
+
+      .page-2 .signature-box img,
+      .page-2 .signature-empty {
+        width: 74mm !important;
+        height: 27mm !important;
+      }
+
+      .page-2 .signature-date {
+        margin-top: 0.5mm !important;
+        font-size: 8.1pt !important;
+        line-height: 1 !important;
+      }
+
+      .page-2 .footer {
+        position: absolute !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        min-height: 9mm !important;
+        margin: 0 !important;
+        padding: 1mm 30mm 0 0 !important;
+        display: flex !important;
+        align-items: end !important;
+        font-size: 8.2pt !important;
+        line-height: 1 !important;
+      }
+
+      .page-2 .footer img {
+        width: 25mm !important;
+        right: 0 !important;
+        bottom: 0 !important;
+      }
+    }
+
     </style>
   </head>
 
