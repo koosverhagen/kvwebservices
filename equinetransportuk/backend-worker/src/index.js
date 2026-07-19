@@ -6904,8 +6904,8 @@ async function findBookingById(env, bookingId) {
           const parsed = JSON.parse(monthData);
 
           if (Array.isArray(parsed)) {
-            const kvBooking = parsed.find(
-              (b) => String(b.id) === String(safeBookingId),
+            const kvBooking = parsed.find((b) =>
+              bookingMatchesBookingId(b, bookingIdCandidates),
             );
 
             if (kvBooking) {
@@ -7339,9 +7339,12 @@ async function updateDepositStateForBooking(env, bookingId, patch) {
   };
 
   await moveBookingInKv(env, booking, nextBooking);
+  await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
 
   if (Object.prototype.hasOwnProperty.call(patch || {}, "depositPaid")) {
     try {
+      const canonicalBookingId = String(nextBooking.id || bookingId || "").trim();
+
       await env.DB.prepare(
         `
         UPDATE bookings
@@ -7350,7 +7353,11 @@ async function updateDepositStateForBooking(env, bookingId, patch) {
         WHERE id = ?
       `,
       )
-        .bind(patch.depositPaid ? 1 : 0, nextBooking.updatedAt, bookingId)
+        .bind(
+          patch.depositPaid ? 1 : 0,
+          nextBooking.updatedAt,
+          canonicalBookingId,
+        )
         .run();
     } catch (err) {
       console.warn("⚠️ Deposit DB status update failed:", err.message);
@@ -7396,6 +7403,286 @@ function bookingLooksLikeActiveDepositHold(booking) {
   return true;
 }
 
+
+const STRIPE_DEPOSIT_INDEX_CACHE_KEY = "cache:stripe-deposit-index:v2";
+const STRIPE_DEPOSIT_INDEX_CACHE_SECONDS = 10 * 60;
+const MAX_STRIPE_DEPOSIT_SEARCH_PAGES = 5;
+const MAX_LEGACY_DEPOSIT_REPAIRS_PER_LIST_LOAD = 10;
+
+function bookingNeedsLegacyStripeDepositDiscovery(booking) {
+  if (!booking) return false;
+
+  const bookingId = String(booking.id || booking.bookingId || "").trim();
+
+  const isLegacyBooking =
+    bookingId.startsWith("book_planyo_") ||
+    String(booking.paymentMode || booking.payment_mode || "").toLowerCase() ===
+      "legacy_import";
+
+  if (!isLegacyBooking) return false;
+
+  // Only self-heal upcoming or just-returned bookings. Old captured deposits may
+  // already have been refunded in Stripe, and PaymentIntent status alone does
+  // not safely describe the later refund state.
+  const dropoffValue =
+    booking.dropoffAt ||
+    booking.dropoffAtLocal ||
+    booking.dropoff_at ||
+    booking.pickupAt ||
+    booking.pickupAtLocal ||
+    booking.pickup_at ||
+    "";
+
+  const dropoffTime = new Date(dropoffValue).getTime();
+  const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+
+  if (Number.isFinite(dropoffTime) && dropoffTime < twoDaysAgo) {
+    return false;
+  }
+
+  const paymentIntentId = String(
+    booking.depositPaymentIntentId ||
+      booking.deposit_payment_intent_id ||
+      "",
+  ).trim();
+
+  if (paymentIntentId) return false;
+
+  const status = String(
+    booking.depositStatus || booking.deposit_status || "",
+  ).toLowerCase();
+
+  const capturedAmount = Number(
+    booking.depositCapturedAmount ||
+      booking.deposit_captured_amount ||
+      booking.depositCaptured ||
+      booking.deposit_captured ||
+      0,
+  );
+
+  const alreadyKnown =
+    capturedAmount > 0 ||
+    booking.depositPaid === true ||
+    booking.deposit_paid === 1 ||
+    booking.deposit_paid === true ||
+    booking.depositReleased === true ||
+    booking.deposit_released === 1 ||
+    booking.depositCancelled === true ||
+    booking.deposit_cancelled === 1 ||
+    booking.deposit_cancelled === true ||
+    status === "paid" ||
+    status === "secured" ||
+    status === "requires_capture" ||
+    status === "legacy_authorized" ||
+    status === "captured" ||
+    status === "captured_remainder_released" ||
+    status === "released" ||
+    status === "cancelled" ||
+    status === "canceled";
+
+  return !alreadyKnown;
+}
+
+function compactStripeDepositIntent(paymentIntent) {
+  return {
+    id: paymentIntent.id,
+    status: paymentIntent.status || "",
+    amount: Number(paymentIntent.amount || 0),
+    amount_received: Number(paymentIntent.amount_received || 0),
+    amount_capturable: Number(paymentIntent.amount_capturable || 0),
+    capture_method: paymentIntent.capture_method || "",
+    canceled_at: paymentIntent.canceled_at || null,
+    created: Number(paymentIntent.created || 0),
+    metadata: {
+      bookingId:
+        paymentIntent.metadata?.bookingId ||
+        paymentIntent.metadata?.bookingID ||
+        paymentIntent.metadata?.booking_id ||
+        "",
+      paymentType:
+        paymentIntent.metadata?.paymentType ||
+        paymentIntent.metadata?.payment_type ||
+        "",
+    },
+  };
+}
+
+async function loadStripeDepositIntentIndex(env, stripe) {
+  try {
+    const cachedRaw = await env.BOOKINGS_KV.get(
+      STRIPE_DEPOSIT_INDEX_CACHE_KEY,
+    );
+
+    if (cachedRaw) {
+      const cached = JSON.parse(cachedRaw);
+      const cachedAt = Number(cached?.cachedAt || 0);
+      const intents = Array.isArray(cached?.intents) ? cached.intents : [];
+
+      if (
+        cachedAt > 0 &&
+        Date.now() - cachedAt < STRIPE_DEPOSIT_INDEX_CACHE_SECONDS * 1000
+      ) {
+        return intents;
+      }
+    }
+  } catch (err) {
+    console.warn("⚠️ Stripe deposit index cache read failed:", err.message);
+  }
+
+  const intents = [];
+  let page = null;
+
+  for (
+    let pageNumber = 0;
+    pageNumber < MAX_STRIPE_DEPOSIT_SEARCH_PAGES;
+    pageNumber += 1
+  ) {
+    const params = {
+      query: "metadata['paymentType']:'deposit'",
+      limit: 100,
+    };
+
+    if (page) params.page = page;
+
+    const result = await stripe.paymentIntents.search(params);
+
+    for (const paymentIntent of result.data || []) {
+      intents.push(compactStripeDepositIntent(paymentIntent));
+    }
+
+    if (!result.has_more || !result.next_page) break;
+    page = result.next_page;
+  }
+
+  intents.sort(
+    (a, b) => Number(b.created || 0) - Number(a.created || 0),
+  );
+
+  try {
+    await env.BOOKINGS_KV.put(
+      STRIPE_DEPOSIT_INDEX_CACHE_KEY,
+      JSON.stringify({
+        cachedAt: Date.now(),
+        intents,
+      }),
+      {
+        expirationTtl: STRIPE_DEPOSIT_INDEX_CACHE_SECONDS,
+      },
+    );
+  } catch (err) {
+    console.warn("⚠️ Stripe deposit index cache write failed:", err.message);
+  }
+
+  return intents;
+}
+
+function findStripeDepositIntentForBooking(booking, depositIntentIndex) {
+  if (!booking || !Array.isArray(depositIntentIndex)) return null;
+
+  for (const paymentIntent of depositIntentIndex) {
+    const metadataBookingId = String(
+      paymentIntent?.metadata?.bookingId || "",
+    ).trim();
+
+    const paymentType = String(
+      paymentIntent?.metadata?.paymentType || "",
+    ).toLowerCase();
+
+    if (!metadataBookingId || paymentType !== "deposit") continue;
+
+    const candidates = buildBookingIdCandidates(metadataBookingId);
+
+    if (bookingMatchesBookingId(booking, candidates)) {
+      return paymentIntent;
+    }
+  }
+
+  return null;
+}
+
+async function discoverAndRepairLegacyStripeDeposits(
+  env,
+  stripe,
+  bookings,
+) {
+  const candidates = (bookings || []).filter(
+    bookingNeedsLegacyStripeDepositDiscovery,
+  );
+
+  if (!candidates.length) return bookings;
+
+  let depositIntentIndex;
+
+  try {
+    depositIntentIndex = await loadStripeDepositIntentIndex(env, stripe);
+  } catch (err) {
+    console.warn("⚠️ Stripe legacy deposit index failed:", err.message);
+    return bookings;
+  }
+
+  if (!depositIntentIndex.length) return bookings;
+
+  const repairedById = new Map();
+  let repairedCount = 0;
+
+  for (const booking of candidates) {
+    if (repairedCount >= MAX_LEGACY_DEPOSIT_REPAIRS_PER_LIST_LOAD) break;
+
+    const indexedIntent = findStripeDepositIntentForBooking(
+      booking,
+      depositIntentIndex,
+    );
+
+    if (!indexedIntent?.id) continue;
+
+    try {
+      // Retrieve the current Stripe object so captured/cancelled/hold status is
+      // never inferred from stale cached search data.
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        indexedIntent.id,
+      );
+
+      const patch = buildDepositPatchFromPaymentIntent(paymentIntent);
+
+      if (!patch) continue;
+
+      patch.depositPaymentIntentId = paymentIntent.id;
+      patch.legacyStripeDepositRepaired = true;
+      patch.legacyStripeDepositRepairedAt = new Date().toISOString();
+
+      const updatedBooking = await updateDepositStateForBooking(
+        env,
+        booking.id,
+        patch,
+      );
+
+      if (updatedBooking) {
+        repairedById.set(String(booking.id), updatedBooking);
+        repairedCount += 1;
+
+        console.log("✅ Repaired legacy Stripe deposit:", {
+          bookingId: booking.id,
+          paymentIntentId: paymentIntent.id,
+          status: paymentIntent.status,
+          capturedAmount: patch.depositCapturedAmount || 0,
+        });
+      }
+    } catch (err) {
+      console.warn("⚠️ Could not repair legacy Stripe deposit:", {
+        bookingId: booking.id,
+        paymentIntentId: indexedIntent.id,
+        message: err.message,
+      });
+    }
+  }
+
+  if (!repairedById.size) return bookings;
+
+  return bookings.map(
+    (booking) => repairedById.get(String(booking.id)) || booking,
+  );
+}
+
 async function syncDepositStatusesFromStripe(env, bookings) {
   if (!Array.isArray(bookings) || !bookings.length) return bookings;
   if (!env.STRIPE_SECRET_KEY) return bookings;
@@ -7403,6 +7690,14 @@ async function syncDepositStatusesFromStripe(env, bookings) {
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20",
   });
+
+  // First repair historical Planyo bookings whose Stripe deposit exists but
+  // whose PaymentIntent ID/status was never written into KV during migration.
+  bookings = await discoverAndRepairLegacyStripeDeposits(
+    env,
+    stripe,
+    bookings,
+  );
 
   const synced = [];
 
@@ -9076,8 +9371,11 @@ async function handleStripeWebhook(request, env) {
 
           let updated = false;
 
+          const paymentBookingIdCandidates =
+            buildBookingIdCandidates(paymentBookingId);
+
           for (const b of parsed) {
-            if (String(b.id) === String(paymentBookingId)) {
+            if (bookingMatchesBookingId(b, paymentBookingIdCandidates)) {
               if (paymentType === "deposit") {
                 b.depositPaid = true;
 
@@ -9091,7 +9389,7 @@ async function handleStripeWebhook(request, env) {
       WHERE id = ?
     `,
                   )
-                    .bind(new Date().toISOString(), paymentBookingId)
+                    .bind(new Date().toISOString(), b.id)
                     .run();
 
                   console.log(
@@ -9160,7 +9458,7 @@ async function handleStripeWebhook(request, env) {
       WHERE id = ?
     `,
                   )
-                    .bind(newPaidNow, nowIso, paymentBookingId)
+                    .bind(newPaidNow, nowIso, b.id)
                     .run();
 
                   console.log("✅ Outstanding payment marked in DB:", {
