@@ -7407,7 +7407,7 @@ function bookingLooksLikeActiveDepositHold(booking) {
 const STRIPE_DEPOSIT_INDEX_CACHE_KEY = "cache:stripe-deposit-index:v2";
 const STRIPE_DEPOSIT_INDEX_CACHE_SECONDS = 10 * 60;
 const MAX_STRIPE_DEPOSIT_SEARCH_PAGES = 5;
-const MAX_LEGACY_DEPOSIT_REPAIRS_PER_LIST_LOAD = 10;
+const MAX_LEGACY_DEPOSIT_REPAIRS_PER_LIST_LOAD = 100;
 
 function bookingNeedsLegacyStripeDepositDiscovery(booking) {
   if (!booking) return false;
@@ -7460,27 +7460,21 @@ function bookingNeedsLegacyStripeDepositDiscovery(booking) {
       0,
   );
 
-  const alreadyKnown =
+  // Active local hold flags are not final truth; Stripe must confirm them.
+  const hasFinalState =
     capturedAmount > 0 ||
-    booking.depositPaid === true ||
-    booking.deposit_paid === 1 ||
-    booking.deposit_paid === true ||
     booking.depositReleased === true ||
     booking.deposit_released === 1 ||
     booking.depositCancelled === true ||
     booking.deposit_cancelled === 1 ||
     booking.deposit_cancelled === true ||
-    status === "paid" ||
-    status === "secured" ||
-    status === "requires_capture" ||
-    status === "legacy_authorized" ||
     status === "captured" ||
     status === "captured_remainder_released" ||
     status === "released" ||
     status === "cancelled" ||
     status === "canceled";
 
-  return !alreadyKnown;
+  return !hasFinalState;
 }
 
 function compactStripeDepositIntent(paymentIntent) {
@@ -7620,8 +7614,6 @@ async function discoverAndRepairLegacyStripeDeposits(
     return bookings;
   }
 
-  if (!depositIntentIndex.length) return bookings;
-
   const repairedById = new Map();
   let repairedCount = 0;
 
@@ -7633,17 +7625,64 @@ async function discoverAndRepairLegacyStripeDeposits(
       depositIntentIndex,
     );
 
-    if (!indexedIntent?.id) continue;
+    if (!indexedIntent?.id) {
+      const localStatus = String(
+        booking.depositStatus || booking.deposit_status || "",
+      ).toLowerCase();
+
+      const locallyMarkedAsHeld =
+        booking.depositPaid === true ||
+        booking.depositPaid === 1 ||
+        String(booking.depositPaid || "").toLowerCase() === "true" ||
+        Number(booking.deposit_paid || 0) === 1 ||
+        [
+          "paid",
+          "secured",
+          "requires_capture",
+          "legacy_authorized",
+          "legacy_matched",
+        ].includes(localStatus);
+
+      if (!locallyMarkedAsHeld) continue;
+
+      const nowIso = new Date().toISOString();
+
+      const clearedBooking = await updateDepositStateForBooking(
+        env,
+        booking.id,
+        {
+          depositPaid: false,
+          depositCancelled: false,
+          depositCancelledAt: null,
+          deposit_cancelled: false,
+          deposit_cancelled_at: null,
+          depositReleased: false,
+          depositReleasedAt: null,
+          depositCapturedAmount: 0,
+          depositStatus: "not_secured",
+          depositPaymentIntentId: null,
+          deposit_payment_intent_id: null,
+          legacyStripeDepositRepaired: true,
+          legacyStripeDepositRepairedAt: nowIso,
+          updatedAt: nowIso,
+        },
+      );
+
+      if (clearedBooking) {
+        repairedById.set(String(booking.id), clearedBooking);
+        repairedCount += 1;
+        console.log("✅ Cleared stale legacy deposit hold:", booking.id);
+      }
+
+      continue;
+    }
 
     try {
-      // Retrieve the current Stripe object so captured/cancelled/hold status is
-      // never inferred from stale cached search data.
       const paymentIntent = await stripe.paymentIntents.retrieve(
         indexedIntent.id,
       );
 
       const patch = buildDepositPatchFromPaymentIntent(paymentIntent);
-
       if (!patch) continue;
 
       patch.depositPaymentIntentId = paymentIntent.id;
@@ -7659,7 +7698,6 @@ async function discoverAndRepairLegacyStripeDeposits(
       if (updatedBooking) {
         repairedById.set(String(booking.id), updatedBooking);
         repairedCount += 1;
-
         console.log("✅ Repaired legacy Stripe deposit:", {
           bookingId: booking.id,
           paymentIntentId: paymentIntent.id,
@@ -7721,12 +7759,46 @@ async function syncDepositStatusesFromStripe(env, bookings) {
         const paymentIntent =
           await stripe.paymentIntents.retrieve(paymentIntentId);
 
-        const patch = buildDepositPatchFromPaymentIntent(paymentIntent);
+          let patch = buildDepositPatchFromPaymentIntent(paymentIntent);
 
-        if (patch) {
-          patch.depositPaymentIntentId = paymentIntent.id;
+          // Clear abandoned Stripe intents that are no longer active holds.
+          if (!patch) {
+            const intentAgeMs =
+              Date.now() - Number(paymentIntent.created || 0) * 1000;
 
-          const updatedBooking = await updateDepositStateForBooking(
+            if (
+              intentAgeMs > 24 * 60 * 60 * 1000 &&
+              paymentIntent.status !== "requires_capture"
+            ) {
+              const nowIso = new Date().toISOString();
+
+              patch = {
+                depositPaid: false,
+                depositCancelled: false,
+                depositCancelledAt: null,
+                deposit_cancelled: false,
+                deposit_cancelled_at: null,
+                depositReleased: false,
+                depositReleasedAt: null,
+                depositCapturedAmount: 0,
+                depositStatus: "not_secured",
+                depositPaymentIntentId: null,
+                deposit_payment_intent_id: null,
+                updatedAt: nowIso,
+              };
+            }
+          }
+
+          if (patch) {
+            if (
+              paymentIntent.status === "requires_capture" ||
+              paymentIntent.status === "canceled" ||
+              paymentIntent.status === "succeeded"
+            ) {
+              patch.depositPaymentIntentId = paymentIntent.id;
+            }
+
+            const updatedBooking = await updateDepositStateForBooking(
             env,
             booking.id,
             patch,
