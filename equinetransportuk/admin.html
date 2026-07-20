@@ -11059,7 +11059,15 @@ Equine Transport UK`;
 
         // Do not require a PaymentIntent ID here: D1 fallback/legacy rows can
         // have deposit_paid=1 but no Stripe ID in the admin response.
-        return depositSecuredByFlag || depositSecuredByStatus;
+        const hasStripeDepositIntent = !!(
+          booking?.depositPaymentIntentId ||
+          booking?.deposit_payment_intent_id
+        );
+
+        return (
+          hasStripeDepositIntent &&
+          (depositSecuredByFlag || depositSecuredByStatus)
+        );
       }
 
       function bookingMatchesDepositFilter(booking, depositMode) {
