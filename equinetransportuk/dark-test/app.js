@@ -226,9 +226,7 @@ function startBooking(vehicleId) {
   if (selectedLorryInput) selectedLorryInput.value = vehicle?.name || "";
   if (selectedBaseInput) selectedBaseInput.value = "";
 
-  const bookingSection =
-    document.getElementById("availability-form") ||
-    document.getElementById("booking");
+  const bookingSection = document.getElementById("booking");
 
   bookingSection?.scrollIntoView({
     behavior: "smooth",
@@ -568,7 +566,11 @@ durationDaysInput?.addEventListener("change", async () => {
 
   // 🔥 slight delay prevents double-trigger chain
   setTimeout(() => {
-    maybeAutoSubmitAvailability();
+    if (LOCKED_VEHICLE && PRESELECTED_VEHICLE) {
+      forcePreselectedAvailabilityCheck(40);
+    } else {
+      maybeAutoSubmitAvailability();
+    }
   }, 50);
 });
 
@@ -592,22 +594,172 @@ pickupTimeInput?.addEventListener("change", async () => {
   =============================== */
 
   setTimeout(() => {
-    maybeAutoSubmitAvailability();
+    if (LOCKED_VEHICLE && PRESELECTED_VEHICLE) {
+      forcePreselectedAvailabilityCheck(40);
+    } else {
+      maybeAutoSubmitAvailability();
+    }
   }, 50);
 });
 
 const availabilityResults = document.getElementById("availability-results");
 const startBookingBtn = document.getElementById("start-booking-btn");
 
-startBookingBtn?.addEventListener("click", () => {
-  resetBookingFlow();
+function getBookingScrollHeaderOffset() {
+  const header = document.querySelector(".site-header");
+  return header ? Math.ceil(header.getBoundingClientRect().height + 14) : 92;
+}
+
+function scrollToAvailabilityAndDuration(options = {}) {
+  const target =
+    availabilityForm ||
+    document.getElementById("availability-form") ||
+    document.getElementById("booking") ||
+    pickupDateInput ||
+    durationDaysInput;
+
+  if (!target) return;
+
+  const top =
+    target.getBoundingClientRect().top +
+    window.pageYOffset -
+    getBookingScrollHeaderOffset();
+
+  window.scrollTo({
+    top: Math.max(0, top),
+    behavior: options.behavior || "smooth",
+  });
+
+  const durationTarget =
+    durationDaysInput || document.getElementById("duration-days");
+
+  if (durationTarget) {
+    setTimeout(() => {
+      durationTarget.classList.add("duration-highlight");
+      setTimeout(() => {
+        durationTarget.classList.remove("duration-highlight");
+      }, 1500);
+    }, options.highlightDelay ?? 350);
+  }
+}
+
+function closeMainNavigationAfterBookingJump() {
+  const nav = document.getElementById("main-nav");
+  const toggle = document.getElementById("nav-toggle");
+
+  nav?.classList.remove("open");
+  toggle?.classList.remove("open");
+  toggle?.setAttribute("aria-expanded", "false");
+}
+
+function resetAndScrollToAvailabilityDuration() {
+  if (typeof resetBookingFlow === "function") {
+    resetBookingFlow();
+  }
 
   setTimeout(() => {
-    document.getElementById("availability-form")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
+    scrollToAvailabilityAndDuration();
+  }, 140);
+}
+
+
+function scrollToPickupDateInput() {
+  const target =
+    pickupDateInput?.__appleDateTrigger ||
+    pickupDateInput ||
+    availabilityForm ||
+    document.getElementById("booking");
+
+  if (!target) return;
+
+  const header = document.querySelector(".site-header");
+  const headerOffset = header
+    ? Math.ceil(header.getBoundingClientRect().height + 14)
+    : 92;
+
+  const targetTop =
+    target.getBoundingClientRect().top + window.pageYOffset - headerOffset;
+
+  window.scrollTo({
+    top: Math.max(0, targetTop),
+    behavior: "smooth",
+  });
+
+  setTimeout(() => {
+    target.focus?.({ preventScroll: true });
+  }, 350);
+}
+
+function resetBookingFlowForHeroStart() {
+  resetAvailabilityAutoSubmitState();
+  AVAILABILITY_FLOW_LOCK = false;
+  window.__lastDurationCheck = "";
+
+  IS_RESETTING = true;
+
+  selectedAvailability = null;
+  PRESELECTED_VEHICLE = null;
+  LOCKED_VEHICLE = false;
+  BLOCK_AUTO_SCROLL = false;
+  AVAILABILITY_FLOW_LOCK = false;
+
+  if (pickupDateInput) pickupDateInput.value = "";
+  if (selectedPickupInput) selectedPickupInput.value = "";
+  window.SELECTED_DATE = null;
+
+  if (selectedLorryInput) selectedLorryInput.value = "";
+  if (selectedDurationInput) selectedDurationInput.value = "";
+  if (selectedBaseInput) selectedBaseInput.value = "";
+  if (pickupTimeInput) pickupTimeInput.value = "";
+  if (durationDaysInput) durationDaysInput.value = "";
+
+  const row = document.getElementById("pickup-time-row");
+  if (row) row.style.display = "none";
+
+  const group = document.getElementById("pickup-time-group");
+  if (group) group.style.display = "none";
+
+  const warningBox = document.getElementById("preselected-warning");
+  if (warningBox) {
+    warningBox.innerHTML = "";
+    warningBox.style.display = "none";
+  }
+
+  if (availabilityResults) availabilityResults.innerHTML = "";
+
+  const confirmation = document.getElementById("booking-confirmation");
+  if (confirmation) confirmation.innerHTML = "";
+
+  if (typeof updateAppleDateTrigger === "function") {
+    updateAppleDateTrigger(pickupDateInput);
+    updateAppleDateTrigger(selectedPickupInput);
+  }
+
+  updateCalendarVehicleLabel();
+  updateCheckoutSummary();
+  goToStep(1);
+
+  IS_RESETTING = false;
+}
+
+startBookingBtn?.addEventListener("click", (event) => {
+  event.preventDefault();
+  resetAndScrollToAvailabilityDuration();
+});
+
+document.querySelectorAll(".main-nav a").forEach((link) => {
+  const label = String(link.textContent || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
+  if (label === "self drive" || label === "book self drive") {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      closeMainNavigationAfterBookingJump();
+      resetAndScrollToAvailabilityDuration();
     });
-  }, 120);
+  }
 });
 const bookingForm = document.getElementById("booking-form");
 const selectedLorryInput = document.getElementById("selected-lorry") || {
@@ -961,14 +1113,7 @@ function attachAppleDatePicker(input, options = {}) {
   trigger.setAttribute("aria-label", options.title || "Choose date");
   trigger.innerHTML = `
     <span class="apple-date-trigger-text">Choose date</span>
-    <span class="apple-date-trigger-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M7 2V5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
-        <path d="M17 2V5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
-        <path d="M4 9H20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
-        <rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" stroke-width="1.9"/>
-      </svg>
-    </span>
+    <span class="apple-date-trigger-icon" aria-hidden="true">⌄</span>
   `;
 
   input.insertAdjacentElement("afterend", trigger);
@@ -1708,6 +1853,30 @@ function maybeAutoSubmitAvailability() {
       AVAILABILITY_FLOW_LOCK = false;
     }, 150);
   }
+}
+
+function forcePreselectedAvailabilityCheck(delay = 120) {
+  if (IS_STRIPE_RETURN || STRIPE_FLOW_COMPLETED) return;
+  if (!availabilityForm) return;
+  if (!LOCKED_VEHICLE || !PRESELECTED_VEHICLE) return;
+
+  const pickupDate = pickupDateInput?.value || "";
+  const duration = Number(durationDaysInput?.value || 0);
+  const pickupTime = pickupTimeInput?.value || "";
+
+  if (!pickupDate || !duration) return;
+  if (duration === 0.5 && !pickupTime) return;
+
+  const expectedKey = buildAvailabilitySubmitKey();
+
+  clearTimeout(availabilityAutoSubmitTimer);
+  availabilityAutoSubmitTimer = setTimeout(() => {
+    if (!LOCKED_VEHICLE || !PRESELECTED_VEHICLE) return;
+    if (buildAvailabilitySubmitKey() !== expectedKey) return;
+
+    lastAvailabilityAutoSubmitKey = "";
+    availabilityForm.requestSubmit();
+  }, delay);
 }
 
 async function getVehicleAvailability(
@@ -2962,9 +3131,7 @@ function goBackToDates() {
 
   /* scroll to calendar */
 
-  const calendar =
-    document.getElementById("availability-calendar") ||
-    document.getElementById("availability-form");
+  const calendar = document.getElementById("availability-calendar");
 
   if (calendar) {
     calendar.scrollIntoView({
@@ -3030,13 +3197,7 @@ function resetBookingFlow() {
   if (row) row.style.display = "none";
 
   const group = document.getElementById("pickup-time-group");
-  if (group) {
-    group.style.setProperty("display", "none", "important");
-    group.classList.remove("is-visible");
-  }
-  document
-    .getElementById("availability-form")
-    ?.classList.remove("has-pickup-time");
+  if (group) group.style.display = "none";
 
   const warningBox = document.getElementById("preselected-warning");
   if (warningBox) {
@@ -3083,11 +3244,13 @@ function resetBookingFlow() {
   goToStep(1);
 
   /* ===============================
-     SCROLL TOP
+     SCROLL TO AVAILABILITY + DURATION
   =============================== */
 
   requestAnimationFrame(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof scrollToAvailabilityAndDuration === "function") {
+      scrollToAvailabilityAndDuration();
+    }
   });
 
   /* ===============================
@@ -3100,8 +3263,12 @@ function resetBookingFlow() {
 }
 
 function resetCalendarToToday() {
+  const calendarEl = document.getElementById("availability-calendar");
+
   if (!window.renderCalendar || !window.__calendarState) {
-    console.warn("⚠️ Calendar not ready");
+    if (calendarEl) {
+      console.warn("⚠️ Calendar not ready");
+    }
     return;
   }
 
@@ -3563,12 +3730,42 @@ function scrollStep2IntoView() {
   const step2 = document.getElementById("step-2");
   if (!step2) return;
 
-  setTimeout(() => {
-    step2.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
+  const isMobile =
+    window.matchMedia?.("(max-width: 768px)")?.matches ||
+    window.matchMedia?.("(pointer: coarse)")?.matches;
+
+  const scrollToTopOfStep = (behavior = "smooth") => {
+    const header = document.querySelector(".site-header");
+    const headerHeight = header
+      ? Math.ceil(header.getBoundingClientRect().height)
+      : 0;
+
+    const top =
+      window.scrollY +
+      step2.getBoundingClientRect().top -
+      headerHeight -
+      10;
+
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior,
     });
-  }, 120);
+  };
+
+  // Wait until Step 2 and its dynamically inserted lorry cards
+  // have completed their first layout.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      scrollToTopOfStep("smooth");
+    });
+  });
+
+  // iOS Safari/Home Screen apps can preserve the old scroll anchor while
+  // result cards are being inserted. Correct it again after layout settles.
+  if (isMobile) {
+    setTimeout(() => scrollToTopOfStep("auto"), 260);
+    setTimeout(() => scrollToTopOfStep("auto"), 520);
+  }
 }
 
 function isWeekendDate(value) {
@@ -4263,12 +4460,8 @@ async function renderAvailabilityResults(items) {
       </div>
     `);
 
-    setTimeout(() => {
-      availabilityResults?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 150);
+    goToStep(2);
+    scrollStep2IntoView();
 
     return;
   }
@@ -4371,13 +4564,7 @@ async function renderAvailabilityResults(items) {
   =============================== */
 
   goToStep(2);
-
-  setTimeout(() => {
-    document.getElementById("step-2")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }, 120);
+  scrollStep2IntoView();
 }
 
 const bookingTimeInput = document.getElementById("booking-pickup-time");
@@ -4661,15 +4848,13 @@ async function updatePickupTimeVisibility() {
 
   const duration = Number(durationDaysInput?.value || 0);
   const group = document.getElementById("pickup-time-group");
-  const availabilityBox = document.getElementById("availability-form");
 
   if (!group || !pickupTimeInput) return;
 
   if (duration === 0.5) {
-    // Dark test CSS used !important to hide this field, so force the inline value too.
-    group.style.setProperty("display", "block", "important");
+    group.style.display = "block";
     group.classList.add("is-visible");
-    availabilityBox?.classList.add("has-pickup-time");
+    availabilityForm?.classList.add("has-pickup-time");
 
     // ✅ FORCE manual user choice (prevents auto-submit flow)
     pickupTimeInput.value = "";
@@ -4699,9 +4884,9 @@ async function updatePickupTimeVisibility() {
       pickupTimeInput.focus();
     }, 150);
   } else {
-    group.style.setProperty("display", "none", "important");
+    group.style.display = "none";
     group.classList.remove("is-visible");
-    availabilityBox?.classList.remove("has-pickup-time");
+    availabilityForm?.classList.remove("has-pickup-time");
 
     // ✅ Full-day default (keeps existing behaviour)
     pickupTimeInput.value = "07:00";
@@ -4726,29 +4911,6 @@ function autoCheckAvailability() {
 pickupDateInput?.addEventListener("change", async () => {
   const pickupDate = pickupDateInput?.value;
 
-  // Date choice should NOT immediately jump to lorry availability.
-  // Customer chooses the date first, then chooses duration, then the availability
-  // search can run from the duration change or the Check availability button.
-  resetAvailabilityAutoSubmitState?.();
-
-  selectedAvailability = null;
-  LAST_AVAILABLE_VEHICLES = [];
-
-  if (availabilityResults) {
-    availabilityResults.innerHTML = "";
-  }
-
-  if (durationDaysInput) {
-    durationDaysInput.value = "";
-  }
-
-  if (pickupTimeInput) {
-    pickupTimeInput.value = "";
-  }
-
-  updatePickupTimeVisibility();
-  updateEarlyPickupAvailability();
-
   if (pickupDate) {
     window.__lastDurationCheck = "";
 
@@ -4772,9 +4934,11 @@ pickupDateInput?.addEventListener("change", async () => {
     }
   }
 
-  setTimeout(() => {
-    durationDaysInput?.focus?.({ preventScroll: true });
-  }, 80);
+  if (LOCKED_VEHICLE && PRESELECTED_VEHICLE) {
+    forcePreselectedAvailabilityCheck(180);
+  } else {
+    autoCheckAvailability();
+  }
 });
 
 /* trigger when duration changes */
@@ -4829,7 +4993,8 @@ const FLEET_DETAIL_CONTENT = {
       "Owners wanting a safety-bar layout",
       "Self-drive day hire and half-day hire when available",
     ],
-    video: "",
+    video: "videos/ls23-lorry-tour.mp4",
+    videoPoster: "videos/ls23-lorry-tour-poster.jpg",
   },
 
   "v35-2": {
@@ -4848,7 +5013,8 @@ const FLEET_DETAIL_CONTENT = {
       "Nervous travellers",
       "Shows, lessons, clinics and vet visits",
     ],
-    video: "",
+    video: "videos/dl22-lorry-tour.mp4",
+    videoPoster: "videos/dl22-lorry-tour-poster.jpg",
   },
 
   "v35-3": {
@@ -4867,7 +5033,8 @@ const FLEET_DETAIL_CONTENT = {
       "Shows, clinics and vet appointments",
       "Owners wanting a traditional breast-bar layout",
     ],
-    video: "",
+    video: "videos/ca21-lorry-tour.mp4",
+    videoPoster: "videos/ca21-lorry-tour-poster.jpg",
   },
 
   "v75-1": {
@@ -4991,7 +5158,60 @@ function renderFleetList(items) {
   `;
 }
 
+
+function ensureFleetDetailUiPolishStyles() {
+  if (document.getElementById("fleet-detail-ui-polish-style")) return;
+
+  const style = document.createElement("style");
+  style.id = "fleet-detail-ui-polish-style";
+  style.textContent = `
+    .fleet-detail-overlay,
+    .fleet-detail-modal,
+    .fleet-detail-body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .fleet-detail-overlay::-webkit-scrollbar,
+    .fleet-detail-modal::-webkit-scrollbar,
+    .fleet-detail-body::-webkit-scrollbar {
+      width: 0 !important;
+      height: 0 !important;
+      display: none !important;
+    }
+
+    .fleet-detail-video-frame {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    .fleet-detail-video-frame video,
+    .fleet-detail-video video.fleet-detail-video-player {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-height: none !important;
+      border-radius: 0 !important;
+      object-fit: cover;
+      background: #0f172a;
+    }
+
+    @media (max-width: 820px) {
+      .fleet-detail-video-frame {
+        border-radius: 16px;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
 function ensureFleetDetailOverlay() {
+  ensureFleetDetailUiPolishStyles();
+
   let overlay = document.getElementById("fleet-detail-overlay");
 
   if (!overlay) {
@@ -5128,10 +5348,12 @@ function openFleetDetailOverlay(vehicleId) {
     if (detail.video) {
       video.innerHTML = `
         <h3>Video</h3>
-        <video controls playsinline preload="metadata" poster="${escapeHtml(mainImage)}">
-          <source src="${escapeHtml(detail.video)}" type="video/mp4">
-          Your browser does not support video playback.
-        </video>
+        <div class="fleet-detail-video-frame">
+          <video class="fleet-detail-video-player" controls playsinline preload="metadata" ${detail.videoPoster ? `poster="${escapeHtml(detail.videoPoster)}"` : ""}>
+            <source src="${escapeHtml(detail.video)}" type="video/mp4">
+            Your browser does not support video playback.
+          </video>
+        </div>
       `;
     } else {
       video.innerHTML = `
@@ -7449,6 +7671,8 @@ window.fleetImages = window.fleetImages || [
   "3.5 T With Breast Bar (CA21)4.webp",
   "3.5 T With Breast Bar (CA21)5.webp",
   "3.5 T With Breast Bar (CA21)6.webp",
+  "3.5 T With Breast Bar (CA21)7.webp",
+  "3.5 T With Breast Bar (CA21)8.webp",
   "3.5T With Safety Bar (LS23)1.webp",
   "3.5T With Safety Bar (LS23)2.webp",
   "3.5T With Safety Bar (LS23)3.webp",
@@ -7457,8 +7681,6 @@ window.fleetImages = window.fleetImages || [
   "3.5T With Safety Bar (LS23)6.webp",
   "3.5T With Safety Bar (LS23)7.webp",
   "3.5T With Safety Bar (LS23)8.webp",
-  "3.5T With Safety Bar (LS23)9.webp",
-  "3.5T With Safety Bar (LS23)10.webp",
   "7.5 T 3 Horses with Living1.webp",
   "7.5 T 3 Horses with Living2.webp",
   "7.5 T 3 Horses with Living3.webp",
@@ -8766,264 +8988,3 @@ async function showVehiclePreview(date, event) {
   watchBookingUpdates(); // run once immediately
   setInterval(watchBookingUpdates, 10000); // every 10 seconds
 })();
-
-/* ======================================================
-   DARK KEYNOTE V24 — Hero slideshow controller
-====================================================== */
-
-function initDarkHeroSlideshow() {
-  const root = document.querySelector(".hero-slideshow");
-  if (!root || root.dataset.heroSlideshowReady === "true") return;
-
-  const slides = Array.from(root.querySelectorAll(".hero-slide"));
-  const dots = Array.from(root.querySelectorAll("[data-hero-slide-dot]"));
-  const prev = root.querySelector('[data-hero-slide="prev"]');
-  const next = root.querySelector('[data-hero-slide="next"]');
-
-  if (!slides.length) return;
-
-  root.dataset.heroSlideshowReady = "true";
-
-  let index = Math.max(
-    0,
-    slides.findIndex((slide) => slide.classList.contains("is-active")),
-  );
-  if (index < 0) index = 0;
-  let timer = null;
-
-  function showSlide(nextIndex) {
-    index = (nextIndex + slides.length) % slides.length;
-
-    slides.forEach((slide, i) => {
-      slide.classList.toggle("is-active", i === index);
-    });
-
-    dots.forEach((dot, i) => {
-      dot.classList.toggle("is-active", i === index);
-      dot.setAttribute("aria-current", i === index ? "true" : "false");
-    });
-  }
-
-  function stop() {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
-  }
-
-  function start() {
-    stop();
-    timer = setInterval(() => showSlide(index + 1), 4500);
-  }
-
-  prev?.addEventListener("click", () => {
-    showSlide(index - 1);
-    start();
-  });
-
-  next?.addEventListener("click", () => {
-    showSlide(index + 1);
-    start();
-  });
-
-  dots.forEach((dot) => {
-    dot.addEventListener("click", () => {
-      const dotIndex = Number(dot.dataset.heroSlideDot);
-      if (Number.isFinite(dotIndex)) {
-        showSlide(dotIndex);
-        start();
-      }
-    });
-  });
-
-  root.addEventListener("mouseenter", stop);
-  root.addEventListener("mouseleave", start);
-
-  showSlide(index);
-  start();
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initDarkHeroSlideshow);
-} else {
-  initDarkHeroSlideshow();
-}
-
-/* ======================================================
-   DARK KEYNOTE V32 — white DOB calendar overlay icon
-====================================================== */
-
-function initDobCalendarWhiteIcon() {
-  const input = document.getElementById("customer-dob");
-  if (!input || input.dataset.dobIconReady === "true") return;
-
-  const parent = input.closest(".form-field") || input.parentElement;
-  if (!parent) return;
-
-  input.dataset.dobIconReady = "true";
-  parent.classList.add("dob-calendar-wrap");
-
-  if (!parent.querySelector(".dob-calendar-icon")) {
-    const icon = document.createElement("span");
-    icon.className = "dob-calendar-icon";
-    icon.setAttribute("aria-hidden", "true");
-    icon.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M7 3v3M17 3v3M4.5 9.2h15M6.2 5.5h11.6c1 0 1.7.8 1.7 1.7v10.6c0 1-.8 1.7-1.7 1.7H6.2c-1 0-1.7-.8-1.7-1.7V7.2c0-1 .8-1.7 1.7-1.7Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `;
-    parent.appendChild(icon);
-  }
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initDobCalendarWhiteIcon);
-} else {
-  initDobCalendarWhiteIcon();
-}
-
-/* ======================================================
-   DARK KEYNOTE V33 — centre DOB calendar icon in input
-====================================================== */
-
-function initDobCalendarWhiteIconV33() {
-  const input = document.getElementById("customer-dob");
-  if (!input) return;
-
-  let shell = input.closest(".dob-date-shell");
-
-  if (!shell) {
-    shell = document.createElement("span");
-    shell.className = "dob-date-shell";
-    input.parentNode.insertBefore(shell, input);
-    shell.appendChild(input);
-  }
-
-  let icon =
-    shell.querySelector(".dob-calendar-icon") ||
-    input.closest(".form-field")?.querySelector(".dob-calendar-icon");
-
-  if (!icon) {
-    icon = document.createElement("span");
-    icon.className = "dob-calendar-icon";
-    icon.setAttribute("aria-hidden", "true");
-    icon.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M7 3v3M17 3v3M4.5 9.2h15M6.2 5.5h11.6c1 0 1.7.8 1.7 1.7v10.6c0 1-.8 1.7-1.7 1.7H6.2c-1 0-1.7-.8-1.7-1.7V7.2c0-1 .8-1.7 1.7-1.7Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `;
-  }
-
-  if (icon.parentElement !== shell) {
-    shell.appendChild(icon);
-  }
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initDobCalendarWhiteIconV33);
-} else {
-  initDobCalendarWhiteIconV33();
-}
-
-/* ======================================================
-   DARK KEYNOTE V36 — responsive header phone guard
-   Prevents the blue phone number from overlapping the menu while resizing.
-====================================================== */
-
-function initHeaderPhoneOverlapGuardV36() {
-  const body = document.body;
-  const header = document.querySelector(".site-header");
-  const inner = header?.querySelector(".header-inner");
-  const brand = header?.querySelector(".brand");
-  const nav = header?.querySelector(".main-nav");
-  const phone = header?.querySelector(".phone-link");
-
-  if (!body || !header || !inner || !brand || !nav || !phone) return;
-
-  const measurePhoneWidth = () => {
-    const wasCollapsed = body.classList.contains("header-phone-collapsed");
-    if (wasCollapsed) body.classList.remove("header-phone-collapsed");
-
-    const width = Math.max(
-      phone.scrollWidth || 0,
-      phone.getBoundingClientRect().width || 0,
-      128,
-    );
-
-    phone.dataset.phoneNaturalWidth = String(Math.ceil(width));
-
-    if (wasCollapsed) body.classList.add("header-phone-collapsed");
-    return width;
-  };
-
-  let naturalPhoneWidth = measurePhoneWidth();
-  let ticking = false;
-
-  const update = () => {
-    ticking = false;
-
-    const viewport =
-      window.innerWidth || document.documentElement.clientWidth || 0;
-
-    if (viewport < 981) {
-      body.classList.remove("header-phone-collapsed");
-      return;
-    }
-
-    const innerWidth =
-      inner.clientWidth || inner.getBoundingClientRect().width || viewport;
-    const brandWidth =
-      brand.getBoundingClientRect().width || brand.scrollWidth || 0;
-    const navWidth = Math.max(
-      nav.scrollWidth || 0,
-      nav.getBoundingClientRect().width || 0,
-    );
-    const phoneWidth = Number(
-      phone.dataset.phoneNaturalWidth || naturalPhoneWidth || 128,
-    );
-
-    /* Extra breathing room prevents the edge-case touch/overlap while dragging
-       the browser width. */
-    const safetyGap = 68;
-
-    const shouldHide =
-      viewport <= 1500 ||
-      brandWidth + navWidth + phoneWidth + safetyGap > innerWidth;
-
-    body.classList.toggle("header-phone-collapsed", shouldHide);
-  };
-
-  const requestUpdate = () => {
-    if (ticking) return;
-    ticking = true;
-    window.requestAnimationFrame(update);
-  };
-
-  window.addEventListener("resize", requestUpdate, { passive: true });
-  window.addEventListener("orientationchange", requestUpdate, {
-    passive: true,
-  });
-
-  if ("ResizeObserver" in window) {
-    const observer = new ResizeObserver(() => {
-      naturalPhoneWidth = measurePhoneWidth();
-      requestUpdate();
-    });
-    observer.observe(inner);
-    observer.observe(nav);
-    observer.observe(brand);
-  }
-
-  window.addEventListener("load", () => {
-    naturalPhoneWidth = measurePhoneWidth();
-    requestUpdate();
-  });
-
-  requestUpdate();
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initHeaderPhoneOverlapGuardV36);
-} else {
-  initHeaderPhoneOverlapGuardV36();
-}

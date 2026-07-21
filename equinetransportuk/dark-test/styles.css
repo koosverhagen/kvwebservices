@@ -11166,3 +11166,1552 @@ body.dark-keynote-v8.contact-dark-page .site-footer h4 {
   }
 }
 
+/* ======================================================
+   DARK KEYNOTE V38 — tablet hamburger menu alignment fix
+   Fixes the dark-test header at iPad/tablet widths where the hamburger
+   could sit beside the logo instead of at the far right, and where the
+   dropdown could float awkwardly over the hero.
+====================================================== */
+
+@media (min-width: 701px) and (max-width: 1070px) {
+  html body.dark-keynote-v8 .site-header {
+    z-index: 10000 !important;
+  }
+
+  html body.dark-keynote-v8 .header-inner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+    min-height: 82px !important;
+    position: relative !important;
+  }
+
+  html body.dark-keynote-v8 .brand {
+    grid-column: 1 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    justify-self: start !important;
+  }
+
+  html body.dark-keynote-v8 .brand-text {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  html body.dark-keynote-v8 header.site-header a.phone-link,
+  html body.dark-keynote-v8 .site-header .phone-link {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  html body.dark-keynote-v8 .site-header .nav-toggle,
+  html body.dark-keynote-v8 .site-header button.nav-toggle,
+  html body.dark-keynote-v8 .nav-toggle {
+    grid-column: 2 !important;
+    justify-self: end !important;
+    align-self: center !important;
+    display: inline-flex !important;
+    position: relative !important;
+    z-index: 10002 !important;
+  }
+
+  html body.dark-keynote-v8 .main-nav {
+    display: none !important;
+    position: absolute !important;
+    top: 82px !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+
+    padding: 10px 14px !important;
+    margin: 0 !important;
+
+    background: rgba(3, 13, 24, 0.98) !important;
+    border-top: 1px solid rgba(222, 238, 255, 0.12) !important;
+    border-bottom: 1px solid rgba(222, 238, 255, 0.16) !important;
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.28) !important;
+    backdrop-filter: blur(18px) saturate(1.05) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.05) !important;
+    z-index: 10001 !important;
+  }
+
+  html body.dark-keynote-v8 .main-nav.open {
+    display: flex !important;
+  }
+
+  html body.dark-keynote-v8 .main-nav a {
+    width: 100% !important;
+    min-height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 8px 10px !important;
+    margin: 0 !important;
+
+    color: #ffffff !important;
+    font-size: 14px !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.02em !important;
+    text-align: center !important;
+    border-radius: 10px !important;
+  }
+
+  html body.dark-keynote-v8 .main-nav a:hover,
+  html body.dark-keynote-v8 .main-nav a:focus-visible {
+    background: rgba(47, 125, 255, 0.16) !important;
+    color: #ffffff !important;
+  }
+}
+
+/* ======================================================
+   DARK TEST V41 — MOBILE EDGE BREATHING ROOM
+   Adds a small 3px inner side gap on phones so text and
+   full-width buttons do not sit too tight to the screen edge.
+====================================================== */
+@media (max-width: 700px) {
+  .container {
+    padding-left: 3px !important;
+    padding-right: 3px !important;
+  }
+
+  body.dark-keynote-v8 .container {
+    padding-left: 3px !important;
+    padding-right: 3px !important;
+  }
+
+  body.dark-keynote-v8 .header-inner {
+    padding-left: 13px !important;
+    padding-right: 13px !important;
+  }
+}
+
+
+/* ======================================================
+   V19 — ONE MASTER LAYOUT, COLOURS ONLY CHANGE
+====================================================== */
+.phone-link{display:none!important}
+#start-booking-btn{white-space:nowrap!important}
+.theme-bookmark{position:fixed;top:50%;right:0;z-index:100000;transform:translateY(-50%)}
+.theme-bookmark .theme-toggle{min-width:46px;min-height:112px;margin:0;padding:12px 8px;border-right:0;border-radius:16px 0 0 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:none;cursor:pointer}
+.theme-bookmark .theme-toggle-label{writing-mode:vertical-rl;text-orientation:mixed;font-size:12px;font-weight:850}
+.theme-bookmark .theme-toggle-icon{font-size:18px}
+#fleet .fleet-image-wrap{background:transparent!important;line-height:0!important}
+#fleet .fleet-image-wrap img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;margin:0!important}
+body.dark-keynote-v8.theme-light-palette{--bg:#fff;--card:#fff;--text:#0d0f15;--muted:#5f6b7a;--line:rgba(13,15,21,.15);--accent:#1f6feb;color:var(--text)!important;background:#fff!important}
+body.dark-keynote-v8.theme-light-palette,body.dark-keynote-v8.theme-light-palette .keynote-hero,body.dark-keynote-v8.theme-light-palette .site-header,body.dark-keynote-v8.theme-light-palette #fleet,body.dark-keynote-v8.theme-light-palette .faq-section,body.dark-keynote-v8.theme-light-palette .site-footer,body.dark-keynote-v8.theme-light-palette footer{background:#fff!important}
+body.dark-keynote-v8.theme-light-palette .site-header{border-bottom-color:rgba(13,15,21,.13)!important}
+body.dark-keynote-v8.theme-light-palette .brand-logo{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+body.dark-keynote-v8.theme-light-palette .brand-name,body.dark-keynote-v8.theme-light-palette .main-nav a,body.dark-keynote-v8.theme-light-palette h1,body.dark-keynote-v8.theme-light-palette h2,body.dark-keynote-v8.theme-light-palette h3,body.dark-keynote-v8.theme-light-palette h4,body.dark-keynote-v8.theme-light-palette strong{color:#0d0f15!important}
+body.dark-keynote-v8.theme-light-palette .brand-group,body.dark-keynote-v8.theme-light-palette .lead,body.dark-keynote-v8.theme-light-palette .muted,body.dark-keynote-v8.theme-light-palette .tiny,body.dark-keynote-v8.theme-light-palette p{color:#5f6b7a!important}
+body.dark-keynote-v8.theme-light-palette .hero-slideshow-frame::before{background:linear-gradient(90deg,rgba(255,255,255,.99) 0%,rgba(255,255,255,.93) 20%,rgba(255,255,255,.72) 43%,rgba(255,255,255,.40) 65%,rgba(255,255,255,.13) 84%,rgba(255,255,255,0) 100%)!important}
+body.dark-keynote-v8.theme-light-palette .hero-availability,body.dark-keynote-v8.theme-light-palette .trust-item,body.dark-keynote-v8.theme-light-palette .card,body.dark-keynote-v8.theme-light-palette .fleet-card,body.dark-keynote-v8.theme-light-palette .availability-item,body.dark-keynote-v8.theme-light-palette .faq-card,body.dark-keynote-v8.theme-light-palette .faq-item,body.dark-keynote-v8.theme-light-palette .summary-card,body.dark-keynote-v8.theme-light-palette .seo-panel,body.dark-keynote-v8.theme-light-palette .reviews-modal,body.dark-keynote-v8.theme-light-palette .fleet-detail-modal{background:#fff!important;color:#0d0f15!important;border-color:rgba(13,15,21,.15)!important;box-shadow:none!important}
+body.dark-keynote-v8.theme-light-palette input,body.dark-keynote-v8.theme-light-palette select,body.dark-keynote-v8.theme-light-palette textarea,body.dark-keynote-v8.theme-light-palette .apple-date-trigger{background:#fff!important;color:#0d0f15!important;border-color:rgba(13,15,21,.17)!important;box-shadow:none!important}
+body.dark-keynote-v8.theme-light-palette label{color:#475569!important}
+body.dark-keynote-v8.theme-light-palette .booking-steps .step{background:#fff!important;color:#334155!important;border-color:#cbd5e1!important;box-shadow:none!important}
+body.dark-keynote-v8.theme-light-palette .booking-steps .step.active{background:#1f6feb!important;color:#fff!important;border-color:#1f6feb!important}
+body.dark-keynote-v8.theme-light-palette .search-chip,body.dark-keynote-v8.theme-light-palette .availability-meta-pill{background:#fff!important;color:#334155!important;border-color:#cbd5e1!important}
+body.dark-keynote-v8.theme-light-palette #fleet .fleet-image-wrap,body.dark-keynote-v8.theme-light-palette #fleet .fleet-content,body.dark-keynote-v8.theme-light-palette #fleet .fleet-card{background:#fff!important}
+body.dark-keynote-v8.theme-light-palette #fleet .fleet-overlay{background:rgba(15,23,42,.08)!important}
+body.dark-keynote-v8.theme-light-palette .btn:not(.ghost):not(.btn-ghost),body.dark-keynote-v8.theme-light-palette .choose-lorry{background:#1f6feb!important;color:#fff!important;border-color:#1f6feb!important;box-shadow:none!important}
+body.dark-keynote-v8.theme-light-palette .btn.ghost,body.dark-keynote-v8.theme-light-palette .btn-ghost{background:#fff!important;color:#0d0f15!important;border-color:rgba(13,15,21,.17)!important}
+body.dark-keynote-v8.theme-light-palette .theme-bookmark .theme-toggle{background:#fff!important;color:#0d0f15!important;border:1px solid rgba(13,15,21,.17)!important;border-right:0!important}
+body.dark-keynote-v8:not(.theme-light-palette) .theme-bookmark .theme-toggle{background:#0d0f15!important;color:#fff!important;border:1px solid rgba(255,255,255,.20)!important;border-right:0!important}
+body.dark-keynote-v8.theme-light-palette *,body.dark-keynote-v8.theme-light-palette *::before,body.dark-keynote-v8.theme-light-palette *::after{box-shadow:none!important;text-shadow:none!important}
+@media(max-width:650px){.theme-bookmark .theme-toggle{min-width:42px;min-height:94px;padding:10px 6px}}
+
+
+/* ======================================================
+   V20 — LIGHT READABILITY + HALF-DAY PICKUP FIX
+====================================================== */
+
+/* Ensure all secondary/helper copy remains clearly readable in Light. */
+body.dark-keynote-v8.theme-light-palette .hero-availability::after,
+body.dark-keynote-v8.theme-light-palette .hero-helper,
+body.dark-keynote-v8.theme-light-palette .hero-note,
+body.dark-keynote-v8.theme-light-palette .availability-status,
+body.dark-keynote-v8.theme-light-palette .availability-count,
+body.dark-keynote-v8.theme-light-palette .availability-price-note,
+body.dark-keynote-v8.theme-light-palette .price-confirm,
+body.dark-keynote-v8.theme-light-palette .summary-note,
+body.dark-keynote-v8.theme-light-palette .trust-item small,
+body.dark-keynote-v8.theme-light-palette .fleet-content p,
+body.dark-keynote-v8.theme-light-palette .faq-card p,
+body.dark-keynote-v8.theme-light-palette .faq-item p,
+body.dark-keynote-v8.theme-light-palette .muted,
+body.dark-keynote-v8.theme-light-palette .tiny {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+/* Labels and placeholder-like display text. */
+body.dark-keynote-v8.theme-light-palette .hero-field label,
+body.dark-keynote-v8.theme-light-palette .form-field label {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette input::placeholder,
+body.dark-keynote-v8.theme-light-palette textarea::placeholder {
+  color: #718096 !important;
+  opacity: 1 !important;
+}
+
+/* Half-day pickup field: JS adds is-visible and has-pickup-time. */
+body.dark-keynote-v8 .hero-pickup-time.is-visible,
+body.dark-keynote-v8.theme-light-palette .hero-pickup-time.is-visible {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8 .hero-availability.has-pickup-time,
+body.dark-keynote-v8.theme-light-palette .hero-availability.has-pickup-time {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    260px !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .hero-pickup-time select {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(13,15,21,.17) !important;
+}
+
+@media (max-width: 900px) {
+  body.dark-keynote-v8 .hero-availability.has-pickup-time,
+  body.dark-keynote-v8.theme-light-palette .hero-availability.has-pickup-time {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  body.dark-keynote-v8 .hero-pickup-time.is-visible,
+  body.dark-keynote-v8.theme-light-palette .hero-pickup-time.is-visible {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 650px) {
+  body.dark-keynote-v8 .hero-availability.has-pickup-time,
+  body.dark-keynote-v8.theme-light-palette .hero-availability.has-pickup-time {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* ======================================================
+   V21 — COMPLETE LIGHT-THEME COLOUR AUDIT
+   Layout, dimensions and typography remain inherited
+   directly from the approved Dark master layout.
+====================================================== */
+
+/* ---------- Core Light palette ---------- */
+
+body.dark-keynote-v8.theme-light-palette {
+  --bg: #ffffff !important;
+  --card: #ffffff !important;
+  --text: #0d0f15 !important;
+  --muted: #526174 !important;
+  --line: rgba(15, 23, 42, 0.14) !important;
+  --accent: #1f6feb !important;
+
+  color: #0d0f15 !important;
+  background: #ffffff !important;
+}
+
+body.dark-keynote-v8.theme-light-palette,
+body.dark-keynote-v8.theme-light-palette main,
+body.dark-keynote-v8.theme-light-palette .keynote-hero,
+body.dark-keynote-v8.theme-light-palette .booking-wrap,
+body.dark-keynote-v8.theme-light-palette #booking,
+body.dark-keynote-v8.theme-light-palette #fleet,
+body.dark-keynote-v8.theme-light-palette .faq-section,
+body.dark-keynote-v8.theme-light-palette .site-footer {
+  background: #ffffff !important;
+}
+
+/* ---------- Header / navigation ---------- */
+
+body.dark-keynote-v8.theme-light-palette .site-header,
+body.dark-keynote-v8.theme-light-palette .main-nav {
+  background: rgba(255, 255, 255, 0.97) !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.13) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .brand-name,
+body.dark-keynote-v8.theme-light-palette .main-nav a {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .brand-group {
+  color: #526174 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .brand-logo {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .nav-toggle-bar {
+  background: #0d0f15 !important;
+}
+
+/* ---------- Readable text everywhere ---------- */
+
+body.dark-keynote-v8.theme-light-palette h1,
+body.dark-keynote-v8.theme-light-palette h2,
+body.dark-keynote-v8.theme-light-palette h3,
+body.dark-keynote-v8.theme-light-palette h4,
+body.dark-keynote-v8.theme-light-palette h5,
+body.dark-keynote-v8.theme-light-palette strong,
+body.dark-keynote-v8.theme-light-palette .price-main,
+body.dark-keynote-v8.theme-light-palette .availability-price,
+body.dark-keynote-v8.theme-light-palette .summary-vehicle-name {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette p,
+body.dark-keynote-v8.theme-light-palette li,
+body.dark-keynote-v8.theme-light-palette .lead,
+body.dark-keynote-v8.theme-light-palette .muted,
+body.dark-keynote-v8.theme-light-palette .tiny,
+body.dark-keynote-v8.theme-light-palette .summary-note,
+body.dark-keynote-v8.theme-light-palette .availability-price-note,
+body.dark-keynote-v8.theme-light-palette .price-confirm,
+body.dark-keynote-v8.theme-light-palette .empty-note,
+body.dark-keynote-v8.theme-light-palette .loading-note {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+/* ---------- Shared flat Light surfaces ---------- */
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .hero-availability,
+  .trust-item,
+  .seo-panel,
+  .seo-mini-card,
+  .card,
+  .fleet-card,
+  .fleet-content,
+  .availability-item,
+  .summary-card,
+  .requirements-box,
+  .checkout-breakdown,
+  .hire-form-info,
+  .voucher-card,
+  .faq-item,
+  .booking-confirmation-card,
+  .confirmation-card,
+  .confirmation-block,
+  .payment-card,
+  .reviews-modal,
+  .google-reviews-summary,
+  .google-review-card,
+  .google-reviews-photos-block,
+  .google-reviews-footer,
+  .fleet-detail-modal,
+  .fleet-detail-video-placeholder,
+  .apple-date-picker-card,
+  .cal-wrap
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Hero ---------- */
+
+body.dark-keynote-v8.theme-light-palette .hero-copy-card h1 {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .hero-copy-card .lead {
+  color: #526174 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .hero-slideshow-frame::before {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.99) 0%,
+      rgba(255,255,255,.94) 20%,
+      rgba(255,255,255,.72) 43%,
+      rgba(255,255,255,.40) 65%,
+      rgba(255,255,255,.13) 84%,
+      rgba(255,255,255,0) 100%
+    ) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .hero-availability::after,
+body.dark-keynote-v8.theme-light-palette .hero-availability .hero-helper {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .trust-item small {
+  color: #607086 !important;
+}
+
+/* ---------- Forms, fields and choices ---------- */
+
+body.dark-keynote-v8.theme-light-palette :is(
+  input,
+  select,
+  textarea,
+  .apple-date-trigger
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(input, textarea)::placeholder {
+  color: #718096 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette select option {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette input[readonly],
+body.dark-keynote-v8.theme-light-palette input:disabled,
+body.dark-keynote-v8.theme-light-palette select:disabled {
+  background: #f7f9fc !important;
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .form-field label,
+  .form-group label,
+  .hero-field label,
+  .label
+) {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .checkbox-line input[type="checkbox"] {
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .checkbox-line input[type="checkbox"]:checked {
+  background: #1f6feb !important;
+  border-color: #1f6feb !important;
+}
+
+/* ---------- Booking step pills ---------- */
+
+body.dark-keynote-v8.theme-light-palette .booking-steps .step {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .booking-steps .step.active {
+  background: #1f6feb !important;
+  color: #ffffff !important;
+  border-color: #1f6feb !important;
+}
+
+/* ---------- Step 2: Select your lorry ---------- */
+
+body.dark-keynote-v8.theme-light-palette #step-2,
+body.dark-keynote-v8.theme-light-palette #step-2 > .card,
+body.dark-keynote-v8.theme-light-palette #step-2 .availability-list,
+body.dark-keynote-v8.theme-light-palette #availability-results {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-2 :is(h2, h3, h4) {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .search-chip,
+  .availability-meta-pill
+) {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .search-chip-accent {
+  background: rgba(31, 111, 235, 0.08) !important;
+  color: #1f6feb !important;
+  border-color: rgba(31, 111, 235, 0.24) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .availability-item {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .availability-item:hover {
+  box-shadow: none !important;
+  border-color: rgba(31, 111, 235, 0.38) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .availability-image {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .availability-info,
+  .availability-info strong,
+  .availability-price,
+  .price-main
+) {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .reset-booking-step-btn,
+  .reset-btn,
+  .details-actions .btn.ghost
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+}
+
+/* ---------- Steps 3–5: details, summary, payment ---------- */
+
+body.dark-keynote-v8.theme-light-palette :is(
+  #step-3,
+  #step-4,
+  #step-5,
+  #step-3 .card,
+  #step-4 .card,
+  #step-5 .card,
+  .booking-main,
+  .booking-summary,
+  .summary-sticky-wrap,
+  .extras-grid
+) {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .requirements-box {
+  background: #f8fafc !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .checkout-breakdown {
+  background: rgba(31, 111, 235, 0.07) !important;
+  color: #1e3a8a !important;
+  border-color: rgba(31, 111, 235, 0.20) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .summary-row,
+  .payment-row,
+  .confirmation-ref,
+  .confirmation-note,
+  .confirmation-trust,
+  .success-note
+) {
+  color: #334155 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .summary-row.total {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .summary-row.pay-now {
+  color: #1f6feb !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .summary-row.outstanding {
+  color: #526174 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .voucher-message.ok,
+body.dark-keynote-v8.theme-light-palette .success-note {
+  color: #047857 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .voucher-message.error,
+body.dark-keynote-v8.theme-light-palette .availability-error {
+  color: #b91c1c !important;
+}
+
+/* ---------- Buttons: blue stays identical ---------- */
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .btn:not(.ghost):not(.btn-ghost),
+  .choose-lorry,
+  .confirm-btn,
+  #booking-confirm-btn,
+  .apple-date-picker-done
+) {
+  background: #1f6feb !important;
+  color: #ffffff !important;
+  border-color: #1f6feb !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .btn.ghost,
+  .btn-ghost
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- SEO / location chips ---------- */
+
+body.dark-keynote-v8.theme-light-palette .seo-mini-card {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .service-area-list span {
+  background: #ffffff !important;
+  color: #1e3a8a !important;
+  border-color: rgba(31, 111, 235, 0.20) !important;
+}
+
+/* ---------- Fleet ---------- */
+
+body.dark-keynote-v8.theme-light-palette #fleet,
+body.dark-keynote-v8.theme-light-palette #fleet .fleet-card,
+body.dark-keynote-v8.theme-light-palette #fleet .fleet-content,
+body.dark-keynote-v8.theme-light-palette #fleet .fleet-image-wrap {
+  background: #ffffff !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #fleet .fleet-card {
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #fleet .fleet-overlay {
+  background: rgba(15, 23, 42, 0.08) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #fleet .fleet-overlay:hover {
+  background: rgba(15, 23, 42, 0.16) !important;
+}
+
+/* ---------- Fleet detail popup ---------- */
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-modal {
+  background: #ffffff !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-close {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .fleet-detail-copy,
+  .fleet-detail-copy h2,
+  .fleet-detail-info-grid h3
+) {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .fleet-detail-intro,
+  .fleet-detail-info-grid li
+) {
+  color: #526174 !important;
+}
+
+/* ---------- Reviews popup ---------- */
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .reviews-modal,
+  .reviews-content,
+  .google-reviews-widget,
+  .google-reviews-list
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .reviews-close {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .google-reviews-score,
+  .google-review-author,
+  .google-review-text,
+  .google-reviews-summary h3,
+  .google-reviews-photos-head h4
+) {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .google-reviews-count,
+  .google-review-meta,
+  .google-reviews-footer
+) {
+  color: #526174 !important;
+}
+
+/* ---------- Apple date picker ---------- */
+
+body.dark-keynote-v8.theme-light-palette .apple-date-picker-card {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .apple-date-picker-head,
+  .apple-date-picker-month,
+  .apple-date-picker-weekdays,
+  .apple-date-picker-grid,
+  .apple-date-picker-actions
+) {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette :is(
+  .apple-date-picker-nav,
+  .apple-date-picker-close,
+  .apple-date-picker-today
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+/* ---------- FAQ and footer ---------- */
+
+body.dark-keynote-v8.theme-light-palette .faq-item {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .site-footer,
+body.dark-keynote-v8.theme-light-palette .site-footer a,
+body.dark-keynote-v8.theme-light-palette .site-footer h3,
+body.dark-keynote-v8.theme-light-palette .site-footer h4,
+body.dark-keynote-v8.theme-light-palette .site-footer strong {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .site-footer p,
+body.dark-keynote-v8.theme-light-palette .site-footer small {
+  color: #526174 !important;
+}
+
+/* ---------- Shared secondary page classes ---------- */
+/* These apply when those pages load the shared theme.js and styles.css. */
+
+body.dark-keynote-v8.theme-light-palette:is(
+  .driven-dark-page,
+  .terms-dark-page,
+  .calculators-dark-page,
+  .contact-dark-page
+) {
+  --bg: #ffffff !important;
+  --card: #ffffff !important;
+  --text: #0d0f15 !important;
+  --muted: #526174 !important;
+  --line: rgba(15, 23, 42, 0.14) !important;
+
+  color: #0d0f15 !important;
+  background: #ffffff !important;
+}
+
+body.dark-keynote-v8.theme-light-palette:is(
+  .driven-dark-page,
+  .terms-dark-page,
+  .calculators-dark-page,
+  .contact-dark-page
+) :is(
+  .driven-hero-card,
+  .driven-info-card,
+  .driven-calculator-section,
+  .terms-card-premium,
+  .terms-video-box,
+  .calculator-card,
+  .contact-panel,
+  .contact-detail,
+  .directions-section
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette:is(
+  .driven-dark-page,
+  .terms-dark-page,
+  .calculators-dark-page,
+  .contact-dark-page
+) :is(h1, h2, h3, h4, strong, label) {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette:is(
+  .driven-dark-page,
+  .terms-dark-page,
+  .calculators-dark-page,
+  .contact-dark-page
+) :is(p, li, .muted, .lead) {
+  color: #526174 !important;
+}
+
+/* ---------- No shadows anywhere in Light ---------- */
+
+body.dark-keynote-v8.theme-light-palette *,
+body.dark-keynote-v8.theme-light-palette *::before,
+body.dark-keynote-v8.theme-light-palette *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+
+/* ======================================================
+   V22 — LIGHT GREY CARDS + VISIBLE FAQ KICKER
+   + LIGHT MORE-DETAILS TEXT AREA
+   Colours only; Dark master layout remains unchanged.
+====================================================== */
+
+/* Very light cool-grey card surfaces in Light mode. */
+body.dark-keynote-v8.theme-light-palette :is(
+  .hero-availability,
+  .trust-item,
+  .seo-panel,
+  .seo-mini-card,
+  .card,
+  .fleet-card,
+  .fleet-content,
+  .availability-item,
+  .summary-card,
+  .requirements-box,
+  .hire-form-info,
+  .voucher-card,
+  .faq-item,
+  .booking-confirmation-card,
+  .confirmation-card,
+  .confirmation-block,
+  .payment-card,
+  .google-reviews-summary,
+  .google-review-card,
+  .google-reviews-photos-block,
+  .google-reviews-footer,
+  .cal-wrap
+) {
+  background: #f6f8fb !important;
+}
+
+/* Keep nested input and action surfaces clean white for contrast. */
+body.dark-keynote-v8.theme-light-palette :is(
+  input,
+  select,
+  textarea,
+  .apple-date-trigger,
+  .search-chip,
+  .availability-meta-pill
+) {
+  background: #ffffff !important;
+}
+
+/* Make "Helpful answers" clearly visible. */
+body.dark-keynote-v8.theme-light-palette .faq-section .section-head .kicker {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+/* FAQ heading and cards remain clearly readable. */
+body.dark-keynote-v8.theme-light-palette .faq-section .section-head h2,
+body.dark-keynote-v8.theme-light-palette .faq-item h3 {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .faq-item p {
+  color: #526174 !important;
+}
+
+/* More details popup — full Light treatment. */
+body.dark-keynote-v8.theme-light-palette .fleet-detail-overlay {
+  background: rgba(241, 245, 249, 0.92) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-modal {
+  background: #f6f8fb !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-copy {
+  background: transparent !important;
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-copy .kicker {
+  color: #526174 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-copy h2 {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-subtitle {
+  color: #1f6feb !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-intro {
+  color: #526174 !important;
+}
+
+/* Information text blocks in More details. */
+body.dark-keynote-v8.theme-light-palette .fleet-detail-info-grid > div,
+body.dark-keynote-v8.theme-light-palette .fleet-detail-video {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-info-grid h3,
+body.dark-keynote-v8.theme-light-palette .fleet-detail-video h3 {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-info-grid li {
+  color: #526174 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-video-placeholder {
+  background: #ffffff !important;
+  color: #64748b !important;
+  border-color: rgba(15, 23, 42, 0.18) !important;
+}
+
+/* More details thumbnails and image frames. */
+body.dark-keynote-v8.theme-light-palette .fleet-detail-main-image,
+body.dark-keynote-v8.theme-light-palette .fleet-detail-thumb {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-close {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .fleet-detail-actions .btn.ghost {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+}
+
+
+/* ======================================================
+   V23 — LIGHT CHECK-AVAILABILITY TITLE + REVIEWS POPUP
+   Light palette only. Dark remains unchanged.
+====================================================== */
+
+/* Make the availability heading and helper text readable in Light. */
+body.dark-keynote-v8.theme-light-palette .hero-availability::before {
+  color: #0d0f15 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette .hero-availability::after {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+/* Reviews overlay: Light theme with stronger specificity than Dark rules. */
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay,
+body.dark-keynote-v8.theme-light-palette .reviews-overlay,
+body.dark-keynote-v8.theme-light-palette .dark-reviews-overlay {
+  background: rgba(241, 245, 249, 0.94) !important;
+  backdrop-filter: blur(18px) saturate(1.02) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.02) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .reviews-modal,
+body.dark-keynote-v8.theme-light-palette .reviews-modal,
+body.dark-keynote-v8.theme-light-palette .dark-reviews-modal {
+  background: #f6f8fb !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .reviews-header,
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .reviews-content,
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .google-reviews-widget,
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .google-reviews-list {
+  background: transparent !important;
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .reviews-drag {
+  background: #cbd5e1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .reviews-close {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  box-shadow: none !important;
+}
+
+/* Review summary, cards, photo block and footer. */
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay :is(
+  .google-reviews-summary,
+  .google-reviews-photos-block,
+  .google-review-card,
+  .google-reviews-footer,
+  .google-reviews-empty,
+  .google-reviews-loading
+) {
+  background: #ffffff !important;
+  color: #526174 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+/* Review headings and author names. */
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay :is(
+  .google-reviews-kicker,
+  .google-reviews-title,
+  .google-reviews-summary h3,
+  .google-reviews-photos-head h4,
+  .google-review-author,
+  .google-reviews-empty p
+) {
+  color: #0d0f15 !important;
+  opacity: 1 !important;
+}
+
+/* Review body text and metadata. */
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay :is(
+  .google-reviews-score,
+  .google-reviews-count,
+  .google-review-meta,
+  .google-review-text,
+  .google-reviews-footer,
+  p,
+  span,
+  small
+) {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+/* Keep stars and blue actions clear. */
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .google-reviews-stars,
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay .google-review-stars {
+  color: #f5a623 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay :is(
+  .google-reviews-google-link,
+  .google-reviews-footer a,
+  .google-reviews-photos-head a
+) {
+  background: #1f6feb !important;
+  color: #ffffff !important;
+  border-color: #1f6feb !important;
+  box-shadow: none !important;
+}
+
+/* Review photos and avatars. */
+body.dark-keynote-v8.theme-light-palette #reviewsOverlay :is(
+  .google-review-photo-card,
+  .google-review-avatar
+) {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+
+/* ======================================================
+   V24 — LIGHT SELECT-LORRY CARD
+   Colours only. Dark layout remains unchanged.
+====================================================== */
+
+/* Main Select your lorry panel */
+body.dark-keynote-v8.theme-light-palette :is(
+  #step-2,
+  #step-2 > .card,
+  #step-2 .card,
+  #availability-results,
+  .availability-results,
+  .availability-list,
+  .select-lorry-card,
+  .select-vehicle-card
+) {
+  background: #f6f8fb !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+/* Section title and all primary copy */
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  h2,
+  h3,
+  h4,
+  .section-title,
+  .availability-title,
+  .vehicle-name,
+  .availability-price,
+  .price-main,
+  strong
+) {
+  color: #0d0f15 !important;
+  opacity: 1 !important;
+}
+
+/* Secondary copy */
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  p,
+  .muted,
+  .availability-count,
+  .availability-info,
+  .availability-price-note,
+  .price-confirm,
+  .vehicle-meta,
+  .availability-meta
+) {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+/* Search summary chips */
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  .search-chip,
+  .availability-meta-pill,
+  .summary-chip,
+  .availability-chip
+) {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  .search-chip,
+  .availability-meta-pill,
+  .summary-chip,
+  .availability-chip
+) strong {
+  color: #0d0f15 !important;
+}
+
+/* Blue available-count chip */
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  .search-chip-accent,
+  .availability-chip-accent
+) {
+  background: rgba(31, 111, 235, 0.08) !important;
+  color: #1f6feb !important;
+  border-color: rgba(31, 111, 235, 0.24) !important;
+}
+
+/* Individual lorry result cards */
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  .availability-item,
+  .availability-card,
+  .vehicle-option-card,
+  .lorry-option-card
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  .availability-item,
+  .availability-card,
+  .vehicle-option-card,
+  .lorry-option-card
+):hover {
+  border-color: rgba(31, 111, 235, 0.35) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Images and image frames */
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  .availability-image,
+  .vehicle-image,
+  .lorry-image,
+  .availability-thumb
+) {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+  box-shadow: none !important;
+}
+
+/* Reset booking button */
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  .reset-booking,
+  .reset-booking-step-btn,
+  .reset-btn,
+  .btn.ghost,
+  .btn-ghost,
+  [data-reset-booking]
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+  box-shadow: none !important;
+}
+
+/* Keep Choose this lorry actions blue */
+body.dark-keynote-v8.theme-light-palette #step-2 :is(
+  .choose-lorry,
+  .availability-actions .btn,
+  .vehicle-select-btn,
+  .lorry-select-btn
+) {
+  background: #1f6feb !important;
+  color: #ffffff !important;
+  border-color: #1f6feb !important;
+  box-shadow: none !important;
+}
+
+
+/* ======================================================
+   V25 — MOBILE SELECT-LORRY SCROLL POSITION
+====================================================== */
+
+/* Prevent mobile browsers from anchoring the viewport halfway down
+   while the lorry-result cards are inserted dynamically. */
+@media (max-width: 768px) {
+  #step-2,
+  #step-2 .card,
+  #availability-results,
+  .availability-list {
+    overflow-anchor: none !important;
+  }
+
+  #step-2 {
+    scroll-margin-top: 84px !important;
+  }
+}
+
+
+/* ======================================================
+   V26 — LIGHT "YOUR DETAILS" STEP
+   Colours only. Dark layout, fonts and sizing unchanged.
+====================================================== */
+
+/* Main Step 3 form card and summary area */
+body.dark-keynote-v8.theme-light-palette #step-3,
+body.dark-keynote-v8.theme-light-palette #step-3 .booking-main,
+body.dark-keynote-v8.theme-light-palette #step-3 .booking-summary,
+body.dark-keynote-v8.theme-light-palette #step-3 .summary-sticky-wrap {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .booking-main > .card,
+body.dark-keynote-v8.theme-light-palette #step-3 #checkout-summary,
+body.dark-keynote-v8.theme-light-palette #step-3 .checkout-summary,
+body.dark-keynote-v8.theme-light-palette #step-3 .summary-card,
+body.dark-keynote-v8.theme-light-palette #step-3 .booking-summary-card {
+  background: #f6f8fb !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+/* Heading */
+body.dark-keynote-v8.theme-light-palette #step-3 .card > h3,
+body.dark-keynote-v8.theme-light-palette #step-3 :is(
+  .summary-title,
+  .summary-vehicle-name,
+  h4,
+  strong
+) {
+  color: #0d0f15 !important;
+  opacity: 1 !important;
+}
+
+/* Edit dates / Change lorry / Reset */
+body.dark-keynote-v8.theme-light-palette #step-3 .details-actions .btn,
+body.dark-keynote-v8.theme-light-palette #step-3 .btn.ghost,
+body.dark-keynote-v8.theme-light-palette #step-3 .btn-ghost,
+body.dark-keynote-v8.theme-light-palette #step-3 .reset-btn {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+  box-shadow: none !important;
+}
+
+/* Labels */
+body.dark-keynote-v8.theme-light-palette #step-3 :is(
+  .form-field label,
+  .form-group label,
+  .voucher-left label
+) {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+/* Inputs, selects and notes */
+body.dark-keynote-v8.theme-light-palette #step-3 :is(
+  input,
+  select,
+  textarea,
+  .apple-date-trigger
+) {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 :is(
+  input,
+  textarea
+)::placeholder {
+  color: #718096 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 select option {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+}
+
+/* Read-only selected-lorry/base fields */
+body.dark-keynote-v8.theme-light-palette #step-3 input[readonly],
+body.dark-keynote-v8.theme-light-palette #step-3 input:disabled,
+body.dark-keynote-v8.theme-light-palette #step-3 select:disabled {
+  background: #eef2f7 !important;
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+/* Availability/status messages */
+body.dark-keynote-v8.theme-light-palette #step-3 .availability-status {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .availability-status.ok {
+  background: #ecfdf3 !important;
+  color: #166534 !important;
+  border-color: #86efac !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .availability-status.error {
+  background: #fff1f2 !important;
+  color: #b91c1c !important;
+  border-color: #fecdd3 !important;
+}
+
+/* Returning-customer badge */
+body.dark-keynote-v8.theme-light-palette #step-3 .customer-badge {
+  color: #047857 !important;
+  opacity: 1 !important;
+}
+
+/* Voucher card */
+body.dark-keynote-v8.theme-light-palette #step-3 .voucher-card {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 #apply-discount {
+  background: #ffffff !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .voucher-message {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .voucher-message.ok {
+  color: #047857 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .voucher-message.error {
+  color: #b91c1c !important;
+}
+
+/* Extras and checkbox rows */
+body.dark-keynote-v8.theme-light-palette #step-3 .extras-grid,
+body.dark-keynote-v8.theme-light-palette #step-3 .check,
+body.dark-keynote-v8.theme-light-palette #step-3 .dartford-row {
+  color: #334155 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .check span {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 input[type="checkbox"] {
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 input[type="checkbox"]:checked {
+  background: #1f6feb !important;
+  border-color: #1f6feb !important;
+}
+
+/* Summary rows and totals */
+body.dark-keynote-v8.theme-light-palette #step-3 :is(
+  .summary-row,
+  .summary-line,
+  .summary-note,
+  .summary-meta,
+  .summary-label
+) {
+  color: #526174 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 :is(
+  .summary-row strong,
+  .summary-value,
+  .summary-row.total,
+  .summary-total
+) {
+  color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .summary-row.pay-now {
+  color: #1f6feb !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .summary-divider {
+  background: rgba(15, 23, 42, 0.13) !important;
+}
+
+/* Success/error text */
+body.dark-keynote-v8.theme-light-palette #step-3 .success-note {
+  background: #ecfdf3 !important;
+  color: #166534 !important;
+  border-color: #86efac !important;
+}
+
+/* Main submit button remains the shared blue */
+body.dark-keynote-v8.theme-light-palette #step-3 #booking-submit {
+  background: #1f6feb !important;
+  color: #ffffff !important;
+  border-color: #1f6feb !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 #booking-submit:disabled {
+  background: #cbd5e1 !important;
+  color: #64748b !important;
+  border-color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+
+/* ======================================================
+   V27 — LIGHT EARLY-PICKUP + DARTFORD CARDS
+   Stronger selectors override the Dark master card fill.
+====================================================== */
+
+body.dark-keynote-v8.theme-light-palette #step-3 .extras-grid > .check,
+body.dark-keynote-v8.theme-light-palette #step-3 .extras-grid > .dartford-row {
+  background: #f6f8fb !important;
+  background-image: none !important;
+  color: #334155 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .extras-grid > .check span,
+body.dark-keynote-v8.theme-light-palette #step-3 .dartford-row > .check span {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .dartford-row > .check {
+  background: transparent !important;
+  background-image: none !important;
+  color: #334155 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .dartford-count {
+  background: transparent !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .dartford-count input,
+body.dark-keynote-v8.theme-light-palette #step-3 .dartford-count input:disabled {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #0d0f15 !important;
+  border-color: rgba(15, 23, 42, 0.17) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #0d0f15 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .extras-grid input[type="checkbox"] {
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+body.dark-keynote-v8.theme-light-palette #step-3 .extras-grid input[type="checkbox"]:checked {
+  background: #1f6feb !important;
+  border-color: #1f6feb !important;
+}

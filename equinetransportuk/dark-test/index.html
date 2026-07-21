@@ -12,7 +12,16 @@
       content="Book self-drive 3.5T and 7.5T horsebox hire from East Sussex or request professional driven horse transport across the whole of the UK."
     />
 
-    <link rel="stylesheet" href="styles.css?v=dark-test-v37" />
+    <script>
+      (() => {
+        try {
+          const theme = localStorage.getItem("equine-theme") === "dark" ? "dark" : "light";
+          document.documentElement.classList.toggle("theme-dark", theme === "dark");
+          document.documentElement.classList.toggle("theme-light", theme === "light");
+        } catch (_) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css?v=identical-layout-v27" />
     <link rel="icon" href="images/favicon.png" />
 
     <link rel="canonical" href="https://www.equinetransportuk.com/" />
@@ -169,26 +178,8 @@
       }
     </script>
   </head>
-  <body class="dark-keynote-v8">
-    <div
-      style="
-        position: fixed;
-        left: 10px;
-        bottom: 10px;
-        z-index: 999999;
-        background: #facc15;
-        color: #111827;
-        padding: 8px 12px;
-        border-radius: 999px;
-        font-weight: 900;
-        font-size: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-      "
-    >
-      TEST DESIGN
-    </div>
-
-    <header class="site-header">
+  <body class="dark-keynote-v8 theme-light-palette">
+<header class="site-header">
       <div class="container header-inner">
         <a class="brand" href="#top" aria-label="Equine Transport UK home">
           <img
@@ -207,17 +198,15 @@
         </a>
 
         <nav class="main-nav" id="main-nav" aria-label="Main navigation">
-          <a href="#fleet">Self Drive</a>
+          <a href="#availability-form">Self Drive</a>
           <a href="driven-services.html">Driven Services</a>
-          <a href="#booking">Book Self Drive</a>
+          <a href="#fleet">Fleet</a>
+          <a href="#availability-form">Book Self Drive</a>
           <a href="pricing-terms.html">Pricing & Terms</a>
           <a href="calculators.html">Calculators</a>
           <a href="contact.html">Contact</a>
         </nav>
-
-        <a class="phone-link" href="tel:07812188871">07812 188871</a>
-
-        <button
+<button
           class="nav-toggle"
           id="nav-toggle"
           aria-label="Open navigation"
@@ -230,6 +219,14 @@
         </button>
       </div>
     </header>
+
+    <div class="theme-bookmark" aria-label="Theme controls">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme" aria-pressed="false">
+        <span class="theme-toggle-icon" aria-hidden="true">☾</span>
+        <span class="theme-toggle-label">Dark</span>
+      </button>
+    </div>
+
 
     <main id="top">
       <section class="hero keynote-hero" aria-labelledby="hero-title">
@@ -990,9 +987,9 @@ removed duplicate, script is loaded at end of body -->
         <div>
           <h4>Menu</h4>
           <nav class="footer-menu" aria-label="Footer navigation">
-            <a href="#fleet">Self Drive</a>
+            <a href="#availability-form">Self Drive</a>
             <a href="driven-services.html">Driven Services</a>
-            <a href="#booking">Book Self Drive</a>
+            <a href="#availability-form">Book Self Drive</a>
             <a href="pricing-terms.html">Pricing & Terms</a>
             <a href="calculators.html">Calculators</a>
             <a href="contact.html">Contact</a>
@@ -1357,7 +1354,8 @@ removed duplicate, script is loaded at end of body -->
         });
       });
     </script>
-    <script src="app.js?v=dark-test-v38"></script>
+    <script src="app.js?v=identical-layout-v27"></script>
     <div id="calendar-tooltip" class="cal-tooltip"></div>
+      <script src="theme.js?v=identical-layout-v27"></script>
   </body>
 </html>
