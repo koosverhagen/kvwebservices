@@ -8529,7 +8529,17 @@ async function handleAdminBookingUpdate(request, env) {
    👤 CUSTOMER
 =============================== */
 
-    const customerId = String(body.customerId || "").trim();
+    const requestedCustomerId = String(body.customerId || "").trim();
+    const existingCustomerId = String(
+      existing.customerId || existing.customer_id || "",
+    ).trim();
+    const customerId = requestedCustomerId || existingCustomerId;
+    const customerChanged = !!customerId && customerId !== existingCustomerId;
+
+    if (!customerId) return json({ error: "This booking has no customer assigned" }, 400);
+
+    const selectedCustomer = await getCustomerById(env, customerId);
+    if (!selectedCustomer) return json({ error: "Selected customer was not found" }, 404);
 
     const dartfordTotal = (extras.dartford || 0) * 4.2;
 
@@ -8830,42 +8840,21 @@ async function handleAdminBookingUpdate(request, env) {
         durationDays,
         finalTotal,
         amountAlreadyPaid,
-        customerId || existing.customerId || null,
+        customerId,
         now,
         bookingId,
       )
       .run();
 
     /* ===============================
-   👤 LOAD CUSTOMER NAME
+    👤 LOAD SELECTED CUSTOMER
 =============================== */
-    let customerName = existing.customerName;
-    let customerEmail = existing.customerEmail;
-    let customerMobile = existing.customerMobile;
-
-    if (customerId) {
-      try {
-        const customer = await env.DB.prepare(
-          "SELECT * FROM customers WHERE id = ?",
-        )
-          .bind(customerId)
-          .first();
-
-        if (customer?.full_name) {
-          customerName = customer.full_name;
-        }
-
-        if (customer?.email) {
-          customerEmail = customer.email;
-        }
-
-        if (customer?.mobile) {
-          customerMobile = customer.mobile;
-        }
-      } catch (err) {
-        console.warn("⚠️ Customer lookup failed:", err);
-      }
-    }
+    const customerName = selectedCustomer.full_name || selectedCustomer.name || "Customer";
+    const customerEmail = selectedCustomer.email || "";
+    const customerMobile = selectedCustomer.mobile || "";
+    const customerAddress = selectedCustomer.address || "";
+    const customerDob = selectedCustomer.dob || "";
+    const customerNotes = selectedCustomer.notes || "";
 
     /* ===============================
        🔥 BUILD UPDATED OBJECT
@@ -8906,11 +8895,15 @@ async function handleAdminBookingUpdate(request, env) {
       adminSuggestedRefundAmount: refundSuggestedAmount,
       overpaidAmount: refundSuggestedAmount,
 
-      customerId: customerId || existing.customerId || null,
+      customerId: customerId,
 
       customerName,
       customerEmail,
       customerMobile,
+      customerAddress,
+      customerDob,
+      customerNotes,
+      requiredFormType: customerChanged ? "" : existing.requiredFormType || existing.formType || "",
 
       updatedAt: now,
 
@@ -8927,7 +8920,7 @@ async function handleAdminBookingUpdate(request, env) {
    👤 CUSTOMER CHANGE AUDIT
 =============================== */
 
-    if (customerId && customerId !== originalCustomerId) {
+    if (customerChanged) {
       try {
         const auditKey = `audit:${existing.id}`;
 
@@ -9024,7 +9017,7 @@ async function handleAdminBookingUpdate(request, env) {
    🔥 SAVE BOOKING FIRST
 =============================== */
 
-    await enrichBookingLinks(env, nextBooking);
+    Object.assign(nextBooking, await enrichBookingLinks(env, nextBooking));
 
     await moveBookingInKv(env, existing, nextBooking);
 
@@ -9075,7 +9068,7 @@ async function handleAdminBookingUpdate(request, env) {
    Send links to the new customer automatically.
 =============================== */
 
-    if (customerId && customerId !== originalCustomerId) {
+    if (customerChanged) {
       try {
         await sendAdminBookingLinksEmail(env, nextBooking);
       } catch (err) {

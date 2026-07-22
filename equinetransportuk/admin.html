@@ -8427,7 +8427,9 @@
                        margin-top:4px;
                      "
                      data-id="${c.id}"
-                     data-name="${c.full_name}">
+                     data-name="${c.full_name}"
+                     data-email="${c.email || ""}"
+                     data-mobile="${c.mobile || ""}">
                   <div style="font-weight:700;">👤 ${c.full_name}</div>
                   <div class="tiny">${c.email || c.mobile || ""}</div>
                 </div>
@@ -8440,6 +8442,8 @@
                   SELECTED_CUSTOMER = {
                     id: el.dataset.id,
                     name: el.dataset.name,
+                    email: el.dataset.email || "",
+                    mobile: el.dataset.mobile || "",
                   };
 
                   document.getElementById("edit-customer-search").value =
@@ -19208,21 +19212,40 @@ Send the fresh form link to ${booking.customerEmail} now?`,
             document.getElementById("edit-customer-search")?.value?.trim() ||
             "";
 
-          const customerChanged = customerSearchValue.length > 0;
+          const originalCustomerId =
+            booking?.customerId || booking?.customer_id || null;
+
+          const originalCustomerName = String(
+            booking?.customerName || booking?.customer_name || "",
+          ).trim();
+
+          const selectedCustomerId = SELECTED_CUSTOMER?.id || null;
+
+          const customerChanged =
+            !isNew &&
+            !!selectedCustomerId &&
+            String(selectedCustomerId) !== String(originalCustomerId || "");
+
+          const typedDifferentCustomer =
+            !isNew &&
+            customerSearchValue &&
+            customerSearchValue !== originalCustomerName &&
+            !customerChanged;
+
+          if (isNew && !selectedCustomerId) {
+            return alert("Please select or create a customer");
+          }
+
+          if (typedDifferentCustomer) {
+            return alert("Please select the customer from the search results");
+          }
 
           const customerId =
-            SELECTED_CUSTOMER?.id || booking?.customerId || null;
-
-          /* =====================================
-         ONLY VALIDATE IF USER IS CHANGING CUSTOMER
-      ===================================== */
-
-          if (customerChanged && !SELECTED_CUSTOMER) {
-            return alert("Please select a valid customer");
-          }
+            selectedCustomerId || originalCustomerId || null;
 
           console.log("👤 customerChanged:", customerChanged);
           console.log("👤 SELECTED_CUSTOMER:", SELECTED_CUSTOMER);
+          console.log("👤 ORIGINAL customerId:", originalCustomerId);
           console.log("👤 FINAL customerId:", customerId);
 
           /* ===============================
@@ -19238,7 +19261,8 @@ Send the fresh form link to ${booking.customerEmail} now?`,
               hireTotal === Number(booking.hireTotal || 0) &&
               extras.dartford === Number(booking.extras?.dartford || 0) &&
               extras.earlyPickup === Boolean(booking.extras?.earlyPickup) &&
-              customerId === booking.customerId &&
+              String(customerId || "") ===
+                String(booking.customerId || booking.customer_id || "") &&
               adminNote === String(booking.adminNote || booking.note || "");
 
             if (noChanges) {
@@ -19294,6 +19318,8 @@ Send the fresh form link to ${booking.customerEmail} now?`,
         =============================== */
 
             customerId,
+            originalCustomerId:
+              booking?.customerId || booking?.customer_id || null,
 
             isNew,
             updatedAt: booking?.updatedAt || null,
@@ -19670,90 +19696,7 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           }
         });
 
-      document
-        .getElementById("edit-customer-search")
-        ?.addEventListener("input", async (e) => {
-          const q = e.target.value.trim();
-
-          console.log("🔎 searching:", q);
-
-          const resultsEl = document.getElementById("customer-results");
-
-          if (!q || q.length < 2) {
-            resultsEl.innerHTML = "";
-            return;
-          }
-
-          try {
-            const res = await fetch(
-              `${API_BASE}/api/customers/search?q=${encodeURIComponent(q)}`,
-            );
-
-            const data = await res.json();
-
-            if (!data.results || data.results.length === 0) {
-              resultsEl.innerHTML = "No customers found";
-              return;
-            }
-
-            /* ===============================
-               🔥 RENDER LIST
-            =============================== */
-
-            resultsEl.innerHTML = data.results
-              .map(
-                (c) => `
-              <div class="customer-result"
-                   data-id="${c.id}"
-                   data-name="${c.full_name}"
-                   style="padding:6px; cursor:pointer;">
-                👤 ${c.full_name} (${c.email || c.mobile || "-"})
-              </div>
-            `,
-              )
-              .join("");
-
-            /* ===============================
-               🔥 CLICK SELECT
-            =============================== */
-
-            resultsEl.querySelectorAll(".customer-result").forEach((el) => {
-              el.onclick = () => {
-                const id = el.dataset.id;
-                const name = el.dataset.name;
-
-                SELECTED_CUSTOMER = { id, name };
-
-                document.getElementById("edit-customer-search").value = name;
-                resultsEl.innerHTML = `✅ Selected: ${name}`;
-
-                console.log("👤 SELECTED CUSTOMER:", SELECTED_CUSTOMER);
-              };
-            });
-          } catch (err) {
-            console.error(err);
-            resultsEl.innerHTML = "Search failed";
-          }
-        });
-
-      document
-        .getElementById("customer-results")
-        ?.addEventListener("click", (e) => {
-          const el = e.target.closest(".customer-option");
-          if (!el) return;
-
-          SELECTED_CUSTOMER = {
-            id: el.dataset.id,
-            name: el.querySelector("strong").textContent,
-          };
-
-          document.getElementById("edit-customer-search").value =
-            SELECTED_CUSTOMER.name;
-
-          document.getElementById("customer-results").innerHTML = `
-          ✅ Selected: ${SELECTED_CUSTOMER.name}
-        `;
-        });
+      // Customer search is handled by the debounced listener above.
 
       /* ===============================
    ❌ CANCEL BOOKING (NEW)
@@ -20823,18 +20766,33 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           if (resultsEl) resultsEl.innerHTML = "Select or create customer";
         } else {
           // 👉 Existing booking
+          const currentCustomerId =
+            booking.customerId || booking.customer_id || null;
+          const currentCustomerName =
+            booking.customerName || booking.customer_name || "";
+
           SELECTED_CUSTOMER = {
-            id: booking.customerId || null,
-            name: booking.customerName || "",
+            id: currentCustomerId,
+            name: currentCustomerName,
+            email:
+              booking.customerEmail ||
+              booking.customer_email ||
+              booking.email ||
+              "",
+            mobile:
+              booking.customerMobile ||
+              booking.customer_mobile ||
+              booking.mobile ||
+              "",
           };
 
           if (searchInput) {
-            searchInput.value = booking.customerName || "";
+            searchInput.value = currentCustomerName;
           }
 
           if (resultsEl) {
-            resultsEl.innerHTML = booking.customerName
-              ? `<span class="pill ok">👤 ${booking.customerName}</span>`
+            resultsEl.innerHTML = currentCustomerName
+              ? `<span class="pill ok">👤 ${currentCustomerName}</span>`
               : `<span class="pill warn">No customer assigned</span>`;
           }
 
