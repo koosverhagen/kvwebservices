@@ -4,6 +4,10 @@ const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
 };
 const BOOKINGS_RESPONSE_CACHE_TTL = 60 * 1000; // 60 seconds
+const BOOKINGS_RESPONSE_CACHE = new Map();
+const DEPOSIT_SYNC_MIN_INTERVAL_MS = 2 * 60 * 1000;
+let ACTIVE_DEPOSIT_SYNC_PROMISE = null;
+let LAST_DEPOSIT_SYNC_STARTED_AT = 0;
 
 const GOOGLE_REVIEW_LINK = "https://g.page/r/CUTVuCXkntpdEBM/review";
 const GOOGLE_REVIEW_QR_URL =
@@ -939,7 +943,7 @@ export default {
       ================================ */
 
       if (request.method === "GET" && url.pathname === "/api/bookings/list") {
-        const response = await handleListBookings(request, env);
+        const response = await handleListBookings(request, env, ctx);
         return withCors(response, corsHeaders);
       }
 
@@ -1950,6 +1954,14 @@ export default {
         const response = await handleAdminHandoverView(request, env);
         return withCors(response, corsHeaders);
       }
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/handover/statuses"
+      ) {
+        const response = await handleAdminHandoverStatuses(request, env);
+        return withCors(response, corsHeaders);
+      }
+
 
       /* ===============================
    ADMIN HANDOVER EMAIL COPY
@@ -7828,6 +7840,28 @@ async function syncDepositStatusesFromStripe(env, bookings) {
    No-payment bookings created by admin
 ================================ */
 
+function scheduleDepositStatusSync(env, bookings, ctx) {
+  if (!Array.isArray(bookings) || !bookings.length) return;
+  if (!env.STRIPE_SECRET_KEY) return;
+
+  const now = Date.now();
+  if (ACTIVE_DEPOSIT_SYNC_PROMISE) return;
+  if (now - LAST_DEPOSIT_SYNC_STARTED_AT < DEPOSIT_SYNC_MIN_INTERVAL_MS) return;
+
+  LAST_DEPOSIT_SYNC_STARTED_AT = now;
+  ACTIVE_DEPOSIT_SYNC_PROMISE = syncDepositStatusesFromStripe(env, bookings)
+    .catch((err) => {
+      console.warn("⚠️ Background Stripe deposit sync failed:", err.message);
+    })
+    .finally(() => {
+      ACTIVE_DEPOSIT_SYNC_PROMISE = null;
+    });
+
+  if (ctx?.waitUntil) {
+    ctx.waitUntil(ACTIVE_DEPOSIT_SYNC_PROMISE);
+  }
+}
+
 async function upsertBookingInKv(env, booking) {
   const monthKey = `bookings:${String(booking.pickupAt || "").slice(0, 7)}`;
 
@@ -10483,7 +10517,7 @@ async function repairKvMonthBucketsFromD1Bookings(env, bookings) {
    LIST BOOKINGS API (MONTH BASED)
 ================================ */
 
-async function handleListBookings(request, env) {
+async function handleListBookings(request, env, ctx) {
   const url = new URL(request.url);
 
   const fromParam = url.searchParams.get("from");
@@ -10498,6 +10532,26 @@ async function handleListBookings(request, env) {
 
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
     return json({ error: "Invalid from/to parameters" }, 400);
+  }
+
+  let bookingsVersion = "";
+  try {
+    bookingsVersion = String(
+      (await env.BOOKINGS_KV.get("bookings:version")) || "",
+    );
+  } catch {}
+
+  const responseCacheKey = `${fromParam}|${toParam}|${bookingsVersion}`;
+  const cachedResponse = BOOKINGS_RESPONSE_CACHE.get(responseCacheKey);
+
+  if (
+    cachedResponse &&
+    Date.now() - cachedResponse.createdAt < BOOKINGS_RESPONSE_CACHE_TTL
+  ) {
+    return new Response(cachedResponse.body, {
+      status: 200,
+      headers: JSON_HEADERS,
+    });
   }
 
   const months = [];
@@ -10600,7 +10654,9 @@ async function handleListBookings(request, env) {
      Fixes stale past bookings still showing "on hold"
   ================================ */
 
-  bookings = await syncDepositStatusesFromStripe(env, bookings);
+  // Stripe reconciliation is intentionally background work. Webhooks and admin
+  // actions keep normal data current; this safety net must not delay searches.
+  scheduleDepositStatusSync(env, bookings, ctx);
 
   /* ===============================
    🔐 ENRICH WITH DVLA STATUS
@@ -10722,9 +10778,24 @@ async function handleListBookings(request, env) {
     };
   });
 
-  return json({
+  const responseBody = JSON.stringify({
     bookings: transformedBookings,
     reservations,
+  });
+
+  BOOKINGS_RESPONSE_CACHE.set(responseCacheKey, {
+    createdAt: Date.now(),
+    body: responseBody,
+  });
+
+  if (BOOKINGS_RESPONSE_CACHE.size > 20) {
+    const oldestKey = BOOKINGS_RESPONSE_CACHE.keys().next().value;
+    if (oldestKey) BOOKINGS_RESPONSE_CACHE.delete(oldestKey);
+  }
+
+  return new Response(responseBody, {
+    status: 200,
+    headers: JSON_HEADERS,
   });
 }
 
@@ -13419,6 +13490,60 @@ async function handleAdminHandoverView(request, env) {
       500,
     );
   }
+}
+
+async function handleAdminHandoverStatuses(request, env) {
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: "Invalid JSON body" }, 400);
+  }
+
+  const bookingIds = [...new Set(
+    (Array.isArray(body.bookingIds) ? body.bookingIds : [])
+      .map(cleanHandoverBookingId)
+      .filter(Boolean),
+  )].slice(0, 250);
+
+  if (!bookingIds.length) {
+    return json({ ok: true, statuses: {} });
+  }
+
+  const entries = await Promise.all(
+    bookingIds.map(async (bookingId) => {
+      try {
+        const raw = await env.BOOKINGS_KV.get(getHandoverKvKey(bookingId));
+        if (!raw) {
+          return [
+            bookingId,
+            { found: false, status: "draft", hasBothSignatures: false },
+          ];
+        }
+
+        const handover = JSON.parse(raw);
+        return [
+          bookingId,
+          {
+            found: true,
+            status: String(handover?.status || "draft").toLowerCase(),
+            hasBothSignatures: !!(
+              handover?.termsSignature && handover?.customerSignature
+            ),
+          },
+        ];
+      } catch (err) {
+        console.warn("⚠️ Handover status read failed:", bookingId, err.message);
+        return [
+          bookingId,
+          { found: false, status: "draft", hasBothSignatures: false },
+        ];
+      }
+    }),
+  );
+
+  return json({ ok: true, statuses: Object.fromEntries(entries) });
 }
 
 async function handleAdminHandoverSave(request, env) {

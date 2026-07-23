@@ -10962,24 +10962,64 @@ Equine Transport UK`;
       `;
       }
 
+      const BOOKING_FILTER_CACHE = new WeakMap();
+
+      function getBookingFilterCache(booking) {
+        if (!booking || typeof booking !== "object") {
+          return {
+            haystack: "",
+            pickupTime: NaN,
+            dropoffTime: NaN,
+            createdTime: NaN,
+          };
+        }
+
+        let cached = BOOKING_FILTER_CACHE.get(booking);
+        if (cached) return cached;
+
+        cached = {
+          haystack: [
+            booking?.id,
+            shortRef(booking?.id),
+            getCustomerName(booking),
+            getCustomerEmail(booking),
+            booking?.customerMobile,
+            getVehicleName(booking),
+            booking?.vehicleId,
+            booking?.status,
+            booking?.requiredFormType,
+          ]
+            .join(" ")
+            .toLowerCase(),
+          pickupTime: new Date(
+            booking?.pickupAt ||
+              booking?.pickupAtLocal ||
+              booking?.pickupDate ||
+              0,
+          ).getTime(),
+          dropoffTime: new Date(
+            booking?.dropoffAt ||
+              booking?.dropoffAtLocal ||
+              booking?.pickupAt ||
+              0,
+          ).getTime(),
+          createdTime: new Date(
+            booking?.createdAt ||
+              booking?.updatedAt ||
+              booking?.pickupAt ||
+              0,
+          ).getTime(),
+        };
+
+        BOOKING_FILTER_CACHE.set(booking, cached);
+        return cached;
+      }
+
       function bookingMatchesSearch(booking, search) {
-        if (!search) return true;
+        const searchText = String(search || "").trim().toLowerCase();
+        if (!searchText) return true;
 
-        const haystack = [
-          booking?.id,
-          shortRef(booking?.id),
-          getCustomerName(booking),
-          getCustomerEmail(booking),
-          booking?.customerMobile,
-          getVehicleName(booking),
-          booking?.vehicleId,
-          booking?.status,
-          booking?.requiredFormType,
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        return haystack.includes(search.toLowerCase());
+        return getBookingFilterCache(booking).haystack.includes(searchText);
       }
 
       function bookingMatchesFilter(booking, filter) {
@@ -11112,38 +11152,25 @@ Equine Transport UK`;
       }
 
       function getBookingPickupTime(booking) {
-        return new Date(
-          booking?.pickupAt ||
-            booking?.pickupAtLocal ||
-            booking?.pickupDate ||
-            0,
-        ).getTime();
+        return getBookingFilterCache(booking).pickupTime;
+      }
+
+      function getBookingDropoffTime(booking) {
+        return getBookingFilterCache(booking).dropoffTime;
       }
 
       function getBookingCreatedTime(booking) {
-        return new Date(
-          booking?.createdAt || booking?.updatedAt || booking?.pickupAt || 0,
-        ).getTime();
+        return getBookingFilterCache(booking).createdTime;
       }
 
-      function bookingMatchesDateRange(booking) {
-        const from = rangeFromInput?.value || "";
-        const to = rangeToInput?.value || "";
-
-        if (!from && !to) return true;
+      function bookingMatchesDateRange(booking, fromTime, toTime) {
+        if (!Number.isFinite(fromTime) && !Number.isFinite(toTime)) return true;
 
         const pickupTime = getBookingPickupTime(booking);
         if (!pickupTime || Number.isNaN(pickupTime)) return false;
 
-        if (from) {
-          const fromDate = new Date(`${from}T00:00:00`);
-          if (pickupTime < fromDate.getTime()) return false;
-        }
-
-        if (to) {
-          const toDate = new Date(`${to}T23:59:59`);
-          if (pickupTime > toDate.getTime()) return false;
-        }
+        if (Number.isFinite(fromTime) && pickupTime < fromTime) return false;
+        if (Number.isFinite(toTime) && pickupTime > toTime) return false;
 
         return true;
       }
@@ -11179,6 +11206,10 @@ Equine Transport UK`;
       }
 
       function renderBookings(options = {}) {
+        // Stop any old background handover-status work as soon as filters change.
+        HANDOVER_STATUS_HYDRATE_TOKEN += 1;
+
+        const mobileLayout = window.matchMedia("(max-width: 768px)").matches;
         const search = searchInput.value.trim();
         const filter = statusFilter.value;
         const vehicleFilter = bookingVehicleFilter?.value || "all";
@@ -11204,72 +11235,62 @@ Equine Transport UK`;
       =============================== */
 
         const nowTs = Date.now();
+        const mode = timeFilter?.value || "upcoming";
+        const fromValue = rangeFromInput?.value || "";
+        const toValue = rangeToInput?.value || "";
+        const fromTime = fromValue
+          ? new Date(`${fromValue}T00:00:00`).getTime()
+          : NaN;
+        const toTime = toValue
+          ? new Date(`${toValue}T23:59:59`).getTime()
+          : NaN;
+        const thirtyDaysAgo = nowTs - 30 * 24 * 60 * 60 * 1000;
 
-        filteredBookings = allBookings
-          .filter((b) => bookingMatchesSearch(b, search))
-          .filter((b) => bookingMatchesFilter(b, filter))
-          .filter((b) => bookingMatchesVehicleFilter(b, vehicleFilter))
-          .filter((b) => bookingMatchesVoucherFilter(b, voucherMode))
-          .filter((b) => bookingMatchesDepositFilter(b, depositMode))
-          .filter((b) => bookingMatchesNotesFilter(b, notesMode, notesKeyword))
-          .filter((b) => {
-            const mode = timeFilter?.value || "upcoming";
+        filteredBookings = allBookings.filter((booking) => {
+          if (!bookingMatchesSearch(booking, search)) return false;
+          if (!bookingMatchesFilter(booking, filter)) return false;
+          if (!bookingMatchesVehicleFilter(booking, vehicleFilter)) return false;
+          if (!bookingMatchesVoucherFilter(booking, voucherMode)) return false;
+          if (!bookingMatchesDepositFilter(booking, depositMode)) return false;
+          if (!bookingMatchesNotesFilter(booking, notesMode, notesKeyword)) {
+            return false;
+          }
 
-            // ✅ Recent bookings use booking-created date,
-            // not lorry hire/pickup date.
-            if (mode === "recent") return true;
+          if (
+            mode !== "recent" &&
+            !bookingMatchesDateRange(booking, fromTime, toTime)
+          ) {
+            return false;
+          }
 
-            return bookingMatchesDateRange(b);
-          })
-          .filter((b) => {
-            const mode = timeFilter?.value || "upcoming";
+          const start = getBookingPickupTime(booking);
+          const end = getBookingDropoffTime(booking);
+          const created = getBookingCreatedTime(booking);
 
-            const start = getBookingPickupTime(b);
-            const end = b.dropoffAt ? new Date(b.dropoffAt).getTime() : start;
-            const created = getBookingCreatedTime(b);
-            const now = nowTs;
+          if (mode === "recent") {
+            return created && !Number.isNaN(created) && created >= thirtyDaysAgo;
+          }
 
-            if (mode === "recent") {
-              const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-              return created && !isNaN(created) && created >= thirtyDaysAgo;
-            }
+          if (!start || Number.isNaN(start)) return false;
+          if (mode === "all") return true;
+          if (mode === "inprogress") return start <= nowTs && end >= nowTs;
+          if (mode === "past") return end < nowTs;
+          if (mode === "upcoming") return start > nowTs;
 
-            if (!start || isNaN(start)) return false;
+          return true;
+        });
 
-            if (mode === "all") {
-              return true;
-            }
+        filteredBookings.sort((a, b) => {
+          if (mode === "recent") {
+            return getBookingCreatedTime(b) - getBookingCreatedTime(a);
+          }
 
-            if (mode === "inprogress") {
-              return start <= now && end >= now;
-            }
+          if (mode === "past") {
+            return getBookingPickupTime(b) - getBookingPickupTime(a);
+          }
 
-            if (mode === "past") {
-              return end < now;
-            }
-
-            if (mode === "upcoming") {
-              return start > now;
-            }
-
-            return true;
-          })
-          .sort((a, b) => {
-            const mode = timeFilter?.value || "upcoming";
-
-            // ✅ Recent bookings = booking creation date, newest first
-            if (mode === "recent") {
-              return getBookingCreatedTime(b) - getBookingCreatedTime(a);
-            }
-
-            // ✅ Past bookings = latest hire first, down to oldest
-            if (mode === "past") {
-              return getBookingPickupTime(b) - getBookingPickupTime(a);
-            }
-
-            // ✅ Other searches = hire/pickup date, oldest first
-            return getBookingPickupTime(a) - getBookingPickupTime(b);
-          });
+          return getBookingPickupTime(a) - getBookingPickupTime(b);
+        });
 
         bookingCount.textContent = `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"}`;
         /* ===============================
@@ -11277,13 +11298,25 @@ Equine Transport UK`;
         =============================== */
 
         if (!filteredBookings.length) {
-          bookingsBody.innerHTML = `
-            <tr>
-              <td colspan="6" class="empty-state">
-                No bookings found for the current filters.
-              </td>
-            </tr>
-          `;
+          if (mobileLayout) {
+            bookingsBody.innerHTML = "";
+            if (mobileBookings) {
+              mobileBookings.innerHTML = `
+                <div class="empty-state">
+                  No bookings found for the current filters.
+                </div>
+              `;
+            }
+          } else {
+            bookingsBody.innerHTML = `
+              <tr>
+                <td colspan="6" class="empty-state">
+                  No bookings found for the current filters.
+                </td>
+              </tr>
+            `;
+            renderMobileCards([]);
+          }
 
           setTimeout(syncScroll, 0);
           return;
@@ -11293,7 +11326,7 @@ Equine Transport UK`;
            GROUPING
         =============================== */
 
-        const mode = timeFilter?.value || "all";
+        // mode was resolved once above for this render.
 
         const inProgress = [];
         const today = [];
@@ -11324,14 +11357,18 @@ Equine Transport UK`;
             (a, b) => getBookingCreatedTime(b) - getBookingCreatedTime(a),
           );
 
-          bookingsBody.innerHTML = `
+          if (mobileLayout) {
+            bookingsBody.innerHTML = "";
+            renderMobileCards(recentSorted);
+          } else {
+            bookingsBody.innerHTML = `
     <tr class="section-header">
       <td colspan="6">🆕 Recent Bookings</td>
     </tr>
     ${recentSorted.map(renderRow).join("")}
   `;
-
-          renderMobileCards(recentSorted);
+            renderMobileCards([]);
+          }
 
           setTimeout(syncScroll, 0);
           return;
@@ -11698,9 +11735,13 @@ Equine Transport UK`;
           `;
           });
 
-        bookingsBody.innerHTML = html;
-
-        renderMobileCards(filteredBookings);
+        if (mobileLayout) {
+          bookingsBody.innerHTML = "";
+          renderMobileCards(filteredBookings);
+        } else {
+          bookingsBody.innerHTML = html;
+          renderMobileCards([]);
+        }
 
         /* ===============================
    🔥 DEBUG + DVLA LOAD (FIXED)
@@ -11735,7 +11776,7 @@ Equine Transport UK`;
       function renderMobileCards(bookings = []) {
         if (!mobileBookings) return;
 
-        mobileBookings.innerHTML = "";
+        const fragment = document.createDocumentFragment();
 
         bookings.forEach((booking) => {
           const mobileCard = document.createElement("div");
@@ -12281,9 +12322,30 @@ ${mobileOutstandingText}
 
           `;
 
-          mobileBookings.appendChild(mobileCard);
+          fragment.appendChild(mobileCard);
         });
+
+        mobileBookings.replaceChildren(fragment);
       }
+
+      let LAST_BOOKING_LAYOUT_MOBILE = window.matchMedia(
+        "(max-width: 768px)",
+      ).matches;
+      let BOOKING_LAYOUT_RESIZE_TIMER = null;
+
+      window.addEventListener("resize", () => {
+        clearTimeout(BOOKING_LAYOUT_RESIZE_TIMER);
+        BOOKING_LAYOUT_RESIZE_TIMER = setTimeout(() => {
+          const isMobile = window.matchMedia("(max-width: 768px)").matches;
+          if (isMobile === LAST_BOOKING_LAYOUT_MOBILE) return;
+
+          LAST_BOOKING_LAYOUT_MOBILE = isMobile;
+          renderBookings({ skipBackgroundHydration: true });
+          setTimeout(() => {
+            hydrateCompletedHandoversForRenderedBookings({ maxBookingIds: 150 });
+          }, 40);
+        }, 120);
+      });
 
       /* =====================================
          MOBILE RESEND
@@ -13969,8 +14031,12 @@ ${mobileOutstandingText}
         markBookingHandoverStatus(bookingId, isComplete ? "complete" : "draft");
       }
 
-      async function hydrateCompletedHandoversForRenderedBookings() {
+      async function hydrateCompletedHandoversForRenderedBookings(options = {}) {
         const token = ++HANDOVER_STATUS_HYDRATE_TOKEN;
+        const maxBookingIds = Math.max(
+          1,
+          Math.min(250, Number(options.maxBookingIds || 150)),
+        );
 
         const bookingIds = Array.from(
           document.querySelectorAll("[data-open-handover]"),
@@ -13978,52 +14044,37 @@ ${mobileOutstandingText}
           .map((btn) => btn.getAttribute("data-open-handover"))
           .filter(Boolean);
 
-        const uniqueBookingIds = [...new Set(bookingIds)];
-
+        const uniqueBookingIds = [...new Set(bookingIds)].slice(0, maxBookingIds);
         if (!uniqueBookingIds.length) return;
 
-        const chunkSize = 8;
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/handover/statuses`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bookingIds: uniqueBookingIds }),
+          });
 
-        for (let i = 0; i < uniqueBookingIds.length; i += chunkSize) {
+          const data = await res.json().catch(() => ({}));
           if (token !== HANDOVER_STATUS_HYDRATE_TOKEN) return;
+          if (!res.ok || data.ok === false) return;
 
-          const chunk = uniqueBookingIds.slice(i, i + chunkSize);
+          const statuses = data.statuses || {};
 
-          await Promise.allSettled(
-            chunk.map(async (bookingId) => {
-              try {
-                const res = await fetch(
-                  `${API_BASE}/api/admin/handover?bookingId=${encodeURIComponent(
-                    bookingId,
-                  )}`,
-                );
+          uniqueBookingIds.forEach((bookingId) => {
+            const statusData = statuses[bookingId] || {};
+            let handoverStatus = statusData.status || "draft";
 
-                const data = await res.json();
+            if (
+              String(handoverStatus).toLowerCase() === "customer_signed" &&
+              statusData.hasBothSignatures !== true
+            ) {
+              handoverStatus = "in_progress";
+            }
 
-                if (!res.ok || data.ok === false) {
-                  return;
-                }
-
-                const handover = data.handover || {};
-                let handoverStatus =
-                  data.found === true ? handover.status || "draft" : "draft";
-
-                if (
-                  String(handoverStatus || "").toLowerCase() === "customer_signed" &&
-                  !(handover.termsSignature && handover.customerSignature)
-                ) {
-                  handoverStatus = "in_progress";
-                }
-
-                markBookingHandoverStatus(bookingId, handoverStatus);
-              } catch (err) {
-                console.warn(
-                  `Could not hydrate handover status for ${bookingId}:`,
-                  err,
-                );
-              }
-            }),
-          );
+            markBookingHandoverStatus(bookingId, handoverStatus);
+          });
+        } catch (err) {
+          console.warn("Could not hydrate handover statuses:", err);
         }
       }
 
@@ -18346,8 +18397,11 @@ Equine Transport UK`;
           // ✅ FIXED LINE
           window.ALL_BOOKINGS = allBookings || [];
 
-          renderBookings();
-          hydrateCompletedHandoversForRenderedBookings();
+          renderBookings({ skipBackgroundHydration: true });
+
+          setTimeout(() => {
+            hydrateCompletedHandoversForRenderedBookings({ maxBookingIds: 150 });
+          }, 80);
 
           // 🔥 SAFE calendar refresh
           // Do NOT refresh calendar during Find Bookings search on mobile;
@@ -19060,6 +19114,10 @@ Send the fresh form link to ${booking.customerEmail} now?`,
         requestAnimationFrame(() => {
           renderBookings({ skipBackgroundHydration: true });
           updateClearButton();
+
+          setTimeout(() => {
+            hydrateCompletedHandoversForRenderedBookings({ maxBookingIds: 150 });
+          }, 40);
 
           setStatus(
             `${filteredBookings.length} booking${filteredBookings.length === 1 ? "" : "s"} found.`,
@@ -19776,13 +19834,6 @@ Send the fresh form link to ${booking.customerEmail} now?`,
       // call after render
       setTimeout(syncScroll, 100);
 
-      /* ===============================
-         🚀 INIT (MISSING - CRITICAL)
-      =============================== */
-
-      defaultRanges();
-      loadBookings();
-      updateClearButton();
       /* ===============================
          🔥 ADMIN EDIT LIVE LISTENERS
          Used for existing booking edits AND new admin bookings.
@@ -21554,9 +21605,15 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           await loadBookings({ refreshCalendar: false });
           window.__calendarReady = true;
 
-          setTimeout(() => {
+          const startCalendarLoad = () => {
             loadAdminCalendar({ useCachedFirst: true, background: true });
-          }, 80);
+          };
+
+          if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(startCalendarLoad, { timeout: 1500 });
+          } else {
+            setTimeout(startCalendarLoad, 450);
+          }
 
           try {
             const savedVoucherToken =
