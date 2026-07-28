@@ -11590,8 +11590,8 @@ async function findCustomerByEmailOrMobile(env, email, mobile) {
        🔥 CLEAN INPUT
     =============================== */
 
-    const cleanEmail = email ? String(email).trim().toLowerCase() : null;
-    const cleanMobile = mobile ? String(mobile).trim() : null;
+    const cleanEmail = String(email || "").trim().toLowerCase() || null;
+    const cleanMobile = String(mobile || "").trim() || null;
 
     console.log("🔎 LOOKUP INPUT:", { cleanEmail, cleanMobile });
 
@@ -11604,13 +11604,13 @@ async function findCustomerByEmailOrMobile(env, email, mobile) {
       SELECT *
       FROM customers
       WHERE
-        (email IS NOT NULL AND LOWER(email) = ?)
+        (? IS NOT NULL AND email IS NOT NULL AND LOWER(email) = ?)
         OR
-        (mobile IS NOT NULL AND mobile = ?)
+        (? IS NOT NULL AND mobile IS NOT NULL AND mobile = ?)
       LIMIT 1
     `,
     )
-      .bind(cleanEmail || "", cleanMobile || "")
+      .bind(cleanEmail, cleanEmail, cleanMobile, cleanMobile)
       .first();
 
     console.log("🔎 LOOKUP RESULT:", result);
