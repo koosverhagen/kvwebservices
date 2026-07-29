@@ -1,19 +1,19 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Equine Transport UK Case Study | Custom Booking Platform</title>
+  <title>Equine Transport UK Case Study | Astro Website &amp; Booking Platform</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Equine Transport UK case study: a custom horsebox hire booking platform with public booking flow, protected admin system, Stripe payments, deposits, customer records and availability tools.">
+  <meta name="description" content="Equine Transport UK case study: a mobile-first Astro website on Cloudflare Pages connected to a custom booking and admin platform with Stripe payments.">
 
-  <link rel="stylesheet" href="css/style.css?v=31">
+  <link rel="stylesheet" href="css/style.css?v=39">
 
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
-    "name": "Equine Transport UK — Custom Horsebox Hire Booking Platform",
-    "description": "Case study for a custom horsebox hire booking platform built by KV Web Services, including a public booking flow, protected admin system, payment tracking, deposits, customer records and availability tools.",
+    "name": "Equine Transport UK — Astro Website and Custom Booking Platform",
+    "description": "Case study covering a custom horsebox hire booking and admin platform, followed by a staged migration of the public website to Astro on Cloudflare Pages while existing booking and payment services remained in place.",
     "creator": {
       "@type": "ProfessionalService",
       "name": "KV Web Services",
@@ -34,7 +34,7 @@
     <a href="index.html" class="logo">KVWebServices</a>
 
     <nav class="nav">
-      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">
+      <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
         ☰
       </button>
 
@@ -42,7 +42,7 @@
         <a href="about.html">About</a>
         <a href="services.html">Services</a>
         <a href="portfolio.html">Portfolio</a>
-        <a href="artist-store/index.html">Case Study</a>
+        <a href="equine-transport-case-study.html">Case Study</a>
         <a href="qualifications.html">Qualifications</a>
         <a href="contact.html">Contact</a>
       </div>
@@ -52,17 +52,18 @@
 
 <main class="container">
 
-  <section class="hero">
-    <h1>Equine Transport UK — Custom Horsebox Hire Booking Platform</h1>
+  <section class="hero case-study-hero">
+    <p class="case-study-kicker">Website &amp; Business Platform Case Study</p>
+    <h1>Equine Transport UK — Astro Website &amp; Custom Booking Platform</h1>
 
     <p>
-      A custom website, booking flow and protected admin system for a horsebox
-      hire business that needed more practical control over bookings, payments,
-      deposits, customer records and day-to-day admin.
+      A complete digital platform for self-drive horsebox hire and driven horse
+      transport, combining a modern public website with live booking, payments,
+      customer communication and practical day-to-day admin tools.
     </p>
 
     <div class="tech-tags">
-      Custom Booking Flow · Admin Dashboard · Stripe Payments · Customer Records
+      Astro · Cloudflare Pages · Custom Booking Platform · Stripe · Mobile-First
     </div>
 
     <div class="actions">
@@ -71,103 +72,191 @@
     </div>
   </section>
 
+  <figure class="case-study-visual">
+    <img
+      src="images/equine.webp"
+      alt="Equine Transport UK Astro website showing the responsive homepage and booking options"
+      width="2048"
+      height="1474"
+    >
+    <figcaption>
+      The completed Astro production website presents self-drive hire, driven
+      transport and live booking options through a clear, mobile-first structure.
+    </figcaption>
+  </figure>
+
+  <section class="case-study-facts" aria-label="Project overview">
+    <article class="case-study-fact">
+      <span>Public website</span>
+      <strong>Astro on Cloudflare Pages</strong>
+    </article>
+    <article class="case-study-fact">
+      <span>Business platform</span>
+      <strong>Custom booking and admin tools</strong>
+    </article>
+    <article class="case-study-fact">
+      <span>Payments</span>
+      <strong>Stripe booking lifecycle</strong>
+    </article>
+    <article class="case-study-fact">
+      <span>Release approach</span>
+      <strong>Safe staged migration</strong>
+    </article>
+  </section>
+
   <section class="case-grid">
 
     <div class="case-card">
-      <h2>The Challenge</h2>
+      <h2>The Business Need</h2>
       <p>
-        Equine Transport UK needed more than a standard website. The business
-        needed a practical system for self-drive horsebox hire, driven services,
-        availability, payments, deposits, customer details and booking management.
+        Equine Transport UK needed more than a brochure website. Customers
+        needed a straightforward way to choose a lorry, check availability,
+        book and pay, while the business needed reliable control over bookings,
+        deposits, forms, customer records and vehicle availability.
       </p>
       <p class="muted">
-        The aim was to reduce manual admin, make customer booking clearer, and
-        give the business a reliable admin area for everyday use.
+        The public website also needed to become faster, easier to maintain and
+        better structured without interrupting the live booking operation.
       </p>
     </div>
 
     <div class="case-card">
-      <h2>What Was Built</h2>
+      <h2>What Was Delivered</h2>
       <ul class="case-list">
-        <li>New public website for the hire and transport service</li>
-        <li>Custom booking flow built around the business workflow</li>
-        <li>Protected admin dashboard for managing bookings</li>
-        <li>Customer records and booking history</li>
-        <li>Availability calendar for lorries and hire periods</li>
-        <li>Stripe payment links, deposits, balances and refunds</li>
-        <li>Data migration from older booking tools</li>
-        <li>Mobile-friendly admin layout for day-to-day use</li>
+        <li>Mobile-first Astro website hosted by Cloudflare Pages</li>
+        <li>Custom booking assistant and live availability flow</li>
+        <li>Protected admin system for bookings and customers</li>
+        <li>Stripe payments, deposit holds, balances and refunds</li>
+        <li>Booking forms, confirmation emails and customer links</li>
+        <li>Vehicle calendars and practical mobile admin tools</li>
+        <li>Light and dark themes with accessible page structure</li>
+        <li>Staged migration and production release validation</li>
       </ul>
     </div>
 
   </section>
 
-  <section class="service-detail">
+  <section class="platform-overview" aria-labelledby="platform-overview-title">
+    <div class="platform-overview__intro">
+      <p class="case-study-kicker">One Connected Platform</p>
+      <h2 id="platform-overview-title">Modern presentation, proven business systems</h2>
+      <p>
+        The public website and the operational booking platform have clear
+        responsibilities. This allowed the customer-facing site to be modernised
+        without rebuilding working payment and admin services unnecessarily.
+      </p>
+    </div>
+
+    <div class="platform-overview__flow">
+      <article class="platform-overview__step">
+        <span>1</span>
+        <h3>Astro Website</h3>
+        <p>Fast public pages, structured content and booking entry points.</p>
+      </article>
+      <article class="platform-overview__step">
+        <span>2</span>
+        <h3>Booking Services</h3>
+        <p>Availability, reservations, forms and customer communication.</p>
+      </article>
+      <article class="platform-overview__step">
+        <span>3</span>
+        <h3>Payments</h3>
+        <p>Stripe checkout, webhooks, deposits, balances and refunds.</p>
+      </article>
+      <article class="platform-overview__step">
+        <span>4</span>
+        <h3>Admin Tools</h3>
+        <p>Bookings, customers, calendars and daily operational actions.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="service-detail case-study-detail">
 
     <div class="content-block">
-      <h2>Public Booking Flow</h2>
+      <h2>Custom Booking &amp; Admin Platform</h2>
       <p>
-        Customers can view the service, choose the right type of hire, check the
-        relevant information and start a booking through a clear public flow.
-        The booking journey was designed around real horsebox hire requirements,
-        not a generic template.
+        The booking platform was built around the real workflow of a horsebox
+        hire business rather than forcing the business into a generic booking
+        template. Customers can choose the correct hire option, check live
+        availability and complete the required booking steps online.
+      </p>
+      <p>
+        Behind the public journey, the protected admin system brings together
+        bookings, customers, vehicle availability, forms, payments, deposits
+        and common follow-up actions in one practical place.
       </p>
     </div>
 
     <div class="content-block">
-      <h2>Protected Admin System</h2>
+      <h2>Payments &amp; Complete Booking Lifecycle</h2>
       <p>
-        A private admin area was built for managing bookings, customers,
-        availability, payments and day-to-day actions. The admin tools are laid
-        out for practical use, including mobile-friendly booking cards and clear
-        actions for common tasks.
+        Stripe is integrated with the booking workflow for confirmation
+        payments, outstanding balances, deposit holds, captures and refunds.
+        Webhooks keep the booking record aligned with payment activity and
+        support the emails and customer links needed after checkout.
+      </p>
+      <p>
+        Before the final website release, the live journey was checked from
+        booking and payment confirmation through to customer email, refund and
+        cancellation behaviour.
       </p>
     </div>
 
     <div class="content-block">
-      <h2>Payments and Deposits</h2>
+      <h2>Astro Conversion on Cloudflare Pages</h2>
       <p>
-        The platform supports payment tracking for hire totals, outstanding
-        balances, deposits and refunds. This gives the business a clearer view
-        of what has been paid, what is still outstanding, and what needs follow-up.
+        The public presentation layer was rebuilt in Astro and deployed on
+        Cloudflare Pages. The result is a lightweight, maintainable website with
+        clear content structure, responsive layouts and less reliance on
+        client-side code for ordinary pages.
+      </p>
+      <p>
+        The existing booking services remained in place, so the migration
+        improved the website without changing established booking IDs, payment
+        behaviour or day-to-day admin processes.
       </p>
     </div>
 
     <div class="content-block">
-      <h2>Customer and Booking Management</h2>
+      <h2>Safe Staged Migration</h2>
       <p>
-        Customer details, booking records, booking dates, lorry information,
-        payment status and admin notes are kept together so the business has one
-        practical place to manage each booking.
+        The Astro version was built and tested in a separate staging setup
+        before production cutover. Booking connections, forms, payments,
+        emails, redirects and key customer journeys were checked in stages.
+      </p>
+      <p>
+        This reduced release risk and allowed the previous public site to keep
+        serving customers until the replacement was ready.
       </p>
     </div>
 
     <div class="content-block">
-      <h2>Data Migration</h2>
+      <h2>Mobile-First Customer Experience</h2>
       <p>
-        Existing customers, bookings and payments were reviewed and moved into
-        the new setup. This helped preserve important business history while
-        making the new admin system more useful from launch.
+        The website and booking journey were refined for phone use as well as
+        desktop. Clear navigation, readable content, responsive booking steps
+        and light/dark themes help customers use the service comfortably across
+        devices.
       </p>
-    </div>
-
-    <div class="content-block">
-      <h2>Mobile Admin Design</h2>
       <p>
-        The admin experience was designed to work well on phones and tablets,
-        because real booking admin often happens away from a desk. Booking cards,
-        calendar views and key actions were kept clear and practical for daily use.
+        Structured content, semantic page hierarchy, accessibility checks and
+        performance-conscious implementation support both people and search
+        systems.
       </p>
     </div>
 
     <div class="content-block">
       <h2>Outcome</h2>
       <p>
-        KV Web Services built a custom booking platform for Equine Transport UK,
-        not just a simple website or a basic connection between third-party tools.
-        The result is a practical business system that combines the public website,
-        booking flow, admin tools, customer records, payment tracking and
-        availability management in one setup.
+        Equine Transport UK now has a modern Astro production website connected
+        to a mature custom booking and admin platform. Customers have a clearer
+        route from information to booking, while the business retains the
+        operational tools and payment lifecycle already proven in daily use.
+      </p>
+      <p>
+        The project demonstrates how a public website can be modernised safely
+        while protecting the business systems behind it.
       </p>
 
       <div class="actions">
@@ -186,6 +275,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=37"></script>
+<script src="js/main.js?v=38"></script>
 </body>
 </html>
