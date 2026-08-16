@@ -1474,10 +1474,18 @@ export default {
             },
           ],
 
-          // ✅ ADD THIS BLOCK
+          client_reference_id: internalBookingId,
+
           metadata: {
             bookingId: internalBookingId,
             paymentType: "outstanding",
+          },
+
+          payment_intent_data: {
+            metadata: {
+              bookingId: internalBookingId,
+              paymentType: "outstanding",
+            },
           },
 
           success_url: `${env.PUBLIC_SITE_URL}/index.html?outstanding=paid&bookingId=${encodeURIComponent(internalBookingId)}`,
@@ -7227,9 +7235,18 @@ async function moveBookingInKv(env, oldBooking, nextBooking) {
   }
 
   if (oldMonthKey === newMonthKey) {
-    const updatedMonthBookings = oldMonthBookings.map((b) =>
-      String(b.id) === String(nextBooking.id) ? nextBooking : b,
-    );
+    let bookingWasReplaced = false;
+
+    const updatedMonthBookings = oldMonthBookings.map((b) => {
+      if (String(b.id) !== String(nextBooking.id)) return b;
+
+      bookingWasReplaced = true;
+      return nextBooking;
+    });
+
+    if (!bookingWasReplaced) {
+      updatedMonthBookings.push(nextBooking);
+    }
 
     await env.BOOKINGS_KV.put(
       newMonthKey,
@@ -9428,20 +9445,22 @@ async function handleStripeWebhook(request, env) {
           ? session.payment_intent
           : session.payment_intent?.id || null;
 
-      // 🔥 ADD THIS BLOCK HERE (EXACT SPOT)
-      if (!session.metadata?.bookingId) {
-        console.log("❌ Missing bookingId in metadata");
+      const paymentType = String(
+        session.metadata?.paymentType || "",
+      ).trim();
 
-        await env.BOOKINGS_KV.put(eventId, "processed");
+      const paymentBookingId = String(
+        session.metadata?.bookingId || session.client_reference_id || "",
+      ).trim();
+
+      if (!paymentBookingId) {
+        console.error("❌ Missing bookingId in Checkout Session metadata");
 
         return new Response(
           JSON.stringify({ error: "Missing bookingId in metadata" }),
-          { status: 400 },
+          { status: 500 },
         );
       }
-
-      const paymentType = session.metadata?.paymentType || "";
-      const paymentBookingId = session.metadata?.bookingId || "";
 
       console.log("👉 session received");
 
@@ -9450,151 +9469,211 @@ async function handleStripeWebhook(request, env) {
       =============================== */
 
       if (paymentType && paymentBookingId) {
+        if (!["deposit", "outstanding"].includes(paymentType)) {
+          console.error("❌ Unsupported payment type:", paymentType);
+
+          return new Response(
+            JSON.stringify({ error: "Unsupported payment type" }),
+            { status: 400 },
+          );
+        }
+
         console.log("💳 Payment detected:", paymentType, paymentBookingId);
 
-        const list = await env.BOOKINGS_KV.list({ prefix: "bookings:" });
+        const paymentBooking = await findBookingById(
+          env,
+          paymentBookingId,
+        );
 
-        for (const key of list.keys) {
-          const data = await env.BOOKINGS_KV.get(key.name);
-          if (!data) continue;
+        if (!paymentBooking) {
+          console.error(
+            "❌ Payment booking not found:",
+            paymentBookingId,
+          );
 
-          let parsed;
+          return new Response(
+            JSON.stringify({ error: "Payment booking not found" }),
+            { status: 500 },
+          );
+        }
 
-          try {
-            parsed = JSON.parse(data);
-          } catch {
-            continue;
+        const canonicalBookingId = String(
+          paymentBooking.id || paymentBookingId,
+        ).trim();
+
+        const nowIso = new Date().toISOString();
+
+        const nextBooking = {
+          ...paymentBooking,
+          updatedAt: nowIso,
+        };
+
+        if (paymentType === "deposit") {
+          nextBooking.depositPaid = true;
+
+          await env.DB.prepare(
+            `
+            UPDATE bookings
+            SET deposit_paid = 1,
+                updated_at = ?
+            WHERE id = ?
+            `,
+          )
+            .bind(nowIso, canonicalBookingId)
+            .run();
+
+          console.log(
+            "✅ Deposit marked as paid in DB:",
+            canonicalBookingId,
+          );
+        }
+
+        if (paymentType === "outstanding") {
+          if (
+            session.payment_status &&
+            session.payment_status !== "paid"
+          ) {
+            console.error(
+              "❌ Outstanding Checkout Session is not paid:",
+              session.payment_status,
+            );
+
+            return new Response(
+              JSON.stringify({ error: "Checkout Session is not paid" }),
+              { status: 409 },
+            );
           }
 
-          if (!Array.isArray(parsed)) continue;
+          const outstandingPaidAmount = Number(
+            (Number(session.amount_total || 0) / 100).toFixed(2),
+          );
 
-          let updated = false;
+          if (
+            !Number.isFinite(outstandingPaidAmount) ||
+            outstandingPaidAmount <= 0
+          ) {
+            console.error(
+              "❌ Invalid outstanding payment amount:",
+              session.amount_total,
+            );
 
-          const paymentBookingIdCandidates =
-            buildBookingIdCandidates(paymentBookingId);
+            return new Response(
+              JSON.stringify({ error: "Invalid payment amount" }),
+              { status: 400 },
+            );
+          }
 
-          for (const b of parsed) {
-            if (bookingMatchesBookingId(b, paymentBookingIdCandidates)) {
-              if (paymentType === "deposit") {
-                b.depositPaid = true;
+          const paymentReference = String(
+            paymentIntentId || session.id || "",
+          ).trim();
 
-                // ✅ ALSO SAVE TO DATABASE (CRITICAL FIX)
-                try {
-                  await env.DB.prepare(
-                    `
-      UPDATE bookings
-      SET deposit_paid = 1,
-          updated_at = ?
-      WHERE id = ?
-    `,
-                  )
-                    .bind(new Date().toISOString(), b.id)
-                    .run();
+          const processedPaymentReferences = new Set(
+            [
+              ...(Array.isArray(
+                paymentBooking.outstandingPaymentReferences,
+              )
+                ? paymentBooking.outstandingPaymentReferences
+                : []),
+              paymentBooking.outstandingSessionPaymentIntentId,
+            ]
+              .map((value) => String(value || "").trim())
+              .filter(Boolean),
+          );
 
-                  console.log(
-                    "✅ Deposit marked as paid in DB:",
-                    paymentBookingId,
-                  );
-                } catch (err) {
-                  console.error("❌ Failed to update deposit in DB:", err);
-                }
-              }
+          const alreadyRecorded =
+            paymentReference &&
+            processedPaymentReferences.has(paymentReference);
 
-              if (paymentType === "outstanding") {
-                /* ===============================
-     ✅ OUTSTANDING PAYMENT RECEIVED
-     Add Stripe outstanding payment to paidNow,
-     then recalculate the remaining balance.
-  =============================== */
+          if (!alreadyRecorded) {
+            const previousPaidNow = Number(
+              paymentBooking.paidNow || 0,
+            );
 
-                const nowIso = new Date().toISOString();
+            const totalDue = Number(
+              paymentBooking.hireTotal ||
+                paymentBooking.priceTotal ||
+                0,
+            );
 
-                const outstandingPaidAmount = Number(
-                  (Number(session.amount_total || 0) / 100).toFixed(2),
-                );
+            const uncappedPaidNow = Number(
+              (previousPaidNow + outstandingPaidAmount).toFixed(2),
+            );
 
-                const previousPaidNow = Number(b.paidNow || 0);
-                const totalDue = Number(b.hireTotal || b.priceTotal || 0);
+            const newPaidNow =
+              totalDue > 0
+                ? Math.min(totalDue, uncappedPaidNow)
+                : uncappedPaidNow;
 
-                const newPaidNow = Number(
-                  (previousPaidNow + outstandingPaidAmount).toFixed(2),
-                );
+            const newOutstandingAmount = Math.max(
+              0,
+              Number((totalDue - newPaidNow).toFixed(2)),
+            );
 
-                const newOutstandingAmount = Math.max(
-                  0,
-                  Number((totalDue - newPaidNow).toFixed(2)),
-                );
-
-                b.paidNow = newPaidNow;
-                b.outstandingAmount = newOutstandingAmount;
-                b.outstanding = newOutstandingAmount;
-                b.outstandingPaid = newOutstandingAmount <= 0.05;
-
-                /* ===============================
-     🔥 SAVE OUTSTANDING STRIPE DETAILS
-  =============================== */
-
-                b.outstandingSessionPaymentIntentId = paymentIntentId;
-
-                b.outstandingAmountPaid = Number(
-                  (
-                    Number(b.outstandingAmountPaid || 0) + outstandingPaidAmount
-                  ).toFixed(2),
-                );
-
-                b.outstandingPaidAt = nowIso;
-
-                /* ===============================
-     ✅ ALSO SAVE PAID TOTAL TO D1
-  =============================== */
-
-                try {
-                  await env.DB.prepare(
-                    `
-      UPDATE bookings
-      SET paid_now = ?,
-          updated_at = ?
-      WHERE id = ?
-    `,
-                  )
-                    .bind(newPaidNow, nowIso, b.id)
-                    .run();
-
-                  console.log("✅ Outstanding payment marked in DB:", {
-                    bookingId: paymentBookingId,
-                    paidNow: newPaidNow,
-                    outstanding: newOutstandingAmount,
-                  });
-                } catch (err) {
-                  console.error(
-                    "❌ Failed to update outstanding payment in DB:",
-                    err,
-                  );
-                }
-
-                console.log("💰 Outstanding payment stored:", {
-                  bookingId: paymentBookingId,
-                  paymentIntent: b.outstandingSessionPaymentIntentId,
-                  amount: outstandingPaidAmount,
-                  paidNow: b.paidNow,
-                  outstanding: b.outstandingAmount,
-                  outstandingPaid: b.outstandingPaid,
-                });
-              }
-
-              b.updatedAt = new Date().toISOString();
-
-              updated = true;
+            if (paymentReference) {
+              processedPaymentReferences.add(paymentReference);
             }
-          }
 
-          if (updated) {
-            await env.BOOKINGS_KV.put(key.name, JSON.stringify(parsed));
-            await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
-            console.log("✅ Payment status updated in KV");
-            break;
+            nextBooking.paidNow = newPaidNow;
+            nextBooking.outstandingAmount = newOutstandingAmount;
+            nextBooking.outstanding = newOutstandingAmount;
+            nextBooking.outstandingPaid =
+              newOutstandingAmount <= 0.05;
+            nextBooking.paymentStatus =
+              newOutstandingAmount <= 0.05
+                ? "fully_paid"
+                : nextBooking.paymentStatus;
+            nextBooking.outstandingSessionPaymentIntentId =
+              paymentIntentId ||
+              nextBooking.outstandingSessionPaymentIntentId ||
+              null;
+            nextBooking.outstandingPaymentReferences = Array.from(
+              processedPaymentReferences,
+            );
+            nextBooking.outstandingAmountPaid = Number(
+              (
+                Number(
+                  paymentBooking.outstandingAmountPaid || 0,
+                ) + outstandingPaidAmount
+              ).toFixed(2),
+            );
+            nextBooking.outstandingPaidAt = nowIso;
+
+            await env.DB.prepare(
+              `
+              UPDATE bookings
+              SET paid_now = ?,
+                  updated_at = ?
+              WHERE id = ?
+              `,
+            )
+              .bind(newPaidNow, nowIso, canonicalBookingId)
+              .run();
+
+            console.log("✅ Outstanding payment reconciled:", {
+              bookingId: canonicalBookingId,
+              paymentReference,
+              amount: outstandingPaidAmount,
+              paidNow: newPaidNow,
+              outstanding: newOutstandingAmount,
+            });
+          } else {
+            console.log(
+              "ℹ️ Outstanding payment already recorded:",
+              paymentReference,
+            );
           }
         }
+
+        await moveBookingInKv(
+          env,
+          paymentBooking,
+          nextBooking,
+        );
+
+        await env.BOOKINGS_KV.put(
+          "bookings:version",
+          String(Date.now()),
+        );
 
         await env.BOOKINGS_KV.put(eventId, "processed");
 

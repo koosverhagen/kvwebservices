@@ -9250,7 +9250,21 @@ Equine Transport UK`;
             ? data.bookings
             : [];
 
-        return bookings.map(normaliseBookingForDisplay);
+        const seenBookingIds = new Set();
+
+        const uniqueBookings = bookings.filter((booking) => {
+          const bookingId = String(
+            booking?.id || booking?.bookingId || "",
+          ).trim();
+
+          if (!bookingId) return true;
+          if (seenBookingIds.has(bookingId)) return false;
+
+          seenBookingIds.add(bookingId);
+          return true;
+        });
+
+        return uniqueBookings.map(normaliseBookingForDisplay);
       }
 
       function normaliseBookingForDisplay(booking) {
