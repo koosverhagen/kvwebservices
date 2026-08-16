@@ -1953,6 +1953,14 @@ export default {
         return withCors(response, corsHeaders);
       }
 
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/admin/second-driver/invite"
+      ) {
+        const response = await handleAdminSecondDriverInvite(request, env);
+        return withCors(response, corsHeaders);
+      }
+
       /* ===============================
    ADMIN HANDOVER / DAMAGE REPORT
    STEP 1A — KV LOAD/SAVE SHELL ONLY
@@ -10782,6 +10790,7 @@ async function handleListBookings(request, env, ctx) {
 
   let dvlaMap = {};
   let d1FinanceMap = {};
+  let secondDriverMap = {};
 
   if (ids.length) {
     const chunkSize = 80;
@@ -10814,6 +10823,45 @@ async function handleListBookings(request, env, ctx) {
             priceTotal: Number(row.price_total || 0),
             status: row.status || null,
             formCompleted: row.form_completed === 1,
+          };
+        }
+
+        const driverResult = await env.DB.prepare(
+          `
+          SELECT
+            links.booking_id,
+            links.driver_name,
+            links.driver_email,
+            links.status,
+            links.delivery_count,
+            links.last_sent_at,
+            links.submitted_at,
+            forms.customer_name AS submitted_name,
+            forms.customer_email AS submitted_email,
+            forms.submitted_at AS form_submitted_at
+          FROM booking_driver_links links
+          LEFT JOIN booking_forms forms
+            ON forms.booking_id = links.booking_id
+           AND forms.driver_number = 2
+          WHERE links.booking_id IN (${placeholders})
+          `,
+        )
+          .bind(...chunk)
+          .all();
+
+        for (const row of driverResult.results || []) {
+          const submittedAt =
+            row.form_submitted_at || row.submitted_at || "";
+
+          secondDriverMap[row.booking_id] = {
+            driverNumber: 2,
+            name: row.submitted_name || row.driver_name || "",
+            email: row.submitted_email || row.driver_email || "",
+            status: submittedAt ? "submitted" : row.status || "pending",
+            formCompleted: Boolean(submittedAt),
+            submittedAt,
+            deliveryCount: Number(row.delivery_count || 0),
+            lastSentAt: row.last_sent_at || "",
           };
         }
       } catch (err) {
@@ -10850,6 +10898,7 @@ async function handleListBookings(request, env, ctx) {
 
   const transformedBookings = bookings.map((booking) => {
     const d1 = d1FinanceMap[booking.id] || null;
+    const secondDriver = secondDriverMap[booking.id] || null;
 
     const kvPaidNow = Number(booking.paidNow || 0);
     const d1PaidNow = Number(d1?.paidNow || 0);
@@ -10890,6 +10939,26 @@ async function handleListBookings(request, env, ctx) {
         booking.formCompleted === true ||
         booking.form_completed === 1 ||
         d1?.formCompleted === true,
+
+      secondDriverRequested:
+        Boolean(secondDriver) ||
+        booking.secondDriverRequested === true,
+      secondDriverName:
+        secondDriver?.name || booking.secondDriverName || "",
+      secondDriverEmail:
+        secondDriver?.email || booking.secondDriverEmail || "",
+      secondDriverStatus:
+        secondDriver?.status || booking.secondDriverStatus || "",
+      secondDriverFormCompleted:
+        secondDriver?.formCompleted === true ||
+        booking.secondDriverFormCompleted === true,
+      secondDriverSubmittedAt:
+        secondDriver?.submittedAt ||
+        booking.secondDriverSubmittedAt ||
+        "",
+      secondDriverDeliveryCount:
+        secondDriver?.deliveryCount ||
+        Number(booking.secondDriverDeliveryCount || 0),
     };
   });
 
@@ -13259,11 +13328,356 @@ function withCors(response, corsHeaders) {
   });
 }
 
+function normaliseDriverNumber(value) {
+  return Number(value) === 2 ? 2 : 1;
+}
+
+function secondDriverRequested(value) {
+  return ["1", "true", "yes", "on"].includes(
+    String(value || "").trim().toLowerCase(),
+  );
+}
+
+function normaliseDriverEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+async function hashDriverFormToken(value) {
+  const bytes = new TextEncoder().encode(String(value || ""));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function buildSecondDriverFormLink(env, booking, rawToken) {
+  const siteBase = getPublicSiteBase(env);
+  const bookingId = getCustomerFacingBookingId(booking);
+
+  const params = new URLSearchParams({
+    bookingId,
+    vehicleName:
+      booking.vehicleSnapshot?.name ||
+      booking.vehicleName ||
+      booking.vehicleId ||
+      "",
+    driverNumber: "2",
+    driverToken: rawToken,
+  });
+
+  return `${siteBase}/forms/long-form.html?${params.toString()}`;
+}
+
+function buildSecondDriverInvitationEmail({
+  booking,
+  driverName,
+  formLink,
+}) {
+  const safeName = escapeHtml(driverName || "Driver 2");
+  const safeLink = escapeHtml(formLink);
+  const safeReference = escapeHtml(
+    getCustomerFacingBookingId(booking) || booking.id || "",
+  );
+  const safeVehicle = escapeHtml(
+    booking.vehicleSnapshot?.name ||
+      booking.vehicleName ||
+      booking.vehicleId ||
+      "Horsebox",
+  );
+
+  return `
+  <div style="margin:0;padding:0;background:#ffffff;">
+    <div style="
+      max-width:760px;
+      margin:0 auto;
+      padding:34px 5px 40px;
+      font-family:Arial,sans-serif;
+      color:#2b2b2b;
+      line-height:1.6;
+    ">
+      ${EMAIL_BRAND_BLOCK}
+
+      <h1 style="
+        margin:0 0 22px;
+        text-align:center;
+        color:#1673ea;
+        font-size:28px;
+        line-height:1.3;
+      ">
+        Driver 2 insurance form
+      </h1>
+
+      <p style="margin:0 0 16px;font-size:16px;">Dear ${safeName},</p>
+
+      <p style="margin:0 0 18px;font-size:16px;">
+        You have been added as a second driver for an
+        <strong>Equine Transport UK</strong> horsebox booking.
+        Every driver must complete their own insurance proposal form.
+      </p>
+
+      <div style="
+        background:#eef4ff;
+        border:1px solid #c9dafc;
+        border-radius:14px;
+        padding:20px 24px;
+        margin:0 0 28px;
+      ">
+        <p style="margin:0;font-size:16px;">
+          <strong>Booking reference:</strong> #${safeReference}<br>
+          <strong>Lorry:</strong> ${safeVehicle}
+        </p>
+      </div>
+
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${safeLink}" style="
+          display:inline-block;
+          background:#1673ea;
+          color:#ffffff;
+          text-decoration:none;
+          font-weight:700;
+          font-size:17px;
+          padding:14px 24px;
+          border-radius:10px;
+        ">
+          Complete Driver 2 form
+        </a>
+      </div>
+
+      <p style="margin:0 0 12px;font-size:14px;color:#5b6472;">
+        This link is personal to Driver 2. Please do not forward it.
+      </p>
+    </div>
+  </div>`;
+}
+
+async function prepareSecondDriverInvitation(
+  env,
+  booking,
+  { driverName, driverEmail },
+) {
+  const bookingId = String(booking?.id || "").trim();
+
+  if (!bookingId) {
+    throw new Error("Missing booking ID");
+  }
+
+  const existing = await env.DB.prepare(
+    `
+    SELECT
+      id,
+      driver_name,
+      driver_email,
+      status,
+      delivery_count
+    FROM booking_driver_links
+    WHERE booking_id = ?
+      AND driver_number = 2
+    LIMIT 1
+    `,
+  )
+    .bind(bookingId)
+    .first();
+
+  if (existing?.status === "submitted") {
+    return {
+      alreadySubmitted: true,
+      driverName: existing.driver_name || "",
+      driverEmail: existing.driver_email || "",
+      emailSent: false,
+    };
+  }
+
+  const safeDriverName = String(
+    driverName || existing?.driver_name || "",
+  ).trim();
+
+  const safeDriverEmail = normaliseDriverEmail(
+    driverEmail || existing?.driver_email || "",
+  );
+
+  if (!safeDriverName) {
+    throw new Error("Driver 2 name is required");
+  }
+
+  if (
+    !safeDriverEmail ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeDriverEmail)
+  ) {
+    throw new Error("A valid Driver 2 email is required");
+  }
+
+  const rawToken = crypto.randomUUID().replace(/-/g, "");
+  const tokenHash = await hashDriverFormToken(rawToken);
+  const now = new Date().toISOString();
+  const linkId = existing?.id || `driverlink_${crypto.randomUUID()}`;
+  const formLink = buildSecondDriverFormLink(env, booking, rawToken);
+
+  await env.DB.prepare(
+    `
+    INSERT INTO booking_driver_links (
+      id,
+      booking_id,
+      driver_number,
+      driver_name,
+      driver_email,
+      form_type,
+      token_hash,
+      status,
+      delivery_count,
+      last_sent_at,
+      submitted_at,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, 2, ?, ?, 'long', ?, 'pending', ?, ?, NULL, ?, ?)
+    ON CONFLICT(booking_id, driver_number) DO UPDATE SET
+      driver_name = excluded.driver_name,
+      driver_email = excluded.driver_email,
+      form_type = 'long',
+      token_hash = excluded.token_hash,
+      status = 'pending',
+      delivery_count = booking_driver_links.delivery_count + 1,
+      last_sent_at = excluded.last_sent_at,
+      submitted_at = NULL,
+      updated_at = excluded.updated_at
+    `,
+  )
+    .bind(
+      linkId,
+      bookingId,
+      safeDriverName,
+      safeDriverEmail,
+      tokenHash,
+      Number(existing?.delivery_count || 0) + 1,
+      now,
+      now,
+      now,
+    )
+    .run();
+
+  const subject = `Driver 2 form – Equine Transport UK booking ${getCustomerFacingBookingId(booking)}`;
+  const html = buildSecondDriverInvitationEmail({
+    booking,
+    driverName: safeDriverName,
+    formLink,
+  });
+
+  let emailSent = false;
+  let emailError = "";
+
+  try {
+    await sendBookingEmail(env, {
+      to: safeDriverEmail,
+      subject,
+      html,
+    });
+
+    emailSent = true;
+
+    await env.DB.prepare(
+      `
+      UPDATE booking_driver_links
+      SET status = 'sent',
+          updated_at = ?
+      WHERE booking_id = ?
+        AND driver_number = 2
+      `,
+    )
+      .bind(new Date().toISOString(), bookingId)
+      .run();
+  } catch (err) {
+    emailError = err.message || "Email delivery failed";
+    console.error("❌ DRIVER 2 EMAIL FAILED:", emailError);
+  }
+
+  await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+  return {
+    alreadySubmitted: false,
+    driverName: safeDriverName,
+    driverEmail: safeDriverEmail,
+    formLink,
+    emailSent,
+    emailError,
+  };
+}
+
+async function handleAdminSecondDriverInvite(request, env) {
+  try {
+    const body = await request.json();
+    const bookingId = String(body.bookingId || "").trim();
+
+    if (!bookingId) {
+      return json({ ok: false, error: "Missing bookingId" }, 400);
+    }
+
+    const booking = await findBookingById(env, bookingId);
+
+    if (!booking) {
+      return json({ ok: false, error: "Booking not found" }, 404);
+    }
+
+    const primaryForm = await env.DB.prepare(
+      `
+      SELECT id
+      FROM booking_forms
+      WHERE booking_id = ?
+        AND driver_number = 1
+      LIMIT 1
+      `,
+    )
+      .bind(booking.id)
+      .first();
+
+    if (!primaryForm) {
+      return json(
+        {
+          ok: false,
+          error: "Driver 1 form must be completed before adding Driver 2",
+        },
+        409,
+      );
+    }
+
+    const result = await prepareSecondDriverInvitation(env, booking, {
+      driverName: body.driverName,
+      driverEmail: body.driverEmail,
+    });
+
+    return json({
+      ok: true,
+      bookingId: booking.id,
+      driverNumber: 2,
+      ...result,
+      message: result.alreadySubmitted
+        ? "Driver 2 form is already complete."
+        : result.emailSent
+          ? "Driver 2 form link sent successfully."
+          : "Driver 2 link was created, but the email could not be delivered.",
+    });
+  } catch (err) {
+    console.error("❌ ADMIN DRIVER 2 INVITE ERROR:", err);
+
+    return json(
+      {
+        ok: false,
+        error: err.message || "Failed to prepare Driver 2 form",
+      },
+      500,
+    );
+  }
+}
+
 async function handleFormSubmit(request, env) {
   try {
     const data = await request.json();
 
     let bookingId = String(data.bookingId || data.bookingID || "").trim();
+    const driverNumber = normaliseDriverNumber(data.driverNumber);
+    const driverToken = String(data.driverToken || "").trim();
+
+    data.driverNumber = driverNumber;
 
     /* ===============================
    🔥 NORMALISE BOOKING ID (FIX)
@@ -13287,6 +13701,10 @@ async function handleFormSubmit(request, env) {
       return json({ error: "Invalid formType" }, 400);
     }
 
+    if (driverNumber === 2 && formType !== "long") {
+      return json({ error: "Driver 2 must complete the long form" }, 400);
+    }
+
     /* ===============================
        FIND BOOKING IN KV
     =============================== */
@@ -13306,11 +13724,71 @@ async function handleFormSubmit(request, env) {
     bookingId = String(booking.id || bookingId).trim();
     data.bookingId = bookingId;
 
+    if (driverNumber === 2) {
+      if (!driverToken) {
+        return json({ error: "Missing Driver 2 form token" }, 403);
+      }
+
+      const tokenHash = await hashDriverFormToken(driverToken);
+
+      const driverLink = await env.DB.prepare(
+        `
+        SELECT token_hash, status
+        FROM booking_driver_links
+        WHERE booking_id = ?
+          AND driver_number = 2
+        LIMIT 1
+        `,
+      )
+        .bind(bookingId)
+        .first();
+
+      if (
+        !driverLink ||
+        String(driverLink.token_hash || "") !== tokenHash
+      ) {
+        return json({ error: "Invalid or expired Driver 2 form link" }, 403);
+      }
+
+      if (driverLink.status === "submitted") {
+        return json({ error: "Driver 2 form has already been submitted" }, 409);
+      }
+    }
+
+    delete data.driverToken;
+
     /* ===============================
        NORMALISE + BASIC VALIDATION
     =============================== */
 
     const cleaned = { ...data };
+
+    const wantsSecondDriver =
+      driverNumber === 1 &&
+      secondDriverRequested(cleaned.additionalDriverRequired);
+
+    if (wantsSecondDriver) {
+      const secondDriverName = String(
+        cleaned.secondDriverName || "",
+      ).trim();
+      const secondDriverEmail = normaliseDriverEmail(
+        cleaned.secondDriverEmail,
+      );
+
+      if (!secondDriverName) {
+        return json({ error: "Driver 2 name is required" }, 400);
+      }
+
+      if (
+        !secondDriverEmail ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(secondDriverEmail)
+      ) {
+        return json({ error: "A valid Driver 2 email is required" }, 400);
+      }
+
+      cleaned.secondDriverName = secondDriverName;
+      cleaned.secondDriverEmail = secondDriverEmail;
+    }
 
     /* ===============================
    DVLA EXTRACTION (NEW)
@@ -13347,16 +13825,24 @@ async function handleFormSubmit(request, env) {
         .map((v) => String(v).trim())
         .join(" ")
         .trim() ||
-      booking.customerName ||
+      (driverNumber === 1 ? booking.customerName : "") ||
       null;
 
     const customerEmail =
-      String(cleaned.email || booking.customerEmail || "")
+      String(
+        cleaned.email ||
+          (driverNumber === 1 ? booking.customerEmail : "") ||
+          "",
+      )
         .trim()
         .toLowerCase() || null;
 
     const customerMobile =
-      String(cleaned.mobile || booking.customerMobile || "").trim() || null;
+      String(
+        cleaned.mobile ||
+          (driverNumber === 1 ? booking.customerMobile : "") ||
+          "",
+      ).trim() || null;
 
     const signatureData =
       String(cleaned.signatureData || cleaned.signature || "").trim() || null;
@@ -13386,7 +13872,10 @@ async function handleFormSubmit(request, env) {
     }
 
     const now = new Date().toISOString();
-    const formId = `form_${bookingId}`;
+    const formId =
+      driverNumber === 1
+        ? `form_${bookingId}`
+        : `form_${bookingId}_driver_2`;
 
     /* ===============================
        SAVE FULL FORM TO D1
@@ -13397,6 +13886,7 @@ async function handleFormSubmit(request, env) {
       INSERT INTO booking_forms (
         id,
         booking_id,
+        driver_number,
         form_type,
         customer_id,
         customer_name,
@@ -13407,7 +13897,7 @@ async function handleFormSubmit(request, env) {
         submitted_at,
         updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         form_type = excluded.form_type,
         customer_id = excluded.customer_id,
@@ -13422,6 +13912,7 @@ async function handleFormSubmit(request, env) {
       .bind(
         formId,
         bookingId,
+        driverNumber,
         formType,
         booking.customerId || null,
         customerName,
@@ -13462,6 +13953,19 @@ async function handleFormSubmit(request, env) {
 
           updated = true;
 
+          if (driverNumber === 2) {
+            return {
+              ...b,
+              secondDriverRequested: true,
+              secondDriverName: customerName || "",
+              secondDriverEmail: customerEmail || "",
+              secondDriverStatus: "submitted",
+              secondDriverFormCompleted: true,
+              secondDriverSubmittedAt: now,
+              updatedAt: now,
+            };
+          }
+
           return {
             ...b,
             formCompleted: true,
@@ -13495,24 +13999,71 @@ async function handleFormSubmit(request, env) {
     =============================== */
 
     try {
-      await env.DB.prepare(
-        `
-  UPDATE bookings
-  SET
-    form_completed = 1,
-    dvla_verified = 0,
-    updated_at = ?
-  WHERE id = ?
-`,
-      )
-        .bind(now, bookingId)
-        .run();
+      if (driverNumber === 2) {
+        await env.DB.prepare(
+          `
+          UPDATE booking_driver_links
+          SET status = 'submitted',
+              submitted_at = ?,
+              updated_at = ?
+          WHERE booking_id = ?
+            AND driver_number = 2
+          `,
+        )
+          .bind(now, now, bookingId)
+          .run();
+      } else {
+        await env.DB.prepare(
+          `
+          UPDATE bookings
+          SET
+            form_completed = 1,
+            dvla_verified = 0,
+            updated_at = ?
+          WHERE id = ?
+          `,
+        )
+          .bind(now, bookingId)
+          .run();
+      }
     } catch (err) {
-      console.warn("⚠️ bookings table update skipped:", err.message);
+      console.warn("⚠️ form completion update skipped:", err.message);
     }
+
+    let secondDriverInvitation = null;
+
+    if (wantsSecondDriver) {
+      try {
+        const invite = await prepareSecondDriverInvitation(env, booking, {
+          driverName: cleaned.secondDriverName,
+          driverEmail: cleaned.secondDriverEmail,
+        });
+
+        secondDriverInvitation = {
+          driverName: invite.driverName,
+          driverEmail: invite.driverEmail,
+          emailSent: invite.emailSent,
+          emailError: invite.emailError || "",
+          alreadySubmitted: invite.alreadySubmitted === true,
+        };
+      } catch (err) {
+        console.error("❌ DRIVER 2 INVITATION FAILED:", err);
+
+        secondDriverInvitation = {
+          driverName: cleaned.secondDriverName || "",
+          driverEmail: cleaned.secondDriverEmail || "",
+          emailSent: false,
+          emailError: err.message || "Driver 2 email could not be prepared",
+          alreadySubmitted: false,
+        };
+      }
+    }
+
+    await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
 
     console.log("✅ FORM SAVED:", {
       bookingId,
+      driverNumber,
       formType,
       formId,
     });
@@ -13520,9 +14071,11 @@ async function handleFormSubmit(request, env) {
     return json({
       success: true,
       bookingId,
+      driverNumber,
       formType,
       formId,
-      booking, // ✅ ADD THIS
+      secondDriverInvitation,
+      booking,
     });
   } catch (err) {
     console.error("❌ FORM ERROR:", err);
@@ -15091,6 +15644,9 @@ async function handleAdminFormView(request, env) {
   try {
     const url = new URL(request.url);
     const bookingId = String(url.searchParams.get("bookingId") || "").trim();
+    const driverNumber = normaliseDriverNumber(
+      url.searchParams.get("driverNumber"),
+    );
 
     if (!bookingId) {
       return json({ error: "Missing bookingId" }, 400);
@@ -15101,6 +15657,7 @@ async function handleAdminFormView(request, env) {
       SELECT
         id,
         booking_id,
+        driver_number,
         form_type,
         customer_id,
         customer_name,
@@ -15112,10 +15669,11 @@ async function handleAdminFormView(request, env) {
         updated_at
       FROM booking_forms
       WHERE booking_id = ?
+        AND driver_number = ?
       LIMIT 1
     `,
     )
-      .bind(bookingId)
+      .bind(bookingId, driverNumber)
       .first();
 
     if (!row) {
@@ -15135,6 +15693,7 @@ async function handleAdminFormView(request, env) {
       form: {
         id: row.id,
         bookingId: row.booking_id,
+        driverNumber: Number(row.driver_number || 1),
         formType: row.form_type,
         customerId: row.customer_id,
         customerName: row.customer_name,
@@ -15219,6 +15778,7 @@ async function handleAdminFormReset(request, env) {
   try {
     const body = await request.json();
     const bookingId = String(body.bookingId || "").trim();
+    const driverNumber = normaliseDriverNumber(body.driverNumber);
 
     if (!bookingId) {
       return json({ ok: false, error: "Missing bookingId" }, 400);
@@ -15231,6 +15791,74 @@ async function handleAdminFormReset(request, env) {
     }
 
     const now = new Date().toISOString();
+
+    if (driverNumber === 2) {
+      const canonicalBookingId = String(booking.id || bookingId);
+
+      const driverLink = await env.DB.prepare(
+        `
+        SELECT driver_name, driver_email
+        FROM booking_driver_links
+        WHERE booking_id = ?
+          AND driver_number = 2
+        LIMIT 1
+        `,
+      )
+        .bind(canonicalBookingId)
+        .first();
+
+      if (!driverLink) {
+        return json(
+          { ok: false, error: "Driver 2 has not been added" },
+          404,
+        );
+      }
+
+      await env.DB.batch([
+        env.DB.prepare(
+          `
+          DELETE FROM booking_forms
+          WHERE booking_id = ?
+            AND driver_number = 2
+          `,
+        ).bind(canonicalBookingId),
+        env.DB.prepare(
+          `
+          UPDATE booking_driver_links
+          SET status = 'pending',
+              submitted_at = NULL,
+              updated_at = ?
+          WHERE booking_id = ?
+            AND driver_number = 2
+          `,
+        ).bind(now, canonicalBookingId),
+      ]);
+
+      const invite = await prepareSecondDriverInvitation(env, booking, {
+        driverName: driverLink.driver_name,
+        driverEmail: driverLink.driver_email,
+      });
+
+      await env.BOOKINGS_KV.put("bookings:version", String(Date.now()));
+
+      return json({
+        ok: true,
+        bookingId: canonicalBookingId,
+        driverNumber: 2,
+        secondDriver: {
+          name: invite.driverName,
+          email: invite.driverEmail,
+          status: invite.emailSent ? "sent" : "pending",
+          formCompleted: false,
+          emailSent: invite.emailSent,
+          emailError: invite.emailError || "",
+        },
+        message: invite.emailSent
+          ? "Driver 2 form was reset and a fresh link was sent."
+          : "Driver 2 form was reset, but the email could not be delivered.",
+      });
+    }
+
     const formToken = `reset_${Date.now()}_${crypto.randomUUID()}`;
 
     let updatedBooking = clearSubmittedFormFieldsFromBooking(
@@ -15246,6 +15874,7 @@ async function handleAdminFormReset(request, env) {
         `
         DELETE FROM booking_forms
         WHERE booking_id = ?
+          AND driver_number = 1
       `,
       )
         .bind(updatedBooking.id || bookingId)

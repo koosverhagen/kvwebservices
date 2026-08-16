@@ -1040,6 +1040,62 @@
               />
             </div>
           </div>
+
+          <div
+            id="secondDriverRequest"
+            style="
+              margin-top: 22px;
+              padding: 18px;
+              border: 1px solid #bfdbfe;
+              border-radius: 14px;
+              background: #eff6ff;
+            "
+          >
+            <h3 style="margin: 0 0 8px; color: #0f4f9c">
+              Will another person also drive the horsebox?
+            </h3>
+            <p class="small" style="margin: 0 0 14px">
+              Every driver must complete their own insurance proposal form.
+            </p>
+
+            <label for="additionalDriverRequired">Second driver required?</label>
+            <select
+              id="additionalDriverRequired"
+              name="additionalDriverRequired"
+              required
+            >
+              <option value="">Please choose</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+
+            <div
+              id="secondDriverDetails"
+              class="grid two"
+              style="display: none; margin-top: 14px"
+            >
+              <div>
+                <label for="secondDriverName">Second driver’s full name</label>
+                <input
+                  id="secondDriverName"
+                  name="secondDriverName"
+                  autocomplete="name"
+                  placeholder="Add the second driver’s full name"
+                />
+              </div>
+
+              <div>
+                <label for="secondDriverEmail">Second driver’s email</label>
+                <input
+                  id="secondDriverEmail"
+                  name="secondDriverEmail"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="Their personal email address"
+                />
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- Journey -->
@@ -1619,6 +1675,10 @@
         const params = new URLSearchParams(location.search);
         const bookingId =
           params.get("bookingId") || params.get("bookingID") || "";
+        const driverNumber =
+          Number(params.get("driverNumber")) === 2 ? 2 : 1;
+        const driverToken = params.get("driverToken") || "";
+        const isAdditionalDriver = driverNumber === 2;
 
         /* ===============================
    PAPER FORM MODE
@@ -1771,7 +1831,9 @@
           }
         }
 
-        document.getElementById("bookingIdPill").textContent = bookingId || "—";
+        document.getElementById("bookingIdPill").textContent = bookingId
+          ? `${bookingId}${isAdditionalDriver ? " · Driver 2" : ""}`
+          : "—";
 
         const today = new Date().toISOString().slice(0, 10);
 
@@ -1809,7 +1871,12 @@
        🚀 AUTO SKIP
     =============================== */
 
-            if (!PAPER_MODE && !ADMIN_PRINT_MODE && booking.formCompleted) {
+            if (
+              !PAPER_MODE &&
+              !ADMIN_PRINT_MODE &&
+              !isAdditionalDriver &&
+              booking.formCompleted
+            ) {
               renderSuccessCard({
                 booking,
                 firstName: booking.customerName?.split(" ")[0] || "",
@@ -1839,20 +1906,72 @@
           prefillFromBooking();
         }
 
+        const secondDriverRequest =
+          document.getElementById("secondDriverRequest");
+        const additionalDriverRequired =
+          document.getElementById("additionalDriverRequired");
+        const secondDriverDetails =
+          document.getElementById("secondDriverDetails");
+        const secondDriverName =
+          document.getElementById("secondDriverName");
+        const secondDriverEmail =
+          document.getElementById("secondDriverEmail");
+
+        function updateSecondDriverDetails() {
+          const show =
+            !isAdditionalDriver &&
+            additionalDriverRequired?.value === "yes";
+
+          if (secondDriverDetails) {
+            secondDriverDetails.style.display = show ? "grid" : "none";
+          }
+
+          if (secondDriverName) {
+            secondDriverName.required = show;
+            if (!show) secondDriverName.value = "";
+          }
+
+          if (secondDriverEmail) {
+            secondDriverEmail.required = show;
+            if (!show) secondDriverEmail.value = "";
+          }
+        }
+
+        if (isAdditionalDriver) {
+          if (secondDriverRequest) {
+            secondDriverRequest.style.display = "none";
+          }
+
+          if (additionalDriverRequired) {
+            additionalDriverRequired.required = false;
+            additionalDriverRequired.value = "no";
+          }
+        } else {
+          additionalDriverRequired?.addEventListener(
+            "change",
+            updateSecondDriverDetails,
+          );
+        }
+
+        updateSecondDriverDetails();
+
         function fillFormFromBooking(booking) {
           if (!booking) return;
 
-          /* NAME */
-          if (booking.customerName) {
-            const parts = booking.customerName.split(" ");
-            document.getElementById("firstName").value = parts.shift() || "";
-            document.getElementById("lastName").value = parts.join(" ") || "";
-          }
+          if (!isAdditionalDriver) {
+            /* NAME */
+            if (booking.customerName) {
+              const parts = booking.customerName.split(" ");
+              document.getElementById("firstName").value = parts.shift() || "";
+              document.getElementById("lastName").value = parts.join(" ") || "";
+            }
 
-          /* CONTACT */
-          document.getElementById("email").value = booking.customerEmail || "";
-          document.getElementById("mobile").value =
-            booking.customerMobile || "";
+            /* CONTACT */
+            document.getElementById("email").value =
+              booking.customerEmail || "";
+            document.getElementById("mobile").value =
+              booking.customerMobile || "";
+          }
 
           /* DATES */
           if (booking.pickupAt && booking.dropoffAt) {
@@ -2187,6 +2306,41 @@
   <p style="margin:0 0 22px;color:#6b7280;font-size:15px;">
     Thank you ${data.firstName || ""}. Your details have been received.
   </p>
+
+  ${
+    data.secondDriverInvitation
+      ? `
+        <div style="
+          margin:0 0 22px;
+          padding:14px 16px;
+          border-radius:12px;
+          border:1px solid ${
+            data.secondDriverInvitation.emailSent
+              ? "#86efac"
+              : "#fbbf24"
+          };
+          background:${
+            data.secondDriverInvitation.emailSent
+              ? "#f0fdf4"
+              : "#fffbeb"
+          };
+          color:${
+            data.secondDriverInvitation.emailSent
+              ? "#166534"
+              : "#92400e"
+          };
+          font-size:14px;
+          font-weight:700;
+        ">
+          ${
+            data.secondDriverInvitation.emailSent
+              ? `Driver 2’s form link has been sent to ${data.secondDriverInvitation.driverEmail}.`
+              : `Your form is saved, but Driver 2’s email could not be delivered. Please contact Equine Transport UK so we can resend it.`
+          }
+        </div>
+      `
+      : ""
+  }
 
   <!-- BOOKING ID -->
   <div style="
@@ -2954,6 +3108,12 @@
           delete data.hireUntilTime;
 
           data.bookingId = bookingId;
+          data.driverNumber = driverNumber;
+
+          if (isAdditionalDriver) {
+            data.driverToken = driverToken;
+          }
+
           data.formType = "long";
 
           try {
@@ -2970,6 +3130,8 @@
             if (!res.ok) throw new Error(out.error || "Submit failed");
 
             statusEl.textContent = "";
+            data.secondDriverInvitation =
+              out.secondDriverInvitation || null;
 
             // 🔥 SHOW SUCCESS CARD
             // 🔥 fetch booking details (source of truth)

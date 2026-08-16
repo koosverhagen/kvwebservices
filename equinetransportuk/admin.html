@@ -10297,7 +10297,10 @@ Equine Transport UK`;
 </html>`;
       }
 
-      async function openSubmittedFormPrint(bookingId) {
+      async function openSubmittedFormPrint(
+        bookingId,
+        driverNumber = 1,
+      ) {
         const safeBookingId = String(bookingId || "").trim();
 
         if (!safeBookingId) {
@@ -10321,7 +10324,7 @@ Equine Transport UK`;
         ) || {};
 
         try {
-          const formUrl = `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(safeBookingId)}&_=${Date.now()}`;
+          const formUrl = `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(safeBookingId)}&driverNumber=${encodeURIComponent(driverNumber)}&_=${Date.now()}`;
 
           // Keep this as a simple GET, matching the existing View Form request.
           // Do not pass cache/credentials options here: those can add browser
@@ -10391,6 +10394,97 @@ Equine Transport UK`;
                 ? `<div class="tiny" style="color:#0284c7;font-weight:700;">↩ Returns today</div>`
                 : ""
             }
+          </div>
+        `;
+      }
+
+      function renderSecondDriverAdmin(booking, mobile = false) {
+        if (!isFormComplete(booking)) return "";
+
+        const bookingId = String(booking?.id || "");
+        const requested =
+          booking?.secondDriverRequested === true ||
+          Boolean(booking?.secondDriverEmail);
+        const completed =
+          booking?.secondDriverFormCompleted === true ||
+          booking?.secondDriverStatus === "submitted";
+        const name = String(booking?.secondDriverName || "").trim();
+        const email = String(booking?.secondDriverEmail || "").trim();
+        const buttonClass = mobile
+          ? "mobile-link-btn"
+          : "btn ghost btn-small";
+
+        if (!requested) {
+          return `
+            <div class="stack" style="margin-top:10px;">
+              <strong>Driver 2</strong>
+              <span class="pill warn">Not added</span>
+              <button
+                class="${buttonClass}"
+                type="button"
+                data-add-second-driver="${escapeHtml(bookingId)}"
+              >
+                Add second driver
+              </button>
+            </div>
+          `;
+        }
+
+        if (completed) {
+          return `
+            <div class="stack" style="margin-top:10px;">
+              <strong>Driver 2</strong>
+              <span class="pill ok">Form Complete</span>
+              ${name ? `<span class="tiny">${escapeHtml(name)}</span>` : ""}
+              ${email ? `<span class="tiny">${escapeHtml(email)}</span>` : ""}
+              <button
+                class="${buttonClass}"
+                type="button"
+                data-view-form="${escapeHtml(bookingId)}"
+                data-driver-number="2"
+              >
+                View Driver 2 Form
+              </button>
+              <button
+                class="${buttonClass}"
+                type="button"
+                data-print-submitted-form="${escapeHtml(bookingId)}"
+                data-driver-number="2"
+              >
+                Print Driver 2 PDF
+              </button>
+              <button
+                class="${buttonClass}"
+                type="button"
+                data-reset-submitted-form="${escapeHtml(bookingId)}"
+                data-driver-number="2"
+                style="border-color:#b45309;color:#92400e;"
+              >
+                Reset Driver 2 Form
+              </button>
+            </div>
+          `;
+        }
+
+        const statusLabel =
+          booking?.secondDriverStatus === "sent"
+            ? "Form link sent"
+            : "Awaiting form";
+
+        return `
+          <div class="stack" style="margin-top:10px;">
+            <strong>Driver 2</strong>
+            <span class="pill warn">${escapeHtml(statusLabel)}</span>
+            ${name ? `<span class="tiny">${escapeHtml(name)}</span>` : ""}
+            ${email ? `<span class="tiny">${escapeHtml(email)}</span>` : ""}
+            <button
+              class="${buttonClass}"
+              type="button"
+              data-add-second-driver="${escapeHtml(bookingId)}"
+              data-resend-second-driver="1"
+            >
+              Resend Driver 2 link
+            </button>
           </div>
         `;
       }
@@ -10618,6 +10712,8 @@ Equine Transport UK`;
       `
   }
 </div>
+
+        ${renderSecondDriverAdmin(booking)}
 
         <!-- DEPOSIT -->
         <div class="stack">
@@ -12316,6 +12412,8 @@ ${notesBox}
       ${mobileFormEmail}
     `
   }
+
+${renderSecondDriverAdmin(booking, true)}
 
 <button
   class="mobile-link-btn ${COMPLETED_HANDOVERS.has(String(booking.id)) ? "handover-is-complete" : ""}"
@@ -18481,14 +18579,121 @@ Equine Transport UK`;
         }
       }
 
-      async function loadForm(bookingId) {
+      document.addEventListener("click", async (event) => {
+        const btn = event.target.closest("[data-add-second-driver]");
+        if (!btn) return;
+
+        event.preventDefault();
+
+        const bookingId = btn.getAttribute("data-add-second-driver");
+        const booking = allBookings.find(
+          (item) => String(item.id) === String(bookingId),
+        );
+
+        if (!booking) {
+          alert("Booking not found.");
+          return;
+        }
+
+        const resend =
+          btn.getAttribute("data-resend-second-driver") === "1";
+
+        let driverName = String(booking.secondDriverName || "").trim();
+        let driverEmail = String(booking.secondDriverEmail || "").trim();
+
+        if (!resend) {
+          driverName = String(
+            prompt("Second driver’s full name:", driverName) || "",
+          ).trim();
+
+          if (!driverName) return;
+
+          driverEmail = String(
+            prompt("Second driver’s email:", driverEmail) || "",
+          )
+            .trim()
+            .toLowerCase();
+
+          if (!driverEmail) return;
+        } else {
+          const ok = confirm(
+            `Send a fresh Driver 2 form link to ${driverEmail}?`,
+          );
+
+          if (!ok) return;
+        }
+
+        const oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = resend ? "Resending..." : "Sending...";
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/admin/second-driver/invite`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                bookingId,
+                driverName,
+                driverEmail,
+              }),
+            },
+          );
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok || !data.ok) {
+            throw new Error(
+              data.error || "Failed to prepare Driver 2 form",
+            );
+          }
+
+          const idx = allBookings.findIndex(
+            (item) => String(item.id) === String(bookingId),
+          );
+
+          if (idx >= 0) {
+            allBookings[idx] = {
+              ...allBookings[idx],
+              secondDriverRequested: true,
+              secondDriverName:
+                data.driverName || driverName,
+              secondDriverEmail:
+                data.driverEmail || driverEmail,
+              secondDriverStatus:
+                data.alreadySubmitted
+                  ? "submitted"
+                  : data.emailSent
+                    ? "sent"
+                    : "pending",
+              secondDriverFormCompleted:
+                data.alreadySubmitted === true,
+            };
+          }
+
+          renderBookings();
+          alert(data.message || "Driver 2 form prepared.");
+          await loadBookings();
+        } catch (err) {
+          console.error("❌ Driver 2 invite failed:", err);
+          alert(err.message || "Failed to send Driver 2 form link.");
+
+          btn.disabled = false;
+          btn.textContent = oldText;
+        }
+      });
+
+      async function loadForm(bookingId, driverNumber = 1) {
         if (!bookingId) return;
 
         showModalLoading();
 
         try {
           const res = await fetch(
-            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}`,
+            `${API_BASE}/api/admin/form?bookingId=${encodeURIComponent(bookingId)}&driverNumber=${encodeURIComponent(driverNumber)}`,
           );
 
           // 🔥 SAFELY parse JSON (prevents crash on empty 404 body)
@@ -18520,7 +18725,10 @@ Equine Transport UK`;
           // ✅ NORMAL FLOW
           const formData = data.form || data;
 
-          if (mergeSubmittedFormDvlaIntoBooking(bookingId, formData)) {
+          if (
+            driverNumber === 1 &&
+            mergeSubmittedFormDvlaIntoBooking(bookingId, formData)
+          ) {
             // Refresh the booking card behind the modal immediately, so the
             // Licence and Code pills update as soon as the form is viewed.
             renderBookings();
@@ -18528,6 +18736,7 @@ Equine Transport UK`;
 
           modalSummary.innerHTML = `
             ${makeDetailBox("Booking reference", shortRef(bookingId))}
+            ${makeDetailBox("Driver", `Driver ${driverNumber}`)}
             ${makeDetailBox("Form type", formData.formType || "—")}
             ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
           `;
@@ -18636,13 +18845,15 @@ Equine Transport UK`;
         event.preventDefault();
 
         const bookingId = btn.getAttribute("data-view-form");
+        const driverNumber =
+          Number(btn.getAttribute("data-driver-number")) === 2 ? 2 : 1;
 
         if (!bookingId) {
           alert("Missing booking reference.");
           return;
         }
 
-        loadForm(bookingId);
+        loadForm(bookingId, driverNumber);
       });
 
       /* ===============================
@@ -18656,6 +18867,8 @@ Equine Transport UK`;
         event.preventDefault();
 
         const bookingId = btn.getAttribute("data-reset-submitted-form");
+        const driverNumber =
+          Number(btn.getAttribute("data-driver-number")) === 2 ? 2 : 1;
 
         const booking = allBookings.find(
           (b) => String(b.id) === String(bookingId),
@@ -18667,10 +18880,18 @@ Equine Transport UK`;
         }
 
         const customerName = getCustomerName(booking) || "this customer";
+        const resetLabel =
+          driverNumber === 2
+            ? `Driver 2 (${booking.secondDriverName || booking.secondDriverEmail || "second driver"})`
+            : customerName;
+        const resetExplanation =
+          driverNumber === 2
+            ? "This clears only Driver 2’s submitted form and sends them a fresh link. Driver 1 remains complete."
+            : "This clears the submitted form, DVLA verified tick, licence number and DVLA/access code. A fresh form link will be created so the customer can submit again.";
         const ok = confirm(
-          `Reset the submitted form for ${customerName}?
+          `Reset the submitted form for ${resetLabel}?
 
-This clears the submitted form, DVLA verified tick, licence number and DVLA/access code. A fresh form link will be created so the customer can submit again.`,
+${resetExplanation}`,
         );
 
         if (!ok) return;
@@ -18685,13 +18906,22 @@ This clears the submitted form, DVLA verified tick, licence number and DVLA/acce
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ bookingId }),
+            body: JSON.stringify({ bookingId, driverNumber }),
           });
 
           const data = await res.json();
 
           if (!res.ok || !data.ok) {
             throw new Error(data.error || data.detail || "Failed to reset form");
+          }
+
+          if (driverNumber === 2) {
+            alert(
+              data.message ||
+                "Driver 2 form reset and fresh link prepared.",
+            );
+            await loadBookings();
+            return;
           }
 
           const idx = allBookings.findIndex(
@@ -18783,13 +19013,15 @@ Send the fresh form link to ${booking.customerEmail} now?`,
         event.preventDefault();
 
         const bookingId = btn.getAttribute("data-print-submitted-form");
+        const driverNumber =
+          Number(btn.getAttribute("data-driver-number")) === 2 ? 2 : 1;
 
         const oldText = btn.textContent;
         btn.disabled = true;
         btn.textContent = "Opening...";
 
         try {
-          await openSubmittedFormPrint(bookingId);
+          await openSubmittedFormPrint(bookingId, driverNumber);
         } finally {
           btn.disabled = false;
           btn.textContent = oldText;

@@ -818,6 +818,62 @@
             </div>
           </div>
 
+          <div
+            id="secondDriverRequest"
+            style="
+              margin: 20px 0;
+              padding: 18px;
+              border: 1px solid #bfdbfe;
+              border-radius: 14px;
+              background: #eff6ff;
+            "
+          >
+            <h3 style="margin: 0 0 8px; color: #0f4f9c">
+              Will another person also drive the horsebox?
+            </h3>
+            <p class="small" style="margin: 0 0 14px">
+              Every driver must complete their own insurance proposal form.
+            </p>
+
+            <label for="additionalDriverRequired">Second driver required?</label>
+            <select
+              id="additionalDriverRequired"
+              name="additionalDriverRequired"
+              required
+            >
+              <option value="">Please choose</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+
+            <div
+              id="secondDriverDetails"
+              class="grid two"
+              style="display: none; margin-top: 14px"
+            >
+              <div>
+                <label for="secondDriverName">Second driver’s full name</label>
+                <input
+                  id="secondDriverName"
+                  name="secondDriverName"
+                  autocomplete="name"
+                  placeholder="Add the second driver’s full name"
+                />
+              </div>
+
+              <div>
+                <label for="secondDriverEmail">Second driver’s email</label>
+                <input
+                  id="secondDriverEmail"
+                  name="secondDriverEmail"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="Their personal email address"
+                />
+              </div>
+            </div>
+          </div>
+
           <div class="grid two">
             <div>
               <label>Driving Licence Number (16 digits / capitals)</label>
@@ -1003,6 +1059,40 @@
       // ✅ single source of truth
       const bookingId =
         params.get("bookingId") || params.get("bookingID") || "";
+
+      const additionalDriverRequired =
+        document.getElementById("additionalDriverRequired");
+      const secondDriverDetails =
+        document.getElementById("secondDriverDetails");
+      const secondDriverName =
+        document.getElementById("secondDriverName");
+      const secondDriverEmail =
+        document.getElementById("secondDriverEmail");
+
+      function updateSecondDriverDetails() {
+        const show = additionalDriverRequired?.value === "yes";
+
+        if (secondDriverDetails) {
+          secondDriverDetails.style.display = show ? "grid" : "none";
+        }
+
+        if (secondDriverName) {
+          secondDriverName.required = show;
+          if (!show) secondDriverName.value = "";
+        }
+
+        if (secondDriverEmail) {
+          secondDriverEmail.required = show;
+          if (!show) secondDriverEmail.value = "";
+        }
+      }
+
+      additionalDriverRequired?.addEventListener(
+        "change",
+        updateSecondDriverDetails,
+      );
+
+      updateSecondDriverDetails();
 
       /* ===============================
    PAPER FORM MODE
@@ -2208,6 +2298,41 @@
     Thank you ${data.firstName || ""}. Your details have been received.
   </p>
 
+  ${
+    data.secondDriverInvitation
+      ? `
+        <div style="
+          margin:0 0 22px;
+          padding:14px 16px;
+          border-radius:12px;
+          border:1px solid ${
+            data.secondDriverInvitation.emailSent
+              ? "#86efac"
+              : "#fbbf24"
+          };
+          background:${
+            data.secondDriverInvitation.emailSent
+              ? "#f0fdf4"
+              : "#fffbeb"
+          };
+          color:${
+            data.secondDriverInvitation.emailSent
+              ? "#166534"
+              : "#92400e"
+          };
+          font-size:14px;
+          font-weight:700;
+        ">
+          ${
+            data.secondDriverInvitation.emailSent
+              ? `Driver 2’s form link has been sent to ${data.secondDriverInvitation.driverEmail}.`
+              : `Your form is saved, but Driver 2’s email could not be delivered. Please contact Equine Transport UK so we can resend it.`
+          }
+        </div>
+      `
+      : ""
+  }
+
   <!-- BOOKING ID -->
   <div style="
     display:flex;
@@ -2559,6 +2684,9 @@
 
           const out = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(out.error || "Submit failed");
+
+          data.secondDriverInvitation =
+            out.secondDriverInvitation || null;
 
           /* ===============================
    ✅ ALWAYS HAVE BOOKING (FIX)
