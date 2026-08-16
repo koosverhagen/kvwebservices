@@ -10887,15 +10887,38 @@ Equine Transport UK`;
           ${renderExtrasSummary(booking)}
         `;
       }
+      function bookingHasEarlyPickup(booking) {
+        const storedValue =
+          booking?.extras?.earlyPickup ??
+          booking?.extras?.early_pickup ??
+          booking?.earlyPickup ??
+          false;
+
+        return (
+          storedValue === true ||
+          storedValue === 1 ||
+          storedValue === "1" ||
+          String(storedValue || "").toLowerCase() === "true" ||
+          Number(booking?.earlyPickupTotal || 0) > 0
+        );
+      }
+
       function renderExtrasSummary(booking) {
         const extras = booking.extras || {};
 
-        const dartfordCount = Number(extras.dartford || 0);
-        const earlyPickup =
-          extras.earlyPickup === true ||
-          extras.earlyPickup === 1 ||
-          extras.earlyPickup === "1" ||
-          String(extras.earlyPickup || "").toLowerCase() === "true";
+        const storedDartfordCount = Number(extras.dartford || 0);
+        const storedDartfordTotal = Number(
+          booking.dartfordTotal || 0,
+        );
+
+        const dartfordCount =
+          storedDartfordCount > 0
+            ? storedDartfordCount
+            : storedDartfordTotal > 0
+              ? Math.round(storedDartfordTotal / 4.2)
+              : 0;
+
+        const earlyPickup = bookingHasEarlyPickup(booking);
 
         const lines = [];
 
@@ -17688,7 +17711,7 @@ ${mobileOutstandingText}
             booking?.extras?.dartford || 0;
 
           document.getElementById("edit-early").checked =
-            booking?.extras?.earlyPickup || false;
+            bookingHasEarlyPickup(booking);
 
           enforceAdminEarlyPickupRules();
 
@@ -19332,7 +19355,7 @@ Send the fresh form link to ${booking.customerEmail} now?`,
               durationDays === Number(booking.durationDays) &&
               hireTotal === Number(booking.hireTotal || 0) &&
               extras.dartford === Number(booking.extras?.dartford || 0) &&
-              extras.earlyPickup === Boolean(booking.extras?.earlyPickup) &&
+              extras.earlyPickup === bookingHasEarlyPickup(booking) &&
               String(customerId || "") ===
                 String(booking.customerId || booking.customer_id || "") &&
               adminNote === String(booking.adminNote || booking.note || "");
@@ -20805,7 +20828,7 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           booking.extras?.dartford || 0;
 
         document.getElementById("edit-early").checked =
-          !!booking.extras?.earlyPickup;
+          bookingHasEarlyPickup(booking);
 
         document.getElementById("edit-price").value =
           booking.hireTotal || booking.total || 0;

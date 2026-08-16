@@ -3969,6 +3969,7 @@ async function handleMigrationImportPlanyoIncremental(request, env) {
           duration_days,
           price_total,
           paid_now,
+          extras_json,
           status,
           created_at,
           updated_at,
@@ -3976,7 +3977,7 @@ async function handleMigrationImportPlanyoIncremental(request, env) {
           deposit_paid,
           dvla_verified
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       )
         .bind(
@@ -3988,6 +3989,7 @@ async function handleMigrationImportPlanyoIncremental(request, env) {
           safeNumber(booking.durationDays),
           safeNumber(booking.hireTotal || booking.priceTotal),
           safeNumber(booking.paidNow),
+          JSON.stringify(booking.extras || {}),
           safeText(booking.status || "legacy_imported"),
           safeText(booking.createdAt || now),
           now,
@@ -6839,6 +6841,7 @@ async function findBookingById(env, bookingId) {
         b.duration_days,
         b.price_total,
         b.paid_now,
+        b.extras_json,
         b.status,
         b.created_at,
         b.updated_at,
@@ -6859,6 +6862,16 @@ async function findBookingById(env, bookingId) {
       .first();
 
     if (row) {
+      const extras = safeParseObjectJson(row.extras_json);
+      const dartfordCount = Number(extras.dartford || 0);
+      const earlyPickupEnabled =
+        isEarlyPickupRequested(extras.earlyPickup);
+      const dartfordTotal = Number((dartfordCount * 4.2).toFixed(2));
+      const earlyPickupTotal = earlyPickupEnabled ? 20 : 0;
+      const extrasTotal = Number(
+        (dartfordTotal + earlyPickupTotal).toFixed(2),
+      );
+
       const booking = {
         id: row.id,
         customerId: row.customer_id,
@@ -6895,6 +6908,12 @@ async function findBookingById(env, bookingId) {
         priceTotal: Number(row.price_total || 0),
         confirmationFee: Number(row.paid_now || 0),
         paidNow: Number(row.paid_now || 0),
+
+        extras,
+        extrasTotal,
+        dartfordTotal,
+        earlyPickupTotal,
+
         outstandingAmount: Math.max(
           0,
           Number(row.price_total || 0) - Number(row.paid_now || 0),
@@ -8245,11 +8264,12 @@ async function handleAdminBookingUpdate(request, env) {
           duration_days,
           price_total,
           paid_now,
+          extras_json,
           status,
           created_at,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       )
         .bind(
@@ -8261,6 +8281,7 @@ async function handleAdminBookingUpdate(request, env) {
           booking.durationDays,
           booking.hireTotal,
           0,
+          JSON.stringify(booking.extras || {}),
           booking.status,
           now,
           now,
@@ -8879,6 +8900,7 @@ async function handleAdminBookingUpdate(request, env) {
     duration_days = ?,
     price_total = ?,
     paid_now = ?,
+    extras_json = ?,
     customer_id = ?,
     updated_at = ?
   WHERE id = ?
@@ -8891,6 +8913,7 @@ async function handleAdminBookingUpdate(request, env) {
         durationDays,
         finalTotal,
         amountAlreadyPaid,
+        JSON.stringify(extras || {}),
         customerId,
         now,
         bookingId,
@@ -10083,11 +10106,12 @@ async function handleStripeWebhook(request, env) {
             duration_days,
             price_total,
             paid_now,
+            extras_json,
             status,
             created_at,
             updated_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         )
           .bind(
@@ -10099,6 +10123,7 @@ async function handleStripeWebhook(request, env) {
             booking.durationDays,
             booking.hireTotal,
             booking.confirmationFee,
+            JSON.stringify(booking.extras || {}),
             booking.status,
             booking.createdAt,
             booking.createdAt,
@@ -10449,6 +10474,14 @@ async function buildListBookingFromD1Row(env, row) {
   const paidNow = Number(row.paid_now || 0);
   const outstandingAmount = Math.max(0, priceTotal - paidNow);
   const extras = safeParseObjectJson(row.extras_json);
+  const dartfordCount = Number(extras.dartford || 0);
+  const earlyPickupEnabled =
+    isEarlyPickupRequested(extras.earlyPickup);
+  const dartfordTotal = Number((dartfordCount * 4.2).toFixed(2));
+  const earlyPickupTotal = earlyPickupEnabled ? 20 : 0;
+  const extrasTotal = Number(
+    (dartfordTotal + earlyPickupTotal).toFixed(2),
+  );
 
   let booking = {
     id: row.id,
@@ -10473,8 +10506,11 @@ async function buildListBookingFromD1Row(env, row) {
 
     hireTotal: priceTotal,
     priceTotal,
-    priceBase: priceTotal,
-    priceExtras: 0,
+    priceBase: Math.max(
+      0,
+      Number((priceTotal - extrasTotal).toFixed(2)),
+    ),
+    priceExtras: extrasTotal,
     confirmationFee: paidNow,
     paidNow,
     outstandingAmount,
@@ -10482,9 +10518,9 @@ async function buildListBookingFromD1Row(env, row) {
     outstandingPaid: priceTotal > 0 && paidNow >= priceTotal,
 
     extras,
-    extrasTotal: 0,
-    dartfordTotal: 0,
-    earlyPickupTotal: 0,
+    extrasTotal,
+    dartfordTotal,
+    earlyPickupTotal,
 
     depositAmount: 200,
     depositPaid: row.deposit_paid === 1,
