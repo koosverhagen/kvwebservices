@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">KV Web Services</title>
+  <rect x="3" y="3" width="58" height="58" rx="15" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+  <g fill="none" stroke="#0f172a" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M17.5 16.5v31M18 32l13.5-15.5M18 32l13.5 15.5"/>
+    <path d="M34 16.5l9.5 31 9.5-31"/>
+  </g>
+</svg>
