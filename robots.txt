@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kvwebservices.co.uk/sitemap.xml

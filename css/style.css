@@ -277,7 +277,7 @@ section > h2:not(:first-child) {
   font-weight: 500;
 }
 
-.menu a[href="equine-transport-case-study.html"] {
+.menu a[href$="-case-study.html"] {
   color: var(--accent);
   font-weight: 600;
 }
@@ -376,7 +376,7 @@ section > h2:not(:first-child) {
     background: rgba(15,23,42,0.04);
   }
 
-  .menu a[href="equine-transport-case-study.html"] {
+  .menu a[href$="-case-study.html"] {
     border-color: rgba(37,99,235,0.35);
     background: rgba(37,99,235,0.10);
     color: var(--accent);
@@ -1955,7 +1955,7 @@ body.contact-page .contact-card:hover {
 }
 
 /* =====================================================
-   EQUINE TRANSPORT CASE STUDY
+   WEBSITE & BUSINESS PLATFORM CASE STUDIES
 ===================================================== */
 
 .featured-case-actions {
