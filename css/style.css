@@ -277,16 +277,46 @@ section > h2:not(:first-child) {
   font-weight: 500;
 }
 
-.menu a[href$="-case-study.html"] {
-  color: var(--accent);
-  font-weight: 600;
-}
 
 @media (min-width: 931px) {
+  .menu {
+    align-items: center;
+    gap: 0;
+  }
+
+  .menu a {
+    position: relative;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  }
+
+  .menu a:not(:last-child) {
+    margin-right: 28px;
+  }
+
   .menu a:not(:last-child)::after {
     content: "|";
-    margin-left: 28px;
+    position: absolute;
+    top: 50%;
+    right: -16px;
     color: var(--muted);
+    font-weight: 400;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .menu a:hover,
+  .menu a:focus-visible {
+    background: rgba(15,23,42,0.04);
+  }
+
+  .menu a[aria-current="page"]:hover,
+  .menu a[aria-current="page"]:focus-visible {
+    border-color: rgba(37,99,235,0.35);
+    background: rgba(37,99,235,0.10);
+    color: var(--accent);
   }
 }
 
@@ -376,12 +406,6 @@ section > h2:not(:first-child) {
     background: rgba(15,23,42,0.04);
   }
 
-  .menu a[href$="-case-study.html"] {
-    border-color: rgba(37,99,235,0.35);
-    background: rgba(37,99,235,0.10);
-    color: var(--accent);
-    font-weight: 600;
-  }
 }
 
 @media (max-width: 730px) {
