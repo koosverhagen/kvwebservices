@@ -1433,8 +1433,9 @@ margin-left: 0;
 }
 
 .budget-info-dialog {
-  width: min(520px, calc(100% - 32px));
+  width: min(720px, calc(100% - 32px));
   max-height: calc(100vh - 32px);
+  overflow-y: auto;
   padding: 0;
   border: 0;
   border-radius: 22px;
@@ -1459,8 +1460,9 @@ margin-left: 0;
 }
 
 .budget-info-dialog h3 {
-  margin: 22px 0 8px;
-  font-size: 16px;
+  margin: 0 0 6px;
+  font-size: 17px;
+  line-height: 1.35;
 }
 
 .budget-info-dialog p {
@@ -1469,12 +1471,37 @@ margin-left: 0;
 }
 
 .budget-info-dialog ul {
-  margin: 0;
+  margin: 12px 0 0;
   padding-left: 22px;
 }
 
 .budget-info-dialog li + li {
   margin-top: 6px;
+}
+
+.budget-info-intro {
+  max-width: 600px;
+}
+
+.budget-tier-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.budget-tier {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.budget-tier p {
+  font-size: 14px;
+}
+
+.budget-tier ul {
+  font-size: 14px;
 }
 
 .budget-info-dialog .budget-info-exclusions {

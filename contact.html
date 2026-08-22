@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Start your web design or custom booking system project. Contact KV Web Services for practical websites, booking flows and business platform enquiries.">
 
-<link rel="stylesheet" href="css/style.css?v=42">
+<link rel="stylesheet" href="css/style.css?v=43">
   <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2">
   <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=2">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png?v=2">
@@ -226,7 +226,7 @@
               class="budget-info-button"
               aria-haspopup="dialog"
               aria-controls="budget-info-dialog">
-              What’s included?
+              Compare what’s included
             </button>
           </div>
           <select id="budget" name="Budget range" required>
@@ -336,19 +336,65 @@
 <dialog class="budget-info-dialog" id="budget-info-dialog" aria-labelledby="budget-info-title">
   <div class="budget-info-dialog-content">
     <button type="button" class="budget-info-close" aria-label="Close pricing information">×</button>
-    <h2 id="budget-info-title">Website updates — up to £250</h2>
-    <p>
-      Designed for up to two hours of focused work on an existing website.
-      We’ll confirm what fits before work starts.
+    <h2 id="budget-info-title">What’s included at each budget?</h2>
+    <p class="budget-info-intro">
+      These are practical starting points. We’ll confirm the exact scope and price before work starts.
     </p>
-    <h3>This can include</h3>
-    <ul>
-      <li>Supplied text, image or contact-detail changes</li>
-      <li>A small layout or styling fix</li>
-      <li>A form adjustment or one minor mobile issue</li>
-    </ul>
+
+    <div class="budget-tier-list">
+      <section class="budget-tier">
+        <h3>Website updates — up to £250</h3>
+        <p>Up to two hours of focused work on an existing website.</p>
+        <ul>
+          <li>Supplied text, image or contact-detail changes</li>
+          <li>A small layout or styling fix</li>
+          <li>A form adjustment or one minor mobile issue</li>
+        </ul>
+      </section>
+
+      <section class="budget-tier">
+        <h3>Starter website — £250–£499</h3>
+        <p>A focused one-page website for a new or very small business.</p>
+        <ul>
+          <li>Mobile-friendly design using supplied branding and content</li>
+          <li>Key services, contact details and clear calls to action</li>
+          <li>Contact form, social links and basic search setup</li>
+        </ul>
+      </section>
+
+      <section class="budget-tier">
+        <h3>Small business website — £500–£999</h3>
+        <p>A professional brochure website with room for more detail.</p>
+        <ul>
+          <li>Up to four core pages with responsive layouts</li>
+          <li>Contact or enquiry form and useful business links</li>
+          <li>Basic on-page SEO, performance checks and one revision round</li>
+        </ul>
+      </section>
+
+      <section class="budget-tier">
+        <h3>Advanced website — £1,000–£2,499</h3>
+        <p>A larger, more tailored website with richer functionality.</p>
+        <ul>
+          <li>Typically five to eight pages with custom layouts</li>
+          <li>More detailed forms, galleries or simple booking integrations</li>
+          <li>Enhanced SEO structure, analytics setup and two revision rounds</li>
+        </ul>
+      </section>
+
+      <section class="budget-tier">
+        <h3>Larger/custom project — £2,500+</h3>
+        <p>For complex systems that need detailed planning and phased delivery.</p>
+        <ul>
+          <li>Custom booking, customer or admin workflows</li>
+          <li>E-commerce, payments or third-party integrations</li>
+          <li>Technical discovery, testing and a tailored delivery plan</li>
+        </ul>
+      </section>
+    </div>
+
     <p class="budget-info-exclusions">
-      Full redesigns, new pages, complex features, hosting and paid software are quoted separately.
+      Copywriting, branding, hosting, domain names, paid software and third-party fees are quoted separately unless included in your written estimate.
     </p>
   </div>
 </dialog>
