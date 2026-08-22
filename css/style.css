@@ -1387,13 +1387,11 @@ margin-left: 0;
   background: var(--accent);
   color: #ffffff;
   border: 1px solid var(--accent);
-  box-shadow: 0 10px 24px rgba(37,99,235,0.24);
 }
 
 .booking-case-study-btn:hover,
 .booking-case-study-btn:focus-visible {
   color: #ffffff;
-  box-shadow: 0 14px 30px rgba(37,99,235,0.32);
 }
 
 @media (max-width: 640px) {
