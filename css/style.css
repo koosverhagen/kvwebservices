@@ -1375,6 +1375,37 @@ margin-left: 0;
   margin-bottom: 120px;
 }
 
+.custom-booking-page .pricing-teaser.content-block:last-child {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 120px;
+}
+
+.booking-case-study-btn {
+  position: relative;
+  z-index: 1;
+  background: var(--accent);
+  color: #ffffff;
+  border: 1px solid var(--accent);
+  box-shadow: 0 10px 24px rgba(37,99,235,0.24);
+}
+
+.booking-case-study-btn:hover,
+.booking-case-study-btn:focus-visible {
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(37,99,235,0.32);
+}
+
+@media (max-width: 640px) {
+  .custom-booking-page .pricing-teaser.content-block:last-child {
+    margin-bottom: 90px;
+  }
+
+  .booking-case-study-btn {
+    width: 100%;
+  }
+}
+
 .price-range {
   font-size: 26px;
   font-weight: 600;
