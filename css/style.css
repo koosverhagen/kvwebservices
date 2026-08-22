@@ -1401,6 +1401,110 @@ margin-left: 0;
   font-size: 14px;
 }
 
+.budget-label-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.budget-info-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.budget-info-button:hover {
+  text-decoration-thickness: 2px;
+}
+
+.budget-info-button:focus-visible,
+.budget-info-close:focus-visible {
+  outline: 2px solid rgba(37,99,235,0.45);
+  outline-offset: 3px;
+}
+
+.budget-info-dialog {
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  color: var(--text);
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15,23,42,0.22);
+}
+
+.budget-info-dialog::backdrop {
+  background: rgba(15,23,42,0.52);
+}
+
+.budget-info-dialog-content {
+  position: relative;
+  padding: 32px;
+}
+
+.budget-info-dialog h2 {
+  margin: 0 40px 12px 0;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.budget-info-dialog h3 {
+  margin: 22px 0 8px;
+  font-size: 16px;
+}
+
+.budget-info-dialog p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.budget-info-dialog ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.budget-info-dialog li + li {
+  margin-top: 6px;
+}
+
+.budget-info-dialog .budget-info-exclusions {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.budget-info-close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: var(--muted);
+  font: inherit;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.budget-info-close:hover {
+  background: #e2e8f0;
+  color: var(--text);
+}
+
 .form-step {
   display: none;
 }
@@ -1728,6 +1832,10 @@ body.chrome-safe-funnel .progress-bar {
   grid-column: 1 / -1;
 }
 
+.form-step[data-step="3"] .budget-label-group {
+  grid-column: 1;
+}
+
 .form-step[data-step="2"] label,
 .form-step[data-step="3"] label,
 .form-step[data-step="4"] label {
@@ -1940,6 +2048,14 @@ body.chrome-safe-funnel .progress-bar {
   .form-step[data-step="4"] .submit-btn {
     width: 100%;
     align-self: center;
+  }
+
+  .form-step[data-step="3"] .budget-label-group {
+    grid-column: 1;
+  }
+
+  .budget-info-dialog-content {
+    padding: 28px 22px 24px;
   }
 }
 /* ==========================================

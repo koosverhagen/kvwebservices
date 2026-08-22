@@ -69,6 +69,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const backButtons = Array.from(projectForm.querySelectorAll(".back-btn"));
   const optionButtons = Array.from(projectForm.querySelectorAll(".option-btn"));
   const progressBar = projectForm.closest(".contact-card")?.querySelector(".progress-bar") || null;
+  const budgetInfoButton = document.querySelector(".budget-info-button");
+  const budgetInfoDialog = document.getElementById("budget-info-dialog");
+  const budgetInfoClose = budgetInfoDialog?.querySelector(".budget-info-close") || null;
+
+  if (budgetInfoButton && budgetInfoDialog instanceof HTMLDialogElement) {
+    budgetInfoButton.addEventListener("click", () => {
+      budgetInfoDialog.showModal();
+    });
+
+    budgetInfoClose?.addEventListener("click", () => {
+      budgetInfoDialog.close();
+    });
+
+    budgetInfoDialog.addEventListener("click", (event) => {
+      if (event.target === budgetInfoDialog) {
+        budgetInfoDialog.close();
+      }
+    });
+
+    budgetInfoDialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      budgetInfoDialog.close();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && budgetInfoDialog.open) {
+        event.preventDefault();
+        budgetInfoDialog.close();
+      }
+    });
+
+    budgetInfoDialog.addEventListener("close", () => {
+      budgetInfoButton.focus();
+    });
+  }
 
   let currentStep = 0;
   let selectedProjectType = "";
