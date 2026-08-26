@@ -835,4 +835,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   }
+
+  const salesYear = document.getElementById("sales-year");
+  if (salesYear) salesYear.textContent = String(new Date().getFullYear());
 });
