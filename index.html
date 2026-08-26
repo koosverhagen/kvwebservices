@@ -8,6 +8,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Modern websites, enquiry forms and custom booking systems for UK service businesses. Clear packages, direct support and practical digital tools from KV Web Services.">
   <meta name="theme-color" content="#2563eb">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="KV Web Services">
+  <meta property="og:title" content="Web Design for UK Service Businesses | KV Web Services">
+  <meta property="og:description" content="Modern websites, enquiry forms and custom booking systems for UK service businesses—with clear packages and direct support.">
+  <meta property="og:url" content="https://kvwebservices.co.uk/">
 
   <link rel="stylesheet" href="css/style.css?v=42">
 
@@ -15,23 +20,37 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "ProfessionalService",
-    "name": "KV Web Services",
-    "url": "https://kvwebservices.co.uk/",
-    "logo": "https://kvwebservices.co.uk/images/favicon.svg",
-    "description": "Modern websites, enquiry forms and custom booking systems for UK service businesses.",
-    "email": "info@kvwebservices.co.uk",
-    "areaServed": {
-      "@type": "Country",
-      "name": "United Kingdom"
-    },
-    "serviceType": [
-      "Website Design",
-      "Website Redesign",
-      "Lead Generation Websites",
-      "Custom Booking Systems",
-      "Payment Integrations",
-      "Website Care"
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://kvwebservices.co.uk/#website",
+        "url": "https://kvwebservices.co.uk/",
+        "name": "KV Web Services",
+        "alternateName": "KVWebServices",
+        "publisher": { "@id": "https://kvwebservices.co.uk/#business" },
+        "inLanguage": "en-GB"
+      },
+      {
+        "@type": "ProfessionalService",
+        "@id": "https://kvwebservices.co.uk/#business",
+        "name": "KV Web Services",
+        "url": "https://kvwebservices.co.uk/",
+        "logo": "https://kvwebservices.co.uk/images/favicon.svg",
+        "description": "Modern websites, enquiry forms and custom booking systems for UK service businesses.",
+        "email": "info@kvwebservices.co.uk",
+        "areaServed": {
+          "@type": "Country",
+          "name": "United Kingdom"
+        },
+        "serviceType": [
+          "Website Design",
+          "Website Redesign",
+          "Lead Generation Websites",
+          "Custom Booking Systems",
+          "Payment Integrations",
+          "Website Care"
+        ]
+      }
     ]
   }
   </script>
