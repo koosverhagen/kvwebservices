@@ -1746,6 +1746,21 @@ body.chrome-safe-funnel .progress-bar {
   line-height: 1.55;
 }
 
+.funnel-privacy {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.optional-label {
+  margin-left: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9em;
+  font-weight: 400;
+}
+
 .contact-process {
   margin-top: 56px;
   margin-bottom: 120px;

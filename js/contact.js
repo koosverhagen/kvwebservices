@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const platformSelect = document.getElementById("platform");
     if (!platformWrapper || !platformSelect) return;
 
-    const shouldShow = selectedProjectType === "Website Update";
+    const shouldShow = selectedProjectType === "Website refresh";
     platformWrapper.classList.toggle("is-visible", shouldShow);
     platformWrapper.style.display = shouldShow ? "" : "none";
     platformSelect.disabled = !shouldShow;
@@ -451,7 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (submitButton instanceof HTMLButtonElement) {
         submitButton.disabled = false;
-        submitButton.textContent = "Start My Project";
+        submitButton.textContent = "Request a free project call";
       }
     }
   });

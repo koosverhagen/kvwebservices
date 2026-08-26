@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Start your web design or custom booking system project. Contact KV Web Services for practical websites, booking flows and business platform enquiries.">
 
-<link rel="stylesheet" href="css/style.css?v=43">
+<link rel="stylesheet" href="css/style.css?v=44">
   <link rel="icon" href="/favicon.ico?v=20260825" sizes="any">
   <link rel="icon" type="image/svg+xml" sizes="any" href="/images/favicon.svg?v=20260825">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png?v=20260825">
@@ -65,6 +65,7 @@
         method="POST"
         class="funnel-form">
 
+        <input type="hidden" name="_subject" value="New KV Web Services project enquiry">
         <input type="hidden" name="source" value="KV Web Services Premium Funnel">
 
         <input type="hidden" name="Project Type" id="hidden-project-type">
@@ -81,29 +82,21 @@
 
           <div class="option-group" role="group" aria-label="Project type">
             <!-- ✅ kept type="button" + added aria-pressed default false -->
-            <button type="button" class="option-btn" data-value="New Website" aria-pressed="false">
-              Create a new website
+            <button type="button" class="option-btn" data-value="Website refresh" aria-pressed="false">
+              Website refresh
             </button>
-            <button type="button" class="option-btn" data-value="Website Update" aria-pressed="false">
-              Make changes to my current website
+            <button type="button" class="option-btn" data-value="New lead-generation website" aria-pressed="false">
+              New lead-generation website
             </button>
-            <button type="button" class="option-btn" data-value="Custom booking system / business platform" aria-pressed="false">
-              Custom booking system / business platform
+            <button type="button" class="option-btn" data-value="Booking or admin system" aria-pressed="false">
+              Booking or admin system
             </button>
-            <button type="button" class="option-btn" data-value="Other" aria-pressed="false">
-              Other
+            <button type="button" class="option-btn" data-value="Ongoing website care" aria-pressed="false">
+              Ongoing website care
             </button>
-          </div>
-
-          <div id="project-type-other-wrapper">
-            <label for="project-type-other">Please specify project type</label>
-            <input
-              id="project-type-other"
-              name="Project Type (other)"
-              type="text"
-              placeholder="Type your project type"
-              required
-              disabled>
+            <button type="button" class="option-btn" data-value="Not sure yet" aria-pressed="false">
+              Not sure yet
+            </button>
           </div>
 
           <div class="step-actions">
@@ -116,6 +109,23 @@
         <!-- STEP 2 -->
         <div class="form-step" data-step="2">
           <h2>Business Information</h2>
+
+          <label for="business-name">Business name</label>
+          <input
+            id="business-name"
+            name="Business"
+            type="text"
+            autocomplete="organization"
+            required>
+
+          <label for="current-website">Current website <span class="optional-label">Optional</span></label>
+          <input
+            id="current-website"
+            name="Current website"
+            type="url"
+            inputmode="url"
+            autocomplete="url"
+            placeholder="https://">
 
           <label for="business-type">Business type</label>
           <select id="business-type" name="Business type" required>
@@ -231,25 +241,12 @@
           </div>
           <select id="budget" name="Budget range" required>
             <option value="" selected disabled>Please choose</option>
-            <option value="Website updates — up to £250">Website updates — up to £250</option>
-            <option value="Starter website — £250–£499">Starter website — £250–£499</option>
-            <option value="Small business website — £500–£999">Small business website — £500–£999</option>
-            <option value="Advanced website — £1,000–£2,499">Advanced website — £1,000–£2,499</option>
-            <option value="Larger/custom project — £2,500+">Larger/custom project — £2,500+</option>
+            <option value="£500–£1,000">£500–£1,000</option>
+            <option value="£1,000–£2,500">£1,000–£2,500</option>
+            <option value="£2,500–£5,000">£2,500–£5,000</option>
+            <option value="£5,000+">£5,000+</option>
             <option value="Not sure yet">Not sure yet</option>
-            <option value="Other">Other</option>
           </select>
-
-          <div id="budget-other-wrapper" style="display:none;">
-            <label for="budget-other">Please specify budget range</label>
-            <input
-              id="budget-other"
-              name="Budget range (other)"
-              type="text"
-              placeholder="Type your budget range"
-              required
-              disabled>
-          </div>
 
           <label for="maintenance">Ongoing maintenance?</label>
           <select id="maintenance" name="Ongoing maintenance" required>
@@ -291,12 +288,15 @@
           <textarea id="message" name="Message"></textarea>
 
           <div class="step-actions">
-            <button type="submit" class="submit-btn">Start My Project</button>
+            <button type="submit" class="submit-btn">Request a free project call</button>
           </div>
 
           <p class="funnel-next-steps">
-            What happens next: you’ll get a reply within 1 working day with next steps,
+            What happens next: you’ll receive a personal reply within 1 working day with next steps,
             timeline guidance, and a clear project estimate.
+          </p>
+          <p class="funnel-privacy">
+            No mailing lists. Your details are used only to reply to this enquiry.
           </p>
         </div>
 
@@ -343,53 +343,48 @@
 
     <div class="budget-tier-list">
       <section class="budget-tier">
-        <h3>Website updates — up to £250</h3>
-        <p>Up to two hours of focused work on an existing website.</p>
+        <h3>£500–£1,000</h3>
+        <p>Best suited to a focused website refresh or a clearly defined smaller project.</p>
         <ul>
-          <li>Supplied text, image or contact-detail changes</li>
-          <li>A small layout or styling fix</li>
-          <li>A form adjustment or one minor mobile issue</li>
+          <li>Homepage and key-page improvements</li>
+          <li>Mobile, speed or accessibility fixes</li>
+          <li>Clearer calls to action and enquiry routes</li>
         </ul>
       </section>
 
       <section class="budget-tier">
-        <h3>Starter website — £250–£499</h3>
-        <p>A focused one-page website for a new or very small business.</p>
+        <h3>£1,000–£2,500</h3>
+        <p>For a substantial refresh or a focused lead-generation website.</p>
         <ul>
-          <li>Mobile-friendly design using supplied branding and content</li>
-          <li>Key services, contact details and clear calls to action</li>
-          <li>Contact form, social links and basic search setup</li>
+          <li>Strategy, structure, design and build</li>
+          <li>Enquiry journey and local search foundations</li>
+          <li>Launch support and handover</li>
         </ul>
       </section>
 
       <section class="budget-tier">
-        <h3>Small business website — £500–£999</h3>
-        <p>A professional brochure website with room for more detail.</p>
+        <h3>£2,500–£5,000</h3>
+        <p>For a larger tailored website or useful booking and admin functionality.</p>
         <ul>
-          <li>Up to four core pages with responsive layouts</li>
-          <li>Contact or enquiry form and useful business links</li>
-          <li>Basic on-page SEO, performance checks and one revision round</li>
+          <li>More detailed forms, customer journeys or integrations</li>
+          <li>Custom page layouts and richer content</li>
+          <li>Testing, analytics and a structured launch</li>
         </ul>
       </section>
 
       <section class="budget-tier">
-        <h3>Advanced website — £1,000–£2,499</h3>
-        <p>A larger, more tailored website with richer functionality.</p>
-        <ul>
-          <li>Typically five to eight pages with custom layouts</li>
-          <li>More detailed forms, galleries or simple booking integrations</li>
-          <li>Enhanced SEO structure, analytics setup and two revision rounds</li>
-        </ul>
-      </section>
-
-      <section class="budget-tier">
-        <h3>Larger/custom project — £2,500+</h3>
-        <p>For complex systems that need detailed planning and phased delivery.</p>
+        <h3>£5,000+</h3>
+        <p>For complex systems that need discovery, phased delivery and operational tools.</p>
         <ul>
           <li>Custom booking, customer or admin workflows</li>
-          <li>E-commerce, payments or third-party integrations</li>
-          <li>Technical discovery, testing and a tailored delivery plan</li>
+          <li>Payments and third-party integrations</li>
+          <li>Technical discovery, testing and tailored support</li>
         </ul>
+      </section>
+
+      <section class="budget-tier">
+        <h3>Not sure yet</h3>
+        <p>That is completely fine. Share the result you want and you’ll receive a realistic range before deciding whether to proceed.</p>
       </section>
     </div>
 
@@ -405,6 +400,6 @@
   </div>
 </footer>
 
-<script src="js/contact.js?v=39"></script>
+<script src="js/contact.js?v=40"></script>
 </body>
 </html>
