@@ -3009,18 +3009,20 @@ body.contact-page .contact-card:hover {
   border-radius: 22px;
   background: var(--sales-surface);
   box-shadow: 0 22px 65px rgba(15, 23, 42, 0.08);
+  font-size: 15px;
 }
 
 .sales-enquiry-form label {
   display: grid;
   gap: 8px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .sales-enquiry-form label > span {
   color: var(--sales-muted);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .sales-enquiry-form input,
@@ -3033,7 +3035,9 @@ body.contact-page .contact-card:hover {
   border-radius: 10px;
   background: #ffffff;
   color: var(--sales-text);
-  font: inherit;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .sales-enquiry-form textarea {
@@ -3061,8 +3065,9 @@ body.contact-page .contact-card:hover {
   border-radius: 11px;
   background: var(--sales-blue);
   color: #ffffff;
-  font: inherit;
-  font-weight: 800;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
   cursor: pointer;
   box-shadow: 0 14px 30px rgba(37, 99, 235, 0.2);
 }
