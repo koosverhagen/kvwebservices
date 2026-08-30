@@ -838,4 +838,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const salesYear = document.getElementById("sales-year");
   if (salesYear) salesYear.textContent = String(new Date().getFullYear());
+
+  const salesEnquiryForm = document.getElementById("sales-enquiry-form");
+  const salesFormStatus = document.getElementById("sales-form-status");
+
+  salesEnquiryForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const submitButton = salesEnquiryForm.querySelector('button[type="submit"]');
+    if (submitButton instanceof HTMLButtonElement) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Sending...";
+    }
+    if (salesFormStatus) salesFormStatus.textContent = "Sending your enquiry...";
+
+    try {
+      const response = await fetch(salesEnquiryForm.action, {
+        method: "POST",
+        body: new FormData(salesEnquiryForm),
+        headers: { Accept: "application/json" },
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.ok !== true) {
+        throw new Error(result.message || "Submission failed");
+      }
+
+      salesEnquiryForm.reset();
+      if (salesFormStatus) {
+        salesFormStatus.textContent =
+          "Thank you — your enquiry has been sent. I will reply within one working day.";
+      }
+    } catch (error) {
+      if (salesFormStatus) {
+        salesFormStatus.textContent =
+          "Sorry, that could not be sent. Please email info@kvwebservices.co.uk.";
+      }
+    } finally {
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = false;
+        submitButton.textContent = "Request a free project call";
+      }
+    }
+  });
 });
