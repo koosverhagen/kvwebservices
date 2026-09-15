@@ -9273,6 +9273,18 @@ async function handleAdminBookingUpdate(request, env) {
         console.log("✅ DURATION AUDIT ADDED");
       }
 
+      if (Number(oldTotal.toFixed(2)) !== Number(finalTotal.toFixed(2))) {
+        audit.unshift({
+          type: "price_changed",
+          fromTotal: Number(oldTotal.toFixed(2)),
+          toTotal: Number(finalTotal.toFixed(2)),
+          difference: Number((finalTotal - oldTotal).toFixed(2)),
+          at: new Date().toISOString(),
+        });
+
+        console.log("✅ PRICE AUDIT ADDED");
+      }
+
       await env.BOOKINGS_KV.put(auditKey, JSON.stringify(audit));
     } catch (err) {
       console.error("❌ FINAL EDIT AUDIT FAILED:", err);

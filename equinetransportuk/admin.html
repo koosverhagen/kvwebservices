@@ -7575,17 +7575,22 @@
             </div>
 
             <!-- ===============================
-             TOTAL (READ-ONLY)
+             TOTAL (ADMIN EDITABLE)
         =============================== -->
 
             <div class="field">
-              <label>Total (£)</label>
+              <label for="edit-price">Total price (£)</label>
               <input
                 type="number"
                 id="edit-price"
-                readonly
-                style="background: #f3f4f6; cursor: not-allowed"
+                min="0.01"
+                step="0.01"
+                inputmode="decimal"
               />
+              <div class="tiny" style="margin-top: 4px">
+                Editable for insurance or other agreed charges. For example,
+                change £105 to £135 to add £30.
+              </div>
             </div>
 
             <!-- ===============================
@@ -21218,7 +21223,11 @@ Send the fresh form link to ${booking.customerEmail} now?`,
         attachAdminEditLiveListeners();
 
         setTimeout(() => {
-          updateAdminPrice();
+          // Keep an existing manually adjusted price when reopening the editor.
+          // New and legacy bookings without a total still receive a live quote.
+          if (isNew || Number(booking.hireTotal || booking.total || 0) <= 0) {
+            updateAdminPrice();
+          }
           checkAdminAvailabilityLive();
         }, 80);
       }
@@ -21391,6 +21400,15 @@ Send the fresh form link to ${booking.customerEmail} now?`,
                   ⏱️ Duration changed<br>
                   From: <strong>${a.fromDuration} day(s)</strong><br>
                   To: <strong>${a.toDuration} day(s)</strong><br>
+                  ${date}
+                `;
+              }
+
+              if (a.type === "price_changed") {
+                return `
+                  💷 Total price changed<br>
+                  From: <strong>£${Number(a.fromTotal || 0).toFixed(2)}</strong><br>
+                  To: <strong>£${Number(a.toTotal || 0).toFixed(2)}</strong><br>
                   ${date}
                 `;
               }
