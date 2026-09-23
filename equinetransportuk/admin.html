@@ -1556,6 +1556,24 @@
         font-weight: 600;
       }
 
+      .booking-early-pickup-badge {
+        display: inline-flex;
+        align-self: flex-start;
+        align-items: center;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin-top: 6px;
+        padding: 7px 11px;
+        border: 2px solid #d97706;
+        border-radius: 10px;
+        background: #fef3c7;
+        color: #78350f;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.35;
+        letter-spacing: 0.04em;
+      }
+
       /* =========================================
    IOS APP SHELL
 ========================================= */
@@ -10999,9 +11017,15 @@ Equine Transport UK`;
           storedValue === true ||
           storedValue === 1 ||
           storedValue === "1" ||
-          String(storedValue || "").toLowerCase() === "true" ||
+          ["true", "yes"].includes(String(storedValue || "").trim().toLowerCase()) ||
           Number(booking?.earlyPickupTotal || 0) > 0
         );
+      }
+
+      function earlyPickupBadgeHtml(booking) {
+        return bookingHasEarlyPickup(booking)
+          ? '<span class="booking-early-pickup-badge">EARLY PICKUP</span>'
+          : "";
       }
 
       function renderExtrasSummary(booking) {
@@ -11690,6 +11714,7 @@ Equine Transport UK`;
       ${buildBookingCustomerLink(booking, getCustomerName(booking))}
       ${isCancelled ? '<span class="badge-cancelled">Cancelled</span>' : ""}
     </div>
+    ${earlyPickupBadgeHtml(booking)}
     ${buildResendConfirmationPanel(booking)}
     ${buildContactButtons(booking)}
     ${notesHtml}
@@ -12172,6 +12197,8 @@ Equine Transport UK`;
               : "";
 
           mobileCard.innerHTML = `
+
+            ${earlyPickupBadgeHtml(booking)}
 
             <div class="mobile-booking-top">
 
