@@ -5824,11 +5824,11 @@ async function handlePricingQuote(request, env) {
   if (
     Number(durationDays) === 0.5 &&
     String(vehicleId || "").startsWith("v35") &&
-    isWeekendDate(pickupDate)
+    isWeekendHalfDayBlocked(pickupDate)
   ) {
     return json(
       {
-        error: "Half-day hire is not available for 3.5T lorries at weekends",
+        error: "Weekend half-day hire for 3.5T lorries is available only from 1 Nov 2026 to 31 Mar 2027",
       },
       400,
     );
@@ -6028,6 +6028,16 @@ async function resolveDiscount({
     discountAmount: Number(discountAmount.toFixed(2)),
     code: entry.code,
   };
+}
+
+// One-off winter offer, based on the hire date (inclusive), not booking date.
+function isWinterHalfDayDate(dateStr) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || "")) &&
+    dateStr >= "2026-11-01" && dateStr <= "2027-03-31";
+}
+
+function isWeekendHalfDayBlocked(dateStr) {
+  return isWeekendDate(dateStr) && !isWinterHalfDayDate(dateStr);
 }
 
 function isWeekendDate(dateStr) {
@@ -8143,12 +8153,12 @@ async function handleAdminBookingUpdate(request, env) {
       if (
         durationDays === 0.5 &&
         String(vehicleId).startsWith("v35") &&
-        isWeekendDate(pickupDate)
+        isWeekendHalfDayBlocked(pickupDate)
       ) {
         return json(
           {
             error:
-              "Half-day hire is not available for 3.5T lorries at weekends",
+              "Weekend half-day hire for 3.5T lorries is available only from 1 Nov 2026 to 31 Mar 2027",
           },
           400,
         );
@@ -8651,11 +8661,11 @@ async function handleAdminBookingUpdate(request, env) {
     if (
       durationDays === 0.5 &&
       String(vehicleId).startsWith("v35") &&
-      isWeekendDate(pickupDate)
+      isWeekendHalfDayBlocked(pickupDate)
     ) {
       return json(
         {
-          error: "Half-day hire is not available for 3.5T lorries at weekends",
+          error: "Weekend half-day hire for 3.5T lorries is available only from 1 Nov 2026 to 31 Mar 2027",
         },
         400,
       );
