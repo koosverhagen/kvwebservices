@@ -20732,6 +20732,7 @@ Send the fresh form link to ${booking.customerEmail} now?`,
           el.dataset.date = dateStr;
 
           const isWeekend = dayObj.getDay() === 0 || dayObj.getDay() === 6;
+          const isWinterHalfDay = dateStr >= "2026-11-01" && dateStr <= "2027-03-31";
 
           const shortVehicleLabel = (vehicle) =>
             String(vehicle.name || vehicle.id || "")
@@ -20817,9 +20818,8 @@ Send the fresh form link to ${booking.customerEmail} now?`,
             const is35 = String(vehicle.id).startsWith("v35");
             const label = shortVehicleLabel(vehicle);
 
-            // 3.5T lorries allow half days Monday-Friday only.
-            // Weekends are full-day bars.
-            if (is35 && !isWeekend) {
+            // 3.5T half days include weekends during the winter offer.
+            if (is35 && (!isWeekend || isWinterHalfDay)) {
               return `
       <div class="cal-lorry-row">
         <div class="cal-lorry-label">${escapeHtml(label)}</div>
@@ -20832,7 +20832,7 @@ Send the fresh form link to ${booking.customerEmail} now?`,
             }
 
             // 7.5T lorries are always full-day only.
-            // 3.5T weekends are also full-day only.
+            // 3.5T weekends outside the winter offer are full-day only.
             return `
     <div class="cal-lorry-row">
       <div class="cal-lorry-label">${escapeHtml(label)}</div>
