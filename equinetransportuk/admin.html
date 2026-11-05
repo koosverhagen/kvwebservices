@@ -6509,8 +6509,7 @@
                 <option value="all">All bookings</option>
                 <option value="form_complete">Form complete</option>
                 <option value="form_missing">Form missing</option>
-                <option value="short_required">Short form required</option>
-                <option value="long_required">Long form required</option>
+                <option value="long_required">Millins proposal required</option>
               </select>
             </div>
 
@@ -9620,13 +9619,7 @@ Equine Transport UK`;
         return getFormSource(booking) === "paper";
       }
 
-      function getRequiredFormType(booking) {
-        return (
-          booking?.requiredFormType ||
-          booking?.required_form_type ||
-          booking?.formTypeRequired ||
-          null
-        );
+      function getRequiredFormType(booking) { return "long";
       }
 
       function isDepositPaid(booking) {
@@ -10034,10 +10027,6 @@ Equine Transport UK`;
       }
 
       function buildPaperFormUrl(booking) {
-        const formType = getRequiredFormType(booking) || "long";
-        const fileName =
-          formType === "short" ? "short-form.html" : "long-form.html";
-
         const params = new URLSearchParams({
           bookingId: booking.id || "",
           paper: "1",
@@ -10054,7 +10043,7 @@ Equine Transport UK`;
           dropoffAt: booking.dropoffAtLocal || booking.dropoffAt || "",
         });
 
-        return `${window.location.origin}/${fileName}?${params.toString()}`;
+        return `https://www.equinetransportuk.com/forms/millins-form.html?${params.toString()}`;
       }
 
       function adminPrintNormaliseKey(key) {
@@ -10366,6 +10355,11 @@ Equine Transport UK`;
           }
 
           const form = out.form || out;
+          if (form.payload?.formVersion === "millins-2025-v1") {
+            const {exportMillins} = await import("./forms/millins/admin-export.js");
+            await exportMillins(form, true, printWindow);
+            return;
+          }
           const html = buildSubmittedFormPrintHtml({
             bookingId: safeBookingId,
             booking,
@@ -11107,7 +11101,7 @@ Equine Transport UK`;
           </div>
 
           <div class="tiny">
-            Required: ${requiredType === "short" ? "Short" : "Long"}
+            Required: Millins proposal
           </div>
 
           ${
@@ -16582,13 +16576,7 @@ ${mobileOutstandingText}
     <div class="status-label">Submitted Form</div>
 
     <div class="status-value">
-      <span class="check-pair">
-        Short ${getPrintCheckMark(isShortForm && formComplete)}
-      </span>
-
-      <span class="check-pair">
-        Long ${getPrintCheckMark(isLongForm && formComplete)}
-      </span>
+      <span class="check-pair">Hirer proposal ${getPrintCheckMark(formComplete)}</span>
     </div>
   </div>
 
@@ -16639,8 +16627,7 @@ ${mobileOutstandingText}
     <div class="terms">
       <h2>Terms and Conditions of Hire</h2>
       <ul>
-        <li>If you hire for the first time or have not hired from us within the last 3 months, you must complete the Millens Hire Questionnaire (LONG Form).</li>
-        <li>If you have hired from us within the last 3 months, you may complete the Millens Hire Questionnaire (SHORT Form).</li>
+        <li>Every hirer and driver must complete and sign the Millins Hirer Proposal Form for every hire.</li>
         <li class="red">Fuel level must match on return (see gauge). A £50 charge plus the cost of fuel will apply if not returned at the same level.</li>
         <li>300 miles per day are included; thereafter £0.30 per mile will be charged.</li>
         <li>Late return policy: vehicles must be returned at the agreed time. Returns more than 30 minutes late may incur a £50 late return charge, unless a valid reason has been communicated to us at the time the delay occurs.</li>
@@ -18772,6 +18759,19 @@ Equine Transport UK`;
             ${makeDetailBox("Form type", formData.formType || "—")}
             ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
           `;
+
+          // Export only forms signed using this exact Millins version.
+          if (formData.payload?.formVersion === "millins-2025-v1") {
+            const exportHost = document.createElement("div");
+            modalSummary.append(exportHost);
+            import("./forms/millins/admin-export.js")
+              .then(({addMillinsExportControls}) => addMillinsExportControls(exportHost, formData))
+              .catch(() => {
+                const notice = document.createElement("p");
+                notice.textContent = "PDF export is temporarily unavailable. Please reopen the form to try again.";
+                exportHost.append(notice);
+              });
+          }
 
           const entries = buildFieldEntries(formData);
 
