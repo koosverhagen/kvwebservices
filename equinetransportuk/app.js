@@ -455,10 +455,7 @@ const STRIPE_PAYMENT_LINK_35T = "";
 const STRIPE_PAYMENT_LINK_75T = "";
 const OUTSTANDING_PAYMENT_LINK = "";
 const DEPOSIT_PAYMENT_LINK = "";
-const FORM_LINK_A =
-  "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/short-form.html";
-const FORM_LINK_B =
-  "https://koosverhagen.github.io/kvwebservices/equinetransportuk/forms/long-form.html";
+const MILLINS_FORM_LINK = "https://www.equinetransportuk.com/forms/millins-form.html";
 
 const BACKEND_API_BASE =
   location.hostname === "127.0.0.1" || location.hostname === "localhost"
@@ -1197,10 +1194,8 @@ const discountMessage = document.getElementById("discount-message");
 let selectedAvailability = null;
 
 /* ===============================
-   Required form auto-detection
-   Source of truth is the Worker.
-   Short form is only shown when the backend finds a previous hire
-   for this customer within 90 days of the selected pickup date.
+   Millins proposal required for every hire.
+   The stored type remains compatible with existing booking records.
 ================================ */
 
 const REQUIRED_FORM_STATE = {
@@ -1213,12 +1208,7 @@ const REQUIRED_FORM_STATE = {
 
 let requiredFormCheckTimer = null;
 
-function normaliseRequiredFormType(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase() === "short"
-    ? "short"
-    : "long";
+function normaliseRequiredFormType(value) { return "long";
 }
 
 function getCurrentRequiredFormType() {
@@ -1229,12 +1219,7 @@ function getCurrentRequiredFormType() {
   );
 }
 
-function getCurrentRequiredFormLabel() {
-  if (REQUIRED_FORM_STATE.loading) {
-    return "Checking automatically…";
-  }
-
-  return getCurrentRequiredFormType() === "short" ? "Short Form" : "Long Form";
+function getCurrentRequiredFormLabel() { return "Millins Hirer Proposal Form";
 }
 
 function setDetectedRequiredFormType(type, reason = "auto") {
@@ -1339,7 +1324,7 @@ async function checkRequiredFormRequirement({ force = false } = {}) {
   } catch (err) {
     console.warn("Required form auto-detection failed:", err);
 
-    // Safe fallback: use the full long form if the check cannot run.
+    // Keep the Millins proposal if the booking check cannot run.
     const type = setDetectedRequiredFormType("long", "fallback_error");
     updateCheckoutSummary();
     return type;
@@ -7157,10 +7142,7 @@ if (bookingForm) {
     });
     const hiredWithinLast3Months = requiredFormType === "short";
 
-    const shortFormLink = buildFormUrl(FORM_LINK_A, bookingId);
-    const longFormLink = buildFormUrl(FORM_LINK_B, bookingId);
-    const requiredFormLink =
-      requiredFormType === "short" ? shortFormLink : longFormLink;
+    const requiredFormLink = buildFormUrl(MILLINS_FORM_LINK, bookingId);
 
     /* ===============================
        PICKUP / DROPOFF TIMES
@@ -7251,8 +7233,8 @@ if (bookingForm) {
       outstandingPaymentLink: OUTSTANDING_PAYMENT_LINK,
       depositLink: DEPOSIT_PAYMENT_LINK,
 
-      formLinkA: shortFormLink,
-      formLinkB: longFormLink,
+      formLinkA: requiredFormLink,
+      formLinkB: requiredFormLink,
       requiredFormType,
       requiredFormLink,
       hiredWithinLast3Months,

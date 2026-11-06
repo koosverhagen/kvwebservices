@@ -6369,6 +6369,18 @@
         }
       }
 
+
+      #form-modal [hidden] { display: none !important; }
+      #form-modal.millins-document .et-modal-card { width: min(1040px, 96vw); }
+      .millins-view-toolbar { display:flex; gap:12px; align-items:center; margin:8px 0; }
+      .millins-view-toolbar select { padding:8px; border:1px solid #c5d1de; border-radius:6px; background:#fff; color:#183255; font:inherit; }
+      .millins-view-pages { overflow-x:auto; background:#edf2f5; padding:12px; border-radius:8px; }
+      .millins-view-page { width:var(--millins-page-width,100%); margin:0 auto 22px; }
+      .millins-view-page figcaption { padding:8px 0; font-weight:700; color:#183255; }
+      .millins-view-page canvas { display:block; width:100%; height:auto; background:white; box-shadow:0 2px 8px #18325522; }
+      .millins-view-page details { margin-top:8px; font-size:14px; }
+      .millins-view-page details p { white-space:pre-wrap; line-height:1.6; }
+      @media(max-width:600px) { #form-modal.millins-document .et-modal-body { padding:12px; } .millins-view-pages { padding:6px; } }
     </style>
 
     <link rel="icon" href="images/favicon.png" />
@@ -6883,19 +6895,21 @@
       <div class="et-modal-center">
         <div class="et-modal-card">
           <div class="et-modal-header">
-            <h3>Booking Form</h3>
+            <h3 id="modal-form-title">Booking Form</h3>
             <button id="modal-close-btn" class="modal-close">✕</button>
           </div>
 
           <div class="et-modal-body">
             <div id="modal-form-summary" class="detail-grid"></div>
 
-            <div class="subsection">
+            <section id="modal-millins-preview" class="millins-view" aria-label="Completed Millins proposal" hidden></section>
+
+            <div class="subsection" id="modal-legacy-fields">
               <h4>Submitted fields</h4>
               <div id="modal-form-fields" class="kv-list"></div>
             </div>
 
-            <div class="subsection">
+            <div class="subsection" id="modal-legacy-signature">
               <h4>Signature</h4>
               <div id="modal-signature" class="et-modal-signature"></div>
             </div>
@@ -8008,6 +8022,19 @@
 
       const modalSummary = document.getElementById("modal-form-summary");
       const modalFields = document.getElementById("modal-form-fields");
+      const millinsPreview = document.getElementById("modal-millins-preview");
+      let formViewRequest = 0;
+      let disposeFormPreview = null;
+      function clearFormPreview() {
+        disposeFormPreview?.();
+        disposeFormPreview = null;
+        millinsPreview.replaceChildren();
+        millinsPreview.hidden = true;
+        document.getElementById("modal-legacy-fields").hidden = true;
+        document.getElementById("modal-legacy-signature").hidden = true;
+        document.getElementById("modal-form-title").textContent = "Booking Form";
+        modal.classList.remove("millins-document");
+      }
       const modalSignature = document.getElementById("modal-signature");
 
       /* ===============================
@@ -10227,7 +10254,7 @@ Equine Transport UK`;
           ]),
           adminPrintSection("Licence & DVLA", [
             { label: "Driving Licence Number", value: adminPrintGet(lookup, ["drivingLicenceNumber", "licenceNumber", "driverLicenceNumber"]) || booking?.drivingLicenceNumber },
-            { label: "Date of the Last Long Form", value: adminPrintGet(lookup, ["lastLongFormDate"]), formatter: adminPrintFormatDate },
+            { label: "Date of the previous full proposal", value: adminPrintGet(lookup, ["lastLongFormDate"]), formatter: adminPrintFormatDate },
             { label: "DVLA Access / Check Code", value: adminPrintGet(lookup, ["dvlaCode", "dvlaCheckCode", "dvlaAccessCode"]) || getDvlaCodeValue(booking) },
             { label: "Date of Last DVLA Access Code", value: adminPrintGet(lookup, ["dvlaCodeDate", "dvlaAccessCodeDate"]), formatter: adminPrintFormatDate },
           ]),
@@ -10288,14 +10315,14 @@ Equine Transport UK`;
     <div class="toolbar">
       <div>
         <strong>Admin print copy</strong>
-        <span>${escapeHtml(isShort ? "Short form" : "Long form")} · ${escapeHtml(displayBookingId)}</span>
+        <span>${escapeHtml(isShort ? "Earlier hire declaration" : "Earlier hire questionnaire")} · ${escapeHtml(displayBookingId)}</span>
       </div>
       <button type="button" onclick="window.print()">Print / Save PDF</button>
     </div>
     <main class="wrap">
       <div class="header-card">
-        <h1 class="brand-title">Millens Self Drive Hire Horsebox Insurance Proposal <span>${escapeHtml(isShort ? "Short Form" : "Long Form")}</span></h1>
-        <p class="brand-sub">${escapeHtml(isShort ? "Short form declaration copy: no change since the last long hire questionnaire." : "Long hire questionnaire copy submitted by the hirer / driver.")}</p>
+        <h1 class="brand-title">Millens Self Drive Hire Horsebox Insurance Proposal <span>${escapeHtml(isShort ? "Earlier hire declaration" : "Earlier hire questionnaire")}</span></h1>
+        <p class="brand-sub">${escapeHtml(isShort ? "Earlier declaration copy: no change since the previous hire questionnaire." : "Earlier hire questionnaire copy submitted by the hirer / driver.")}</p>
         <div class="top-meta">
           <div class="pill">Booking ID: ${escapeHtml(displayBookingId)}</div>
           <div class="pill">Submitted: ${escapeHtml(adminPrintFormatDateTime(submittedAt) || "—")}</div>
@@ -13918,6 +13945,8 @@ ${mobileOutstandingText}
       }
 
       function closeModal() {
+        formViewRequest++;
+        clearFormPreview();
         modal.classList.add("hidden");
         document.body.style.overflow = "";
       }
@@ -15881,8 +15910,8 @@ ${mobileOutstandingText}
             "",
         ).toLowerCase();
 
-        if (type.includes("long")) return "Long Form";
-        if (type.includes("short")) return "Short Form";
+        if (type.includes("long")) return "Millins proposal";
+        if (type.includes("short")) return "Millins proposal";
 
         return "—";
       }
@@ -15981,8 +16010,6 @@ ${mobileOutstandingText}
         const hireDates = `${pickup} → ${dropoff}`;
 
         const formLabel = getBookingFormLabel(booking);
-        const isShortForm = formLabel === "Short Form";
-        const isLongForm = formLabel === "Long Form";
         const formComplete = isFormComplete(booking);
 
         const depositOk = bookingHasActiveDeposit(booking);
@@ -17447,6 +17474,7 @@ ${mobileOutstandingText}
         }
       }
       function showModalLoading() {
+        clearFormPreview();
         modalSummary.innerHTML = `<div class="empty-state">Loading form…</div>`;
         modalFields.innerHTML = "";
         modalSignature.innerHTML = "";
@@ -18707,7 +18735,7 @@ Equine Transport UK`;
 
       async function loadForm(bookingId, driverNumber = 1) {
         if (!bookingId) return;
-
+        const requestId = ++formViewRequest;
         showModalLoading();
 
         try {
@@ -18722,6 +18750,8 @@ Equine Transport UK`;
           } catch {
             data = {};
           }
+
+          if (requestId !== formViewRequest) return;
 
           // ✅ HANDLE "NO FORM" (NORMAL CASE)
           if (res.status === 404) {
@@ -18756,22 +18786,28 @@ Equine Transport UK`;
           modalSummary.innerHTML = `
             ${makeDetailBox("Booking reference", shortRef(bookingId))}
             ${makeDetailBox("Driver", `Driver ${driverNumber}`)}
-            ${makeDetailBox("Form type", formData.formType || "—")}
+            ${makeDetailBox("Form", formData.payload?.formVersion === "millins-2025-v1" ? "Millins hirer proposal" : "Previous submitted form")}
             ${makeDetailBox("Submitted", formData.submittedAt ? formatDateTime(formData.submittedAt) : "—")}
           `;
 
-          // Export only forms signed using this exact Millins version.
           if (formData.payload?.formVersion === "millins-2025-v1") {
+            modal.classList.add("millins-document");
+            document.getElementById("modal-form-title").textContent = `Millins proposal — Driver ${driverNumber}`;
             const exportHost = document.createElement("div");
+            exportHost.style.gridColumn = "1 / -1";
             modalSummary.append(exportHost);
-            import("./forms/millins/admin-export.js")
-              .then(({addMillinsExportControls}) => addMillinsExportControls(exportHost, formData))
-              .catch(() => {
-                const notice = document.createElement("p");
-                notice.textContent = "PDF export is temporarily unavailable. Please reopen the form to try again.";
-                exportHost.append(notice);
-              });
+            millinsPreview.hidden = false;
+            millinsPreview.textContent = "Preparing the completed form…";
+            const viewer = await import("./forms/millins/admin-export.js?v=20261106-view1");
+            if (requestId !== formViewRequest) return;
+            viewer.addMillinsExportControls(exportHost, formData);
+            disposeFormPreview = viewer.renderMillinsPreview(millinsPreview, formData).dispose;
+            openModal();
+            return;
           }
+
+          document.getElementById("modal-legacy-fields").hidden = false;
+          document.getElementById("modal-legacy-signature").hidden = false;
 
           const entries = buildFieldEntries(formData);
 
@@ -18851,6 +18887,8 @@ Equine Transport UK`;
 
           openModal();
         } catch (err) {
+          if (requestId !== formViewRequest) return;
+          clearFormPreview();
           console.error("Failed to load form:", err);
 
           modalSummary.innerHTML = `

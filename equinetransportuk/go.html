@@ -100,10 +100,10 @@
 
         if (token.startsWith("form-short-")) {
           const bookingId = token.slice("form-short-".length);
-          target = `forms/short-form.html?bookingId=${encodeURIComponent(bookingId)}`;
+          target = `https://www.equinetransportuk.com/forms/millins-form.html?bookingId=${encodeURIComponent(bookingId)}`;
         } else if (token.startsWith("form-long-")) {
           const bookingId = token.slice("form-long-".length);
-          target = `forms/long-form.html?bookingId=${encodeURIComponent(bookingId)}`;
+          target = `https://www.equinetransportuk.com/forms/millins-form.html?bookingId=${encodeURIComponent(bookingId)}`;
         } else if (token.startsWith("deposit-")) {
           const bookingId = token.slice("deposit-".length);
           target = `pay-deposit.html?bookingId=${encodeURIComponent(bookingId)}`;

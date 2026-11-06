@@ -1119,12 +1119,6 @@
         )} → ${formatPrintDateTime(dropoffValue)}`;
 
         const formComplete = !!booking.formCompleted;
-        const requiredFormType = String(
-          booking.requiredFormType || "",
-        ).toLowerCase();
-
-        const isShortForm = requiredFormType === "short";
-        const isLongForm = requiredFormType !== "short";
 
         const depositOk = !!booking.depositPaid;
 
@@ -1199,13 +1193,7 @@
     <div class="status-label">Submitted Form</div>
 
     <div class="status-value">
-      <span class="check-pair">
-        Short ${getPrintCheckMark(isShortForm && formComplete)}
-      </span>
-
-      <span class="check-pair">
-        Long ${getPrintCheckMark(isLongForm && formComplete)}
-      </span>
+      <span class="check-pair">Hirer proposal ${getPrintCheckMark(formComplete)}</span>
     </div>
   </div>
 
@@ -1256,8 +1244,7 @@
             <div class="terms">
               <h2>Terms and Conditions of Hire</h2>
               <ul>
-                <li>If you hire for the first time or have not hired from us within the last 3 months, you must complete the Millens Hire Questionnaire (LONG Form).</li>
-                <li>If you have hired from us within the last 3 months, you may complete the Millens Hire Questionnaire (SHORT Form).</li>
+                <li>Every driver must complete and sign the Millins Hirer Proposal Form for every hire. Your booking email contains the form link.</li>
                 <li class="red">Fuel level must match on return (see gauge). A £50 charge plus the cost of fuel will apply if not returned at the same level.</li>
                 <li>300 miles per day are included; thereafter £0.30 per mile will be charged.</li>
                 <li>Late return policy: vehicles must be returned at the agreed time. Returns more than 30 minutes late may incur a £50 late return charge, unless a valid reason has been communicated to us at the time the delay occurs.</li>
