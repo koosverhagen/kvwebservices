@@ -14358,12 +14358,13 @@ ${mobileOutstandingText}
       function updateHandoverDamageImages(booking) {
         const prefix = getHandoverDamageAssetPrefix(booking);
         const base = "images/handover";
+        const version = prefix === "7h_noliving" ? "?v=hy70-bpf-20261118" : "";
 
         HANDOVER_DAMAGE_BASE_SRCS = {
-          front: `${base}/${prefix}_front.png`,
-          rear: `${base}/${prefix}_rear.png`,
-          left: `${base}/${prefix}_left.png`,
-          right: `${base}/${prefix}_right.png`,
+          front: `${base}/${prefix}_front.png${version}`,
+          rear: `${base}/${prefix}_rear.png${version}`,
+          left: `${base}/${prefix}_left.png${version}`,
+          right: `${base}/${prefix}_right.png${version}`,
           fuel: `${base}/all_fuel.png`,
         };
 
