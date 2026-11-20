@@ -1,4 +1,4 @@
-import {schema} from './schema.js';
+import {schema} from './schema.js?v=licence-20261120';
 export {schema};
 export const VERSION = schema.version;
 export const cleanLicence = v => String(v || '').replace(/\s+/g,'').toUpperCase();
@@ -18,7 +18,7 @@ export function submission(values, extra={}) {
 export function validate(values,extra={}) {
  const errors=[];const add=(field,message)=>errors.push({field,message});
  const required=['Hirer’s Name','Hirer’s Home Address','Post code','Years','Months','Mobile Telephone','Email','Date of Birth','Job Role/Position','Industry','Nationality','Date From','Am/PM 1','Date To','Am/PM 2','Reason for Journey','Where are you travelling to','Country of Issue of Licence','Period of UK residency years','Driving Licence categories held','Dates Driving Tests passed','Driving Licence Number 2','How often do you drive a motor vehicle in the UK','How long have you been driving this regularly?','What experience do you have of driving a horsebox','Print Name','Date Signed'];
- for(const f of required)if(!String(values[f]||'').trim())add(f,`Please complete: ${f}.`);
+ for(const f of required)if(!String(values[f]||'').trim())add(f,`Please complete: ${f==='Years'?'years at your current home address':f==='Months'?'additional months at your current home address':f}.`);
  const radios=['Moving','Check Box33','Check Box35','Check Box39','Check Box45','Check Box51','Declined','Cancelled','Special Terms','Non Motor Convictions'];
  if(values['Check Box35']==='Yes')radios.push('Check Box37');
  if(values['Check Box39']==='Yes')radios.push('Check Box41','Check Box43');
@@ -33,8 +33,10 @@ export function validate(values,extra={}) {
  const birth=parseDate(values['Date of Birth']);if(birth&&birth>new Date())add('Date of Birth','Please enter a date of birth that is not in the future.');
  const from=parseDate(values['Date From']),to=parseDate(values['Date To']);
  if(from&&to){const days=(to-from)/86400000;if(days<0||days>90||(days===0&&values['Am/PM 2']<=values['Am/PM 1']))add('Date To','Hire dates must be in order and no more than 90 days apart.');if(days>=1&&!String(values['overnight parking arrangements']||'').trim())add('overnight parking arrangements','Please provide the overnight parking address.');if(days>=1&&!['A third party yard','Your own premises','Parking on the road'].some(f=>values[f]))add('A third party yard','Please select the overnight parking arrangement.');}
- const licence=cleanLicence(values['Driving Licence Number']||values['Driving Licence Number 2']);if(licence.length<8)add('Driving Licence Number 2','Please enter your full driving licence number.');
- if(extra.licenceType!=='non-dvla') {if(cleanCode(values['DVLA Check Code']).length!==8)add('DVLA Check Code','Your DVLA check code must contain 8 characters.');if(!parseDate(values['Date Check Code Obtained']))add('Date Check Code Obtained','Please enter the date the DVLA code was obtained as DD/MM/YYYY.');}
+ const licence=cleanLicence(values['Driving Licence Number']||values['Driving Licence Number 2']);
+ if(extra.licenceType==='non-dvla'){if(licence.length<8)add('Driving Licence Number 2','Please enter your full driving licence number.');}
+ else if(!/^[A-Z0-9]{16}$/.test(licence))add('Driving Licence Number','Enter exactly 16 letters and numbers from section 5 of your DVLA licence. Do not include the separate 2-digit issue number or any spaces.');
+ if(extra.licenceType!=='non-dvla') {if(!/^[A-Za-z0-9]{8}$/.test(cleanCode(values['DVLA Check Code'])))add('DVLA Check Code','Enter the 8-character DVLA access (check) code exactly as shown: CASE SENSITIVE, with no spaces.');if(!parseDate(values['Date Check Code Obtained']))add('Date Check Code Obtained','Please enter the date the DVLA code was obtained as DD/MM/YYYY.');}
  if(values['Check Box33']==='Yes'&&!values['Date of offence 1'])add('Date of offence 1','Please add the conviction or offence details.');
  if(values['Check Box39']==='Yes'&&!values['If yes to any of the above please provide further details below'])add('If yes to any of the above please provide further details below','Please provide the medical details requested on the form.');
  if(values['Check Box45']==='Yes'&&!values.Describe1)add('Describe1','Please add the claim or accident details.');
